@@ -23,6 +23,7 @@ import {
   Megaphone,
   Users,
   UserPlus,
+  Check,
 } from 'lucide-react';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
@@ -282,61 +283,76 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     const hasCapacity = typeof needed === 'number' ? assigned.length < needed : true;
     const canSignup = canSelfSignup && canSelfSignup(request, type);
     const isSignedUp = isUserSignedUp && isUserSignedUp(request, type);
+    const isFullyStaffed = typeof needed === 'number' ? assigned.length >= needed : false;
+    const isUnderStaffed = typeof needed === 'number' ? assigned.length < needed : false;
+    const isOverStaffed = typeof needed === 'number' ? assigned.length > needed : false;
 
     return (
-      <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
-        {/* Header with icon and title */}
-        <div className="flex items-center gap-2 mb-3">
-          {icon}
-          <span className="font-semibold text-base text-[#236383]">{title}</span>
+      <div className={`rounded-lg p-4 border min-h-[120px] ${
+        isUnderStaffed 
+          ? 'bg-red-50 border-red-200' 
+          : isFullyStaffed && !isOverStaffed
+            ? 'bg-green-50 border-green-200'
+            : isOverStaffed
+              ? 'bg-blue-50 border-blue-200'
+              : 'bg-white/60 border-white/80'
+      }`}>
+        {/* Header with clear status - Completed Event Summary */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {icon}
+            <span className="font-semibold text-base text-[#236383]">{title}</span>
+          </div>
+          {typeof needed === 'number' && (
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                isUnderStaffed 
+                  ? 'bg-red-100 text-red-700 border border-red-200' 
+                  : isFullyStaffed && !isOverStaffed
+                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    : isOverStaffed
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-gray-100 text-gray-600'
+              }`}>
+                {isUnderStaffed && <AlertTriangle className="w-3 h-3" />}
+                {isFullyStaffed && !isOverStaffed && <Check className="w-3 h-3" />}
+                {isOverStaffed && <Users className="w-3 h-3" />}
+                <span className="font-bold">{assigned.length}/{needed}</span>
+                {isUnderStaffed && <span className="ml-1">Short-staffed</span>}
+                {isOverStaffed && <span className="ml-1">Extra help</span>}
+                {isFullyStaffed && !isOverStaffed && <span className="ml-1">Fully staffed</span>}
+              </div>
+            </div>
+          )}
         </div>
-        {/* Assigned people */}
-        <div className="space-y-2 mb-3 min-h-[60px]">
+        
+        {/* Final team summary */}
+        {typeof needed === 'number' && (
+          <div className="mb-3 text-xs text-gray-600 bg-white/50 rounded px-2 py-1">
+            <span className="font-medium">Event Team:</span> {assigned.length} {title.toLowerCase()} 
+            {needed > 0 && <span className="ml-2">(Requested: {needed})</span>}
+          </div>
+        )}
+        
+        {/* Team members who served */}
+        <div className="space-y-2 mb-3">
           {assigned.length > 0 ? (
             assigned.map((personId: string) => {
-              // Get name from details first, but if it's numeric-only (like "350"), treat it as an ID 
               const detailName = details?.[personId]?.name;
               const name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
               return (
-                <div key={personId} className="flex items-center justify-between bg-white/80 rounded px-3 py-2">
+                <div key={personId} className="flex items-center bg-white/90 rounded px-3 py-2 shadow-sm">
+                  <Check className="w-3 h-3 text-green-600 mr-2" />
                   <span className="text-sm font-medium">{name}</span>
-                  {canEdit && onRemoveAssignment && (
-                    <button
-                      onClick={() => onRemoveAssignment(type, personId)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
                 </div>
               );
             })
           ) : (
-            <div className="text-[#236383]/60 italic text-[16px]">No one assigned</div>
+            <div className="text-gray-500 italic text-sm text-center py-2 bg-white/30 rounded border-2 border-dashed border-gray-300">
+              No one served in this role
+            </div>
           )}
         </div>
-        {/* Assign button */}
-        {canEdit && hasCapacity && onAssign && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onAssign(type)}
-            className="w-full text-sm border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white"
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Assign {title.slice(0, -1)}
-          </Button>
-        )}
-        {!canEdit && canSignup && onSelfSignup && (
-          <Button
-            size="sm"
-            variant={isSignedUp ? "secondary" : "outline"}
-            onClick={() => onSelfSignup(type)}
-            className="w-full text-sm"
-          >
-            {isSignedUp ? 'Signed up' : 'Sign up'}
-          </Button>
-        )}
       </div>
     );
   };

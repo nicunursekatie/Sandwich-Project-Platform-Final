@@ -22,6 +22,7 @@ import {
   Megaphone,
   UserPlus,
   UserX,
+  Check,
 } from 'lucide-react';
 import { formatTime12Hour, formatTimeForInput, formatEventDate } from '@/components/event-requests/utils';
 import { SANDWICH_TYPES, statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
@@ -350,42 +351,89 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     const hasCapacity = typeof needed === 'number' ? assigned.length < needed : true;
     const canSignup = canSelfSignup && canSelfSignup(request, type);
     const isSignedUp = isUserSignedUp && isUserSignedUp(request, type);
+    const isFullyStaffed = typeof needed === 'number' ? assigned.length >= needed : false;
+    const isUnderStaffed = typeof needed === 'number' ? assigned.length < needed : false;
+    const isOverStaffed = typeof needed === 'number' ? assigned.length > needed : false;
 
     return (
-      <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
-        {/* Header with icon, title and count */}
+      <div className={`rounded-lg p-4 border min-h-[140px] transition-all ${
+        isUnderStaffed 
+          ? 'bg-red-50 border-red-200 shadow-sm' 
+          : isFullyStaffed && !isOverStaffed
+            ? 'bg-green-50 border-green-200 shadow-sm'
+            : isOverStaffed
+              ? 'bg-blue-50 border-blue-200 shadow-sm'
+              : 'bg-white/60 border-white/80'
+      }`}>
+        {/* Enhanced Header with clear status */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             {icon}
             <span className="font-semibold text-base text-[#236383]">{title}</span>
           </div>
           {typeof needed === 'number' && (
-            <div className="flex items-center gap-1">
-              <span className={`text-sm font-medium ${
-                assigned.length >= needed ? 'text-green-600' : 'text-orange-600'
+            <div className="flex items-center gap-2">
+              {/* Status indicator */}
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                isUnderStaffed 
+                  ? 'bg-red-100 text-red-700 border border-red-200' 
+                  : isFullyStaffed && !isOverStaffed
+                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    : isOverStaffed
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-gray-100 text-gray-600'
               }`}>
-                {assigned.length}/{needed}
-              </span>
-              {assigned.length < needed && (
-                <UserX className="w-4 h-4 text-orange-600" />
-              )}
+                {isUnderStaffed && <AlertTriangle className="w-3 h-3" />}
+                {isFullyStaffed && !isOverStaffed && <Check className="w-3 h-3" />}
+                {isOverStaffed && <Users className="w-3 h-3" />}
+                <span className="font-bold">
+                  {assigned.length}/{needed}
+                </span>
+                {isUnderStaffed && <span className="ml-1">Need {needed - assigned.length} more</span>}
+                {isOverStaffed && <span className="ml-1">+{assigned.length - needed} extra</span>}
+                {isFullyStaffed && !isOverStaffed && <span className="ml-1">Complete</span>}
+              </div>
             </div>
           )}
         </div>
+
+        {/* Requirements summary */}
+        {typeof needed === 'number' && (
+          <div className="mb-3 text-xs text-gray-600 bg-white/50 rounded px-2 py-1">
+            <span className="font-medium">Required:</span> {needed} {title.toLowerCase()}
+            {assigned.length > 0 && (
+              <span className="ml-2">
+                • <span className="font-medium">Assigned:</span> {assigned.length}
+                {isUnderStaffed && (
+                  <span className="ml-2 text-red-600 font-medium">
+                    • <span className="font-bold">Missing:</span> {needed - assigned.length}
+                  </span>
+                )}
+                {isOverStaffed && (
+                  <span className="ml-2 text-blue-600 font-medium">
+                    • <span className="font-bold">Extra:</span> +{assigned.length - needed}
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
+        )}
+        
         {/* Assigned people */}
-        <div className="space-y-2 mb-3 min-h-[60px]">
+        <div className="space-y-2 mb-3 min-h-[40px]">
           {assigned.length > 0 ? (
             assigned.map((personId: string) => {
               // Get name from details first, but if it's numeric-only (like "350"), treat it as an ID 
               const detailName = details?.[personId]?.name;
               const name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
               return (
-                <div key={personId} className="flex items-center justify-between bg-white/80 rounded px-3 py-2">
+                <div key={personId} className="flex items-center justify-between bg-white/90 rounded px-3 py-2 shadow-sm">
                   <span className="text-sm font-medium">{name}</span>
                   {canEdit && onRemoveAssignment && (
                     <button
                       onClick={() => onRemoveAssignment(type, personId)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1 transition-colors"
+                      title="Remove assignment"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -394,31 +442,40 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               );
             })
           ) : (
-            <div className="text-[#236383]/60 italic text-[16px]">No one assigned</div>
+            <div className="text-gray-500 italic text-sm text-center py-2 bg-white/30 rounded border-2 border-dashed border-gray-300">
+              No one assigned yet
+            </div>
           )}
         </div>
-        {/* Assign button */}
-        {canEdit && hasCapacity && onAssign && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onAssign(type)}
-            className="w-full text-sm border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white"
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Assign {title.slice(0, -1)}
-          </Button>
-        )}
-        {!canEdit && canSignup && onSelfSignup && (
-          <Button
-            size="sm"
-            variant={isSignedUp ? "secondary" : "outline"}
-            onClick={() => onSelfSignup(type)}
-            className="w-full text-sm"
-          >
-            {isSignedUp ? 'Signed up' : 'Sign up'}
-          </Button>
-        )}
+        
+        {/* Action buttons */}
+        <div className="space-y-2">
+          {canEdit && onAssign && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onAssign(type)}
+              className={`w-full text-sm transition-all ${
+                isUnderStaffed 
+                  ? 'border-red-400 text-red-700 hover:bg-red-500 hover:text-white bg-red-50' 
+                  : 'border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white'
+              }`}
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              {isUnderStaffed ? `Assign ${title.slice(0, -1)} (Urgent)` : `Add ${title.slice(0, -1)}`}
+            </Button>
+          )}
+          {!canEdit && canSignup && onSelfSignup && (
+            <Button
+              size="sm"
+              variant={isSignedUp ? "secondary" : "outline"}
+              onClick={() => onSelfSignup(type)}
+              className="w-full text-sm"
+            >
+              {isSignedUp ? 'Signed up' : 'Sign up'}
+            </Button>
+          )}
+        </div>
       </div>
     );
   };
@@ -811,91 +868,39 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           {(request.overnightHoldingLocation || request.deliveryDestination || canEdit) && (
             <div className="bg-white/50 rounded-lg p-3 border border-white/60 space-y-3">
               {/* Overnight Holding Location */}
-              {request.overnightHoldingLocation ? (
+              {/* Show overnight holding location field if it exists OR if editing */}
+              {(request.overnightHoldingLocation || (canEdit && request.deliveryDestination)) && (
                 <div>
                   {renderEditableField(
                     'overnightHoldingLocation',
-                    request.overnightHoldingLocation,
+                    request.overnightHoldingLocation || '',
                     '🌙 Overnight Holding Location',
                     'text'
                   )}
-                  <div className="ml-6 mt-1">
-                    {request.overnightPickupTime ? (
-                      renderEditableField(
+                  {/* Show pickup time if location exists or if currently editing pickup time */}
+                  {(request.overnightHoldingLocation || (isEditingThisCard && editingField === 'overnightPickupTime')) && (
+                    <div className="ml-6 mt-1">
+                      {renderEditableField(
                         'overnightPickupTime',
-                        formatTime12Hour(request.overnightPickupTime),
+                        request.overnightPickupTime ? formatTime12Hour(request.overnightPickupTime) : '',
                         'Pickup Time',
                         'time'
-                      )
-                    ) : (
-                      canEdit && (
-                        <div className="group">
-                          <p className="text-gray-600 font-bold text-[17px]">Pickup Time</p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-lg font-normal text-gray-400">Not set</p>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => startEditing('overnightPickupTime', '')}
-                              className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                              title="Add Pickup Time from Overnight Location"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              ) : (
-                canEdit && request.deliveryDestination && (
-                  <div className="group">
-                    <p className="text-gray-600 font-bold text-[17px]">🌙 Overnight Holding Location</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-lg font-normal text-gray-400">Not set</p>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing('overnightHoldingLocation', '')}
-                        className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                        title="Add Overnight Holding Location"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
+                      )}
                     </div>
-                  </div>
-                )
+                  )}
+                </div>
               )}
 
-              {/* Final Delivery Destination */}
-              {request.deliveryDestination ? (
+              {/* Final Delivery Destination - Always show if editable or has value */}
+              {(request.deliveryDestination || canEdit) && (
                 <div>
                   {renderEditableField(
                     'deliveryDestination',
-                    request.deliveryDestination,
+                    request.deliveryDestination || '',
                     request.overnightHoldingLocation ? '📍 Final Delivery Destination' : '📍 Delivery Destination',
                     'text'
                   )}
                 </div>
-              ) : (
-                canEdit && (
-                  <div className="group">
-                    <p className="text-gray-600 font-bold text-[17px]">📍 Delivery Destination</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-lg font-normal text-gray-400">Not set</p>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing('deliveryDestination', '')}
-                        className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                        title="Add Delivery Destination"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )
               )}
             </div>
           )}
@@ -980,85 +985,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           onSelfSignup={(type) => handleSelfSignup(type)}
         />
 
-        {/* Staffing Summary - Visual representation */}
-        <div className="mt-3 pt-3 border-t border-gray-200">
-          <div className="grid grid-cols-3 gap-3">
-            {/* Drivers */}
-            <div className={`rounded-lg p-2 ${
-              parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
-                ? 'bg-green-50 border border-green-300'
-                : 'bg-orange-50 border border-orange-300'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Car className={`w-4 h-4 ${
-                    parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
-                      ? 'text-green-600'
-                      : 'text-orange-600'
-                  }`} />
-                  <span className="text-sm font-medium">Drivers</span>
-                </div>
-                <span className={`text-sm font-bold ${
-                  parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
-                    ? 'text-green-600'
-                    : 'text-orange-600'
-                }`}>
-                  {parsePostgresArray(request.assignedDriverIds).length}/{request.driversNeeded || 0}
-                </span>
-              </div>
-            </div>
-
-            {/* Speakers */}
-            <div className={`rounded-lg p-2 ${
-              Object.keys(request.assignedSpeakerDetails || {}).length >= (request.speakersNeeded || 0)
-                ? 'bg-green-50 border border-green-300'
-                : 'bg-orange-50 border border-orange-300'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Megaphone className={`w-4 h-4 ${
-                    Object.keys(request.assignedSpeakerDetails || {}).length >= (request.speakersNeeded || 0)
-                      ? 'text-green-600'
-                      : 'text-orange-600'
-                  }`} />
-                  <span className="text-sm font-medium">Speakers</span>
-                </div>
-                <span className={`text-sm font-bold ${
-                  Object.keys(request.assignedSpeakerDetails || {}).length >= (request.speakersNeeded || 0)
-                    ? 'text-green-600'
-                    : 'text-orange-600'
-                }`}>
-                  {Object.keys(request.assignedSpeakerDetails || {}).length}/{request.speakersNeeded || 0}
-                </span>
-              </div>
-            </div>
-
-            {/* Volunteers */}
-            <div className={`rounded-lg p-2 ${
-              parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
-                ? 'bg-green-50 border border-green-300'
-                : 'bg-orange-50 border border-orange-300'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Users className={`w-4 h-4 ${
-                    parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
-                      ? 'text-green-600'
-                      : 'text-orange-600'
-                  }`} />
-                  <span className="text-sm font-medium">Volunteers</span>
-                </div>
-                <span className={`text-sm font-bold ${
-                  parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
-                    ? 'text-green-600'
-                    : 'text-orange-600'
-                }`}>
-                  {parsePostgresArray(request.assignedVolunteerIds).length}/{request.volunteersNeeded || 0}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
