@@ -310,7 +310,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               <div className="flex items-center gap-1">
                 <Badge className="flex items-center gap-1 bg-[#FBAD3F] text-white">
                   <User className="w-3 h-3" />
-                  <span className="text-xs">Owner:</span>
+                  <span className="text-[14px]">Owner:</span>
                   <span className="font-medium text-[14px]">{project.assigneeName}</span>
                 </Badge>
                 <SendKudosButton
