@@ -124,7 +124,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           <div className="bg-blue-50 rounded-lg p-3">
             <p className="text-sm text-gray-500 mb-1">Submitted</p>
             <div className="space-y-1">
-              <p className="font-medium flex items-center gap-2 text-lg">
+              <p className="font-medium flex items-center gap-2 text-[16px]">
                 <Clock className="w-4 h-4" />
                 {request.createdAt
                   ? new Date(request.createdAt).toLocaleDateString() + ' at ' + new Date(request.createdAt).toLocaleTimeString()
