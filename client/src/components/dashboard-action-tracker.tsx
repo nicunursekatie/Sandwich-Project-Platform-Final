@@ -372,6 +372,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
           </Button>
           <Button 
             variant="outline" 
+            className="text-[16px]"
             onClick={() => onNavigate('messages')}
             data-testid="check-messages"
           >
