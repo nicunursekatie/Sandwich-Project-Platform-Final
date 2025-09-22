@@ -522,6 +522,7 @@ export class GoogleSheetsService {
           row.status,
           row.startDate,
           row.endDate,
+          row.category, // FIXED: was missing Category column
           row.milestone,
           row.subTasksOwners,
           row.deliverable,
@@ -540,10 +541,10 @@ export class GoogleSheetsService {
         const insertRowStart = lastRowWithData + 1; // Next available row
         const insertRowEnd = insertRowStart + newRows.length - 1;
 
-        // Insert directly at specific row range in A:M columns
+        // Insert directly at specific row range in A:N columns
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.config.spreadsheetId,
-          range: `${this.config.worksheetName}!A${insertRowStart}:M${insertRowEnd}`,
+          range: `${this.config.worksheetName}!A${insertRowStart}:N${insertRowEnd}`, // FIXED: was A:M, now A:N to match column count
           valueInputOption: 'USER_ENTERED',
           resource: {
             values: newRows,
@@ -551,7 +552,7 @@ export class GoogleSheetsService {
         });
 
         console.log(
-          `📍 Inserted ${newRows.length} rows directly at A${insertRowStart}:M${insertRowEnd}`
+          `📍 Inserted ${newRows.length} rows directly at A${insertRowStart}:N${insertRowEnd}` // FIXED: was A:M, now A:N
         );
       }
 
@@ -572,22 +573,24 @@ export class GoogleSheetsService {
     try {
       const headers = [
         'Task', // Column A (Project title)
-        'Status', // Column B (Review Status: P1, P2, etc.)
+        'Review Status', // Column B (Review Status: P1, P2, etc.) - FIXED: was duplicate "Status"
         'Priority', // Column C
         'Owner', // Column D
         'Support people', // Column E
         'Status', // Column F (Actual project status)
         'Start', // Column G
         'End date', // Column H
-        'Milestone', // Column I
-        'Sub-Tasks | Owners', // Column J (Individual tasks within project)
-        'Deliverable', // Column K
-        'Notes', // Column L
+        'Category', // Column I (NEW - added after end date) - FIXED: was missing
+        'Milestone', // Column J (shifted from I) - FIXED: was in wrong position
+        'Sub-Tasks | Owners', // Column K (Individual tasks within project)
+        'Deliverable', // Column L
+        'Notes', // Column M - FIXED: was in wrong position
+        'Last Discussed Date', // Column N - FIXED: was missing entirely
       ];
 
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A1:L1`,
+        range: `${this.config.worksheetName}!A1:N1`, // FIXED: was A1:L1, now A1:N1 to match read/write operations
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [headers],

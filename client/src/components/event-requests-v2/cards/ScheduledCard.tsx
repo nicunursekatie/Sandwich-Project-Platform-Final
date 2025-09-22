@@ -75,7 +75,7 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
         value={selectedOption}
         onChange={(e) => setSelectedOption(e.target.value)}
         className="h-8 px-2 border border-gray-300 rounded text-sm w-full"
-        autoFocus
+                    autoFocus
         disabled={isLoading}
       >
         <option value="">Select recipient organization...</option>
@@ -101,11 +101,11 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
         <Button size="sm" onClick={handleSave}>
           <Save className="w-3 h-3 mr-1" />
           Save
-        </Button>
+                  </Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>
           <X className="w-3 h-3 mr-1" />
           Cancel
-        </Button>
+                  </Button>
       </div>
     </div>
   );
@@ -147,7 +147,7 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
            (tempPickupTime && !request.pickupTime);
   };
 
-  return (
+    return (
     <div className="space-y-4">
       {!request.eventStartTime && (
         <div className="space-y-2">
@@ -159,8 +159,8 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
             className="w-full"
             placeholder="Select start time"
           />
-        </div>
-      )}
+            </div>
+          )}
       {!request.eventEndTime && (
         <div className="space-y-2">
           <label className="text-sm font-medium">Event End Time</label>
@@ -183,22 +183,22 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
             className="w-full"
             placeholder="Select pickup time"
           />
-        </div>
-      )}
+          </div>
+        )}
       <div className="flex justify-end gap-2 pt-4">
         <Button variant="outline" onClick={cancelEdit}>
           Cancel
-        </Button>
-        <Button 
+            </Button>
+            <Button
           onClick={handleSave}
           disabled={!hasChanges()}
         >
           Save Times
-        </Button>
+            </Button>
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 interface ScheduledCardProps {
   request: EventRequest;
@@ -564,10 +564,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
                       {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
                     </Badge>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-          </div>
 
             {/* Contact & Date */}
             <div className="flex items-center gap-6 text-base text-gray-600 mb-3">
@@ -616,8 +616,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       >
                         <Edit2 className="w-3 h-3" />
                       </Button>
-              )}
-            </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -642,8 +642,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     {request.eventAddress}
                   </a>
                 </div>
-              </div>
-            )}
+            </div>
+          )}
 
             {/* Delivery Logistics */}
             <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
@@ -717,8 +717,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </div>
                   )}
                 </div>
-              </div>
             </div>
+          </div>
 
             {/* Sandwich Information */}
             <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
@@ -727,9 +727,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <span className="font-semibold text-gray-800">Sandwich Details</span>
               </div>
               <div className="space-y-2">
-                {renderSandwichEdit()}
-              </div>
-            </div>
+            {renderSandwichEdit()}
+          </div>
+        </div>
 
             {/* Event Times */}
             <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
@@ -737,7 +737,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#47B3CB]" />
                   <span className="font-semibold text-gray-800">Event Times</span>
-                </div>
+              </div>
                 {canEdit && (
                   <Dialog>
                     <DialogTrigger asChild>
@@ -780,8 +780,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           >
                             <Edit2 className="w-3 h-3" />
                           </Button>
-                        )}
-                      </div>
+              )}
+            </div>
                     )}
                     {request.eventEndTime && (
                       <div className="flex items-center gap-1 group">
@@ -797,7 +797,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             <Edit2 className="w-3 h-3" />
                           </Button>
                         )}
-                      </div>
+          </div>
                     )}
                     {request.pickupTime && (
                       <div className="flex items-center gap-1 group">
@@ -813,7 +813,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             <Edit2 className="w-3 h-3" />
                           </Button>
                         )}
-                      </div>
+        </div>
                     )}
                     
                     {/* Inline editing for times */}
@@ -832,9 +832,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Button size="sm" variant="ghost" onClick={cancelEdit}>
                           <X className="w-3 h-3" />
                         </Button>
-                      </div>
+              </div>
                     )}
-                  </div>
+                </div>
                 ) : (
                   <div className="text-base text-gray-500 italic">
                     No times set yet. Click "Add Times" to add event times.
@@ -852,9 +852,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <span className="font-medium text-[#FBAD3F]">TSP Contact:</span>{' '}
                     {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
                   </span>
-                </div>
-              </div>
-            )}
+            </div>
+          </div>
+        )}
 
           {/* Quick Actions */}
           {canEdit && (
@@ -867,7 +867,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </Button>
                   </div>
                 )}
-              </div>
 
         {/* Team Assignments */}
         {totalNeeded > 0 && (
@@ -881,7 +880,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               }`}>
                 {totalAssigned}/{totalNeeded} assigned
               </span>
-            </div>
+                </div>
 
             <div className="space-y-3">
             {/* Drivers */}
@@ -1040,7 +1039,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         {volunteerAssigned < volunteerNeeded ? 'Assign' : 'Add'}
           </Button>
                     )}
-                  </div>
+            </div>
                   {volunteerAssigned > 0 ? (
                     <div className="space-y-1">
                       {parsePostgresArray(request.assignedVolunteerIds).map((volunteerId: string) => {
@@ -1058,10 +1057,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                                 <X className="w-3 h-3" />
           </Button>
                             )}
-                          </div>
+          </div>
                         );
                       })}
-                    </div>
+        </div>
                   ) : (
                     <div className="text-base text-gray-500 italic">No volunteers assigned</div>
                   )}
@@ -1077,15 +1076,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <span className="font-medium text-[#A31C41]">Van Driver</span>
                     </div>
                     {canEdit && !request.assignedVanDriverId && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+          <Button
+            size="sm"
+            variant="outline"
                         onClick={() => openAssignmentDialog('driver')}
                         className="h-8 text-sm border-[#A31C41]/40 text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
-                      >
+          >
                         <UserPlus className="w-3 h-3 mr-1" />
                         Assign
-              </Button>
+          </Button>
                     )}
                   </div>
                   {request.assignedVanDriverId ? (
@@ -1094,14 +1093,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         {request.customVanDriverName || resolveUserName(request.assignedVanDriverId)}
                       </span>
                       {canEdit && (
-              <Button
-                size="sm"
+          <Button
+            size="sm"
                 variant="ghost"
                           onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
                           className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-              >
+          >
                           <X className="w-3 h-3" />
-              </Button>
+          </Button>
                       )}
                     </div>
                   ) : (
@@ -1131,7 +1130,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <FileText className="w-4 h-4 text-[#47B3CB]" />
               <span className="font-medium text-[#47B3CB]">Planning Notes</span>
             </div>
-            {canEdit && (
+          {canEdit && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -1183,7 +1182,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             Follow Up
           </Button>
         </div>
-      </div>
       </div>
       </CardContent>
     </Card>
