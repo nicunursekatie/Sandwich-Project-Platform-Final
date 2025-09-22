@@ -122,7 +122,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         {/* Event Details */}
         <div className="space-y-3 mb-4">
           <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-sm text-gray-500 mb-1">Submitted</p>
+            <p className="text-gray-500 mb-1 text-[16px] font-bold">Submitted</p>
             <div className="space-y-1">
               <p className="font-medium flex items-center gap-2 text-[16px]">
                 <Clock className="w-4 h-4" />
