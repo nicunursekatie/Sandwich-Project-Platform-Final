@@ -40,12 +40,24 @@ export function parseSandwichTypes(sandwichTypes: any): SandwichType[] | null {
       if (values.every(item => typeof item === 'object' && 'type' in item && 'quantity' in item)) {
         return values as SandwichType[];
       }
+
+      // Handle old format like {deli: 0, turkey: 0, ham: 0, pbj: 0}
+      const keys = Object.keys(sandwichTypes);
+      if (keys.length > 0 && values.every(v => typeof v === 'number')) {
+        // Convert old format to new format, but filter out zero quantities
+        const converted = keys
+          .map(type => ({ type, quantity: sandwichTypes[type] as number }))
+          .filter(item => item.quantity > 0);
+
+        // Return converted array or null if all quantities were zero
+        return converted.length > 0 ? converted : null;
+      }
     }
 
-    console.warn('Unable to parse sandwich types:', sandwichTypes);
+    // Silently return null for unparseable data (don't log warnings for old formats)
     return null;
   } catch (error) {
-    console.error('Error parsing sandwich types:', error, sandwichTypes);
+    // Silently handle parse errors for old format data
     return null;
   }
 }

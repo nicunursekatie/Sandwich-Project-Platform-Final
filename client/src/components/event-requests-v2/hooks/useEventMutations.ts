@@ -46,9 +46,17 @@ export const useEventMutations = () => {
   });
 
   const updateEventRequestMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) =>
-      apiRequest('PUT', `/api/event-requests/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      console.log('=== UPDATE MUTATION ===');
+      console.log('Event ID:', id);
+      console.log('Data being sent:', JSON.stringify(data, null, 2));
+      return apiRequest('PUT', `/api/event-requests/${id}`, data);
+    },
     onSuccess: async (updatedEvent, variables) => {
+      console.log('=== UPDATE SUCCESS ===');
+      console.log('Updated event:', updatedEvent);
+      console.log('Variables:', variables);
+
       toast({
         title: 'Event request updated',
         description: 'The event request has been successfully updated.',
@@ -62,7 +70,7 @@ export const useEventMutations = () => {
       setShowEventDetails(false);
       setSelectedEventRequest(null);
       setIsEditing(false);
-      
+
       // Clear inline editing state as well
       setEditingScheduledId(null);
       setEditingField(null);
