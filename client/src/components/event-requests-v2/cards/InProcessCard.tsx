@@ -362,11 +362,11 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   </Badge>
                 )}
               </div>
-              {(request as any).toolkitSentBy && (
+              {request.toolkitSentBy && (
                 <div className="flex items-center gap-2 ml-6">
                   <User className="w-3 h-3 text-yellow-600" />
                   <span className="text-xs text-yellow-700">
-                    Sent by: {resolveUserName ? resolveUserName((request as any).toolkitSentBy) : (request as any).toolkitSentBy}
+                    Sent by: {resolveUserName ? resolveUserName(request.toolkitSentBy) : request.toolkitSentBy}
                   </span>
                 </div>
               )}

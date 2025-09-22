@@ -629,11 +629,11 @@ export default function RequestCard({
                             </span>
                           )}
                         </div>
-                        {(request as any).toolkitSentBy && (
+                        {request.toolkitSentBy && (
                           <div className="flex items-center space-x-2 ml-7">
                             <User className="w-4 h-4 text-green-600" />
                             <span className="text-sm text-green-700">
-                              Toolkit sent by: {(request as any).toolkitSentBy}
+                              Toolkit sent by: {resolveUserName(request.toolkitSentBy)}
                             </span>
                           </div>
                         )}
