@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   Clock,
   Package,
@@ -453,7 +454,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
             {/* Destination Information */}
-            <div className="bg-white/60 rounded-lg p-3 mb-4 border border-[#FBAD3F]/20">
+            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[#236383]" />
@@ -537,18 +538,74 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
             </div>
                     {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          if (!request.eventStartTime) startEditing('eventStartTime', '');
-                          else if (!request.eventEndTime) startEditing('eventEndTime', '');
-                          else if (!request.pickupTime) startEditing('pickupTime', '');
-                        }}
-                        className="h-6 px-2 text-sm text-blue-600"
-                      >
-                        + Add Start or End Time
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-sm text-blue-600"
+                          >
+                            + Add Start or End Time
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Add Event Times</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            {!request.eventStartTime && (
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Event Start Time</label>
+                                <Input
+                                  type="time"
+                                  value={request.eventStartTime || ''}
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      startEditing('eventStartTime', e.target.value);
+                                    }
+                                  }}
+                                  className="w-full"
+                                />
+                              </div>
+                            )}
+                            {!request.eventEndTime && (
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Event End Time</label>
+                                <Input
+                                  type="time"
+                                  value={request.eventEndTime || ''}
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      startEditing('eventEndTime', e.target.value);
+                                    }
+                                  }}
+                                  className="w-full"
+                                />
+                              </div>
+                            )}
+                            {!request.pickupTime && (
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Pickup Time</label>
+                                <Input
+                                  type="time"
+                                  value={request.pickupTime || ''}
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      startEditing('pickupTime', e.target.value);
+                                    }
+                                  }}
+                                  className="w-full"
+                                />
+                              </div>
+                            )}
+                            <div className="flex justify-end gap-2 pt-4">
+                              <Button variant="outline" onClick={() => {}}>
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     )}
           </div>
                 )}
@@ -582,7 +639,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Team Assignments */}
         {totalNeeded > 0 && (
-          <div className="bg-white/80 rounded-lg p-4 mb-4 border border-[#FBAD3F]/20">
+          <div className="bg-white/90 rounded-lg p-4 mb-4 border border-white/50 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <span className="font-semibold text-gray-800">Team Assignments</span>
               <span className={`text-base font-bold px-2 py-1 rounded-full ${
@@ -599,8 +656,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {driverNeeded > 0 && (
                 <div className={`rounded-lg p-3 border ${
                   driverAssigned >= driverNeeded 
-                    ? 'bg-[#236383]/10 border-[#236383]/30' 
-                    : 'bg-[#A31C41]/10 border-[#A31C41]/30'
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -666,8 +723,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {speakerNeeded > 0 && (
                 <div className={`rounded-lg p-3 border ${
                   speakerAssigned >= speakerNeeded 
-                    ? 'bg-[#236383]/10 border-[#236383]/30' 
-                    : 'bg-[#A31C41]/10 border-[#A31C41]/30'
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -725,8 +782,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {volunteerNeeded > 0 && (
                 <div className={`rounded-lg p-3 border ${
                   volunteerAssigned >= volunteerNeeded 
-                    ? 'bg-[#236383]/10 border-[#236383]/30' 
-                    : 'bg-[#A31C41]/10 border-[#A31C41]/30'
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -781,7 +838,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {/* Van Driver - if needed */}
               {(request.vanDriverNeeded || request.assignedVanDriverId) && (
-                <div className="rounded-lg p-3 border bg-[#A31C41]/10 border-[#A31C41]/30">
+                <div className="rounded-lg p-3 border bg-orange-50 border-orange-200">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Car className="w-4 h-4 text-[#A31C41]" />
