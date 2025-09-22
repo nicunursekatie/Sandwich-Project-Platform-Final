@@ -564,37 +564,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
                       {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
                     </Badge>
-                      )}
-                    </div>
                   )}
                 </div>
-              </div>
+              )}
             </div>
-              <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
-                <Check className="w-3 h-3 mr-1" />
-                Fully Staffed
-              </Badge>
-            ) : (
-              <div className="flex gap-1">
-                {driverNeeded > driverAssigned && (
-                  <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                    {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
-                  </Badge>
-                )}
-                {speakerNeeded > speakerAssigned && (
-                  <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                    {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                  </Badge>
-                )}
-                {volunteerNeeded > volunteerAssigned && (
-                  <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                    {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
-                  </Badge>
-                )}
-              </div>
-            )}
-
-          </div>
 
             {/* Contact & Date */}
             <div className="flex items-center gap-6 text-base text-gray-600 mb-3">
@@ -609,8 +582,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <a href={`tel:${request.phone}`} className="text-blue-600 hover:text-blue-800">
                     <Phone className="w-3 h-3" />
                   </a>
-                      )}
-                    </div>
+                )}
+              </div>
               
               <div className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
@@ -629,7 +602,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <Button size="sm" variant="ghost" onClick={cancelEdit}>
                       <X className="w-3 h-3" />
                     </Button>
-                </div>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-1 group">
                     <span className="font-medium">{dateLabel}:</span>
@@ -643,9 +616,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       >
                         <Edit2 className="w-3 h-3" />
                       </Button>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -661,7 +635,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           )}
         </div>
-        </div>
+
         {/* Main Content */}
         <div className="space-y-4">
             {/* Event Location */}
