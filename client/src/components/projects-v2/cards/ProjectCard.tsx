@@ -208,12 +208,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               )}
             </div>
 
-            <h3 className="text-lg font-semibold mt-2 text-gray-900 truncate pr-8">
+            <h3 className="text-lg font-semibold mt-2 text-gray-900 truncate pr-8 font-roboto">
               {project.title}
             </h3>
 
             {project.description && (
-              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2 font-roboto">
                 {project.description}
               </p>
             )}
@@ -280,7 +280,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       <CardContent>
         <div className="space-y-3">
           {/* Category and Dates */}
-          <div className="flex items-center gap-4 text-sm text-gray-600">
+          <div className="flex items-center gap-4 text-sm text-gray-600 font-roboto">
             <div className="flex items-center gap-1">
               {getCategoryIcon(project.category || 'technology')}
               <span className="capitalize text-[15px]">{project.category || 'technology'}</span>
