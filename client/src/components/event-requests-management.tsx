@@ -1029,7 +1029,7 @@ export default function EventRequestsManagement({
           
           // Update speaker assignments array - replace old name with new
           const newSpeakerAssignments = oldSpeakerName
-            ? currentSpeakerAssignments.map(name => name === oldSpeakerName ? personName : name)
+            ? currentSpeakerAssignments.map((name: string) => name === oldSpeakerName ? personName : name)
             : [...currentSpeakerAssignments, personName];
           updateData.speakerAssignments = newSpeakerAssignments;
         } else {
@@ -1050,8 +1050,8 @@ export default function EventRequestsManagement({
       } else if (assignmentType === 'volunteer') {
         // Handle volunteer assignment (add or edit)
         const currentVolunteers = eventRequest.assignedVolunteerIds || [];
-        const currentVolunteerDetails = eventRequest.volunteerDetails || {};
-        const currentVolunteerAssignments = eventRequest.volunteerAssignments || [];
+        const currentVolunteerDetails = (eventRequest as any).volunteerDetails || {};
+        const currentVolunteerAssignments = (eventRequest as any).volunteerAssignments || [];
         
         if (isEditingAssignment && editingAssignmentPersonId) {
           // Editing: Replace the existing assignment
