@@ -631,7 +631,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base font-medium text-gray-600">Address:</span>
-                  <span className="text-base">{request.eventAddress}</span>
+                  <a 
+                    href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-base text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {request.eventAddress}
+                  </a>
                 </div>
               </div>
             )}
@@ -711,64 +718,101 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             </div>
 
-            {/* Key Details */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* Sandwich Information */}
+            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-4 h-4 text-[#47B3CB]" />
+                <span className="font-semibold text-gray-800">Sandwich Details</span>
+              </div>
               <div className="space-y-2">
                 {renderSandwichEdit()}
               </div>
+            </div>
 
+            {/* Event Times */}
+            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#47B3CB]" />
+                  <span className="font-semibold text-gray-800">Event Times</span>
+                </div>
+                {canEdit && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-sm text-[#47B3CB] hover:bg-[#47B3CB]/10"
+                      >
+                        + Add Times
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Add Event Times</DialogTitle>
+                      </DialogHeader>
+                      <TimeDialogContent 
+                        request={request}
+                        startEditing={startEditing}
+                        saveEdit={saveEdit}
+                        cancelEdit={cancelEdit}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
               <div className="space-y-2">
                 {/* Times - only show if they exist */}
-                {(request.eventStartTime || request.eventEndTime || request.pickupTime) && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-gray-500" />
-                    <div className="text-base space-x-3">
-                      {request.eventStartTime && (
-                        <div className="flex items-center gap-1 group">
-                          <span>Start: {formatTime12Hour(request.eventStartTime)}</span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => startEditing('eventStartTime', formatTimeForInput(request.eventStartTime))}
-                              className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                      {request.eventEndTime && (
-                        <div className="flex items-center gap-1 group">
-                          <span>End: {formatTime12Hour(request.eventEndTime)}</span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => startEditing('eventEndTime', formatTimeForInput(request.eventEndTime))}
-                              className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                      {request.pickupTime && (
-                        <div className="flex items-center gap-1 group">
-                          <span>Pickup: {formatTime12Hour(request.pickupTime)}</span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => startEditing('pickupTime', formatTimeForInput(request.pickupTime))}
-                              className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-            </div>
+                {(request.eventStartTime || request.eventEndTime || request.pickupTime) ? (
+                  <div className="space-y-2">
+                    {request.eventStartTime && (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-base font-medium text-gray-600">Start:</span>
+                        <span className="text-base">{formatTime12Hour(request.eventStartTime)}</span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('eventStartTime', formatTimeForInput(request.eventStartTime))}
+                            className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {request.eventEndTime && (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-base font-medium text-gray-600">End:</span>
+                        <span className="text-base">{formatTime12Hour(request.eventEndTime)}</span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('eventEndTime', formatTimeForInput(request.eventEndTime))}
+                            className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {request.pickupTime && (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-base font-medium text-gray-600">Pickup:</span>
+                        <span className="text-base">{formatTime12Hour(request.pickupTime)}</span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('pickupTime', formatTimeForInput(request.pickupTime))}
+                            className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                     
                     {/* Inline editing for times */}
                     {isEditingThisCard && (editingField === 'eventStartTime' || editingField === 'eventEndTime' || editingField === 'pickupTime') && (
@@ -788,47 +832,27 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </Button>
                       </div>
                     )}
-                    
-                    {canEdit && (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-2 text-sm text-blue-600"
-                          >
-                            + Add Start or End Time
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Add Event Times</DialogTitle>
-                          </DialogHeader>
-                          <TimeDialogContent 
-                            request={request}
-                            startEditing={startEditing}
-                            saveEdit={saveEdit}
-                            cancelEdit={cancelEdit}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    )}
-          </div>
+                  </div>
+                ) : (
+                  <div className="text-base text-gray-500 italic">
+                    No times set yet. Click "Add Times" to add event times.
+                  </div>
                 )}
-
-                {/* TSP Contact */}
-        {(request.tspContact || request.customTspContact) && (
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-[#FBAD3F]" />
-                    <span className="text-base">
-                      <span className="font-medium text-[#FBAD3F]">TSP Contact:</span>{' '}
-                      {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
-                    </span>
               </div>
-                )}
+            </div>
+
+            {/* TSP Contact */}
+            {(request.tspContact || request.customTspContact) && (
+              <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-[#FBAD3F]" />
+                  <span className="text-base">
+                    <span className="font-medium text-[#FBAD3F]">TSP Contact:</span>{' '}
+                    {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
+                  </span>
                 </div>
-                </div>
-          </div>
+              </div>
+            )}
 
           {/* Quick Actions */}
           {canEdit && (
