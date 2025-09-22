@@ -198,12 +198,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
                 {project.priority || 'medium'}
               </Badge>
 
-              {/* Meeting Project Badge */}
-              {project.googleSheetRowId && (
-                <Badge className="bg-[#e6f2f5] text-[#236383]">
-                  📊 Meeting
-                </Badge>
-              )}
 
               {/* Overdue Badge */}
               {isOverdue && (
