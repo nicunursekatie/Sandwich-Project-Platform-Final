@@ -205,7 +205,7 @@ const adminDocuments: AdminDocument[] = [
   },
 ];
 
-const categories = ['All', 'Legal & Tax', 'Governance', 'Forms', 'Safety Guidelines', 'Labels & Printing', 'Sandwich Making', 'Tools'];
+const categories = ['All', 'Legal & Tax', 'Governance', 'Forms', 'Safety Guidelines', 'Labels & Printing', 'Sandwich Making', 'Toolkit'];
 
 // Logo files information
 const logoFiles = [
@@ -274,7 +274,12 @@ export default function ImportantDocuments() {
     (user.email === 'admin@sandwich.project' || user.email === 'katielong2316@gmail.com');
 
   const filteredDocuments = adminDocuments.filter(
-    (doc) => selectedCategory === 'All' || doc.category === selectedCategory
+    (doc) => {
+      if (selectedCategory === 'All') return true;
+      // Map "Toolkit" filter to "Tools" category for backward compatibility
+      const categoryToMatch = selectedCategory === 'Toolkit' ? 'Tools' : selectedCategory;
+      return doc.category === categoryToMatch;
+    }
   );
 
   const handleDownload = (doc: AdminDocument) => {
