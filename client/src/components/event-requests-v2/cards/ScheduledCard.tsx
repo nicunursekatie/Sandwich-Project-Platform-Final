@@ -708,11 +708,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             )}
           </div>
 
-          {/* Destinations - Show overnight holding if present, otherwise just final destination */}
-          {(request.overnightHoldingLocation || request.deliveryDestination) && (
+          {/* Destinations - Always show this section if there's a destination or if user can edit */}
+          {(request.overnightHoldingLocation || request.deliveryDestination || canEdit) && (
             <div className="bg-white/50 rounded-lg p-3 border border-white/60 space-y-3">
               {/* Overnight Holding Location */}
-              {request.overnightHoldingLocation && (
+              {request.overnightHoldingLocation ? (
                 <div>
                   {renderEditableField(
                     'overnightHoldingLocation',
@@ -720,21 +720,57 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     '🌙 Overnight Holding Location',
                     'text'
                   )}
-                  {request.overnightPickupTime && (
-                    <div className="ml-6 mt-1">
-                      {renderEditableField(
+                  <div className="ml-6 mt-1">
+                    {request.overnightPickupTime ? (
+                      renderEditableField(
                         'overnightPickupTime',
-                        request.overnightPickupTime && formatTime12Hour(request.overnightPickupTime),
+                        formatTime12Hour(request.overnightPickupTime),
                         'Pickup Time',
                         'time'
-                      )}
-                    </div>
-                  )}
+                      )
+                    ) : (
+                      canEdit && (
+                        <div className="group">
+                          <p className="text-gray-600 font-bold text-[17px]">Pickup Time</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-lg font-normal text-gray-400">Not set</p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditing('overnightPickupTime', '')}
+                              className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                              title="Add Pickup Time from Overnight Location"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
+              ) : (
+                canEdit && request.deliveryDestination && (
+                  <div className="group">
+                    <p className="text-gray-600 font-bold text-[17px]">🌙 Overnight Holding Location</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-normal text-gray-400">Not set</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('overnightHoldingLocation', '')}
+                        className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        title="Add Overnight Holding Location"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                )
               )}
 
               {/* Final Delivery Destination */}
-              {request.deliveryDestination && (
+              {request.deliveryDestination ? (
                 <div>
                   {renderEditableField(
                     'deliveryDestination',
@@ -743,6 +779,24 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     'text'
                   )}
                 </div>
+              ) : (
+                canEdit && (
+                  <div className="group">
+                    <p className="text-gray-600 font-bold text-[17px]">📍 Delivery Destination</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-normal text-gray-400">Not set</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('deliveryDestination', '')}
+                        className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        title="Add Delivery Destination"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                )
               )}
             </div>
           )}
