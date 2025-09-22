@@ -306,10 +306,10 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 }) => {
   return (
     <Card
-      className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#47B3CB] ${
+      className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#FBAD3F] ${
         isStale
-          ? 'bg-gradient-to-br from-[#47B3CB] to-[#A0D8E8] border border-[#47B3CB]/50'
-          : 'bg-gradient-to-br from-[#47B3CB]/80 to-[#D6F0F5] border border-[#47B3CB]/30'
+          ? 'bg-gradient-to-br from-[#FBAD3F]/30 via-[#FBAD3F]/20 to-[#FFF4E6] border border-[#FBAD3F]/50'
+          : 'bg-gradient-to-br from-[#FFF4E6] via-[#FBAD3F]/10 to-[#FBAD3F]/20 border border-[#FBAD3F]/30'
       }`}
     >
       <CardContent className="p-6">

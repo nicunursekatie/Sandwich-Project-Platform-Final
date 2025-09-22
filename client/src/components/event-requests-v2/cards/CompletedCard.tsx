@@ -429,7 +429,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   canDelete = true,
 }) => {
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-gray-400 bg-gray-50">
+    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-gradient-to-br from-[#e6f7f5] via-[#007E8C]/10 to-[#007E8C]/20 border border-[#007E8C]/30">
       <CardContent className="p-6">
         <CardHeader request={request} />
 

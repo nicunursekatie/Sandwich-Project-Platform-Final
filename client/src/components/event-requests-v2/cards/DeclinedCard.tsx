@@ -201,7 +201,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
   const dateInfo = formatEventDate(request.desiredEventDate || '');
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-red-400 bg-red-50/30 opacity-90">
+    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-gray-400 bg-gradient-to-br from-gray-100 via-gray-50 to-red-50/20 border border-gray-300/30 opacity-90">
       <CardContent className="p-6">
         <CardHeader request={request} />
 
