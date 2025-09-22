@@ -544,32 +544,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {getStatusLabel(request.status)}
               </Badge>
               {staffingComplete ? (
-                <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
-                  <Check className="w-3 h-3 mr-1" />
-                  Fully Staffed
-                </Badge>
-              ) : (
-                <div className="flex gap-1">
-                  {driverNeeded > driverAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                  )}
-                  {speakerNeeded > speakerAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                  )}
-                  {volunteerNeeded > volunteerAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
               <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
                 <Check className="w-3 h-3 mr-1" />
                 Fully Staffed
@@ -661,7 +635,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           )}
         </div>
-        </div>
+
         {/* Main Content */}
         <div className="space-y-4">
             {/* Event Location */}
@@ -815,7 +789,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => startEditing('eventStartTime', request.eventStartTime ? formatTimeForInput(request.eventStartTime) : '')}
+                            onClick={() => startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}
                             className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                           >
                             <Edit2 className="w-3 h-3" />
@@ -831,7 +805,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => startEditing('eventEndTime', request.eventEndTime ? formatTimeForInput(request.eventEndTime) : '')}
+                            onClick={() => startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}
                             className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                           >
                             <Edit2 className="w-3 h-3" />
@@ -847,7 +821,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => startEditing('pickupTime', request.pickupTime ? formatTimeForInput(request.pickupTime) : '')}
+                            onClick={() => startEditing('pickupTime', formatTimeForInput(request.pickupTime || ''))}
                             className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                           >
                             <Edit2 className="w-3 h-3" />
