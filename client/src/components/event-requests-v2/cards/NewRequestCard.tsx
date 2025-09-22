@@ -162,7 +162,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           {/* Previous Host Status */}
           {request.hasHostedBefore !== null && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500">Previously hosted:</span>
+              <span className="text-gray-500 font-bold text-[16px]">Previously hosted:</span>
               <Badge className={
                 request.hasHostedBefore 
                   ? "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 text-[14px]"
