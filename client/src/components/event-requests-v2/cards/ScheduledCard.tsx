@@ -119,7 +119,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   };
 
   const driverGap = (request.driversNeeded || 0) - parsePostgresArray(request.assignedDriverIds).length;
-  const speakerGap = (request.speakersNeeded || 0) - Object.keys(request.assignedSpeakerDetails || {}).length;
+  const speakerGap = (request.speakersNeeded || 0) - Object.keys(request.speakerDetails || {}).length;
   const volunteerGap = (request.volunteersNeeded || 0) - parsePostgresArray(request.assignedVolunteerIds).length;
   const hasStaffingGaps = driverGap > 0 || speakerGap > 0 || volunteerGap > 0;
   
@@ -229,20 +229,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <span className="ml-2">• {request.phone}</span>
               )}
             </div>
-            {/* TSP Contact */}
-            {(request.tspContact || request.customTspContact) && (
-              <div className="text-sm text-[#D68319] mb-2">
-                <span className="font-medium">TSP Contact: </span>
-                <span className="font-normal">
-                  {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
-                </span>
-                {request.tspContactAssignedDate && (
-                  <span className="ml-2 text-xs text-gray-500">
-                    (assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()})
-                  </span>
-                )}
-              </div>
-            )}
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {isEditingDate ? (
@@ -423,21 +409,52 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
         <div className="space-y-2 mb-3 min-h-[40px]">
           {assigned.length > 0 ? (
             assigned.map((personId: string) => {
-              // Get name from details first, but if it's numeric-only (like "350"), treat it as an ID 
-              const detailName = details?.[personId]?.name;
-              const name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
+              // Extract name properly for custom assignments
+              let name = '';
+              let isCustomAssignment = false;
+              
+              if (personId.startsWith('custom-')) {
+                // Parse custom ID format: custom-{timestamp}-{name-with-dashes}
+                const parts = personId.split('-');
+                if (parts.length >= 3) {
+                  // Extract name part (everything after timestamp) and convert dashes back to spaces
+                  const namePart = parts.slice(2).join('-').replace(/-/g, ' ');
+                  name = namePart;
+                  isCustomAssignment = true;
+                } else {
+                  name = personId; // fallback
+                }
+              } else {
+                // Get name from details first, but if it's numeric-only (like "350"), treat it as an ID 
+                const detailName = details?.[personId]?.name;
+                name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
+              }
+              
               return (
                 <div key={personId} className="flex items-center justify-between bg-white/90 rounded px-3 py-2 shadow-sm">
                   <span className="text-sm font-medium">{name}</span>
-                  {canEdit && onRemoveAssignment && (
-                    <button
-                      onClick={() => onRemoveAssignment(type, personId)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1 transition-colors"
-                      title="Remove assignment"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {/* Edit button for custom assignments */}
+                    {canEdit && isCustomAssignment && onEditAssignment && (
+                      <button
+                        onClick={() => onEditAssignment(type, personId)}
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full p-1"
+                        title="Edit custom assignment"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                    )}
+                    {/* Remove button */}
+                    {canEdit && onRemoveAssignment && (
+                      <button
+                        onClick={() => onRemoveAssignment(type, personId)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
+                        title="Remove assignment"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })
@@ -486,9 +503,27 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
       return null; // Don't show section if not needed and no one assigned
     }
 
-    const assignedVanDriverName = request.assignedVanDriverId 
-      ? (request.customVanDriverName || resolveUserName(request.assignedVanDriverId))
-      : null;
+    // Extract van driver name properly for custom assignments
+    let assignedVanDriverName = null;
+    let isCustomVanDriver = false;
+    
+    if (request.assignedVanDriverId) {
+      if (request.assignedVanDriverId.startsWith('custom-')) {
+        // Parse custom ID format: custom-{timestamp}-{name-with-dashes}
+        const parts = request.assignedVanDriverId.split('-');
+        if (parts.length >= 3) {
+          // Extract name part (everything after timestamp) and convert dashes back to spaces
+          const namePart = parts.slice(2).join('-').replace(/-/g, ' ');
+          assignedVanDriverName = namePart;
+          isCustomVanDriver = true;
+        } else {
+          assignedVanDriverName = request.customVanDriverName || request.assignedVanDriverId;
+          isCustomVanDriver = true;
+        }
+      } else {
+        assignedVanDriverName = request.customVanDriverName || resolveUserName(request.assignedVanDriverId);
+      }
+    }
 
     return (
       <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
@@ -503,14 +538,28 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           {assignedVanDriverName ? (
             <div className="flex items-center justify-between bg-white/80 rounded px-3 py-2">
               <span className="text-sm font-medium">{assignedVanDriverName}</span>
-              {canEdit && onRemoveAssignment && (
-                <button
-                  onClick={() => onRemoveAssignment('driver', request.assignedVanDriverId!)}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                {/* Edit button for custom van driver */}
+                {canEdit && isCustomVanDriver && onEditAssignment && (
+                  <button
+                    onClick={() => onEditAssignment('driver', request.assignedVanDriverId!)}
+                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full p-1"
+                    title="Edit custom assignment"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                )}
+                {/* Remove button */}
+                {canEdit && onRemoveAssignment && (
+                  <button
+                    onClick={() => onRemoveAssignment('driver', request.assignedVanDriverId!)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
+                    title="Remove assignment"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="text-sm text-[#A31C41]/60 italic">No van driver assigned</div>
@@ -564,7 +613,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           'Volunteers',
           request.volunteersNeeded,
           request.assignedVolunteerIds,
-          request.volunteerDetails
+          null
         )}
       </div>
 
@@ -728,7 +777,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     if (!(isEditingThisCard && editingField === 'sandwichTypes')) {
       const sandwichInfo = formatSandwichTypesDisplay(
         request.sandwichTypes,
-        request.estimatedSandwichCount
+        request.estimatedSandwichCount ?? undefined
       );
 
       return (
@@ -963,8 +1012,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             )}
             <div>
               {renderEditableField(
-                'notes',
-                request.notes,
+                'planningNotes',
+                request.planningNotes,
                 'Additional Notes',
                 'text'
               )}
@@ -985,6 +1034,109 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           onSelfSignup={(type) => handleSelfSignup(type)}
         />
 
+        {/* TSP Contact Section - Prominent display */}
+        {(request.tspContact || request.customTspContact) && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-[#FBAD3F]/10 to-[#D68319]/10 border-2 border-[#FBAD3F]/30 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="bg-[#FBAD3F] p-2 rounded-full">
+                <Building className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-bold text-[#D68319] mb-1">
+                  TSP Contact
+                </div>
+                <div className="text-xl font-semibold text-[#236383]">
+                  {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
+                </div>
+                {request.tspContactAssignedDate && (
+                  <div className="text-sm text-gray-600 mt-1">
+                    Assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Staffing Summary - Visual representation */}
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="grid grid-cols-3 gap-3">
+            {/* Drivers */}
+            <div className={`rounded-lg p-2 ${
+              parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
+                ? 'bg-green-50 border border-green-300'
+                : 'bg-orange-50 border border-orange-300'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Car className={`w-4 h-4 ${
+                    parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
+                      ? 'text-green-600'
+                      : 'text-orange-600'
+                  }`} />
+                  <span className="text-sm font-medium">Drivers</span>
+                </div>
+                <span className={`text-sm font-bold ${
+                  parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
+                    ? 'text-green-600'
+                    : 'text-orange-600'
+                }`}>
+                  {parsePostgresArray(request.assignedDriverIds).length}/{request.driversNeeded || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Speakers */}
+            <div className={`rounded-lg p-2 ${
+              Object.keys(request.speakerDetails || {}).length >= (request.speakersNeeded || 0)
+                ? 'bg-green-50 border border-green-300'
+                : 'bg-orange-50 border border-orange-300'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Megaphone className={`w-4 h-4 ${
+                    Object.keys(request.speakerDetails || {}).length >= (request.speakersNeeded || 0)
+                      ? 'text-green-600'
+                      : 'text-orange-600'
+                  }`} />
+                  <span className="text-sm font-medium">Speakers</span>
+                </div>
+                <span className={`text-sm font-bold ${
+                  Object.keys(request.speakerDetails || {}).length >= (request.speakersNeeded || 0)
+                    ? 'text-green-600'
+                    : 'text-orange-600'
+                }`}>
+                  {Object.keys(request.speakerDetails || {}).length}/{request.speakersNeeded || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Volunteers */}
+            <div className={`rounded-lg p-2 ${
+              parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
+                ? 'bg-green-50 border border-green-300'
+                : 'bg-orange-50 border border-orange-300'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Users className={`w-4 h-4 ${
+                    parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
+                      ? 'text-green-600'
+                      : 'text-orange-600'
+                  }`} />
+                  <span className="text-sm font-medium">Volunteers</span>
+                </div>
+                <span className={`text-sm font-bold ${
+                  parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
+                    ? 'text-green-600'
+                    : 'text-orange-600'
+                }`}>
+                  {parsePostgresArray(request.assignedVolunteerIds).length}/{request.volunteersNeeded || 0}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">

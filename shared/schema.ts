@@ -1983,3 +1983,25 @@ export const insertEventVolunteerSchema = createInsertSchema(
 
 export type EventVolunteer = typeof eventVolunteers.$inferSelect;
 export type InsertEventVolunteer = z.infer<typeof insertEventVolunteerSchema>;
+
+// Meeting notes table for agenda planning and note management
+export const meetingNotes = pgTable('meeting_notes', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').notNull(),
+  meetingId: integer('meeting_id'),
+  type: text('type').notNull(), // 'discussion' | 'meeting'
+  content: text('content').notNull(),
+  status: text('status').notNull().default('active'), // 'active' | 'used' | 'archived'
+  createdBy: varchar('created_by'), // User ID who created the note
+  createdByName: varchar('created_by_name'), // User name for display
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Meeting notes schema types
+export const insertMeetingNoteSchema = createInsertSchema(meetingNotes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type MeetingNote = typeof meetingNotes.$inferSelect;
+export type InsertMeetingNote = z.infer<typeof insertMeetingNoteSchema>;
