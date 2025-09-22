@@ -6,10 +6,12 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        sans: ['Roboto', 'sans-serif'],
         'main-heading': ['Roboto', 'sans-serif'],
         'sub-heading': ['Roboto', 'sans-serif'],
         body: ['Roboto', 'sans-serif'],
         highlight: ['Lobster', 'cursive'],
+        roboto: ['Roboto', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',
