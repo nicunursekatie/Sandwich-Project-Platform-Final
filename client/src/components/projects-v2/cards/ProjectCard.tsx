@@ -257,6 +257,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
                 </>
               )}
 
+              {/* Completed projects can be archived */}
+              {project.status === 'completed' && (
+                <DropdownMenuItem onClick={() => handleStatusChange('archived')}>
+                  <Archive className="w-4 h-4 mr-2" />
+                  Archive
+                </DropdownMenuItem>
+              )}
+
               {project.status === 'archived' && (
                 <DropdownMenuItem onClick={handleUnarchive}>
                   <FolderOpen className="w-4 h-4 mr-2" />
