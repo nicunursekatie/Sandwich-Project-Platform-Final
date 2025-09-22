@@ -313,7 +313,7 @@ export function AgendaPlanningTab({
             onClick={async () => {
               try {
                 setIsCompiling(true);
-                const response = await apiRequest(
+                const response = await apiRequest<{ message?: string }>(
                   'POST',
                   '/api/google-sheets/projects/sync/from-sheets'
                 );
