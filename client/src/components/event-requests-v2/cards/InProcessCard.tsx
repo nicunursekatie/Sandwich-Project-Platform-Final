@@ -392,7 +392,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               <div className="space-y-3">
                 {request.message && (
                   <div>
-                    <p className="text-gray-500 mb-1 text-[15px]">
+                    <p className="text-gray-500 mb-1 text-[16px]">
                       Initial Request Message:
                     </p>
                     <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded border-l-3 border-blue-200">
