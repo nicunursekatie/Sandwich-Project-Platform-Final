@@ -52,20 +52,13 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
   const { data: recipients = [], isLoading, error } = useQuery({
     queryKey: ['recipients'],
     queryFn: async () => {
-      console.log('Fetching recipients...');
       const response = await fetch('/api/recipients');
-      console.log('Recipients response:', response);
       if (!response.ok) {
-        console.error('Failed to fetch recipients:', response.status, response.statusText);
         throw new Error('Failed to fetch recipients');
       }
-      const data = await response.json();
-      console.log('Recipients data:', data);
-      return data;
+      return response.json();
     },
   });
-
-  console.log('Recipients state:', { recipients, isLoading, error });
 
   const handleSave = () => {
     if (selectedOption === 'custom') {
@@ -629,12 +622,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           </div>
 
-            {/* Destination Information */}
+            {/* Event Location & Recipients */}
             <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[#47B3CB]" />
-                  <span className="font-semibold text-gray-800">Delivery Information</span>
+                  <span className="font-semibold text-gray-800">Event Location & Recipients</span>
                 </div>
                 {canEdit && (
                   <Button
@@ -644,13 +637,25 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     className="h-6 px-2 text-sm text-[#47B3CB] hover:bg-[#47B3CB]/10"
                   >
                     <Edit2 className="w-3 h-3 mr-1" />
-                    Edit
+                    Edit Recipients
                   </Button>
                 )}
               </div>
               <div className="space-y-2">
+                {request.eventAddress && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium text-gray-600">Event Address:</span>
+                    <span className="text-base">{request.eventAddress}</span>
+                  </div>
+                )}
+                {request.overnightHoldingLocation && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium text-gray-600">Overnight Holding:</span>
+                    <span className="text-base">{request.overnightHoldingLocation}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-600">Delivery Destination:</span>
+                  <span className="text-base font-medium text-gray-600">Recipients:</span>
                   {isEditingThisCard && editingField === 'deliveryDestination' ? (
                     <DeliveryDestinationEditor 
                       currentValue={request.deliveryDestination || ''}
@@ -664,18 +669,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </span>
                   )}
                 </div>
-                {request.eventAddress && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-medium text-gray-600">Event Address:</span>
-                    <span className="text-base">{request.eventAddress}</span>
-                  </div>
-                )}
-                {request.overnightHoldingLocation && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-medium text-gray-600">Overnight Holding:</span>
-                    <span className="text-base">{request.overnightHoldingLocation}</span>
-                  </div>
-                )}
               </div>
             </div>
 
