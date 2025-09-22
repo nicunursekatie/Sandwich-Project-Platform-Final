@@ -306,10 +306,10 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 }) => {
   return (
     <Card
-      className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#FBAD3F] ${
+      className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#47B3CB] ${
         isStale
-          ? 'bg-[#47B3CB]/40 border border-[#47B3CB]/50'
-          : 'bg-[#47B3CB]/20 border border-[#47B3CB]/30'
+          ? 'bg-gradient-to-br from-[#47B3CB] to-[#A0D8E8] border border-[#47B3CB]/50'
+          : 'bg-gradient-to-br from-[#47B3CB]/80 to-[#D6F0F5] border border-[#47B3CB]/30'
       }`}
     >
       <CardContent className="p-6">
@@ -354,7 +354,9 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[16px] font-semibold text-[#236383]">Preferred Time</p>
+              <p className="text-[16px] font-semibold text-[#236383]">
+                Preferred Time
+              </p>
               <p className="font-medium">
                 {request.preferredStartTime &&
                   formatTime12Hour(request.preferredStartTime)}
@@ -362,7 +364,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   ` - ${formatTime12Hour(request.preferredEndTime)}`}
               </p>
             </div>
-            
           </div>
 
           {/* Sandwich Info */}
