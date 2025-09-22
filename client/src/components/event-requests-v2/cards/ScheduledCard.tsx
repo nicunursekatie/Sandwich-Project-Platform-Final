@@ -49,14 +49,23 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
   const [customValue, setCustomValue] = React.useState(currentValue);
 
   // Fetch recipients from the API
-  const { data: recipients = [], isLoading } = useQuery({
+  const { data: recipients = [], isLoading, error } = useQuery({
     queryKey: ['recipients'],
     queryFn: async () => {
+      console.log('Fetching recipients...');
       const response = await fetch('/api/recipients');
-      if (!response.ok) throw new Error('Failed to fetch recipients');
-      return response.json();
+      console.log('Recipients response:', response);
+      if (!response.ok) {
+        console.error('Failed to fetch recipients:', response.status, response.statusText);
+        throw new Error('Failed to fetch recipients');
+      }
+      const data = await response.json();
+      console.log('Recipients data:', data);
+      return data;
     },
   });
+
+  console.log('Recipients state:', { recipients, isLoading, error });
 
   const handleSave = () => {
     if (selectedOption === 'custom') {
@@ -77,6 +86,8 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
         disabled={isLoading}
       >
         <option value="">Select recipient organization...</option>
+        {isLoading && <option disabled>Loading recipients...</option>}
+        {error && <option disabled>Error loading recipients</option>}
         {recipients.map((recipient: any) => (
           <option key={recipient.id} value={recipient.name}>
             {recipient.name}
