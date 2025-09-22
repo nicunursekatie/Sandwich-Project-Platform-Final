@@ -1445,7 +1445,9 @@ export const eventRequests = pgTable(
 
     // Additional event details
     sandwichTypes: jsonb('sandwich_types'), // Array of {type: string, quantity: number} objects
-    deliveryDestination: text('delivery_destination'), // Organization/host location where sandwiches will be delivered
+    deliveryDestination: text('delivery_destination'), // Organization/host location where sandwiches will be delivered (final destination)
+    overnightHoldingLocation: text('overnight_holding_location'), // Location where sandwiches will be stored overnight before final delivery
+    overnightPickupTime: time('overnight_pickup_time'), // Time to pick up sandwiches from overnight location
     // Driver, speaker, and volunteer requirements
     driversNeeded: integer('drivers_needed').default(0), // How many drivers this event needs
     speakersNeeded: integer('speakers_needed').default(0), // How many speakers this event needs
@@ -1660,6 +1662,8 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     schedulingNotes: z.string().nullable().optional(),
     eventAddress: z.string().nullable().optional(),
     deliveryDestination: z.string().nullable().optional(),
+    overnightHoldingLocation: z.string().nullable().optional(),
+    overnightPickupTime: z.string().nullable().optional(),
     estimatedSandwichCount: z.number().nullable().optional(),
     driversArranged: z.boolean().nullable().optional(),
     driverDetails: z.any().nullable().optional(), // JSONB field

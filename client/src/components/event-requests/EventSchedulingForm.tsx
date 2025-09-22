@@ -68,6 +68,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     pickupTime: '',
     eventAddress: '',
     deliveryDestination: '',
+    overnightHoldingLocation: '',
+    overnightPickupTime: '',
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
     hasRefrigeration: '',
     driversNeeded: 0,
@@ -139,6 +141,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         pickupTime: eventRequest?.pickupTime || '',
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
+        overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
+        overnightPickupTime: eventRequest?.overnightPickupTime || '',
         sandwichTypes: existingSandwichTypes,
         hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
         driversNeeded: eventRequest?.driversNeeded || 0,
@@ -257,6 +261,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       pickupTime: formData.pickupTime || null,
       eventAddress: formData.eventAddress || null,
       deliveryDestination: formData.deliveryDestination || null,
+      overnightHoldingLocation: formData.overnightHoldingLocation || null,
+      overnightPickupTime: formData.overnightPickupTime || null,
       hasRefrigeration: formData.hasRefrigeration === 'true' ? true : 
                         formData.hasRefrigeration === 'false' ? false : null,
       driversNeeded: parseInt(formData.driversNeeded?.toString() || '0') || 0,
@@ -492,15 +498,52 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             />
           </div>
 
-          {/* Delivery Destination */}
-          <div>
-            <Label htmlFor="deliveryDestination">Delivery Destination</Label>
-            <Input
-              id="deliveryDestination"
-              value={formData.deliveryDestination}
-              onChange={(e) => setFormData(prev => ({ ...prev, deliveryDestination: e.target.value }))}
-              placeholder="Where should the sandwiches be delivered? (organization, address, etc.)"
-            />
+          {/* Delivery Destinations */}
+          <div className="space-y-4">
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700 mb-2 font-medium">
+                📍 Delivery Options: You can specify either a direct delivery destination, or an overnight holding location with a final destination.
+              </p>
+            </div>
+
+            {/* Overnight Holding Location (Optional) */}
+            <div className="space-y-2">
+              <Label htmlFor="overnightHoldingLocation">
+                🌙 Overnight Holding Location (Optional)
+              </Label>
+              <Input
+                id="overnightHoldingLocation"
+                value={formData.overnightHoldingLocation}
+                onChange={(e) => setFormData(prev => ({ ...prev, overnightHoldingLocation: e.target.value }))}
+                placeholder="Location where sandwiches will be stored overnight (e.g., church, community center)"
+              />
+              {formData.overnightHoldingLocation && (
+                <div className="ml-4 mt-2">
+                  <Label htmlFor="overnightPickupTime">Pickup Time from Overnight Location</Label>
+                  <Input
+                    id="overnightPickupTime"
+                    type="time"
+                    value={formData.overnightPickupTime}
+                    onChange={(e) => setFormData(prev => ({ ...prev, overnightPickupTime: e.target.value }))}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Final Delivery Destination */}
+            <div>
+              <Label htmlFor="deliveryDestination">
+                {formData.overnightHoldingLocation ? '📍 Final Delivery Destination' : '📍 Delivery Destination'}
+              </Label>
+              <Input
+                id="deliveryDestination"
+                value={formData.deliveryDestination}
+                onChange={(e) => setFormData(prev => ({ ...prev, deliveryDestination: e.target.value }))}
+                placeholder={formData.overnightHoldingLocation
+                  ? "Final destination after overnight hold (organization, address, etc.)"
+                  : "Where should the sandwiches be delivered? (organization, address, etc.)"}
+              />
+            </div>
           </div>
 
           {/* Sandwich Planning */}

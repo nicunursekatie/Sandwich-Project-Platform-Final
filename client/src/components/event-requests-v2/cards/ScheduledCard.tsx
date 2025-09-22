@@ -699,14 +699,41 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             )}
           </div>
 
-          {/* Destination */}
-          {request.deliveryDestination && (
-            <div className="bg-white/50 rounded-lg p-3 border border-white/60">
-              {renderEditableField(
-                'deliveryDestination',
-                request.deliveryDestination,
-                'Delivery Destination',
-                'text'
+          {/* Destinations - Show overnight holding if present, otherwise just final destination */}
+          {(request.overnightHoldingLocation || request.deliveryDestination) && (
+            <div className="bg-white/50 rounded-lg p-3 border border-white/60 space-y-3">
+              {/* Overnight Holding Location */}
+              {request.overnightHoldingLocation && (
+                <div>
+                  {renderEditableField(
+                    'overnightHoldingLocation',
+                    request.overnightHoldingLocation,
+                    '🌙 Overnight Holding Location',
+                    'text'
+                  )}
+                  {request.overnightPickupTime && (
+                    <div className="ml-6 mt-1">
+                      {renderEditableField(
+                        'overnightPickupTime',
+                        request.overnightPickupTime && formatTime12Hour(request.overnightPickupTime),
+                        'Pickup Time',
+                        'time'
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Final Delivery Destination */}
+              {request.deliveryDestination && (
+                <div>
+                  {renderEditableField(
+                    'deliveryDestination',
+                    request.deliveryDestination,
+                    request.overnightHoldingLocation ? '📍 Final Delivery Destination' : '📍 Delivery Destination',
+                    'text'
+                  )}
+                </div>
               )}
             </div>
           )}
