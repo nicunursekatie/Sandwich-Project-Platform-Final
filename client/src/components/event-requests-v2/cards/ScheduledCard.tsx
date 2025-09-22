@@ -23,6 +23,7 @@ import {
   Check,
   Phone,
   Mail,
+  FileText,
 } from 'lucide-react';
 import { formatTime12Hour, formatTimeForInput, formatEventDate } from '@/components/event-requests/utils';
 import { SANDWICH_TYPES, statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
