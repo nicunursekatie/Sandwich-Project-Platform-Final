@@ -183,7 +183,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     }`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2">
               {/* Status Badge */}
               <Badge className={`${getStatusColor(project.status)} border`}>
