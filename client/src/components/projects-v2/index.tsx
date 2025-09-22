@@ -92,7 +92,10 @@ const ProjectsManagementContent: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setProjectTypeFilter('all')}
+            onClick={() => {
+              setProjectTypeFilter('all');
+              // Keep current status tab when filtering by "All Projects"
+            }}
             className={`transition-all ${
               projectTypeFilter === 'all'
                 ? 'bg-brand-primary text-white hover:bg-brand-primary-dark'
@@ -104,7 +107,11 @@ const ProjectsManagementContent: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setProjectTypeFilter('meeting')}
+            onClick={() => {
+              setProjectTypeFilter('meeting');
+              // Show all meeting projects regardless of status
+              setActiveTab('in_progress'); // Default to in_progress for better UX
+            }}
             className={`transition-all ${
               projectTypeFilter === 'meeting'
                 ? 'bg-brand-primary text-white hover:bg-brand-primary'
@@ -116,7 +123,11 @@ const ProjectsManagementContent: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setProjectTypeFilter('internal')}
+            onClick={() => {
+              setProjectTypeFilter('internal');
+              // Show all internal projects regardless of status
+              setActiveTab('in_progress'); // Default to in_progress for better UX
+            }}
             className={`transition-all ${
               projectTypeFilter === 'internal'
                 ? 'bg-[#A31C41] text-white hover:bg-[#A31C41]/90'
