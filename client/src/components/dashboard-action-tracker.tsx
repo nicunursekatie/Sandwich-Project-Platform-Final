@@ -209,7 +209,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
         <p className="text-gray-600">Stay on top of your assigned work and communications</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Projects Card */}
         <Card className="hover:shadow-md transition-shadow" data-testid="projects-card">
           <CardHeader className="pb-3">
@@ -253,49 +253,6 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
           </CardContent>
         </Card>
 
-        {/* Tasks Card */}
-        <Card className="hover:shadow-md transition-shadow" data-testid="tasks-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="text-base">Tasks</span>
-              </div>
-              <Badge variant="secondary" data-testid="tasks-count">
-                {isLoading ? <Skeleton className="h-4 w-6" /> : dashboardData?.counts.tasks || 0}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {isLoading ? (
-              <LoadingSkeleton />
-            ) : !dashboardData?.tasks || dashboardData.tasks.length === 0 ? (
-              <ZeroState 
-                type="tasks"
-                icon={CheckCircle} 
-                message="No pending tasks found. Tasks assigned to you will appear here." 
-              />
-            ) : (
-              <div className="space-y-1">
-                {dashboardData.tasks.map((task) => (
-                  <ItemComponent key={task.id} item={task} type="task" />
-                ))}
-                {dashboardData.counts.tasks > 3 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full mt-2 text-green-600 hover:text-green-800" 
-                    onClick={() => onNavigate('action-tracking')}
-                    data-testid="tasks-view-all"
-                  >
-                    View all {dashboardData.counts.tasks} tasks <ArrowRight className="w-4 h-4 ml-1" />
-                  </Button>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Events Card */}
         <Card className="hover:shadow-md transition-shadow" data-testid="events-card">
           <CardHeader className="pb-3">
@@ -332,6 +289,49 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
                     data-testid="events-view-all"
                   >
                     View all {dashboardData.counts.events} events <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tasks Card */}
+        <Card className="hover:shadow-md transition-shadow" data-testid="tasks-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <span className="text-base">Tasks</span>
+              </div>
+              <Badge variant="secondary" data-testid="tasks-count">
+                {isLoading ? <Skeleton className="h-4 w-6" /> : dashboardData?.counts.tasks || 0}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {isLoading ? (
+              <LoadingSkeleton />
+            ) : !dashboardData?.tasks || dashboardData.tasks.length === 0 ? (
+              <ZeroState 
+                type="tasks"
+                icon={CheckCircle} 
+                message="No pending tasks found. Tasks assigned to you will appear here." 
+              />
+            ) : (
+              <div className="space-y-1">
+                {dashboardData.tasks.map((task) => (
+                  <ItemComponent key={task.id} item={task} type="task" />
+                ))}
+                {dashboardData.counts.tasks > 3 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full mt-2 text-green-600 hover:text-green-800" 
+                    onClick={() => onNavigate('action-tracking')}
+                    data-testid="tasks-view-all"
+                  >
+                    View all {dashboardData.counts.tasks} tasks <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 )}
               </div>
