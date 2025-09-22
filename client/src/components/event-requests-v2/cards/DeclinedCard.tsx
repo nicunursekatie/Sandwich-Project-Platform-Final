@@ -10,9 +10,15 @@ import {
   Eye,
   Trash2,
   Calendar,
+  Building,
+  AlertTriangle,
+  Edit2,
+  Save,
+  X,
 } from 'lucide-react';
-import { CardHeader } from './shared/CardHeader';
 import { formatEventDate } from '@/components/event-requests/utils';
+import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
+import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
 
 interface DeclinedCardProps {
@@ -24,6 +30,164 @@ interface DeclinedCardProps {
   onReactivate: () => void;
   canDelete?: boolean;
 }
+
+// CardHeader component - copied from shared
+interface CardHeaderProps {
+  request: EventRequest;
+  isInProcessStale?: boolean;
+  canEdit?: boolean;
+  isEditingThisCard?: boolean;
+  editingField?: string;
+  editingValue?: string;
+  startEditing?: (field: string, value: string) => void;
+  saveEdit?: () => void;
+  cancelEdit?: () => void;
+  setEditingValue?: (value: string) => void;
+}
+
+const CardHeader: React.FC<CardHeaderProps> = ({ 
+  request, 
+  isInProcessStale,
+  canEdit = false,
+  isEditingThisCard = false,
+  editingField = '',
+  editingValue = '',
+  startEditing,
+  saveEdit,
+  cancelEdit,
+  setEditingValue
+}) => {
+  const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
+  
+  // Get the proper status label from constants instead of just replacing underscores
+  const getStatusLabel = (status: string) => {
+    const statusOption = statusOptions.find(option => option.value === status);
+    return statusOption ? statusOption.label : status.replace('_', ' ');
+  };
+
+  // Hide requested date once there's a scheduled date (keep requested date in database but don't display)
+  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+
+  // Format the date for display
+  const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
+
+  // Calculate if date is past
+  const isPast = displayDate ? new Date(displayDate) < new Date() : false;
+
+  // Calculate relative time
+  const getRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const diffTime = date.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays === -1) return 'Yesterday';
+    if (diffDays > 0 && diffDays <= 7) return `In ${diffDays} days`;
+    if (diffDays < 0 && diffDays >= -7) return `${Math.abs(diffDays)} days ago`;
+    return '';
+  };
+
+  // Determine the date label and field to edit based on what date we're showing
+  let dateLabel = 'Requested Date';
+  let dateFieldToEdit = 'desiredEventDate';
+  if (request.scheduledEventDate) {
+    dateFieldToEdit = 'scheduledEventDate';
+    if (request.status === 'completed') {
+      dateLabel = 'Event Date';
+    } else {
+      dateLabel = 'Scheduled Date';
+    }
+  }
+
+  // Parse date string safely without timezone issues
+  const parseLocalDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  // Format date for input (YYYY-MM-DD)
+  const formatDateForInput = (dateStr: string) => {
+    if (!dateStr) return '';
+    return dateStr.split('T')[0]; // Remove time part if present
+  };
+
+  // Check if we're editing this date field
+  const isEditingDate = isEditingThisCard && editingField === dateFieldToEdit;
+
+  return (
+    <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start space-x-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-lg text-[#1A2332]">
+              {request.organizationName}
+            </h3>
+            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
+              <StatusIcon className="w-3 h-3 mr-1" />
+              {getStatusLabel(request.status)}
+            </Badge>
+            {isInProcessStale && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Needs follow-up
+              </Badge>
+            )}
+          </div>
+          <div className="text-sm text-[#236383] mt-1 space-y-1">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {isEditingDate ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{dateLabel}:</span>
+                  <Input
+                    type="date"
+                    value={formatDateForInput(editingValue)}
+                    onChange={(e) => setEditingValue?.(e.target.value)}
+                    className="h-8 w-40"
+                    autoFocus
+                    data-testid="input-date"
+                  />
+                  <Button size="sm" onClick={saveEdit} data-testid="button-save-date">
+                    <Save className="w-3 h-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-date">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <span data-testid="text-date-label" className="text-[16px]">
+                    {dateLabel}: {' '}
+                    <strong className="text-[16px]" data-testid="text-date-value">
+                      {displayDate && dateInfo ? dateInfo.text : 'No date set'}
+                    </strong>
+                    {displayDate && getRelativeTime(displayDate.toString()) && (
+                      <span className="text-[#236383] ml-1">({getRelativeTime(displayDate.toString())})</span>
+                    )}
+                  </span>
+                  {canEdit && startEditing && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                      className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                      title={`Edit ${dateLabel}`}
+                      data-testid="button-edit-date"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const DeclinedCard: React.FC<DeclinedCardProps> = ({
   request,
