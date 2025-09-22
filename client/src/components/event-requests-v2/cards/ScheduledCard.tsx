@@ -154,7 +154,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
     return (
       <div className="group">
-        <p className="text-base text-gray-600 font-bold">{label}</p>
+        <p className="text-gray-600 font-bold text-[17px]">{label}</p>
         <div className="flex items-center gap-2">
           {field === 'eventAddress' && value ? (
             <a 
@@ -196,7 +196,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-amber-600" />
             <span className="text-lg font-semibold">Sandwiches:</span>
-            <span className="text-lg font-medium">{sandwichInfo}</span>
+            <span className="text-lg font-normal">{sandwichInfo}</span>
             {canEdit && (
               <Button
                 size="sm"
