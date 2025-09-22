@@ -362,7 +362,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   };
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#FBAD3F]/15 via-[#FBAD3F]/8 to-white border border-[#FBAD3F]/30 shadow-lg">
+    <Card className="transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F] to-[#FBAD3F] border border-[#FBAD3F]/30 shadow-lg">
       <CardContent className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
