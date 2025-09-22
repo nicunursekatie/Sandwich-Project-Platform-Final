@@ -315,7 +315,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             {/* Project Owner */}
             {project.assigneeName && (
               <div className="flex items-center gap-1">
-                <Badge variant="secondary" className="flex items-center gap-1">
+                <Badge className="flex items-center gap-1 bg-[#FBAD3F] text-white">
                   <User className="w-3 h-3" />
                   <span className="text-xs">Owner:</span>
                   <span className="font-medium">{project.assigneeName}</span>
@@ -331,7 +331,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             {/* Support People */}
             {supportPeople.length > 0 && (
               <div className="flex items-center gap-1">
-                <Badge variant="outline" className="flex items-center gap-1">
+                <Badge className="flex items-center gap-1 bg-[#236383] text-white">
                   <Users className="w-3 h-3" />
                   <span className="text-xs">Support:</span>
                   <span className="font-medium">{supportPeople.join(', ')}</span>
@@ -349,7 +349,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-blue-500 h-2 rounded-full transition-all"
+                  className="bg-[#FBAD3F] h-2 rounded-full transition-all"
                   style={{
                     width: `${Math.min(100, (project.actualHours / project.estimatedHours) * 100)}%`
                   }}
