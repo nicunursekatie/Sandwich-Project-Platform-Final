@@ -9,8 +9,8 @@ interface ProjectContextValue {
   isLoading: boolean;
 
   // Filter states
-  activeTab: 'available' | 'in_progress' | 'completed' | 'archived';
-  setActiveTab: (tab: 'available' | 'in_progress' | 'completed' | 'archived') => void;
+  activeTab: 'tabled' | 'in_progress' | 'completed' | 'archived';
+  setActiveTab: (tab: 'tabled' | 'in_progress' | 'completed' | 'archived') => void;
   projectTypeFilter: 'all' | 'meeting' | 'internal';
   setProjectTypeFilter: (filter: 'all' | 'meeting' | 'internal') => void;
   searchQuery: string;
@@ -39,7 +39,7 @@ interface ProjectContextValue {
 
   // Stats
   projectStats: {
-    available: number;
+    tabled: number;
     inProgress: number;
     completed: number;
     archived: number;
@@ -65,7 +65,7 @@ interface ProjectProviderProps {
 const initialNewProject: Partial<InsertProject> = {
   title: '',
   description: '',
-  status: 'available',
+  status: 'tabled',
   priority: 'medium',
   category: 'technology',
   assigneeName: '',
@@ -82,7 +82,7 @@ const initialNewProject: Partial<InsertProject> = {
 
 export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
   // Core state
-  const [activeTab, setActiveTab] = useState<'available' | 'in_progress' | 'completed' | 'archived'>('available');
+  const [activeTab, setActiveTab] = useState<'tabled' | 'in_progress' | 'completed' | 'archived'>('in_progress');
   const [projectTypeFilter, setProjectTypeFilter] = useState<'all' | 'meeting' | 'internal'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -159,7 +159,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
 
   // Calculate stats
   const projectStats = {
-    available: activeProjects.filter(p => p.status === 'available').length,
+    tabled: activeProjects.filter(p => p.status === 'tabled').length,
     inProgress: activeProjects.filter(p => p.status === 'in_progress').length,
     completed: activeProjects.filter(p => p.status === 'completed').length,
     archived: archivedProjects.length,

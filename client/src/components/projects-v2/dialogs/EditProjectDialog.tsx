@@ -39,7 +39,7 @@ export const EditProjectDialog: React.FC = () => {
       setFormData({
         title: editingProject.title || '',
         description: editingProject.description || '',
-        status: editingProject.status || 'available',
+        status: editingProject.status || 'tabled',
         priority: editingProject.priority || 'medium',
         category: editingProject.category || 'technology',
         assigneeName: editingProject.assigneeName || '',
@@ -130,14 +130,14 @@ export const EditProjectDialog: React.FC = () => {
                 Status
               </Label>
               <Select
-                value={formData.status || 'available'}
+                value={formData.status || 'tabled'}
                 onValueChange={(value) => setFormData({ ...formData, status: value })}
               >
                 <SelectTrigger className="font-roboto">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
+                  <SelectItem value="tabled">Tabled</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>

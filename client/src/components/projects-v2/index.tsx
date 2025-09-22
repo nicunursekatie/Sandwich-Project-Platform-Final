@@ -133,15 +133,15 @@ const ProjectsManagementContent: React.FC = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-1">
           <Button
             variant="ghost"
-            onClick={() => setActiveTab('available')}
+            onClick={() => setActiveTab('tabled')}
             className={`font-roboto font-medium transition-all ${
-              activeTab === 'available'
+              activeTab === 'tabled'
                 ? 'bg-brand-primary text-white hover:bg-brand-primary-dark'
                 : 'text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/5'
             }`}
           >
             <Circle className="w-4 h-4 mr-2" />
-            Available ({projectStats.available})
+            Tabled ({projectStats.tabled})
           </Button>
 
           <Button

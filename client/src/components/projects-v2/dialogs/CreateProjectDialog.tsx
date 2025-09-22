@@ -209,14 +209,14 @@ export const CreateProjectDialog: React.FC = () => {
               Initial Status
             </Label>
             <Select
-              value={newProject.status || 'available'}
+              value={newProject.status || 'tabled'}
               onValueChange={(value) => setNewProject({ ...newProject, status: value })}
             >
               <SelectTrigger className="font-roboto">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="tabled">Tabled</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
               </SelectContent>
             </Select>

@@ -59,7 +59,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   // Helper functions
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'available':
+      case 'tabled':
         return <Circle className="w-4 h-4" />;
       case 'in_progress':
         return <Play className="w-4 h-4" />;
@@ -74,7 +74,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'available':
+      case 'tabled':
         return 'text-gray-500 bg-gray-50 border-gray-200';
       case 'in_progress':
         return 'text-[#236383] bg-[#e6f2f5] border-[#236383]/30';
@@ -164,7 +164,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   };
 
   const handleUnarchive = () => {
-    unarchiveProjectMutation.mutate({ id: project.id, status: 'available' });
+    unarchiveProjectMutation.mutate({ id: project.id, status: 'tabled' });
   };
 
   // Parse support people
@@ -240,7 +240,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               {/* Status Changes */}
               {project.status !== 'completed' && project.status !== 'archived' && (
                 <>
-                  {project.status === 'available' && (
+                  {project.status === 'tabled' && (
                     <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
                       <Play className="w-4 h-4 mr-2" />
                       Start Progress
