@@ -318,7 +318,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-orange-600" />
-              <span className="text-base">Messages</span>
+              <span className="text-[18px] text-[#236383]">Messages</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
