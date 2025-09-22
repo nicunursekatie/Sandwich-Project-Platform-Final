@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
+import { createHash } from 'crypto';
 
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
@@ -23,6 +24,11 @@ export interface SheetRow {
   notes: string;
   lastDiscussedDate: string; // Column N: Last discussed date
   rowIndex?: number;
+  // Bidirectional sync metadata fields (stored in hidden columns)
+  appProjectId?: string; // Hidden column: App project ID for linking
+  lastUpdatedAt?: string; // Hidden column: ISO timestamp of last update
+  lastUpdatedBy?: string; // Hidden column: "app" or "sheet" to track update source
+  dataHash?: string; // Hidden column: Hash of row data for change detection
 }
 
 export class GoogleSheetsService {
@@ -651,6 +657,123 @@ export class GoogleSheetsService {
       return ['yes', 'true', '1', 'on'].includes(value.toLowerCase());
     }
     return false;
+  }
+
+  /**
+   * Calculate hash of row data for change detection (excluding metadata fields)
+   */
+  public calculateRowHash(row: SheetRow): string {
+    // Create a normalized version of the row data (excluding metadata and rowIndex)
+    const dataToHash = {
+      task: row.task?.trim() || '',
+      reviewStatus: row.reviewStatus?.trim() || '',
+      priority: row.priority?.trim() || '',
+      owner: row.owner?.trim() || '',
+      supportPeople: row.supportPeople?.trim() || '',
+      status: row.status?.trim() || '',
+      startDate: row.startDate?.trim() || '',
+      endDate: row.endDate?.trim() || '',
+      category: row.category?.trim() || '',
+      milestone: row.milestone?.trim() || '',
+      subTasksOwners: row.subTasksOwners?.trim() || '',
+      deliverable: row.deliverable?.trim() || '',
+      notes: row.notes?.trim() || '',
+      lastDiscussedDate: row.lastDiscussedDate?.trim() || '',
+    };
+
+    // Create deterministic hash of the data
+    const dataString = JSON.stringify(dataToHash, Object.keys(dataToHash).sort());
+    return createHash('sha256').update(dataString).digest('hex').substring(0, 16); // Use first 16 chars for readability
+  }
+
+  /**
+   * Resolve conflict between app and sheet data using timestamp-based approach
+   */
+  public resolveConflict(
+    appData: SheetRow,
+    sheetData: SheetRow
+  ): { 
+    resolved: SheetRow; 
+    winner: 'app' | 'sheet' | 'no-conflict'; 
+    reason: string 
+  } {
+    const appTimestamp = appData.lastUpdatedAt ? new Date(appData.lastUpdatedAt) : new Date(0);
+    const sheetTimestamp = sheetData.lastUpdatedAt ? new Date(sheetData.lastUpdatedAt) : new Date(0);
+
+    // If hashes are the same, no conflict
+    if (appData.dataHash === sheetData.dataHash) {
+      return { 
+        resolved: appData, 
+        winner: 'no-conflict', 
+        reason: 'Data hashes match - no changes detected' 
+      };
+    }
+
+    // If one side has no timestamp, prefer the one with timestamp
+    if (appTimestamp.getTime() === 0 && sheetTimestamp.getTime() > 0) {
+      return { 
+        resolved: sheetData, 
+        winner: 'sheet', 
+        reason: 'App data has no timestamp, sheet has recent updates' 
+      };
+    }
+    if (sheetTimestamp.getTime() === 0 && appTimestamp.getTime() > 0) {
+      return { 
+        resolved: appData, 
+        winner: 'app', 
+        reason: 'Sheet data has no timestamp, app has recent updates' 
+      };
+    }
+
+    // Timestamp-based conflict resolution (most recent wins)
+    if (appTimestamp > sheetTimestamp) {
+      return { 
+        resolved: appData, 
+        winner: 'app', 
+        reason: `App data is newer (${appData.lastUpdatedAt} > ${sheetData.lastUpdatedAt})` 
+      };
+    } else if (sheetTimestamp > appTimestamp) {
+      return { 
+        resolved: sheetData, 
+        winner: 'sheet', 
+        reason: `Sheet data is newer (${sheetData.lastUpdatedAt} > ${appData.lastUpdatedAt})` 
+      };
+    } else {
+      // Same timestamp - prefer app data as source of truth
+      return { 
+        resolved: appData, 
+        winner: 'app', 
+        reason: 'Same timestamp - defaulting to app as source of truth' 
+      };
+    }
+  }
+
+  /**
+   * Update row with sync metadata for bidirectional tracking
+   */
+  public updateRowWithMetadata(
+    row: SheetRow, 
+    appProjectId: string, 
+    updatedBy: 'app' | 'sheet'
+  ): SheetRow {
+    const now = new Date().toISOString();
+    const updatedRow = { ...row };
+    
+    updatedRow.appProjectId = appProjectId;
+    updatedRow.lastUpdatedAt = now;
+    updatedRow.lastUpdatedBy = updatedBy;
+    updatedRow.dataHash = this.calculateRowHash(row);
+    
+    return updatedRow;
+  }
+
+  /**
+   * Check if row data has changed by comparing hashes
+   */
+  public hasRowChanged(previousRow: SheetRow, currentRow: SheetRow): boolean {
+    const previousHash = previousRow.dataHash || this.calculateRowHash(previousRow);
+    const currentHash = this.calculateRowHash(currentRow);
+    return previousHash !== currentHash;
   }
 }
 
