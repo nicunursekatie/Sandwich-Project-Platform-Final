@@ -346,7 +346,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           {/* Toolkit Sent Info */}
           {request.toolkitSentDate && (
             <div className="bg-yellow-50 rounded-lg p-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-1">
                 <Package className="w-4 h-4 text-yellow-600" />
                 <span className="text-sm font-medium">Toolkit sent:</span>
                 <span className="text-sm">
@@ -362,6 +362,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   </Badge>
                 )}
               </div>
+              {(request as any).toolkitSentBy && (
+                <div className="flex items-center gap-2 ml-6">
+                  <User className="w-3 h-3 text-yellow-600" />
+                  <span className="text-xs text-yellow-700">
+                    Sent by: {resolveUserName ? resolveUserName((request as any).toolkitSentBy) : (request as any).toolkitSentBy}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

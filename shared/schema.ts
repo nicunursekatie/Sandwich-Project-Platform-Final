@@ -1442,6 +1442,7 @@ export const eventRequests = pgTable(
     toolkitSent: boolean('toolkit_sent').default(false), // Whether toolkit has been sent
     toolkitSentDate: timestamp('toolkit_sent_date'), // When toolkit was sent
     toolkitStatus: varchar('toolkit_status').default('not_sent'), // 'not_sent', 'sent', 'received_confirmed', 'not_needed'
+    toolkitSentBy: varchar('toolkit_sent_by'), // User ID of who sent the toolkit
     eventStartTime: varchar('event_start_time'), // Event start time (stored as string for flexibility)
     eventEndTime: varchar('event_end_time'), // Event end time
     pickupTime: varchar('pickup_time'), // Driver pickup time for sandwiches

@@ -616,16 +616,26 @@ export default function RequestCard({
                   </h4>
                   <div className="flex items-center space-x-4">
                     {request.toolkitSent ? (
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        <span className="text-green-800 font-medium">
-                          Toolkit Sent
-                        </span>
-                        {request.toolkitSentDate && (
-                          <span className="text-sm text-green-600">
-                            on{' '}
-                            {new Date(request.toolkitSentDate).toLocaleDateString()}
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          <span className="text-green-800 font-medium">
+                            Toolkit Sent
                           </span>
+                          {request.toolkitSentDate && (
+                            <span className="text-sm text-green-600">
+                              on{' '}
+                              {new Date(request.toolkitSentDate).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                        {(request as any).toolkitSentBy && (
+                          <div className="flex items-center space-x-2 ml-7">
+                            <User className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-green-700">
+                              Toolkit sent by: {(request as any).toolkitSentBy}
+                            </span>
+                          </div>
                         )}
                       </div>
                     ) : (

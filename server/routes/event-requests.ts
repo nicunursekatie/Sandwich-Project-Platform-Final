@@ -2141,6 +2141,7 @@ router.patch('/:id/toolkit-sent', isAuthenticated, requirePermission('EVENT_REQU
     console.log('=== MARK TOOLKIT AS SENT ===');
     console.log('Event ID:', id);
     console.log('Toolkit Sent Date:', toolkitSentDate);
+    console.log('Toolkit Sent By:', req.user?.id, '(', req.user?.email, ')');
 
     // Get original data for audit logging
     const originalEvent = await storage.getEventRequestById(id);
@@ -2155,6 +2156,7 @@ router.patch('/:id/toolkit-sent', isAuthenticated, requirePermission('EVENT_REQU
       toolkitSent: true,
       toolkitSentDate: sentDate,
       toolkitStatus: 'sent',
+      toolkitSentBy: req.user?.id, // Record who sent the toolkit
       status: 'in_process', // Move to in_process when toolkit is sent
       updatedAt: new Date(),
     };
