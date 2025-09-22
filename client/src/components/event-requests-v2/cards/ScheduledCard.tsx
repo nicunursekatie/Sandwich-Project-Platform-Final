@@ -1169,7 +1169,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </p>
           )}
         </div>
-      </div>
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-3 border-t border-gray-200">
@@ -1184,6 +1183,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             Follow Up
           </Button>
         </div>
+      </div>
       </CardContent>
     </Card>
   );
