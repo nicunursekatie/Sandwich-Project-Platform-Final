@@ -62,40 +62,55 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   canDelete = true,
 }) => {
   const { user } = useAuth();
-  
+
   // Fetch users data for TSP contact name lookup
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ['/api/users'],
-    enabled: !!(request.tspContact), // Only fetch if there's a TSP contact assigned
+    enabled: !!request.tspContact, // Only fetch if there's a TSP contact assigned
   });
 
   // Helper function to get user display name from user ID
   const getUserDisplayName = (userId: string): string => {
-    const user = users.find(u => u.id === userId);
+    const user = users.find((u) => u.id === userId);
     if (!user) return userId;
-    return `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
-           user.displayName || 
-           user.email || 
-           'Unknown User';
+    return (
+      `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+      user.displayName ||
+      user.email ||
+      'Unknown User'
+    );
   };
-  
+
   // Check if user can edit TSP contact assignments
-  const canEditTspContact = hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT);
+  const canEditTspContact = hasPermission(
+    user,
+    PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT
+  );
   return (
-    <Card className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] ${statusColors.new}`}>
-      <CardContent className="p-6 bg-gradient-to-br from-white via-teal-50 to-teal-100">
-      <CardHeader request={request} />
+    <Card
+      className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] ${statusColors.new}`}
+    >
+      <CardContent className="p-6 bg-gradient-to-br from-[#e5f4f6] via-[#47B3Cb] to-[#47B3CB]">
+        <CardHeader request={request} />
+        <CardHeader request={request} />
 
         {/* TSP Contact Assignment Status */}
         {(request.tspContact || request.customTspContact) && (
           <div className="mb-4">
-            <div className="rounded-lg p-3 border border-[#FBAD3F] shadow-sm" style={{backgroundColor: '#FFF4E6', borderColor: '#FBAD3F'}}>
+            <div
+              className="rounded-lg p-3 border border-[#FBAD3F] shadow-sm"
+              style={{ backgroundColor: '#FFF4E6', borderColor: '#FBAD3F' }}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <UserPlus className="w-4 h-4 text-[#E5901A]" />
-                  <span className="font-semibold text-[#D68319]">TSP Contact Assigned:</span>
+                  <span className="font-semibold text-[#D68319]">
+                    TSP Contact Assigned:
+                  </span>
                   <span className="font-medium text-[#C7761A]">
-                    {request.tspContact ? getUserDisplayName(request.tspContact) : request.customTspContact}
+                    {request.tspContact
+                      ? getUserDisplayName(request.tspContact)
+                      : request.customTspContact}
                   </span>
                 </div>
                 {canEditTspContact && (
@@ -112,7 +127,10 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               </div>
               {request.tspContactAssignedDate && (
                 <p className="text-sm text-[#D68319]/90 mt-1">
-                  Assigned on {new Date(request.tspContactAssignedDate).toLocaleDateString()}
+                  Assigned on{' '}
+                  {new Date(
+                    request.tspContactAssignedDate
+                  ).toLocaleDateString()}
                 </p>
               )}
             </div>
@@ -122,16 +140,22 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         {/* Event Details */}
         <div className="space-y-3 mb-4">
           <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-gray-500 mb-1 text-[16px] font-bold">Submitted</p>
+            <p className="text-gray-500 mb-1 text-[16px] font-bold">
+              Submitted
+            </p>
             <div className="space-y-1">
               <p className="font-medium flex items-center gap-2 text-[16px]">
                 <Clock className="w-4 h-4" />
                 {request.createdAt
-                  ? new Date(request.createdAt).toLocaleDateString() + ' at ' + new Date(request.createdAt).toLocaleTimeString()
+                  ? new Date(request.createdAt).toLocaleDateString() +
+                    ' at ' +
+                    new Date(request.createdAt).toLocaleTimeString()
                   : 'Unknown date'}
                 {request.createdAt && (
                   <Badge className="ml-1 bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]">
-                    {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(request.createdAt), {
+                      addSuffix: true,
+                    })}
                   </Badge>
                 )}
               </p>
@@ -141,7 +165,9 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           {/* Submission Message */}
           {request.message && (
             <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-gray-500 mb-1 text-[17px] font-bold">Message from submission:</p>
+              <p className="text-gray-500 mb-1 text-[17px] font-bold">
+                Message from submission:
+              </p>
               <p className="text-gray-600 text-[16px]">{request.message}</p>
             </div>
           )}
@@ -153,7 +179,10 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 <Package className="w-4 h-4 text-amber-600" />
                 <span className="font-medium">Sandwiches:</span>
                 <span>
-                  {formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount)}
+                  {formatSandwichTypesDisplay(
+                    request.sandwichTypes,
+                    request.estimatedSandwichCount
+                  )}
                 </span>
               </div>
             </div>
@@ -162,17 +191,20 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           {/* Previous Host Status */}
           {request.hasHostedBefore !== null && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500 font-bold text-[16px]">Previously hosted:</span>
-              <Badge className={
-                request.hasHostedBefore 
-                  ? "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 text-[14px]"
-                  : "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]"
-              }>
+              <span className="text-gray-500 font-bold text-[16px]">
+                Previously hosted:
+              </span>
+              <Badge
+                className={
+                  request.hasHostedBefore
+                    ? 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 text-[14px]'
+                    : 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]'
+                }
+              >
                 {request.hasHostedBefore ? 'Yes' : 'No - First Time'}
               </Badge>
             </div>
           )}
-
         </div>
 
         {/* Contact Info */}
@@ -196,7 +228,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               Assign TSP Contact
             </Button>
           )}
-          
+
           <Button
             size="sm"
             variant="default"
@@ -220,11 +252,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
           {/* Edit/Delete */}
           {canEdit && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onEdit}
-            >
+            <Button size="sm" variant="ghost" onClick={onEdit}>
               <Edit className="w-4 h-4" />
             </Button>
           )}
