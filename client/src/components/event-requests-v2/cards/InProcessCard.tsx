@@ -363,7 +363,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Estimated Attendance</p>
+              <p className="text-gray-500 font-bold text-[16px]">Estimated Attendance</p>
               <p className="font-medium">
                 {request.estimatedAttendance || 'Not specified'}
               </p>
