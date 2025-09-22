@@ -130,7 +130,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   ? new Date(request.createdAt).toLocaleDateString() + ' at ' + new Date(request.createdAt).toLocaleTimeString()
                   : 'Unknown date'}
                 {request.createdAt && (
-                  <Badge className="text-xs ml-1 bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200">
+                  <Badge className="ml-1 bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]">
                     {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
                   </Badge>
                 )}
@@ -163,7 +163,11 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           {request.hasHostedBefore !== null && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-500">Previously hosted:</span>
-              <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-0 shadow-lg hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 text-[14px]">
+              <Badge className={
+                request.hasHostedBefore 
+                  ? "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 text-[14px]"
+                  : "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]"
+              }>
                 {request.hasHostedBefore ? 'Yes' : 'No - First Time'}
               </Badge>
             </div>
