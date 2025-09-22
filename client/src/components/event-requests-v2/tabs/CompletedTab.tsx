@@ -69,7 +69,6 @@ export const CompletedTab: React.FC = () => {
                 handleStatusChange(request.id, 'new');
               }
             }}
-            resolveUserName={resolveUserName}
           />
         ))
       )}
