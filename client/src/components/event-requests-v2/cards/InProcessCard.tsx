@@ -167,6 +167,20 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <span className="ml-2">• {request.phone}</span>
               )}
             </div>
+            {/* TSP Contact */}
+            {(request.tspContact || request.customTspContact) && (
+              <div className="text-sm text-[#D68319] mb-2">
+                <span className="font-medium">TSP Contact: </span>
+                <span className="font-normal">
+                  {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
+                </span>
+                {request.tspContactAssignedDate && (
+                  <span className="ml-2 text-xs text-gray-500">
+                    (assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()})
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {isEditingDate ? (
