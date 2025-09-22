@@ -694,7 +694,7 @@ export default function ProjectsClean() {
             }`}
           >
             <Circle className="w-4 h-4 mr-2" />
-            Available (
+            Tabled (
             {allProjects.filter((p) => p.status === 'tabled').length})
           </Button>
 
