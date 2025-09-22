@@ -108,7 +108,18 @@ export class GoogleSheetsSyncService {
             delete preservedData.description; // Don't overwrite if it has meeting content
           }
 
-          // Update existing project but preserve meeting content
+          // CRITICAL FIX: Don't override local status changes unless the sheet has newer data
+          // Only update status if the project hasn't been manually updated recently (within 1 hour)
+          const lastUpdated = existingProject.updatedAt ? new Date(existingProject.updatedAt) : new Date(0);
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+          
+          if (lastUpdated > oneHourAgo) {
+            // Project was updated recently, preserve local status changes
+            delete preservedData.status;
+            console.log(`🔒 Preserving recent local status change for project "${existingProject.title}" (status: ${existingProject.status})`);
+          }
+
+          // Update existing project but preserve meeting content and recent status changes
           await this.storage.updateProject(existingProject.id, {
             ...preservedData,
             syncStatus: 'synced',
