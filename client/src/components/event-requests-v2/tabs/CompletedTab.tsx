@@ -37,6 +37,7 @@ export const CompletedTab: React.FC = () => {
           <CompletedCard
             key={request.id}
             request={request}
+            resolveUserName={resolveUserName}
             onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);

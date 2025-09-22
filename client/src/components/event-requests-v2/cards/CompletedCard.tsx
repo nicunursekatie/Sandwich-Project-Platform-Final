@@ -55,10 +55,11 @@ interface CardHeaderProps {
   saveEdit?: () => void;
   cancelEdit?: () => void;
   setEditingValue?: (value: string) => void;
+  resolveUserName?: (id: string) => string;
 }
 
-const CardHeader: React.FC<CardHeaderProps> = ({ 
-  request, 
+const CardHeader: React.FC<CardHeaderProps> = ({
+  request,
   isInProcessStale,
   canEdit = false,
   isEditingThisCard = false,
@@ -67,7 +68,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   startEditing,
   saveEdit,
   cancelEdit,
-  setEditingValue
+  setEditingValue,
+  resolveUserName
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -163,7 +165,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <div className="text-sm text-[#D68319] mb-2">
                 <span className="font-medium">TSP Contact: </span>
                 <span className="font-normal">
-                  {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
+                  {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
                 </span>
                 {request.tspContactAssignedDate && (
                   <span className="ml-2 text-xs text-gray-500">
@@ -455,7 +457,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   return (
     <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-gradient-to-br from-[#e6f7f5] via-[#007E8C]/10 to-[#007E8C]/20 border border-[#007E8C]/30">
       <CardContent className="p-6">
-        <CardHeader request={request} />
+        <CardHeader request={request} resolveUserName={resolveUserName} />
 
         {/* Event Summary */}
         <div className="space-y-3 mb-4">
