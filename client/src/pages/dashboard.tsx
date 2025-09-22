@@ -50,7 +50,7 @@ import AnalyticsDashboard from '@/components/analytics-dashboard';
 import HostAnalytics from '@/components/host-analytics';
 import EnhancedMeetingDashboard from '@/components/enhanced-meeting-dashboard';
 import RoleDemo from '@/pages/role-demo';
-import ProjectsClean from '@/pages/projects-clean';
+import ProjectsManagementV2 from '@/components/projects-v2';
 import ProjectDetailClean from '@/pages/project-detail-clean';
 import Analytics from '@/pages/analytics';
 import ImpactDashboard from '@/pages/impact-dashboard';
@@ -236,8 +236,8 @@ export default function Dashboard({
       case 'important-documents':
         return <ImportantDocuments />;
       case 'projects':
-        console.log('Rendering ProjectsClean component');
-        return <ProjectsClean />;
+        console.log('Rendering ProjectsManagementV2 component');
+        return <ProjectsManagementV2 />;
       case 'real-time-messages':
         return <RealTimeMessages />;
       case 'messages':

@@ -1,0 +1,378 @@
+import React from 'react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Circle,
+  Play,
+  CheckCircle2,
+  Archive,
+  Settings,
+  Edit,
+  Trash2,
+  User,
+  Calendar,
+  ArrowRight,
+  Clock,
+  AlertTriangle,
+  Users,
+  MoreVertical,
+  FolderOpen,
+  Package,
+  Target,
+  Megaphone,
+  Code,
+  Building,
+  Heart,
+  DollarSign,
+  CalendarEvent,
+} from 'lucide-react';
+import { Project } from '@shared/schema';
+import { useAuth } from '@/hooks/useAuth';
+import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { useProjectQueries } from '../hooks/useProjectQueries';
+import { useProjectMutations } from '../hooks/useProjectMutations';
+import { useProjectContext } from '../context/ProjectContext';
+import SendKudosButton from '@/components/send-kudos-button';
+
+interface ProjectCardProps {
+  project: Project;
+}
+
+export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
+  const { user } = useAuth();
+  const { getUserDisplayName, parseAssignees } = useProjectQueries();
+  const {
+    updateProjectStatusMutation,
+    deleteProjectMutation,
+    archiveProjectMutation,
+    unarchiveProjectMutation,
+  } = useProjectMutations();
+  const { setEditingProject, setShowEditDialog } = useProjectContext();
+
+  // Helper functions
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'available':
+        return <Circle className="w-4 h-4" />;
+      case 'in_progress':
+        return <Play className="w-4 h-4" />;
+      case 'completed':
+        return <CheckCircle2 className="w-4 h-4" />;
+      case 'archived':
+        return <Archive className="w-4 h-4" />;
+      default:
+        return <Circle className="w-4 h-4" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'available':
+        return 'text-gray-500 bg-gray-50 border-gray-200';
+      case 'in_progress':
+        return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'completed':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'archived':
+        return 'text-gray-400 bg-gray-50 border-gray-200';
+      default:
+        return 'text-gray-500 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'low':
+        return 'bg-gray-100 text-gray-700';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'high':
+        return 'bg-orange-100 text-orange-700';
+      case 'urgent':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'technology':
+        return <Code className="w-4 h-4" />;
+      case 'marketing':
+        return <Megaphone className="w-4 h-4" />;
+      case 'operations':
+        return <Building className="w-4 h-4" />;
+      case 'community':
+        return <Heart className="w-4 h-4" />;
+      case 'fundraising':
+        return <DollarSign className="w-4 h-4" />;
+      case 'event':
+        return <CalendarEvent className="w-4 h-4" />;
+      default:
+        return <Package className="w-4 h-4" />;
+    }
+  };
+
+  const formatDate = (dateStr: string | Date | null) => {
+    if (!dateStr) return 'No date set';
+    try {
+      const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const canEditProject = () => {
+    return hasPermission(user, PERMISSIONS.PROJECTS_EDIT) ||
+           project.assigneeName === user?.email;
+  };
+
+  const canDeleteProject = () => {
+    return hasPermission(user, PERMISSIONS.PROJECTS_DELETE);
+  };
+
+  const handleEdit = () => {
+    setEditingProject(project);
+    setShowEditDialog(true);
+  };
+
+  const handleDelete = () => {
+    if (window.confirm(`Are you sure you want to delete "${project.title}"?`)) {
+      deleteProjectMutation.mutate(project.id);
+    }
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    if (newStatus === 'archived') {
+      archiveProjectMutation.mutate(project.id);
+    } else {
+      updateProjectStatusMutation.mutate({ id: project.id, status: newStatus });
+    }
+  };
+
+  const handleUnarchive = () => {
+    unarchiveProjectMutation.mutate({ id: project.id, status: 'available' });
+  };
+
+  // Parse support people
+  const supportPeople = parseAssignees(project.supportPeople || '');
+
+  // Check if project is overdue
+  const isOverdue = project.dueDate &&
+    new Date(project.dueDate) < new Date() &&
+    project.status !== 'completed' &&
+    project.status !== 'archived';
+
+  return (
+    <Card className={`group hover:shadow-lg transition-all duration-200 ${
+      project.googleSheetRowId ? 'border-l-4 border-l-blue-500' :
+      'border-l-4 border-l-green-500'
+    }`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-start gap-2">
+              {/* Status Badge */}
+              <Badge className={`${getStatusColor(project.status)} border`}>
+                {getStatusIcon(project.status)}
+                <span className="ml-1 capitalize">
+                  {project.status.replace('_', ' ')}
+                </span>
+              </Badge>
+
+              {/* Priority Badge */}
+              <Badge className={getPriorityColor(project.priority || 'medium')}>
+                {project.priority || 'medium'}
+              </Badge>
+
+              {/* Meeting Project Badge */}
+              {project.googleSheetRowId && (
+                <Badge className="bg-blue-100 text-blue-700">
+                  📊 Meeting
+                </Badge>
+              )}
+
+              {/* Overdue Badge */}
+              {isOverdue && (
+                <Badge className="bg-red-100 text-red-700">
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  Overdue
+                </Badge>
+              )}
+            </div>
+
+            <h3 className="text-lg font-semibold mt-2 text-gray-900">
+              {project.title}
+            </h3>
+
+            {project.description && (
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                {project.description}
+              </p>
+            )}
+          </div>
+
+          {/* Actions Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canEditProject() && (
+                <>
+                  <DropdownMenuItem onClick={handleEdit}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {/* Status Changes */}
+              {project.status !== 'completed' && project.status !== 'archived' && (
+                <>
+                  {project.status === 'available' && (
+                    <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
+                      <Play className="w-4 h-4 mr-2" />
+                      Start Progress
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Mark Complete
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('archived')}>
+                    <Archive className="w-4 h-4 mr-2" />
+                    Archive
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              {project.status === 'archived' && (
+                <DropdownMenuItem onClick={handleUnarchive}>
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  Restore from Archive
+                </DropdownMenuItem>
+              )}
+
+              {canDeleteProject() && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <div className="space-y-3">
+          {/* Category and Dates */}
+          <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-1">
+              {getCategoryIcon(project.category || 'technology')}
+              <span className="capitalize">{project.category || 'technology'}</span>
+            </div>
+
+            {project.dueDate && (
+              <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                <span className={isOverdue ? 'text-red-600 font-semibold' : ''}>
+                  {formatDate(project.dueDate)}
+                </span>
+              </div>
+            )}
+
+            {project.estimatedHours && project.estimatedHours > 0 && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                <span>{project.estimatedHours}h estimated</span>
+              </div>
+            )}
+          </div>
+
+          {/* Assignees */}
+          <div className="flex flex-wrap gap-2">
+            {/* Project Owner */}
+            {project.assigneeName && (
+              <div className="flex items-center gap-1">
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  <span className="text-xs">Owner:</span>
+                  <span className="font-medium">{project.assigneeName}</span>
+                </Badge>
+                <SendKudosButton
+                  recipientName={project.assigneeName}
+                  size="sm"
+                  variant="ghost"
+                />
+              </div>
+            )}
+
+            {/* Support People */}
+            {supportPeople.length > 0 && (
+              <div className="flex items-center gap-1">
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  <span className="text-xs">Support:</span>
+                  <span className="font-medium">{supportPeople.join(', ')}</span>
+                </Badge>
+              </div>
+            )}
+          </div>
+
+          {/* Progress Bar (if in progress) */}
+          {project.status === 'in_progress' && project.estimatedHours && project.actualHours && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-gray-600">
+                <span>Progress</span>
+                <span>{Math.round((project.actualHours / project.estimatedHours) * 100)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, (project.actualHours / project.estimatedHours) * 100)}%`
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* View Details Button */}
+          <div className="pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-between hover:bg-gray-50"
+              onClick={() => window.location.href = `/projects/${project.id}`}
+            >
+              View Details
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
