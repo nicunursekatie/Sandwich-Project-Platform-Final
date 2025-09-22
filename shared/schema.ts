@@ -187,6 +187,11 @@ export const projects = pgTable('projects', {
   googleSheetRowId: text('google_sheet_row_id'), // Track which sheet row this corresponds to
   lastSyncedAt: timestamp('last_synced_at'), // When last synced with Google Sheets
   syncStatus: text('sync_status').default('unsynced'), // "unsynced", "synced", "conflict", "error"
+  // Bidirectional sync metadata
+  lastPulledFromSheetAt: timestamp('last_pulled_from_sheet_at'), // When last pulled changes from sheet
+  lastPushedToSheetAt: timestamp('last_pushed_to_sheet_at'), // When last pushed changes to sheet  
+  lastSheetHash: text('last_sheet_hash'), // Hash of sheet data for change detection
+  lastAppHash: text('last_app_hash'), // Hash of app data for change detection
   tasksAndOwners: text('tasks_and_owners'), // Parsed from Google Sheets format: "Katie: Design, Chris: Review"
   // Additional database columns to prevent deletion during migrations
   estimatedhours: integer('estimatedhours'),

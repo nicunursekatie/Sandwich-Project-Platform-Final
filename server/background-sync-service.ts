@@ -121,12 +121,12 @@ export class BackgroundSyncService {
   }
 
   /**
-   * Sync projects from Google Sheets
+   * Sync projects from Google Sheets (bidirectional sync with hash-based change detection)
    */
   private async syncProjects() {
     try {
       const projectSyncService = new GoogleSheetsSyncService(this.storage);
-      const result = await projectSyncService.syncFromGoogleSheets();
+      const result = await projectSyncService.bidirectionalSync();
 
       if (result.success) {
         console.log(
