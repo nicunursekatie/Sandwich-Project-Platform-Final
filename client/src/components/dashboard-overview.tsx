@@ -267,7 +267,7 @@ export default function DashboardOverview({
                     : 'Enter New Collection Data'}
                 </Button>
                 <Button
-                  className="bg-white border border-brand-light-blue text-brand-light-blue hover:bg-brand-light-blue hover:text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors shadow-sm text-base sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px]"
+                  className="bg-white border border-brand-light-blue text-brand-light-blue hover:bg-brand-light-blue hover:text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors shadow-sm text-[16px] sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px]"
                   onClick={() => onSectionChange?.('collections')}
                 >
                   View Collection History
