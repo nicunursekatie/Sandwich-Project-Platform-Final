@@ -166,27 +166,163 @@ export class GoogleSheetsSyncService {
   }
 
   /**
-   * Bi-directional sync - handles conflicts by prioritizing most recent update
+   * True bidirectional sync with hash-based change detection and conflict resolution
    */
   async bidirectionalSync(): Promise<{
     success: boolean;
     message: string;
     details?: any;
   }> {
-    try {
-      // First sync FROM sheets to get latest manual changes
-      const fromResult = await this.syncFromGoogleSheets();
-
-      // Then sync TO sheets to ensure everything is up to date
-      const toResult = await this.syncToGoogleSheets();
-
+    const sheetsService = getProjectsGoogleSheetsService();
+    if (!sheetsService) {
       return {
-        success: fromResult.success && toResult.success,
-        message: `Bidirectional sync complete. ${fromResult.message} | ${toResult.message}`,
-        details: {
-          fromSheets: fromResult,
-          toSheets: toResult,
-        },
+        success: false,
+        message: 'Projects Google Sheets service not configured - missing PROJECTS_SHEET_ID',
+      };
+    }
+
+    try {
+      console.log('🔄 Starting true bidirectional sync with hash-based change detection...');
+      
+      // Get all meeting projects from database (those with googleSheetRowId)
+      const allProjects = await this.storage.getAllProjects();
+      const dbProjects = allProjects.filter((p) => p.googleSheetRowId);
+      
+      // Read from Google Sheets
+      const sheetRows = await sheetsService.readSheet();
+      
+      let syncStats = {
+        conflicts: 0,
+        appWins: 0,
+        sheetWins: 0,
+        noChanges: 0,
+        appToSheetUpdates: 0,
+        sheetToAppUpdates: 0,
+        newFromSheet: 0,
+      };
+
+      const now = new Date().toISOString();
+      
+      // Process each sheet row
+      for (const sheetRow of sheetRows) {
+        if (!sheetRow.task) continue; // Skip empty rows
+        
+        // Find corresponding database project
+        const dbProject = dbProjects.find(
+          (p) => p.googleSheetRowId === sheetRow.rowIndex?.toString() ||
+                 p.title.toLowerCase().trim() === sheetRow.task.toLowerCase().trim()
+        );
+
+        if (dbProject) {
+          // Convert database project to sheet format for comparison
+          const appSheetRow = this.projectToSheetRow(dbProject, await this.storage.getProjectTasks(dbProject.id));
+          
+          // Add metadata to both rows for comparison
+          const appRowWithMeta = sheetsService.updateRowWithMetadata(appSheetRow, dbProject.id.toString(), 'app');
+          const sheetRowWithMeta = sheetsService.updateRowWithMetadata(sheetRow, dbProject.id.toString(), 'sheet');
+          
+          // Check if data has changed
+          const hasAppChanges = sheetsService.hasRowChanged(
+            { ...appRowWithMeta, dataHash: dbProject.lastAppHash }, 
+            appRowWithMeta
+          );
+          const hasSheetChanges = sheetsService.hasRowChanged(
+            { ...sheetRowWithMeta, dataHash: dbProject.lastSheetHash }, 
+            sheetRowWithMeta
+          );
+
+          if (!hasAppChanges && !hasSheetChanges) {
+            // No changes on either side
+            syncStats.noChanges++;
+            continue;
+          }
+
+          if (hasAppChanges && hasSheetChanges) {
+            // Conflict detected - use conflict resolution
+            console.log(`⚠️ Conflict detected for project "${dbProject.title}"`);
+            
+            const conflict = sheetsService.resolveConflict(appRowWithMeta, sheetRowWithMeta);
+            console.log(`🔧 Conflict resolution: ${conflict.winner} wins - ${conflict.reason}`);
+            
+            syncStats.conflicts++;
+            
+            if (conflict.winner === 'app') {
+              syncStats.appWins++;
+              // Update sheet with app data
+              await this.updateSheetRow(sheetsService, conflict.resolved, sheetRow.rowIndex!);
+              syncStats.appToSheetUpdates++;
+              
+              // Update database metadata
+              await this.storage.updateProject(dbProject.id, {
+                lastPushedToSheetAt: now,
+                lastAppHash: sheetsService.calculateRowHash(appRowWithMeta),
+                lastSheetHash: sheetsService.calculateRowHash(conflict.resolved),
+              });
+            } else if (conflict.winner === 'sheet') {
+              syncStats.sheetWins++;
+              // Update database with sheet data
+              await this.updateProjectFromSheetRow(dbProject, conflict.resolved);
+              syncStats.sheetToAppUpdates++;
+              
+              // Update database metadata
+              await this.storage.updateProject(dbProject.id, {
+                lastPulledFromSheetAt: now,
+                lastAppHash: sheetsService.calculateRowHash(conflict.resolved),
+                lastSheetHash: sheetsService.calculateRowHash(sheetRowWithMeta),
+              });
+            }
+          } else if (hasAppChanges) {
+            // App has changes, sheet doesn't - push to sheet
+            console.log(`📤 Pushing app changes to sheet for project "${dbProject.title}"`);
+            await this.updateSheetRow(sheetsService, appRowWithMeta, sheetRow.rowIndex!);
+            syncStats.appToSheetUpdates++;
+            
+            // Update database metadata
+            await this.storage.updateProject(dbProject.id, {
+              lastPushedToSheetAt: now,
+              lastAppHash: sheetsService.calculateRowHash(appRowWithMeta),
+            });
+          } else if (hasSheetChanges) {
+            // Sheet has changes, app doesn't - pull from sheet
+            console.log(`📥 Pulling sheet changes to app for project "${dbProject.title}"`);
+            await this.updateProjectFromSheetRow(dbProject, sheetRowWithMeta);
+            syncStats.sheetToAppUpdates++;
+            
+            // Update database metadata
+            await this.storage.updateProject(dbProject.id, {
+              lastPulledFromSheetAt: now,
+              lastSheetHash: sheetsService.calculateRowHash(sheetRowWithMeta),
+            });
+          }
+        } else {
+          // New project from sheet - create in database
+          console.log(`➕ Creating new project from sheet: "${sheetRow.task}"`);
+          const projectData = this.sheetRowToProject(sheetRow);
+          const newProject = await this.storage.createProject({
+            ...projectData,
+            createdBy: 'google-sheets-sync',
+            createdByName: 'Google Sheets Import',
+            syncStatus: 'synced',
+            googleSheetRowId: sheetRow.rowIndex?.toString(),
+            lastPulledFromSheetAt: now,
+            lastSheetHash: sheetsService.calculateRowHash(sheetRow),
+          });
+          
+          if (newProject) {
+            await this.syncProjectTasks(newProject.id, sheetRow.subTasksOwners);
+          }
+          syncStats.newFromSheet++;
+        }
+      }
+
+      const message = `✅ Bidirectional sync complete: ${syncStats.conflicts} conflicts (${syncStats.appWins} app wins, ${syncStats.sheetWins} sheet wins), ${syncStats.appToSheetUpdates} app→sheet, ${syncStats.sheetToAppUpdates} sheet→app, ${syncStats.newFromSheet} new from sheet, ${syncStats.noChanges} unchanged`;
+      
+      console.log(message);
+      
+      return {
+        success: true,
+        message,
+        details: syncStats,
       };
     } catch (error) {
       console.error('Error in bidirectional sync:', error);
@@ -195,6 +331,53 @@ export class GoogleSheetsSyncService {
         message: `Bidirectional sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
+  }
+
+  /**
+   * Update a specific row in Google Sheets
+   */
+  private async updateSheetRow(sheetsService: any, rowData: SheetRow, rowIndex: number): Promise<void> {
+    // This would be implemented to update a specific row in the sheet
+    // For now, we'll use the existing updateSheet method which updates all rows
+    // In a full implementation, this would update just the specific row for efficiency
+    const allProjects = await this.storage.getAllProjects();
+    const meetingProjects = allProjects.filter((p) => p.googleSheetRowId);
+    
+    const sheetRows: SheetRow[] = [];
+    for (const project of meetingProjects) {
+      if (project.id.toString() === rowData.appProjectId) {
+        // Use the updated row data for this project
+        sheetRows.push(rowData);
+      } else {
+        // Use existing data for other projects
+        const projectTasks = await this.storage.getProjectTasks(project.id);
+        sheetRows.push(this.projectToSheetRow(project, projectTasks));
+      }
+    }
+    
+    await sheetsService.updateSheet(sheetRows);
+  }
+
+  /**
+   * Update database project from sheet row data
+   */
+  private async updateProjectFromSheetRow(project: Project, sheetRow: SheetRow): Promise<void> {
+    const projectData = this.sheetRowToProject(sheetRow);
+    
+    // Preserve meeting discussion content - don't overwrite it
+    const preservedData = { ...projectData };
+    if (project.meetingDiscussionPoints) {
+      delete preservedData.description; // Don't overwrite if it has meeting content
+    }
+
+    await this.storage.updateProject(project.id, {
+      ...preservedData,
+      syncStatus: 'synced',
+      googleSheetRowId: sheetRow.rowIndex?.toString(),
+    });
+
+    // Sync sub-tasks for this project (with meeting content preservation)
+    await this.syncProjectTasksPreservingMeetingContent(project.id, sheetRow.subTasksOwners);
   }
 
   /**
