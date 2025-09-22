@@ -125,22 +125,29 @@ const ActionTracking = () => {
     }
   };
 
-  // Fetch user's assigned projects
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ['/api/projects/assigned'],
+  // Fetch dashboard data (same source as dashboard widget)
+  const { data: dashboardData, refetch: refetchDashboard } = useQuery<{
+    projects: any[];
+    tasks: any[];
+    events: any[];
+    messages: any[];
+    counts: {
+      projects: number;
+      tasks: number;
+      events: number;
+      messages: number;
+    };
+  }>({
+    queryKey: ['/api/me/dashboard'],
   });
 
-  // Fetch user's assigned tasks
-  const { data: tasks = [] } = useQuery<ProjectTask[]>({
-    queryKey: ['/api/tasks/assigned'],
-  });
-
-  // Fetch user's assigned events
-  const { data: events = [], refetch: refetchEvents } = useQuery<
-    EventRequest[]
-  >({
-    queryKey: ['/api/event-requests/assigned'],
-  });
+  // Extract data from dashboard response
+  const projects = dashboardData?.projects || [];
+  const tasks = dashboardData?.tasks || [];
+  const events = dashboardData?.events || [];
+  
+  // For compatibility with existing code, create refetchEvents that refetches dashboard
+  const refetchEvents = refetchDashboard;
 
   // Mutation for marking follow-ups as complete
   const followUpMutation = useMutation({
@@ -160,7 +167,7 @@ const ActionTracking = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['/api/event-requests/assigned'],
+        queryKey: ['/api/me/dashboard'],
       });
       toast({
         title: 'Follow-up marked complete',
