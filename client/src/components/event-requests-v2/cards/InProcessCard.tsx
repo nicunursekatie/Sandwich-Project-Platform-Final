@@ -362,12 +362,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   ` - ${formatTime12Hour(request.preferredEndTime)}`}
               </p>
             </div>
-            <div>
-              <p className="text-gray-500 font-bold text-[16px]">Estimated Attendance</p>
-              <p className="font-normal">
-                {request.estimatedAttendance || 'Not specified'}
-              </p>
-            </div>
+            
           </div>
 
           {/* Sandwich Info */}
