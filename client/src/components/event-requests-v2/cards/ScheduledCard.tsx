@@ -954,27 +954,58 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           )}
 
-          {/* Times & Logistics - Compact */}
-          <div className="bg-white/50 rounded-lg p-2 border border-white/60">
-            <div className="grid grid-cols-4 gap-3 text-sm">
-              {renderEditableField(
+          {/* Times & Logistics - Smart Display */}
+          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-gray-700 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Event Times & Logistics
+              </h4>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    // If no times are set, start editing the most common one (start time)
+                    if (!request.eventStartTime && !request.eventEndTime && !request.pickupTime) {
+                      startEditing('eventStartTime', '');
+                    }
+                  }}
+                  className="text-xs text-[#236383] hover:text-[#FBAD3F] opacity-70 hover:opacity-100"
+                  title="Add missing times"
+                >
+                  + Add Times
+                </Button>
+              )}
+            </div>
+            <div className="grid gap-3 text-sm" style={{
+              gridTemplateColumns: `repeat(${[
+                request.eventStartTime,
+                request.eventEndTime, 
+                request.pickupTime,
+                true // Always show refrigeration
+              ].filter(Boolean).length}, 1fr)`
+            }}>
+              {/* Only show fields that have values or are currently being edited */}
+              {(request.eventStartTime || (isEditingThisCard && editingField === 'eventStartTime')) && renderEditableField(
                 'eventStartTime',
                 request.eventStartTime && formatTime12Hour(request.eventStartTime),
                 'Start Time',
                 'time'
               )}
-              {renderEditableField(
+              {(request.eventEndTime || (isEditingThisCard && editingField === 'eventEndTime')) && renderEditableField(
                 'eventEndTime',
                 request.eventEndTime && formatTime12Hour(request.eventEndTime),
                 'End Time',
                 'time'
               )}
-              {renderEditableField(
+              {(request.pickupTime || (isEditingThisCard && editingField === 'pickupTime')) && renderEditableField(
                 'pickupTime',
                 request.pickupTime && formatTime12Hour(request.pickupTime),
                 'Pickup Time',
                 'time'
               )}
+              {/* Always show refrigeration as it has meaningful states */}
               {renderEditableField(
                 'hasRefrigeration',
                 request.hasRefrigeration === true ? 'Yes' : request.hasRefrigeration === false ? 'No' : 'Unknown',
@@ -987,6 +1018,44 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 ]
               )}
             </div>
+            
+            {/* Quick add buttons for missing times - only show if editing is enabled and times are missing */}
+            {canEdit && !isEditingThisCard && (
+              <div className="mt-3 pt-2 border-t border-gray-200">
+                <div className="flex flex-wrap gap-2">
+                  {!request.eventStartTime && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => startEditing('eventStartTime', '')}
+                      className="text-xs border-[#236383]/30 text-[#236383] hover:bg-[#236383] hover:text-white"
+                    >
+                      + Start Time
+                    </Button>
+                  )}
+                  {!request.eventEndTime && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => startEditing('eventEndTime', '')}
+                      className="text-xs border-[#236383]/30 text-[#236383] hover:bg-[#236383] hover:text-white"
+                    >
+                      + End Time
+                    </Button>
+                  )}
+                  {!request.pickupTime && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => startEditing('pickupTime', '')}
+                      className="text-xs border-[#236383]/30 text-[#236383] hover:bg-[#236383] hover:text-white"
+                    >
+                      + Pickup Time
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sandwich Details */}
