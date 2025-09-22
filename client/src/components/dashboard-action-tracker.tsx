@@ -198,14 +198,13 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
         <h2 className="text-2xl font-bold text-gray-900 mb-2">My Action Tracker</h2>
         <p className="text-gray-600">Stay on top of your assigned work and communications</p>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Projects Card */}
         <Card className="hover:shadow-md transition-shadow" data-testid="projects-card">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
-              <span className="text-base text-[#236383]">Projects</span>
+              <span className="text-[#236383] text-[18px]">Projects</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -352,7 +351,6 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
           </CardContent>
         </Card>
       </div>
-
       {/* Quick Action Buttons */}
       {!isLoading && dashboardData && (
         <div className="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-200">
