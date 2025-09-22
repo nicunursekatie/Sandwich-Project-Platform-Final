@@ -229,14 +229,6 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'documentation',
   },
   {
-    id: 'toolkit',
-    label: 'Toolkit',
-    icon: FolderOpen,
-    href: 'toolkit',
-    permission: PERMISSIONS.NAV_TOOLKIT,
-    group: 'documentation',
-  },
-  {
     id: 'document-management',
     label: 'Document Management',
     icon: FileText,
