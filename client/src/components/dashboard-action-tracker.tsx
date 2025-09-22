@@ -158,16 +158,6 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
             </p>
           )}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {item.priority && (
-            <Badge variant="outline" className={`text-xs ${getPriorityColor(item.priority)}`}>
-              {item.priority}
-            </Badge>
-          )}
-          <Badge variant="outline" className={`text-[14px] ${getStatusColor(item.status)}`}>
-            {formatStatusText(item.status)}
-          </Badge>
-        </div>
       </div>
       {item.dueDate && (
         <div className="flex items-center gap-1 mt-1">
