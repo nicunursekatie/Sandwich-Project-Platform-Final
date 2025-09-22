@@ -94,7 +94,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       case 'medium':
         return 'bg-yellow-100 text-yellow-700';
       case 'high':
-        return 'bg-orange-100 text-orange-700';
+        return 'bg-[#FBAD3F] text-white';
       case 'urgent':
         return 'bg-red-100 text-red-700';
       default:
