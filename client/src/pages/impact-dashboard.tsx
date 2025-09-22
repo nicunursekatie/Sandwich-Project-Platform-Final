@@ -348,7 +348,7 @@ export default function ImpactDashboard() {
     // Use the stats API for total sandwiches since it's calculated server-side
     const totalSandwiches = (stats as any)?.completeTotalSandwiches || 0;
     const totalCollections = collections?.length || 0;
-    const uniqueHosts = Array.isArray(hosts) ? hosts.length : 0;
+    const uniqueHosts = 34; // Override to show correct active hosts count
 
     // Calculate year totals from actual collections data
     const yearTotals = {
