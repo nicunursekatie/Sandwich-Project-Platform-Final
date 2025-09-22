@@ -191,7 +191,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   <span data-testid="text-date-label" className="text-[16px] font-bold">
                     {dateLabel}:{' '}
                     <strong
-                      className="text-[16px]"
+                      className="text-[16px] font-normal"
                       data-testid="text-date-value"
                     >
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
