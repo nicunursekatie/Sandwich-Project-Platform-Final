@@ -66,7 +66,6 @@ export const CardAssignments: React.FC<CardAssignmentsProps> = ({
           {icon}
           <span className="font-semibold text-base text-[#236383]">{title}</span>
         </div>
-
         {/* Assigned people */}
         <div className="space-y-2 mb-3 min-h-[60px]">
           {assigned.length > 0 ? (
@@ -89,10 +88,9 @@ export const CardAssignments: React.FC<CardAssignmentsProps> = ({
               );
             })
           ) : (
-            <div className="text-sm text-[#236383]/60 italic">No one assigned</div>
+            <div className="text-[#236383]/60 italic text-[16px]">No one assigned</div>
           )}
         </div>
-
         {/* Assign button */}
         {canEdit && hasCapacity && onAssign && (
           <Button
