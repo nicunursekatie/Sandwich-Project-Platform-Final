@@ -166,7 +166,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {value}
             </a>
           ) : (
-            <p className="text-[16px] font-normal">{value || 'Not set'}</p>
+            <p className="text-lg font-normal">{value || 'Not set'}</p>
           )}
           {canEdit && (
             <Button
@@ -385,7 +385,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <div className="space-y-3">
             {request.message && (
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-2">Initial Request Message:</p>
+                <p className="font-medium text-gray-600 mb-2 text-[16px]">Initial Request Message:</p>
                 <p className="text-base text-gray-800 bg-blue-50 p-3 rounded border-l-4 border-blue-300 leading-relaxed">
                   {request.message}
                 </p>
