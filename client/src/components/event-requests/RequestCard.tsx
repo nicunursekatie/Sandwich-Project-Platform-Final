@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -213,6 +213,156 @@ export default function RequestCard({
     return request.statusChangedAt ? new Date(request.statusChangedAt) < oneWeekAgo : false;
   };
 
+  // Helper function to determine what action moved the request to in-process status
+  // Uses deterministic trigger resolution by comparing action timestamps to statusChangedAt
+  const getInProcessActionInfo = useMemo(() => {
+    if (request.status !== 'in_process' || !request.statusChangedAt) return null;
+
+    const statusChangedDate = new Date(request.statusChangedAt);
+    const tolerance = 30 * 60 * 1000; // 30 minutes tolerance for timestamp comparison
+    
+    // Collect all possible action timestamps with their metadata
+    const possibleActions: Array<{
+      date: Date;
+      action: string;
+      actionBy: string | null;
+      icon: any;
+      priority: number; // Used as tie-breaker only
+    }> = [];
+
+    // Toolkit sent action
+    if (request.toolkitSentDate) {
+      try {
+        const date = new Date(request.toolkitSentDate);
+        if (!isNaN(date.getTime())) { // Ensure date is valid
+          possibleActions.push({
+            date,
+            action: 'Toolkit sent',
+            actionBy: request.toolkitSentBy || null,
+            icon: Package,
+            priority: 1
+          });
+        }
+      } catch (error) {
+        console.warn('Invalid toolkitSentDate:', request.toolkitSentDate);
+      }
+    }
+
+    // Follow-up completion action
+    if (request.followUpDate) {
+      try {
+        const date = new Date(request.followUpDate);
+        if (!isNaN(date.getTime())) { // Ensure date is valid
+          possibleActions.push({
+            date,
+            action: 'Follow-up recorded',
+            actionBy: null, // followUpDate doesn't track who completed it
+            icon: Phone,
+            priority: 2
+          });
+        }
+      } catch (error) {
+        console.warn('Invalid followUpDate:', request.followUpDate);
+      }
+    }
+
+    // Contact completion action
+    if (request.contactedAt) {
+      try {
+        const date = new Date(request.contactedAt);
+        if (!isNaN(date.getTime())) { // Ensure date is valid
+          possibleActions.push({
+            date,
+            action: 'Initial contact completed',
+            actionBy: request.completedByUserId || null,
+            icon: CheckCircle,
+            priority: 3
+          });
+        }
+      } catch (error) {
+        console.warn('Invalid contactedAt:', request.contactedAt);
+      }
+    }
+
+    // TSP contact assignment
+    if (request.tspContactAssignedDate) {
+      try {
+        const date = new Date(request.tspContactAssignedDate);
+        if (!isNaN(date.getTime())) { // Ensure date is valid
+          possibleActions.push({
+            date,
+            action: 'TSP contact assigned',
+            actionBy: null, // tspContactAssignedDate doesn't track who assigned it
+            icon: UserCheck,
+            priority: 4
+          });
+        }
+      } catch (error) {
+        console.warn('Invalid tspContactAssignedDate:', request.tspContactAssignedDate);
+      }
+    }
+
+    // Find actions within tolerance window, preferring those at/before statusChangedAt
+    const validActions = possibleActions.filter(action => {
+      const timeDiff = statusChangedDate.getTime() - action.date.getTime();
+      return timeDiff >= -tolerance && timeDiff <= tolerance;
+    });
+
+    if (validActions.length > 0) {
+      // Sort by preference: actions at/before statusChangedAt first, then by proximity, then by priority
+      validActions.sort((a, b) => {
+        const timeDiffA = statusChangedDate.getTime() - a.date.getTime();
+        const timeDiffB = statusChangedDate.getTime() - b.date.getTime();
+        
+        // Prefer actions at or before statusChangedAt (timeDiff >= 0) over those after (timeDiff < 0)
+        const isABeforeOrAt = timeDiffA >= 0;
+        const isBBeforeOrAt = timeDiffB >= 0;
+        
+        if (isABeforeOrAt && !isBBeforeOrAt) {
+          return -1; // A is at/before, B is after - prefer A
+        }
+        if (!isABeforeOrAt && isBBeforeOrAt) {
+          return 1; // B is at/before, A is after - prefer B
+        }
+        
+        // Both are either before/at or both are after - sort by proximity
+        const diffA = Math.abs(timeDiffA);
+        const diffB = Math.abs(timeDiffB);
+        
+        if (diffA !== diffB) {
+          return diffA - diffB; // Closer timestamps first
+        }
+        return a.priority - b.priority; // Lower priority numbers first (tie-breaker)
+      });
+      
+      return validActions[0];
+    }
+
+    // Fallback to statusChangedAt if no matching action found
+    try {
+      return {
+        date: statusChangedDate,
+        action: 'Status changed to In Process',
+        actionBy: null,
+        icon: ArrowUp,
+        priority: 999
+      };
+    } catch (error) {
+      console.warn('Invalid statusChangedAt:', request.statusChangedAt);
+      return null; // Return null if even the fallback fails
+    }
+  }, [request.status, request.statusChangedAt, request.toolkitSentDate, request.toolkitSentBy, request.followUpDate, request.contactedAt, request.completedByUserId, request.tspContactAssignedDate]);
+
+  // Helper function to calculate days since action with null safety
+  const getDaysSinceAction = (actionDate: Date | null | undefined) => {
+    if (!actionDate || isNaN(actionDate.getTime())) {
+      return 0; // Fallback to 0 days if date is invalid
+    }
+    const now = new Date();
+    const timeDiff = now.getTime() - actionDate.getTime();
+    return Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+  };
+
   // Fetch drivers data for van driver display
   const { data: drivers = [] } = useQuery<any[]>({
     queryKey: ['/api/drivers'],
@@ -363,20 +513,90 @@ export default function RequestCard({
                 </div>
 
                 <div className="space-y-3">
+                  {/* For in-process cards, show Action Date prominently */}
+                  {request.status === 'in_process' && getInProcessActionInfo && (
+                    <div className="flex items-center space-x-3">
+                      {(() => {
+                        const actionInfo = getInProcessActionInfo;
+                        if (!actionInfo || !actionInfo.date || !actionInfo.action || !actionInfo.icon) {
+                          return null; // Don't render if action info is incomplete
+                        }
+                        
+                        const ActionIcon = actionInfo.icon;
+                        const daysSince = getDaysSinceAction(actionInfo.date);
+                        
+                        try {
+                          const dateString = actionInfo.date.toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          });
+                          
+                          return (
+                            <>
+                              <ActionIcon className="w-5 h-5 text-[#A31C41] flex-shrink-0" />
+                              <div>
+                                <p className="text-base font-bold text-[#A31C41]" data-testid="text-action-date">
+                                  {dateString}
+                                  {daysSince >= 0 && (
+                                    <span className="ml-2 text-sm" data-testid="text-action-elapsed">
+                                      ({daysSince === 0 ? 'Today' : daysSince === 1 ? '1 day ago' : `${daysSince} days ago`})
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="text-sm text-[#A31C41] font-medium" data-testid="text-requested-date">Action Date</p>
+                                <div className="text-sm text-[#007E8C] space-y-1">
+                                  <p data-testid="text-action-type"><strong>Action:</strong> {actionInfo.action}</p>
+                                  {actionInfo.actionBy && (
+                                    <p data-testid="text-action-by"><strong>Action by:</strong> {resolveUserName(actionInfo.actionBy)}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          );
+                        } catch (error) {
+                          console.warn('Error formatting action date:', error);
+                          return (
+                            <>
+                              <ActionIcon className="w-5 h-5 text-[#A31C41] flex-shrink-0" />
+                              <div>
+                                <p className="text-base font-bold text-[#A31C41]" data-testid="text-action-date">
+                                  Action Date Unavailable
+                                </p>
+                                <p className="text-sm text-[#A31C41] font-medium" data-testid="text-requested-date">Action Date</p>
+                                <div className="text-sm text-[#007E8C] space-y-1">
+                                  <p data-testid="text-action-type"><strong>Action:</strong> {actionInfo.action || 'Unknown action'}</p>
+                                  {actionInfo.actionBy && (
+                                    <p data-testid="text-action-by"><strong>Action by:</strong> {resolveUserName(actionInfo.actionBy)}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          );
+                        }
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Show requested event date (less prominent for in-process) */}
                   <div className="flex items-center space-x-3">
-                    <Calendar className="w-5 h-5 text-[#007E8C] flex-shrink-0" />
+                    <Calendar className={`w-5 h-5 flex-shrink-0 ${request.status === 'in_process' ? 'text-gray-400' : 'text-[#007E8C]'}`} />
                     <div>
-                      <p className={`text-base font-semibold ${dateInfo.className}`}>
+                      <p className={`text-base font-semibold ${request.status === 'in_process' ? 'text-gray-600' : dateInfo.className}`}>
                         {dateInfo.text}
                       </p>
-                      <p className="text-sm text-[#007E8C]">{request.status === 'completed' ? 'Event Date' : 'Requested Event Date'}</p>
+                      <p className={`text-sm ${request.status === 'in_process' ? 'text-gray-400' : 'text-[#007E8C]'}`}>
+                        {request.status === 'completed' ? 'Event Date' : 'Requested Event Date'}
+                      </p>
                     </div>
                   </div>
 
+                  {/* Show request submission date (less prominent for in-process) */}
                   <div className="flex items-center space-x-3">
-                    <Clock className="w-5 h-5 text-[#007E8C] flex-shrink-0" />
+                    <Clock className={`w-5 h-5 flex-shrink-0 ${request.status === 'in_process' ? 'text-gray-400' : 'text-[#007E8C]'}`} />
                     <div>
-                      <p className="text-base font-semibold text-[#1A2332]">
+                      <p className={`text-base font-semibold ${request.status === 'in_process' ? 'text-gray-600' : 'text-[#1A2332]'}`}>
                         {request.createdAt ? new Date(request.createdAt).toLocaleString('en-US', {
                           weekday: 'short',
                           year: 'numeric',
@@ -387,7 +607,7 @@ export default function RequestCard({
                           hour12: true
                         }) : 'Unknown'}
                       </p>
-                      <p className="text-sm text-[#007E8C]">Request Submitted</p>
+                      <p className={`text-sm ${request.status === 'in_process' ? 'text-gray-400' : 'text-[#007E8C]'}`}>Request Submitted</p>
                     </div>
                   </div>
 
