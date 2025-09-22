@@ -62,6 +62,10 @@ import {
   Check,
   X,
   Clock,
+  ToggleLeft,
+  ToggleRight,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { PERMISSIONS, USER_ROLES, getDefaultPermissionsForRole } from '@shared/auth-utils';
 
@@ -993,6 +997,58 @@ export default function ModernPermissionsEditor({
     );
   };
 
+  // Bulk toggle functions
+  const handleCategoryToggle = (categoryName: string, enable: boolean) => {
+    const category = PERMISSION_CATEGORIES[categoryName as keyof typeof PERMISSION_CATEGORIES];
+    if (!category) return;
+    
+    const categoryPermissionKeys = category.permissions
+      .filter(p => Object.values(PERMISSIONS).includes(p.key as any))
+      .map(p => p.key);
+    
+    setSelectedPermissions(prev => {
+      if (enable) {
+        // Add all category permissions that aren't already selected
+        const newPermissions = [...prev];
+        categoryPermissionKeys.forEach(key => {
+          if (!newPermissions.includes(key)) {
+            newPermissions.push(key);
+          }
+        });
+        return newPermissions;
+      } else {
+        // Remove all category permissions
+        return prev.filter(p => !categoryPermissionKeys.includes(p));
+      }
+    });
+  };
+
+  const handleBulkToggle = (permissionKeys: string[], enable: boolean) => {
+    setSelectedPermissions(prev => {
+      if (enable) {
+        const newPermissions = [...prev];
+        permissionKeys.forEach(key => {
+          if (!newPermissions.includes(key)) {
+            newPermissions.push(key);
+          }
+        });
+        return newPermissions;
+      } else {
+        return prev.filter(p => !permissionKeys.includes(p));
+      }
+    });
+  };
+
+  // Helper function to check if all permissions in a group are selected
+  const areAllSelected = (permissionKeys: string[]) => {
+    return permissionKeys.every(key => selectedPermissions.includes(key));
+  };
+
+  // Helper function to check if some permissions in a group are selected
+  const areSomeSelected = (permissionKeys: string[]) => {
+    return permissionKeys.some(key => selectedPermissions.includes(key));
+  };
+
   const handleRoleTemplateApply = (templateRole: string) => {
     const template = ROLE_TEMPLATES[templateRole as keyof typeof ROLE_TEMPLATES];
     if (template) {
@@ -1035,6 +1091,80 @@ export default function ModernPermissionsEditor({
             Manage user role and permissions. {permissionCount} of {totalPermissions} permissions selected.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Global actions */}
+        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg mb-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedPermissions([])}
+                className="text-red-600 hover:bg-red-50"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const allPermissions = Object.values(PERMISSION_CATEGORIES)
+                    .flatMap(cat => cat.permissions)
+                    .filter(p => Object.values(PERMISSIONS).includes(p.key as any))
+                    .map(p => p.key);
+                  setSelectedPermissions(allPermissions);
+                }}
+                className="text-green-600 hover:bg-green-50"
+              >
+                <CheckSquare className="h-4 w-4 mr-1" />
+                Select All
+              </Button>
+            </div>
+            <Separator orientation="vertical" className="h-6" />
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium">{permissionCount}</span> of{' '}
+              <span className="font-medium">{totalPermissions}</span> permissions selected
+            </div>
+          </div>
+          
+          {/* Level-based toggles */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">By level:</span>
+            {Object.entries(PERMISSION_LEVELS).map(([level, levelInfo]) => {
+              const levelPermissions = Object.values(PERMISSION_CATEGORIES)
+                .flatMap(cat => cat.permissions)
+                .filter(p => p.level === level && Object.values(PERMISSIONS).includes(p.key as any))
+                .map(p => p.key);
+              
+              if (levelPermissions.length === 0) return null;
+              
+              const allLevelSelected = areAllSelected(levelPermissions);
+              const LevelIcon = levelInfo.icon;
+              
+              return (
+                <TooltipProvider key={level}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleBulkToggle(levelPermissions, !allLevelSelected)}
+                        className={`text-xs ${allLevelSelected ? levelInfo.color : 'hover:bg-gray-50'}`}
+                      >
+                        <LevelIcon className="h-3 w-3 mr-1" />
+                        {level}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Toggle all {level}-level permissions ({levelPermissions.length} total)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })}
+          </div>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
           <TabsList className="grid w-full grid-cols-2">
@@ -1128,14 +1258,228 @@ export default function ModernPermissionsEditor({
                     
                     if (categoryPermissions.length === 0) return null;
 
+                    // Define bulk toggle groups for this category
+                    const getBulkToggleGroups = (categoryName: string, permissions: typeof categoryPermissions) => {
+                      const groups: { name: string; permissions: string[]; description: string }[] = [];
+                      
+                      // CRUD operations for data entities
+                      if (categoryName === 'Data Management') {
+                        const entities = ['HOSTS', 'RECIPIENTS', 'DRIVERS', 'COLLECTIONS', 'DISTRIBUTIONS'];
+                        entities.forEach(entity => {
+                          const entityPerms = permissions.filter(p => p.key.startsWith(entity + '_')).map(p => p.key);
+                          if (entityPerms.length > 1) {
+                            groups.push({
+                              name: `All ${entity.toLowerCase()} operations`,
+                              permissions: entityPerms,
+                              description: `View, add, edit, delete ${entity.toLowerCase()}`
+                            });
+                          }
+                        });
+                      }
+                      
+                      // Navigation tabs
+                      if (categoryName === 'Navigation Control') {
+                        groups.push({
+                          name: 'All Navigation Tabs',
+                          permissions: permissions.map(p => p.key),
+                          description: 'Enable all navigation tabs'
+                        });
+                        
+                        // Group by functional areas
+                        const navGroups = {
+                          'Core Tabs': ['NAV_MY_ACTIONS', 'NAV_DASHBOARD', 'NAV_INBOX'],
+                          'Data Tabs': ['NAV_HOSTS', 'NAV_DRIVERS', 'NAV_VOLUNTEERS', 'NAV_RECIPIENTS', 'NAV_GROUPS_CATALOG'],
+                          'Event Tabs': ['NAV_EVENT_PLANNING', 'NAV_EVENT_REMINDERS', 'NAV_EVENTS_GOOGLE_SHEET'],
+                          'Work Tabs': ['NAV_PROJECTS', 'NAV_WORK_LOG', 'NAV_MEETINGS'],
+                          'Resource Tabs': ['NAV_TOOLKIT', 'NAV_IMPORTANT_DOCUMENTS', 'NAV_IMPORTANT_LINKS', 'NAV_DOCUMENT_MANAGEMENT'],
+                          'Analysis Tabs': ['NAV_ANALYTICS', 'NAV_WEEKLY_MONITORING', 'NAV_COLLECTIONS_LOG', 'NAV_DISTRIBUTION_TRACKING', 'NAV_INVENTORY_CALCULATOR']
+                        };
+                        
+                        Object.entries(navGroups).forEach(([groupName, navKeys]) => {
+                          const groupPerms = permissions.filter(p => navKeys.includes(p.key)).map(p => p.key);
+                          if (groupPerms.length > 0) {
+                            groups.push({
+                              name: groupName,
+                              permissions: groupPerms,
+                              description: `Enable ${groupName.toLowerCase()}`
+                            });
+                          }
+                        });
+                      }
+                      
+                      // Event Request inline editing
+                      if (categoryName === 'Event Request Management') {
+                        const inlineEditPerms = permissions.filter(p => p.key.includes('INLINE_EDIT')).map(p => p.key);
+                        if (inlineEditPerms.length > 0) {
+                          groups.push({
+                            name: 'All Inline Editing',
+                            permissions: inlineEditPerms,
+                            description: 'Enable all inline editing on event cards'
+                          });
+                        }
+                      }
+                      
+                      // Chat rooms
+                      if (categoryName === 'Communication') {
+                        const chatPerms = permissions.filter(p => p.key.startsWith('CHAT_')).map(p => p.key);
+                        if (chatPerms.length > 0) {
+                          groups.push({
+                            name: 'All Chat Rooms',
+                            permissions: chatPerms,
+                            description: 'Access to all chat rooms'
+                          });
+                        }
+                        
+                        const messagePerms = permissions.filter(p => p.key.startsWith('MESSAGES_')).map(p => p.key);
+                        if (messagePerms.length > 0) {
+                          groups.push({
+                            name: 'All Message Operations',
+                            permissions: messagePerms,
+                            description: 'View, send, edit, delete, moderate messages'
+                          });
+                        }
+                      }
+                      
+                      // Work logs
+                      if (categoryName === 'Work & Time Tracking') {
+                        const ownPerms = permissions.filter(p => p.key.includes('_OWN')).map(p => p.key);
+                        const allPerms = permissions.filter(p => p.key.includes('_ALL')).map(p => p.key);
+                        
+                        if (ownPerms.length > 0) {
+                          groups.push({
+                            name: 'Own Work Logs',
+                            permissions: ownPerms,
+                            description: 'Manage your own work logs'
+                          });
+                        }
+                        if (allPerms.length > 0) {
+                          groups.push({
+                            name: 'All Work Logs (Admin)',
+                            permissions: allPerms,
+                            description: 'Manage all users\' work logs'
+                          });
+                        }
+                      }
+                      
+                      // Projects
+                      if (categoryName === 'Project Management') {
+                        const ownPerms = permissions.filter(p => p.key.includes('_OWN')).map(p => p.key);
+                        const allPerms = permissions.filter(p => p.key.includes('_ALL')).map(p => p.key);
+                        
+                        if (ownPerms.length > 0) {
+                          groups.push({
+                            name: 'Own Projects',
+                            permissions: ownPerms,
+                            description: 'Manage your own projects'
+                          });
+                        }
+                        if (allPerms.length > 0) {
+                          groups.push({
+                            name: 'All Projects (Admin)',
+                            permissions: allPerms,
+                            description: 'Manage all projects'
+                          });
+                        }
+                      }
+                      
+                      return groups;
+                    };
+
+                    const bulkGroups = getBulkToggleGroups(categoryName, categoryPermissions);
+                    const allCategoryPermissions = categoryPermissions.map(p => p.key);
+                    const allSelected = areAllSelected(allCategoryPermissions);
+                    const someSelected = areSomeSelected(allCategoryPermissions);
+
                     return (
                       <Card key={categoryName}>
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-2 text-base">
-                            <CategoryIcon className="h-4 w-4" />
-                            {categoryName}
-                          </CardTitle>
-                          <CardDescription>{category.description}</CardDescription>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <CardTitle className="flex items-center gap-2 text-base">
+                                <CategoryIcon className="h-4 w-4" />
+                                {categoryName}
+                              </CardTitle>
+                              <CardDescription>{category.description}</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleCategoryToggle(categoryName, !allSelected)}
+                                      className={`${someSelected && !allSelected ? 'bg-orange-50 border-orange-200' : ''}`}
+                                    >
+                                      {allSelected ? (
+                                        <>
+                                          <CheckSquare className="h-4 w-4 mr-1" />
+                                          All On
+                                        </>
+                                      ) : someSelected ? (
+                                        <>
+                                          <Square className="h-4 w-4 mr-1" />
+                                          Some On
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Square className="h-4 w-4 mr-1" />
+                                          All Off
+                                        </>
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Toggle all permissions in this category</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </div>
+                          
+                          {/* Bulk toggle groups */}
+                          {bulkGroups.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              <p className="text-sm font-medium text-muted-foreground">Quick toggles:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {bulkGroups.map(group => {
+                                  const groupAllSelected = areAllSelected(group.permissions);
+                                  const groupSomeSelected = areSomeSelected(group.permissions);
+                                  
+                                  return (
+                                    <TooltipProvider key={group.name}>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleBulkToggle(group.permissions, !groupAllSelected)}
+                                            className={`text-xs ${
+                                              groupAllSelected 
+                                                ? 'bg-green-50 border-green-200 text-green-700' 
+                                                : groupSomeSelected 
+                                                  ? 'bg-orange-50 border-orange-200 text-orange-700'
+                                                  : 'hover:bg-gray-50'
+                                            }`}
+                                          >
+                                            {groupAllSelected ? (
+                                              <ToggleRight className="h-3 w-3 mr-1" />
+                                            ) : (
+                                              <ToggleLeft className="h-3 w-3 mr-1" />
+                                            )}
+                                            {group.name}
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{group.description}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
