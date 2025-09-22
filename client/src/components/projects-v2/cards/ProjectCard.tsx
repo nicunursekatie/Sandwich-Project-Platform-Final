@@ -330,12 +330,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
             {/* Support People */}
             {supportPeople.length > 0 && (
-              <div className="flex items-center gap-1">
-                <Badge className="flex items-center gap-1 bg-[#236383] text-white">
+              <div className="bg-[#236383] text-white px-3 py-2 rounded-md">
+                <div className="flex items-center gap-1 mb-1">
                   <Users className="w-3 h-3" />
-                  <span className="text-xs">Support:</span>
-                  <span className="font-medium">{supportPeople.join(', ')}</span>
-                </Badge>
+                  <span className="text-xs font-medium">Support Team:</span>
+                </div>
+                <div className="text-xs">{supportPeople.join(', ')}</div>
               </div>
             )}
           </div>
