@@ -258,15 +258,8 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
       unreadMessages = [];
     }
 
-    // Get total counts
-    const totalProjectsCount = allProjects.filter((project: any) => {
-      return (
-        ((project.assigneeId && project.assigneeId === userId) ||
-        (project.assigneeIds && Array.isArray(project.assigneeIds) && project.assigneeIds.includes(userId)) ||
-        (project.supportPeopleIds && Array.isArray(project.supportPeopleIds) && project.supportPeopleIds.includes(userId))) &&
-        project.status !== 'completed'
-      );
-    }).length;
+    // Get total counts - use the already filtered assignedProjects array
+    const totalProjectsCount = assignedProjects.length;
 
     const totalTasksCount = allTasks.filter((task: any) => {
       return ['pending', 'in_progress'].includes(task.status);
