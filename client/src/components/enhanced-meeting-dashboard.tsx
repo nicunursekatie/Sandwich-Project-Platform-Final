@@ -49,6 +49,7 @@ import { AddProjectDialog } from './meetings/dashboard/dialogs/AddProjectDialog'
 import { MeetingDetailsDialog } from './meetings/dashboard/dialogs/MeetingDetailsDialog';
 import { MeetingOverviewTab } from './meetings/dashboard/tabs/MeetingOverviewTab';
 import { AgendaPlanningTab } from './meetings/dashboard/tabs/AgendaPlanningTab';
+import { NotesTab } from './meetings/dashboard/tabs/NotesTab';
 import { getCategoryIcon } from './meetings/dashboard/utils/categories';
 import { formatStatusText, getStatusBadgeProps } from './meetings/dashboard/utils/status';
 import { formatMeetingDate, formatMeetingTime, isPastMeeting, getCurrentDateRange, formatSectionName } from './meetings/dashboard/utils/date';
@@ -103,7 +104,7 @@ export default function EnhancedMeetingDashboard() {
   const [isCompiling, setIsCompiling] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
-  const [activeTab, setActiveTab] = useState<'overview' | 'agenda'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'agenda' | 'notes'>('overview');
   const [showNewMeetingDialog, setShowNewMeetingDialog] = useState(false);
   const [newMeetingData, setNewMeetingData] = useState<MeetingFormData>({
     title: '',
@@ -677,6 +678,18 @@ export default function EnhancedMeetingDashboard() {
           <BookOpen className="w-4 h-4" />
           <span className="hidden sm:inline">Agenda </span>Planning
         </button>
+        <button
+          onClick={() => setActiveTab('notes')}
+          data-testid="button-notes-tab"
+          className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+            activeTab === 'notes'
+              ? 'bg-white text-teal-700 shadow-sm'
+              : 'text-gray-600 hover:text-teal-700'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span className="hidden sm:inline">Meeting </span>Notes
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -779,6 +792,16 @@ export default function EnhancedMeetingDashboard() {
           createProjectMutation={createProjectMutation}
           queryClient={baseQueryClient}
           apiRequest={apiRequest}
+          toast={toast}
+        />
+      )}
+      {activeTab === 'notes' && (
+        <NotesTab
+          selectedMeeting={selectedMeeting}
+          meetings={safeMeetings}
+          allProjects={allProjects}
+          handleSendToAgenda={handleSendToAgenda}
+          queryClient={baseQueryClient}
           toast={toast}
         />
       )}
