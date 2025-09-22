@@ -195,12 +195,13 @@ function ComprehensivePersonSelector({ selectedPeople, onSelectionChange, assign
   ].filter(person => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
-    return person.displayName.toLowerCase().includes(searchLower) ||
-           (person.email && person.email.toLowerCase().includes(searchLower)) ||
-           (person.phone && person.phone.toLowerCase().includes(searchLower)) ||
-           (person.hostName && person.hostName.toLowerCase().includes(searchLower));
+    return (
+      (typeof person.displayName === 'string' && person.displayName.toLowerCase().includes(searchLower)) ||
+      (typeof person.email === 'string' && person.email.toLowerCase().includes(searchLower)) ||
+      (person.type === 'driver' && person.phone && typeof person.phone === 'string' && person.phone.toLowerCase().includes(searchLower)) ||
+      (person.type === 'host-contact' && person.hostName && typeof person.hostName === 'string' && person.hostName.toLowerCase().includes(searchLower))
+    );
   });
-  
   // Group people by section
   const groupedPeople = allPeople.reduce((acc, person) => {
     if (!acc[person.section]) acc[person.section] = [];

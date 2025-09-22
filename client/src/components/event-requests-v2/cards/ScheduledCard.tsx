@@ -544,30 +544,31 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {getStatusLabel(request.status)}
               </Badge>
               {staffingComplete ? (
-                <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
-                  <Check className="w-3 h-3 mr-1" />
-                  Fully Staffed
-                </Badge>
-              ) : (
-                <div className="flex gap-1">
-                  {driverNeeded > driverAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                  )}
-                  {speakerNeeded > speakerAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                  )}
-                  {volunteerNeeded > volunteerAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
+              <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
+                <Check className="w-3 h-3 mr-1" />
+                Fully Staffed
+              </Badge>
+            ) : (
+              <div className="flex gap-1">
+                {driverNeeded > driverAssigned && (
+                  <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                    {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                  </Badge>
+                )}
+                {speakerNeeded > speakerAssigned && (
+                  <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                    {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
+                  </Badge>
+                )}
+                {volunteerNeeded > volunteerAssigned && (
+                  <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                    {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
+                  </Badge>
+                )}
+              </div>
+            )}
+
+          </div>
 
             {/* Contact & Date */}
             <div className="flex items-center gap-6 text-base text-gray-600 mb-3">
@@ -1170,6 +1171,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </p>
           )}
         </div>
+      </div>
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-3 border-t border-gray-200">
@@ -1184,7 +1186,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             Follow Up
           </Button>
         </div>
-      </div>
       </CardContent>
     </Card>
   );
