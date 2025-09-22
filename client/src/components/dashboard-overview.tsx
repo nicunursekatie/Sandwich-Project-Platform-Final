@@ -259,7 +259,7 @@ export default function DashboardOverview({
               </div>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
-                  className="bg-brand-orange hover:bg-brand-orange-dark text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors text-base sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px]"
+                  className="bg-brand-orange hover:bg-brand-orange-dark text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-lg transition-colors text-[16px] sm:text-lg md:text-sm min-h-[48px] sm:min-h-[56px] md:min-h-[40px]"
                   onClick={() => setShowCollectionForm(!showCollectionForm)}
                 >
                   {showCollectionForm
