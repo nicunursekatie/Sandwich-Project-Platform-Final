@@ -12,8 +12,12 @@ export const useEventQueries = () => {
   });
 
   // Fetch drivers, hosts, and volunteers for assignment modal
-  const { data: drivers = [] } = useQuery<any[]>({
+  const { data: drivers = [], isLoading: driversLoading, error: driversError } = useQuery<any[]>({
     queryKey: ['/api/drivers'],
+    onSuccess: (data) => {
+      console.log('Drivers loaded:', data.length, 'drivers');
+      console.log('Driver IDs:', data.map((d: any) => ({ id: d.id, name: d.name })));
+    }
   });
 
   const { data: hosts = [] } = useQuery<any[]>({

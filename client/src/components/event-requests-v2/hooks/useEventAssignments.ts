@@ -71,12 +71,15 @@ export const useEventAssignments = () => {
 
     // Handle driver IDs (numeric, like "443")
     if (/^\d+$/.test(userIdOrName)) {
-      const driver = drivers.find((d) => d.id.toString() === userIdOrName);
+      const driverId = parseInt(userIdOrName);
+      const driver = drivers.find((d) => d.id === driverId || d.id.toString() === userIdOrName);
       if (driver) {
+        console.log(`Resolved driver: ID=${userIdOrName} => Name=${driver.name}`);
         return driver.name;
       }
       // If driver not found in the loaded list, return a descriptive placeholder
       // This handles cases where the drivers array might not be fully loaded
+      console.warn(`Driver not found in resolveUserName: ID=${userIdOrName}, Available drivers:`, drivers.map(d => d.id));
       return `Driver #${userIdOrName}`;
     }
 

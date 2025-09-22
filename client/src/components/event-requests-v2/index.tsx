@@ -396,6 +396,8 @@ const EventRequestsManagementContent: React.FC = () => {
             console.log('Event ID:', assignmentEventId);
             console.log('Assignment Type:', assignmentType);
             console.log('Selected Assignees:', assignees);
+            console.log('Available drivers:', (drivers as any[]).map((d: any) => ({ id: d.id, name: d.name })));
+            console.log('Available users:', (users as any[]).map((u: any) => ({ id: u.id, name: `${u.firstName} ${u.lastName}` })));
 
             try {
               // Get the current event to preserve existing assignments
@@ -414,11 +416,31 @@ const EventRequestsManagementContent: React.FC = () => {
                 // Build driver details object
                 const driverDetails: any = {};
                 assignees.forEach(driverId => {
-                  const driver = drivers.find((d: any) => d.id.toString() === driverId);
-                  const foundUser = users.find((u: any) => u.id === driverId);
+                  // Check if it's a numeric driver ID
+                  const isNumericId = /^\d+$/.test(driverId);
+
+                  let driverName = driverId; // fallback to ID if name not found
+
+                  if (isNumericId) {
+                    // It's a traditional driver ID - look it up in the drivers array
+                    const driver = (drivers as any[]).find((d: any) => d.id.toString() === driverId || d.id === parseInt(driverId));
+                    if (driver) {
+                      driverName = driver.name;
+                      console.log(`Found driver: ID=${driverId}, Name=${driver.name}`);
+                    } else {
+                      console.warn(`Driver not found in loaded drivers: ID=${driverId}`);
+                      // Keep the ID as-is, it will show as "Driver #350" in the UI
+                    }
+                  } else {
+                    // It's a user ID - look it up in the users array
+                    const foundUser = (users as any[]).find((u: any) => u.id === driverId);
+                    if (foundUser) {
+                      driverName = `${foundUser.firstName} ${foundUser.lastName}`.trim();
+                    }
+                  }
 
                   driverDetails[driverId] = {
-                    name: driver?.name || (foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : driverId),
+                    name: driverName,
                     assignedAt: new Date().toISOString(),
                     assignedBy: user?.id || 'system'
                   };
@@ -434,7 +456,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 const speakerAssignments: string[] = [];
 
                 assignees.forEach(speakerId => {
-                  const foundUser = users.find((u: any) => u.id === speakerId);
+                  const foundUser = (users as any[]).find((u: any) => u.id === speakerId);
                   const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : speakerId;
 
                   speakerDetails[speakerId] = {
@@ -457,7 +479,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 const volunteerAssignments: string[] = [];
 
                 assignees.forEach(volunteerId => {
-                  const foundUser = users.find((u: any) => u.id === volunteerId);
+                  const foundUser = (users as any[]).find((u: any) => u.id === volunteerId);
                   const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : volunteerId;
 
                   volunteerDetails[volunteerId] = {
