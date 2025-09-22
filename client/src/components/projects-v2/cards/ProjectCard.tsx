@@ -32,7 +32,6 @@ import {
   Building,
   Heart,
   DollarSign,
-  CalendarEvent,
 } from 'lucide-react';
 import { Project } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
@@ -116,7 +115,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       case 'fundraising':
         return <DollarSign className="w-4 h-4" />;
       case 'event':
-        return <CalendarEvent className="w-4 h-4" />;
+        return <Calendar className="w-4 h-4" />;
       default:
         return <Package className="w-4 h-4" />;
     }
