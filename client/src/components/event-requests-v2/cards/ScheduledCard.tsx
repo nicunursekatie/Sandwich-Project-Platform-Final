@@ -622,6 +622,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           </div>
 
+        {/* Main Content */}
+        <div className="space-y-4">
             {/* Event Location */}
             {request.eventAddress && (
               <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
