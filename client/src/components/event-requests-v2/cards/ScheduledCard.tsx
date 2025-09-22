@@ -362,20 +362,52 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
         <div className="space-y-2 mb-3 min-h-[60px]">
           {assigned.length > 0 ? (
             assigned.map((personId: string) => {
-              // Get name from details first, but if it's numeric-only (like "350"), treat it as an ID 
-              const detailName = details?.[personId]?.name;
-              const name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
+              // Extract name properly for custom assignments
+              let name = '';
+              let isCustomAssignment = false;
+              
+              if (personId.startsWith('custom-')) {
+                // Parse custom ID format: custom-{timestamp}-{name-with-dashes}
+                const parts = personId.split('-');
+                if (parts.length >= 3) {
+                  // Extract name part (everything after timestamp) and convert dashes back to spaces
+                  const namePart = parts.slice(2).join('-').replace(/-/g, ' ');
+                  name = namePart;
+                  isCustomAssignment = true;
+                } else {
+                  name = personId; // fallback
+                }
+              } else {
+                // Get name from details first, but if it's numeric-only (like "350"), treat it as an ID 
+                const detailName = details?.[personId]?.name;
+                name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
+              }
+              
               return (
                 <div key={personId} className="flex items-center justify-between bg-white/80 rounded px-3 py-2">
                   <span className="text-sm font-medium">{name}</span>
-                  {canEdit && onRemoveAssignment && (
-                    <button
-                      onClick={() => onRemoveAssignment(type, personId)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {/* Edit button for custom assignments */}
+                    {canEdit && isCustomAssignment && onEditAssignment && (
+                      <button
+                        onClick={() => onEditAssignment(type, personId)}
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full p-1"
+                        title="Edit custom assignment"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                    )}
+                    {/* Remove button */}
+                    {canEdit && onRemoveAssignment && (
+                      <button
+                        onClick={() => onRemoveAssignment(type, personId)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
+                        title="Remove assignment"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })
@@ -415,9 +447,27 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
       return null; // Don't show section if not needed and no one assigned
     }
 
-    const assignedVanDriverName = request.assignedVanDriverId 
-      ? (request.customVanDriverName || resolveUserName(request.assignedVanDriverId))
-      : null;
+    // Extract van driver name properly for custom assignments
+    let assignedVanDriverName = null;
+    let isCustomVanDriver = false;
+    
+    if (request.assignedVanDriverId) {
+      if (request.assignedVanDriverId.startsWith('custom-')) {
+        // Parse custom ID format: custom-{timestamp}-{name-with-dashes}
+        const parts = request.assignedVanDriverId.split('-');
+        if (parts.length >= 3) {
+          // Extract name part (everything after timestamp) and convert dashes back to spaces
+          const namePart = parts.slice(2).join('-').replace(/-/g, ' ');
+          assignedVanDriverName = namePart;
+          isCustomVanDriver = true;
+        } else {
+          assignedVanDriverName = request.customVanDriverName || request.assignedVanDriverId;
+          isCustomVanDriver = true;
+        }
+      } else {
+        assignedVanDriverName = request.customVanDriverName || resolveUserName(request.assignedVanDriverId);
+      }
+    }
 
     return (
       <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
@@ -432,14 +482,28 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           {assignedVanDriverName ? (
             <div className="flex items-center justify-between bg-white/80 rounded px-3 py-2">
               <span className="text-sm font-medium">{assignedVanDriverName}</span>
-              {canEdit && onRemoveAssignment && (
-                <button
-                  onClick={() => onRemoveAssignment('driver', request.assignedVanDriverId!)}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                {/* Edit button for custom van driver */}
+                {canEdit && isCustomVanDriver && onEditAssignment && (
+                  <button
+                    onClick={() => onEditAssignment('driver', request.assignedVanDriverId!)}
+                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full p-1"
+                    title="Edit custom assignment"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                )}
+                {/* Remove button */}
+                {canEdit && onRemoveAssignment && (
+                  <button
+                    onClick={() => onRemoveAssignment('driver', request.assignedVanDriverId!)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
+                    title="Remove assignment"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="text-sm text-[#A31C41]/60 italic">No van driver assigned</div>
