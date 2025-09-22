@@ -354,7 +354,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-gray-500 text-[16px] font-bold">Preferred Time</p>
+              <p className="text-[16px] font-semibold text-[#236383]">Preferred Time</p>
               <p className="font-medium">
                 {request.preferredStartTime &&
                   formatTime12Hour(request.preferredStartTime)}
