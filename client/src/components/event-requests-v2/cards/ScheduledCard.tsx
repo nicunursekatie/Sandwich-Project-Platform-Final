@@ -568,6 +568,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
 
             {/* Contact & Date */}
             <div className="flex items-center gap-6 text-base text-gray-600 mb-3">
@@ -788,7 +790,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}
+                            onClick={() => startEditing('eventStartTime', request.eventStartTime ? formatTimeForInput(request.eventStartTime) : '')}
                             className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                           >
                             <Edit2 className="w-3 h-3" />
@@ -804,7 +806,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}
+                            onClick={() => startEditing('eventEndTime', request.eventEndTime ? formatTimeForInput(request.eventEndTime) : '')}
                             className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                           >
                             <Edit2 className="w-3 h-3" />
@@ -820,7 +822,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => startEditing('pickupTime', formatTimeForInput(request.pickupTime || ''))}
+                            onClick={() => startEditing('pickupTime', request.pickupTime ? formatTimeForInput(request.pickupTime) : '')}
                             className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                           >
                             <Edit2 className="w-3 h-3" />

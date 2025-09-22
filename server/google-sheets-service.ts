@@ -32,7 +32,7 @@ export interface SheetRow {
 }
 
 export class GoogleSheetsService {
-  private auth: JWT;
+  private auth!: JWT;
   private sheets: any;
 
   constructor(private config: GoogleSheetsConfig) {
@@ -237,9 +237,10 @@ export class GoogleSheetsService {
           );
           return;
         } catch (testError) {
-          console.error('❌ Authentication test failed:', testError.message);
+          const error = testError as Error;
+          console.error('❌ Authentication test failed:', error.message);
           throw new Error(
-            `JWT authentication test failed: ${testError.message}`
+            `JWT authentication test failed: ${error.message}`
           );
         }
       } catch (authError) {
@@ -277,7 +278,7 @@ export class GoogleSheetsService {
 
       const authClient = await auth.getClient();
       this.auth = authClient as JWT;
-      this.sheets = google.sheets({ version: 'v4', auth: authClient });
+      this.sheets = google.sheets({ version: 'v4', auth: authClient as any });
 
       // Test file-based authentication with real API call
       console.log('🔧 Testing file-based authentication with real API call...');
@@ -303,12 +304,13 @@ export class GoogleSheetsService {
           }
         );
       } catch (testError) {
+        const error = testError as Error;
         console.error(
           "❌ File-based authentication test failed against user's spreadsheet:",
-          testError.message
+          error.message
         );
         throw new Error(
-          `File-based JWT authentication test failed: ${testError.message}`
+          `File-based JWT authentication test failed: ${error.message}`
         );
       }
 
@@ -318,10 +320,11 @@ export class GoogleSheetsService {
       fs.unlinkSync(tempFilePath);
       console.log('🔧 Cleaned up temporary service account file');
     } catch (error) {
-      console.error('❌ Google Sheets authentication failed:', error.message);
+      const err = error as Error;
+      console.error('❌ Google Sheets authentication failed:', err.message);
       if (
-        error.message.includes('DECODER') ||
-        error.message.includes('OSSL_UNSUPPORTED')
+        err.message.includes('DECODER') ||
+        err.message.includes('OSSL_UNSUPPORTED')
       ) {
         console.error(
           '💡 This is a Node.js v20 OpenSSL compatibility issue with the private key format'
