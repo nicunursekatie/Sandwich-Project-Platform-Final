@@ -208,7 +208,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               )}
             </div>
 
-            <h3 className="text-lg font-semibold mt-2 text-gray-900">
+            <h3 className="text-lg font-semibold mt-2 text-gray-900 truncate pr-8">
               {project.title}
             </h3>
 
