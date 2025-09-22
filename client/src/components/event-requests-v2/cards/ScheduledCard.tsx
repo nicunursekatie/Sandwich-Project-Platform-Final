@@ -166,7 +166,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {value}
             </a>
           ) : (
-            <p className="text-lg font-semibold">{value || 'Not set'}</p>
+            <p className="text-[16px] font-normal">{value || 'Not set'}</p>
           )}
           {canEdit && (
             <Button
