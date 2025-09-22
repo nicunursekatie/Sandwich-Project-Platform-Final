@@ -29,7 +29,7 @@ meetingsRouter.get('/minutes', async (req: any, res) => {
     }
 
     const limit = req.query.limit
-      ? parseInt(req.query.limit as string)
+      ? parseInt(req.query.limit as string, 10)
       : undefined;
     const minutes = limit
       ? await storage.getRecentMeetingMinutes(limit)
@@ -52,7 +52,7 @@ meetingsRouter.get('/minutes', async (req: any, res) => {
 
       const filteredMinutes = minutes.filter(
         (minute) =>
-          !minute.committeeType || committeeTypes.includes(minute.committeeType) // General meeting minutes (no committee assignment)
+          !minute.committeeType || committeeTypes.includes(Number(minute.committeeType)) // General meeting minutes (no committee assignment)
       );
       res.json(filteredMinutes);
     } else {
@@ -79,12 +79,11 @@ meetingsRouter.post('/minutes', async (req, res) => {
 
 meetingsRouter.delete('/minutes/:id', async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const success = await storage.deleteMeetingMinutes(id);
 
     if (success) {
       logger.info('Meeting minutes deleted', {
-        minutesId: id,
         method: req.method,
         url: req.url,
         ip: req.ip,
@@ -97,7 +96,7 @@ meetingsRouter.delete('/minutes/:id', async (req, res) => {
       res.status(404).json({ message: 'Meeting minutes not found' });
     }
   } catch (error) {
-    logger.error('Failed to delete meeting minutes', error);
+    logger.error('Failed to delete meeting minutes', error instanceof Error ? error : new Error(String(error)));
     res.status(500).json({ message: 'Failed to delete meeting minutes' });
   }
 });
@@ -122,10 +121,9 @@ meetingsRouter.post(
       // Handle file upload and store file
       if (req.file) {
         logger.info('Meeting minutes file uploaded', {
-          filename: req.file.filename,
-          originalname: req.file.originalname,
-          size: req.file.size,
-          meetingId: meetingId,
+          method: req.method,
+          url: req.url,
+          ip: req.ip,
         });
 
         try {
@@ -213,8 +211,6 @@ meetingsRouter.post(
       const minutes = await storage.createMeetingMinutes(minutesData);
 
       logger.info('Meeting minutes created successfully', {
-        minutesId: minutes.id,
-        meetingId: meetingId,
         method: req.method,
         url: req.url,
         ip: req.ip,
@@ -228,10 +224,10 @@ meetingsRouter.post(
         extractedContent: documentContent ? true : false,
       });
     } catch (error) {
-      logger.error('Failed to upload meeting minutes', error);
+      logger.error('Failed to upload meeting minutes', error instanceof Error ? error : new Error(String(error)));
       res.status(500).json({
         message: 'Failed to upload meeting minutes',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -240,7 +236,7 @@ meetingsRouter.post(
 // File serving endpoint for meeting minutes documents by ID
 meetingsRouter.get('/minutes/:id/file', async (req: any, res) => {
   try {
-    const minutesId = parseInt(req.params.id);
+    const minutesId = parseInt(req.params.id, 10);
     if (isNaN(minutesId)) {
       return res.status(400).json({ message: 'Invalid meeting minutes ID' });
     }
@@ -260,9 +256,9 @@ meetingsRouter.get('/minutes/:id/file', async (req: any, res) => {
 
     // Debug logging
     logger.info('Meeting minutes file debug', {
-      minutesId,
-      storedFilePath: minutes.filePath,
-      fileName: minutes.fileName,
+      method: req.method,
+      url: req.url,
+      ip: req.ip,
     });
 
     // Handle both absolute and relative paths
@@ -274,11 +270,7 @@ meetingsRouter.get('/minutes/:id/file', async (req: any, res) => {
     try {
       await fs.access(filePath);
     } catch (error) {
-      logger.error('File access failed', {
-        filePath,
-        storedPath: minutes.filePath,
-        error: error.message,
-      });
+      logger.error('File access failed', error instanceof Error ? error : new Error(String(error)));
       return res.status(404).json({ message: 'File not found on disk' });
     }
 
@@ -301,10 +293,10 @@ meetingsRouter.get('/minutes/:id/file', async (req: any, res) => {
       fileHeader.startsWith('PK')
     ) {
       // This is a Microsoft Office document (DOCX, XLSX, etc.)
-      if (minutes.fileName.toLowerCase().endsWith('.docx')) {
+      if (minutes.fileName && minutes.fileName.toLowerCase().endsWith('.docx')) {
         contentType =
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      } else if (minutes.fileName.toLowerCase().endsWith('.xlsx')) {
+      } else if (minutes.fileName && minutes.fileName.toLowerCase().endsWith('.xlsx')) {
         contentType =
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       } else {
@@ -314,9 +306,9 @@ meetingsRouter.get('/minutes/:id/file', async (req: any, res) => {
     }
 
     logger.info('File type detected', {
-      fileName: minutes.fileName,
-      detectedType: contentType,
-      fileHeader: fileHeader.substring(0, 20),
+      method: req.method,
+      url: req.url,
+      ip: req.ip,
     });
 
     // Set appropriate headers
@@ -325,15 +317,15 @@ meetingsRouter.get('/minutes/:id/file', async (req: any, res) => {
     res.setHeader(
       'Content-Disposition',
       contentType === 'application/pdf'
-        ? `inline; filename="${minutes.fileName}"`
-        : `attachment; filename="${minutes.fileName}"`
+        ? `inline; filename="${minutes.fileName || 'document'}"`
+        : `attachment; filename="${minutes.fileName || 'document'}"`
     );
 
     // Stream the file
     const fileStream = createReadStream(filePath);
     fileStream.pipe(res);
   } catch (error) {
-    logger.error('Failed to serve meeting minutes file', error);
+    logger.error('Failed to serve meeting minutes file', error instanceof Error ? error : new Error(String(error)));
     res.status(500).json({ message: 'Failed to serve file' });
   }
 });
@@ -456,7 +448,7 @@ meetingsRouter.patch('/agenda-items/:id', async (req: any, res) => {
       });
     }
 
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const { status } = req.body;
 
     if (!['pending', 'approved', 'rejected', 'postponed'].includes(status)) {
@@ -478,7 +470,7 @@ meetingsRouter.patch('/agenda-items/:id', async (req: any, res) => {
 
 meetingsRouter.put('/agenda-items/:id', async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const { title, description } = req.body;
 
     const updatedItem = await storage.updateAgendaItem(id, {
@@ -515,7 +507,7 @@ meetingsRouter.delete('/agenda-items/:id', async (req: any, res) => {
         .json({ message: 'Committee members cannot delete agenda items' });
     }
 
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const success = await storage.deleteAgendaItem(id);
 
     if (!success) {
@@ -573,7 +565,7 @@ meetingsRouter.get('/notes', async (req, res) => {
 
 meetingsRouter.get('/notes/:id', async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({ message: 'Invalid note ID' });
     }
@@ -585,7 +577,7 @@ meetingsRouter.get('/notes/:id', async (req, res) => {
 
     res.json(note);
   } catch (error) {
-    logger.error('Failed to fetch meeting note', error);
+    logger.error('Failed to fetch meeting note', error instanceof Error ? error : new Error(String(error)));
     res.status(500).json({ message: 'Failed to fetch meeting note' });
   }
 });
@@ -606,11 +598,9 @@ meetingsRouter.post('/notes', async (req: any, res) => {
     const note = await storage.createMeetingNote(noteData);
     
     logger.info('Meeting note created', {
-      noteId: note.id,
-      projectId: note.projectId,
-      meetingId: note.meetingId,
-      type: note.type,
-      createdBy: user?.id || 'unknown',
+      method: req.method,
+      url: req.url,
+      ip: req.ip,
     });
     
     res.status(201).json(note);
@@ -621,7 +611,7 @@ meetingsRouter.post('/notes', async (req: any, res) => {
         errors: error.errors 
       });
     } else {
-      logger.error('Failed to create meeting note', error);
+      logger.error('Failed to create meeting note', error instanceof Error ? error : new Error(String(error)));
       res.status(500).json({ message: 'Failed to create meeting note' });
     }
   }
@@ -629,7 +619,7 @@ meetingsRouter.post('/notes', async (req: any, res) => {
 
 meetingsRouter.patch('/notes/:id', async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({ message: 'Invalid note ID' });
     }
@@ -654,20 +644,21 @@ meetingsRouter.patch('/notes/:id', async (req, res) => {
     }
 
     logger.info('Meeting note updated', {
-      noteId: id,
-      updatedFields: Object.keys(updates),
+      method: req.method,
+      url: req.url,
+      ip: req.ip,
     });
 
     res.json(updatedNote);
   } catch (error) {
-    logger.error('Failed to update meeting note', error);
+    logger.error('Failed to update meeting note', error instanceof Error ? error : new Error(String(error)));
     res.status(500).json({ message: 'Failed to update meeting note' });
   }
 });
 
 meetingsRouter.delete('/notes/:id', async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({ message: 'Invalid note ID' });
     }
@@ -678,7 +669,9 @@ meetingsRouter.delete('/notes/:id', async (req, res) => {
     }
 
     logger.info('Meeting note deleted', {
-      noteId: id,
+      method: req.method,
+      url: req.url,
+      ip: req.ip,
     });
 
     res.json({ message: 'Meeting note deleted successfully' });

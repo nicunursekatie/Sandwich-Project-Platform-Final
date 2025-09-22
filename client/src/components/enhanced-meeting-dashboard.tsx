@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { queryClient as baseQueryClient } from '@/lib/queryClient';
+import { queryClient as baseQueryClient, apiRequest } from '@/lib/queryClient';
 import {
   formatDateForInput,
   formatDateForDisplay,
@@ -212,7 +212,7 @@ export default function EnhancedMeetingDashboard() {
     createTasksFromNotesMutation,
     resetAgendaPlanningMutation,
     generateAgendaPDF,
-  } = useProjects(projectAgendaStatus);
+  } = useProjects(projectAgendaStatus, selectedMeeting);
 
   const {
     agendaItems,
@@ -777,6 +777,9 @@ export default function EnhancedMeetingDashboard() {
           createOffAgendaItemMutation={createOffAgendaItemMutation}
           deleteAgendaItemMutation={deleteAgendaItemMutation}
           createProjectMutation={createProjectMutation}
+          queryClient={baseQueryClient}
+          apiRequest={apiRequest}
+          toast={toast}
         />
       )}
 

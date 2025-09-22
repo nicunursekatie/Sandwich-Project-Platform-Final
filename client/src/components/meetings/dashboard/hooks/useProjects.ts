@@ -41,7 +41,7 @@ export interface ProjectUpdateData {
 }
 
 // Custom hook for all project-related operations
-export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agenda' | 'tabled'>) {
+export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agenda' | 'tabled'>, selectedMeeting?: { id: number } | null) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -195,7 +195,7 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
     },
   });
 
-  // Convert meeting notes to tasks mutation
+  // Convert meeting notes to meeting notes mutation
   const createTasksFromNotesMutation = useMutation({
     mutationFn: async () => {
       const allProjects = projectsQuery.data || [];
@@ -208,76 +208,79 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
             projectAgendaStatus[project.id] === 'tabled')
       );
 
-      const taskPromises = projectsWithNotes.map(async (project: Project) => {
-        const tasks = [];
+      const notePromises = projectsWithNotes.map(async (project: Project) => {
+        const notes = [];
 
-        // Create task from discussion points
+        // Create note from discussion points
         if (project.meetingDiscussionPoints?.trim()) {
-          tasks.push({
-            title: project.meetingDiscussionPoints.trim(),
-            description: `Project: ${project.title}`,
-            assigneeName: project.assigneeName || 'Unassigned',
-            priority: 'medium',
-            status: 'pending',
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0], // 7 days from now
+          notes.push({
+            projectId: project.id,
+            meetingId: selectedMeeting?.id || null,
+            type: 'discussion',
+            content: project.meetingDiscussionPoints.trim(),
+            status: 'active',
           });
         }
 
-        // Create task from decision items
+        // Create note from decision items
         if (project.meetingDecisionItems?.trim()) {
-          tasks.push({
-            title: `Action item: ${project.title}`,
-            description: `Meeting Decisions to Implement: ${project.meetingDecisionItems.trim()}`,
-            assigneeName: project.assigneeName || 'Unassigned',
-            priority: 'high',
-            status: 'pending',
-            dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0], // 3 days for decisions
+          notes.push({
+            projectId: project.id,
+            meetingId: selectedMeeting?.id || null,
+            type: 'meeting',
+            content: project.meetingDecisionItems.trim(),
+            status: 'active',
           });
         }
 
-        // Create tasks for this project
-        const taskResults = await Promise.all(
-          tasks.map((task) =>
-            apiRequest('POST', `/api/projects/${project.id}/tasks`, task)
+        // Create meeting notes
+        const noteResults = await Promise.all(
+          notes.map((note) =>
+            apiRequest('POST', '/api/meetings/notes', note)
           )
         );
 
+        // Clear project fields after successful note creation
+        if (noteResults.length > 0) {
+          await apiRequest('PATCH', `/api/projects/${project.id}`, {
+            meetingDiscussionPoints: '',
+            meetingDecisionItems: '',
+          });
+        }
+
         return {
           projectTitle: project.title,
-          tasksCreated: taskResults.length,
+          notesCreated: noteResults.length,
         };
       });
 
-      return Promise.all(taskPromises);
+      return Promise.all(notePromises);
     },
     onSuccess: (results) => {
-      const totalTasks = results.reduce(
-        (sum, result) => sum + result.tasksCreated,
+      const totalNotes = results.reduce(
+        (sum, result) => sum + result.notesCreated,
         0
       );
       const projectCount = results.length;
 
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings/notes'] });
 
       toast({
-        title: 'Tasks Created Successfully!',
-        description: `Created ${totalTasks} task${
-          totalTasks !== 1 ? 's' : ''
-        } from meeting notes across ${projectCount} project${
+        title: 'Notes Saved Successfully!',
+        description: `Created ${totalNotes} meeting note${
+          totalNotes !== 1 ? 's' : ''
+        } from ${projectCount} project${
           projectCount !== 1 ? 's' : ''
         }`,
         duration: 5000,
       });
     },
     onError: (error: any) => {
-      console.error('Failed to create tasks from notes:', error);
+      console.error('Failed to create meeting notes:', error);
       toast({
-        title: 'Error Creating Tasks',
-        description: error?.message || 'Failed to convert meeting notes into tasks',
+        title: 'Error Saving Notes',
+        description: error?.message || 'Failed to save meeting notes',
         variant: 'destructive',
       });
     },
