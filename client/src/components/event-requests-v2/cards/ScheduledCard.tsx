@@ -154,7 +154,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
     return (
       <div className="group">
-        <p className="text-base text-gray-600 font-bold">{label}</p>
+        <p className="text-gray-600 font-bold text-[17px]">{label}</p>
         <div className="flex items-center gap-2">
           {field === 'eventAddress' && value ? (
             <a 
