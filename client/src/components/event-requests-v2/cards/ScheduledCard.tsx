@@ -228,20 +228,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <span className="ml-2">• {request.phone}</span>
               )}
             </div>
-            {/* TSP Contact */}
-            {(request.tspContact || request.customTspContact) && (
-              <div className="text-sm text-[#D68319] mb-2">
-                <span className="font-medium">TSP Contact: </span>
-                <span className="font-normal">
-                  {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
-                </span>
-                {request.tspContactAssignedDate && (
-                  <span className="ml-2 text-xs text-gray-500">
-                    (assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()})
-                  </span>
-                )}
-              </div>
-            )}
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {isEditingDate ? (
@@ -979,6 +965,30 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           onRemoveAssignment={(type, personId) => handleRemoveAssignment(type, personId)}
           onSelfSignup={(type) => handleSelfSignup(type)}
         />
+
+        {/* TSP Contact Section - Prominent display */}
+        {(request.tspContact || request.customTspContact) && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-[#FBAD3F]/10 to-[#D68319]/10 border-2 border-[#FBAD3F]/30 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="bg-[#FBAD3F] p-2 rounded-full">
+                <Building className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-bold text-[#D68319] mb-1">
+                  TSP Contact
+                </div>
+                <div className="text-xl font-semibold text-[#236383]">
+                  {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
+                </div>
+                {request.tspContactAssignedDate && (
+                  <div className="text-sm text-gray-600 mt-1">
+                    Assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Staffing Summary - Visual representation */}
         <div className="mt-3 pt-3 border-t border-gray-200">
