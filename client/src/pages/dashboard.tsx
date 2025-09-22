@@ -322,9 +322,7 @@ export default function Dashboard({
       case 'action-tracking':
         return <ActionTracking />;
       case 'my-actions':
-        // Redirect to dashboard since action tracker is now integrated there
-        setActiveSection('dashboard');
-        return <DashboardOverview onSectionChange={setActiveSection} />;
+        return <ActionTracking />;
 
       case 'wishlist':
         return <WishlistPage />;
