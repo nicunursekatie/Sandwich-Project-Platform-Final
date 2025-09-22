@@ -41,7 +41,7 @@ export class GoogleSheetsSyncService {
       await sheetsService.updateSheet(sheetRows);
 
       // Mark projects as synced
-      const now = new Date().toISOString();
+      const now = new Date();
       for (const project of projects) {
         await this.storage.updateProject(project.id, {
           lastSyncedAt: now,
@@ -135,6 +135,8 @@ export class GoogleSheetsSyncService {
         } else {
           // Only create new project if it doesn't exist - mark as meeting project
           const newProject = await this.storage.createProject({
+            title: projectData.title || 'Untitled Project',
+            status: projectData.status || 'active',
             ...projectData,
             createdBy: 'google-sheets-sync',
             createdByName: 'Google Sheets Import',
@@ -201,7 +203,7 @@ export class GoogleSheetsSyncService {
         newFromSheet: 0,
       };
 
-      const now = new Date().toISOString();
+      const now = new Date();
       
       // Process each sheet row
       for (const sheetRow of sheetRows) {
@@ -223,11 +225,11 @@ export class GoogleSheetsSyncService {
           
           // Check if data has changed
           const hasAppChanges = sheetsService.hasRowChanged(
-            { ...appRowWithMeta, dataHash: dbProject.lastAppHash }, 
+            { ...appRowWithMeta, dataHash: dbProject.lastAppHash || '' }, 
             appRowWithMeta
           );
           const hasSheetChanges = sheetsService.hasRowChanged(
-            { ...sheetRowWithMeta, dataHash: dbProject.lastSheetHash }, 
+            { ...sheetRowWithMeta, dataHash: dbProject.lastSheetHash || '' }, 
             sheetRowWithMeta
           );
 
@@ -299,6 +301,8 @@ export class GoogleSheetsSyncService {
           console.log(`➕ Creating new project from sheet: "${sheetRow.task}"`);
           const projectData = this.sheetRowToProject(sheetRow);
           const newProject = await this.storage.createProject({
+            title: projectData.title || 'Untitled Project',
+            status: projectData.status || 'active',
             ...projectData,
             createdBy: 'google-sheets-sync',
             createdByName: 'Google Sheets Import',
@@ -857,7 +861,7 @@ export function getGoogleSheetsSyncService(
 export async function triggerGoogleSheetsSync(): Promise<void> {
   try {
     const { storage } = await import('./storage-wrapper');
-    const syncService = getGoogleSheetsSyncService(storage);
+    const syncService = getGoogleSheetsSyncService(storage as any);
 
     console.log('🔄 Starting automatic Google Sheets sync...');
     const result = await syncService.syncToGoogleSheets();
