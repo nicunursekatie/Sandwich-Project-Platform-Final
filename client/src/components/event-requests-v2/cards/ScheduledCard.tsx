@@ -452,7 +452,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   };
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F] to-[#FBAD3F] border border-[#FBAD3F]/30 shadow-lg">
+    <Card className="transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg">
       <CardContent className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -617,15 +617,71 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <Clock className="w-4 h-4 text-gray-500" />
                     <div className="text-base space-x-3">
                       {request.eventStartTime && (
-                        <span>Start: {formatTime12Hour(request.eventStartTime)}</span>
+                        <div className="flex items-center gap-1 group">
+                          <span>Start: {formatTime12Hour(request.eventStartTime)}</span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditing('eventStartTime', formatTimeForInput(request.eventStartTime))}
+                              className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
                       )}
                       {request.eventEndTime && (
-                        <span>End: {formatTime12Hour(request.eventEndTime)}</span>
+                        <div className="flex items-center gap-1 group">
+                          <span>End: {formatTime12Hour(request.eventEndTime)}</span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditing('eventEndTime', formatTimeForInput(request.eventEndTime))}
+                              className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
                       )}
                       {request.pickupTime && (
-                        <span>Pickup: {formatTime12Hour(request.pickupTime)}</span>
-              )}
+                        <div className="flex items-center gap-1 group">
+                          <span>Pickup: {formatTime12Hour(request.pickupTime)}</span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditing('pickupTime', formatTimeForInput(request.pickupTime))}
+                              className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
             </div>
+                    
+                    {/* Inline editing for times */}
+                    {isEditingThisCard && (editingField === 'eventStartTime' || editingField === 'eventEndTime' || editingField === 'pickupTime') && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Input
+                          type="time"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-8 w-32"
+                          autoFocus
+                        />
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+                    
                     {canEdit && (
                       <Dialog>
                         <DialogTrigger asChild>
