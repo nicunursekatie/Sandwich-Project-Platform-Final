@@ -195,7 +195,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
   return (
     <div className="space-y-6" data-testid="dashboard-action-tracker">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">My Action Tracker</h2>
+        <h2 className="font-bold mb-2 text-[20px] text-[#236383]">My Action Tracker</h2>
         <p className="text-gray-600">Stay on top of your assigned work and communications</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
