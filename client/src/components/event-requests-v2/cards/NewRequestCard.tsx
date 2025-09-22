@@ -83,7 +83,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   const canEditTspContact = hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT);
   return (
     <Card className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] ${statusColors.new}`}>
-      <CardContent className="p-6">
+      <CardContent className="p-6 bg-[#47b3cb]">
         <CardHeader request={request} />
 
         {/* TSP Contact Assignment Status */}

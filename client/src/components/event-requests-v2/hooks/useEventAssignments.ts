@@ -69,18 +69,27 @@ export const useEventAssignments = () => {
       }
     }
 
-    // Handle driver IDs (numeric, like "443")
+    // Handle numeric IDs (could be drivers, volunteers, or speakers)
     if (/^\d+$/.test(userIdOrName)) {
-      const driverId = parseInt(userIdOrName);
-      const driver = drivers.find((d) => d.id === driverId || d.id.toString() === userIdOrName);
+      const numericId = parseInt(userIdOrName);
+      
+      // First try drivers
+      const driver = drivers.find((d) => d.id === numericId || d.id.toString() === userIdOrName);
       if (driver) {
         console.log(`Resolved driver: ID=${userIdOrName} => Name=${driver.name}`);
         return driver.name;
       }
-      // If driver not found in the loaded list, return a descriptive placeholder
-      // This handles cases where the drivers array might not be fully loaded
-      console.warn(`Driver not found in resolveUserName: ID=${userIdOrName}, Available drivers:`, drivers.map(d => d.id));
-      return `Driver #${userIdOrName}`;
+      
+      // Then try volunteers (speakers are volunteers)
+      const volunteer = volunteers.find((v) => v.id === numericId || v.id.toString() === userIdOrName);
+      if (volunteer) {
+        console.log(`Resolved volunteer/speaker: ID=${userIdOrName} => Name=${volunteer.name}`);
+        return volunteer.name;
+      }
+      
+      // If not found, return a generic placeholder
+      console.warn(`Person not found in resolveUserName: ID=${userIdOrName}`);
+      return `Person #${userIdOrName}`;
     }
 
     return userIdOrName;
