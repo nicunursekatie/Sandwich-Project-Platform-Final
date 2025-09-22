@@ -842,13 +842,28 @@ export default function MonthlyComparisonAnalytics() {
               <CardContent className="space-y-3">
                 <div className="p-3 bg-red-50 rounded">
                   <h4 className="font-semibold text-red-800 mb-1">
-                    Performance Gap
+                    Year-over-Year Performance
                   </h4>
                   <p className="text-sm text-red-700">
-                    August 2025 collected{' '}
-                    {augustAnalysis.shortfall?.toLocaleString()} fewer
-                    sandwiches ({augustAnalysis.shortfallPercent?.toFixed(1)}%
-                    below) compared to recent 6-month average.
+                    {augustAnalysis.yearOverYearChange !== null ? (
+                      augustAnalysis.yearOverYearChange < 0 ? (
+                        <>
+                          August 2025 collected{' '}
+                          {Math.abs(augustAnalysis.yearOverYearChange).toLocaleString()} fewer
+                          sandwiches ({Math.abs(augustAnalysis.yearOverYearPercent?.toFixed(1) || 0)}%
+                          decrease) compared to August 2024.
+                        </>
+                      ) : (
+                        <>
+                          August 2025 collected{' '}
+                          {augustAnalysis.yearOverYearChange.toLocaleString()} more
+                          sandwiches ({augustAnalysis.yearOverYearPercent?.toFixed(1)}%
+                          increase) compared to August 2024.
+                        </>
+                      )
+                    ) : (
+                      'No August 2024 data available for comparison.'
+                    )}
                   </p>
                 </div>
 
