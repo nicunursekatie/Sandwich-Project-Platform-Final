@@ -127,6 +127,15 @@ export default function Dashboard({
     // Check for section in query parameters first
     if (urlParams.section) {
       console.log('Setting activeSection from query parameter:', urlParams.section);
+      
+      // Handle special case for project detail view via query parameters
+      if (urlParams.section === 'projects' && urlParams.view === 'detail' && urlParams.id) {
+        const projectSection = `project-${urlParams.id}`;
+        console.log('Setting activeSection to project detail:', projectSection);
+        setActiveSection(projectSection);
+        return;
+      }
+      
       setActiveSection(urlParams.section);
       return;
     }

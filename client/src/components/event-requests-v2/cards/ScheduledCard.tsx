@@ -185,10 +185,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="flex items-start space-x-3">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg text-[#1A2332]">
+            <h3 className="font-semibold text-lg text-[#646464]">
               {request.organizationName}
             </h3>
-            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
+            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-[#236383] text-white border border-[#236383] text-[16px]">
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}
             </Badge>
@@ -200,19 +200,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             )}
             {/* Staffing need badges */}
             {driverGap > 0 && (
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+              <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#FBAD3F] border-[#FBAD3F]/30 font-semibold">
                 <Car className="w-3 h-3 mr-1" />
                 Need {driverGap} driver{driverGap > 1 ? 's' : ''}
               </Badge>
             )}
             {speakerGap > 0 && (
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+              <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#FBAD3F] border-[#FBAD3F]/30 font-semibold">
                 <Megaphone className="w-3 h-3 mr-1" />
                 Need {speakerGap} speaker{speakerGap > 1 ? 's' : ''}
               </Badge>
             )}
             {volunteerGap > 0 && (
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+              <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#FBAD3F] border-[#FBAD3F]/30 font-semibold">
                 <Users className="w-3 h-3 mr-1" />
                 Need {volunteerGap} volunteer{volunteerGap > 1 ? 's' : ''}
               </Badge>
@@ -344,12 +344,12 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     return (
       <div className={`rounded-lg p-4 border min-h-[140px] transition-all ${
         isUnderStaffed 
-          ? 'bg-red-50 border-red-200 shadow-sm' 
+          ? 'bg-[#FBAD3F]/5 border-[#FBAD3F]/30 shadow-sm' 
           : isFullyStaffed && !isOverStaffed
-            ? 'bg-green-50 border-green-200 shadow-sm'
+            ? 'bg-[#236383]/5 border-[#236383]/30 shadow-sm'
             : isOverStaffed
-              ? 'bg-blue-50 border-blue-200 shadow-sm'
-              : 'bg-white/60 border-white/80'
+              ? 'bg-[#47B3CB]/5 border-[#47B3CB]/30 shadow-sm'
+              : 'bg-white/60 border-[#D1D3D4]/50'
       }`}>
         {/* Enhanced Header with clear status */}
         <div className="flex items-center justify-between mb-3">
@@ -362,12 +362,12 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               {/* Status indicator */}
               <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                 isUnderStaffed 
-                  ? 'bg-red-100 text-red-700 border border-red-200' 
+                  ? 'bg-[#FBAD3F]/20 text-[#FBAD3F] border border-[#FBAD3F]/40' 
                   : isFullyStaffed && !isOverStaffed
-                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    ? 'bg-[#236383]/20 text-[#236383] border border-[#236383]/40'
                     : isOverStaffed
-                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-[#47B3CB]/20 text-[#47B3CB] border border-[#47B3CB]/40'
+                      : 'bg-[#D1D3D4]/30 text-[#646464]'
               }`}>
                 {isUnderStaffed && <AlertTriangle className="w-3 h-3" />}
                 {isFullyStaffed && !isOverStaffed && <Check className="w-3 h-3" />}
@@ -474,8 +474,8 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               onClick={() => onAssign(type)}
               className={`w-full text-sm transition-all ${
                 isUnderStaffed 
-                  ? 'border-red-400 text-red-700 hover:bg-red-500 hover:text-white bg-red-50' 
-                  : 'border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white'
+                  ? 'border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F] hover:text-white bg-[#FBAD3F]/10 font-semibold' 
+                  : 'border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white'
               }`}
             >
               <UserPlus className="w-4 h-4 mr-2" />
@@ -526,7 +526,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     }
 
     return (
-      <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
+      <div className="bg-[#A31C41]/5 rounded-lg p-4 border border-[#A31C41]/20 min-h-[120px]">
         {/* Header */}
         <div className="flex items-center gap-2 mb-3">
           <Car className="w-5 h-5 text-[#A31C41]" />
@@ -886,7 +886,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   };
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] bg-gradient-to-br from-[#e6f2f5] via-[#d1e9ed] to-[#236383]/10 border border-[#236383]/30">
+    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] bg-gradient-to-br from-[#236383]/5 via-[#236383]/10 to-white border border-[#236383]/20">
       <CardContent className="p-6">
         <CardHeader
           request={request}
@@ -1036,13 +1036,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* TSP Contact Section - Prominent display */}
         {(request.tspContact || request.customTspContact) && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-[#FBAD3F]/10 to-[#D68319]/10 border-2 border-[#FBAD3F]/30 rounded-lg">
+          <div className="mt-4 p-4 bg-gradient-to-r from-[#FBAD3F]/10 to-[#FBAD3F]/5 border-2 border-[#FBAD3F]/30 rounded-lg">
             <div className="flex items-center gap-3">
               <div className="bg-[#FBAD3F] p-2 rounded-full">
                 <Building className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
-                <div className="text-lg font-bold text-[#D68319] mb-1">
+                <div className="text-lg font-bold text-[#FBAD3F] mb-1">
                   TSP Contact
                 </div>
                 <div className="text-xl font-semibold text-[#236383]">
@@ -1058,85 +1058,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
         )}
 
-        {/* Staffing Summary - Visual representation */}
-        <div className="mt-3 pt-3 border-t border-gray-200">
-          <div className="grid grid-cols-3 gap-3">
-            {/* Drivers */}
-            <div className={`rounded-lg p-2 ${
-              parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
-                ? 'bg-green-50 border border-green-300'
-                : 'bg-orange-50 border border-orange-300'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Car className={`w-4 h-4 ${
-                    parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
-                      ? 'text-green-600'
-                      : 'text-orange-600'
-                  }`} />
-                  <span className="text-sm font-medium">Drivers</span>
-                </div>
-                <span className={`text-sm font-bold ${
-                  parsePostgresArray(request.assignedDriverIds).length >= (request.driversNeeded || 0)
-                    ? 'text-green-600'
-                    : 'text-orange-600'
-                }`}>
-                  {parsePostgresArray(request.assignedDriverIds).length}/{request.driversNeeded || 0}
-                </span>
-              </div>
-            </div>
-
-            {/* Speakers */}
-            <div className={`rounded-lg p-2 ${
-              Object.keys(request.speakerDetails || {}).length >= (request.speakersNeeded || 0)
-                ? 'bg-green-50 border border-green-300'
-                : 'bg-orange-50 border border-orange-300'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Megaphone className={`w-4 h-4 ${
-                    Object.keys(request.speakerDetails || {}).length >= (request.speakersNeeded || 0)
-                      ? 'text-green-600'
-                      : 'text-orange-600'
-                  }`} />
-                  <span className="text-sm font-medium">Speakers</span>
-                </div>
-                <span className={`text-sm font-bold ${
-                  Object.keys(request.speakerDetails || {}).length >= (request.speakersNeeded || 0)
-                    ? 'text-green-600'
-                    : 'text-orange-600'
-                }`}>
-                  {Object.keys(request.speakerDetails || {}).length}/{request.speakersNeeded || 0}
-                </span>
-              </div>
-            </div>
-
-            {/* Volunteers */}
-            <div className={`rounded-lg p-2 ${
-              parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
-                ? 'bg-green-50 border border-green-300'
-                : 'bg-orange-50 border border-orange-300'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Users className={`w-4 h-4 ${
-                    parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
-                      ? 'text-green-600'
-                      : 'text-orange-600'
-                  }`} />
-                  <span className="text-sm font-medium">Volunteers</span>
-                </div>
-                <span className={`text-sm font-bold ${
-                  parsePostgresArray(request.assignedVolunteerIds).length >= (request.volunteersNeeded || 0)
-                    ? 'text-green-600'
-                    : 'text-orange-600'
-                }`}>
-                  {parsePostgresArray(request.assignedVolunteerIds).length}/{request.volunteersNeeded || 0}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
