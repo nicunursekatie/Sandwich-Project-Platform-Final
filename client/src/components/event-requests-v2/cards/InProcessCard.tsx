@@ -188,7 +188,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
-                  <span data-testid="text-date-label" className="text-[16px]">
+                  <span data-testid="text-date-label" className="text-[16px] font-bold">
                     {dateLabel}:{' '}
                     <strong
                       className="text-[16px]"
