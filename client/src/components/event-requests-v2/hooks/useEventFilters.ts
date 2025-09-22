@@ -50,7 +50,7 @@ export const useEventFilters = () => {
           .includes(searchQuery.toLowerCase()) ||
         request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (request.email && request.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
         dateMatchesSearch(request.desiredEventDate, searchQuery);
 
@@ -115,9 +115,9 @@ export const useEventFilters = () => {
           request.lastName
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          request.email
+          (request.email && request.email
             .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
+            .includes(searchQuery.toLowerCase())) ||
           (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
           dateMatchesSearch(request.desiredEventDate, searchQuery);
 
