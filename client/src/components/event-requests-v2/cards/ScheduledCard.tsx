@@ -188,7 +188,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             <h3 className="font-semibold text-lg text-[#646464]">
               {request.organizationName}
             </h3>
-            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-blue-600 text-white border border-blue-600 text-base">
+            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-[#FBAD3F] text-white border border-[#FBAD3F] text-base shadow-sm">
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}
             </Badge>
@@ -200,19 +200,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             )}
             {/* Staffing need badges */}
             {driverGap > 0 && (
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300 font-semibold">
+              <Badge variant="outline" className="bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30 font-semibold shadow-sm">
                 <Car className="w-3 h-3 mr-1" />
                 Need {driverGap} driver{driverGap > 1 ? 's' : ''}
               </Badge>
             )}
             {speakerGap > 0 && (
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300 font-semibold">
+              <Badge variant="outline" className="bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30 font-semibold shadow-sm">
                 <Megaphone className="w-3 h-3 mr-1" />
                 Need {speakerGap} speaker{speakerGap > 1 ? 's' : ''}
               </Badge>
             )}
             {volunteerGap > 0 && (
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300 font-semibold">
+              <Badge variant="outline" className="bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30 font-semibold shadow-sm">
                 <Users className="w-3 h-3 mr-1" />
                 Need {volunteerGap} volunteer{volunteerGap > 1 ? 's' : ''}
               </Badge>
@@ -342,14 +342,14 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     const isOverStaffed = typeof needed === 'number' ? assigned.length > needed : false;
 
     return (
-      <div className={`rounded-lg p-4 border min-h-[140px] transition-all ${
+      <div className={`rounded-lg p-4 border min-h-[140px] transition-all shadow-md ${
         isUnderStaffed 
-          ? 'bg-orange-50 border-orange-200 shadow-sm' 
+          ? 'bg-gradient-to-br from-[#A31C41]/10 to-[#A31C41]/5 border-[#A31C41]/30' 
           : isFullyStaffed && !isOverStaffed
-            ? 'bg-green-50 border-green-200 shadow-sm'
+            ? 'bg-gradient-to-br from-[#236383]/10 to-[#236383]/5 border-[#236383]/30'
             : isOverStaffed
-              ? 'bg-blue-50 border-blue-200 shadow-sm'
-              : 'bg-white border-gray-200'
+              ? 'bg-gradient-to-br from-[#47B3CB]/10 to-[#47B3CB]/5 border-[#47B3CB]/30'
+              : 'bg-gradient-to-br from-white to-gray-50 border-gray-200'
       }`}>
         {/* Enhanced Header with clear status */}
         <div className="flex items-center justify-between mb-3">
@@ -360,13 +360,13 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           {typeof needed === 'number' && (
             <div className="flex items-center gap-2">
               {/* Status indicator */}
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shadow-sm ${
                 isUnderStaffed 
-                  ? 'bg-orange-100 text-orange-700 border border-orange-200' 
+                  ? 'bg-[#A31C41]/20 text-[#A31C41] border border-[#A31C41]/40' 
                   : isFullyStaffed && !isOverStaffed
-                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    ? 'bg-[#236383]/20 text-[#236383] border border-[#236383]/40'
                     : isOverStaffed
-                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      ? 'bg-[#47B3CB]/20 text-[#47B3CB] border border-[#47B3CB]/40'
                       : 'bg-gray-100 text-gray-600'
               }`}>
                 {isUnderStaffed && <AlertTriangle className="w-3 h-3" />}
@@ -472,10 +472,10 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               size="sm"
               variant="outline"
               onClick={() => onAssign(type)}
-              className={`w-full text-sm transition-all ${
+              className={`w-full text-sm transition-all shadow-sm ${
                 isUnderStaffed 
-                  ? 'border-orange-400 text-orange-700 hover:bg-orange-500 hover:text-white bg-orange-50 font-semibold' 
-                  : 'border-blue-400 text-blue-700 hover:bg-blue-500 hover:text-white'
+                  ? 'border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white bg-[#A31C41]/10 font-semibold' 
+                  : 'border-[#236383] text-[#236383] hover:bg-[#236383] hover:text-white'
               }`}
             >
               <UserPlus className="w-4 h-4 mr-2" />
@@ -526,7 +526,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     }
 
     return (
-      <div className="bg-[#A31C41]/5 rounded-lg p-4 border border-[#A31C41]/20 min-h-[120px]">
+      <div className="bg-gradient-to-br from-[#A31C41]/10 to-[#A31C41]/5 rounded-lg p-4 border border-[#A31C41]/30 min-h-[120px] shadow-md">
         {/* Header */}
         <div className="flex items-center gap-2 mb-3">
           <Car className="w-5 h-5 text-[#A31C41]" />
@@ -904,7 +904,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {/* Event Details - Editable */}
         <div className="space-y-3 mb-4">
           {/* Event Location */}
-          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
+          <div className="bg-white/80 rounded-lg p-3 border border-[#FBAD3F]/20 shadow-sm">
             {renderEditableField(
               'eventAddress',
               request.eventAddress,
@@ -955,7 +955,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           )}
 
           {/* Times & Logistics - Smart Display */}
-          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
+          <div className="bg-white/80 rounded-lg p-3 border border-[#FBAD3F]/20 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-medium text-gray-700 flex items-center gap-2">
                 <Clock className="w-4 h-4" />
@@ -971,7 +971,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       startEditing('eventStartTime', '');
                     }
                   }}
-                  className="text-xs text-[#236383] hover:text-[#FBAD3F] opacity-70 hover:opacity-100"
+                  className="text-xs text-[#236383] hover:text-[#FBAD3F] opacity-70 hover:opacity-100 hover:bg-[#FBAD3F]/10 rounded-md"
                   title="Add missing times"
                 >
                   + Add Times
@@ -1028,7 +1028,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => startEditing('eventStartTime', '')}
-                      className="text-xs border-[#236383]/30 text-[#236383] hover:bg-[#236383] hover:text-white"
+                      className="text-xs border-[#236383]/40 text-[#236383] hover:bg-[#236383] hover:text-white shadow-sm"
                     >
                       + Start Time
                     </Button>
@@ -1038,7 +1038,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => startEditing('eventEndTime', '')}
-                      className="text-xs border-[#236383]/30 text-[#236383] hover:bg-[#236383] hover:text-white"
+                      className="text-xs border-[#236383]/40 text-[#236383] hover:bg-[#236383] hover:text-white shadow-sm"
                     >
                       + End Time
                     </Button>
@@ -1048,7 +1048,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => startEditing('pickupTime', '')}
-                      className="text-xs border-[#236383]/30 text-[#236383] hover:bg-[#236383] hover:text-white"
+                      className="text-xs border-[#236383]/40 text-[#236383] hover:bg-[#236383] hover:text-white shadow-sm"
                     >
                       + Pickup Time
                     </Button>
@@ -1059,7 +1059,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
           {/* Sandwich Details */}
-          <div className="bg-white/50 rounded-lg p-3 border border-white/60">
+          <div className="bg-white/80 rounded-lg p-3 border border-[#FBAD3F]/20 shadow-sm">
             {renderSandwichEdit()}
           </div>
         </div>
@@ -1105,7 +1105,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* TSP Contact Section - Prominent display */}
         {(request.tspContact || request.customTspContact) && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-[#FBAD3F]/10 to-[#FBAD3F]/5 border-2 border-[#FBAD3F]/30 rounded-lg">
+          <div className="mt-4 p-4 bg-gradient-to-r from-[#FBAD3F]/15 to-[#FBAD3F]/8 border-2 border-[#FBAD3F]/40 rounded-lg shadow-md">
             <div className="flex items-center gap-3">
               <div className="bg-[#FBAD3F] p-2 rounded-full">
                 <Building className="w-6 h-6 text-white" />
