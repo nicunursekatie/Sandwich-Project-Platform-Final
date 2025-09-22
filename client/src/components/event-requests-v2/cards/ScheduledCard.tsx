@@ -372,12 +372,30 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {getStatusLabel(request.status)}
               </Badge>
-              {staffingComplete && (
+              {staffingComplete ? (
                 <Badge className="bg-[#236383] text-white px-2 py-1 text-xs shadow-sm">
                   <Check className="w-3 h-3 mr-1" />
                   Fully Staffed
                 </Badge>
-            )}
+              ) : (
+                <div className="flex gap-1">
+                  {driverNeeded > driverAssigned && (
+                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {speakerNeeded > speakerAssigned && (
+                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {volunteerNeeded > volunteerAssigned && (
+                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                </div>
+              )}
           </div>
 
             {/* Contact & Date */}
@@ -433,23 +451,71 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           </div>
 
+            {/* Destination Information */}
+            <div className="bg-white/60 rounded-lg p-3 mb-4 border border-[#FBAD3F]/20">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[#236383]" />
+                  <span className="font-semibold text-gray-800">Delivery Information</span>
+                </div>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startEditing('deliveryDestination', request.deliveryDestination || '')}
+                    className="h-6 px-2 text-sm text-[#236383] hover:bg-[#236383]/10"
+                  >
+                    <Edit2 className="w-3 h-3 mr-1" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-medium text-gray-600">Delivery Destination:</span>
+                  {isEditingThisCard && editingField === 'deliveryDestination' ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="h-8 px-2 border border-gray-300 rounded text-sm"
+                        autoFocus
+                      >
+                        <option value="">Select recipient organization...</option>
+                        <option value="custom">Custom destination...</option>
+                        {/* TODO: Add actual recipient organizations from API */}
+                      </select>
+                      <Button size="sm" onClick={saveEdit}>
+                        <Save className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className="text-base">
+                      {request.deliveryDestination || 'Not specified'}
+                    </span>
+                  )}
+                </div>
+                {request.eventAddress && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium text-gray-600">Event Address:</span>
+                    <span className="text-base">{request.eventAddress}</span>
+                  </div>
+                )}
+                {request.overnightHoldingLocation && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium text-gray-600">Overnight Holding:</span>
+                    <span className="text-base">{request.overnightHoldingLocation}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Key Details */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="space-y-2">
-                {request.eventAddress && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-gray-500" />
-                    <a 
-                      href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      {request.eventAddress}
-                    </a>
-          </div>
-                )}
-                
                 {renderSandwichEdit()}
               </div>
 
@@ -480,7 +546,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         }}
                         className="h-6 px-2 text-sm text-blue-600"
                       >
-                        + Add Time
+                        + Add Start or End Time
                       </Button>
                     )}
           </div>
@@ -757,16 +823,28 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
         )}
 
-        {/* Notes */}
+        {/* Request Message */}
         {request.message && (
-          <div className="bg-blue-50 rounded-lg p-3 mb-4">
+          <div className="bg-blue-50 rounded-lg p-3 mb-4 border border-blue-200">
             <div className="flex items-center gap-2 mb-2">
               <MessageSquare className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-blue-800">Request Message</span>
+              <span className="font-medium text-blue-800">Original Request Message</span>
             </div>
             <p className="text-base text-blue-700">{request.message}</p>
           </div>
         )}
+
+        {/* Planning Notes */}
+        {request.planningNotes && (
+          <div className="bg-green-50 rounded-lg p-3 mb-4 border border-green-200">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-4 h-4 text-green-600" />
+              <span className="font-medium text-green-800">Planning Notes</span>
+            </div>
+            <p className="text-base text-green-700">{request.planningNotes}</p>
+          </div>
+        )}
+
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-3 border-t border-gray-200">
