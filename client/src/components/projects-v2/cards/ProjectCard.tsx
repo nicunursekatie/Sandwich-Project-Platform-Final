@@ -283,7 +283,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
           </DropdownMenu>
         </div>
       </CardHeader>
-
       <CardContent>
         <div className="space-y-3">
           {/* Category and Dates */}
@@ -335,7 +334,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
                   <Users className="w-3 h-3" />
                   <span className="text-xs font-medium">Support Team:</span>
                 </div>
-                <div className="text-xs">{supportPeople.join(', ')}</div>
+                <div className="text-[14px]">{supportPeople.join(', ')}</div>
               </div>
             )}
           </div>
