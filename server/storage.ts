@@ -33,6 +33,7 @@ import {
   eventRequests,
   organizations,
   eventVolunteers,
+  meetingNotes,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -102,6 +103,8 @@ import {
   type InsertOrganization,
   type EventVolunteer,
   type InsertEventVolunteer,
+  type MeetingNote,
+  type InsertMeetingNote,
 } from '@shared/schema';
 
 export interface IStorage {
@@ -318,6 +321,24 @@ export interface IStorage {
     updates: Partial<Meeting>
   ): Promise<Meeting | undefined>;
   deleteMeeting(id: number): Promise<boolean>;
+
+  // Meeting Notes
+  getAllMeetingNotes(): Promise<MeetingNote[]>;
+  getMeetingNote(id: number): Promise<MeetingNote | undefined>;
+  getMeetingNotesByProject(projectId: number): Promise<MeetingNote[]>;
+  getMeetingNotesByMeeting(meetingId: number): Promise<MeetingNote[]>;
+  getMeetingNotesByFilters(filters: {
+    projectId?: number;
+    meetingId?: number;
+    type?: string;
+    status?: string;
+  }): Promise<MeetingNote[]>;
+  createMeetingNote(note: InsertMeetingNote): Promise<MeetingNote>;
+  updateMeetingNote(
+    id: number,
+    updates: Partial<MeetingNote>
+  ): Promise<MeetingNote | undefined>;
+  deleteMeetingNote(id: number): Promise<boolean>;
 
   // Driver Agreements (admin access only)
   createDriverAgreement(
