@@ -356,6 +356,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
         <div className="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-200">
           <Button 
             variant="outline" 
+            className="text-[16px]"
             onClick={() => onNavigate('action-tracking')}
             data-testid="view-all-actions"
           >
