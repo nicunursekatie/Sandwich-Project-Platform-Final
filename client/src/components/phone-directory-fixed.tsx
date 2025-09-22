@@ -226,13 +226,13 @@ function PhoneDirectoryFixed() {
   const canViewHosts = hasPermission(user, PERMISSIONS.HOSTS_VIEW);
   const canViewRecipients = hasPermission(user, PERMISSIONS.RECIPIENTS_VIEW);
   const canViewDrivers = hasPermission(user, PERMISSIONS.DRIVERS_VIEW);
-  const canViewVolunteers = hasPermission(user, PERMISSIONS.NAV_VOLUNTEERS);
+  const canViewVolunteers = hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS);
   const canEditContacts =
     hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ||
     hasPermission(user, PERMISSIONS.USERS_EDIT) ||
-    hasPermission(user, PERMISSIONS.USERS_EDIT) ||
+    hasPermission(user, PERMISSIONS.MANAGE_DIRECTORY) ||
     hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL) ||
-    hasPermission(user, PERMISSIONS.NAV_VOLUNTEERS) ||
+    hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ||
     hasPermission(user, PERMISSIONS.HOSTS_VIEW);
 
   // Tabs

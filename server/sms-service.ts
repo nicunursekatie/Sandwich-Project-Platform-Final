@@ -49,7 +49,7 @@ export async function sendSMSReminder(
 
   try {
     // Import storage to get users who have opted in to SMS
-    const { storage } = await import('./storage-wrapper');
+    const { storage } = await import('./storage');
 
     // Get all users who have opted in to SMS
     const allUsers = await storage.getAllUsers();
