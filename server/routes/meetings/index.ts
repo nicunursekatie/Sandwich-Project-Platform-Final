@@ -10,6 +10,7 @@ import {
   insertMeetingMinutesSchema,
   insertAgendaItemSchema,
   insertMeetingSchema,
+  insertMeetingNoteSchema,
 } from '@shared/schema';
 
 const meetingsRouter = Router();
@@ -545,6 +546,145 @@ meetingsRouter.post('/', async (req, res) => {
     res.status(201).json(meeting);
   } catch (error) {
     res.status(500).json({ message: 'Failed to create meeting' });
+  }
+});
+
+// Meeting Notes
+meetingsRouter.get('/notes', async (req, res) => {
+  try {
+    const { projectId, meetingId, type, status } = req.query;
+    
+    const filters: any = {};
+    if (projectId) filters.projectId = parseInt(projectId as string);
+    if (meetingId) filters.meetingId = parseInt(meetingId as string);
+    if (type) filters.type = type as string;
+    if (status) filters.status = status as string;
+
+    const notes = Object.keys(filters).length > 0 
+      ? await storage.getMeetingNotesByFilters(filters)
+      : await storage.getAllMeetingNotes();
+    
+    res.json(notes);
+  } catch (error) {
+    logger.error('Failed to fetch meeting notes', error);
+    res.status(500).json({ message: 'Failed to fetch meeting notes' });
+  }
+});
+
+meetingsRouter.get('/notes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid note ID' });
+    }
+
+    const note = await storage.getMeetingNote(id);
+    if (!note) {
+      return res.status(404).json({ message: 'Meeting note not found' });
+    }
+
+    res.json(note);
+  } catch (error) {
+    logger.error('Failed to fetch meeting note', error);
+    res.status(500).json({ message: 'Failed to fetch meeting note' });
+  }
+});
+
+meetingsRouter.post('/notes', async (req: any, res) => {
+  try {
+    const userId = req.user?.claims?.sub || req.user?.id;
+    const user = userId ? await storage.getUser(userId) : null;
+    
+    const noteData = insertMeetingNoteSchema.parse(req.body);
+    
+    // Add creator information if available
+    if (user) {
+      noteData.createdBy = user.id;
+      noteData.createdByName = user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+    }
+    
+    const note = await storage.createMeetingNote(noteData);
+    
+    logger.info('Meeting note created', {
+      noteId: note.id,
+      projectId: note.projectId,
+      meetingId: note.meetingId,
+      type: note.type,
+      createdBy: user?.id || 'unknown',
+    });
+    
+    res.status(201).json(note);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ 
+        message: 'Invalid meeting note data', 
+        errors: error.errors 
+      });
+    } else {
+      logger.error('Failed to create meeting note', error);
+      res.status(500).json({ message: 'Failed to create meeting note' });
+    }
+  }
+});
+
+meetingsRouter.patch('/notes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid note ID' });
+    }
+
+    // Validate that only allowed fields are being updated
+    const allowedUpdates = ['content', 'type', 'status'];
+    const updates: any = {};
+    
+    for (const key of allowedUpdates) {
+      if (req.body[key] !== undefined) {
+        updates[key] = req.body[key];
+      }
+    }
+    
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
+
+    const updatedNote = await storage.updateMeetingNote(id, updates);
+    if (!updatedNote) {
+      return res.status(404).json({ message: 'Meeting note not found' });
+    }
+
+    logger.info('Meeting note updated', {
+      noteId: id,
+      updatedFields: Object.keys(updates),
+    });
+
+    res.json(updatedNote);
+  } catch (error) {
+    logger.error('Failed to update meeting note', error);
+    res.status(500).json({ message: 'Failed to update meeting note' });
+  }
+});
+
+meetingsRouter.delete('/notes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid note ID' });
+    }
+
+    const success = await storage.deleteMeetingNote(id);
+    if (!success) {
+      return res.status(404).json({ message: 'Meeting note not found' });
+    }
+
+    logger.info('Meeting note deleted', {
+      noteId: id,
+    });
+
+    res.json({ message: 'Meeting note deleted successfully' });
+  } catch (error) {
+    logger.error('Failed to delete meeting note', error);
+    res.status(500).json({ message: 'Failed to delete meeting note' });
   }
 });
 

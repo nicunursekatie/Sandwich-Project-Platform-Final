@@ -744,12 +744,12 @@ export function AgendaPlanningTab({
                                   htmlFor={`decisions-${project.id}`}
                                   className="text-sm font-medium text-gray-700"
                                 >
-                                  Decision Items & Action Needed
+                                  Notes from Meeting
                                 </Label>
                                 <Textarea
                                   id={`decisions-${project.id}`}
                                   data-testid={`textarea-decisions-${project.id}`}
-                                  placeholder="What decisions or actions are needed from the team?"
+                                  placeholder="Notes and outcomes from the meeting discussion"
                                   className="min-h-[80px] resize-none"
                                   value={getTextValue(
                                     project.id,
@@ -1098,12 +1098,12 @@ export function AgendaPlanningTab({
               {createTasksFromNotesMutation.isPending ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                  Creating Tasks...
+                  Saving Notes...
                 </div>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Create Tasks from Notes
+                  Save Notes
                 </>
               )}
             </Button>

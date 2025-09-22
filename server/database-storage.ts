@@ -43,6 +43,7 @@ import {
   eventRequests,
   organizations,
   eventVolunteers,
+  meetingNotes,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -120,6 +121,8 @@ import {
   type InsertOrganization,
   type EventVolunteer,
   type InsertEventVolunteer,
+  type MeetingNote,
+  type InsertMeetingNote,
 } from '@shared/schema';
 import { db } from './db';
 import {
@@ -1292,6 +1295,87 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMeeting(id: number): Promise<boolean> {
     const result = await db.delete(meetings).where(eq(meetings.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Meeting Notes
+  async getAllMeetingNotes(): Promise<MeetingNote[]> {
+    return await db.select().from(meetingNotes).orderBy(desc(meetingNotes.createdAt));
+  }
+
+  async getMeetingNote(id: number): Promise<MeetingNote | undefined> {
+    const [note] = await db.select().from(meetingNotes).where(eq(meetingNotes.id, id));
+    return note || undefined;
+  }
+
+  async getMeetingNotesByProject(projectId: number): Promise<MeetingNote[]> {
+    return await db
+      .select()
+      .from(meetingNotes)
+      .where(eq(meetingNotes.projectId, projectId))
+      .orderBy(desc(meetingNotes.createdAt));
+  }
+
+  async getMeetingNotesByMeeting(meetingId: number): Promise<MeetingNote[]> {
+    return await db
+      .select()
+      .from(meetingNotes)
+      .where(eq(meetingNotes.meetingId, meetingId))
+      .orderBy(desc(meetingNotes.createdAt));
+  }
+
+  async getMeetingNotesByFilters(filters: {
+    projectId?: number;
+    meetingId?: number;
+    type?: string;
+    status?: string;
+  }): Promise<MeetingNote[]> {
+    const conditions = [];
+    
+    if (filters.projectId !== undefined) {
+      conditions.push(eq(meetingNotes.projectId, filters.projectId));
+    }
+    if (filters.meetingId !== undefined) {
+      conditions.push(eq(meetingNotes.meetingId, filters.meetingId));
+    }
+    if (filters.type) {
+      conditions.push(eq(meetingNotes.type, filters.type));
+    }
+    if (filters.status) {
+      conditions.push(eq(meetingNotes.status, filters.status));
+    }
+
+    let query = db.select().from(meetingNotes);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(meetingNotes.createdAt));
+  }
+
+  async createMeetingNote(insertNote: InsertMeetingNote): Promise<MeetingNote> {
+    const [note] = await db
+      .insert(meetingNotes)
+      .values(insertNote)
+      .returning();
+    return note;
+  }
+
+  async updateMeetingNote(
+    id: number,
+    updates: Partial<MeetingNote>
+  ): Promise<MeetingNote | undefined> {
+    const [note] = await db
+      .update(meetingNotes)
+      .set(updates)
+      .where(eq(meetingNotes.id, id))
+      .returning();
+    return note || undefined;
+  }
+
+  async deleteMeetingNote(id: number): Promise<boolean> {
+    const result = await db.delete(meetingNotes).where(eq(meetingNotes.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
