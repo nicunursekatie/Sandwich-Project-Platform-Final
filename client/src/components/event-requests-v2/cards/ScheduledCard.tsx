@@ -548,7 +548,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => startEditing(field, value?.toString() || '')}
+              onClick={() => {
+                // For time fields, we need to pass the raw 24-hour format value for the HTML input
+                if (type === 'time') {
+                  // Extract the raw time from the request object
+                  const rawValue = request[field as keyof EventRequest] as string;
+                  startEditing(field, rawValue || '');
+                } else {
+                  startEditing(field, value?.toString() || '');
+                }
+              }}
               className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
               title={`Edit ${label}`}
             >
