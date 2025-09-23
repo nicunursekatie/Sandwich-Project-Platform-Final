@@ -282,6 +282,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       department: formData.department || null,
       // Van driver assignment
       assignedVanDriverId: (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none') ? formData.assignedVanDriverId : null,
+      // Toolkit information
+      toolkitStatus: formData.toolkitStatus || null,
+      toolkitSentDate: formData.toolkitSentDate || null,
     };
 
     // Handle sandwich data based on mode
