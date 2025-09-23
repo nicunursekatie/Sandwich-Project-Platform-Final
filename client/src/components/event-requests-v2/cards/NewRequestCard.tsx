@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,9 @@ import {
   Save,
   X,
   User,
+  History,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
@@ -30,6 +33,7 @@ import type { EventRequest } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -300,6 +304,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   canEdit = true,
   canDelete = true,
 }) => {
+  const [showAuditLog, setShowAuditLog] = useState(false);
   const { user } = useAuth();
 
   // Fetch users data for TSP contact name lookup
@@ -503,6 +508,37 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             >
               <Trash2 className="w-4 h-4" />
             </Button>
+          )}
+        </div>
+
+        {/* Audit Log Section */}
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAuditLog(!showAuditLog)}
+            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
+            data-testid="button-toggle-audit-log"
+          >
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              <span className="text-sm">Activity History</span>
+            </div>
+            {showAuditLog ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </Button>
+          
+          {showAuditLog && (
+            <div className="mt-3" data-testid="audit-log-section">
+              <EventRequestAuditLog
+                eventId={request.id?.toString()}
+                showFilters={false}
+                compact={true}
+              />
+            </div>
           )}
         </div>
       </CardContent>

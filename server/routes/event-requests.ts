@@ -1903,7 +1903,7 @@ router.get('/orgs-catalog-test', async (req, res) => {
 });
 
 // Mark follow-up as completed for an event
-router.patch('/:id/follow-up', isAuthenticated, async (req, res) => {
+router.patch('/:id/follow-up', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { followUpType, notes } = req.body;
@@ -1940,6 +1940,23 @@ router.patch('/:id/follow-up', isAuthenticated, async (req, res) => {
     const updatedEventRequest = await storage.updateEventRequest(
       id,
       updateData
+    );
+
+    // Enhanced audit logging for follow-up completion
+    await logEventRequestAudit(
+      'FOLLOW_UP_COMPLETED',
+      id.toString(),
+      eventRequest,
+      updatedEventRequest,
+      req,
+      {
+        action: `Follow-up Completed (${followUpType})`,
+        organizationName: eventRequest.organizationName,
+        contactName: `${eventRequest.firstName} ${eventRequest.lastName}`,
+        completedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+        followUpType,
+        followUpNotes: notes,
+      }
     );
 
     await logActivity(
@@ -2004,6 +2021,23 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     const updatedEvent = await storage.updateEventRequest(eventId, updateData);
 
     console.log(`Updated driver assignments for event ${eventId}:`, updateData);
+
+    // Enhanced audit logging for driver assignment updates
+    await logEventRequestAudit(
+      'DRIVER_ASSIGNMENTS_UPDATED',
+      eventId.toString(),
+      existingEvent,
+      updatedEvent,
+      req,
+      {
+        action: 'Driver Assignments Updated',
+        organizationName: existingEvent.organizationName,
+        contactName: `${existingEvent.firstName} ${existingEvent.lastName}`,
+        updatedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+        assignedDriverIds: assignedDriverIds || [],
+        vanDriverAssigned: vanDriverNeeded && (assignedVanDriverId || customVanDriverName),
+      }
+    );
 
     // Log activity
     await logActivity(
@@ -2182,6 +2216,23 @@ router.patch('/:id/toolkit-sent', isAuthenticated, requirePermission('EVENT_REQU
       console.warn('Failed to update Google Sheets status:', error);
     }
 
+    // Enhanced audit logging for toolkit sent action
+    await logEventRequestAudit(
+      'TOOLKIT_SENT',
+      id.toString(),
+      originalEvent,
+      updatedEventRequest,
+      req,
+      {
+        action: 'Toolkit Sent',
+        organizationName: originalEvent.organizationName,
+        contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
+        toolkitSentBy: req.user?.email || req.user?.displayName || 'Unknown User',
+        toolkitSentDate: sentDate.toISOString(),
+        statusChange: `${originalEvent.status} → in_process`,
+      }
+    );
+
     console.log('Successfully marked toolkit as sent for:', id);
     await logActivity(
       req,
@@ -2196,6 +2247,149 @@ router.patch('/:id/toolkit-sent', isAuthenticated, requirePermission('EVENT_REQU
     res.status(500).json({ message: 'Failed to mark toolkit as sent' });
   }
 });
+
+// Get audit logs for event requests
+router.get(
+  '/audit-logs',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_VIEW'),
+  async (req, res) => {
+    try {
+      const {
+        tableName = 'event_requests',
+        recordId,
+        userId,
+        limit = 100,
+        offset = 0,
+        hours = 24,
+        action,
+        eventId,
+      } = req.query;
+
+      console.log('🔍 AUDIT LOGS REQUEST:', {
+        tableName,
+        recordId,
+        userId,
+        limit,
+        offset,
+        hours,
+        action,
+        eventId,
+      });
+
+      let auditLogs = [];
+
+      if (eventId) {
+        // Get audit logs for a specific event request
+        auditLogs = await AuditLogger.getAuditHistory(
+          'event_requests',
+          eventId.toString(),
+          userId?.toString(),
+          parseInt(limit.toString()),
+          parseInt(offset.toString())
+        );
+      } else {
+        // Get all event request audit logs with optional filtering
+        // SECURITY FIX: Always hardcode tableName to 'event_requests' to prevent unauthorized access to other tables
+        auditLogs = await AuditLogger.getAuditHistory(
+          'event_requests',
+          recordId?.toString(),
+          userId?.toString(),
+          parseInt(limit.toString()),
+          parseInt(offset.toString())
+        );
+
+        // Filter by time range if specified
+        if (hours && hours !== 'all') {
+          const hoursNum = parseInt(hours.toString());
+          const cutoffTime = new Date(Date.now() - hoursNum * 60 * 60 * 1000);
+          auditLogs = auditLogs.filter((log) => new Date(log.timestamp) >= cutoffTime);
+        }
+
+        // Filter by action if specified
+        if (action && action !== 'all') {
+          auditLogs = auditLogs.filter((log) => log.action === action);
+        }
+      }
+
+      // Enrich with user information and format for frontend
+      const users = await storage.getAllUsers();
+      const enrichedLogs = auditLogs.map((log) => {
+        const user = users.find((u: any) => u.id === log.userId);
+        const newData = log.newData ? JSON.parse(log.newData) : null;
+        const oldData = log.oldData ? JSON.parse(log.oldData) : null;
+
+        return {
+          id: log.id || Date.now(), // Fallback ID for frontend rendering
+          action: log.action,
+          eventId: log.recordId,
+          timestamp: log.timestamp,
+          userId: log.userId,
+          userEmail: user?.email || 'Unknown User',
+          organizationName: newData?.organizationName || oldData?.organizationName || 'Unknown',
+          contactName: newData?.actionContext?.contactName || 
+                      (newData?.firstName && newData?.lastName ? `${newData.firstName} ${newData.lastName}` : '') ||
+                      (oldData?.firstName && oldData?.lastName ? `${oldData.firstName} ${oldData.lastName}` : '') ||
+                      'Unknown Contact',
+          actionDescription: getAuditActionDescription(log.action, newData, oldData),
+          details: newData?.actionContext || {},
+          statusChange: newData?.actionContext?.statusChange || null,
+          followUpMethod: newData?.actionContext?.communicationMethod || null,
+        };
+      });
+
+      console.log(`📋 Retrieved ${enrichedLogs.length} audit log entries`);
+
+      await logActivity(
+        req,
+        res,
+        'EVENT_REQUESTS_AUDIT_VIEW',
+        `Retrieved ${enrichedLogs.length} audit log entries`
+      );
+
+      res.json({
+        logs: enrichedLogs,
+        total: enrichedLogs.length,
+        limit: parseInt(limit.toString()),
+        offset: parseInt(offset.toString()),
+      });
+    } catch (error) {
+      console.error('❌ Error fetching audit logs:', error);
+      res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
+  }
+);
+
+// Helper function to generate user-friendly action descriptions for audit logs
+function getAuditActionDescription(action: string, newData: any, oldData: any): string {
+  switch (action) {
+    case 'CREATE':
+      return 'Created event request';
+    case 'TOOLKIT_SENT':
+      return 'Sent toolkit';
+    case 'STATUS_UPDATE':
+      return 'Updated status';
+    case 'PRIMARY_CONTACT_COMPLETED':
+      return 'Completed primary contact';
+    case 'SCHEDULED':
+      return 'Scheduled event';
+    case 'NOTES_ADDED':
+      return 'Added notes';
+    case 'ASSIGNMENT_UPDATED':
+      return 'Updated assignment';
+    case 'UPDATE':
+      // Try to determine what was updated based on the data
+      if (newData?.status && oldData?.status && newData.status !== oldData.status) {
+        return 'Updated status';
+      }
+      if (newData?.notes && (!oldData?.notes || newData.notes !== oldData.notes)) {
+        return 'Added/updated notes';
+      }
+      return 'Updated event request';
+    default:
+      return action.toLowerCase().replace('_', ' ');
+  }
+}
 
 // Remove volunteer from event
 router.delete('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
@@ -2301,6 +2495,25 @@ router.patch(
         return res.status(404).json({ error: 'Event request not found' });
       }
 
+      // Enhanced audit logging for social media tracking
+      const originalEvent = await storage.getEventRequestById(id);
+      await logEventRequestAudit(
+        'SOCIAL_MEDIA_UPDATED',
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        {
+          action: 'Social Media Tracking Updated',
+          organizationName: updatedEventRequest.organizationName,
+          contactName: `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`,
+          updatedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          socialMediaPostRequested,
+          socialMediaPostCompleted,
+          notes,
+        }
+      );
+
       await logActivity(
         req,
         res,
@@ -2346,6 +2559,24 @@ router.patch(
       if (!updatedEventRequest) {
         return res.status(404).json({ error: 'Event request not found' });
       }
+
+      // Enhanced audit logging for actual sandwich count
+      const originalEvent = await storage.getEventRequestById(id);
+      await logEventRequestAudit(
+        'ACTUAL_SANDWICH_COUNT_RECORDED',
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        {
+          action: 'Actual Sandwich Count Recorded',
+          organizationName: updatedEventRequest.organizationName,
+          contactName: `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`,
+          recordedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          actualSandwichCount,
+          actualSandwichTypes,
+        }
+      );
 
       await logActivity(
         req,
@@ -2411,6 +2642,26 @@ router.patch(
       const totalDistributed = sandwichDistributions.reduce(
         (sum, dist) => sum + dist.totalCount,
         0
+      );
+
+      // Enhanced audit logging for sandwich distribution
+      const originalEvent = await storage.getEventRequestById(id);
+      await logEventRequestAudit(
+        'SANDWICH_DISTRIBUTION_RECORDED',
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        {
+          action: 'Sandwich Distribution Recorded',
+          organizationName: updatedEventRequest.organizationName,
+          contactName: `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`,
+          recordedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          totalDistributed,
+          distributionLocations: sandwichDistributions.length,
+          distributionDetails: sandwichDistributions,
+          distributionNotes,
+        }
       );
 
       await logActivity(
