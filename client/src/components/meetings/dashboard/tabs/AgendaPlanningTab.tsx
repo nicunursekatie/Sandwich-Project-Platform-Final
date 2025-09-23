@@ -224,7 +224,7 @@ export function AgendaPlanningTab({
 
     try {
       // Process agenda projects
-      const agendaProjects = allProjects.filter(p => projectAgendaStatus[p.id] === 'onAgenda');
+      const agendaProjects = allProjects.filter(p => projectAgendaStatus[p.id] === 'agenda');
 
       for (const project of agendaProjects) {
         const discussionPoints = getTextValue(project.id, 'discussionPoints', project.meetingDiscussionPoints || '');
@@ -322,8 +322,17 @@ export function AgendaPlanningTab({
         setSelectedProjectIds([]);
         setProjectAgendaStatus({});
         setMinimizedProjects(new Set());
-        // Note: localProjectText is not directly controlled by this component, 
-        // it will be reset when the parent component re-renders with empty agenda status
+        
+        // Clear discussion text by resetting the parent component state
+        // This will clear all the text boxes for discussion points and decision items
+        if (resetAgendaPlanningMutation) {
+          try {
+            await resetAgendaPlanningMutation.mutateAsync();
+          } catch (resetError) {
+            // Reset mutation failed, but notes were saved successfully
+            console.warn('Failed to reset agenda planning text:', resetError);
+          }
+        }
       } else {
         toast({
           title: 'No Notes to Save',
