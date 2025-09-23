@@ -433,12 +433,76 @@ export class ProjectService implements IProjectService {
   sanitizeProjectUpdates(updates: any): any {
     // Filter out fields that shouldn't be updated directly
     const {
+      id,
       createdAt,
       updatedAt,
+      created_at,
+      updated_at,
+      createdBy,
       created_by,
+      createdByName,
       created_by_name,
       ...validUpdates
     } = updates;
+    
+    // Convert date strings to Date objects for timestamp fields
+    // These fields are timestamp type in the database
+    const timestampFields = [
+      'lastSyncedAt',
+      'lastPulledFromSheetAt', 
+      'lastPushedToSheetAt'
+    ];
+    
+    for (const field of timestampFields) {
+      if (validUpdates[field] !== undefined && validUpdates[field] !== null) {
+        if (typeof validUpdates[field] === 'string' && validUpdates[field]) {
+          try {
+            // Handle both ISO strings and common date formats
+            const dateValue = validUpdates[field];
+            let parsedDate;
+            
+            // Check if it's already a valid ISO string
+            if (dateValue.includes('T') || dateValue.includes('Z')) {
+              parsedDate = new Date(dateValue);
+            } else if (dateValue.includes('/')) {
+              // Handle MM/DD/YYYY or M/D/YYYY format
+              const parts = dateValue.split('/');
+              if (parts.length === 3) {
+                const month = parseInt(parts[0], 10);
+                const day = parseInt(parts[1], 10);
+                const year = parseInt(parts[2], 10);
+                parsedDate = new Date(year, month - 1, day);
+              } else {
+                parsedDate = new Date(dateValue);
+              }
+            } else {
+              parsedDate = new Date(dateValue);
+            }
+            
+            // Only set if the date is valid
+            if (!isNaN(parsedDate.getTime())) {
+              validUpdates[field] = parsedDate;
+            } else {
+              // Remove invalid date to prevent errors
+              delete validUpdates[field];
+            }
+          } catch (error) {
+            // Remove field if date parsing fails
+            console.error(`Failed to parse date for field ${field}:`, error);
+            delete validUpdates[field];
+          }
+        } else if (validUpdates[field] instanceof Date) {
+          // Already a Date object, keep it
+        } else {
+          // Invalid value, remove it
+          delete validUpdates[field];
+        }
+      }
+    }
+    
+    // Note: These fields are stored as text/string in the database, so don't convert them
+    // dueDate, startDate, completionDate, lastDiscussedDate - all remain as strings
+    
     return validUpdates;
   }
 
