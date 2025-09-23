@@ -76,6 +76,7 @@ interface AgendaPlanningTabProps {
   minimizedProjects: Set<number>;
   setMinimizedProjects: (projects: Set<number>) => void;
   localProjectText: Record<number, { discussionPoints?: string; decisionItems?: string }>;
+  setLocalProjectText: (text: Record<number, { discussionPoints?: string; decisionItems?: string }>) => void;
   showResetConfirmDialog: boolean;
   setShowResetConfirmDialog: (show: boolean) => void;
   showAddProjectDialog: boolean;
@@ -152,6 +153,7 @@ export function AgendaPlanningTab({
   minimizedProjects,
   setMinimizedProjects,
   localProjectText,
+  setLocalProjectText,
   showResetConfirmDialog,
   setShowResetConfirmDialog,
   showAddProjectDialog,
@@ -285,8 +287,8 @@ export function AgendaPlanningTab({
         }
       }
 
-      // Process off-agenda items
-      const offAgendaItems = agendaItems.filter(item => item.isOffAgendaItem);
+      // Process off-agenda items - skip them if they don't have a valid projectId
+      const offAgendaItems = agendaItems.filter(item => item.isOffAgendaItem && item.projectId && item.projectId > 0);
 
       for (const item of offAgendaItems) {
         const noteContent = {
@@ -297,15 +299,17 @@ export function AgendaPlanningTab({
         };
 
         try {
-          // For off-agenda items, we'll need to create them without a specific project
-          await createNoteMutation.mutateAsync({
-            projectId: 0, // Will need to handle this case in the backend
-            meetingId: selectedMeeting.id,
-            type: 'meeting',
-            content: JSON.stringify(noteContent),
-            status: 'active',
-          });
-          notesCreated++;
+          // Only create note if we have a valid projectId
+          if (item.projectId) {
+            await createNoteMutation.mutateAsync({
+              projectId: item.projectId,
+              meetingId: selectedMeeting.id,
+              type: 'meeting',
+              content: JSON.stringify(noteContent),
+              status: 'active',
+            });
+            notesCreated++;
+          }
         } catch (error) {
           errors.push(`Failed to save off-agenda item: ${item.title}`);
         }
@@ -322,6 +326,7 @@ export function AgendaPlanningTab({
         setSelectedProjectIds([]);
         setProjectAgendaStatus({});
         setMinimizedProjects(new Set());
+        setLocalProjectText({});
         
         // Clear discussion text by resetting the parent component state
         // This will clear all the text boxes for discussion points and decision items

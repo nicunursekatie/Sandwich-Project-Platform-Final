@@ -745,6 +745,7 @@ export default function EnhancedMeetingDashboard() {
           minimizedProjects={minimizedProjects}
           setMinimizedProjects={setMinimizedProjects}
           localProjectText={localProjectText}
+          setLocalProjectText={setLocalProjectText}
           showResetConfirmDialog={showResetConfirmDialog}
           setShowResetConfirmDialog={setShowResetConfirmDialog}
           showAddProjectDialog={showAddProjectDialog}
