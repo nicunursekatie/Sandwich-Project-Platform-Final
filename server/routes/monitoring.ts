@@ -14,15 +14,6 @@ router.get('/sms-config', async (req, res) => {
   try {
     const { isConfigured, missingItems } = validateSMSConfig();
     const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
-    const isConfigured = !!(
-      twilioAccountSid &&
-      twilioAuthToken &&
-      twilioPhoneNumber
-    );
-    const missingItems: string[] = [];
-    if (!twilioAccountSid) missingItems.push('TWILIO_ACCOUNT_SID');
-    if (!twilioAuthToken) missingItems.push('TWILIO_AUTH_TOKEN');
-    if (!twilioPhoneNumber) missingItems.push('TWILIO_PHONE_NUMBER');
     res.json({
       isConfigured,
       phoneNumber: isConfigured ? twilioPhoneNumber : null,
@@ -274,7 +265,7 @@ router.post('/send-sms-reminders', async (req, res) => {
 });
 
 // Send SMS reminder to single location
-router.post('/send-sms-reminder', async (req, res) => {
+router.post('/send-sms-reminder/:location', async (req, res) => {
   try {
     const location = decodeURIComponent(req.params.location);
     const { appUrl } = req.body;
