@@ -343,37 +343,56 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
       <CardContent className="p-6">
         <CardHeader request={request} resolveUserName={resolveUserName} isInProcessStale={isStale} />
 
-        {/* Event Details */}
-        <div className="space-y-3 mb-4">
-          {/* Toolkit Sent Info */}
-          {request.toolkitSentDate && (
-            <div className="bg-yellow-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Package className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm font-medium">Toolkit sent:</span>
-                <span className="text-sm">
-                  {new Date(request.toolkitSentDate).toLocaleDateString()}
-                </span>
-                {isStale && (
-                  <Badge
-                    variant="outline"
-                    className="ml-2 bg-amber-50 text-amber-700 border-amber-300"
-                  >
-                    <AlertTriangle className="w-3 h-3 mr-1" />
-                    Over 1 week ago
-                  </Badge>
-                )}
+        {/* PROMINENT Toolkit Sent Status - Most Important Info */}
+        {request.toolkitSentDate && (
+          <div className="bg-gradient-to-r from-[#28a745] to-[#20c997] rounded-xl p-5 mb-6 border-2 border-green-300 shadow-lg">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <Package className="w-6 h-6 text-white" />
+                <span className="text-lg font-bold text-white">TOOLKIT SENT</span>
+              </div>
+              <div className="text-2xl font-bold text-white mb-1">
+                {new Date(request.toolkitSentDate + 'T00:00:00').toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'short', 
+                  day: 'numeric', 
+                  year: 'numeric' 
+                })}
+              </div>
+              <div className="text-sm text-green-100">
+                {(() => {
+                  const sentDate = new Date(request.toolkitSentDate + 'T00:00:00');
+                  const today = new Date();
+                  const diffTime = today.getTime() - sentDate.getTime();
+                  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  if (diffDays === 0) return 'Sent today';
+                  if (diffDays === 1) return 'Sent 1 day ago';
+                  if (diffDays <= 7) return `Sent ${diffDays} days ago`;
+                  if (diffDays <= 14) return `Sent ${Math.floor(diffDays / 7)} week ago`;
+                  return `Sent ${Math.floor(diffDays / 7)} weeks ago`;
+                })()}
               </div>
               {request.toolkitSentBy && (
-                <div className="flex items-center gap-2 ml-6">
-                  <User className="w-3 h-3 text-yellow-600" />
-                  <span className="text-xs text-yellow-700">
-                    Sent by: {resolveUserName ? resolveUserName(request.toolkitSentBy) : request.toolkitSentBy}
-                  </span>
+                <div className="flex items-center justify-center gap-2 mt-2 text-xs text-green-100">
+                  <User className="w-3 h-3" />
+                  <span>Sent by: {resolveUserName ? resolveUserName(request.toolkitSentBy) : request.toolkitSentBy}</span>
+                </div>
+              )}
+              {isStale && (
+                <div className="mt-3">
+                  <Badge className="bg-red-500 text-white border-red-400 px-3 py-1">
+                    <AlertTriangle className="w-4 h-4 mr-1" />
+                    Follow-up needed - Over 1 week since toolkit sent
+                  </Badge>
                 </div>
               )}
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Event Details */}
+        <div className="space-y-3 mb-4">
 
           {/* Scheduled Call Info */}
           {request.scheduledCallDate && (
