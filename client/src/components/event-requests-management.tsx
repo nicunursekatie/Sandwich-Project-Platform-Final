@@ -2160,7 +2160,7 @@ export default function EventRequestsManagement({
         {showCollectionLog && collectionLogEventRequest && (
           <EventCollectionLog
             eventRequest={collectionLogEventRequest}
-            isOpen={showCollectionLog}
+            isVisible={showCollectionLog}
             onClose={() => {
               setShowCollectionLog(false);
               setCollectionLogEventRequest(null);

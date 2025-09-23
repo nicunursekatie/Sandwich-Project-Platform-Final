@@ -202,7 +202,7 @@ const ProjectsManagementContent: React.FC = () => {
         emptyMessage={
           searchQuery
             ? `No projects found matching "${searchQuery}"`
-            : `No ${activeTab.replace('_', ' ')} projects`
+            : `No ${(activeTab || '').replace('_', ' ')} projects`
         }
       />
 
