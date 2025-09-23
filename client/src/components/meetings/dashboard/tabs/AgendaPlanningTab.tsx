@@ -318,8 +318,12 @@ export function AgendaPlanningTab({
           description: `Saved ${notesCreated} note(s) from this meeting. View them in the Notes tab.`,
         });
 
-        // Optionally clear the text fields after successful save
-        // This depends on your preference - you might want to keep them
+        // Reset agenda planning page to normal state
+        setSelectedProjectIds([]);
+        setProjectAgendaStatus({});
+        setMinimizedProjects(new Set());
+        // Note: localProjectText is not directly controlled by this component, 
+        // it will be reset when the parent component re-renders with empty agenda status
       } else {
         toast({
           title: 'No Notes to Save',
