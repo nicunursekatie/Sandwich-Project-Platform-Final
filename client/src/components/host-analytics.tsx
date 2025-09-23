@@ -28,6 +28,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { SandwichCollection, Host } from '@shared/schema';
+import { parseCollectionDate } from '@/lib/analytics-utils';
 
 interface HostAnalyticsProps {
   selectedHost?: string;
@@ -170,24 +171,28 @@ export default function HostAnalytics({
         cutoffDate.setFullYear(now.getFullYear() - 1);
         break;
       case 'all':
-        cutoffDate = new Date('2020-01-01'); // Far back date
+        cutoffDate = parseCollectionDate('2020-01-01'); // Far back date
         break;
     }
 
     const filteredCollections = hostCollections.filter(
-      (c: SandwichCollection) => new Date(c.collectionDate) >= cutoffDate
+      (c: SandwichCollection) =>
+        parseCollectionDate(c.collectionDate).getTime() >= cutoffDate.getTime()
     );
 
     // Calculate overall statistics
     let totalIndividual = 0;
     let totalGroup = 0;
     const allGroups = new Set<string>();
-    const dates: string[] = [];
+    const dates: Date[] = [];
 
     filteredCollections.forEach((collection: SandwichCollection) => {
       totalIndividual += collection.individualSandwiches || 0;
       totalGroup += calculateGroupTotal(collection);
-      dates.push(collection.collectionDate);
+      const parsedDate = parseCollectionDate(collection.collectionDate);
+      if (!Number.isNaN(parsedDate.getTime())) {
+        dates.push(parsedDate);
+      }
 
       const groups = getGroupCollections(collection);
       groups.forEach((group) => allGroups.add(group));
@@ -197,7 +202,10 @@ export default function HostAnalytics({
     const monthlyData = new Map<string, MonthlyStats>();
 
     filteredCollections.forEach((collection: SandwichCollection) => {
-      const date = new Date(collection.collectionDate);
+      const date = parseCollectionDate(collection.collectionDate);
+      if (Number.isNaN(date.getTime())) {
+        return;
+      }
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleDateString('en-US', {
         month: 'short',
@@ -238,16 +246,16 @@ export default function HostAnalytics({
       .map(([, stats]) => stats);
 
     // Calculate date range
-    dates.sort();
+    dates.sort((a, b) => a.getTime() - b.getTime());
     const dateRange =
       dates.length > 0
         ? {
-            earliest: new Date(dates[0]).toLocaleDateString('en-US', {
+            earliest: dates[0].toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
             }),
-            latest: new Date(dates[dates.length - 1]).toLocaleDateString(
+            latest: dates[dates.length - 1].toLocaleDateString(
               'en-US',
               { month: 'short', day: 'numeric', year: 'numeric' }
             ),

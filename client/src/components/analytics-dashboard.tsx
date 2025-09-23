@@ -27,6 +27,7 @@ import {
   calculateTotalSandwiches,
   calculateActualWeeklyAverage,
   getRecordWeek,
+  parseCollectionDate,
 } from '@/lib/analytics-utils';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -148,15 +149,14 @@ export default function AnalyticsDashboard() {
           console.log(`⚠️ Skipping collection ${index}: No date`);
           return;
         }
-        
-        // Extract YYYY-MM from date string (bulletproof parsing)
-        const monthMatch = dateStr.match(/^(\d{4})-(\d{2})/);
-        if (!monthMatch) {
+
+        const parsedDate = parseCollectionDate(dateStr);
+        if (Number.isNaN(parsedDate.getTime())) {
           console.log(`⚠️ Skipping collection ${index}: Invalid date format: ${dateStr}`);
           return;
         }
-        
-        const monthKey = `${monthMatch[1]}-${monthMatch[2]}`;
+
+        const monthKey = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`;
         
         // Calculate total sandwiches for this collection
         const individual = Number(collection.individualSandwiches || 0);
