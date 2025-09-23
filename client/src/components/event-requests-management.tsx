@@ -2034,9 +2034,9 @@ export default function EventRequestsManagement({
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">
+      <div className="w-full flex flex-col space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-3xl font-bold">Event Requests Management</h1>
             <p className="text-[#236383]">
@@ -2113,11 +2113,11 @@ export default function EventRequestsManagement({
           totalItems={filteredAndSortedRequests.length}
           totalPages={totalPages}
           children={{
-            new: <div className="space-y-4">{renderEventsForStatus('new')}</div>,
-            in_process: <div className="space-y-4">{renderEventsForStatus('in_process')}</div>,
-            scheduled: <div className="space-y-4">{renderEventsForStatus('scheduled')}</div>,
-            completed: <div className="space-y-4">{renderEventsForStatus('completed')}</div>,
-            declined: <div className="space-y-4">{renderEventsForStatus('declined')}</div>,
+            new: <div className="w-full flex flex-col space-y-4">{renderEventsForStatus('new')}</div>,
+            in_process: <div className="w-full flex flex-col space-y-4">{renderEventsForStatus('in_process')}</div>,
+            scheduled: <div className="w-full flex flex-col space-y-4">{renderEventsForStatus('scheduled')}</div>,
+            completed: <div className="w-full flex flex-col space-y-4">{renderEventsForStatus('completed')}</div>,
+            declined: <div className="w-full flex flex-col space-y-4">{renderEventsForStatus('declined')}</div>,
           }}
         />
 
