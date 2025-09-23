@@ -141,10 +141,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error('❌ Failed to load monitoring routes:', error);
   }
 
-  // Meeting notes routes
-  const meetingNotesRoutes = await import('./routes/meeting-notes');
-  app.use('/api/meetings/notes', isAuthenticated, meetingNotesRoutes.default);
-
   // Add catch-all handler for unknown API routes to prevent SPA fallback serving HTML
   // This must come AFTER all legitimate API routes but BEFORE static file serving
   app.use('/api', (req, res, next) => {
