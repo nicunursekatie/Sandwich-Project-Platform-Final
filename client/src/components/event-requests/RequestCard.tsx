@@ -1324,9 +1324,9 @@ export default function RequestCard({
                           </div>
                           
                           {/* Driver Assignments */}
-                          {request.assignedDriverIds && request.assignedDriverIds.length > 0 && (
+                          {(request.assignedDriverIds && request.assignedDriverIds.length > 0) || request.assignedVanDriverId ? (
                             <div className="space-y-1">
-                              {request.assignedDriverIds.map((driverId) => {
+                              {request.assignedDriverIds?.map((driverId) => {
                                 const driverDetails = (request as any).driverDetails?.[driverId];
                                 const driverName = driverDetails?.name || getDriverName(driverId);
                                 return (
@@ -1361,8 +1361,43 @@ export default function RequestCard({
                                   </div>
                                 );
                               })}
+                              {/* Van Driver in Drivers List */}
+                              {request.assignedVanDriverId && (
+                                <div className="flex items-center justify-between bg-white p-2 rounded border">
+                                  <span className="text-sm font-medium text-[#236383]">
+                                    {getDriverName(request.assignedVanDriverId)}
+                                    <span className="ml-2 text-xs text-[#A31C41]">(van driver, counts as driver)</span>
+                                  </span>
+                                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_STAFFING) && (
+                                    <div className="flex items-center space-x-1">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openEditAssignmentDialog(request.id, 'driver', request.assignedVanDriverId);
+                                        }}
+                                        className="h-6 w-6 p-0 text-[#236383] hover:text-[#1A2332]"
+                                      >
+                                        <Edit className="w-3 h-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoveAssignment(request.assignedVanDriverId, 'driver', request.id);
+                                        }}
+                                        className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          ) : null}
                           
                           {/* Driver Assignment Actions */}
                           {(hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS)) && (
@@ -1400,25 +1435,7 @@ export default function RequestCard({
                         </div>
                         
                         {/* Van Driver Section */}
-                        {request.vanDriverNeeded && (
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-base font-medium text-[#236383] flex items-center">
-                                <Truck className="w-4 h-4 mr-1" />
-                                Van Driver:
-                              </span>
-                              {request.assignedVanDriverId ? (
-                                <span className="font-semibold text-base text-green-600">
-                                  {getDriverName(request.assignedVanDriverId)}
-                                </span>
-                              ) : (
-                                <span className="font-semibold text-base text-orange-600">
-                                  Van Driver Needed
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                        {/* (Removed, now shown in Drivers section) */}
                         
                         {/* Speakers Section */}
                         <div className="space-y-2">
