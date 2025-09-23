@@ -208,13 +208,12 @@ export function AgendaPlanningTab({
   // Add notes functionality
   const { createNoteMutation } = useNotes();
 
-  // Function to create individual note items from agenda planning text boxes
-  // This should only be called at the end of the meeting to finalize notes
-  const handleFinalizeMeetingNotes = async () => {
+  // Function to save all agenda content to organized notes
+  const handleSaveToNotes = async () => {
     if (!selectedMeeting) {
       toast({
         title: 'No Meeting Selected',
-        description: 'Please select a meeting before finalizing notes.',
+        description: 'Please select a meeting before saving notes.',
         variant: 'destructive',
       });
       return;
@@ -223,62 +222,124 @@ export function AgendaPlanningTab({
     let notesCreated = 0;
     const errors: string[] = [];
 
-    // Process each project that has text content
-    for (const project of allProjects) {
-      const discussionPoints = getTextValue(project.id, 'discussionPoints', '');
-      const decisionItems = getTextValue(project.id, 'decisionItems', '');
+    try {
+      // Process agenda projects
+      const agendaProjects = allProjects.filter(p => projectAgendaStatus[p.id] === 'onAgenda');
 
-      // Create note for discussion points if there's content
-      if (discussionPoints && discussionPoints.trim()) {
-        try {
-          await createNoteMutation.mutateAsync({
-            projectId: project.id,
-            meetingId: selectedMeeting.id,
-            type: 'discussion',
-            content: discussionPoints.trim(),
-            status: 'active',
-          });
-          notesCreated++;
-        } catch (error) {
-          errors.push(`Failed to save discussion points for ${project.title}`);
+      for (const project of agendaProjects) {
+        const discussionPoints = getTextValue(project.id, 'discussionPoints', project.meetingDiscussionPoints || '');
+        const decisionItems = getTextValue(project.id, 'decisionItems', project.meetingDecisionItems || '');
+
+        // Create a comprehensive note for each project with structured content
+        const noteContent = {
+          projectTitle: project.title,
+          category: project.category || 'general',
+          priority: project.priority || 'medium',
+          status: project.status,
+          discussionPoints: discussionPoints?.trim() || null,
+          decisionItems: decisionItems?.trim() || null,
+          assignee: project.assigneeName || null,
+          supportPeople: project.supportPeople || null,
+          reviewInNextMeeting: project.reviewInNextMeeting || false,
+        };
+
+        // Only create note if there's meaningful content
+        if (discussionPoints?.trim() || decisionItems?.trim()) {
+          try {
+            await createNoteMutation.mutateAsync({
+              projectId: project.id,
+              meetingId: selectedMeeting.id,
+              type: 'meeting',
+              content: JSON.stringify(noteContent),
+              status: 'active',
+            });
+            notesCreated++;
+          } catch (error) {
+            errors.push(`Failed to save notes for ${project.title}`);
+          }
         }
       }
 
-      // Create note for decision items if there's content
-      if (decisionItems && decisionItems.trim()) {
+      // Process tabled projects
+      const tabledProjects = allProjects.filter(p => projectAgendaStatus[p.id] === 'tabled');
+
+      for (const project of tabledProjects) {
+        const noteContent = {
+          projectTitle: project.title,
+          category: project.category || 'general',
+          status: 'tabled',
+          reason: 'Tabled for next meeting',
+        };
+
         try {
           await createNoteMutation.mutateAsync({
             projectId: project.id,
             meetingId: selectedMeeting.id,
             type: 'meeting',
-            content: decisionItems.trim(),
+            content: JSON.stringify(noteContent),
             status: 'active',
           });
           notesCreated++;
         } catch (error) {
-          errors.push(`Failed to save decision items for ${project.title}`);
+          errors.push(`Failed to save tabled status for ${project.title}`);
         }
       }
-    }
 
-    // Show success/error message
-    if (notesCreated > 0) {
+      // Process off-agenda items
+      const offAgendaItems = agendaItems.filter(item => item.isOffAgendaItem);
+
+      for (const item of offAgendaItems) {
+        const noteContent = {
+          title: item.title,
+          section: item.section,
+          type: 'off-agenda',
+          content: item.content || '',
+        };
+
+        try {
+          // For off-agenda items, we'll need to create them without a specific project
+          await createNoteMutation.mutateAsync({
+            projectId: 0, // Will need to handle this case in the backend
+            meetingId: selectedMeeting.id,
+            type: 'meeting',
+            content: JSON.stringify(noteContent),
+            status: 'active',
+          });
+          notesCreated++;
+        } catch (error) {
+          errors.push(`Failed to save off-agenda item: ${item.title}`);
+        }
+      }
+
+      // Show success message
+      if (notesCreated > 0) {
+        toast({
+          title: 'Notes Saved Successfully',
+          description: `Saved ${notesCreated} note(s) from this meeting. View them in the Notes tab.`,
+        });
+
+        // Optionally clear the text fields after successful save
+        // This depends on your preference - you might want to keep them
+      } else {
+        toast({
+          title: 'No Notes to Save',
+          description: 'Add discussion points or decision items before saving.',
+          variant: 'destructive',
+        });
+      }
+
+    } catch (error) {
       toast({
-        title: 'Meeting Notes Finalized',
-        description: `Created ${notesCreated} individual note item(s) from this meeting's discussion. These are now available in the Notes tab.`,
-      });
-    } else {
-      toast({
-        title: 'No Notes to Finalize',
-        description: 'No text content found in discussion points or decision items.',
+        title: 'Error Saving Notes',
+        description: 'An unexpected error occurred while saving notes.',
         variant: 'destructive',
       });
     }
 
     if (errors.length > 0) {
       toast({
-        title: 'Some Notes Failed to Save',
-        description: errors.join(', '),
+        title: 'Some Notes Failed',
+        description: errors.slice(0, 3).join(', '),
         variant: 'destructive',
       });
     }
@@ -349,13 +410,13 @@ export function AgendaPlanningTab({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowResetConfirmDialog(true)}
-            disabled={resetAgendaPlanningMutation.isPending}
-            data-testid="button-reset-agenda"
-            style={{ borderColor: '#FBAD3F', color: '#FBAD3F' }}
+            onClick={handleSaveToNotes}
+            disabled={createNoteMutation.isPending}
+            data-testid="button-save-to-notes"
+            style={{ borderColor: '#47B3CB', color: '#47B3CB' }}
             onMouseEnter={(e) => {
               const target = e.currentTarget as HTMLButtonElement;
-              target.style.backgroundColor = '#fef7e6';
+              target.style.backgroundColor = '#e6f2f5';
             }}
             onMouseLeave={(e) => {
               const target = e.currentTarget as HTMLButtonElement;
@@ -363,8 +424,8 @@ export function AgendaPlanningTab({
             }}
             className=""
           >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset for Next Week
+            <FileText className="w-4 h-4 mr-2" />
+            Save to Notes
           </Button>
 
           {(agendaSummary.agendaCount > 0 ||

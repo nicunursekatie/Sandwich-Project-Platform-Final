@@ -48,6 +48,7 @@ import {
   Users,
   MessageSquare,
   Award,
+  Archive,
 } from 'lucide-react';
 import { TaskAssigneeSelector } from '@/components/task-assignee-selector';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
@@ -599,6 +600,31 @@ export default function ProjectDetailClean({
     }
   };
 
+  const [isArchivingTasks, setIsArchivingTasks] = useState(false);
+
+  // Archive completed tasks mutation
+  const archiveCompletedTasksMutation = useMutation({
+    mutationFn: async () => {
+      const completedTaskIds = tasks.filter((t) => t.status === 'completed').map((t) => t.id);
+      if (completedTaskIds.length === 0) return;
+      // You can either delete or mark as archived. Here, we'll PATCH to set status 'archived'.
+      await Promise.all(
+        completedTaskIds.map((taskId) =>
+          apiRequest('PATCH', `/api/tasks/${taskId}`, { status: 'archived' })
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', id, 'tasks'] });
+      toast({ description: 'Completed tasks archived.' });
+      setIsArchivingTasks(false);
+    },
+    onError: (error) => {
+      toast({ description: 'Failed to archive completed tasks', variant: 'destructive' });
+      setIsArchivingTasks(false);
+    },
+  });
+
   if (isProjectLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -985,15 +1011,27 @@ export default function ProjectDetailClean({
           <h2 className="text-2xl font-bold text-brand-primary font-roboto">
             Tasks
           </h2>
-          {user && canEditProject(user, project) && (
-            <Button
-              onClick={() => setIsAddingTask(true)}
-              className="flex items-center gap-2 bg-brand-orange hover:bg-brand-orange/90 text-white font-roboto px-4 py-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Task
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {user && canEditProject(user, project) && (
+              <Button
+                onClick={() => setIsAddingTask(true)}
+                className="flex items-center gap-2 bg-brand-orange hover:bg-brand-orange/90 text-white font-roboto px-4 py-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Task
+              </Button>
+            )}
+            {user && canEditProject(user, project) && tasks.some((t) => t.status === 'completed') && (
+              <Button
+                onClick={() => archiveCompletedTasksMutation.mutate()}
+                className="flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white font-roboto px-4 py-2"
+                disabled={isArchivingTasks || archiveCompletedTasksMutation.isPending}
+              >
+                <Archive className="h-4 w-4" />
+                {archiveCompletedTasksMutation.isPending ? 'Archiving...' : 'Archive Completed Tasks'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Add Task Form */}

@@ -333,6 +333,113 @@ export function NotesTab({
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
+  // Parse and render structured note content
+  const renderNoteContent = (note: MeetingNote) => {
+    try {
+      // Try to parse as JSON for structured notes
+      const parsed = JSON.parse(note.content);
+
+      // Check if it's a structured note from agenda planning
+      if (parsed.projectTitle || parsed.title) {
+        return (
+          <div className="space-y-3">
+            {/* Project/Item Title */}
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-900">
+                {parsed.projectTitle || parsed.title}
+              </span>
+              {parsed.category && (
+                <Badge variant="outline" className="text-xs">
+                  {parsed.category}
+                </Badge>
+              )}
+              {parsed.priority && (
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${
+                    parsed.priority === 'high' ? 'border-red-500 text-red-700' :
+                    parsed.priority === 'medium' ? 'border-yellow-500 text-yellow-700' :
+                    'border-gray-400 text-gray-600'
+                  }`}
+                >
+                  {parsed.priority}
+                </Badge>
+              )}
+              {parsed.status === 'tabled' && (
+                <Badge className="bg-orange-100 text-orange-700 text-xs">
+                  Tabled
+                </Badge>
+              )}
+              {parsed.type === 'off-agenda' && (
+                <Badge className="bg-purple-100 text-purple-700 text-xs">
+                  Off-Agenda
+                </Badge>
+              )}
+            </div>
+
+            {/* Discussion Points */}
+            {parsed.discussionPoints && (
+              <div className="pl-4 border-l-2 border-teal-200">
+                <p className="text-sm font-medium text-teal-700 mb-1">Discussion Points:</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{parsed.discussionPoints}</p>
+              </div>
+            )}
+
+            {/* Decision Items */}
+            {parsed.decisionItems && (
+              <div className="pl-4 border-l-2 border-rose-200">
+                <p className="text-sm font-medium text-rose-700 mb-1">Decision Items:</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{parsed.decisionItems}</p>
+              </div>
+            )}
+
+            {/* Off-Agenda Content */}
+            {parsed.type === 'off-agenda' && parsed.content && (
+              <div className="pl-4 border-l-2 border-purple-200">
+                <p className="text-sm font-medium text-purple-700 mb-1">Content:</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{parsed.content}</p>
+              </div>
+            )}
+
+            {/* Metadata */}
+            <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+              {parsed.assignee && (
+                <div className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  <span>Assigned to: {parsed.assignee}</span>
+                </div>
+              )}
+              {parsed.supportPeople && (
+                <div className="flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  <span>Support: {parsed.supportPeople}</span>
+                </div>
+              )}
+              {parsed.reviewInNextMeeting && (
+                <Badge variant="secondary" className="text-xs">
+                  Review Next Meeting
+                </Badge>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // If it's not our structured format, return the parsed content as-is
+      return <p className="text-gray-900 whitespace-pre-wrap">{note.content}</p>;
+    } catch {
+      // If it's not JSON, render as plain text
+      return (
+        <div className="text-gray-900 leading-relaxed whitespace-pre-wrap">
+          {expandedNotes.has(note.id)
+            ? note.content
+            : truncateText(note.content)
+          }
+        </div>
+      );
+    }
+  };
+
   if (notesLoading) {
     return (
       <div className="space-y-4">
