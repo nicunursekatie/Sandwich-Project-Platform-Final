@@ -1347,60 +1347,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </div>
                 )}
 
-                {/* Van Driver - if needed */}
-                {(request.vanDriverNeeded || request.assignedVanDriverId) && (
-                  <div className="rounded-lg p-3 border bg-orange-50 border-orange-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Car className="w-4 h-4 text-[#A31C41]" />
-                        <span className="font-medium text-[#A31C41]">
-                          Van Driver
-                        </span>
-                        <span className="text-xs text-gray-600 bg-white/60 px-2 py-1 rounded-full">
-                          (counts as driver)
-                        </span>
-                      </div>
-                      {canEdit && !request.assignedVanDriverId && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openAssignmentDialog('driver')}
-                          className="h-8 text-sm border-[#A31C41]/40 text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
-                        >
-                          <UserPlus className="w-3 h-3 mr-1" />
-                          Assign
-                        </Button>
-                      )}
-                    </div>
-                    {request.assignedVanDriverId ? (
-                      <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                        <span className="text-base font-medium">
-                          {request.customVanDriverName ||
-                            resolveUserName(request.assignedVanDriverId)}
-                        </span>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              handleRemoveAssignment(
-                                'driver',
-                                request.assignedVanDriverId!
-                              )
-                            }
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-base text-gray-500 italic">
-                        No van driver assigned
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           )}
