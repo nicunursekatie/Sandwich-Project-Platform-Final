@@ -346,44 +346,33 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
       <CardContent className="p-6">
         <CardHeader request={request} resolveUserName={resolveUserName} isInProcessStale={isStale} />
 
-        {/* PROMINENT Toolkit Sent Status - Most Important Info */}
-        {request.toolkitSentDate && (
-          <div className="bg-gradient-to-r from-[#28a745] to-[#20c997] rounded-xl p-5 mb-6 border-2 border-green-300 shadow-lg">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <Package className="w-6 h-6 text-white" />
-                <span className="text-lg font-bold text-white">TOOLKIT SENT</span>
+        {/* Toolkit Sent Status - Professional and brand-aligned */}
+        {request.toolkitSentDate && (() => {
+          // Format toolkit date safely
+          const formatToolkitDate = (dateStr?: string) => {
+            if (!dateStr) return null;
+            const iso = dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`;
+            const dt = new Date(iso);
+            if (isNaN(dt.getTime())) return null;
+            return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+          };
+
+          const formattedDate = formatToolkitDate(request.toolkitSentDate);
+          if (!formattedDate) return null;
+
+          return (
+            <div className="mb-4">
+              <div className="inline-flex items-center gap-2 rounded-md border border-[#236383]/25 bg-[#EAF4F8] text-[#236383] px-3 py-2 text-sm font-medium">
+                <Package className="w-4 h-4" />
+                <span>Toolkit sent {formattedDate}</span>
+                {request.toolkitSentBy && (
+                  <span className="text-xs text-[#236383]/70">
+                    by {resolveUserName ? resolveUserName(request.toolkitSentBy) : request.toolkitSentBy}
+                  </span>
+                )}
               </div>
-              <div className="text-2xl font-bold text-white mb-1">
-                {new Date(request.toolkitSentDate + 'T00:00:00').toLocaleDateString('en-US', { 
-                  weekday: 'short', 
-                  month: 'short', 
-                  day: 'numeric', 
-                  year: 'numeric' 
-                })}
-              </div>
-              <div className="text-sm text-green-100">
-                {(() => {
-                  const sentDate = new Date(request.toolkitSentDate + 'T00:00:00');
-                  const today = new Date();
-                  const diffTime = today.getTime() - sentDate.getTime();
-                  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                  
-                  if (diffDays === 0) return 'Sent today';
-                  if (diffDays === 1) return 'Sent 1 day ago';
-                  if (diffDays <= 7) return `Sent ${diffDays} days ago`;
-                  if (diffDays <= 14) return `Sent ${Math.floor(diffDays / 7)} week ago`;
-                  return `Sent ${Math.floor(diffDays / 7)} weeks ago`;
-                })()}
-              </div>
-              {request.toolkitSentBy && (
-                <div className="flex items-center justify-center gap-2 mt-2 text-xs text-green-100">
-                  <User className="w-3 h-3" />
-                  <span>Sent by: {resolveUserName ? resolveUserName(request.toolkitSentBy) : request.toolkitSentBy}</span>
-                </div>
-              )}
               {isStale && (
-                <div className="mt-3">
+                <div className="mt-2">
                   <Badge className="bg-red-500 text-white border-red-400 px-3 py-1">
                     <AlertTriangle className="w-4 h-4 mr-1" />
                     Follow-up needed - Over 1 week since toolkit sent
@@ -391,8 +380,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </div>
               )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Event Details */}
         <div className="space-y-3 mb-4">
