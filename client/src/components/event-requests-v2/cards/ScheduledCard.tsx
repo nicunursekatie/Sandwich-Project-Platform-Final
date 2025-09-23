@@ -3,9 +3,21 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Clock,
   Package,
@@ -27,9 +39,21 @@ import {
   Mail,
   FileText,
 } from 'lucide-react';
-import { formatTime12Hour, formatTimeForInput, formatEventDate } from '@/components/event-requests/utils';
-import { SANDWICH_TYPES, statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
-import { parseSandwichTypes, formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
+import {
+  formatTime12Hour,
+  formatTimeForInput,
+  formatEventDate,
+} from '@/components/event-requests/utils';
+import {
+  SANDWICH_TYPES,
+  statusColors,
+  statusIcons,
+  statusOptions,
+} from '@/components/event-requests/constants';
+import {
+  parseSandwichTypes,
+  formatSandwichTypesDisplay,
+} from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
 
 interface DeliveryDestinationEditorProps {
@@ -43,13 +67,19 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
   currentValue,
   onSave,
   onCancel,
-  setEditingValue
+  setEditingValue,
 }) => {
-  const [selectedOption, setSelectedOption] = React.useState(currentValue ? 'custom' : '');
+  const [selectedOption, setSelectedOption] = React.useState(
+    currentValue ? 'custom' : ''
+  );
   const [customValue, setCustomValue] = React.useState(currentValue);
 
   // Fetch recipients from the API
-  const { data: recipients = [], isLoading, error } = useQuery({
+  const {
+    data: recipients = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['recipients'],
     queryFn: async () => {
       const response = await fetch('/api/recipients');
@@ -75,7 +105,7 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
         value={selectedOption}
         onChange={(e) => setSelectedOption(e.target.value)}
         className="h-8 px-2 border border-gray-300 rounded text-sm w-full"
-                    autoFocus
+        autoFocus
         disabled={isLoading}
       >
         <option value="">Select recipient organization...</option>
@@ -101,11 +131,11 @@ const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
         <Button size="sm" onClick={handleSave}>
           <Save className="w-3 h-3 mr-1" />
           Save
-                  </Button>
+        </Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>
           <X className="w-3 h-3 mr-1" />
           Cancel
-                  </Button>
+        </Button>
       </div>
     </div>
   );
@@ -122,11 +152,17 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
   request,
   startEditing,
   saveEdit,
-  cancelEdit
+  cancelEdit,
 }) => {
-  const [tempStartTime, setTempStartTime] = React.useState(request.eventStartTime || '');
-  const [tempEndTime, setTempEndTime] = React.useState(request.eventEndTime || '');
-  const [tempPickupTime, setTempPickupTime] = React.useState(request.pickupTime || '');
+  const [tempStartTime, setTempStartTime] = React.useState(
+    request.eventStartTime || ''
+  );
+  const [tempEndTime, setTempEndTime] = React.useState(
+    request.eventEndTime || ''
+  );
+  const [tempPickupTime, setTempPickupTime] = React.useState(
+    request.pickupTime || ''
+  );
 
   const handleSave = () => {
     if (tempStartTime && !request.eventStartTime) {
@@ -142,12 +178,14 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
   };
 
   const hasChanges = () => {
-    return (tempStartTime && !request.eventStartTime) ||
-           (tempEndTime && !request.eventEndTime) ||
-           (tempPickupTime && !request.pickupTime);
+    return (
+      (tempStartTime && !request.eventStartTime) ||
+      (tempEndTime && !request.eventEndTime) ||
+      (tempPickupTime && !request.pickupTime)
+    );
   };
 
-    return (
+  return (
     <div className="space-y-4">
       {!request.eventStartTime && (
         <div className="space-y-2">
@@ -159,8 +197,8 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
             className="w-full"
             placeholder="Select start time"
           />
-            </div>
-          )}
+        </div>
+      )}
       {!request.eventEndTime && (
         <div className="space-y-2">
           <label className="text-sm font-medium">Event End Time</label>
@@ -183,22 +221,19 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
             className="w-full"
             placeholder="Select pickup time"
           />
-          </div>
-        )}
+        </div>
+      )}
       <div className="flex justify-end gap-2 pt-4">
         <Button variant="outline" onClick={cancelEdit}>
           Cancel
-            </Button>
-            <Button
-          onClick={handleSave}
-          disabled={!hasChanges()}
-        >
+        </Button>
+        <Button onClick={handleSave} disabled={!hasChanges()}>
           Save Times
-            </Button>
-        </div>
+        </Button>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 interface ScheduledCardProps {
   request: EventRequest;
@@ -209,7 +244,7 @@ interface ScheduledCardProps {
   isEditingThisCard: boolean;
   inlineSandwichMode: 'total' | 'types';
   inlineTotalCount: number;
-  inlineSandwichTypes: Array<{type: string, quantity: number}>;
+  inlineSandwichTypes: Array<{ type: string; quantity: number }>;
 
   // Actions
   onEdit: () => void;
@@ -227,17 +262,33 @@ interface ScheduledCardProps {
   setInlineSandwichMode: (mode: 'total' | 'types') => void;
   setInlineTotalCount: (count: number) => void;
   addInlineSandwichType: () => void;
-  updateInlineSandwichType: (index: number, field: 'type' | 'quantity', value: string | number) => void;
+  updateInlineSandwichType: (
+    index: number,
+    field: 'type' | 'quantity',
+    value: string | number
+  ) => void;
   removeInlineSandwichType: (index: number) => void;
 
   // Assignment actions
   resolveUserName: (id: string) => string;
   openAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer') => void;
-  openEditAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
-  handleRemoveAssignment: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
+  openEditAssignmentDialog: (
+    type: 'driver' | 'speaker' | 'volunteer',
+    personId: string
+  ) => void;
+  handleRemoveAssignment: (
+    type: 'driver' | 'speaker' | 'volunteer',
+    personId: string
+  ) => void;
   handleSelfSignup: (type: 'driver' | 'speaker' | 'volunteer') => void;
-  canSelfSignup: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
-  isUserSignedUp: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
+  canSelfSignup: (
+    request: EventRequest,
+    type: 'driver' | 'speaker' | 'volunteer'
+  ) => boolean;
+  isUserSignedUp: (
+    request: EventRequest,
+    type: 'driver' | 'speaker' | 'volunteer'
+  ) => boolean;
 
   canEdit?: boolean;
 }
@@ -284,14 +335,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       if (!cleaned) return [];
       if (cleaned.includes('"')) {
         const matches = cleaned.match(/"[^"]*"|[^",]+/g);
-        return matches ? matches.map(item => item.replace(/"/g, '').trim()).filter(item => item) : [];
+        return matches
+          ? matches
+              .map((item) => item.replace(/"/g, '').trim())
+              .filter((item) => item)
+          : [];
       }
-      return cleaned.split(',').map(item => item.trim()).filter(item => item);
+      return cleaned
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item);
     }
     return [];
   };
 
-  const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
+  const StatusIcon =
+    statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
 
   // Helper function to extract name from custom entries
   const extractCustomName = (id: string): string => {
@@ -305,9 +364,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   };
 
   // Calculate staffing status
-  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0);
+  const driverAssigned =
+    parsePostgresArray(request.assignedDriverIds).length +
+    (request.assignedVanDriverId ? 1 : 0);
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
-  const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
+  const volunteerAssigned = parsePostgresArray(
+    request.assignedVolunteerIds
+  ).length;
 
   const driverNeeded = request.driversNeeded || 0;
   const speakerNeeded = request.speakersNeeded || 0;
@@ -323,7 +386,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   // Get status label
   const getStatusLabel = (status: string) => {
-    const statusOption = statusOptions.find(option => option.value === status);
+    const statusOption = statusOptions.find(
+      (option) => option.value === status
+    );
     return statusOption ? statusOption.label : status.replace('_', ' ');
   };
 
@@ -338,7 +403,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   let dateLabel = 'Requested Date';
   if (request.scheduledEventDate) {
     dateFieldToEdit = 'scheduledEventDate';
-    dateLabel = request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
+    dateLabel =
+      request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
   }
 
   const renderEditableField = (
@@ -412,23 +478,23 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             value || 'Not set'
           )}
         </span>
-          {canEdit && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                if (type === 'time') {
-                  const rawValue = request[field as keyof EventRequest] as string;
-                  startEditing(field, rawValue || '');
-                } else {
-                  startEditing(field, value?.toString() || '');
-                }
-              }}
+        {canEdit && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (type === 'time') {
+                const rawValue = request[field as keyof EventRequest] as string;
+                startEditing(field, rawValue || '');
+              } else {
+                startEditing(field, value?.toString() || '');
+              }
+            }}
             className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-            >
-              <Edit2 className="w-3 h-3" />
-            </Button>
-          )}
+          >
+            <Edit2 className="w-3 h-3" />
+          </Button>
+        )}
       </div>
     );
   };
@@ -443,18 +509,20 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       return (
         <div className="flex items-center gap-2 group">
           <Package className="w-4 h-4 text-amber-600" />
-          <span className="text-base font-medium text-gray-600">Sandwiches:</span>
+          <span className="text-base font-medium text-gray-600">
+            Sandwiches:
+          </span>
           <span className="text-base font-semibold">{sandwichInfo}</span>
-            {canEdit && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => startEditing('sandwichTypes', '')}
+          {canEdit && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => startEditing('sandwichTypes', '')}
               className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-              >
-                <Edit2 className="w-3 h-3" />
-              </Button>
-            )}
+            >
+              <Edit2 className="w-3 h-3" />
+            </Button>
+          )}
         </div>
       );
     }
@@ -504,7 +572,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <div key={index} className="flex gap-2">
                 <Select
                   value={item.type}
-                  onValueChange={(value) => updateInlineSandwichType(index, 'type', value)}
+                  onValueChange={(value) =>
+                    updateInlineSandwichType(index, 'type', value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -520,7 +590,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <Input
                   type="number"
                   value={item.quantity}
-                  onChange={(e) => updateInlineSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateInlineSandwichType(
+                      index,
+                      'quantity',
+                      parseInt(e.target.value) || 0
+                    )
+                  }
                   placeholder="Qty"
                   className="w-24"
                 />
@@ -552,7 +628,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 {request.organizationName}
                 {request.department && (
-                  <span className="text-lg font-normal text-gray-500">&bull; {request.department}</span>
+                  <span className="text-lg font-normal text-gray-500">
+                    &bull; {request.department}
+                  </span>
                 )}
               </h3>
               <Badge className="bg-[#FBAD3F] text-white px-3 py-1 text-sm font-medium shadow-sm">
@@ -568,17 +646,21 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <div className="flex gap-1">
                   {driverNeeded > driverAssigned && (
                     <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                      {driverNeeded - driverAssigned} driver
+                      {driverNeeded - driverAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {speakerNeeded > speakerAssigned && (
                     <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
+                      {speakerNeeded - speakerAssigned} speaker
+                      {speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {volunteerNeeded > volunteerAssigned && (
                     <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
+                      {volunteerNeeded - volunteerAssigned} volunteer
+                      {volunteerNeeded - volunteerAssigned > 1 ? 's' : ''}{' '}
+                      needed
                     </Badge>
                   )}
                 </div>
@@ -588,14 +670,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {/* Contact & Date */}
             <div className="flex items-center gap-6 text-base text-gray-600 mb-3">
               <div className="flex items-center gap-1">
-                <span className="font-medium">{request.firstName} {request.lastName}</span>
+                <span className="font-medium">
+                  {request.firstName} {request.lastName}
+                </span>
                 {request.email && (
-                  <a href={`mailto:${request.email}`} className="text-blue-600 hover:text-blue-800">
+                  <a
+                    href={`mailto:${request.email}`}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
                     <Mail className="w-3 h-3" />
                   </a>
                 )}
                 {request.phone && (
-                  <a href={`tel:${request.phone}`} className="text-blue-600 hover:text-blue-800">
+                  <a
+                    href={`tel:${request.phone}`}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
                     <Phone className="w-3 h-3" />
                   </a>
                 )}
@@ -622,12 +712,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 ) : (
                   <div className="flex items-center gap-1 group">
                     <span className="font-medium">{dateLabel}:</span>
-                    <span>{displayDate && dateInfo ? dateInfo.text : 'No date set'}</span>
+                    <span>
+                      {displayDate && dateInfo ? dateInfo.text : 'No date set'}
+                    </span>
                     {canEdit && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                        onClick={() =>
+                          startEditing(
+                            dateFieldToEdit,
+                            formatDateForInput(displayDate?.toString() || '')
+                          )
+                        }
                         className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                       >
                         <Edit2 className="w-3 h-3" />
@@ -645,7 +742,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <Button size="sm" variant="ghost" onClick={onEdit}>
                 <Edit2 className="w-4 h-4" />
               </Button>
-              <Button size="sm" variant="ghost" onClick={onDelete} className="text-red-600 hover:text-red-700">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onDelete}
+                className="text-red-600 hover:text-red-700"
+              >
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
@@ -659,10 +761,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <MapPin className="w-4 h-4 text-[#47B3CB]" />
-                <span className="font-semibold text-gray-800">Event Location</span>
+                <span className="font-semibold text-gray-800">
+                  Event Location
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-medium text-gray-600">Address:</span>
+                <span className="text-base font-medium text-gray-600">
+                  Address:
+                </span>
                 <a
                   href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
                   target="_blank"
@@ -680,13 +786,18 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-[#47B3CB]" />
-                <span className="font-semibold text-gray-800">Delivery Logistics</span>
+                <span className="font-semibold text-gray-800">
+                  Delivery Logistics
+                </span>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-base font-medium text-gray-600">Overnight Holding:</span>
-                {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
+                <span className="text-base font-medium text-gray-600">
+                  Overnight Holding:
+                </span>
+                {isEditingThisCard &&
+                editingField === 'overnightHoldingLocation' ? (
                   <div className="flex items-center gap-2">
                     <Input
                       type="text"
@@ -711,7 +822,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
+                        onClick={() =>
+                          startEditing(
+                            'overnightHoldingLocation',
+                            request.overnightHoldingLocation || ''
+                          )
+                        }
                         className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                       >
                         <Edit2 className="w-3 h-3" />
@@ -721,7 +837,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-medium text-gray-600">Recipients:</span>
+                <span className="text-base font-medium text-gray-600">
+                  Recipients:
+                </span>
                 {isEditingThisCard && editingField === 'deliveryDestination' ? (
                   <DeliveryDestinationEditor
                     currentValue={request.deliveryDestination || ''}
@@ -738,7 +856,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => startEditing('deliveryDestination', request.deliveryDestination || '')}
+                        onClick={() =>
+                          startEditing(
+                            'deliveryDestination',
+                            request.deliveryDestination || ''
+                          )
+                        }
                         className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                       >
                         <Edit2 className="w-3 h-3" />
@@ -754,11 +877,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
               <Package className="w-4 h-4 text-[#47B3CB]" />
-              <span className="font-semibold text-gray-800">Sandwich Details</span>
+              <span className="font-semibold text-gray-800">
+                Sandwich Details
+              </span>
             </div>
-            <div className="space-y-2">
-              {renderSandwichEdit()}
-            </div>
+            <div className="space-y-2">{renderSandwichEdit()}</div>
           </div>
 
           {/* Event Times */}
@@ -795,17 +918,28 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
             <div className="space-y-2">
               {/* Times - only show if they exist */}
-              {(request.eventStartTime || request.eventEndTime || request.pickupTime) ? (
+              {request.eventStartTime ||
+              request.eventEndTime ||
+              request.pickupTime ? (
                 <div className="space-y-2">
                   {request.eventStartTime && (
                     <div className="flex items-center gap-1 group">
-                      <span className="text-base font-medium text-gray-600">Start:</span>
-                      <span className="text-base">{formatTime12Hour(request.eventStartTime)}</span>
+                      <span className="text-base font-medium text-gray-600">
+                        Start:
+                      </span>
+                      <span className="text-base">
+                        {formatTime12Hour(request.eventStartTime)}
+                      </span>
                       {canEdit && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}
+                          onClick={() =>
+                            startEditing(
+                              'eventStartTime',
+                              formatTimeForInput(request.eventStartTime || '')
+                            )
+                          }
                           className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -815,13 +949,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   )}
                   {request.eventEndTime && (
                     <div className="flex items-center gap-1 group">
-                      <span className="text-base font-medium text-gray-600">End:</span>
-                      <span className="text-base">{formatTime12Hour(request.eventEndTime)}</span>
+                      <span className="text-base font-medium text-gray-600">
+                        End:
+                      </span>
+                      <span className="text-base">
+                        {formatTime12Hour(request.eventEndTime)}
+                      </span>
                       {canEdit && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}
+                          onClick={() =>
+                            startEditing(
+                              'eventEndTime',
+                              formatTimeForInput(request.eventEndTime || '')
+                            )
+                          }
                           className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -831,13 +974,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   )}
                   {request.pickupTime && (
                     <div className="flex items-center gap-1 group">
-                      <span className="text-base font-medium text-gray-600">Pickup:</span>
-                      <span className="text-base">{formatTime12Hour(request.pickupTime)}</span>
+                      <span className="text-base font-medium text-gray-600">
+                        Pickup:
+                      </span>
+                      <span className="text-base">
+                        {formatTime12Hour(request.pickupTime)}
+                      </span>
                       {canEdit && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => startEditing('pickupTime', formatTimeForInput(request.pickupTime || ''))}
+                          onClick={() =>
+                            startEditing(
+                              'pickupTime',
+                              formatTimeForInput(request.pickupTime || '')
+                            )
+                          }
                           className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -847,23 +999,26 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   )}
 
                   {/* Inline editing for times */}
-                  {isEditingThisCard && (editingField === 'eventStartTime' || editingField === 'eventEndTime' || editingField === 'pickupTime') && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Input
-                        type="time"
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-8 w-32"
-                        autoFocus
-                      />
-                      <Button size="sm" onClick={saveEdit}>
-                        <Save className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
+                  {isEditingThisCard &&
+                    (editingField === 'eventStartTime' ||
+                      editingField === 'eventEndTime' ||
+                      editingField === 'pickupTime') && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Input
+                          type="time"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-8 w-32"
+                          autoFocus
+                        />
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
                 </div>
               ) : (
                 <div className="text-base text-gray-500 italic">
@@ -879,24 +1034,31 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <div className="flex items-center gap-2">
                 <Building className="w-4 h-4 text-[#FBAD3F]" />
                 <span className="text-base">
-                  <span className="font-medium text-[#FBAD3F]">TSP Contact:</span>{' '}
-                  {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
+                  <span className="font-medium text-[#FBAD3F]">
+                    TSP Contact:
+                  </span>{' '}
+                  {request.tspContact
+                    ? resolveUserName(request.tspContact)
+                    : request.customTspContact}
                 </span>
               </div>
             </div>
           )}
 
-
           {/* Team Assignments */}
           {totalNeeded > 0 && (
             <div className="bg-white/90 rounded-lg p-4 mb-4 border border-white/50 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <span className="font-semibold text-gray-800">Team Assignments</span>
-                <span className={`text-base font-bold px-2 py-1 rounded-full ${
-                  staffingComplete
-                    ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
-                    : 'bg-[#A31C41]/20 text-[#A31C41]'
-                }`}>
+                <span className="font-semibold text-gray-800">
+                  Team Assignments
+                </span>
+                <span
+                  className={`text-base font-bold px-2 py-1 rounded-full ${
+                    staffingComplete
+                      ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
+                      : 'bg-[#A31C41]/20 text-[#A31C41]'
+                  }`}
+                >
                   {totalAssigned}/{totalNeeded} assigned
                 </span>
               </div>
@@ -904,20 +1066,26 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <div className="space-y-3">
                 {/* Drivers */}
                 {driverNeeded > 0 && (
-                  <div className={`rounded-lg p-3 border ${
-                    driverAssigned >= driverNeeded
-                      ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30'
-                      : 'bg-red-50 border-red-200'
-                  }`}>
+                  <div
+                    className={`rounded-lg p-3 border ${
+                      driverAssigned >= driverNeeded
+                        ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30'
+                        : 'bg-red-50 border-red-200'
+                    }`}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Car className="w-4 h-4 text-[#47B3CB]" />
-                        <span className="font-medium text-[#47B3CB]">Drivers</span>
-                        <span className={`text-sm px-2 py-1 rounded-full font-bold ${
-                          driverAssigned >= driverNeeded
-                            ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
-                            : 'bg-[#A31C41]/20 text-[#A31C41]'
-                        }`}>
+                        <span className="font-medium text-[#47B3CB]">
+                          Drivers
+                        </span>
+                        <span
+                          className={`text-sm px-2 py-1 rounded-full font-bold ${
+                            driverAssigned >= driverNeeded
+                              ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
+                              : 'bg-[#A31C41]/20 text-[#A31C41]'
+                          }`}
+                        >
                           {driverAssigned}/{driverNeeded}
                         </span>
                       </div>
@@ -933,44 +1101,65 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </Button>
                       )}
                     </div>
-                    {(driverAssigned > 0 || request.assignedVanDriverId) ? (
+                    {driverAssigned > 0 || request.assignedVanDriverId ? (
                       <div className="space-y-1">
-                        {parsePostgresArray(request.assignedDriverIds).map((driverId: string) => {
-                          let name = '';
-                          if (driverId.startsWith('custom-')) {
-                            name = extractCustomName(driverId);
-                          } else {
-                            const detailName = (request.driverDetails as any)?.[driverId]?.name;
-                            name = (detailName && !/^[\d]+$/.test(detailName)) ? detailName : resolveUserName(driverId);
+                        {parsePostgresArray(request.assignedDriverIds).map(
+                          (driverId: string) => {
+                            let name = '';
+                            if (driverId.startsWith('custom-')) {
+                              name = extractCustomName(driverId);
+                            } else {
+                              const detailName = (
+                                request.driverDetails as any
+                              )?.[driverId]?.name;
+                              name =
+                                detailName && !/^[\d]+$/.test(detailName)
+                                  ? detailName
+                                  : resolveUserName(driverId);
+                            }
+                            return (
+                              <div
+                                key={driverId}
+                                className="flex items-center justify-between bg-white/60 rounded px-2 py-1"
+                              >
+                                <span className="text-base font-medium">
+                                  {name}
+                                </span>
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleRemoveAssignment('driver', driverId)
+                                    }
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
                           }
-                          return (
-                            <div key={driverId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                              <span className="text-base font-medium">{name}</span>
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('driver', driverId)}
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          );
-                        })}
+                        )}
                         {/* Van Driver in Drivers List */}
                         {request.assignedVanDriverId && (
                           <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
                             <span className="text-base font-medium">
                               {resolveUserName(request.assignedVanDriverId)}
-                              <span className="ml-2 text-xs text-[#A31C41]">(van driver, counts as driver)</span>
+                              <span className="ml-2 text-xs text-[#A31C41]">
+                                (van driver, counts as driver)
+                              </span>
                             </span>
                             {canEdit && (
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                                onClick={() =>
+                                  handleRemoveAssignment(
+                                    'driver',
+                                    request.assignedVanDriverId!
+                                  )
+                                }
                                 className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                               >
                                 <X className="w-3 h-3" />
@@ -980,27 +1169,35 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         )}
                       </div>
                     ) : (
-                      <div className="text-base text-gray-500 italic">No drivers assigned</div>
+                      <div className="text-base text-gray-500 italic">
+                        No drivers assigned
+                      </div>
                     )}
                   </div>
                 )}
 
                 {/* Speakers */}
                 {speakerNeeded > 0 && (
-                  <div className={`rounded-lg p-3 border ${
-                    speakerAssigned >= speakerNeeded
-                      ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30'
-                      : 'bg-red-50 border-red-200'
-                  }`}>
+                  <div
+                    className={`rounded-lg p-3 border ${
+                      speakerAssigned >= speakerNeeded
+                        ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30'
+                        : 'bg-red-50 border-red-200'
+                    }`}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Megaphone className="w-4 h-4 text-[#47B3CB]" />
-                        <span className="font-medium text-[#47B3CB]">Speakers</span>
-                        <span className={`text-sm px-2 py-1 rounded-full font-bold ${
-                          speakerAssigned >= speakerNeeded
-                            ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
-                            : 'bg-[#A31C41]/20 text-[#A31C41]'
-                        }`}>
+                        <span className="font-medium text-[#47B3CB]">
+                          Speakers
+                        </span>
+                        <span
+                          className={`text-sm px-2 py-1 rounded-full font-bold ${
+                            speakerAssigned >= speakerNeeded
+                              ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
+                              : 'bg-[#A31C41]/20 text-[#A31C41]'
+                          }`}
+                        >
                           {speakerAssigned}/{speakerNeeded}
                         </span>
                       </div>
@@ -1018,53 +1215,78 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </div>
                     {speakerAssigned > 0 ? (
                       <div className="space-y-1">
-                        {Object.keys(request.speakerDetails || {}).map((speakerId: string) => {
-                          let name = '';
-                          if (speakerId.startsWith('custom-')) {
-                            name = extractCustomName(speakerId);
-                          } else {
-                            const detailName = (request.speakerDetails as any)?.[speakerId]?.name;
-                            name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(speakerId);
+                        {Object.keys(request.speakerDetails || {}).map(
+                          (speakerId: string) => {
+                            let name = '';
+                            if (speakerId.startsWith('custom-')) {
+                              name = extractCustomName(speakerId);
+                            } else {
+                              const detailName = (
+                                request.speakerDetails as any
+                              )?.[speakerId]?.name;
+                              name =
+                                detailName && !/^\d+$/.test(detailName)
+                                  ? detailName
+                                  : resolveUserName(speakerId);
+                            }
+                            return (
+                              <div
+                                key={speakerId}
+                                className="flex items-center justify-between bg-white/60 rounded px-2 py-1"
+                              >
+                                <span className="text-base font-medium">
+                                  {name}
+                                </span>
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleRemoveAssignment(
+                                        'speaker',
+                                        speakerId
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
                           }
-                          return (
-                            <div key={speakerId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                              <span className="text-base font-medium">{name}</span>
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('speaker', speakerId)}
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          );
-                        })}
+                        )}
                       </div>
                     ) : (
-                      <div className="text-base text-gray-500 italic">No speakers assigned</div>
+                      <div className="text-base text-gray-500 italic">
+                        No speakers assigned
+                      </div>
                     )}
                   </div>
                 )}
 
                 {/* Volunteers */}
                 {volunteerNeeded > 0 && (
-                  <div className={`rounded-lg p-3 border ${
-                    volunteerAssigned >= volunteerNeeded
-                      ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30'
-                      : 'bg-red-50 border-red-200'
-                  }`}>
+                  <div
+                    className={`rounded-lg p-3 border ${
+                      volunteerAssigned >= volunteerNeeded
+                        ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30'
+                        : 'bg-red-50 border-red-200'
+                    }`}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4 text-[#47B3CB]" />
-                        <span className="font-medium text-[#47B3CB]">Volunteers</span>
-                        <span className={`text-sm px-2 py-1 rounded-full font-bold ${
-                          volunteerAssigned >= volunteerNeeded
-                            ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
-                            : 'bg-[#A31C41]/20 text-[#A31C41]'
-                        }`}>
+                        <span className="font-medium text-[#47B3CB]">
+                          Volunteers
+                        </span>
+                        <span
+                          className={`text-sm px-2 py-1 rounded-full font-bold ${
+                            volunteerAssigned >= volunteerNeeded
+                              ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
+                              : 'bg-[#A31C41]/20 text-[#A31C41]'
+                          }`}
+                        >
                           {volunteerAssigned}/{volunteerNeeded}
                         </span>
                       </div>
@@ -1076,33 +1298,51 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
                         >
                           <UserPlus className="w-3 h-3 mr-1" />
-                          {volunteerAssigned < volunteerNeeded ? 'Assign' : 'Add'}
+                          {volunteerAssigned < volunteerNeeded
+                            ? 'Assign'
+                            : 'Add'}
                         </Button>
                       )}
                     </div>
                     {volunteerAssigned > 0 ? (
                       <div className="space-y-1">
-                        {parsePostgresArray(request.assignedVolunteerIds).map((volunteerId: string) => {
-                          const name = volunteerId.startsWith('custom-') ? extractCustomName(volunteerId) : resolveUserName(volunteerId);
-                          return (
-                            <div key={volunteerId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                              <span className="text-base font-medium">{name}</span>
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('volunteer', volunteerId)}
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          );
-                        })}
+                        {parsePostgresArray(request.assignedVolunteerIds).map(
+                          (volunteerId: string) => {
+                            const name = volunteerId.startsWith('custom-')
+                              ? extractCustomName(volunteerId)
+                              : resolveUserName(volunteerId);
+                            return (
+                              <div
+                                key={volunteerId}
+                                className="flex items-center justify-between bg-white/60 rounded px-2 py-1"
+                              >
+                                <span className="text-base font-medium">
+                                  {name}
+                                </span>
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleRemoveAssignment(
+                                        'volunteer',
+                                        volunteerId
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          }
+                        )}
                       </div>
                     ) : (
-                      <div className="text-base text-gray-500 italic">No volunteers assigned</div>
+                      <div className="text-base text-gray-500 italic">
+                        No volunteers assigned
+                      </div>
                     )}
                   </div>
                 )}
@@ -1113,7 +1353,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Car className="w-4 h-4 text-[#A31C41]" />
-                        <span className="font-medium text-[#A31C41]">Van Driver</span>
+                        <span className="font-medium text-[#A31C41]">
+                          Van Driver
+                        </span>
                         <span className="text-xs text-gray-600 bg-white/60 px-2 py-1 rounded-full">
                           (counts as driver)
                         </span>
@@ -1133,13 +1375,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     {request.assignedVanDriverId ? (
                       <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
                         <span className="text-base font-medium">
-                          {request.customVanDriverName || resolveUserName(request.assignedVanDriverId)}
+                          {request.customVanDriverName ||
+                            resolveUserName(request.assignedVanDriverId)}
                         </span>
                         {canEdit && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                            onClick={() =>
+                              handleRemoveAssignment(
+                                'driver',
+                                request.assignedVanDriverId!
+                              )
+                            }
                             className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             <X className="w-3 h-3" />
@@ -1147,7 +1395,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         )}
                       </div>
                     ) : (
-                      <div className="text-base text-gray-500 italic">No van driver assigned</div>
+                      <div className="text-base text-gray-500 italic">
+                        No van driver assigned
+                      </div>
                     )}
                   </div>
                 )}
@@ -1156,13 +1406,24 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           )}
 
           {/* Comprehensive Notes & Requirements Section */}
-          {(request.message || request.planningNotes || request.schedulingNotes || request.additionalRequirements ||
-            request.volunteerNotes || request.driverNotes || request.vanDriverNotes || request.followUpNotes ||
-            request.distributionNotes || request.duplicateNotes || request.unresponsiveNotes || request.socialMediaPostNotes) && (
+          {(request.message ||
+            request.planningNotes ||
+            request.schedulingNotes ||
+            request.additionalRequirements ||
+            request.volunteerNotes ||
+            request.driverNotes ||
+            request.vanDriverNotes ||
+            request.followUpNotes ||
+            request.distributionNotes ||
+            request.duplicateNotes ||
+            request.unresponsiveNotes ||
+            request.socialMediaPostNotes) && (
             <div className="bg-[#47B3CB]/10 rounded-lg p-4 mb-4 border border-[#47B3CB]/30">
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="w-4 h-4 text-[#47B3CB]" />
-                <span className="font-medium text-[#47B3CB] text-lg">Notes & Requirements</span>
+                <span className="font-medium text-[#47B3CB] text-lg">
+                  Notes & Requirements
+                </span>
               </div>
               <div className="space-y-3">
                 {request.message && (
@@ -1195,7 +1456,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => startEditing('planningNotes', request.planningNotes || '')}
+                          onClick={() =>
+                            startEditing(
+                              'planningNotes',
+                              request.planningNotes || ''
+                            )
+                          }
                           className="h-6 px-2 text-xs text-[#47B3CB] hover:bg-[#47B3CB]/10"
                         >
                           <Edit2 className="w-3 h-3 mr-1" />
@@ -1217,7 +1483,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             <Save className="w-3 h-3 mr-1" />
                             Save
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEdit}
+                          >
                             <X className="w-3 h-3 mr-1" />
                             Cancel
                           </Button>
