@@ -970,7 +970,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId)}
+                                onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
                                 className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                               >
                                 <X className="w-3 h-3" />
