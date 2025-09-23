@@ -43,7 +43,7 @@ import {
 import { apiRequest } from '@/lib/queryClient';
 import { useState } from 'react';
 import MonthlyComparisonAnalytics from '@/components/monthly-comparison-analytics';
-import { calculateTotalSandwiches } from '@/lib/analytics-utils';
+import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
 
 export default function ImpactDashboard() {
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>(
@@ -118,7 +118,10 @@ export default function ImpactDashboard() {
     collections.forEach((collection: any) => {
       const collectionDate = collection.collectionDate;
       if (collectionDate) {
-        const date = new Date(collectionDate);
+        const date = parseCollectionDate(collectionDate);
+        if (Number.isNaN(date.getTime())) {
+          return;
+        }
         let periodKey: string;
 
         if (chartView === 'weekly') {
@@ -237,13 +240,21 @@ export default function ImpactDashboard() {
 
     // Recent trend (last 4 weeks vs previous 4 weeks)
     const recentCollections = collections.filter(c => {
-      const date = new Date(c.collectionDate);
-      return date >= fourWeeksAgo && date <= now;
+      if (!c.collectionDate) {
+        return false;
+      }
+      const date = parseCollectionDate(c.collectionDate);
+      const time = date.getTime();
+      return time >= fourWeeksAgo.getTime() && time <= now.getTime();
     });
 
     const previousCollections = collections.filter(c => {
-      const date = new Date(c.collectionDate);
-      return date >= eightWeeksAgo && date < fourWeeksAgo;
+      if (!c.collectionDate) {
+        return false;
+      }
+      const date = parseCollectionDate(c.collectionDate);
+      const time = date.getTime();
+      return time >= eightWeeksAgo.getTime() && time < fourWeeksAgo.getTime();
     });
 
     const recentTotal = recentCollections.reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
@@ -280,15 +291,23 @@ export default function ImpactDashboard() {
     const currentYear = now.getFullYear();
     
     const currentMonthCollections = collections.filter(c => {
-      const date = new Date(c.collectionDate);
-      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      if (!c.collectionDate) {
+        return false;
+      }
+      const date = parseCollectionDate(c.collectionDate);
+      return (
+        date.getMonth() === currentMonth && date.getFullYear() === currentYear
+      );
     });
 
     // Group by year for the current month, compute per-year totals, then average
     const monthlyTotalsByYear: Record<number, number> = {};
     
     collections.forEach(c => {
-      const date = new Date(c.collectionDate);
+      if (!c.collectionDate) {
+        return;
+      }
+      const date = parseCollectionDate(c.collectionDate);
       if (date.getMonth() === currentMonth && date.getFullYear() < currentYear) {
         const year = date.getFullYear();
         if (!monthlyTotalsByYear[year]) {
@@ -360,7 +379,10 @@ export default function ImpactDashboard() {
     if (Array.isArray(collections)) {
       collections.forEach((collection: any) => {
         if (collection.collectionDate) {
-          const date = new Date(collection.collectionDate);
+          const date = parseCollectionDate(collection.collectionDate);
+          if (Number.isNaN(date.getTime())) {
+            return;
+          }
           const year = date.getFullYear();
 
           if (yearTotals[year] !== undefined) {

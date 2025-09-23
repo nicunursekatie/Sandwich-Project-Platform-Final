@@ -45,6 +45,7 @@ import type { SandwichCollection } from '@shared/schema';
 import {
   calculateGroupSandwiches,
   calculateTotalSandwiches,
+  parseCollectionDate,
 } from '@/lib/analytics-utils';
 
 interface MonthlyStats {
@@ -109,7 +110,10 @@ export default function MonthlyComparisonAnalytics() {
     collections.forEach((collection) => {
       if (!collection.collectionDate) return;
 
-      const date = new Date(collection.collectionDate);
+      const date = parseCollectionDate(collection.collectionDate);
+      if (Number.isNaN(date.getTime())) {
+        return;
+      }
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const year = date.getFullYear();
       const month = date.toLocaleDateString('en-US', {
@@ -254,11 +258,17 @@ export default function MonthlyComparisonAnalytics() {
 
       // Count collections
       const augustCollections = collections.filter(
-        (c) =>
-          c.hostName === hostName &&
-          c.collectionDate &&
-          new Date(c.collectionDate).getFullYear() === 2025 &&
-          new Date(c.collectionDate).getMonth() === 7 // August is month 7 (0-indexed)
+        (c) => {
+          if (c.hostName !== hostName || !c.collectionDate) {
+            return false;
+          }
+
+          const date = parseCollectionDate(c.collectionDate);
+          if (Number.isNaN(date.getTime())) {
+            return false;
+          }
+          return date.getFullYear() === 2025 && date.getMonth() === 7; // August is month 7 (0-indexed)
+      }
       ).length;
 
       // Calculate average monthly collections for this host using month keys
