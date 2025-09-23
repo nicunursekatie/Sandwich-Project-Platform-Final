@@ -1,21 +1,19 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
-import { sendSMS } from '../sms-service';
+import { sendTestSMS, sendSMSReminder, sendWeeklyReminderSMS, validateSMSConfig } from '../sms-service';
 
 const router = Router();
 
 // Get SMS configuration status
 router.get('/sms-config', async (req, res) => {
   try {
-    const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
-    const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+    const { isConfigured, missingItems } = validateSMSConfig();
     const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
-
-    const isConfigured = !!(twilioAccountSid && twilioAuthToken && twilioPhoneNumber);
 
     res.json({
       configured: isConfigured,
       phoneNumber: isConfigured ? twilioPhoneNumber : null,
+      missingItems,
     });
   } catch (error) {
     console.error('Error checking SMS config:', error);
@@ -51,12 +49,12 @@ router.get('/weekly-status/:weeksAgo', async (req, res) => {
     const locationStatus = new Map<string, any>();
 
     for (const collection of collections) {
-      if (!locationStatus.has(collection.recipient)) {
-        locationStatus.set(collection.recipient, {
-          location: collection.recipient,
+      if (!locationStatus.has(collection.hostName)) {
+        locationStatus.set(collection.hostName, {
+          location: collection.hostName,
           hasData: true,
           lastCollection: collection.collectionDate,
-          sandwichesCollected: collection.sandwichesCollected || 0,
+          sandwichesCollected: collection.individualSandwiches || 0,
         });
       }
     }
@@ -109,8 +107,8 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
       const weekData = {
         week: i,
         totalCollections: collections.length,
-        totalSandwiches: collections.reduce((sum: number, c: any) => sum + (c.sandwichesCollected || 0), 0),
-        locationsReporting: new Set(collections.map((c: any) => c.recipient)).size,
+        totalSandwiches: collections.reduce((sum: number, c: any) => sum + (c.individualSandwiches || 0), 0),
+        locationsReporting: new Set(collections.map((c: any) => c.hostName)).size,
       };
 
       reports.push(weekData);
@@ -158,21 +156,21 @@ router.get('/stats', async (req, res) => {
 
     const stats = {
       currentWeek: {
-        reporting: new Set(currentWeekCollections.map((c: any) => c.recipient)).size,
+        reporting: new Set(currentWeekCollections.map((c: any) => c.hostName)).size,
         total: allRecipients.length,
         percentage: allRecipients.length > 0
-          ? Math.round((new Set(currentWeekCollections.map((c: any) => c.recipient)).size / allRecipients.length) * 100)
+          ? Math.round((new Set(currentWeekCollections.map((c: any) => c.hostName)).size / allRecipients.length) * 100)
           : 0,
       },
       lastWeek: {
-        reporting: new Set(lastWeekCollections.map((c: any) => c.recipient)).size,
+        reporting: new Set(lastWeekCollections.map((c: any) => c.hostName)).size,
         total: allRecipients.length,
         percentage: allRecipients.length > 0
-          ? Math.round((new Set(lastWeekCollections.map((c: any) => c.recipient)).size / allRecipients.length) * 100)
+          ? Math.round((new Set(lastWeekCollections.map((c: any) => c.hostName)).size / allRecipients.length) * 100)
           : 0,
       },
-      totalSandwichesThisWeek: currentWeekCollections.reduce((sum: number, c: any) => sum + (c.sandwichesCollected || 0), 0),
-      totalSandwichesLastWeek: lastWeekCollections.reduce((sum: number, c: any) => sum + (c.sandwichesCollected || 0), 0),
+      totalSandwichesThisWeek: currentWeekCollections.reduce((sum: number, c: any) => sum + (c.individualSandwiches || 0), 0),
+      totalSandwichesLastWeek: lastWeekCollections.reduce((sum: number, c: any) => sum + (c.individualSandwiches || 0), 0),
     };
 
     res.json(stats);
@@ -215,53 +213,16 @@ router.post('/send-sms-reminders', async (req, res) => {
       return res.status(400).json({ error: 'Missing locations array required' });
     }
 
-    const results = [];
+    const results = await sendWeeklyReminderSMS(missingLocations, appUrl);
 
-    for (const location of missingLocations) {
-      try {
-        // Get recipient details
-        const recipients = await storage.getAllRecipients();
-        const recipient = recipients.find((r: any) => r.name === location);
-
-        if (recipient) {
-          if (recipient.contactPhone) {
-            const message = `Reminder: Weekly sandwich collection data for ${location} has not been submitted. Please submit at ${appUrl || 'the app'}.`;
-
-            await sendSMS(recipient.contactPhone, message);
-
-            results.push({
-              location,
-              success: true,
-              phone: recipient.contactPhone,
-            });
-          } else {
-            results.push({
-              location,
-              success: false,
-              error: 'No phone number on file',
-            });
-          }
-        } else {
-          results.push({
-            location,
-            success: false,
-            error: 'No contact found',
-          });
-        }
-      } catch (error) {
-        results.push({
-          location,
-          success: false,
-          error: error instanceof Error ? error.message : 'Failed to send SMS',
-        });
-      }
-    }
+    const successCount = Object.values(results).filter(r => r.success).length;
+    const failureCount = Object.values(results).filter(r => !r.success).length;
 
     res.json({
       success: true,
       results,
-      totalSent: results.filter(r => r.success).length,
-      totalFailed: results.filter(r => !r.success).length,
+      totalSent: successCount,
+      totalFailed: failureCount,
     });
   } catch (error) {
     console.error('Error sending SMS reminders:', error);
@@ -275,28 +236,22 @@ router.post('/send-sms-reminder/:location', async (req, res) => {
     const location = decodeURIComponent(req.params.location);
     const { appUrl } = req.body;
 
-    // Get recipient details
-    const recipients = await storage.getAllRecipients();
-    const recipient = recipients.find((r: any) => r.name === location);
+    const result = await sendSMSReminder(location, appUrl);
 
-    if (!recipient) {
-      return res.status(404).json({ error: 'No recipient found for location' });
+    if (result.success) {
+      res.json({
+        success: true,
+        location,
+        message: 'SMS reminder sent successfully',
+        details: result,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        location,
+        error: result.error,
+      });
     }
-
-    if (!recipient.contactPhone) {
-      return res.status(400).json({ error: 'No phone number on file for this location' });
-    }
-
-    const message = `Reminder: Weekly sandwich collection data for ${location} has not been submitted. Please submit at ${appUrl || 'the app'}.`;
-
-    await sendSMS(recipient.contactPhone, message);
-
-    res.json({
-      success: true,
-      location,
-      phone: recipient.contactPhone,
-      message: 'SMS reminder sent successfully',
-    });
   } catch (error) {
     console.error('Error sending SMS reminder:', error);
     res.status(500).json({ error: 'Failed to send SMS reminder' });
@@ -312,15 +267,22 @@ router.post('/test-sms', async (req, res) => {
       return res.status(400).json({ error: 'Phone number is required' });
     }
 
-    const message = `Test SMS from The Sandwich Project monitoring system. App URL: ${appUrl || 'Not configured'}`;
+    const result = await sendTestSMS(phoneNumber, appUrl);
 
-    await sendSMS(phoneNumber, message);
-
-    res.json({
-      success: true,
-      message: 'Test SMS sent successfully',
-      phone: phoneNumber,
-    });
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Test SMS sent successfully',
+        phone: phoneNumber,
+        details: result,
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error,
+        phone: phoneNumber,
+      });
+    }
   } catch (error) {
     console.error('Error sending test SMS:', error);
     res.status(500).json({ error: 'Failed to send test SMS' });
