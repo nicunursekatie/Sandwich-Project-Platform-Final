@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
@@ -633,14 +634,24 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           </Button>
 
           {canDelete && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onDelete}
-              className="text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <ConfirmationDialog
+              trigger={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-600 hover:text-red-700"
+                  data-testid="button-delete-request"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              }
+              title="Delete Completed Event"
+              description={`Are you sure you want to delete the completed event from ${request.organizationName}? This will remove all event data and cannot be undone.`}
+              confirmText="Delete Event"
+              cancelText="Cancel"
+              onConfirm={onDelete}
+              variant="destructive"
+            />
           )}
         </div>
 

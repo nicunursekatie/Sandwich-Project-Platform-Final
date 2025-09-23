@@ -31,6 +31,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { queryClient } from '@/lib/queryClient';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
@@ -169,10 +170,8 @@ export default function MeetingCalendar({
     createMutation.mutate(formData);
   };
 
-  const handleDeleteMeeting = (meetingId: number, meetingTitle: string) => {
-    if (window.confirm(`Are you sure you want to delete the meeting "${meetingTitle}"? This action cannot be undone.`)) {
-      deleteMutation.mutate(meetingId);
-    }
+  const handleDeleteMeeting = (meetingId: number) => {
+    deleteMutation.mutate(meetingId);
   };
 
   const getStatusColor = (status: string) => {
@@ -470,15 +469,25 @@ export default function MeetingCalendar({
                       <Button variant="outline" size="sm">
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteMeeting(meeting.id, meeting.title)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <ConfirmationDialog
+                        trigger={
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            disabled={deleteMutation.isPending}
+                            data-testid="button-delete-meeting"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        }
+                        title="Delete Meeting"
+                        description={`Are you sure you want to delete the meeting "${meeting.title}"? This action cannot be undone.`}
+                        confirmText="Delete Meeting"
+                        cancelText="Cancel"
+                        onConfirm={() => handleDeleteMeeting(meeting.id)}
+                        variant="destructive"
+                      />
                     </div>
                   </div>
                 </CardContent>

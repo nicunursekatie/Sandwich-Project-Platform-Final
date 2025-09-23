@@ -30,6 +30,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { queryClient } from '@/lib/queryClient';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
@@ -425,15 +426,25 @@ export default function MeetingAgenda({
                     )}
 
                     {canModifyAgenda && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 hover:bg-red-50"
-                        onClick={() => deleteMutation.mutate(item.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <ConfirmationDialog
+                        trigger={
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:bg-red-50"
+                            disabled={deleteMutation.isPending}
+                            data-testid="button-delete-agenda-item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        }
+                        title="Delete Agenda Item"
+                        description={`Are you sure you want to delete the agenda item "${item.title}"? This action cannot be undone.`}
+                        confirmText="Delete Item"
+                        cancelText="Cancel"
+                        onConfirm={() => deleteMutation.mutate(item.id)}
+                        variant="destructive"
+                      />
                     )}
                   </div>
                 </div>

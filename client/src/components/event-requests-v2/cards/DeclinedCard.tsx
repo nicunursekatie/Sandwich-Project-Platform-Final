@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
 
@@ -333,14 +334,24 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
           <div className="flex-1" />
 
           {canDelete && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onDelete}
-              className="text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <ConfirmationDialog
+              trigger={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-600 hover:text-red-700"
+                  data-testid="button-delete-request"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              }
+              title="Delete Declined Event"
+              description={`Are you sure you want to delete the declined event request from ${request.organizationName}? This action cannot be undone.`}
+              confirmText="Delete Request"
+              cancelText="Cancel"
+              onConfirm={onDelete}
+              variant="destructive"
+            />
           )}
         </div>
       </CardContent>

@@ -47,6 +47,7 @@ import {
   Square,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Project, InsertProject } from '@shared/schema';
 import SendKudosButton from '@/components/send-kudos-button';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
@@ -235,14 +236,8 @@ export default function ProjectsClean() {
     }
   };
 
-  const handleDeleteProject = (projectId: number, projectTitle: string) => {
-    if (
-      confirm(
-        `Are you sure you want to delete "${projectTitle}"? This action cannot be undone.`
-      )
-    ) {
-      deleteProjectMutation.mutate(projectId);
-    }
+  const handleDeleteProject = (projectId: number) => {
+    deleteProjectMutation.mutate(projectId);
   };
 
   const handleMarkComplete = (projectId: number, projectTitle: string) => {
@@ -445,16 +440,23 @@ export default function ProjectsClean() {
                     Edit Project
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteProject(project.id, project.title);
-                    }}
-                    className="text-red-600 focus:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Project
-                  </DropdownMenuItem>
+                  <ConfirmationDialog
+                    trigger={
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Project
+                      </DropdownMenuItem>
+                    }
+                    title="Delete Project"
+                    description={`Are you sure you want to delete "${project.title}"? This action cannot be undone.`}
+                    confirmText="Delete Project"
+                    cancelText="Cancel"
+                    onConfirm={() => handleDeleteProject(project.id)}
+                    variant="destructive"
+                  />
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

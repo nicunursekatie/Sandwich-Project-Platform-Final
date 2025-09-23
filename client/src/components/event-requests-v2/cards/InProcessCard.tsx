@@ -33,6 +33,7 @@ import {
   statusIcons,
   statusOptions,
 } from '@/components/event-requests/constants';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
@@ -632,14 +633,24 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             </Button>
           )}
           {canDelete && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onDelete}
-              className="text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <ConfirmationDialog
+              trigger={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-600 hover:text-red-700"
+                  data-testid="button-delete-request"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              }
+              title="Delete In-Process Event"
+              description={`Are you sure you want to delete the in-process event from ${request.organizationName}? This will remove all progress and cannot be undone.`}
+              confirmText="Delete Request"
+              cancelText="Cancel"
+              onConfirm={onDelete}
+              variant="destructive"
+            />
           )}
         </div>
 

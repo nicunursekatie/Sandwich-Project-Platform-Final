@@ -55,6 +55,7 @@ import {
   formatSandwichTypesDisplay,
 } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 interface DeliveryDestinationEditorProps {
   currentValue: string;
@@ -748,14 +749,24 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <Button size="sm" variant="ghost" onClick={onEdit}>
                 <Edit2 className="w-4 h-4" />
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={onDelete}
-                className="text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <ConfirmationDialog
+                trigger={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-600 hover:text-red-700"
+                    data-testid="button-delete-request"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                }
+                title="Delete Scheduled Event"
+                description={`Are you sure you want to delete the scheduled event from ${request.organizationName}? This will remove all scheduling and assignment data and cannot be undone.`}
+                confirmText="Delete Event"
+                cancelText="Cancel"
+                onConfirm={onDelete}
+                variant="destructive"
+              />
             </div>
           )}
         </div>

@@ -51,6 +51,7 @@ import {
   Archive,
 } from 'lucide-react';
 import { TaskAssigneeSelector } from '@/components/task-assignee-selector';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
 import { MultiUserTaskCompletion } from '@/components/multi-user-task-completion';
 import SendKudosButton from '@/components/send-kudos-button';
@@ -506,9 +507,7 @@ export default function ProjectDetailClean({
   };
 
   const handleDeleteTask = (taskId: number) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      deleteTaskMutation.mutate(taskId);
-    }
+    deleteTaskMutation.mutate(taskId);
   };
 
   const handleTaskStatusChange = (taskId: number, newStatus: string) => {
