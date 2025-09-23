@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
+import { createWebSocketConnection } from '@/utils/websocket-helper';
 
 interface UnreadCounts {
   general: number;
@@ -71,119 +72,60 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
     };
   }, [user, refetch]);
 
-  // Listen for WebSocket notifications
+  // Listen for WebSocket notifications using robust helper
   useEffect(() => {
     if (!user) {
       return;
     }
 
-    // Declare variables in outer scope for cleanup
-    let socket: WebSocket | null = null;
-    let reconnectTimeoutId: NodeJS.Timeout | null = null;
+    console.log('Setting up notification WebSocket for user:', user.id);
 
-    try {
-      // Fix WebSocket URL construction for different environments
-      const getWebSocketUrl = () => {
-        if (typeof window === 'undefined') return '';
+    const { cleanup } = createWebSocketConnection(
+      {
+        path: '/notifications',
+        maxRetries: 5,
+        retryDelay: 3000
+      },
+      {
+        onOpen: (ws) => {
+          console.log('Notification WebSocket connected successfully');
+          // Send identification message
+          ws.send(
+            JSON.stringify({
+              type: 'identify',
+              userId: user.id,
+            })
+          );
+        },
+        onMessage: (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('WebSocket notification received:', data);
 
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-
-        // Handle different deployment scenarios
-        if (host.includes('replit.dev') || host.includes('replit.com')) {
-          return `${protocol}//${host}/notifications`;
-        } else if (host.includes('localhost') || host.startsWith('127.0.0.1') || host === 'localhost:undefined') {
-          // For localhost development, always use port 5000 explicitly
-          return `${protocol}//localhost:5000/notifications`;
-        } else if (host && host !== 'undefined' && !host.includes('undefined')) {
-          // Default case for other deployments - use current host
-          return `${protocol}//${host}/notifications`;
-        } else {
-          // Fallback for malformed host
-          return `${protocol}//localhost:5000/notifications`;
-        }
-      };
-
-      const wsUrl = getWebSocketUrl();
-      console.log('Connecting to WebSocket at:', wsUrl);
-
-      if (!wsUrl) {
-        console.warn('Unable to construct WebSocket URL');
-        return;
-      }
-
-      const connectWebSocket = () => {
-        try {
-          socket = new WebSocket(wsUrl);
-
-          socket.onopen = () => {
-            console.log('WebSocket connected successfully');
-            // Send identification message
-            if (socket && user) {
-              socket.send(
-                JSON.stringify({
-                  type: 'identify',
-                  userId: user.id,
-                })
-              );
+            // Refresh counts when notifications are received
+            if (data.type === 'notification') {
+              refetch();
+              setLastCheck(Date.now());
             }
-          };
-
-          socket.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data);
-              console.log('WebSocket notification received:', data);
-
-              // Refresh counts when notifications are received
-              if (data.type === 'notification') {
-                refetch();
-                setLastCheck(Date.now());
-              }
-            } catch (error) {
-              console.error('Error parsing WebSocket message:', error);
-            }
-          };
-
-          socket.onclose = (event) => {
-            console.log(
-              'WebSocket connection closed:',
-              event.code,
-              event.reason
-            );
-            socket = null;
-
-            // Attempt to reconnect after a delay if not intentionally closed
-            if (event.code !== 1000) {
-              reconnectTimeoutId = setTimeout(connectWebSocket, 5000);
-            }
-          };
-
-          socket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            // Prevent unhandled promise rejections
-            socket = null;
-          };
-        } catch (error) {
-          console.error('Failed to create WebSocket connection:', error);
-          // Retry after delay
-          reconnectTimeoutId = setTimeout(connectWebSocket, 10000);
-        }
-      };
-
-      // Initialize WebSocket connection
-      connectWebSocket();
-    } catch (error) {
-      console.error('Failed to initialize WebSocket:', error);
-    }
-
-    return () => {
-      if (reconnectTimeoutId) {
-        clearTimeout(reconnectTimeoutId);
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        },
+        onError: (error) => {
+          console.error('Notification WebSocket error:', error);
+        },
+        onClose: (event) => {
+          console.log(
+            'Notification WebSocket connection closed:',
+            event.code,
+            event.reason
+          );
+        },
+        autoReconnect: true
       }
-      if (socket) {
-        socket.close(1000, 'Component unmounting');
-      }
-    };
+    );
+
+    return cleanup;
   }, [user, refetch]);
 
   // Request notification permission on mount

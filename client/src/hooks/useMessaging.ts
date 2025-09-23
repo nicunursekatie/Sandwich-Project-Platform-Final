@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { createWebSocketConnection } from '@/utils/websocket-helper';
 
 interface UnreadCounts {
   general: number;
@@ -57,21 +58,25 @@ export function useMessaging() {
     return u && typeof u === 'object' && 'id' in u && 'email' in u;
   };
 
-  // Fix WebSocket URL construction
+  // Fix WebSocket URL construction with better port handling
   const getWebSocketUrl = () => {
     if (typeof window === 'undefined') return '';
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
+    const hostname = window.location.hostname;
+    const port = window.location.port;
 
     // Handle different deployment scenarios
-    if (host.includes('replit')) {
+    if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('replit.app')) {
+      // Replit environment - use current host with port
+      const host = port ? `${hostname}:${port}` : hostname;
       return `${protocol}//${host}/notifications`;
-    } else if (host.includes('localhost')) {
-      // For localhost development, use the port from current location
-      return `${protocol}//localhost:5000/notifications`;
+    } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      // Local development - always use port 5000 explicitly
+      return `${protocol}//${hostname}:5000/notifications`;
     } else {
-      // Default case for other deployments
+      // Other deployments - use current host
+      const host = port ? `${hostname}:${port}` : hostname;
       return `${protocol}//${host}/notifications`;
     }
   };
@@ -230,104 +235,72 @@ export function useMessaging() {
     };
   }, [refetchUnreadCounts]);
 
-  // Setup WebSocket connection for real-time updates
+  // Setup WebSocket connection for real-time updates using robust helper
   useEffect(() => {
     if (!isValidUser(user)) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    console.log('Setting up messaging WebSocket for user:', user.id);
+    
+    const { cleanup } = createWebSocketConnection(
+      {
+        path: '/notifications',
+        maxRetries: 5,
+        retryDelay: 3000
+      },
+      {
+        onOpen: (ws) => {
+          console.log('Messaging WebSocket connected successfully');
+          // Identify user
+          ws.send(JSON.stringify({ type: 'identify', userId: user.id }));
+          setWsConnection(ws);
+        },
+        onMessage: (event) => {
+          try {
+            const data = JSON.parse(event.data);
 
-    // Enhanced WebSocket URL construction with better error handling
-    let wsUrl: string;
+            if (data.type === 'new_message') {
+              // Refetch unread counts and messages
+              refetchUnreadCounts();
+              refetchUnreadMessages();
 
-    try {
-      // Check if we're in a Replit environment
-      if (
-        window.location.hostname.includes('.replit.dev') ||
-        window.location.hostname.includes('.replit.app')
-      ) {
-        // Replit environment - use the full hostname without port
-        wsUrl = `${protocol}//${window.location.hostname}/notifications`;
-      } else if (window.location.host && window.location.host !== 'undefined' && window.location.host !== 'localhost:undefined') {
-        // Local development or other environments - use window.location.host which includes port
-        wsUrl = `${protocol}//${window.location.host}/notifications`;
-      } else {
-        // Fallback for environments where window.location.host is undefined or malformed
-        const hostname = window.location.hostname || 'localhost';
-        const port = window.location.port || '5000';
-        wsUrl = `${protocol}//${hostname}:${port}/notifications`;
+              // Show toast notification
+              toast({
+                title: 'New message',
+                description: data.message.sender || 'You have a new message',
+              });
+            } else if (
+              data.type === 'message_edited' ||
+              data.type === 'message_deleted'
+            ) {
+              // Refresh message lists
+              queryClient.invalidateQueries({ queryKey: ['/api/messaging'] });
+            }
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error);
+          }
+        },
+        onError: (error) => {
+          console.error('Messaging WebSocket error:', error);
+          setWsConnection(null);
+        },
+        onClose: (event) => {
+          console.log('Messaging WebSocket disconnected:', event.code, event.reason);
+          setWsConnection(null);
+
+          // Only log warning for unexpected closures
+          if (event.code !== 1000 && event.code !== 1001) {
+            console.warn(
+              'WebSocket closed unexpectedly:',
+              event.code,
+              event.reason
+            );
+          }
+        },
+        autoReconnect: true
       }
-    } catch (error) {
-      console.error('Failed to construct WebSocket URL:', error);
-      // Last resort fallback
-      wsUrl = `ws://localhost:5000/notifications`;
-    }
+    );
 
-    let ws: WebSocket;
-
-    try {
-      ws = new WebSocket(wsUrl);
-    } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
-      return () => {}; // Return cleanup function even on error
-    }
-
-    ws.onopen = () => {
-      console.log('Messaging WebSocket connected');
-      // Identify user
-      if (isValidUser(user)) {
-        ws.send(JSON.stringify({ type: 'identify', userId: user.id }));
-      }
-      setWsConnection(ws);
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        if (data.type === 'new_message') {
-          // Refetch unread counts and messages
-          refetchUnreadCounts();
-          refetchUnreadMessages();
-
-          // Show toast notification
-          toast({
-            title: 'New message',
-            description: data.message.sender || 'You have a new message',
-          });
-        } else if (
-          data.type === 'message_edited' ||
-          data.type === 'message_deleted'
-        ) {
-          // Refresh message lists
-          queryClient.invalidateQueries({ queryKey: ['/api/messaging'] });
-        }
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('Messaging WebSocket error:', error);
-      setWsConnection(null);
-    };
-
-    ws.onclose = (event) => {
-      console.log('Messaging WebSocket disconnected');
-      setWsConnection(null);
-
-      // Prevent logging error for normal closure
-      if (event.code !== 1000 && event.code !== 1001) {
-        console.warn(
-          'WebSocket closed unexpectedly:',
-          event.code,
-          event.reason
-        );
-      }
-    };
-
-    return () => {
-      ws.close();
-    };
+    return cleanup;
   }, [
     isValidUser(user) ? user.id : null,
     refetchUnreadCounts,
