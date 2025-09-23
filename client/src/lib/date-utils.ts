@@ -155,3 +155,92 @@ export function formatTimeForDisplay(timeString: string): string {
     return timeString;
   }
 }
+
+export type DateLike = string | Date | null | undefined;
+
+/**
+ * Parse collection dates without timezone drift.
+ * HTML date inputs (YYYY-MM-DD) are treated as local dates so that
+ * month boundaries remain stable regardless of server timezone.
+ */
+export function parseCollectionDate(dateInput: DateLike): Date | null {
+  if (!dateInput) return null;
+
+  if (dateInput instanceof Date) {
+    const timestamp = dateInput.getTime();
+    return Number.isNaN(timestamp) ? null : new Date(timestamp);
+  }
+
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    if (trimmed === '') return null;
+
+    const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoMatch) {
+      const [, yearStr, monthStr, dayStr] = isoMatch;
+      const year = Number(yearStr);
+      const monthIndex = Number(monthStr) - 1;
+      const day = Number(dayStr);
+      const parsed = new Date(year, monthIndex, day);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  return null;
+}
+
+/**
+ * Convert a collection date into a YYYY-MM month key.
+ */
+export function getCollectionMonthKey(dateInput: DateLike): string | null {
+  const parsed = parseCollectionDate(dateInput);
+  if (!parsed) return null;
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+export interface MonthlyAggregation<T> {
+  total: number;
+  count: number;
+  items: T[];
+}
+
+interface AggregateOptions<T> {
+  getDate?: (item: T) => DateLike;
+  getValue?: (item: T) => number;
+}
+
+/**
+ * Aggregate arbitrary records by month using collection dates.
+ */
+export function aggregateCollectionsByMonth<T>(
+  items: T[],
+  options: AggregateOptions<T> = {}
+): Record<string, MonthlyAggregation<T>> {
+  const getDate = options.getDate ?? ((item: any) => item?.collectionDate);
+  const getValue = options.getValue ?? (() => 1);
+
+  const result: Record<string, MonthlyAggregation<T>> = {};
+
+  for (const item of items) {
+    const monthKey = getCollectionMonthKey(getDate(item));
+    if (!monthKey) continue;
+
+    const numericValue = Number(getValue(item)) || 0;
+
+    if (!result[monthKey]) {
+      result[monthKey] = { total: 0, count: 0, items: [] };
+    }
+
+    result[monthKey].total += numericValue;
+    result[monthKey].count += 1;
+    result[monthKey].items.push(item);
+  }
+
+  return result;
+}

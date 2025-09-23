@@ -1,6 +1,9 @@
 import { seedTestData } from '../__tests__/setup';
 
+const skipDbSetup = process.env.SKIP_DB_SETUP === 'true';
+
 beforeAll(async () => {
+  if (skipDbSetup) return;
   await seedTestData();
 });
 
@@ -9,6 +12,10 @@ beforeAll(async () => {
 
 // Helper function available to all tests
 (global as any).loginUser = async (email: string, password: string) => {
+  if (skipDbSetup) {
+    throw new Error('loginUser is unavailable when SKIP_DB_SETUP=true');
+  }
+
   const request = require('supertest');
   const response = await request((global as any).API_BASE)
     .post('/api/auth/login')
@@ -25,5 +32,6 @@ beforeAll(async () => {
 
 // Add a small delay to prevent overwhelming the server
 beforeEach(async () => {
+  if (skipDbSetup) return;
   await new Promise((resolve) => setTimeout(resolve, 100));
 });
