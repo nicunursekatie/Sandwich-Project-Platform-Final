@@ -34,6 +34,7 @@ import type { EventRequest } from '@shared/schema';
 interface CompletedCardProps {
   request: EventRequest;
   onView: () => void;
+  onEdit: () => void;
   onDelete: () => void;
   onContact: () => void;
   onFollowUp1Day: () => void;
@@ -461,6 +462,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
 export const CompletedCard: React.FC<CompletedCardProps> = ({
   request,
   onView,
+  onEdit,
   onDelete,
   onContact,
   onFollowUp1Day,
@@ -563,6 +565,11 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           <Button size="sm" variant="outline" onClick={onView}>
             <Eye className="w-4 h-4 mr-1" />
             View Details
+          </Button>
+
+          <Button size="sm" variant="outline" onClick={onEdit}>
+            <Edit2 className="w-4 h-4 mr-1" />
+            Edit Event
           </Button>
 
           {!request.followUpOneDayCompleted && (

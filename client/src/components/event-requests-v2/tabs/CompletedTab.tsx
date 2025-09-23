@@ -43,6 +43,10 @@ export const CompletedTab: React.FC = () => {
               setIsEditing(false);
               setShowEventDetails(true);
             }}
+            onEdit={() => {
+              setSelectedEventRequest(request);
+              setIsEditing(true);
+            }}
             onDelete={() => {
               if (
                 window.confirm(
