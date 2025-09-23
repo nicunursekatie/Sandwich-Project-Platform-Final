@@ -543,46 +543,50 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   };
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg">
-      <CardContent className="p-6">
+    <Card className="w-full transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg">
+      <CardContent className="w-full p-6">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-4 w-full">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-bold text-gray-900">{request.organizationName}</h3>
+            <div className="flex items-center gap-3 mb-2 w-full">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                {request.organizationName}
+                {request.department && (
+                  <span className="text-lg font-normal text-gray-500">&bull; {request.department}</span>
+                )}
+              </h3>
               <Badge className="bg-[#FBAD3F] text-white px-3 py-1 text-sm font-medium shadow-sm">
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {getStatusLabel(request.status)}
               </Badge>
               {staffingComplete ? (
-              <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
-                <Check className="w-3 h-3 mr-1" />
-                Fully Staffed
-              </Badge>
-            ) : (
-              <div className="flex gap-1">
-                {driverNeeded > driverAssigned && (
-                  <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                    {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
-                  </Badge>
-                )}
-                {speakerNeeded > speakerAssigned && (
-                  <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                    {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                  </Badge>
-                )}
-                {volunteerNeeded > volunteerAssigned && (
-                  <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
-                    {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
-                  </Badge>
-                )}
-              </div>
-            )}
-
-          </div>
+                <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
+                  <Check className="w-3 h-3 mr-1" />
+                  Fully Staffed
+                </Badge>
+              ) : (
+                <div className="flex gap-1">
+                  {driverNeeded > driverAssigned && (
+                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {speakerNeeded > speakerAssigned && (
+                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {volunteerNeeded > volunteerAssigned && (
+                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Contact & Date */}
-            <div className="flex items-center gap-6 text-base text-gray-600 mb-3">
+            <div className="flex items-center gap-6 text-base text-gray-600 mb-3 w-full">
               <div className="flex items-center gap-1">
                 <span className="font-medium">{request.firstName} {request.lastName}</span>
                 {request.email && (
@@ -648,10 +652,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Main Content */}
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
             {/* Event Location */}
             {request.eventAddress && (
-              <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+              <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm w-full">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="w-4 h-4 text-[#47B3CB]" />
                   <span className="font-semibold text-gray-800">Event Location</span>
@@ -671,7 +675,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           )}
 
             {/* Delivery Logistics */}
-            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm w-full">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-[#47B3CB]" />
@@ -746,7 +750,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
             {/* Sandwich Information */}
-            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm w-full">
               <div className="flex items-center gap-2 mb-2">
                 <Package className="w-4 h-4 text-[#47B3CB]" />
                 <span className="font-semibold text-gray-800">Sandwich Details</span>
@@ -757,7 +761,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
             {/* Event Times */}
-            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm w-full">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#47B3CB]" />
@@ -870,7 +874,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
             {/* TSP Contact */}
             {(request.tspContact || request.customTspContact) && (
-              <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+              <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm w-full">
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-[#FBAD3F]" />
                   <span className="text-base">
@@ -884,7 +888,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Team Assignments */}
         {totalNeeded > 0 && (
-          <div className="bg-white/90 rounded-lg p-4 mb-4 border border-white/50 shadow-sm">
+          <div className="bg-white/90 rounded-lg p-4 mb-4 border border-white/50 shadow-sm w-full">
             <div className="flex items-center justify-between mb-3">
               <span className="font-semibold text-gray-800">Team Assignments</span>
               <span className={`text-base font-bold px-2 py-1 rounded-full ${
@@ -899,7 +903,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="space-y-3">
             {/* Drivers */}
               {driverNeeded > 0 && (
-                <div className={`rounded-lg p-3 border ${
+                <div className={`w-full rounded-lg p-3 border ${
                   driverAssigned >= driverNeeded 
                     ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30' 
                     : 'bg-red-50 border-red-200'
@@ -914,8 +918,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           : 'bg-[#A31C41]/20 text-[#A31C41]'
                       }`}>
                         {driverAssigned}/{driverNeeded}
-                </span>
-              </div>
+                      </span>
+                    </div>
                     {canEdit && (
                       <Button 
                         size="sm" 
@@ -927,8 +931,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
                       </Button>
                     )}
-            </div>
-                  {driverAssigned > 0 ? (
+                  </div>
+                  {(driverAssigned > 0 || request.assignedVanDriverId) ? (
                     <div className="space-y-1">
                       {parsePostgresArray(request.assignedDriverIds).map((driverId: string) => {
                         let name = '';
@@ -936,7 +940,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           name = extractCustomName(driverId);
                         } else {
                           const detailName = (request.driverDetails as any)?.[driverId]?.name;
-                          name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(driverId);
+                          name = (detailName && !/^[\d]+$/.test(detailName)) ? detailName : resolveUserName(driverId);
                         }
                         return (
                           <div key={driverId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
@@ -954,6 +958,25 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           </div>
                         );
                       })}
+                      {/* Van Driver in Drivers List */}
+                      {request.assignedVanDriverId && (
+                        <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
+                          <span className="text-base font-medium">
+                            {resolveUserName(request.assignedVanDriverId)}
+                            <span className="ml-2 text-xs text-[#A31C41]">(van driver, counts as driver)</span>
+                          </span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId)}
+                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-base text-gray-500 italic">No drivers assigned</div>
@@ -1135,7 +1158,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {(request.message || request.planningNotes || request.schedulingNotes || request.additionalRequirements || 
           request.volunteerNotes || request.driverNotes || request.vanDriverNotes || request.followUpNotes || 
           request.distributionNotes || request.duplicateNotes || request.unresponsiveNotes || request.socialMediaPostNotes) && (
-          <div className="bg-[#47B3CB]/10 rounded-lg p-4 mb-4 border border-[#47B3CB]/30">
+          <div className="bg-[#47B3CB]/10 rounded-lg p-4 mb-4 border border-[#47B3CB]/30 w-full">
             <div className="flex items-center gap-2 mb-3">
               <FileText className="w-4 h-4 text-[#47B3CB]" />
               <span className="font-medium text-[#47B3CB] text-lg">Notes & Requirements</span>
@@ -1302,7 +1325,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-3 border-t border-gray-200">
+        <div className="flex gap-2 pt-3 border-t border-gray-200 w-full">
           <Button size="sm" variant="outline" onClick={onContact}>
             Contact Organizer
           </Button>
