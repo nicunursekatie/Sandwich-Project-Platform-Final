@@ -400,7 +400,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         <span className="text-base font-medium text-gray-600">{label}:</span>
         <span className="text-base">
           {field === 'eventAddress' && value ? (
-            <a 
+            <a
               href={`https://maps.google.com/maps?q=${encodeURIComponent(value)}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -618,7 +618,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <Button size="sm" variant="ghost" onClick={cancelEdit}>
                       <X className="w-3 h-3" />
                     </Button>
-                </div>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-1 group">
                     <span className="font-medium">{dateLabel}:</span>
@@ -632,9 +632,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       >
                         <Edit2 className="w-3 h-3" />
                       </Button>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -653,45 +654,206 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Main Content */}
         <div className="space-y-4">
-            {/* Event Location */}
-            {request.eventAddress && (
-              <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4 text-[#47B3CB]" />
-                  <span className="font-semibold text-gray-800">Event Location</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-600">Address:</span>
-                  <a 
-                    href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-base text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    {request.eventAddress}
-                  </a>
-                </div>
+          {/* Event Location */}
+          {request.eventAddress && (
+            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="w-4 h-4 text-[#47B3CB]" />
+                <span className="font-semibold text-gray-800">Event Location</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-medium text-gray-600">Address:</span>
+                <a
+                  href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-base text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {request.eventAddress}
+                </a>
+              </div>
             </div>
           )}
 
-            {/* Delivery Logistics */}
-            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4 text-[#47B3CB]" />
-                  <span className="font-semibold text-gray-800">Delivery Logistics</span>
-                </div>
+          {/* Delivery Logistics */}
+          <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Package className="w-4 h-4 text-[#47B3CB]" />
+                <span className="font-semibold text-gray-800">Delivery Logistics</span>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-600">Overnight Holding:</span>
-                  {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
-                    <div className="flex items-center gap-2">
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-medium text-gray-600">Overnight Holding:</span>
+                {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="text"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      className="h-8 w-48"
+                      autoFocus
+                    />
+                    <Button size="sm" onClick={saveEdit}>
+                      <Save className="w-3 h-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 group">
+                    <span className="text-base">
+                      {request.overnightHoldingLocation || 'Not specified'}
+                    </span>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
+                        className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-medium text-gray-600">Recipients:</span>
+                {isEditingThisCard && editingField === 'deliveryDestination' ? (
+                  <DeliveryDestinationEditor
+                    currentValue={request.deliveryDestination || ''}
+                    onSave={saveEdit}
+                    onCancel={cancelEdit}
+                    setEditingValue={setEditingValue}
+                  />
+                ) : (
+                  <div className="flex items-center gap-1 group">
+                    <span className="text-base">
+                      {request.deliveryDestination || 'Not specified'}
+                    </span>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('deliveryDestination', request.deliveryDestination || '')}
+                        className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sandwich Information */}
+          <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="w-4 h-4 text-[#47B3CB]" />
+              <span className="font-semibold text-gray-800">Sandwich Details</span>
+            </div>
+            <div className="space-y-2">
+              {renderSandwichEdit()}
+            </div>
+          </div>
+
+          {/* Event Times */}
+          <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#47B3CB]" />
+                <span className="font-semibold text-gray-800">Event Times</span>
+              </div>
+              {canEdit && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-sm text-[#47B3CB] hover:bg-[#47B3CB]/10"
+                    >
+                      + Add Times
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Add Event Times</DialogTitle>
+                    </DialogHeader>
+                    <TimeDialogContent
+                      request={request}
+                      startEditing={startEditing}
+                      saveEdit={saveEdit}
+                      cancelEdit={cancelEdit}
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+            <div className="space-y-2">
+              {/* Times - only show if they exist */}
+              {(request.eventStartTime || request.eventEndTime || request.pickupTime) ? (
+                <div className="space-y-2">
+                  {request.eventStartTime && (
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-base font-medium text-gray-600">Start:</span>
+                      <span className="text-base">{formatTime12Hour(request.eventStartTime)}</span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}
+                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {request.eventEndTime && (
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-base font-medium text-gray-600">End:</span>
+                      <span className="text-base">{formatTime12Hour(request.eventEndTime)}</span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}
+                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {request.pickupTime && (
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-base font-medium text-gray-600">Pickup:</span>
+                      <span className="text-base">{formatTime12Hour(request.pickupTime)}</span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('pickupTime', formatTimeForInput(request.pickupTime || ''))}
+                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Inline editing for times */}
+                  {isEditingThisCard && (editingField === 'eventStartTime' || editingField === 'eventEndTime' || editingField === 'pickupTime') && (
+                    <div className="flex items-center gap-2 mt-2">
                       <Input
-                        type="text"
+                        type="time"
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-8 w-48"
+                        className="h-8 w-32"
                         autoFocus
                       />
                       <Button size="sm" onClick={saveEdit}>
@@ -701,641 +863,480 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <X className="w-3 h-3" />
                       </Button>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1 group">
-                      <span className="text-base">
-                        {request.overnightHoldingLocation || 'Not specified'}
-                      </span>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
-                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-gray-600">Recipients:</span>
-                  {isEditingThisCard && editingField === 'deliveryDestination' ? (
-                    <DeliveryDestinationEditor 
-                      currentValue={request.deliveryDestination || ''}
-                      onSave={saveEdit}
-                      onCancel={cancelEdit}
-                      setEditingValue={setEditingValue}
-                    />
-                  ) : (
-                    <div className="flex items-center gap-1 group">
-                      <span className="text-base">
-                        {request.deliveryDestination || 'Not specified'}
-                      </span>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('deliveryDestination', request.deliveryDestination || '')}
-                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
+              ) : (
+                <div className="text-base text-gray-500 italic">
+                  No times set yet. Click "Add Times" to add event times.
                 </div>
-            </div>
-          </div>
-
-            {/* Sandwich Information */}
-            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <Package className="w-4 h-4 text-[#47B3CB]" />
-                <span className="font-semibold text-gray-800">Sandwich Details</span>
-              </div>
-              <div className="space-y-2">
-            {renderSandwichEdit()}
-          </div>
-        </div>
-
-            {/* Event Times */}
-            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#47B3CB]" />
-                  <span className="font-semibold text-gray-800">Event Times</span>
-              </div>
-                {canEdit && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-2 text-sm text-[#47B3CB] hover:bg-[#47B3CB]/10"
-                      >
-                        + Add Times
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Add Event Times</DialogTitle>
-                      </DialogHeader>
-                      <TimeDialogContent 
-                        request={request}
-                        startEditing={startEditing}
-                        saveEdit={saveEdit}
-                        cancelEdit={cancelEdit}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
-              <div className="space-y-2">
-                {/* Times - only show if they exist */}
-                {(request.eventStartTime || request.eventEndTime || request.pickupTime) ? (
-                  <div className="space-y-2">
-                    {request.eventStartTime && (
-                      <div className="flex items-center gap-1 group">
-                        <span className="text-base font-medium text-gray-600">Start:</span>
-                        <span className="text-base">{formatTime12Hour(request.eventStartTime)}</span>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}
-                            className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
               )}
             </div>
-                    )}
-                    {request.eventEndTime && (
-                      <div className="flex items-center gap-1 group">
-                        <span className="text-base font-medium text-gray-600">End:</span>
-                        <span className="text-base">{formatTime12Hour(request.eventEndTime)}</span>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}
-                            className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
           </div>
+
+          {/* TSP Contact */}
+          {(request.tspContact || request.customTspContact) && (
+            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4 text-[#FBAD3F]" />
+                <span className="text-base">
+                  <span className="font-medium text-[#FBAD3F]">TSP Contact:</span>{' '}
+                  {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
+                </span>
+              </div>
+            </div>
+          )}
+
+
+          {/* Team Assignments */}
+          {totalNeeded > 0 && (
+            <div className="bg-white/90 rounded-lg p-4 mb-4 border border-white/50 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-semibold text-gray-800">Team Assignments</span>
+                <span className={`text-base font-bold px-2 py-1 rounded-full ${
+                  staffingComplete
+                    ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
+                    : 'bg-[#A31C41]/20 text-[#A31C41]'
+                }`}>
+                  {totalAssigned}/{totalNeeded} assigned
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {/* Drivers */}
+                {driverNeeded > 0 && (
+                  <div className={`rounded-lg p-3 border ${
+                    driverAssigned >= driverNeeded
+                      ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30'
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Car className="w-4 h-4 text-[#47B3CB]" />
+                        <span className="font-medium text-[#47B3CB]">Drivers</span>
+                        <span className={`text-sm px-2 py-1 rounded-full font-bold ${
+                          driverAssigned >= driverNeeded
+                            ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
+                            : 'bg-[#A31C41]/20 text-[#A31C41]'
+                        }`}>
+                          {driverAssigned}/{driverNeeded}
+                        </span>
+                      </div>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAssignmentDialog('driver')}
+                          className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
+                        >
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
+                        </Button>
+                      )}
+                    </div>
+                    {(driverAssigned > 0 || request.assignedVanDriverId) ? (
+                      <div className="space-y-1">
+                        {parsePostgresArray(request.assignedDriverIds).map((driverId: string) => {
+                          let name = '';
+                          if (driverId.startsWith('custom-')) {
+                            name = extractCustomName(driverId);
+                          } else {
+                            const detailName = (request.driverDetails as any)?.[driverId]?.name;
+                            name = (detailName && !/^[\d]+$/.test(detailName)) ? detailName : resolveUserName(driverId);
+                          }
+                          return (
+                            <div key={driverId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
+                              <span className="text-base font-medium">{name}</span>
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('driver', driverId)}
+                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {/* Van Driver in Drivers List */}
+                        {request.assignedVanDriverId && (
+                          <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
+                            <span className="text-base font-medium">
+                              {resolveUserName(request.assignedVanDriverId)}
+                              <span className="ml-2 text-xs text-[#A31C41]">(van driver, counts as driver)</span>
+                            </span>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId)}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-base text-gray-500 italic">No drivers assigned</div>
                     )}
-                    {request.pickupTime && (
-                      <div className="flex items-center gap-1 group">
-                        <span className="text-base font-medium text-gray-600">Pickup:</span>
-                        <span className="text-base">{formatTime12Hour(request.pickupTime)}</span>
+                  </div>
+                )}
+
+                {/* Speakers */}
+                {speakerNeeded > 0 && (
+                  <div className={`rounded-lg p-3 border ${
+                    speakerAssigned >= speakerNeeded
+                      ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30'
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Megaphone className="w-4 h-4 text-[#47B3CB]" />
+                        <span className="font-medium text-[#47B3CB]">Speakers</span>
+                        <span className={`text-sm px-2 py-1 rounded-full font-bold ${
+                          speakerAssigned >= speakerNeeded
+                            ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
+                            : 'bg-[#A31C41]/20 text-[#A31C41]'
+                        }`}>
+                          {speakerAssigned}/{speakerNeeded}
+                        </span>
+                      </div>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAssignmentDialog('speaker')}
+                          className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
+                        >
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          {speakerAssigned < speakerNeeded ? 'Assign' : 'Add'}
+                        </Button>
+                      )}
+                    </div>
+                    {speakerAssigned > 0 ? (
+                      <div className="space-y-1">
+                        {Object.keys(request.speakerDetails || {}).map((speakerId: string) => {
+                          let name = '';
+                          if (speakerId.startsWith('custom-')) {
+                            name = extractCustomName(speakerId);
+                          } else {
+                            const detailName = (request.speakerDetails as any)?.[speakerId]?.name;
+                            name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(speakerId);
+                          }
+                          return (
+                            <div key={speakerId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
+                              <span className="text-base font-medium">{name}</span>
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('speaker', speakerId)}
+                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-base text-gray-500 italic">No speakers assigned</div>
+                    )}
+                  </div>
+                )}
+
+                {/* Volunteers */}
+                {volunteerNeeded > 0 && (
+                  <div className={`rounded-lg p-3 border ${
+                    volunteerAssigned >= volunteerNeeded
+                      ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30'
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-[#47B3CB]" />
+                        <span className="font-medium text-[#47B3CB]">Volunteers</span>
+                        <span className={`text-sm px-2 py-1 rounded-full font-bold ${
+                          volunteerAssigned >= volunteerNeeded
+                            ? 'bg-[#47B3CB]/20 text-[#47B3CB]'
+                            : 'bg-[#A31C41]/20 text-[#A31C41]'
+                        }`}>
+                          {volunteerAssigned}/{volunteerNeeded}
+                        </span>
+                      </div>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAssignmentDialog('volunteer')}
+                          className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
+                        >
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          {volunteerAssigned < volunteerNeeded ? 'Assign' : 'Add'}
+                        </Button>
+                      )}
+                    </div>
+                    {volunteerAssigned > 0 ? (
+                      <div className="space-y-1">
+                        {parsePostgresArray(request.assignedVolunteerIds).map((volunteerId: string) => {
+                          const name = volunteerId.startsWith('custom-') ? extractCustomName(volunteerId) : resolveUserName(volunteerId);
+                          return (
+                            <div key={volunteerId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
+                              <span className="text-base font-medium">{name}</span>
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('volunteer', volunteerId)}
+                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-base text-gray-500 italic">No volunteers assigned</div>
+                    )}
+                  </div>
+                )}
+
+                {/* Van Driver - if needed */}
+                {(request.vanDriverNeeded || request.assignedVanDriverId) && (
+                  <div className="rounded-lg p-3 border bg-orange-50 border-orange-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Car className="w-4 h-4 text-[#A31C41]" />
+                        <span className="font-medium text-[#A31C41]">Van Driver</span>
+                        <span className="text-xs text-gray-600 bg-white/60 px-2 py-1 rounded-full">
+                          (counts as driver)
+                        </span>
+                      </div>
+                      {canEdit && !request.assignedVanDriverId && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAssignmentDialog('driver')}
+                          className="h-8 text-sm border-[#A31C41]/40 text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
+                        >
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          Assign
+                        </Button>
+                      )}
+                    </div>
+                    {request.assignedVanDriverId ? (
+                      <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
+                        <span className="text-base font-medium">
+                          {request.customVanDriverName || resolveUserName(request.assignedVanDriverId)}
+                        </span>
                         {canEdit && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => startEditing('pickupTime', formatTimeForInput(request.pickupTime || ''))}
-                            className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                            onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
-                            <Edit2 className="w-3 h-3" />
+                            <X className="w-3 h-3" />
                           </Button>
                         )}
-        </div>
+                      </div>
+                    ) : (
+                      <div className="text-base text-gray-500 italic">No van driver assigned</div>
                     )}
-                    
-                    {/* Inline editing for times */}
-                    {isEditingThisCard && (editingField === 'eventStartTime' || editingField === 'eventEndTime' || editingField === 'pickupTime') && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <Input
-                          type="time"
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Comprehensive Notes & Requirements Section */}
+          {(request.message || request.planningNotes || request.schedulingNotes || request.additionalRequirements ||
+            request.volunteerNotes || request.driverNotes || request.vanDriverNotes || request.followUpNotes ||
+            request.distributionNotes || request.duplicateNotes || request.unresponsiveNotes || request.socialMediaPostNotes) && (
+            <div className="bg-[#47B3CB]/10 rounded-lg p-4 mb-4 border border-[#47B3CB]/30">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="w-4 h-4 text-[#47B3CB]" />
+                <span className="font-medium text-[#47B3CB] text-lg">Notes & Requirements</span>
+              </div>
+              <div className="space-y-3">
+                {request.message && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Original Request Message:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded border-l-3 border-blue-200">
+                      {request.message}
+                    </p>
+                  </div>
+                )}
+                {request.additionalRequirements && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Special Requirements:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-amber-50 p-3 rounded border-l-3 border-amber-200">
+                      {request.additionalRequirements}
+                    </p>
+                  </div>
+                )}
+                {request.planningNotes && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium text-[#47B3CB]">
+                        Planning Notes:
+                      </p>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('planningNotes', request.planningNotes || '')}
+                          className="h-6 px-2 text-xs text-[#47B3CB] hover:bg-[#47B3CB]/10"
+                        >
+                          <Edit2 className="w-3 h-3 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                    {isEditingThisCard && editingField === 'planningNotes' ? (
+                      <div className="space-y-2">
+                        <textarea
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-8 w-32"
+                          className="w-full p-2 border border-gray-300 rounded text-sm min-h-[80px]"
+                          placeholder="Add planning notes..."
                           autoFocus
                         />
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3" />
-                        </Button>
-              </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit}>
+                            <Save className="w-3 h-3 mr-1" />
+                            Save
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                            <X className="w-3 h-3 mr-1" />
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-700 bg-white p-3 rounded border">
+                        {request.planningNotes}
+                      </p>
                     )}
-                </div>
-                ) : (
-                  <div className="text-base text-gray-500 italic">
-                    No times set yet. Click "Add Times" to add event times.
+                  </div>
+                )}
+                {request.schedulingNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Scheduling Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-green-50 p-3 rounded border-l-3 border-green-200">
+                      {request.schedulingNotes}
+                    </p>
+                  </div>
+                )}
+                {request.volunteerNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Volunteer Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded border-l-3 border-purple-200">
+                      {request.volunteerNotes}
+                    </p>
+                  </div>
+                )}
+                {request.driverNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Driver Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded border-l-3 border-orange-200">
+                      {request.driverNotes}
+                    </p>
+                  </div>
+                )}
+                {request.vanDriverNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Van Driver Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-red-50 p-3 rounded border-l-3 border-red-200">
+                      {request.vanDriverNotes}
+                    </p>
+                  </div>
+                )}
+                {request.followUpNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Follow-up Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded border-l-3 border-yellow-200">
+                      {request.followUpNotes}
+                    </p>
+                  </div>
+                )}
+                {request.distributionNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Distribution Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-teal-50 p-3 rounded border-l-3 border-teal-200">
+                      {request.distributionNotes}
+                    </p>
+                  </div>
+                )}
+                {request.duplicateNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Duplicate Check Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-pink-50 p-3 rounded border-l-3 border-pink-200">
+                      {request.duplicateNotes}
+                    </p>
+                  </div>
+                )}
+                {request.unresponsiveNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Unresponsive Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-gray-100 p-3 rounded border-l-3 border-gray-300">
+                      {request.unresponsiveNotes}
+                    </p>
+                  </div>
+                )}
+                {request.socialMediaPostNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-[#47B3CB] mb-1">
+                      Social Media Notes:
+                    </p>
+                    <p className="text-sm text-gray-700 bg-indigo-50 p-3 rounded border-l-3 border-indigo-200">
+                      {request.socialMediaPostNotes}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
+          )}
 
-            {/* TSP Contact */}
-            {(request.tspContact || request.customTspContact) && (
-              <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-[#FBAD3F]" />
-                  <span className="text-base">
-                    <span className="font-medium text-[#FBAD3F]">TSP Contact:</span>{' '}
-                    {request.tspContact ? resolveUserName(request.tspContact) : request.customTspContact}
-                  </span>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 justify-end">
+            <Button size="sm" variant="outline" onClick={onContact}>
+              Contact Organizer
+            </Button>
+            <Button size="sm" variant="outline" onClick={onReschedule}>
+              Reschedule
+            </Button>
+            <Button size="sm" onClick={onFollowUp}>
+              Follow Up
+            </Button>
           </div>
-        )}
-
-
-        {/* Team Assignments */}
-        {totalNeeded > 0 && (
-          <div className="bg-white/90 rounded-lg p-4 mb-4 border border-white/50 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-semibold text-gray-800">Team Assignments</span>
-              <span className={`text-base font-bold px-2 py-1 rounded-full ${
-                staffingComplete 
-                  ? 'bg-[#47B3CB]/20 text-[#47B3CB]' 
-                  : 'bg-[#A31C41]/20 text-[#A31C41]'
-              }`}>
-                {totalAssigned}/{totalNeeded} assigned
-              </span>
-                </div>
-
-            <div className="space-y-3">
-            {/* Drivers */}
-              {driverNeeded > 0 && (
-                <div className={`rounded-lg p-3 border ${
-                  driverAssigned >= driverNeeded 
-                    ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30' 
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Car className="w-4 h-4 text-[#47B3CB]" />
-                      <span className="font-medium text-[#47B3CB]">Drivers</span>
-                      <span className={`text-sm px-2 py-1 rounded-full font-bold ${
-                        driverAssigned >= driverNeeded 
-                          ? 'bg-[#47B3CB]/20 text-[#47B3CB]' 
-                          : 'bg-[#A31C41]/20 text-[#A31C41]'
-                      }`}>
-                        {driverAssigned}/{driverNeeded}
-                      </span>
-                    </div>
-                    {canEdit && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => openAssignmentDialog('driver')}
-                        className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
-                      >
-                        <UserPlus className="w-3 h-3 mr-1" />
-                        {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
-                      </Button>
-                    )}
-                  </div>
-                  {(driverAssigned > 0 || request.assignedVanDriverId) ? (
-                    <div className="space-y-1">
-                      {parsePostgresArray(request.assignedDriverIds).map((driverId: string) => {
-                        let name = '';
-                        if (driverId.startsWith('custom-')) {
-                          name = extractCustomName(driverId);
-                        } else {
-                          const detailName = (request.driverDetails as any)?.[driverId]?.name;
-                          name = (detailName && !/^[\d]+$/.test(detailName)) ? detailName : resolveUserName(driverId);
-                        }
-                        return (
-                          <div key={driverId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                            <span className="text-base font-medium">{name}</span>
-                            {canEdit && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveAssignment('driver', driverId)}
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {/* Van Driver in Drivers List */}
-                      {request.assignedVanDriverId && (
-                        <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                          <span className="text-base font-medium">
-                            {resolveUserName(request.assignedVanDriverId)}
-                            <span className="ml-2 text-xs text-[#A31C41]">(van driver, counts as driver)</span>
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId)}
-                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-base text-gray-500 italic">No drivers assigned</div>
-                  )}
-                </div>
-              )}
-
-            {/* Speakers */}
-              {speakerNeeded > 0 && (
-                <div className={`rounded-lg p-3 border ${
-                  speakerAssigned >= speakerNeeded 
-                    ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30' 
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Megaphone className="w-4 h-4 text-[#47B3CB]" />
-                      <span className="font-medium text-[#47B3CB]">Speakers</span>
-                      <span className={`text-sm px-2 py-1 rounded-full font-bold ${
-                        speakerAssigned >= speakerNeeded 
-                          ? 'bg-[#47B3CB]/20 text-[#47B3CB]' 
-                          : 'bg-[#A31C41]/20 text-[#A31C41]'
-                      }`}>
-                        {speakerAssigned}/{speakerNeeded}
-                </span>
-              </div>
-                    {canEdit && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => openAssignmentDialog('speaker')}
-                        className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
-                      >
-                        <UserPlus className="w-3 h-3 mr-1" />
-                        {speakerAssigned < speakerNeeded ? 'Assign' : 'Add'}
-                      </Button>
-                    )}
-            </div>
-                  {speakerAssigned > 0 ? (
-                    <div className="space-y-1">
-                      {Object.keys(request.speakerDetails || {}).map((speakerId: string) => {
-                        let name = '';
-                        if (speakerId.startsWith('custom-')) {
-                          name = extractCustomName(speakerId);
-                        } else {
-                          const detailName = (request.speakerDetails as any)?.[speakerId]?.name;
-                          name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(speakerId);
-                        }
-                        return (
-                          <div key={speakerId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                            <span className="text-base font-medium">{name}</span>
-                            {canEdit && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveAssignment('speaker', speakerId)}
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-base text-gray-500 italic">No speakers assigned</div>
-                  )}
-                </div>
-              )}
-
-            {/* Volunteers */}
-              {volunteerNeeded > 0 && (
-                <div className={`rounded-lg p-3 border ${
-                  volunteerAssigned >= volunteerNeeded 
-                    ? 'bg-[#47B3CB]/10 border-[#47B3CB]/30' 
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-[#47B3CB]" />
-                      <span className="font-medium text-[#47B3CB]">Volunteers</span>
-                      <span className={`text-sm px-2 py-1 rounded-full font-bold ${
-                        volunteerAssigned >= volunteerNeeded 
-                          ? 'bg-[#47B3CB]/20 text-[#47B3CB]' 
-                          : 'bg-[#A31C41]/20 text-[#A31C41]'
-                      }`}>
-                        {volunteerAssigned}/{volunteerNeeded}
-                </span>
-              </div>
-                    {canEdit && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => openAssignmentDialog('volunteer')}
-                        className="h-8 text-sm border-[#47B3CB]/40 text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
-                      >
-                        <UserPlus className="w-3 h-3 mr-1" />
-                        {volunteerAssigned < volunteerNeeded ? 'Assign' : 'Add'}
-          </Button>
-                    )}
-            </div>
-                  {volunteerAssigned > 0 ? (
-                    <div className="space-y-1">
-                      {parsePostgresArray(request.assignedVolunteerIds).map((volunteerId: string) => {
-                        const name = volunteerId.startsWith('custom-') ? extractCustomName(volunteerId) : resolveUserName(volunteerId);
-                        return (
-                          <div key={volunteerId} className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                            <span className="text-base font-medium">{name}</span>
-                            {canEdit && (
-          <Button
-            size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveAssignment('volunteer', volunteerId)}
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-          >
-                                <X className="w-3 h-3" />
-          </Button>
-                            )}
-          </div>
-                        );
-                      })}
         </div>
-                  ) : (
-                    <div className="text-base text-gray-500 italic">No volunteers assigned</div>
-                  )}
-                </div>
-              )}
-
-              {/* Van Driver - if needed */}
-              {(request.vanDriverNeeded || request.assignedVanDriverId) && (
-                <div className="rounded-lg p-3 border bg-orange-50 border-orange-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Car className="w-4 h-4 text-[#A31C41]" />
-                      <span className="font-medium text-[#A31C41]">Van Driver</span>
-                      <span className="text-xs text-gray-600 bg-white/60 px-2 py-1 rounded-full">
-                        (counts as driver)
-                      </span>
-                    </div>
-                    {canEdit && !request.assignedVanDriverId && (
-          <Button
-            size="sm"
-            variant="outline"
-                        onClick={() => openAssignmentDialog('driver')}
-                        className="h-8 text-sm border-[#A31C41]/40 text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
-          >
-                        <UserPlus className="w-3 h-3 mr-1" />
-                        Assign
-          </Button>
-                    )}
-                  </div>
-                  {request.assignedVanDriverId ? (
-                    <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                      <span className="text-base font-medium">
-                        {request.customVanDriverName || resolveUserName(request.assignedVanDriverId)}
-                      </span>
-                      {canEdit && (
-          <Button
-            size="sm"
-                variant="ghost"
-                          onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-          >
-                          <X className="w-3 h-3" />
-          </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-base text-gray-500 italic">No van driver assigned</div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Comprehensive Notes & Requirements Section */}
-        {(request.message || request.planningNotes || request.schedulingNotes || request.additionalRequirements || 
-          request.volunteerNotes || request.driverNotes || request.vanDriverNotes || request.followUpNotes || 
-          request.distributionNotes || request.duplicateNotes || request.unresponsiveNotes || request.socialMediaPostNotes) && (
-          <div className="bg-[#47B3CB]/10 rounded-lg p-4 mb-4 border border-[#47B3CB]/30">
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="w-4 h-4 text-[#47B3CB]" />
-              <span className="font-medium text-[#47B3CB] text-lg">Notes & Requirements</span>
-            </div>
-            <div className="space-y-3">
-              {request.message && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Original Request Message:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded border-l-3 border-blue-200">
-                    {request.message}
-                  </p>
-                </div>
-              )}
-              {request.additionalRequirements && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Special Requirements:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-amber-50 p-3 rounded border-l-3 border-amber-200">
-                    {request.additionalRequirements}
-                  </p>
-                </div>
-              )}
-              {request.planningNotes && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-[#47B3CB]">
-                      Planning Notes:
-                    </p>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEditing('planningNotes', request.planningNotes || '')}
-                        className="h-6 px-2 text-xs text-[#47B3CB] hover:bg-[#47B3CB]/10"
-                      >
-                        <Edit2 className="w-3 h-3 mr-1" />
-                        Edit
-                      </Button>
-                    )}
-                  </div>
-                  {isEditingThisCard && editingField === 'planningNotes' ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded text-sm min-h-[80px]"
-                        placeholder="Add planning notes..."
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3 mr-1" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-700 bg-white p-3 rounded border">
-                      {request.planningNotes}
-                    </p>
-                  )}
-                </div>
-              )}
-              {request.schedulingNotes && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Scheduling Notes:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-green-50 p-3 rounded border-l-3 border-green-200">
-                    {request.schedulingNotes}
-                  </p>
-                </div>
-              )}
-              {request.volunteerNotes && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Volunteer Notes:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded border-l-3 border-purple-200">
-                    {request.volunteerNotes}
-                  </p>
-                </div>
-              )}
-              {request.driverNotes && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Driver Notes:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded border-l-3 border-orange-200">
-                    {request.driverNotes}
-                  </p>
-                </div>
-              )}
-              {request.vanDriverNotes && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Van Driver Notes:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-red-50 p-3 rounded border-l-3 border-red-200">
-                    {request.vanDriverNotes}
-                  </p>
-                </div>
-              )}
-              {request.followUpNotes && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Follow-up Notes:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded border-l-3 border-yellow-200">
-                    {request.followUpNotes}
-                  </p>
-                </div>
-              )}
-              {request.distributionNotes && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Distribution Notes:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-teal-50 p-3 rounded border-l-3 border-teal-200">
-                    {request.distributionNotes}
-                  </p>
-                </div>
-              )}
-              {request.duplicateNotes && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Duplicate Check Notes:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-pink-50 p-3 rounded border-l-3 border-pink-200">
-                    {request.duplicateNotes}
-                  </p>
-                </div>
-              )}
-              {request.unresponsiveNotes && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Unresponsive Notes:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-gray-100 p-3 rounded border-l-3 border-gray-300">
-                    {request.unresponsiveNotes}
-                  </p>
-                </div>
-              )}
-              {request.socialMediaPostNotes && (
-                <div>
-                  <p className="text-sm font-medium text-[#47B3CB] mb-1">
-                    Social Media Notes:
-                  </p>
-                  <p className="text-sm text-gray-700 bg-indigo-50 p-3 rounded border-l-3 border-indigo-200">
-                    {request.socialMediaPostNotes}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 justify-end">
-          <Button size="sm" variant="outline" onClick={onContact}>
-            Contact Organizer
-          </Button>
-          <Button size="sm" variant="outline" onClick={onReschedule}>
-            Reschedule
-          </Button>
-          <Button size="sm" onClick={onFollowUp}>
-            Follow Up
-          </Button>
-        </div>
-      </div>
       </CardContent>
     </Card>
   );

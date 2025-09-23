@@ -579,26 +579,25 @@ export class GoogleSheetsSyncService {
       project.assigneeName || project.createdByName || project.createdBy || '';
     const supportPeopleOnly = project.supportPeople || '';
 
+    // Reordered to match Google Sheet columns:
+    // Task, Priority, Status, Owner, Support people, Sub-Tasks | Owners, Start date, End date, Category, Milestone, Deliverable, Notes, Last Discussed Date
     const sheetRow = {
       task: project.title,
-      reviewStatus: this.mapReviewStatus(project.reviewInNextMeeting), // P1, P2, etc.
       priority: this.mapPriority(project.priority),
-      owner: projectOwner, // Project owner (assignee or creator)
-      supportPeople: supportPeopleOnly, // Only support people
       status: this.mapStatus(project.status),
+      owner: projectOwner,
+      supportPeople: supportPeopleOnly,
+      subTasksOwners: this.formatTasksForSheet(projectTasks),
       startDate: project.startDate || '',
       endDate: project.dueDate || '',
-      category: project.category || '', // Category column (Column I)
-      milestone: project.milestone || '', // Milestone column (Column J)
-      subTasksOwners: this.formatTasksForSheet(projectTasks), // Format sub-tasks
+      category: project.category || '',
+      milestone: project.milestone || '',
       deliverable: project.deliverables || '',
       notes: project.notes || project.description || '',
-      lastDiscussedDate: project.lastDiscussedDate || '', // Column N
+      lastDiscussedDate: project.lastDiscussedDate || '',
     };
 
-    // Column mapping verified: task→A, reviewStatus→B, status→F
-
-    return sheetRow;
+    return sheetRow as SheetRow;
   }
 
   /**
