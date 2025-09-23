@@ -1325,14 +1325,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-3 border-t border-gray-200 w-full">
+        <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 w-full justify-end">
           <Button size="sm" variant="outline" onClick={onContact}>
             Contact Organizer
           </Button>
           <Button size="sm" variant="outline" onClick={onReschedule}>
             Reschedule
           </Button>
-          <div className="flex-1" />
           <Button size="sm" onClick={onFollowUp}>
             Follow Up
           </Button>
