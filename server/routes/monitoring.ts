@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
-import { sendTestSMS, sendSMSReminder, sendWeeklyReminderSMS, validateSMSConfig } from '../sms-service';
+import {
+  sendTestSMS,
+  sendSMSReminder,
+  sendWeeklyReminderSMS,
+  validateSMSConfig,
+} from '../sms-service';
 
 const router = Router();
 
@@ -9,9 +14,17 @@ router.get('/sms-config', async (req, res) => {
   try {
     const { isConfigured, missingItems } = validateSMSConfig();
     const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
-
+    const isConfigured = !!(
+      twilioAccountSid &&
+      twilioAuthToken &&
+      twilioPhoneNumber
+    );
+    const missingItems: string[] = [];
+    if (!twilioAccountSid) missingItems.push('TWILIO_ACCOUNT_SID');
+    if (!twilioAuthToken) missingItems.push('TWILIO_AUTH_TOKEN');
+    if (!twilioPhoneNumber) missingItems.push('TWILIO_PHONE_NUMBER');
     res.json({
-      configured: isConfigured,
+      isConfigured,
       phoneNumber: isConfigured ? twilioPhoneNumber : null,
       missingItems,
     });
@@ -29,7 +42,7 @@ router.get('/weekly-status/:weeksAgo', async (req, res) => {
     // Calculate date range for the week
     const now = new Date();
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay() - (weeksAgo * 7));
+    startOfWeek.setDate(now.getDate() - now.getDay() - weeksAgo * 7);
     startOfWeek.setHours(0, 0, 0, 0);
 
     const endOfWeek = new Date(startOfWeek);
@@ -90,7 +103,7 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
       // Calculate date range for each week
       const now = new Date();
       const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay() - (i * 7));
+      startOfWeek.setDate(now.getDate() - now.getDay() - i * 7);
       startOfWeek.setHours(0, 0, 0, 0);
 
       const endOfWeek = new Date(startOfWeek);
@@ -107,8 +120,12 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
       const weekData = {
         week: i,
         totalCollections: collections.length,
-        totalSandwiches: collections.reduce((sum: number, c: any) => sum + (c.individualSandwiches || 0), 0),
-        locationsReporting: new Set(collections.map((c: any) => c.hostName)).size,
+        totalSandwiches: collections.reduce(
+          (sum: number, c: any) => sum + (c.individualSandwiches || 0),
+          0
+        ),
+        locationsReporting: new Set(collections.map((c: any) => c.hostName))
+          .size,
       };
 
       reports.push(weekData);
@@ -156,21 +173,40 @@ router.get('/stats', async (req, res) => {
 
     const stats = {
       currentWeek: {
-        reporting: new Set(currentWeekCollections.map((c: any) => c.hostName)).size,
+        reporting: new Set(currentWeekCollections.map((c: any) => c.hostName))
+          .size,
         total: allRecipients.length,
-        percentage: allRecipients.length > 0
-          ? Math.round((new Set(currentWeekCollections.map((c: any) => c.hostName)).size / allRecipients.length) * 100)
-          : 0,
+        percentage:
+          allRecipients.length > 0
+            ? Math.round(
+                (new Set(currentWeekCollections.map((c: any) => c.hostName))
+                  .size /
+                  allRecipients.length) *
+                  100
+              )
+            : 0,
       },
       lastWeek: {
-        reporting: new Set(lastWeekCollections.map((c: any) => c.hostName)).size,
+        reporting: new Set(lastWeekCollections.map((c: any) => c.hostName))
+          .size,
         total: allRecipients.length,
-        percentage: allRecipients.length > 0
-          ? Math.round((new Set(lastWeekCollections.map((c: any) => c.hostName)).size / allRecipients.length) * 100)
-          : 0,
+        percentage:
+          allRecipients.length > 0
+            ? Math.round(
+                (new Set(lastWeekCollections.map((c: any) => c.hostName)).size /
+                  allRecipients.length) *
+                  100
+              )
+            : 0,
       },
-      totalSandwichesThisWeek: currentWeekCollections.reduce((sum: number, c: any) => sum + (c.individualSandwiches || 0), 0),
-      totalSandwichesLastWeek: lastWeekCollections.reduce((sum: number, c: any) => sum + (c.individualSandwiches || 0), 0),
+      totalSandwichesThisWeek: currentWeekCollections.reduce(
+        (sum: number, c: any) => sum + (c.individualSandwiches || 0),
+        0
+      ),
+      totalSandwichesLastWeek: lastWeekCollections.reduce(
+        (sum: number, c: any) => sum + (c.individualSandwiches || 0),
+        0
+      ),
     };
 
     res.json(stats);
@@ -197,7 +233,10 @@ router.post('/check-week/:weeksAgo', async (req, res) => {
   try {
     const weeksAgo = parseInt(req.params.weeksAgo, 10);
     // This would trigger checks for a specific week
-    res.json({ success: true, message: `Check completed for week ${weeksAgo}` });
+    res.json({
+      success: true,
+      message: `Check completed for week ${weeksAgo}`,
+    });
   } catch (error) {
     console.error('Error checking week:', error);
     res.status(500).json({ error: 'Failed to check week' });
@@ -210,13 +249,17 @@ router.post('/send-sms-reminders', async (req, res) => {
     const { missingLocations, appUrl } = req.body;
 
     if (!missingLocations || !Array.isArray(missingLocations)) {
-      return res.status(400).json({ error: 'Missing locations array required' });
+      return res
+        .status(400)
+        .json({ error: 'Missing locations array required' });
     }
 
     const results = await sendWeeklyReminderSMS(missingLocations, appUrl);
 
-    const successCount = Object.values(results).filter(r => r.success).length;
-    const failureCount = Object.values(results).filter(r => !r.success).length;
+    const successCount = Object.values(results).filter((r) => r.success).length;
+    const failureCount = Object.values(results).filter(
+      (r) => !r.success
+    ).length;
 
     res.json({
       success: true,
@@ -231,7 +274,7 @@ router.post('/send-sms-reminders', async (req, res) => {
 });
 
 // Send SMS reminder to single location
-router.post('/send-sms-reminder/:location', async (req, res) => {
+router.post('/send-sms-reminder', async (req, res) => {
   try {
     const location = decodeURIComponent(req.params.location);
     const { appUrl } = req.body;
