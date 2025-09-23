@@ -133,8 +133,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/google-sheets', googleSheetsRoutes.default);
 
   // Monitoring routes for weekly collection tracking
-  const monitoringRoutes = await import('./routes/monitoring');
-  app.use('/api/monitoring', monitoringRoutes.default);
+  try {
+    const monitoringRoutes = await import('./routes/monitoring');
+    console.log('✅ Monitoring routes loaded successfully');
+    app.use('/api/monitoring', isAuthenticated, monitoringRoutes.default);
+  } catch (error) {
+    console.error('❌ Failed to load monitoring routes:', error);
+  }
 
   // Add catch-all handler for unknown API routes to prevent SPA fallback serving HTML
   // This must come AFTER all legitimate API routes but BEFORE static file serving
