@@ -177,6 +177,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
       apiRequest('PATCH', `/api/event-requests/${id}`, data),
+    retry: false,
+    networkMode: 'always',
     onSuccess: () => {
       const isEditMode = mode === 'edit';
       toast({

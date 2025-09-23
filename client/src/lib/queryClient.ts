@@ -32,39 +32,61 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  body?: any
+  body?: any,
+  timeoutMs: number = 30000 // 30 second default timeout
 ): Promise<any> {
   const isFormData = body instanceof FormData;
+  
+  // Create an AbortController for timeout handling
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const res = await fetch(url, {
-    method,
-    headers: isFormData
-      ? {}
-      : body
-        ? { 'Content-Type': 'application/json' }
-        : {},
-    body: isFormData ? body : body ? JSON.stringify(body) : undefined,
-    credentials: 'include',
-  });
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: isFormData
+        ? {}
+        : body
+          ? { 'Content-Type': 'application/json' }
+          : {},
+      body: isFormData ? body : body ? JSON.stringify(body) : undefined,
+      credentials: 'include',
+      signal: controller.signal,
+    });
 
-  await throwIfResNotOk(res);
+    // Clear the timeout since the request completed
+    clearTimeout(timeoutId);
+    
+    await throwIfResNotOk(res);
 
-  // If response has content, parse as JSON
-  const contentType = res.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    try {
-      const jsonData = await res.json();
-      // Ensure we return a valid object, not null/undefined
-      return jsonData ?? {};
-    } catch (parseError) {
-      console.warn('Failed to parse JSON response:', parseError);
-      return {};
+    // If response has content, parse as JSON
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const jsonData = await res.json();
+        // Ensure we return a valid object, not null/undefined
+        return jsonData ?? {};
+      } catch (parseError) {
+        console.warn('Failed to parse JSON response:', parseError);
+        return {};
+      }
     }
-  }
 
-  // For empty responses (like 204), return empty object instead of null
-  // This prevents "null is not an object" errors when accessing properties
-  return {};
+    // For empty responses (like 204), return empty object instead of null
+    // This prevents "null is not an object" errors when accessing properties
+    return {};
+  } catch (error: any) {
+    // Clear timeout on error
+    clearTimeout(timeoutId);
+    
+    // Handle timeout/abort errors
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeoutMs}ms`);
+    }
+    
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = 'returnNull' | 'throw';
