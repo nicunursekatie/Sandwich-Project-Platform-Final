@@ -1884,6 +1884,14 @@ export default function EventRequestsManagement({
 
   // Filter and sort event requests
   const filteredAndSortedRequests = useMemo(() => {
+    // Debug logging for search
+    if (searchQuery && searchQuery.toLowerCase().includes('kim')) {
+      console.log('Searching for Kim...');
+      console.log('Total event requests:', eventRequests.length);
+      console.log('Available drivers:', drivers.map((d: any) => ({ id: d.id, name: d.name })));
+      console.log('Available users:', users.map((u: any) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`, email: u.email })).slice(0, 10));
+    }
+    
     let filtered = eventRequests.filter((request: EventRequest) => {
       // Function to check if a user ID matches the search query
       const userMatchesSearch = (userId: string | null | undefined): boolean => {
@@ -1903,16 +1911,24 @@ export default function EventRequestsManagement({
 
       // Function to check if driver details contain the search query
       const driverDetailsMatch = (): boolean => {
-        if (!request.driverDetails) return false;
         try {
           const searchLower = searchQuery.toLowerCase();
+          
           // Check assigned driver IDs
           if (request.assignedDriverIds) {
             const driverIds = parsePostgresArray(request.assignedDriverIds);
+            
+            // Debug logging for Kim search
+            if (searchLower.includes('kim') && driverIds.length > 0) {
+              console.log(`Event ${request.organizationName} has assigned drivers:`, driverIds);
+            }
+            
             for (const driverId of driverIds) {
-              if (userMatchesSearch(driverId)) return true;
-              // Also check against drivers list
-              const driver = drivers.find((d: any) => d.id === driverId);
+              // Check against drivers list (drivers are not users)
+              const driver = drivers.find((d: any) => String(d.id) === String(driverId));
+              if (searchLower.includes('kim') && driver) {
+                console.log(`Checking driver ID ${driverId}:`, driver.name);
+              }
               if (driver) {
                 const driverName = driver.name || '';
                 const driverPhone = driver.phone || '';
@@ -1922,15 +1938,25 @@ export default function EventRequestsManagement({
                   driverPhone.toLowerCase().includes(searchLower) ||
                   driverEmail.toLowerCase().includes(searchLower)
                 ) {
+                  console.log(`✅ Found match for "${searchQuery}" in driver:`, driver.name);
                   return true;
                 }
               }
             }
           }
-          // Check driver details JSON
-          const detailsStr = JSON.stringify(request.driverDetails).toLowerCase();
-          return detailsStr.includes(searchLower);
-        } catch {
+          
+          // Also check driver details JSON for any additional info
+          if (request.driverDetails) {
+            const detailsStr = JSON.stringify(request.driverDetails).toLowerCase();
+            if (detailsStr.includes(searchLower)) {
+              console.log(`Found match for "${searchQuery}" in driver details JSON`);
+              return true;
+            }
+          }
+          
+          return false;
+        } catch (error) {
+          console.error('Error in driverDetailsMatch:', error);
           return false;
         }
       };
