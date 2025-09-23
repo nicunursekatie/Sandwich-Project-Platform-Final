@@ -702,9 +702,9 @@ export default function Dashboard({
               <div className="h-full">{renderContent()}</div>
             ) : (
               // Normal layout for other content
-              <div className="h-full overflow-y-auto overflow-x-hidden">
-                <div className="p-0 sm:p-4 md:p-6 pb-20 min-h-full">
-                  <div className="max-w-full overflow-x-hidden">
+              <div className="h-full overflow-y-auto overflow-x-hidden w-full">
+                <div className="w-full pb-20 min-h-full">
+                  <div className="w-full overflow-x-visible">
                     {renderContent()}
                   </div>
                 </div>
