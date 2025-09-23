@@ -598,9 +598,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <a href={`tel:${request.phone}`} className="text-blue-600 hover:text-blue-800">
                     <Phone className="w-3 h-3" />
                   </a>
-                      )}
-                    </div>
-              
+                )}
+              </div>
+
               <div className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 {isEditingThisCard && editingField === dateFieldToEdit ? (
@@ -1322,7 +1322,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           </div>
         )}
-      </div>
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 justify-end">
@@ -1336,6 +1335,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             Follow Up
           </Button>
         </div>
+      </div>
       </CardContent>
     </Card>
   );
