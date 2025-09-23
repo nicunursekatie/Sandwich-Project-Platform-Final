@@ -14,6 +14,8 @@ import {
   Mail
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
 // Helper function to properly format status text
 const formatStatusText = (status: string): string => {
@@ -154,6 +156,8 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
     }
   };
 
+  const [quickViewEvent, setQuickViewEvent] = useState<DashboardItem | null>(null);
+
   // Loading skeleton component
   const LoadingSkeleton = () => (
     <div className="space-y-3">
@@ -170,27 +174,65 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
   const ItemComponent = ({ item, type }: { item: DashboardItem; type: 'project' | 'task' | 'event' | 'message' }) => {
     if (type === 'event') {
       return (
-        <div 
-          className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
-          onClick={() => handleNavigation(item.linkPath)}
-          data-testid={`item-${type}-${item.id}`}
-        >
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-900 truncate text-[16px]" title={item.organizationName || item.title}>
-              {item.organizationName || item.title}
-            </p>
-            {item.dueDate && (
-              <p className="text-xs text-gray-600 truncate mt-0.5">
-                {formatDate(item.dueDate)}
-              </p>
-            )}
-            {item.assignmentType && item.assignmentType.length > 0 && (
-              <p className="text-xs text-purple-700 truncate mt-0.5">
-                {item.assignmentType.join(', ')}
-              </p>
-            )}
-          </div>
-        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <div 
+              className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+              onClick={() => setQuickViewEvent(item)}
+              data-testid={`item-${type}-${item.id}`}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 truncate text-[16px]" title={item.organizationName || item.title}>
+                  {item.organizationName || item.title}
+                </p>
+                {item.dueDate && (
+                  <p className="text-xs text-gray-600 truncate mt-0.5">
+                    {formatDate(item.dueDate)}
+                  </p>
+                )}
+                {item.assignmentType && item.assignmentType.length > 0 && (
+                  <p className="text-xs text-purple-700 truncate mt-0.5">
+                    {item.assignmentType.join(', ')}
+                  </p>
+                )}
+              </div>
+            </div>
+          </DialogTrigger>
+          {quickViewEvent && quickViewEvent.id === item.id && (
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Event Quick View</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2">
+                <div>
+                  <span className="font-semibold">Organization:</span> {quickViewEvent.organizationName || quickViewEvent.title}
+                </div>
+                {quickViewEvent.dueDate && (
+                  <div>
+                    <span className="font-semibold">Date:</span> {formatDate(quickViewEvent.dueDate)}
+                  </div>
+                )}
+                {quickViewEvent.assignmentType && quickViewEvent.assignmentType.length > 0 && (
+                  <div>
+                    <span className="font-semibold">Your Role:</span> {quickViewEvent.assignmentType.join(', ')}
+                  </div>
+                )}
+                {/* Add more fields as needed */}
+                <div className="pt-2">
+                  <a
+                    href={`/dashboard?section=event-requests&eventId=${quickViewEvent.id}`}
+                    className="inline-block bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition-colors"
+                  >
+                    View Full Event
+                  </a>
+                </div>
+              </div>
+              <DialogClose asChild>
+                <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">✕</button>
+              </DialogClose>
+            </DialogContent>
+          )}
+        </Dialog>
       );
     }
     // Default for other types (project, task, message)

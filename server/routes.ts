@@ -128,6 +128,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerPerformanceRoutes } = await import('./routes/performance');
   registerPerformanceRoutes(app);
 
+  // Google Sheets sync routes
+  const googleSheetsRoutes = await import('./routes/google-sheets');
+  app.use('/api/google-sheets', googleSheetsRoutes.default);
+
   // Add catch-all handler for unknown API routes to prevent SPA fallback serving HTML
   // This must come AFTER all legitimate API routes but BEFORE static file serving
   app.use('/api', (req, res, next) => {

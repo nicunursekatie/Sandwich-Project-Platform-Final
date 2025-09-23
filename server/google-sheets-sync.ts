@@ -16,6 +16,16 @@ export class GoogleSheetsSyncService {
     message: string;
     synced?: number;
   }> {
+    // Check if sync from sheets is in progress to prevent cycling
+    if ((global as any).syncFromSheetsInProgress) {
+      console.log('⏸️ Skipping sync TO sheets - sync FROM sheets is in progress');
+      return {
+        success: true,
+        message: 'Skipped - sync from sheets in progress',
+        synced: 0,
+      };
+    }
+
     const sheetsService = getProjectsGoogleSheetsService();
     if (!sheetsService) {
       return {
@@ -82,6 +92,10 @@ export class GoogleSheetsSyncService {
     }
 
     try {
+      // Set a sync lock to prevent re-triggering sync to sheets
+      console.log('🔒 Starting sync FROM Google Sheets - sync lock activated');
+      (global as any).syncFromSheetsInProgress = true;
+
       // Read from Google Sheets
       const sheetRows = await sheetsService.readSheet();
 
@@ -152,6 +166,10 @@ export class GoogleSheetsSyncService {
         }
       }
 
+      // Clear sync lock
+      (global as any).syncFromSheetsInProgress = false;
+      console.log('✅ Sync FROM Google Sheets complete - sync lock released');
+
       return {
         success: true,
         message: `Sync complete: ${createdCount} created, ${updatedCount} updated`,
@@ -159,11 +177,16 @@ export class GoogleSheetsSyncService {
         created: createdCount,
       };
     } catch (error) {
+      // Clear sync lock on error too
+      (global as any).syncFromSheetsInProgress = false;
       console.error('Error syncing from Google Sheets:', error);
       return {
         success: false,
         message: `Failed to sync: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
+    } finally {
+      // Ensure lock is always cleared
+      (global as any).syncFromSheetsInProgress = false;
     }
   }
 
