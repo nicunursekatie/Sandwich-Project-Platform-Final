@@ -1234,7 +1234,7 @@ export function AgendaPlanningTab({
             <Button
               size="sm"
               variant="outline"
-              onClick={handleFinalizeMeetingNotes}
+              onClick={handleSaveToNotes}
               disabled={createNoteMutation.isPending}
               data-testid="button-floating-create-tasks"
               className="border border-gray-300 px-4 py-2 rounded hover:bg-gray-50 transition-all disabled:opacity-50"
