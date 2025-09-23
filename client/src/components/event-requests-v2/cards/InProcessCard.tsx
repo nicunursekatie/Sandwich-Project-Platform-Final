@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,9 @@ import {
   Save,
   X,
   User,
+  History,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -31,6 +34,7 @@ import {
 } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
+import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -335,6 +339,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   canEdit = true,
   canDelete = true,
 }) => {
+  const [showAuditLog, setShowAuditLog] = useState(false);
   return (
     <Card
       className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#FBAD3F] ${
@@ -638,6 +643,37 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             >
               <Trash2 className="w-4 h-4" />
             </Button>
+          )}
+        </div>
+
+        {/* Audit Log Section */}
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAuditLog(!showAuditLog)}
+            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
+            data-testid="button-toggle-audit-log"
+          >
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              <span className="text-sm">Activity History</span>
+            </div>
+            {showAuditLog ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </Button>
+          
+          {showAuditLog && (
+            <div className="mt-3" data-testid="audit-log-section">
+              <EventRequestAuditLog
+                eventId={request.id?.toString()}
+                showFilters={false}
+                compact={true}
+              />
+            </div>
           )}
         </div>
       </CardContent>

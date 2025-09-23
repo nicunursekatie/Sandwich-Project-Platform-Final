@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,12 +24,16 @@ import {
   Users,
   UserPlus,
   Check,
+  History,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
+import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 
 interface CompletedCardProps {
   request: EventRequest;
@@ -475,6 +479,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   resolveUserName,
   canDelete = true,
 }) => {
+  const [showAuditLog, setShowAuditLog] = useState(false);
   return (
     <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-gradient-to-br from-[#e6f7f5] via-[#007E8C]/10 to-[#007E8C]/20 border border-[#007E8C]/30">
       <CardContent className="p-6">
@@ -631,6 +636,37 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             >
               <Trash2 className="w-4 h-4" />
             </Button>
+          )}
+        </div>
+
+        {/* Audit Log Section */}
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAuditLog(!showAuditLog)}
+            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
+            data-testid="button-toggle-audit-log"
+          >
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              <span className="text-sm">Activity History</span>
+            </div>
+            {showAuditLog ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </Button>
+          
+          {showAuditLog && (
+            <div className="mt-3" data-testid="audit-log-section">
+              <EventRequestAuditLog
+                eventId={request.id?.toString()}
+                showFilters={false}
+                compact={true}
+              />
+            </div>
           )}
         </div>
       </CardContent>
