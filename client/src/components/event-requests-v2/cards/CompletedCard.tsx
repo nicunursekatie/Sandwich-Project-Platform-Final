@@ -146,6 +146,11 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-lg text-[#1A2332]">
               {request.organizationName}
+              {request.department && (
+                <span className="text-gray-600 ml-1">
+                  &bull; {request.department}
+                </span>
+              )}
             </h3>
             <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
               <StatusIcon className="w-3 h-3 mr-1" />
