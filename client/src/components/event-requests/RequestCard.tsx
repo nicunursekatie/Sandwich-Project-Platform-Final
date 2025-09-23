@@ -390,22 +390,25 @@ export default function RequestCard({
   return (
     <Card
       key={request.id}
-      className={`transition-all duration-200 hover:shadow-lg ${statusColors[request.status as keyof typeof statusColors] || statusColors.new}`}
+      className={`w-full transition-all duration-200 hover:shadow-lg ${statusColors[request.status as keyof typeof statusColors] || statusColors.new}`}
       data-testid={`card-event-request-${request.id}`}
     >
-      <CardContent className="p-0">
+      <CardContent className="w-full p-0">
         {request.status === 'scheduled' && (
           <div className="h-1 bg-[#236383] rounded-t-md"></div>
         )}
-        <div className="p-6">
-          <div className="flex items-start justify-between">
+        <div className="p-6 w-full">
+          <div className="flex items-start justify-between w-full">
             <div className="flex-1 space-y-4">
-              <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start justify-between mb-3 w-full">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
                     <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
-                    <h2 className="text-2xl font-bold text-brand-primary leading-tight">
+                    <h2 className="text-2xl font-bold text-brand-primary leading-tight flex items-center gap-2">
                       {request.organizationName}
+                      {request.department && (
+                        <span className="text-lg font-normal text-gray-500">&bull; {request.department}</span>
+                      )}
                     </h2>
                   </div>
                 </div>
