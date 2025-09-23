@@ -366,10 +366,16 @@ const PERMISSION_CATEGORIES = {
         description: 'Access to host-specific chat room',
         level: 'access'
       },
-      { 
-        key: 'CHAT_DRIVER', 
-        name: 'Driver Chat', 
+      {
+        key: 'CHAT_DRIVER',
+        name: 'Driver Chat',
         description: 'Access to driver-specific chat room',
+        level: 'access'
+      },
+      {
+        key: 'CHAT_RECIPIENT',
+        name: 'Recipient Chat',
+        description: 'Access to recipient-specific chat room',
         level: 'access'
       },
       { 
@@ -384,16 +390,28 @@ const PERMISSION_CATEGORIES = {
         description: 'Access to grants committee chat room',
         level: 'access'
       },
-      { 
-        key: 'CHAT_EVENTS_COMMITTEE', 
-        name: 'Events Committee Chat', 
+      {
+        key: 'CHAT_EVENTS_COMMITTEE',
+        name: 'Events Committee Chat',
         description: 'Access to events committee chat room',
         level: 'access'
       },
-      { 
-        key: 'CHAT_WEB_COMMITTEE', 
-        name: 'Web Committee Chat', 
+      {
+        key: 'CHAT_BOARD',
+        name: 'Board Chat',
+        description: 'Access to board chat room',
+        level: 'access'
+      },
+      {
+        key: 'CHAT_WEB_COMMITTEE',
+        name: 'Web Committee Chat',
         description: 'Access to web committee chat room',
+        level: 'access'
+      },
+      {
+        key: 'CHAT_VOLUNTEER_MANAGEMENT',
+        name: 'Volunteer Management Chat',
+        description: 'Access to volunteer management chat room',
         level: 'access'
       },
     ]

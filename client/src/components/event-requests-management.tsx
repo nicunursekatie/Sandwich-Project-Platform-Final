@@ -158,12 +158,24 @@ function ComprehensivePersonSelector({ selectedPeople, onSelectionChange, assign
   
   // Extract all host contacts
   const hostContacts = hostsWithContacts.flatMap(host => 
-    (host.contacts || []).map((contact: any) => ({
-      ...contact,
-      hostName: host.name,
-      displayName: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email || 'Unknown Contact',
-      type: 'host-contact'
-    }))
+    (host.contacts || []).map((contact: any) => {
+      let displayName = '';
+      if (contact.firstName || contact.lastName) {
+        displayName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim();
+      } else if (host.name) {
+        displayName = host.name;
+      } else if (contact.email) {
+        displayName = contact.email;
+      } else {
+        displayName = 'Unknown Contact';
+      }
+      return {
+        ...contact,
+        hostName: host.name,
+        displayName,
+        type: 'host-contact'
+      };
+    })
   );
   
   // Filter all people based on search term
