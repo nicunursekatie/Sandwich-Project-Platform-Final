@@ -1,6 +1,21 @@
 import type { SandwichCollection } from '@shared/schema';
 
 /**
+ * Parse a collection date string and ensure YYYY-MM-DD values are treated as local time.
+ */
+export function parseCollectionDate(dateStr: string): Date {
+  if (!dateStr) {
+    return new Date(NaN);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return new Date(`${dateStr}T00:00:00`);
+  }
+
+  return new Date(dateStr);
+}
+
+/**
  * Standardized group sandwiches calculation for consistent analytics across all components.
  * This function ensures all frontend components use the same logic as the backend stats endpoint.
  *
@@ -86,7 +101,7 @@ export function calculateWeeklyData(collections: SandwichCollection[]): Array<{
   collections.forEach((collection) => {
     if (!collection.collectionDate) return;
 
-    const date = new Date(collection.collectionDate);
+    const date = parseCollectionDate(collection.collectionDate);
 
     // Calculate week start (Monday)
     const weekStart = new Date(date);

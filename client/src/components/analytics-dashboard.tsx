@@ -27,6 +27,7 @@ import {
   calculateTotalSandwiches,
   calculateActualWeeklyAverage,
   getRecordWeek,
+  parseCollectionDate,
 } from '@/lib/analytics-utils';
 import { getCollectionMonthKey } from '@/lib/date-utils';
 import { useAuth } from '@/hooks/useAuth';
