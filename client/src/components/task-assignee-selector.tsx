@@ -135,10 +135,9 @@ export function TaskAssigneeSelector({
       // Multi-user mode
       if (selectedUsers.includes(userId)) {
         // Remove user
+        const removeIndex = selectedUsers.indexOf(userId);
         const newIds = selectedUsers.filter((id) => id !== userId);
-        const newNames = selectedNames.filter(
-          (_, index) => selectedUsers[index] !== userId
-        );
+        const newNames = selectedNames.filter((_, idx) => idx !== removeIndex);
         setSelectedUsers(newIds);
         setSelectedNames(newNames);
         onChange({
@@ -146,15 +145,17 @@ export function TaskAssigneeSelector({
           assigneeNames: newNames.length > 0 ? newNames : undefined,
         });
       } else {
-        // Add user
-        const newIds = [...selectedUsers, userId];
-        const newNames = [...selectedNames, userName];
-        setSelectedUsers(newIds);
-        setSelectedNames(newNames);
-        onChange({
-          assigneeIds: newIds,
-          assigneeNames: newNames,
-        });
+        // Add user (prevent duplicates)
+        if (!selectedUsers.includes(userId)) {
+          const newIds = [...selectedUsers, userId];
+          const newNames = [...selectedNames, userName];
+          setSelectedUsers(newIds);
+          setSelectedNames(newNames);
+          onChange({
+            assigneeIds: newIds,
+            assigneeNames: newNames,
+          });
+        }
       }
     } else {
       // Single user mode

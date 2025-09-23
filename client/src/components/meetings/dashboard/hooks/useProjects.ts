@@ -56,15 +56,19 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
     queryKey: ['/api/projects/for-review'],
   });
 
-  // Filter out completed and archived projects
+  // Get all projects (including completed and archived)
+  const allProjects = React.useMemo(() => {
+    return projectsQuery.data || [];
+  }, [projectsQuery.data]);
+
+  // Filter out completed and archived projects for active projects
   const activeProjects = React.useMemo(() => {
-    const allProjects = projectsQuery.data || [];
-    return allProjects.filter(project => 
-      project.status !== 'completed' && 
+    return allProjects.filter(project =>
+      project.status !== 'completed' &&
       project.status !== 'archived' &&
       project.status !== 'done'
     );
-  }, [projectsQuery.data]);
+  }, [allProjects]);
 
   // Filter projects for review (also exclude completed/archived)
   const activeProjectsForReview = React.useMemo(() => {
@@ -531,12 +535,13 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
 
   return {
     // Queries
-    projects: activeProjects,
+    projects: allProjects,  // Return all projects including completed/archived
+    activeProjects,         // Also provide filtered active projects
     projectsLoading: projectsQuery.isLoading,
     projectsError: projectsQuery.error,
     projectsForReview: activeProjectsForReview,
     projectsForReviewLoading: projectsForReviewQuery.isLoading,
-    
+
     // Mutations
     createProjectMutation,
     updateProjectDiscussionMutation,
@@ -545,10 +550,10 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
     updateProjectOwnerMutation,
     createTasksFromNotesMutation,
     resetAgendaPlanningMutation,
-    
+
     // Helper functions
     generateAgendaPDF,
-    
+
     // Utility to refresh queries
     refreshProjects: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
