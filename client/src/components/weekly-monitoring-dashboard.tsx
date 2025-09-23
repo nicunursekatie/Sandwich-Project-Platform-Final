@@ -31,6 +31,16 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface WeeklySubmissionStatus {
   location: string;
@@ -89,6 +99,13 @@ export default function WeeklyMonitoringDashboard() {
     string | null
   >(null);
   const [smsingLocation, setSmsingLocation] = useState<string | null>(null);
+  // Email preview modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailTargetLocation, setEmailTargetLocation] = useState<string | null>(
+    null
+  );
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
 
   // Get monitoring status for selected week
   const {
@@ -152,7 +169,7 @@ export default function WeeklyMonitoringDashboard() {
     mutationFn: (data: { location: string; appUrl?: string }) =>
       apiRequest(
         'POST',
-        `/api/monitoring/send-sms-reminder/${encodeURIComponent(
+        `/api/monitoring/send-sms-reminder?location=${encodeURIComponent(
           data.location
         )}`,
         { appUrl: data.appUrl }
@@ -478,7 +495,7 @@ export default function WeeklyMonitoringDashboard() {
     mutationFn: (data: { location: string; appUrl?: string }) =>
       apiRequest(
         'POST',
-        `/api/monitoring/send-email-reminder/${encodeURIComponent(
+        `/api/monitoring/send-email-reminder?location=${encodeURIComponent(
           data.location
         )}`,
         { appUrl: data.appUrl }
@@ -1479,6 +1496,59 @@ export default function WeeklyMonitoringDashboard() {
           <AlertDescription>SMS reminder sent successfully!</AlertDescription>
         </Alert>
       )}
+      <Dialog open={showEmailModal} onOpenChange={setShowEmailModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Send email reminder
+              {emailTargetLocation ? ` — ${emailTargetLocation}` : ''}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email-subject">Subject</Label>
+              <Input
+                id="email-subject"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email-body">Body</Label>
+              <Textarea
+                id="email-body"
+                rows={10}
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowEmailModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!emailTargetLocation) return;
+                sendSingleEmailMutation.mutate({
+                  location: emailTargetLocation,
+                  appUrl: window.location.origin,
+                  subject: emailSubject,
+                  body: emailBody,
+                });
+                setShowEmailModal(false);
+              }}
+              disabled={sendSingleEmailMutation.isPending}
+              className="bg-brand-primary hover:bg-brand-primary-dark"
+            >
+              {sendSingleEmailMutation.isPending ? 'Sending...' : 'Send'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
