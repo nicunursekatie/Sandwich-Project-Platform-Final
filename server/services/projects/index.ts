@@ -360,6 +360,11 @@ export class ProjectService implements IProjectService {
     project,
     isAgendaUpdate,
   }: ProjectPermissionContext): Promise<boolean> {
+    // Check for admin roles first (most efficient)
+    if (user.role === 'super_admin' || user.role === 'admin') {
+      return true;
+    }
+
     if (isAgendaUpdate) {
       // For agenda updates, only need MEETINGS_MANAGE permission
       return hasPermission(user, 'MEETINGS_MANAGE');
