@@ -465,9 +465,9 @@ const PERMISSION_CATEGORIES = {
         level: 'admin'
       },
       { 
-        key: 'ADMIN_ACCESS', 
-        name: 'Admin Access', 
-        description: 'Full administrative access to system',
+        key: 'ADMIN_PANEL_ACCESS', 
+        name: 'Admin Panel Access', 
+        description: 'Access to admin panel/user management',
         level: 'admin'
       },
       { 
