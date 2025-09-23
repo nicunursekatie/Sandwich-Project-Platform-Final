@@ -632,7 +632,6 @@ export default function ProjectDetailClean({
     mutationFn: async () => {
       const completedTaskIds = tasks.filter((t) => t.status === 'completed').map((t) => t.id);
       if (completedTaskIds.length === 0) return;
-      // You can either delete or mark as archived. Here, we'll PATCH to set status 'archived'.
       await Promise.all(
         completedTaskIds.map((taskId) =>
           apiRequest('PATCH', `/api/tasks/${taskId}`, { status: 'archived' })
@@ -1049,7 +1048,7 @@ export default function ProjectDetailClean({
             {user && canEditProject(user, project) && tasks.some((t) => t.status === 'completed') && (
               <Button
                 onClick={() => archiveCompletedTasksMutation.mutate()}
-                className="flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white font-roboto px-4 py-2"
+                className="flex items-center gap-2 bg-[#646464] hover:bg-[#444444] text-white font-roboto px-4 py-2 rounded"
                 disabled={isArchivingTasks || archiveCompletedTasksMutation.isPending}
               >
                 <Archive className="h-4 w-4" />
@@ -1169,24 +1168,12 @@ export default function ProjectDetailClean({
           </div>
         )}
 
-        {/* Tasks List */}
+        {/* Main Task List (not archived) */}
         <div className="space-y-4">
-          {isTasksLoading ? (
-            <div className="text-center py-8 text-gray-500 font-roboto">
-              Loading tasks...
-            </div>
-          ) : tasks.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-400 mb-4">
-                <Plus className="h-12 w-12 mx-auto mb-2" />
-              </div>
-              <p className="text-gray-500 font-roboto text-lg">No tasks yet</p>
-              <p className="text-gray-400 font-roboto">
-                Add your first task to get started!
-              </p>
-            </div>
+          {tasks.filter((t) => t.status !== 'archived').length === 0 ? (
+            <div className="text-gray-500 italic">No active tasks.</div>
           ) : (
-            tasks.map((task) => (
+            tasks.filter((t) => t.status !== 'archived').map((task) => (
               <div
                 key={task.id}
                 className={`bg-white rounded-lg border border-gray-200 p-6 ${
@@ -1421,6 +1408,24 @@ export default function ProjectDetailClean({
             ))
           )}
         </div>
+
+        {/* Archived Tasks Section */}
+        {tasks.filter((t) => t.status === 'archived').length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-lg font-bold text-[#646464] mb-2">Archived Tasks</h3>
+            <div className="space-y-2">
+              {tasks.filter((t) => t.status === 'archived').map((task) => (
+                <div key={task.id} className="bg-gray-100 border border-gray-300 rounded p-3 flex items-center justify-between">
+                  <div>
+                    <span className="font-medium text-gray-700">{task.title}</span>
+                    {task.description && <span className="block text-xs text-gray-500 mt-1">{task.description}</span>}
+                  </div>
+                  <span className="text-xs text-[#646464] bg-gray-200 rounded px-2 py-1 ml-2">archived</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Project Edit Dialog */}
