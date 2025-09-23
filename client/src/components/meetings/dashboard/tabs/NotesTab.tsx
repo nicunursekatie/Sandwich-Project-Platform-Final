@@ -342,85 +342,115 @@ export function NotesTab({
       // Check if it's a structured note from agenda planning
       if (parsed.projectTitle || parsed.title) {
         return (
-          <div className="space-y-3">
-            {/* Project/Item Title */}
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-900">
-                {parsed.projectTitle || parsed.title}
-              </span>
-              {parsed.category && (
-                <Badge variant="outline" className="text-xs">
-                  {parsed.category}
-                </Badge>
-              )}
-              {parsed.priority && (
-                <Badge
-                  variant="outline"
-                  className={`text-xs ${
-                    parsed.priority === 'high' ? 'border-red-500 text-red-700' :
-                    parsed.priority === 'medium' ? 'border-yellow-500 text-yellow-700' :
-                    'border-gray-400 text-gray-600'
-                  }`}
-                >
-                  {parsed.priority}
-                </Badge>
-              )}
-              {parsed.status === 'tabled' && (
-                <Badge className="bg-orange-100 text-orange-700 text-xs">
-                  Tabled
-                </Badge>
-              )}
-              {parsed.type === 'off-agenda' && (
-                <Badge className="bg-purple-100 text-purple-700 text-xs">
-                  Off-Agenda
-                </Badge>
-              )}
-            </div>
-
-            {/* Discussion Points */}
-            {parsed.discussionPoints && (
-              <div className="pl-4 border-l-2 border-teal-200">
-                <p className="text-sm font-medium text-teal-700 mb-1">Discussion Points:</p>
-                <p className="text-gray-700 whitespace-pre-wrap">{parsed.discussionPoints}</p>
-              </div>
-            )}
-
-            {/* Decision Items */}
-            {parsed.decisionItems && (
-              <div className="pl-4 border-l-2 border-rose-200">
-                <p className="text-sm font-medium text-rose-700 mb-1">Decision Items:</p>
-                <p className="text-gray-700 whitespace-pre-wrap">{parsed.decisionItems}</p>
-              </div>
-            )}
-
-            {/* Off-Agenda Content */}
-            {parsed.type === 'off-agenda' && parsed.content && (
-              <div className="pl-4 border-l-2 border-purple-200">
-                <p className="text-sm font-medium text-purple-700 mb-1">Content:</p>
-                <p className="text-gray-700 whitespace-pre-wrap">{parsed.content}</p>
-              </div>
-            )}
-
-            {/* Metadata */}
-            <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-              {parsed.assignee && (
-                <div className="flex items-center gap-1">
-                  <User className="w-3 h-3" />
-                  <span>Assigned to: {parsed.assignee}</span>
+          <div className="space-y-4">
+            {/* Project/Item Card with enhanced styling */}
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                {/* Project/Item Title with badges */}
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-lg text-gray-900">
+                    {parsed.projectTitle || parsed.title}
+                  </span>
+                  {parsed.category && (
+                    <Badge variant="outline" className="text-xs">
+                      {parsed.category}
+                    </Badge>
+                  )}
+                  {parsed.priority && (
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${
+                        parsed.priority === 'high' ? 'border-red-500 text-red-700' :
+                        parsed.priority === 'medium' ? 'border-yellow-500 text-yellow-700' :
+                        'border-gray-400 text-gray-600'
+                      }`}
+                    >
+                      {parsed.priority}
+                    </Badge>
+                  )}
+                  {parsed.status === 'tabled' && (
+                    <Badge className="bg-orange-100 text-orange-700 text-xs">
+                      Tabled
+                    </Badge>
+                  )}
+                  {parsed.type === 'off-agenda' && (
+                    <Badge className="bg-purple-100 text-purple-700 text-xs">
+                      Off-Agenda
+                    </Badge>
+                  )}
                 </div>
-              )}
-              {parsed.supportPeople && (
-                <div className="flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  <span>Support: {parsed.supportPeople}</span>
-                </div>
-              )}
-              {parsed.reviewInNextMeeting && (
-                <Badge variant="secondary" className="text-xs">
-                  Review Next Meeting
-                </Badge>
-              )}
-            </div>
+
+                {/* Discussion Points Card */}
+                {parsed.discussionPoints && (
+                  <Card className="mb-3 bg-teal-50 border-teal-200">
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2">
+                        <MessageSquare className="w-4 h-4 text-teal-600 mt-1" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-teal-700 mb-1">Discussion Points</p>
+                          <p className="text-gray-700 whitespace-pre-wrap text-sm">{parsed.discussionPoints}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Decision Items Card */}
+                {parsed.decisionItems && (
+                  <Card className="mb-3 bg-rose-50 border-rose-200">
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-rose-600 mt-1" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-rose-700 mb-1">Decision Items</p>
+                          <p className="text-gray-700 whitespace-pre-wrap text-sm">{parsed.decisionItems}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Off-Agenda Content Card */}
+                {parsed.type === 'off-agenda' && parsed.content && (
+                  <Card className="mb-3 bg-purple-50 border-purple-200">
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-purple-600 mt-1" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-purple-700 mb-1">Content</p>
+                          <p className="text-gray-700 whitespace-pre-wrap text-sm">{parsed.content}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Metadata Bar */}
+                {(parsed.assignee || parsed.supportPeople || parsed.reviewInNextMeeting) && (
+                  <div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-3 pt-3 border-t border-gray-200">
+                    {parsed.assignee && (
+                      <div className="flex items-center gap-1">
+                        <User className="w-3 h-3 text-blue-500" />
+                        <span>Assigned: {parsed.assignee}</span>
+                      </div>
+                    )}
+                    {parsed.supportPeople && (
+                      <div className="flex items-center gap-1">
+                        <Users className="w-3 h-3 text-green-500" />
+                        <span>Support: {parsed.supportPeople}</span>
+                      </div>
+                    )}
+                    {parsed.reviewInNextMeeting && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        Review Next Meeting
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         );
       }
@@ -725,35 +755,9 @@ export function NotesTab({
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="mb-4">
-                    <div 
-                      className="text-gray-900 leading-relaxed whitespace-pre-wrap"
-                      data-testid={`text-note-content-${note.id}`}
-                    >
-                      {expandedNotes.has(note.id) 
-                        ? note.content 
-                        : truncateText(note.content)
-                      }
+                    <div data-testid={`text-note-content-${note.id}`}>
+                      {renderNoteContent(note)}
                     </div>
-                    {note.content.length > 200 && (
-                      <Button
-                        variant="link"
-                        className="p-0 h-auto text-teal-600"
-                        onClick={() => toggleNoteExpanded(note.id)}
-                        data-testid={`button-toggle-note-${note.id}`}
-                      >
-                        {expandedNotes.has(note.id) ? (
-                          <>
-                            <EyeOff className="w-4 h-4 mr-1" />
-                            Show less
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-4 h-4 mr-1" />
-                            Show more
-                          </>
-                        )}
-                      </Button>
-                    )}
                   </div>
                   
                   <div className="flex items-center justify-between">
