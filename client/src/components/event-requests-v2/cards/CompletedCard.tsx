@@ -92,8 +92,11 @@ const CardHeader: React.FC<CardHeaderProps> = ({
 
   // Calculate relative time
   const getRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
+    // Fix timezone issue by treating both dates as local
+    const date = new Date(dateString + 'T00:00:00');
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
+    
     const diffTime = date.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
