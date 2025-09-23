@@ -58,10 +58,28 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
     queryKey: ['/api/projects/for-review'],
   });
 
-  // Get all projects (including completed and archived)
+  // Get all projects (including completed and archived) - deduplicate to prevent duplicates from multiple queries
   const allProjects = React.useMemo(() => {
-    return projectsQuery.data || [];
-  }, [projectsQuery.data]);
+    const mainProjects = projectsQuery.data || [];
+    const reviewProjects = projectsForReviewQuery.data || [];
+    
+    // Create a Map to deduplicate by project ID
+    const projectMap = new Map();
+    
+    // Add main projects first (these are the authoritative source)
+    mainProjects.forEach(project => {
+      projectMap.set(project.id, project);
+    });
+    
+    // Add review projects, but only if they don't already exist (avoid duplicates)
+    reviewProjects.forEach(project => {
+      if (!projectMap.has(project.id)) {
+        projectMap.set(project.id, project);
+      }
+    });
+    
+    return Array.from(projectMap.values());
+  }, [projectsQuery.data, projectsForReviewQuery.data]);
 
   // Filter out completed and archived projects for active projects
   const activeProjects = React.useMemo(() => {
