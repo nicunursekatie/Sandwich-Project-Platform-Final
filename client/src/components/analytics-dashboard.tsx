@@ -29,6 +29,7 @@ import {
   getRecordWeek,
   parseCollectionDate,
 } from '@/lib/analytics-utils';
+import { getCollectionMonthKey } from '@/lib/date-utils';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function AnalyticsDashboard() {
@@ -149,14 +150,13 @@ export default function AnalyticsDashboard() {
           console.log(`⚠️ Skipping collection ${index}: No date`);
           return;
         }
-
-        const parsedDate = parseCollectionDate(dateStr);
-        if (Number.isNaN(parsedDate.getTime())) {
+        
+        // Extract YYYY-MM from date string (bulletproof parsing)
+        const monthKey = getCollectionMonthKey(dateStr);
+        if (!monthKey) {
           console.log(`⚠️ Skipping collection ${index}: Invalid date format: ${dateStr}`);
           return;
         }
-
-        const monthKey = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`;
         
         // Calculate total sandwiches for this collection
         const individual = Number(collection.individualSandwiches || 0);
