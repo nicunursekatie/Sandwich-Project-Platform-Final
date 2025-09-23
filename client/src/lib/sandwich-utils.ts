@@ -93,6 +93,38 @@ export function stringifySandwichTypes(sandwichTypes: SandwichType[] | null): st
 }
 
 /**
+ * Format sandwich type name for professional display
+ */
+function formatSandwichTypeName(type: string): string {
+  const typeMap: { [key: string]: string } = {
+    'pbj': 'PB&J',
+    'pb&j': 'PB&J',
+    'peanut butter and jelly': 'PB&J',
+    'deli': 'Deli',
+    'turkey': 'Turkey',
+    'ham': 'Ham',
+    'roast beef': 'Roast Beef',
+    'tuna': 'Tuna',
+    'chicken': 'Chicken',
+    'veggie': 'Veggie',
+    'vegan': 'Vegan',
+    'grilled cheese': 'Grilled Cheese',
+    'club': 'Club',
+    'blt': 'BLT',
+    'italian': 'Italian',
+    'sub': 'Sub',
+    'hoagie': 'Hoagie'
+  };
+
+  const lowerType = type.toLowerCase();
+  
+  // Return mapped type if found, otherwise capitalize first letter of each word
+  return typeMap[lowerType] || type.split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
  * Format sandwich types for display
  * Returns a human-readable string
  */
@@ -120,11 +152,12 @@ export function formatSandwichTypesDisplay(
     const total = validTypes.reduce((sum, item) => sum + item.quantity, 0);
 
     if (validTypes.length === 1) {
-      return `${validTypes[0].quantity} ${validTypes[0].type}`;
+      const formattedType = formatSandwichTypeName(validTypes[0].type);
+      return `${validTypes[0].quantity} ${formattedType}`;
     }
 
     const breakdown = validTypes
-      .map(item => `${item.quantity} ${item.type}`)
+      .map(item => `${item.quantity} ${formatSandwichTypeName(item.type)}`)
       .join(', ');
 
     return breakdown || `${total} total`;
