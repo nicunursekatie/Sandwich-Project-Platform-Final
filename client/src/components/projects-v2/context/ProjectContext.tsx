@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Project, InsertProject } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 
+const TABLED_STATUSES: Array<Project['status']> = ['tabled', 'waiting'];
+
 interface ProjectContextValue {
   // Projects data
   projects: Project[];
@@ -39,7 +41,7 @@ interface ProjectContextValue {
 
   // Stats
   projectStats: {
-    tabled: number;
+    tabledAndWaiting: number;
     inProgress: number;
     completed: number;
     archived: number;
@@ -124,8 +126,10 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       filtered = activeProjects;
     } else if (status === 'archived') {
       filtered = archivedProjects;
+    } else if (status === 'tabled') {
+      filtered = activeProjects.filter((p) => TABLED_STATUSES.includes(p.status));
     } else {
-      filtered = activeProjects.filter(p => p.status === status);
+      filtered = activeProjects.filter((p) => p.status === status);
     }
 
     // Apply type filter
@@ -159,12 +163,12 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
 
   // Calculate stats
   const projectStats = {
-    tabled: activeProjects.filter(p => p.status === 'tabled').length,
-    inProgress: activeProjects.filter(p => p.status === 'in_progress').length,
-    completed: activeProjects.filter(p => p.status === 'completed').length,
+    tabledAndWaiting: activeProjects.filter((p) => TABLED_STATUSES.includes(p.status)).length,
+    inProgress: activeProjects.filter((p) => p.status === 'in_progress').length,
+    completed: activeProjects.filter((p) => p.status === 'completed').length,
     archived: archivedProjects.length,
-    meeting: activeProjects.filter(p => p.googleSheetRowId).length,
-    internal: activeProjects.filter(p => !p.googleSheetRowId).length,
+    meeting: activeProjects.filter((p) => p.googleSheetRowId).length,
+    internal: activeProjects.filter((p) => !p.googleSheetRowId).length,
   };
 
   // Reset new project form

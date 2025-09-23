@@ -152,7 +152,7 @@ const ProjectsManagementContent: React.FC = () => {
             }`}
           >
             <Circle className="w-4 h-4 mr-2" />
-            Tabled ({projectStats.tabled})
+            Tabled & Waiting ({projectStats.tabledAndWaiting})
           </Button>
 
           <Button
@@ -202,7 +202,9 @@ const ProjectsManagementContent: React.FC = () => {
         emptyMessage={
           searchQuery
             ? `No projects found matching "${searchQuery}"`
-            : `No ${(activeTab || '').replace('_', ' ')} projects`
+            : activeTab === 'tabled'
+              ? 'No tabled or waiting projects'
+              : `No ${(activeTab || '').replace('_', ' ')} projects`
         }
       />
 
