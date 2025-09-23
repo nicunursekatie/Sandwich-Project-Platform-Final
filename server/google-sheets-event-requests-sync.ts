@@ -682,9 +682,9 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       contactName: `${row[1] || ''} ${row[2] || ''}`.trim(), // First Name (B) + Last Name (C) combined
       email: row[3] || '', // Email (D)
       organizationName: row[4] || '', // Group/Organization Name (E)
-      desiredEventDate: row[5] || '', // Desired Event Date (F) - FIXED!
-      message: row[6] || '', // Message (G) - FIXED!
-      phone: row[7] || '', // CC notes/Phone (H) - treating CC notes as phone field
+      message: row[5] || '', // Message (F) - CORRECTED COLUMN MAPPING!
+      phone: row[6] || '', // Phone (G) - CORRECTED COLUMN MAPPING!
+      desiredEventDate: row[7] || '', // Desired Event Date (H) - CORRECTED COLUMN MAPPING!
       department: row[8] || '', // Additional fields if present (I)
       previouslyHosted: row[9] || 'i_dont_know', // Additional fields if present (J)
       status: row[10] || 'new', // Status column if present (K) - default to 'new'
