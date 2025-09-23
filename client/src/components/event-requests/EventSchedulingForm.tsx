@@ -78,7 +78,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     speakersNeeded: 0,
     volunteersNeeded: 0,
     tspContact: '',
+    message: '',
     schedulingNotes: '',
+    planningNotes: '',
     totalSandwichCount: 0,
     status: 'new',
     toolkitSent: false,
@@ -90,6 +92,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showDateConfirmation, setShowDateConfirmation] = useState(false);
   const [pendingDateChange, setPendingDateChange] = useState('');
+  const [isMessageEditable, setIsMessageEditable] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -150,7 +153,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         speakersNeeded: eventRequest?.speakersNeeded || 0,
         volunteersNeeded: eventRequest?.volunteersNeeded || 0,
         tspContact: eventRequest?.tspContact || '',
+        message: (eventRequest as any)?.message || '',
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
+        planningNotes: (eventRequest as any)?.planningNotes || '',
         totalSandwichCount: totalCount,
         // Contact information fields
         firstName: eventRequest?.firstName || '',
@@ -272,7 +277,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
       volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
       tspContact: formData.tspContact || null,
+      message: formData.message || null,
       schedulingNotes: formData.schedulingNotes || null,
+      planningNotes: formData.planningNotes || null,
       // Contact information fields
       firstName: formData.firstName || null,
       lastName: formData.lastName || null,
@@ -822,16 +829,91 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </Select>
           </div>
 
-          {/* Scheduling Notes */}
-          <div>
-            <Label htmlFor="schedulingNotes">Notes (optional)</Label>
-            <Textarea
-              id="schedulingNotes"
-              value={formData.schedulingNotes}
-              onChange={(e) => setFormData(prev => ({ ...prev, schedulingNotes: e.target.value }))}
-              placeholder="Add any notes or special instructions for this scheduled event"
-              className="min-h-[100px]"
-            />
+          {/* Notes & Requirements Section */}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-[#47B3CB] mb-4">Notes & Requirements</h3>
+              
+              {/* Initial Request Message */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="message">Initial Request Message</Label>
+                  {!isMessageEditable && formData.message && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsMessageEditable(true)}
+                      className="text-xs text-gray-500 hover:text-gray-700"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </div>
+                {isMessageEditable ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      id="message"
+                      value={formData.message}
+                      onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Original request message from the organizer"
+                      className="min-h-[80px]"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setIsMessageEditable(false)}
+                        className="bg-[#47B3CB] hover:bg-[#47B3CB]/80 text-white"
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setIsMessageEditable(false);
+                          // Reset to original value if needed
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-200 text-sm text-gray-700">
+                    {formData.message || 'No initial message recorded'}
+                  </div>
+                )}
+              </div>
+
+              {/* Scheduling Notes */}
+              <div className="mb-4">
+                <Label htmlFor="schedulingNotes">Scheduling Notes</Label>
+                <p className="text-sm text-gray-500 mb-2">Notes added while the event is being processed</p>
+                <Textarea
+                  id="schedulingNotes"
+                  value={formData.schedulingNotes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, schedulingNotes: e.target.value }))}
+                  placeholder="Add notes about scheduling, coordination, or processing status"
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              {/* Planning Notes */}
+              <div>
+                <Label htmlFor="planningNotes">Planning Notes</Label>
+                <p className="text-sm text-gray-500 mb-2">Notes for when the event is scheduled or being planned</p>
+                <Textarea
+                  id="planningNotes"
+                  value={formData.planningNotes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, planningNotes: e.target.value }))}
+                  placeholder="Add planning notes, logistics, or post-scheduling information"
+                  className="min-h-[80px]"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Form Actions */}
