@@ -1885,6 +1885,75 @@ export default function EventRequestsManagement({
   // Filter and sort event requests
   const filteredAndSortedRequests = useMemo(() => {
     let filtered = eventRequests.filter((request: EventRequest) => {
+      // Function to check if a user ID matches the search query
+      const userMatchesSearch = (userId: string | null | undefined): boolean => {
+        if (!userId) return false;
+        const foundUser = users.find((u: any) => u.id === userId);
+        if (!foundUser) return false;
+        const userFullName = `${foundUser.firstName || ''} ${foundUser.lastName || ''}`.trim();
+        const userDisplayName = foundUser.displayName || '';
+        const userEmail = foundUser.email || '';
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          userFullName.toLowerCase().includes(searchLower) ||
+          userDisplayName.toLowerCase().includes(searchLower) ||
+          userEmail.toLowerCase().includes(searchLower)
+        );
+      };
+
+      // Function to check if driver details contain the search query
+      const driverDetailsMatch = (): boolean => {
+        if (!request.driverDetails) return false;
+        try {
+          const searchLower = searchQuery.toLowerCase();
+          // Check assigned driver IDs
+          if (request.assignedDriverIds) {
+            const driverIds = parsePostgresArray(request.assignedDriverIds);
+            for (const driverId of driverIds) {
+              if (userMatchesSearch(driverId)) return true;
+              // Also check against drivers list
+              const driver = drivers.find((d: any) => d.id === driverId);
+              if (driver) {
+                const driverName = driver.name || '';
+                const driverPhone = driver.phone || '';
+                const driverEmail = driver.email || '';
+                if (
+                  driverName.toLowerCase().includes(searchLower) ||
+                  driverPhone.toLowerCase().includes(searchLower) ||
+                  driverEmail.toLowerCase().includes(searchLower)
+                ) {
+                  return true;
+                }
+              }
+            }
+          }
+          // Check driver details JSON
+          const detailsStr = JSON.stringify(request.driverDetails).toLowerCase();
+          return detailsStr.includes(searchLower);
+        } catch {
+          return false;
+        }
+      };
+
+      // Function to check if speaker details contain the search query
+      const speakerDetailsMatch = (): boolean => {
+        if (!request.speakerDetails) return false;
+        try {
+          const searchLower = searchQuery.toLowerCase();
+          const detailsStr = JSON.stringify(request.speakerDetails).toLowerCase();
+          // Check if any speaker names/emails match
+          if (detailsStr.includes(searchLower)) return true;
+          // Check speaker user IDs
+          const speakerDetails = request.speakerDetails as Record<string, any>;
+          for (const userId of Object.keys(speakerDetails)) {
+            if (userMatchesSearch(userId)) return true;
+          }
+          return false;
+        } catch {
+          return false;
+        }
+      };
+
       const matchesSearch =
         searchQuery === '' ||
         request.organizationName
@@ -1894,7 +1963,14 @@ export default function EventRequestsManagement({
         request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        dateMatchesSearch(request.desiredEventDate, searchQuery);
+        dateMatchesSearch(request.desiredEventDate, searchQuery) ||
+        // Search through staffing assignments
+        userMatchesSearch(request.tspContact) ||
+        userMatchesSearch(request.additionalContact1) ||
+        userMatchesSearch(request.additionalContact2) ||
+        (request.additionalTspContacts && request.additionalTspContacts.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        driverDetailsMatch() ||
+        speakerDetailsMatch();
 
       const matchesStatus =
         statusFilter === 'all' || request.status === statusFilter;
