@@ -166,34 +166,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             )}
           </div>
           <div className="text-sm text-[#236383] mt-1 space-y-1">
-            {/* Contact Information */}
-            <div className="text-sm text-gray-700 mb-2 space-y-1">
-              <div>
-                <strong>{request.firstName} {request.lastName}</strong>
-              </div>
-              {request.email && (
-                <div className="flex items-center gap-1">
-                  <Mail className="w-3 h-3" />
-                  <a
-                    href={`mailto:${request.email}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    {request.email}
-                  </a>
-                </div>
-              )}
-              {request.phone && (
-                <div className="flex items-center gap-1">
-                  <Phone className="w-3 h-3" />
-                  <a
-                    href={`tel:${request.phone}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    {request.phone}
-                  </a>
-                </div>
-              )}
-            </div>
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {isEditingDate ? (
@@ -260,30 +232,62 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
   onContact
 }) => {
   return (
-    <div className="bg-gray-50 rounded-lg p-3">
-      <div className="flex justify-center gap-3">
-        {request.phone && onCall && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onCall}
-            className="text-[15px]"
-          >
-            <Phone className="w-3 h-3 mr-1" />
-            Call
-          </Button>
-        )}
-        {onContact && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onContact}
-            className="text-[15px]"
-          >
-            <Mail className="w-3 h-3 mr-1" />
-            Email
-          </Button>
-        )}
+    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-sm">
+            <User className="w-4 h-4 text-gray-500" />
+            <span className="font-medium text-[16px]">
+              {request.firstName} {request.lastName}
+            </span>
+          </div>
+          {request.email && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Mail className="w-4 h-4 text-gray-400" />
+              <a
+                href={`mailto:${request.email}`}
+                className="text-blue-600 hover:text-blue-800 text-[16px]"
+              >
+                {request.email}
+              </a>
+            </div>
+          )}
+          {request.phone && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Phone className="w-4 h-4 text-gray-400" />
+              <a
+                href={`tel:${request.phone}`}
+                className="text-blue-600 hover:text-blue-800 text-[16px]"
+              >
+                {request.phone}
+              </a>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          {request.phone && onCall && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onCall}
+              className="text-[15px]"
+            >
+              <Phone className="w-3 h-3 mr-1" />
+              Call
+            </Button>
+          )}
+          {onContact && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onContact}
+              className="text-[15px]"
+            >
+              <Mail className="w-3 h-3 mr-1" />
+              Email
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
