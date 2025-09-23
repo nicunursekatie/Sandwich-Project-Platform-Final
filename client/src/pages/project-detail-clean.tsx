@@ -1420,7 +1420,33 @@ export default function ProjectDetailClean({
                     <span className="font-medium text-gray-700">{task.title}</span>
                     {task.description && <span className="block text-xs text-gray-500 mt-1">{task.description}</span>}
                   </div>
-                  <span className="text-xs text-[#646464] bg-gray-200 rounded px-2 py-1 ml-2">archived</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-xs text-[#646464] bg-gray-200 rounded px-2 py-1">archived</span>
+                    <Button
+                      size="sm"
+                      className="bg-[#236383] hover:bg-[#16425B] text-white rounded px-2 py-1"
+                      onClick={async () => {
+                        await apiRequest('PATCH', `/api/tasks/${task.id}`, { status: 'available' });
+                        queryClient.invalidateQueries({ queryKey: ['/api/projects', id, 'tasks'] });
+                        toast({ description: 'Task unarchived.' });
+                      }}
+                    >
+                      Unarchive
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-[#A31C41] hover:bg-[#7B1B34] text-white rounded px-2 py-1"
+                      onClick={async () => {
+                        if (window.confirm('Are you sure you want to permanently delete this task?')) {
+                          await apiRequest('DELETE', `/api/tasks/${task.id}`);
+                          queryClient.invalidateQueries({ queryKey: ['/api/projects', id, 'tasks'] });
+                          toast({ description: 'Task deleted.' });
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

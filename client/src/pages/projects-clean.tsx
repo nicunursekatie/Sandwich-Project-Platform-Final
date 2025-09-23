@@ -261,10 +261,19 @@ export default function ProjectsClean() {
 
     // Filter by status
     if (status === 'active') {
+      // Show all projects that are not tabled, completed, or archived
+      // This includes: in_progress, waiting, pending, blocked, etc.
       filtered = filtered.filter(
-        (project: Project) => project.status === 'in_progress'
+        (project: Project) =>
+          project.status !== 'tabled' &&
+          project.status !== 'completed' &&
+          project.status !== 'archived'
       );
+    } else if (status === 'archived') {
+      // For archived tab, get from the archived projects endpoint
+      filtered = archivedProjects;
     } else {
+      // For specific status (tabled, completed), filter exactly
       filtered = filtered.filter(
         (project: Project) => project.status === status
       );
