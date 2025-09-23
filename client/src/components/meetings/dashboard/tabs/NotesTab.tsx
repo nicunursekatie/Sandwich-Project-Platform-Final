@@ -315,11 +315,11 @@ export function NotesTab({
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'discussion':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'meeting':
-        return 'bg-green-50 text-green-700 border-green-200';
+        return 'bg-green-100 text-green-800 border-green-300';
       default:
-        return 'bg-gray-50 text-gray-700 border-gray-200';
+        return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -349,7 +349,7 @@ export function NotesTab({
                 <div className="flex items-start gap-2">
                   <MessageSquare className="w-4 h-4 text-blue-600 mt-1 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-blue-800 mb-1">Discussion Points</p>
+                    <p className="text-sm font-medium text-blue-800 mb-1">Discussion Points/Questions</p>
                     <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.discussionPoints}</p>
                   </div>
                 </div>
@@ -361,7 +361,7 @@ export function NotesTab({
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-green-800 mb-1">Decision Items</p>
+                    <p className="text-sm font-medium text-green-800 mb-1">Meeting Notes</p>
                     <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.decisionItems}</p>
                   </div>
                 </div>
@@ -648,28 +648,21 @@ export function NotesTab({
                             {note.type === 'discussion' ? (
                               <>
                                 <MessageSquare className="w-3 h-3 mr-1" />
-                                Discussion Points
+                                Discussion Points/Questions
                               </>
                             ) : (
                               <>
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                Decision Items
+                                <FileText className="w-3 h-3 mr-1" />
+                                Meeting Notes
                               </>
                             )}
                           </Badge>
-                          <Badge className={getStatusColor(note.status)}>
-                            {note.status === 'active' ? (
-                              <>
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                Active
-                              </>
-                            ) : (
-                              <>
-                                <Archive className="w-3 h-3 mr-1" />
-                                Archived
-                              </>
-                            )}
-                          </Badge>
+                          {note.createdAt && (
+                            <Badge className="bg-gray-100 text-gray-700 border-gray-200">
+                              <Calendar className="w-3 h-3 mr-1" />
+                              {formatDateForDisplay(note.createdAt)}
+                            </Badge>
+                          )}
                         </div>
                         <div className="text-sm font-medium text-gray-600 mb-1">
                           Project: {note.projectTitle}
