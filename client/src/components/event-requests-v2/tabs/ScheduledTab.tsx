@@ -201,7 +201,7 @@ export const ScheduledTab: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {scheduledRequests.map((request) => (
-            <div key={request.id} className="w-full max-w-4xl mx-auto">
+            <div key={request.id}>
               <ScheduledCard
                 request={request}
                 editingField={editingField}
