@@ -669,25 +669,31 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
             {/* Contact & Date */}
             <div className="flex items-center gap-6 text-base text-gray-600 mb-3">
-              <div className="flex items-center gap-1">
+              <div className="flex flex-col gap-1">
                 <span className="font-medium">
                   {request.firstName} {request.lastName}
                 </span>
                 {request.email && (
-                  <a
-                    href={`mailto:${request.email}`}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
+                  <div className="flex items-center gap-1">
                     <Mail className="w-3 h-3" />
-                  </a>
+                    <a
+                      href={`mailto:${request.email}`}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      {request.email}
+                    </a>
+                  </div>
                 )}
                 {request.phone && (
-                  <a
-                    href={`tel:${request.phone}`}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
+                  <div className="flex items-center gap-1">
                     <Phone className="w-3 h-3" />
-                  </a>
+                    <a
+                      href={`tel:${request.phone}`}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      {request.phone}
+                    </a>
+                  </div>
                 )}
               </div>
 
