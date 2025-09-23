@@ -236,7 +236,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       const rows = response.data.values || [];
 
       // Find the matching row (case-insensitive)
-      const rowIndex = rows.findIndex((row) => {
+      const rowIndex = rows.findIndex((row: string[]) => {
         const sheetOrgName = row[3] || ''; // Organization Name is column D (index 3)
         const sheetContactName = row[1] || ''; // Contact Name is column B (index 1)
 
@@ -694,18 +694,19 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       return -1;
     };
 
-    // Map expected fields to their column indices
+    // Map expected fields to their column indices - Updated for new sheet structure
     const columnMapping = {
-      submittedOn: getColumnIndex(['timestamp', 'submission date', 'date', 'submitted on']),
-      firstName: getColumnIndex(['first name', 'fname', 'first']),
-      lastName: getColumnIndex(['last name', 'lname', 'last']),
-      email: getColumnIndex(['email', 'email address', 'e-mail']),
-      organizationName: getColumnIndex(['organization', 'group', 'organization name', 'group/organization name', 'company']),
-      message: getColumnIndex(['message', 'details', 'description', 'comments']),
+      submittedOn: getColumnIndex(['submitted on', 'timestamp', 'submission date', 'date']),
+      name: getColumnIndex(['name', 'full name', 'contact name']), // Single name field
+      firstName: getColumnIndex(['first name', 'fname', 'first']), // Legacy support
+      lastName: getColumnIndex(['last name', 'lname', 'last']), // Legacy support
+      email: getColumnIndex(['your email', 'email', 'email address', 'e-mail']),
+      organizationName: getColumnIndex(['group/organization name', 'organization', 'group', 'organization name', 'company']),
+      department: getColumnIndex(['department/team if applicable', 'department', 'team', 'dept', 'division']),
       phone: getColumnIndex(['phone', 'phone number', 'contact', 'telephone']),
       desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date']),
-      department: getColumnIndex(['department', 'dept', 'division']),
-      previouslyHosted: getColumnIndex(['previously hosted', 'previous', 'hosted before']),
+      previouslyHosted: getColumnIndex(['has your organization done an event with us before?', 'previously hosted', 'previous', 'hosted before']),
+      message: getColumnIndex(['message', 'details', 'description', 'comments']),
       status: getColumnIndex(['status', 'current status', 'state']),
     };
 
@@ -736,9 +737,28 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         return row[colIndex] || defaultValue;
       };
 
-      const firstName = getFieldValue(columnMapping.firstName);
-      const lastName = getFieldValue(columnMapping.lastName);
-      const contactName = `${firstName} ${lastName}`.trim();
+      // Handle single Name field from new sheet structure or legacy firstName/lastName
+      let firstName = '';
+      let lastName = '';
+      let contactName = '';
+
+      if (columnMapping.name >= 0) {
+        // New sheet structure: single Name field
+        const fullName = getFieldValue(columnMapping.name);
+        contactName = fullName;
+        
+        // Split name into firstName and lastName
+        if (fullName && fullName.trim()) {
+          const nameParts = fullName.trim().split(/\s+/);
+          firstName = nameParts[0] || '';
+          lastName = nameParts.slice(1).join(' ') || '';
+        }
+      } else {
+        // Legacy sheet structure: separate firstName/lastName fields
+        firstName = getFieldValue(columnMapping.firstName);
+        lastName = getFieldValue(columnMapping.lastName);
+        contactName = `${firstName} ${lastName}`.trim();
+      }
 
       const result = {
         submittedOn: getFieldValue(columnMapping.submittedOn),
@@ -761,10 +781,16 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       // Log the first few rows for debugging
       if (index < 3) {
         console.log(`🔍 DYNAMIC Row ${index + 2} mapping (using header detection):`);
-        console.log(`  firstName[${columnMapping.firstName}]: "${firstName}"`);
-        console.log(`  lastName[${columnMapping.lastName}]: "${lastName}"`);
+        if (columnMapping.name >= 0) {
+          console.log(`  name[${columnMapping.name}]: "${contactName}" → firstName: "${firstName}", lastName: "${lastName}"`);
+        } else {
+          console.log(`  firstName[${columnMapping.firstName}]: "${firstName}"`);
+          console.log(`  lastName[${columnMapping.lastName}]: "${lastName}"`);
+        }
         console.log(`  email[${columnMapping.email}]: "${result.email}"`);
         console.log(`  organization[${columnMapping.organizationName}]: "${result.organizationName}"`);
+        console.log(`  department[${columnMapping.department}]: "${result.department}"`);
+        console.log(`  previouslyHosted[${columnMapping.previouslyHosted}]: "${result.previouslyHosted}"`);
         console.log(`  message[${columnMapping.message}]: "${result.message?.substring(0, 50)}..."`);
         console.log(`  desiredEventDate[${columnMapping.desiredEventDate}]: "${result.desiredEventDate}"`);
         console.log(`  status[${columnMapping.status}]: "${result.status}"`);

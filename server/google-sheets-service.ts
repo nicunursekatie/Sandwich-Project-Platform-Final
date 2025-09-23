@@ -32,14 +32,14 @@ export interface SheetRow {
 }
 
 export class GoogleSheetsService {
-  private auth!: JWT;
-  private sheets: any;
+  protected auth!: JWT;
+  protected sheets: any;
 
   constructor(private config: GoogleSheetsConfig) {
     // Don't call async initialization in constructor
   }
 
-  private async ensureInitialized() {
+  protected async ensureInitialized() {
     if (!this.sheets) {
       await this.initializeAuth();
     }
