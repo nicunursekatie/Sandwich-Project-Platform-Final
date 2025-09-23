@@ -30,6 +30,14 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
       // Get all historical host organizations from sandwich collections
       const allCollections = await storage.getAllSandwichCollections();
+      
+      // Get all users to resolve assignedTo IDs to names
+      const allUsers = await storage.getAllUsers();
+      const userIdToName = new Map();
+      allUsers.forEach(u => {
+        const name = u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || u.id;
+        userIdToName.set(u.id, name);
+      });
 
       // Create a map to aggregate data by organization and department
       const departmentsMap = new Map();
@@ -62,6 +70,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             hasHostedEvent: false,
             totalSandwiches: 0,
             eventDate: null,
+            tspContact: null,
+            tspContactAssigned: null,
+            assignedTo: null,
+            assignedToName: null,
           });
         }
 
@@ -142,6 +154,17 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             } catch {
               dept.eventDate = null;
             }
+          }
+
+          // Update TSP contact information from most recent request
+          dept.tspContact = request.tspContact || null;
+          dept.tspContactAssigned = request.tspContactAssigned || null;
+          dept.assignedTo = request.assignedTo || null;
+          // Resolve assignedTo user ID to name
+          if (request.assignedTo && userIdToName.has(request.assignedTo)) {
+            dept.assignedToName = userIdToName.get(request.assignedTo);
+          } else {
+            dept.assignedToName = null;
           }
         }
       });
@@ -367,6 +390,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           latestRequestDate: dept.latestRequestDate,
           latestCollectionDate: dept.latestCollectionDate || null,
           latestActivityDate: dept.latestActivityDate,
+          tspContact: dept.tspContact || null,
+          tspContactAssigned: dept.tspContactAssigned || null,
+          assignedTo: dept.assignedTo || null,
+          assignedToName: dept.assignedToName || null,
         });
       });
 

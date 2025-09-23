@@ -33,6 +33,7 @@ import {
   ChevronRight,
   Clock,
   CheckCircle,
+  UserCheck,
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/date-utils';
 
@@ -76,6 +77,10 @@ interface OrganizationContact {
   actualEventCount?: number;
   eventFrequency?: string | null;
   latestCollectionDate?: string | null;
+  tspContact?: string | null;
+  tspContactAssigned?: string | null;
+  assignedTo?: string | null;
+  assignedToName?: string | null;
 }
 
 interface GroupCatalogProps {
@@ -210,6 +215,10 @@ export default function GroupCatalog({
       actualEventCount: contact.actualEventCount || 0,
       eventFrequency: contact.eventFrequency || null,
       latestCollectionDate: contact.latestCollectionDate || null,
+      tspContact: contact.tspContact || null,
+      tspContactAssigned: contact.tspContactAssigned || null,
+      assignedTo: contact.assignedTo || null,
+      assignedToName: contact.assignedToName || null,
     }));
   });
 
@@ -762,6 +771,15 @@ export default function GroupCatalog({
                                   <div className="flex items-center space-x-2 text-sm text-gray-500">
                                     <Building className="w-4 h-4" />
                                     <span>Department: {org.department}</span>
+                                  </div>
+                                )}
+                                {/* TSP Contact Display */}
+                                {(org.tspContact || org.tspContactAssigned || org.assignedToName) && (
+                                  <div className="flex items-center space-x-2 text-sm mt-1">
+                                    <UserCheck className="w-4 h-4 text-purple-500" />
+                                    <span className="text-purple-700 font-medium">
+                                      TSP: {org.tspContact || org.tspContactAssigned || org.assignedToName}
+                                    </span>
                                   </div>
                                 )}
                               </div>
