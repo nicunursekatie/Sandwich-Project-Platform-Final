@@ -50,6 +50,7 @@ import {
   formatTime12Hour,
   getSandwichTypesSummary,
   formatEventDate,
+  formatToolkitDate,
 } from './utils';
 
 interface RequestCardProps {
@@ -848,7 +849,7 @@ export default function RequestCard({
                           {request.toolkitSentDate && (
                             <span className="text-sm text-green-600">
                               on{' '}
-                              {new Date(request.toolkitSentDate).toLocaleDateString()}
+                              {formatToolkitDate(request.toolkitSentDate)}
                             </span>
                           )}
                         </div>

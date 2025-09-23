@@ -190,3 +190,64 @@ export const formatDateForInput = (dateString: string | null | undefined): strin
     return '';
   }
 };
+
+// Timezone-safe toolkit date formatter - prevents date shifting by a day
+export const formatToolkitDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return '';
+
+  try {
+    // Parse the date string safely - handle database timestamps, ISO dates, and other formats
+    let date: Date;
+    if (
+      dateString &&
+      typeof dateString === 'string' &&
+      dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    ) {
+      // Database timestamp format: "2025-09-03 00:00:00"
+      // Extract just the date part and create at noon to avoid timezone issues
+      const dateOnly = dateString.split(' ')[0];
+      date = new Date(dateOnly + 'T12:00:00');
+    } else if (
+      dateString &&
+      typeof dateString === 'string' &&
+      dateString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)
+    ) {
+      // ISO format with midnight time (e.g., "2025-09-03T00:00:00.000Z")
+      // Extract just the date part and create at noon to avoid timezone issues
+      const dateOnly = dateString.split('T')[0];
+      date = new Date(dateOnly + 'T12:00:00');
+    } else if (dateString.includes('T') || dateString.includes('Z')) {
+      // Handle full ISO timestamps by parsing them directly
+      date = new Date(dateString);
+    } else if (
+      dateString &&
+      typeof dateString === 'string' &&
+      dateString.match(/^\d{4}-\d{2}-\d{2}$/)
+    ) {
+      // For YYYY-MM-DD format, add noon to prevent timezone shift
+      date = new Date(dateString + 'T12:00:00');
+    } else {
+      // Fallback for other formats - use noon to prevent shifts
+      const tempDate = new Date(dateString);
+      if (isNaN(tempDate.getTime())) return 'Invalid date';
+      
+      // Extract date components and recreate at noon to avoid timezone issues
+      const year = tempDate.getFullYear();
+      const month = String(tempDate.getMonth() + 1).padStart(2, '0');
+      const day = String(tempDate.getDate()).padStart(2, '0');
+      date = new Date(`${year}-${month}-${day}T12:00:00`);
+    }
+
+    if (isNaN(date.getTime())) return 'Invalid date';
+
+    // Format the date safely
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  } catch (error) {
+    console.warn('Error formatting toolkit date:', error);
+    return 'Invalid date';
+  }
+};

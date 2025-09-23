@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { isAuthenticated } from '../temp-auth';
 import { storage } from '../storage-wrapper';
 import logger from '../utils/logger';
+import { z } from 'zod';
+import { insertMeetingNoteSchema } from '@shared/schema';
 
 const router = Router();
 
@@ -421,6 +423,166 @@ router.get('/:id/download-pdf', isAuthenticated, async (req: any, res) => {
   } catch (error) {
     console.error('Error downloading meeting PDF:', error);
     res.status(500).json({ error: 'Failed to download meeting PDF' });
+  }
+});
+
+// Meeting Notes API Endpoints
+
+// GET /api/meetings/notes - Get all meeting notes with optional query filters
+router.get('/notes', isAuthenticated, async (req: any, res) => {
+  try {
+    console.log('[Meeting Notes API] Getting meeting notes with filters:', req.query);
+    const { projectId, meetingId, type, status } = req.query;
+    
+    const filters: any = {};
+    if (projectId) filters.projectId = parseInt(projectId as string);
+    if (meetingId) filters.meetingId = parseInt(meetingId as string);
+    if (type) filters.type = type as string;
+    if (status) filters.status = status as string;
+
+    const notes = Object.keys(filters).length > 0 
+      ? await storage.getMeetingNotesByFilters(filters)
+      : await storage.getAllMeetingNotes();
+    
+    // TODO: Add joined data (projectTitle, meetingTitle) if needed by frontend
+    console.log(`[Meeting Notes API] Found ${notes.length} meeting notes`);
+    res.json(notes);
+  } catch (error) {
+    logger.error('Failed to get meeting notes', error);
+    console.error('[Meeting Notes API] Error fetching meeting notes:', error);
+    res.status(500).json({ message: 'Failed to get meeting notes' });
+  }
+});
+
+// POST /api/meetings/notes - Create a new meeting note  
+router.post('/notes', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    console.log('[Meeting Notes API] Creating new meeting note:', req.body);
+    
+    const noteData = insertMeetingNoteSchema.parse(req.body);
+    
+    // Add creator information
+    noteData.createdBy = user.id;
+    noteData.createdByName = user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+    
+    const note = await storage.createMeetingNote(noteData);
+    
+    console.log(`[Meeting Notes API] Created meeting note with ID: ${note.id}`);
+    res.status(201).json(note);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error('[Meeting Notes API] Validation error:', error.errors);
+      return res.status(400).json({ 
+        message: 'Invalid meeting note data', 
+        errors: error.errors 
+      });
+    }
+    logger.error('Failed to create meeting note', error);
+    console.error('[Meeting Notes API] Error creating meeting note:', error);
+    res.status(500).json({ message: 'Failed to create meeting note' });
+  }
+});
+
+// GET /api/meetings/notes/:id - Get a single meeting note by ID
+router.get('/notes/:id', isAuthenticated, async (req: any, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid note ID' });
+    }
+
+    console.log(`[Meeting Notes API] Getting meeting note ${id}`);
+    
+    const note = await storage.getMeetingNote(id);
+    if (!note) {
+      return res.status(404).json({ message: 'Meeting note not found' });
+    }
+
+    // TODO: Add joined data (projectTitle, meetingTitle) if needed by frontend
+    console.log(`[Meeting Notes API] Found meeting note ${id}`);
+    res.json(note);
+  } catch (error) {
+    logger.error('Failed to get meeting note', error);
+    console.error('[Meeting Notes API] Error fetching meeting note:', error);
+    res.status(500).json({ message: 'Failed to get meeting note' });
+  }
+});
+
+// PATCH /api/meetings/notes/:id - Update a meeting note
+router.patch('/notes/:id', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid note ID' });
+    }
+
+    console.log(`[Meeting Notes API] Updating meeting note ${id}`, req.body);
+
+    // Validate that only allowed fields are being updated
+    const allowedUpdates = ['content', 'type', 'status'];
+    const updates: any = {};
+    
+    for (const key of allowedUpdates) {
+      if (req.body[key] !== undefined) {
+        updates[key] = req.body[key];
+      }
+    }
+    
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
+
+    const updatedNote = await storage.updateMeetingNote(id, updates);
+    if (!updatedNote) {
+      return res.status(404).json({ message: 'Meeting note not found' });
+    }
+
+    console.log(`[Meeting Notes API] Updated meeting note ${id}`);
+    res.json(updatedNote);
+  } catch (error) {
+    logger.error('Failed to update meeting note', error);
+    console.error('[Meeting Notes API] Error updating meeting note:', error);
+    res.status(500).json({ message: 'Failed to update meeting note' });
+  }
+});
+
+// DELETE /api/meetings/notes/:id - Delete a meeting note
+router.delete('/notes/:id', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid note ID' });
+    }
+
+    console.log(`[Meeting Notes API] Deleting meeting note ${id}`);
+
+    const success = await storage.deleteMeetingNote(id);
+    
+    if (!success) {
+      return res.status(404).json({ message: 'Meeting note not found' });
+    }
+    
+    console.log(`[Meeting Notes API] Deleted meeting note ${id}`);
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Failed to delete meeting note', error);
+    console.error('[Meeting Notes API] Error deleting meeting note:', error);
+    res.status(500).json({ message: 'Failed to delete meeting note' });
   }
 });
 

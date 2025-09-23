@@ -8,7 +8,7 @@ import usersRouter from './users';
 import createProjectRoutes from './projects';
 import tasksRouter from './tasks';
 import collectionsRouter from './collections';
-import meetingsRouter from './meetings/index';
+import meetingsRouter from './meetings';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
 import importCollectionsRouter from './import-collections';

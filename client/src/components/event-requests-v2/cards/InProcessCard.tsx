@@ -25,6 +25,7 @@ import {
 import {
   formatTime12Hour,
   formatEventDate,
+  formatToolkitDate,
 } from '@/components/event-requests/utils';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import {
@@ -353,15 +354,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
         {/* Toolkit Sent Status - Professional and brand-aligned */}
         {request.toolkitSentDate && (() => {
-          // Format toolkit date safely
-          const formatToolkitDate = (dateStr?: string) => {
-            if (!dateStr) return null;
-            const iso = dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`;
-            const dt = new Date(iso);
-            if (isNaN(dt.getTime())) return null;
-            return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-          };
-
           const formattedDate = formatToolkitDate(request.toolkitSentDate);
           if (!formattedDate) return null;
 
