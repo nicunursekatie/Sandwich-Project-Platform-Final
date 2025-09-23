@@ -655,13 +655,63 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
-   * Read event requests from Google Sheets
+   * Read event requests from Google Sheets with dynamic header mapping
    */
   private async readEventRequestsSheet(): Promise<EventRequestSheetRow[]> {
     if (!this.sheets) {
       throw new Error('Google Sheets service not initialized');
     }
 
+    // First, read the header row to build dynamic column mapping
+    const headerResponse = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: (this as any).config.spreadsheetId,
+      range: `${(this as any).config.worksheetName}!A1:Z1`,
+    });
+
+    const headers = headerResponse.data.values?.[0] || [];
+    console.log('📋 Actual sheet headers:', headers);
+
+    // Build header to index mapping (case-insensitive)
+    const headerMap = new Map<string, number>();
+    headers.forEach((header: string, index: number) => {
+      if (header && header.trim()) {
+        const normalizedHeader = header.trim().toLowerCase();
+        headerMap.set(normalizedHeader, index);
+        console.log(`📋 Header mapping: "${header}" (${normalizedHeader}) → column ${index}`);
+      }
+    });
+
+    // Define expected headers and their possible variations
+    const getColumnIndex = (possibleHeaders: string[]): number => {
+      for (const header of possibleHeaders) {
+        const index = headerMap.get(header.toLowerCase());
+        if (index !== undefined) {
+          console.log(`✅ Found header "${header}" at column ${index}`);
+          return index;
+        }
+      }
+      console.warn(`⚠️ Header not found for: ${possibleHeaders.join(', ')}`);
+      return -1;
+    };
+
+    // Map expected fields to their column indices
+    const columnMapping = {
+      submittedOn: getColumnIndex(['timestamp', 'submission date', 'date', 'submitted on']),
+      firstName: getColumnIndex(['first name', 'fname', 'first']),
+      lastName: getColumnIndex(['last name', 'lname', 'last']),
+      email: getColumnIndex(['email', 'email address', 'e-mail']),
+      organizationName: getColumnIndex(['organization', 'group', 'organization name', 'group/organization name', 'company']),
+      message: getColumnIndex(['message', 'details', 'description', 'comments']),
+      phone: getColumnIndex(['phone', 'phone number', 'contact', 'telephone']),
+      desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date']),
+      department: getColumnIndex(['department', 'dept', 'division']),
+      previouslyHosted: getColumnIndex(['previously hosted', 'previous', 'hosted before']),
+      status: getColumnIndex(['status', 'current status', 'state']),
+    };
+
+    console.log('📋 Column mapping results:', columnMapping);
+
+    // Read data rows
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: (this as any).config.spreadsheetId,
       range: `${(this as any).config.worksheetName}!A2:Z1000`,
@@ -670,30 +720,58 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     const rows = response.data.values || [];
     console.log(`📊 Reading ${rows.length} rows from Google Sheets`);
     if (rows.length > 0) {
-      console.log('📋 First row (headers):', rows[0]);
+      console.log('📋 First data row:', rows[0]);
       if (rows.length > 1) {
-        console.log('📋 Second row (sample data):', rows[1]);
+        console.log('📋 Second data row:', rows[1]);
       }
     }
 
-    return rows.map((row: string[], index: number) => ({
-      // Match the corrected Google Sheet structure based on actual layout
-      submittedOn: row[0] || '', // Submission Date/Time (A)
-      contactName: `${row[1] || ''} ${row[2] || ''}`.trim(), // First Name (B) + Last Name (C) combined
-      email: row[3] || '', // Email (D)
-      organizationName: row[4] || '', // Group/Organization Name (E)
-      message: row[5] || '', // Message (F) - CORRECTED COLUMN MAPPING!
-      phone: row[6] || '', // Phone (G) - CORRECTED COLUMN MAPPING!
-      desiredEventDate: row[7] || '', // Desired Event Date (H) - CORRECTED COLUMN MAPPING!
-      department: row[8] || '', // Additional fields if present (I)
-      previouslyHosted: row[9] || 'i_dont_know', // Additional fields if present (J)
-      status: row[10] || 'new', // Status column if present (K) - default to 'new'
-      createdDate: '', // Legacy field, not used for mapping
-      lastUpdated: new Date().toISOString(),
-      duplicateCheck: 'No',
-      notes: '',
-      rowIndex: index + 2,
-    }));
+    return rows.map((row: string[], index: number) => {
+      // ACTUALLY USE the dynamic column mapping computed above!
+      const getFieldValue = (colIndex: number, defaultValue = '') => {
+        if (colIndex < 0) {
+          console.warn(`⚠️ Column not found in sheet, using default: "${defaultValue}"`);
+          return defaultValue;
+        }
+        return row[colIndex] || defaultValue;
+      };
+
+      const firstName = getFieldValue(columnMapping.firstName);
+      const lastName = getFieldValue(columnMapping.lastName);
+      const contactName = `${firstName} ${lastName}`.trim();
+
+      const result = {
+        submittedOn: getFieldValue(columnMapping.submittedOn),
+        contactName: contactName || 'Unknown Contact',
+        email: getFieldValue(columnMapping.email),
+        organizationName: getFieldValue(columnMapping.organizationName),
+        message: getFieldValue(columnMapping.message),
+        phone: getFieldValue(columnMapping.phone), // Will default to '' if not found
+        desiredEventDate: getFieldValue(columnMapping.desiredEventDate),
+        department: getFieldValue(columnMapping.department),
+        previouslyHosted: getFieldValue(columnMapping.previouslyHosted, 'i_dont_know'),
+        status: getFieldValue(columnMapping.status, 'new'),
+        createdDate: '',
+        lastUpdated: new Date().toISOString(),
+        duplicateCheck: 'No',
+        notes: getFieldValue(columnMapping.previouslyHosted), // Use same as previouslyHosted for notes
+        rowIndex: index + 2, // Data starts from row 2 (index 0 = row 2)
+      };
+
+      // Log the first few rows for debugging
+      if (index < 3) {
+        console.log(`🔍 DYNAMIC Row ${index + 2} mapping (using header detection):`);
+        console.log(`  firstName[${columnMapping.firstName}]: "${firstName}"`);
+        console.log(`  lastName[${columnMapping.lastName}]: "${lastName}"`);
+        console.log(`  email[${columnMapping.email}]: "${result.email}"`);
+        console.log(`  organization[${columnMapping.organizationName}]: "${result.organizationName}"`);
+        console.log(`  message[${columnMapping.message}]: "${result.message?.substring(0, 50)}..."`);
+        console.log(`  desiredEventDate[${columnMapping.desiredEventDate}]: "${result.desiredEventDate}"`);
+        console.log(`  status[${columnMapping.status}]: "${result.status}"`);
+      }
+
+      return result;
+    });
   }
 
   /**
