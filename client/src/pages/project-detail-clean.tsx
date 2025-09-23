@@ -336,7 +336,32 @@ export default function ProjectDetailClean({
   // Project edit mutation
   const editProjectMutation = useMutation({
     mutationFn: async (projectData: Partial<Project>) => {
-      return await apiRequest('PATCH', `/api/projects/${id}`, projectData);
+      // Clean the payload: only send allowed fields, remove null/undefined/duplicates
+      const allowedFields = [
+        'id', 'title', 'description', 'status', 'priority', 'category', 'milestone',
+        'assigneeId', 'assigneeName', 'assigneeIds', 'assigneeNames',
+        'supportPeopleIds', 'supportPeople', 'progressPercentage', 'notes', 'color',
+        'createdBy', 'createdByName', 'reviewInNextMeeting', 'lastDiscussedDate',
+        'meetingDiscussionPoints', 'meetingDecisionItems', 'googleSheetRowId',
+        'lastSyncedAt', 'syncStatus', 'createdAt', 'updatedAt', 'dueDate', 'startDate', 'completionDate', 'budget', 'estimatedHours', 'actualHours', 'deliverables', 'requirements', 'resources', 'blockers', 'tags', 'stakeholders', 'milestones', 'risklevel'
+      ];
+      const cleaned: Record<string, any> = {};
+      for (const key of allowedFields) {
+        if (projectData[key] !== undefined && projectData[key] !== null) {
+          cleaned[key] = projectData[key];
+        }
+      }
+      // Remove duplicate/legacy fields
+      delete cleaned.estimatedhours;
+      delete cleaned.actualhours;
+      delete cleaned.startdate;
+      delete cleaned.enddate;
+      // Remove empty arrays or empty strings for array fields
+      if (Array.isArray(cleaned.assigneeIds) && cleaned.assigneeIds.length === 0) delete cleaned.assigneeIds;
+      if (Array.isArray(cleaned.assigneeNames) && cleaned.assigneeNames.length === 0) delete cleaned.assigneeNames;
+      if (Array.isArray(cleaned.supportPeopleIds) && cleaned.supportPeopleIds.length === 0) delete cleaned.supportPeopleIds;
+      // Send the cleaned payload
+      return await apiRequest('PATCH', `/api/projects/${id}`, cleaned);
     },
     onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
