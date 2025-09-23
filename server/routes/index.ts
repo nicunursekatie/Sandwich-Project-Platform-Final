@@ -8,7 +8,7 @@ import usersRouter from './users';
 import createProjectRoutes from './projects';
 import tasksRouter from './tasks';
 import collectionsRouter from './collections';
-import meetingsRouter from './meetings';
+import meetingsRouter from './meetings/index';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
 import importCollectionsRouter from './import-collections';
@@ -118,8 +118,11 @@ export function createMainRoutes(deps: RouterDependencies) {
   router.use('/api/meeting-minutes', createErrorHandler('meetings'));
 
   // Setup agenda items router
-  const agendaItemsRouter = createAgendaItemsRouter(deps.isAuthenticated, deps.storage);
-  
+  const agendaItemsRouter = createAgendaItemsRouter(
+    deps.isAuthenticated,
+    deps.storage
+  );
+
   router.use(
     '/api/agenda-items',
     deps.isAuthenticated,
