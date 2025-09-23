@@ -6,17 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
 import { Plus } from 'lucide-react';
-
-interface NewProjectData {
-  title: string;
-  description: string;
-  assigneeName: string;
-  supportPeople: string;
-  dueDate: string;
-  priority: string;
-  category: string;
-  status: string;
-}
+import type { NewProjectData } from '../hooks/useProjects';
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -91,13 +81,12 @@ export function AddProjectDialog({
           <div className="space-y-2">
             <Label htmlFor="project-owner">Project Owner</Label>
             <ProjectAssigneeSelector
-              value={{
-                assigneeName: newProjectData.assigneeName
-              }}
-              onChange={(value) => {
+              value={newProjectData.assigneeName || ''}
+              onChange={(value, userIds) => {
                 setNewProjectData({
                   ...newProjectData,
-                  assigneeName: value.assigneeName || '',
+                  assigneeName: value || '',
+                  assigneeIds: userIds || [],
                 });
               }}
               placeholder="Select or enter project owner"
@@ -109,13 +98,12 @@ export function AddProjectDialog({
           <div className="space-y-2">
             <Label htmlFor="project-support">Support People</Label>
             <ProjectAssigneeSelector
-              value={{
-                assigneeNames: newProjectData.supportPeople ? newProjectData.supportPeople.split(',').map(name => name.trim()).filter(name => name) : []
-              }}
-              onChange={(value) => {
+              value={newProjectData.supportPeople || ''}
+              onChange={(value, userIds) => {
                 setNewProjectData({
                   ...newProjectData,
-                  supportPeople: value.assigneeNames?.join(', ') || '',
+                  supportPeople: value || '',
+                  supportPeopleIds: userIds || [],
                 });
               }}
               placeholder="Select or enter support team members"

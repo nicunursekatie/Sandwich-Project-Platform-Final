@@ -25,7 +25,9 @@ export interface NewProjectData {
   title: string;
   description: string;
   assigneeName: string;
+  assigneeIds?: string[];
   supportPeople: string;
+  supportPeopleIds?: string[];
   dueDate: string;
   priority: string;
   category: string;
