@@ -315,18 +315,18 @@ export function NotesTab({
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'discussion':
-        return 'bg-gradient-to-r from-[#47B3CB]/20 to-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shadow-[#007E8C]/10';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'meeting':
-        return 'bg-gradient-to-r from-[#A31C41]/20 to-[#A31C41]/30 text-[#A31C41] border-[#A31C41]/40 shadow-[#A31C41]/10';
+        return 'bg-green-50 text-green-700 border-green-200';
       default:
-        return 'bg-gradient-to-r from-[#D1D3D4]/20 to-[#646464]/10 text-[#646464] border-[#D1D3D4]/30 shadow-[#D1D3D4]/10';
+        return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
   const getStatusColor = (status: string) => {
     return status === 'active' 
-      ? 'bg-gradient-to-r from-[#007E8C]/20 to-[#47B3CB]/20 text-[#007E8C] border-[#007E8C]/30 shadow-[#007E8C]/10'
-      : 'bg-gradient-to-r from-[#D1D3D4]/20 to-[#646464]/10 text-[#646464] border-[#D1D3D4]/30 shadow-[#D1D3D4]/10';
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      : 'bg-gray-50 text-gray-600 border-gray-200';
   };
 
   const truncateText = (text: string, maxLength: number = 200) => {
@@ -342,115 +342,63 @@ export function NotesTab({
       // Check if it's a structured note from agenda planning
       if (parsed.projectTitle || parsed.title) {
         return (
-          <div className="space-y-4">
-            {/* Project/Item Card with enhanced styling */}
-            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                {/* Project/Item Title with badges */}
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  <span className="font-semibold text-lg text-gray-900">
-                    {parsed.projectTitle || parsed.title}
-                  </span>
-                  {parsed.category && (
-                    <Badge variant="outline" className="text-xs">
-                      {parsed.category}
-                    </Badge>
-                  )}
-                  {parsed.priority && (
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${
-                        parsed.priority === 'high' ? 'border-red-500 text-red-700' :
-                        parsed.priority === 'medium' ? 'border-yellow-500 text-yellow-700' :
-                        'border-gray-400 text-gray-600'
-                      }`}
-                    >
-                      {parsed.priority}
-                    </Badge>
-                  )}
-                  {parsed.status === 'tabled' && (
-                    <Badge className="bg-orange-100 text-orange-700 text-xs">
-                      Tabled
-                    </Badge>
-                  )}
-                  {parsed.type === 'off-agenda' && (
-                    <Badge className="bg-purple-100 text-purple-700 text-xs">
-                      Off-Agenda
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Discussion Points Card */}
-                {parsed.discussionPoints && (
-                  <Card className="mb-3 bg-teal-50 border-teal-200">
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2">
-                        <MessageSquare className="w-4 h-4 text-teal-600 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-teal-700 mb-1">Discussion Points</p>
-                          <p className="text-gray-700 whitespace-pre-wrap text-sm">{parsed.discussionPoints}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Decision Items Card */}
-                {parsed.decisionItems && (
-                  <Card className="mb-3 bg-rose-50 border-rose-200">
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-rose-600 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-rose-700 mb-1">Decision Items</p>
-                          <p className="text-gray-700 whitespace-pre-wrap text-sm">{parsed.decisionItems}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Off-Agenda Content Card */}
-                {parsed.type === 'off-agenda' && parsed.content && (
-                  <Card className="mb-3 bg-purple-50 border-purple-200">
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-purple-600 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-purple-700 mb-1">Content</p>
-                          <p className="text-gray-700 whitespace-pre-wrap text-sm">{parsed.content}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Metadata Bar */}
-                {(parsed.assignee || parsed.supportPeople || parsed.reviewInNextMeeting) && (
-                  <div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-3 pt-3 border-t border-gray-200">
-                    {parsed.assignee && (
-                      <div className="flex items-center gap-1">
-                        <User className="w-3 h-3 text-blue-500" />
-                        <span>Assigned: {parsed.assignee}</span>
-                      </div>
-                    )}
-                    {parsed.supportPeople && (
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3 text-green-500" />
-                        <span>Support: {parsed.supportPeople}</span>
-                      </div>
-                    )}
-                    {parsed.reviewInNextMeeting && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        Review Next Meeting
-                      </Badge>
-                    )}
+          <div className="space-y-3">
+            {/* Main Content - Discussion Points and Decision Items */}
+            {parsed.discussionPoints && (
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+                <div className="flex items-start gap-2">
+                  <MessageSquare className="w-4 h-4 text-blue-600 mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-800 mb-1">Discussion Points</p>
+                    <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.discussionPoints}</p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </div>
+              </div>
+            )}
+            
+            {parsed.decisionItems && (
+              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-800 mb-1">Decision Items</p>
+                    <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.decisionItems}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Project metadata - smaller, less prominent */}
+            <div className="text-xs text-gray-500 flex flex-wrap gap-3 pt-2 border-t border-gray-200">
+              {parsed.priority && (
+                <span className="bg-gray-100 px-2 py-1 rounded">
+                  Priority: {parsed.priority}
+                </span>
+              )}
+              {parsed.assignee && (
+                <span className="bg-gray-100 px-2 py-1 rounded">
+                  Assigned: {parsed.assignee}
+                </span>
+              )}
+              {parsed.status === 'tabled' && (
+                <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                  Tabled
+                </span>
+              )}
+            </div>
+
+            {/* Off-Agenda Content */}
+            {parsed.type === 'off-agenda' && parsed.content && (
+              <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-purple-600 mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-purple-800 mb-1">Off-Agenda Content</p>
+                    <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.content}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       }
@@ -723,8 +671,8 @@ export function NotesTab({
                             )}
                           </Badge>
                         </div>
-                        <div className="text-sm font-medium text-teal-700 mb-1">
-                          {note.projectTitle}
+                        <div className="text-sm font-medium text-gray-600 mb-1">
+                          Project: {note.projectTitle}
                         </div>
                         {note.meetingTitle && (
                           <div className="text-sm text-gray-600 mb-2">
