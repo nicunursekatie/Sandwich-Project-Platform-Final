@@ -8,7 +8,10 @@ import type { EventRequest } from '@shared/schema';
 export const useEventAssignments = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { users, recipients, drivers, volunteers } = useEventQueries();
+  const { users, usersForAssignments, recipients, drivers, volunteers } = useEventQueries();
+  
+  // Use usersForAssignments for TSP contact resolution (no special permissions required)
+  const allUsers = users.length > 0 ? users : usersForAssignments;
   const { updateEventRequestMutation } = useEventMutations();
   const {
     eventRequests,
@@ -54,22 +57,26 @@ export const useEventAssignments = () => {
     if (!userIdOrName) return 'Not assigned';
 
     // Ensure we have loaded data before proceeding
-    if (!users || !drivers || !volunteers) {
-      return 'Loading...';
+    if (!allUsers || !drivers || !volunteers) {
+      // Return user ID as fallback if data not loaded, but make it more readable
+      return userIdOrName.length > 20 ? `User ID: ${userIdOrName.slice(-8)}` : userIdOrName;
     }
 
     try {
-      // Handle user IDs (format: user_xxxx_xxxxx)
-      if (userIdOrName.startsWith('user_') && userIdOrName.includes('_')) {
-        const user = users.find((u) => u?.id === userIdOrName);
+      // Handle user IDs (format: user_xxxx_xxxxx or admin_xxxx)
+      if (userIdOrName.includes('_') && (userIdOrName.startsWith('user_') || userIdOrName.startsWith('admin_'))) {
+        const user = allUsers.find((u) => u?.id === userIdOrName);
         if (user) {
-          return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User';
+          return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.displayName || user.email || 'Unknown User';
         }
+        // If user not found in users array, return a more readable format
+        console.warn(`TSP Contact user not found: ${userIdOrName}`);
+        return `User (${userIdOrName.slice(-8)})`;
       }
 
       // Handle email addresses
       if (userIdOrName.includes('@')) {
-        const user = users.find((u) => u?.email === userIdOrName);
+        const user = allUsers.find((u) => u?.email === userIdOrName);
         if (user) {
           return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User';
         }

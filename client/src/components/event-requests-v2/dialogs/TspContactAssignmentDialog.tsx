@@ -60,9 +60,9 @@ export const TspContactAssignmentDialog: React.FC<TspContactAssignmentDialogProp
 
   const { updateEventRequestMutation } = useEventMutations();
 
-  // Fetch all users for selection
+  // Fetch all users for selection using the for-assignments endpoint (no special permissions required)
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/for-assignments'],
     enabled: isOpen,
   });
 
