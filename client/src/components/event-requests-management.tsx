@@ -1977,6 +1977,66 @@ export default function EventRequestsManagement({
         }
       };
 
+      // Function to check if volunteer details contain the search query
+      const volunteerDetailsMatch = (): boolean => {
+        try {
+          const searchLower = searchQuery.toLowerCase();
+          
+          // Check assigned volunteer IDs
+          if (request.assignedVolunteerIds) {
+            const volunteerIds = parsePostgresArray(request.assignedVolunteerIds);
+            
+            for (const volunteerId of volunteerIds) {
+              // Check if it's a volunteer name stored directly (legacy data)
+              if (typeof volunteerId === 'string' && volunteerId.toLowerCase().includes(searchLower)) {
+                return true;
+              }
+              
+              // Try to find the volunteer by ID in the volunteers list
+              const volunteer = volunteers.find((v: any) => String(v.id) === String(volunteerId));
+              if (volunteer) {
+                const volunteerName = volunteer.name || '';
+                const volunteerEmail = volunteer.email || '';
+                const volunteerPhone = volunteer.phone || '';
+                if (
+                  volunteerName.toLowerCase().includes(searchLower) ||
+                  volunteerEmail.toLowerCase().includes(searchLower) ||
+                  volunteerPhone.toLowerCase().includes(searchLower)
+                ) {
+                  return true;
+                }
+              }
+              
+              // Also check if it's a user ID
+              if (userMatchesSearch(volunteerId)) {
+                return true;
+              }
+            }
+          }
+          
+          // Also check volunteer details JSON
+          if ((request as any).volunteerDetails) {
+            const detailsStr = JSON.stringify((request as any).volunteerDetails).toLowerCase();
+            if (detailsStr.includes(searchLower)) {
+              return true;
+            }
+          }
+          
+          // Check volunteer assignments array
+          if ((request as any).volunteerAssignments) {
+            const assignmentsStr = JSON.stringify((request as any).volunteerAssignments).toLowerCase();
+            if (assignmentsStr.includes(searchLower)) {
+              return true;
+            }
+          }
+          
+          return false;
+        } catch (error) {
+          console.error('Error in volunteerDetailsMatch:', error);
+          return false;
+        }
+      };
+
       const matchesSearch =
         searchQuery === '' ||
         request.organizationName
@@ -1993,7 +2053,8 @@ export default function EventRequestsManagement({
         userMatchesSearch(request.additionalContact2) ||
         (request.additionalTspContacts && request.additionalTspContacts.toLowerCase().includes(searchQuery.toLowerCase())) ||
         driverDetailsMatch() ||
-        speakerDetailsMatch();
+        speakerDetailsMatch() ||
+        volunteerDetailsMatch();
 
       const matchesStatus =
         statusFilter === 'all' || request.status === statusFilter;
