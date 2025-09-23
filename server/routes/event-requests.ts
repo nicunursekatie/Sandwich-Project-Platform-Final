@@ -5,12 +5,15 @@ import {
   insertEventRequestSchema,
   insertOrganizationSchema,
   insertEventVolunteerSchema,
+  auditLogs,
 } from '@shared/schema';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
 import { isAuthenticated } from '../temp-auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
 import { AuditLogger } from '../audit-logger';
+import { db } from '../db';
+import { eq, desc, and, sql, gte } from 'drizzle-orm';
 
 const router = Router();
 
@@ -2755,5 +2758,171 @@ router.patch(
     }
   }
 );
+
+// GET /api/event-requests/audit-logs - Fetch audit log entries for event requests
+router.get('/audit-logs', isAuthenticated, async (req, res) => {
+  try {
+    // Check permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    // Parse query parameters
+    const hours = parseInt(req.query.hours as string) || 24;
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 500); // Cap at 500
+    const offset = parseInt(req.query.offset as string) || 0;
+    const action = req.query.action as string;
+    const userId = req.query.userId as string;
+    const eventId = req.query.eventId as string;
+
+    console.log(`🔍 Fetching audit logs with params:`, {
+      hours,
+      limit,
+      offset,
+      action,
+      userId,
+      eventId,
+    });
+
+    // Calculate time cutoff
+    const hoursAgo = new Date();
+    hoursAgo.setHours(hoursAgo.getHours() - hours);
+
+    // Build query conditions using Drizzle ORM
+    const conditions = [];
+    
+    // Always filter for event_requests table
+    conditions.push(eq(auditLogs.tableName, 'event_requests'));
+    
+    // Add time filter if specified
+    if (hours > 0) {
+      conditions.push(gte(auditLogs.timestamp, hoursAgo));
+    }
+    
+    // Add action filter if specified
+    if (action && action !== 'all') {
+      conditions.push(eq(auditLogs.action, action));
+    }
+    
+    // Add user filter if specified
+    if (userId && userId !== 'all') {
+      conditions.push(eq(auditLogs.userId, userId));
+    }
+    
+    // Add event ID filter if specified
+    if (eventId) {
+      conditions.push(eq(auditLogs.recordId, eventId));
+    }
+
+    console.log('📋 Executing audit log query with conditions:', conditions.length);
+
+    // Execute query using Drizzle ORM
+    const rawLogs = await db
+      .select()
+      .from(auditLogs)
+      .where(and(...conditions))
+      .orderBy(desc(auditLogs.timestamp))
+      .limit(limit)
+      .offset(offset);
+      
+    console.log(`📊 Raw audit logs found: ${rawLogs.length}`);
+
+    // Get users for enriching the audit log data
+    const allUsers = await storage.getAllUsers();
+    const userMap = new Map(allUsers.map(user => [user.id, user]));
+
+    // Get all event requests for enriching audit data
+    const allEventRequests = await storage.getAllEventRequests();
+    const eventMap = new Map(allEventRequests.map(event => [event.id.toString(), event]));
+
+    // Transform raw logs to the expected format
+    const enrichedLogs = rawLogs.map((log: any) => {
+      const user = userMap.get(log.user_id);
+      const event = eventMap.get(log.record_id);
+      
+      let newData, oldData;
+      try {
+        newData = log.new_data ? JSON.parse(log.new_data) : null;
+        oldData = log.old_data ? JSON.parse(log.old_data) : null;
+      } catch (e) {
+        console.warn('Failed to parse audit log data:', e);
+        newData = null;
+        oldData = null;
+      }
+
+      // Create a descriptive action description
+      let actionDescription = log.action;
+      let statusChange = null;
+      let followUpMethod = null;
+
+      switch (log.action) {
+        case 'CREATE':
+          actionDescription = `Created event request for ${event?.organizationName || 'unknown organization'}`;
+          break;
+        case 'PRIMARY_CONTACT_COMPLETED':
+          actionDescription = `Completed primary contact for ${event?.organizationName || 'Event #' + log.record_id}`;
+          break;
+        case 'EVENT_DETAILS_UPDATED':
+          actionDescription = `Updated event details for ${event?.organizationName || 'Event #' + log.record_id}`;
+          break;
+        case 'FOLLOW_UP_RECORDED':
+          actionDescription = `Recorded follow-up for ${event?.organizationName || 'Event #' + log.record_id}`;
+          if (newData?.followUpMethod) {
+            followUpMethod = newData.followUpMethod;
+            actionDescription += ` via ${newData.followUpMethod}`;
+          }
+          break;
+        case 'STATUS_CHANGED':
+          if (oldData?.status && newData?.status) {
+            statusChange = `${oldData.status} → ${newData.status}`;
+            actionDescription = `Changed status from ${oldData.status} to ${newData.status} for ${event?.organizationName || 'Event #' + log.record_id}`;
+          }
+          break;
+        case 'UPDATE_ACTUAL_SANDWICHES':
+          actionDescription = `Updated actual sandwich count for ${event?.organizationName || 'Event #' + log.record_id}`;
+          break;
+        case 'UPDATE_TSP_CONTACT':
+          actionDescription = `Updated TSP contact assignment for ${event?.organizationName || 'Event #' + log.record_id}`;
+          break;
+        case 'DELETE':
+          actionDescription = `Deleted event request for ${event?.organizationName || oldData?.organizationName || 'Event #' + log.record_id}`;
+          break;
+        case 'EVENT_REQUEST_UPDATED':
+          actionDescription = `Updated event request for ${event?.organizationName || 'Event #' + log.record_id}`;
+          break;
+        default:
+          actionDescription = `${log.action} - ${event?.organizationName || 'Event #' + log.record_id}`;
+      }
+
+      return {
+        id: log.id,
+        action: log.action,
+        eventId: log.record_id,
+        timestamp: log.timestamp,
+        userId: log.user_id,
+        userEmail: user?.email || user?.preferredEmail || 'Unknown User',
+        organizationName: event?.organizationName || oldData?.organizationName || 'Unknown Organization',
+        contactName: event ? `${event.firstName} ${event.lastName}` : oldData ? `${oldData.firstName} ${oldData.lastName}` : 'Unknown Contact',
+        actionDescription,
+        details: { oldData, newData },
+        statusChange,
+        followUpMethod,
+      };
+    });
+
+    console.log(`✅ Returning ${enrichedLogs.length} enriched audit log entries`);
+
+    res.json({
+      logs: enrichedLogs,
+      total: enrichedLogs.length,
+      offset,
+      limit,
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching audit logs:', error);
+    res.status(500).json({ error: 'Failed to fetch audit logs' });
+  }
+});
 
 export default router;
