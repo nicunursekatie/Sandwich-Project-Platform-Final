@@ -167,34 +167,62 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
   );
 
   // Item component for displaying individual items
-  const ItemComponent = ({ item, type }: { item: DashboardItem; type: 'project' | 'task' | 'event' | 'message' }) => (
-    <div 
-      className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
-      onClick={() => handleNavigation(item.linkPath)}
-      data-testid={`item-${type}-${item.id}`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 truncate text-[16px]" title={item.title}>
-            {item.title}
-          </p>
-          {item.organizationName && (
-            <p className="text-xs text-gray-600 truncate" title={item.organizationName}>
-              {item.organizationName}
+  const ItemComponent = ({ item, type }: { item: DashboardItem; type: 'project' | 'task' | 'event' | 'message' }) => {
+    if (type === 'event') {
+      return (
+        <div 
+          className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+          onClick={() => handleNavigation(item.linkPath)}
+          data-testid={`item-${type}-${item.id}`}
+        >
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-gray-900 truncate text-[16px]" title={item.organizationName || item.title}>
+              {item.organizationName || item.title}
             </p>
-          )}
+            {item.dueDate && (
+              <p className="text-xs text-gray-600 truncate mt-0.5">
+                {formatDate(item.dueDate)}
+              </p>
+            )}
+            {item.assignmentType && item.assignmentType.length > 0 && (
+              <p className="text-xs text-purple-700 truncate mt-0.5">
+                {item.assignmentType.join(', ')}
+              </p>
+            )}
+          </div>
         </div>
+      );
+    }
+    // Default for other types (project, task, message)
+    return (
+      <div 
+        className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+        onClick={() => handleNavigation(item.linkPath)}
+        data-testid={`item-${type}-${item.id}`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-gray-900 truncate text-[16px]" title={item.title}>
+              {item.title}
+            </p>
+            {item.organizationName && (
+              <p className="text-xs text-gray-600 truncate" title={item.organizationName}>
+                {item.organizationName}
+              </p>
+            )}
+          </div>
+        </div>
+        {item.dueDate && (
+          <div className="flex items-center gap-1 mt-1">
+            <Clock className="w-3 h-3 text-gray-400" />
+            <span className="text-xs text-gray-500">
+              {type === 'event' ? 'Event' : 'Due'} {formatDate(item.dueDate)}
+            </span>
+          </div>
+        )}
       </div>
-      {item.dueDate && (
-        <div className="flex items-center gap-1 mt-1">
-          <Clock className="w-3 h-3 text-gray-400" />
-          <span className="text-xs text-gray-500">
-            {type === 'event' ? 'Event' : 'Due'} {formatDate(item.dueDate)}
-          </span>
-        </div>
-      )}
-    </div>
-  );
+    );
+  };
 
   // Zero state component
   const ZeroState = ({ type, icon: Icon, message }: { type: string; icon: any; message: string }) => (
