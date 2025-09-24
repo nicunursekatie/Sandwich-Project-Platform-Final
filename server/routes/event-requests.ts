@@ -147,7 +147,7 @@ const logEventRequestAudit = async (
       ...newData,
       actionContext: additionalContext || {},
       actionTimestamp: new Date().toISOString(),
-      performedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+      performedBy: req.user?.email || 'Unknown User',
     };
 
     await AuditLogger.logChange(
@@ -189,7 +189,7 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
         return true;
 
       // Method 2b: Additional TSP contacts (check if user email or name appears in additional contacts)
-      if (event.additionalTspContacts && currentUser) {
+      if (event.additionalTspContacts && currentUser && currentUser.email) {
         const additionalContacts = event.additionalTspContacts.toLowerCase();
         const userEmail = currentUser.email.toLowerCase();
         const userName = currentUser.displayName?.toLowerCase() || '';
@@ -216,7 +216,7 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
             ? event.driverDetails
             : JSON.stringify(event.driverDetails)
         ).toLowerCase();
-        const userEmail = currentUser.email.toLowerCase();
+        const userEmail = currentUser.email?.toLowerCase() || '';
         const userName = currentUser.displayName?.toLowerCase() || '';
         const userFirstName = currentUser.firstName?.toLowerCase() || '';
         const userLastName = currentUser.lastName?.toLowerCase() || '';
@@ -234,7 +234,7 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
       }
 
       // Method 4: Listed in speaker details (check if user's name or email appears in speaker details)
-      if (event.speakerDetails && currentUser) {
+      if (event.speakerDetails && currentUser && currentUser.email) {
         const speakerText = event.speakerDetails.toLowerCase();
         const userEmail = currentUser.email.toLowerCase();
         const userName = currentUser.displayName?.toLowerCase() || '';
@@ -324,7 +324,7 @@ function getAssignmentType(
     types.push('TSP Contact');
 
   // Check additional TSP contacts
-  if (event.additionalTspContacts && currentUser) {
+  if (event.additionalTspContacts && currentUser && currentUser.email) {
     const additionalContacts = event.additionalTspContacts.toLowerCase();
     const userEmail = currentUser.email.toLowerCase();
     const userName = currentUser.displayName?.toLowerCase() || '';
@@ -343,7 +343,7 @@ function getAssignmentType(
     }
   }
 
-  if (event.driverDetails && currentUser) {
+  if (event.driverDetails && currentUser && currentUser.email) {
     // driverDetails is now JSONB - convert to string for text search
     const driverText = (
       typeof event.driverDetails === 'string'
@@ -367,7 +367,7 @@ function getAssignmentType(
     }
   }
 
-  if (event.speakerDetails && currentUser) {
+  if (event.speakerDetails && currentUser && currentUser.email) {
     const speakerText = event.speakerDetails.toLowerCase();
     const userEmail = currentUser.email.toLowerCase();
     const userName = currentUser.displayName?.toLowerCase() || '';
@@ -606,7 +606,7 @@ router.patch(
       // Update Google Sheets with the new status
       try {
         const googleSheetsService =
-          getEventRequestsGoogleSheetsService(storage);
+          getEventRequestsGoogleSheetsService(storage as any);
         if (googleSheetsService && updatedEventRequest) {
           const contactName =
             `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
@@ -685,7 +685,7 @@ router.post(
       if (updates.status) {
         try {
           const googleSheetsService =
-            getEventRequestsGoogleSheetsService(storage);
+            getEventRequestsGoogleSheetsService(storage as any);
           if (googleSheetsService) {
             const contactName =
               `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
@@ -917,7 +917,7 @@ router.patch(
       if (updates.status) {
         try {
           const googleSheetsService =
-            getEventRequestsGoogleSheetsService(storage);
+            getEventRequestsGoogleSheetsService(storage as any);
           if (googleSheetsService) {
             const contactName =
               `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
@@ -1014,7 +1014,7 @@ router.patch(
           console.error('❌ Invalid scheduledCallDate:', error);
           return res.status(400).json({
             message: 'Invalid scheduledCallDate format',
-            error: error instanceof z.ZodError ? error.errors : error.message,
+            error: error instanceof z.ZodError ? error.errors : error instanceof Error ? error.message : String(error),
           });
         }
       }
@@ -1085,7 +1085,7 @@ router.patch(
       if (processedUpdates.status) {
         try {
           const googleSheetsService =
-            getEventRequestsGoogleSheetsService(storage);
+            getEventRequestsGoogleSheetsService(storage as any);
           if (googleSheetsService) {
             const contactName =
               `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
@@ -1365,7 +1365,7 @@ router.put(
             toolkitStatus: updatedEventRequest.toolkitStatus,
             communicationMethod: updatedEventRequest.communicationMethod,
             scheduledBy:
-              req.user?.email || req.user?.displayName || 'Unknown User',
+              req.user?.email || 'Unknown User',
             scheduledAt: new Date().toISOString(),
             comprehensiveDataProcessed: true,
           };
@@ -1407,13 +1407,13 @@ router.put(
     } catch (error) {
       console.error('Error updating event request:', error);
       console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown',
       });
       res.status(500).json({
         message: 'Failed to update event request',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         details: 'Check server logs for full error details',
       });
     }
@@ -2083,7 +2083,7 @@ router.patch(
       // Update Google Sheets with the new status
       try {
         const googleSheetsService =
-          getEventRequestsGoogleSheetsService(storage);
+          getEventRequestsGoogleSheetsService(storage as any);
         if (googleSheetsService) {
           const contactName =
             `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
