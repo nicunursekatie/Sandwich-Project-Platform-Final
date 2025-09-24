@@ -1048,16 +1048,47 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           {/* TSP Contact */}
           {(request.tspContact || request.customTspContact) && (
             <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-              <div className="flex items-center gap-2">
-                <Building className="w-4 h-4 text-[#FBAD3F]" />
-                <span className="text-base">
-                  <span className="font-medium text-[#FBAD3F]">
-                    TSP Contact:
-                  </span>{' '}
-                  {request.tspContact
-                    ? resolveUserName(request.tspContact)
-                    : request.customTspContact}
-                </span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-[#FBAD3F]" />
+                  <span className="text-base">
+                    <span className="font-medium text-[#FBAD3F]">
+                      TSP Contact:
+                    </span>{' '}
+                    {request.tspContact
+                      ? resolveUserName(request.tspContact)
+                      : request.customTspContact}
+                  </span>
+                </div>
+                {/* Show email and phone if available */}
+                {(request.tspContactEmail || request.tspContactPhone) && (
+                  <div className="flex flex-col gap-1 ml-7 mt-1">
+                    {request.tspContactEmail && (
+                      <div className="flex items-center gap-1">
+                        <Mail className="w-3 h-3" />
+                        <span className="text-sm">{request.tspContactEmail}</span>
+                        <a
+                          href={`mailto:${request.tspContactEmail}`}
+                          className="text-blue-600 hover:text-blue-800 text-sm ml-1"
+                        >
+                          (email)
+                        </a>
+                      </div>
+                    )}
+                    {request.tspContactPhone && (
+                      <div className="flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        <span className="text-sm">{request.tspContactPhone}</span>
+                        <a
+                          href={`tel:${request.tspContactPhone}`}
+                          className="text-blue-600 hover:text-blue-800 text-sm ml-1"
+                        >
+                          (call)
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
