@@ -478,7 +478,7 @@ router.get('/organization-counts', isAuthenticated, async (req, res) => {
 
 // Get single event request
 router.get(
-  '/:id',
+  '/:id(\\d+)',
   isAuthenticated,
   requirePermission('EVENT_REQUESTS_VIEW'),
   async (req, res) => {
@@ -1074,9 +1074,14 @@ router.patch(
       });
 
       // Check if status is changing and set statusChangedAt accordingly
-      if (processedUpdates.status && processedUpdates.status !== originalEvent.status) {
+      if (
+        processedUpdates.status &&
+        processedUpdates.status !== originalEvent.status
+      ) {
         processedUpdates.statusChangedAt = new Date();
-        console.log(`🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`);
+        console.log(
+          `🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`
+        );
       }
 
       // Always update the updatedAt timestamp
@@ -1324,9 +1329,14 @@ router.put(
       }
 
       // Check if status is changing and set statusChangedAt accordingly
-      if (processedUpdates.status && processedUpdates.status !== originalEvent.status) {
+      if (
+        processedUpdates.status &&
+        processedUpdates.status !== originalEvent.status
+      ) {
         processedUpdates.statusChangedAt = new Date();
-        console.log(`🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`);
+        console.log(
+          `🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`
+        );
       }
 
       // Always update the updatedAt timestamp
@@ -1503,7 +1513,6 @@ router.post('/check-duplicates', async (req, res) => {
     res.status(500).json({ message: 'Failed to check duplicates' });
   }
 });
-
 
 // Organization management routes
 router.get('/organizations/all', async (req, res) => {
@@ -1783,75 +1792,81 @@ router.get('/orgs-catalog-test', async (req, res) => {
 });
 
 // Mark follow-up as completed for an event
-router.patch('/:id/follow-up', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { followUpType, notes } = req.body;
+router.patch(
+  '/:id/follow-up',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_EDIT'),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { followUpType, notes } = req.body;
 
-    if (!followUpType || !['one_day', 'one_month'].includes(followUpType)) {
-      return res.status(400).json({
-        error: "Invalid follow-up type. Must be 'one_day' or 'one_month'",
-      });
-    }
-
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID required' });
-    }
-
-    const eventRequest = await storage.getEventRequest(id);
-    if (!eventRequest) {
-      return res.status(404).json({ error: 'Event request not found' });
-    }
-
-    // Prepare update data based on follow-up type
-    const updateData: any = {
-      followUpNotes: notes || eventRequest.followUpNotes,
-    };
-
-    if (followUpType === 'one_day') {
-      updateData.followUpOneDayCompleted = true;
-      updateData.followUpOneDayDate = new Date();
-    } else if (followUpType === 'one_month') {
-      updateData.followUpOneMonthCompleted = true;
-      updateData.followUpOneMonthDate = new Date();
-    }
-
-    const updatedEventRequest = await storage.updateEventRequest(
-      id,
-      updateData
-    );
-
-    // Enhanced audit logging for follow-up completion
-    await logEventRequestAudit(
-      'FOLLOW_UP_COMPLETED',
-      id.toString(),
-      eventRequest,
-      updatedEventRequest,
-      req,
-      {
-        action: `Follow-up Completed (${followUpType})`,
-        organizationName: eventRequest.organizationName,
-        contactName: `${eventRequest.firstName} ${eventRequest.lastName}`,
-        completedBy: req.user?.email || req.user?.displayName || 'Unknown User',
-        followUpType,
-        followUpNotes: notes,
+      if (!followUpType || !['one_day', 'one_month'].includes(followUpType)) {
+        return res.status(400).json({
+          error: "Invalid follow-up type. Must be 'one_day' or 'one_month'",
+        });
       }
-    );
 
-    await logActivity(
-      req,
-      res,
-      'EVENT_REQUESTS_EDIT',
-      `Marked ${followUpType} follow-up as completed for event: ${eventRequest.organizationName}`
-    );
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID required' });
+      }
 
-    res.json(updatedEventRequest);
-  } catch (error) {
-    console.error('Error marking follow-up as completed:', error);
-    res.status(500).json({ error: 'Failed to mark follow-up as completed' });
+      const eventRequest = await storage.getEventRequest(id);
+      if (!eventRequest) {
+        return res.status(404).json({ error: 'Event request not found' });
+      }
+
+      // Prepare update data based on follow-up type
+      const updateData: any = {
+        followUpNotes: notes || eventRequest.followUpNotes,
+      };
+
+      if (followUpType === 'one_day') {
+        updateData.followUpOneDayCompleted = true;
+        updateData.followUpOneDayDate = new Date();
+      } else if (followUpType === 'one_month') {
+        updateData.followUpOneMonthCompleted = true;
+        updateData.followUpOneMonthDate = new Date();
+      }
+
+      const updatedEventRequest = await storage.updateEventRequest(
+        id,
+        updateData
+      );
+
+      // Enhanced audit logging for follow-up completion
+      await logEventRequestAudit(
+        'FOLLOW_UP_COMPLETED',
+        id.toString(),
+        eventRequest,
+        updatedEventRequest,
+        req,
+        {
+          action: `Follow-up Completed (${followUpType})`,
+          organizationName: eventRequest.organizationName,
+          contactName: `${eventRequest.firstName} ${eventRequest.lastName}`,
+          completedBy:
+            req.user?.email || req.user?.displayName || 'Unknown User',
+          followUpType,
+          followUpNotes: notes,
+        }
+      );
+
+      await logActivity(
+        req,
+        res,
+        'EVENT_REQUESTS_EDIT',
+        `Marked ${followUpType} follow-up as completed for event: ${eventRequest.organizationName}`
+      );
+
+      res.json(updatedEventRequest);
+    } catch (error) {
+      console.error('Error marking follow-up as completed:', error);
+      res.status(500).json({ error: 'Failed to mark follow-up as completed' });
+    }
   }
-});
+);
 
 // Duplicate route removed - organization-counts already exists at line 376
 
@@ -1915,7 +1930,8 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
         contactName: `${existingEvent.firstName} ${existingEvent.lastName}`,
         updatedBy: req.user?.email || req.user?.displayName || 'Unknown User',
         assignedDriverIds: assignedDriverIds || [],
-        vanDriverAssigned: vanDriverNeeded && (assignedVanDriverId || customVanDriverName),
+        vanDriverAssigned:
+          vanDriverNeeded && (assignedVanDriverId || customVanDriverName),
       }
     );
 
@@ -2047,87 +2063,94 @@ router.patch('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
 });
 
 // Mark toolkit as sent for an event request
-router.patch('/:id/toolkit-sent', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { toolkitSentDate } = req.body;
-
-    console.log('=== MARK TOOLKIT AS SENT ===');
-    console.log('Event ID:', id);
-    console.log('Toolkit Sent Date:', toolkitSentDate);
-    console.log('Toolkit Sent By:', req.user?.id, '(', req.user?.email, ')');
-
-    // Get original data for audit logging
-    const originalEvent = await storage.getEventRequestById(id);
-    if (!originalEvent) {
-      return res.status(404).json({ message: 'Event request not found' });
-    }
-
-    // Parse the toolkit sent date
-    const sentDate = toolkitSentDate ? new Date(toolkitSentDate) : new Date();
-
-    const updates = {
-      toolkitSent: true,
-      toolkitSentDate: sentDate,
-      toolkitStatus: 'sent',
-      toolkitSentBy: req.user?.id, // Record who sent the toolkit
-      status: 'in_process', // Move to in_process when toolkit is sent
-      updatedAt: new Date(),
-    };
-
-    const updatedEventRequest = await storage.updateEventRequest(id, updates);
-
-    if (!updatedEventRequest) {
-      return res.status(404).json({ message: 'Event request not found' });
-    }
-
-    // Update Google Sheets with the new status
+router.patch(
+  '/:id/toolkit-sent',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_EDIT'),
+  async (req, res) => {
     try {
-      const googleSheetsService = getEventRequestsGoogleSheetsService(storage);
-      if (googleSheetsService) {
-        const contactName = `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
-        await googleSheetsService.updateEventRequestStatus(
-          updatedEventRequest.organizationName,
-          contactName,
-          'in_process'
-        );
+      const id = parseInt(req.params.id);
+      const { toolkitSentDate } = req.body;
+
+      console.log('=== MARK TOOLKIT AS SENT ===');
+      console.log('Event ID:', id);
+      console.log('Toolkit Sent Date:', toolkitSentDate);
+      console.log('Toolkit Sent By:', req.user?.id, '(', req.user?.email, ')');
+
+      // Get original data for audit logging
+      const originalEvent = await storage.getEventRequestById(id);
+      if (!originalEvent) {
+        return res.status(404).json({ message: 'Event request not found' });
       }
+
+      // Parse the toolkit sent date
+      const sentDate = toolkitSentDate ? new Date(toolkitSentDate) : new Date();
+
+      const updates = {
+        toolkitSent: true,
+        toolkitSentDate: sentDate,
+        toolkitStatus: 'sent',
+        toolkitSentBy: req.user?.id, // Record who sent the toolkit
+        status: 'in_process', // Move to in_process when toolkit is sent
+        updatedAt: new Date(),
+      };
+
+      const updatedEventRequest = await storage.updateEventRequest(id, updates);
+
+      if (!updatedEventRequest) {
+        return res.status(404).json({ message: 'Event request not found' });
+      }
+
+      // Update Google Sheets with the new status
+      try {
+        const googleSheetsService =
+          getEventRequestsGoogleSheetsService(storage);
+        if (googleSheetsService) {
+          const contactName =
+            `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
+          await googleSheetsService.updateEventRequestStatus(
+            updatedEventRequest.organizationName,
+            contactName,
+            'in_process'
+          );
+        }
+      } catch (error) {
+        console.warn('Failed to update Google Sheets status:', error);
+      }
+
+      // Enhanced audit logging for toolkit sent action
+      await logEventRequestAudit(
+        'TOOLKIT_SENT',
+        id.toString(),
+        originalEvent,
+        updatedEventRequest,
+        req,
+        {
+          action: 'Toolkit Sent',
+          organizationName: originalEvent.organizationName,
+          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
+          toolkitSentBy:
+            req.user?.email || req.user?.displayName || 'Unknown User',
+          toolkitSentDate: sentDate.toISOString(),
+          statusChange: `${originalEvent.status} → in_process`,
+        }
+      );
+
+      console.log('Successfully marked toolkit as sent for:', id);
+      await logActivity(
+        req,
+        res,
+        'EVENT_REQUESTS_TOOLKIT_SENT',
+        `Marked toolkit as sent for event request: ${id}`
+      );
+
+      res.json(updatedEventRequest);
     } catch (error) {
-      console.warn('Failed to update Google Sheets status:', error);
+      console.error('Error marking toolkit as sent:', error);
+      res.status(500).json({ message: 'Failed to mark toolkit as sent' });
     }
-
-    // Enhanced audit logging for toolkit sent action
-    await logEventRequestAudit(
-      'TOOLKIT_SENT',
-      id.toString(),
-      originalEvent,
-      updatedEventRequest,
-      req,
-      {
-        action: 'Toolkit Sent',
-        organizationName: originalEvent.organizationName,
-        contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-        toolkitSentBy: req.user?.email || req.user?.displayName || 'Unknown User',
-        toolkitSentDate: sentDate.toISOString(),
-        statusChange: `${originalEvent.status} → in_process`,
-      }
-    );
-
-    console.log('Successfully marked toolkit as sent for:', id);
-    await logActivity(
-      req,
-      res,
-      'EVENT_REQUESTS_TOOLKIT_SENT',
-      `Marked toolkit as sent for event request: ${id}`
-    );
-
-    res.json(updatedEventRequest);
-  } catch (error) {
-    console.error('Error marking toolkit as sent:', error);
-    res.status(500).json({ message: 'Failed to mark toolkit as sent' });
   }
-});
-
+);
 
 // Remove volunteer from event
 router.delete('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
@@ -2310,7 +2333,8 @@ router.patch(
           action: 'Actual Sandwich Count Recorded',
           organizationName: updatedEventRequest.organizationName,
           contactName: `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`,
-          recordedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          recordedBy:
+            req.user?.email || req.user?.displayName || 'Unknown User',
           actualSandwichCount,
           actualSandwichTypes,
         }
@@ -2394,7 +2418,8 @@ router.patch(
           action: 'Sandwich Distribution Recorded',
           organizationName: updatedEventRequest.organizationName,
           contactName: `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`,
-          recordedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+          recordedBy:
+            req.user?.email || req.user?.displayName || 'Unknown User',
           totalDistributed,
           distributionLocations: sandwichDistributions.length,
           distributionDetails: sandwichDistributions,
@@ -2425,11 +2450,11 @@ router.patch(
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { 
-        actualSandwichCount, 
-        actualSandwichCountRecordedDate, 
-        actualSandwichCountRecordedBy, 
-        distributionNotes 
+      const {
+        actualSandwichCount,
+        actualSandwichCountRecordedDate,
+        actualSandwichCountRecordedBy,
+        distributionNotes,
       } = req.body;
 
       if (!id || isNaN(id)) {
@@ -2438,7 +2463,9 @@ router.patch(
 
       // Create validation schema for the payload
       const actualSandwichDataSchema = z.object({
-        actualSandwichCount: z.coerce.number().min(1, 'Actual sandwich count must be greater than 0'),
+        actualSandwichCount: z.coerce
+          .number()
+          .min(1, 'Actual sandwich count must be greater than 0'),
         actualSandwichCountRecordedDate: z.string().optional(),
         actualSandwichCountRecordedBy: z.string().optional(),
         distributionNotes: z.string().optional(),
@@ -2457,11 +2484,13 @@ router.patch(
         actualSandwichCount: validatedData.actualSandwichCount,
         distributionNotes: validatedData.distributionNotes || null,
         // Handle recorded date - use provided date or current timestamp
-        actualSandwichCountRecordedDate: validatedData.actualSandwichCountRecordedDate 
-          ? new Date(validatedData.actualSandwichCountRecordedDate)
-          : new Date(),
+        actualSandwichCountRecordedDate:
+          validatedData.actualSandwichCountRecordedDate
+            ? new Date(validatedData.actualSandwichCountRecordedDate)
+            : new Date(),
         // Handle recorded by - use provided user or current user
-        actualSandwichCountRecordedBy: validatedData.actualSandwichCountRecordedBy || req.user?.id,
+        actualSandwichCountRecordedBy:
+          validatedData.actualSandwichCountRecordedBy || req.user?.id,
         updatedAt: new Date(),
       };
 
@@ -2502,120 +2531,119 @@ router.patch(
       res.json(updatedEventRequest);
     } catch (error) {
       console.error('Error recording actual sandwich data:', error);
-      
+
       // Handle validation errors specifically
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          error: 'Validation failed', 
-          details: error.errors 
+        return res.status(400).json({
+          error: 'Validation failed',
+          details: error.errors,
         });
       }
-      
+
       res.status(500).json({ error: 'Failed to record actual sandwich data' });
     }
   }
 );
 
 // Update TSP contact assignment for event requests
-router.patch(
-  '/:id/tsp-contact',
-  isAuthenticated,
-  async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const { tspContact } = req.body;
+router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { tspContact } = req.body;
 
-      if (!id || isNaN(id)) {
-        return res.status(400).json({ error: 'Valid event ID required' });
-      }
-
-      // Check permissions - only admin@sandwich.project and katielong2316@gmail.com
-      const userEmail = req.user?.email;
-      const allowedEmails = ['admin@sandwich.project', 'katielong2316@gmail.com'];
-      
-      if (!userEmail || !allowedEmails.includes(userEmail)) {
-        return res.status(403).json({ 
-          error: 'Insufficient permissions. Only Christine and Katie can assign TSP contacts.' 
-        });
-      }
-
-      // Create validation schema for the payload
-      const tspContactSchema = z.object({
-        tspContact: z.string().optional().nullable(),
-      });
-
-      const validatedData = tspContactSchema.parse(req.body);
-
-      // Get original data for audit logging
-      const originalEvent = await storage.getEventRequestById(id);
-      if (!originalEvent) {
-        return res.status(404).json({ error: 'Event request not found' });
-      }
-
-      // Prepare updates object
-      const updates: any = {
-        tspContact: validatedData.tspContact || null,
-        updatedAt: new Date(),
-      };
-
-      // If assigning a TSP contact (not removing), set the assignment date
-      if (validatedData.tspContact) {
-        updates.tspContactAssignedDate = new Date();
-      } else {
-        // If removing TSP contact, clear the assignment date
-        updates.tspContactAssignedDate = null;
-      }
-
-      const updatedEventRequest = await storage.updateEventRequest(id, updates);
-
-      if (!updatedEventRequest) {
-        return res.status(404).json({ error: 'Event request not found' });
-      }
-
-      // Enhanced audit logging for this operation
-      await logEventRequestAudit(
-        'UPDATE_TSP_CONTACT',
-        id.toString(),
-        originalEvent,
-        updatedEventRequest,
-        req,
-        {
-          action: validatedData.tspContact ? 'TSP Contact Assigned' : 'TSP Contact Removed',
-          tspContact: validatedData.tspContact,
-          assignedBy: req.user?.email || req.user?.displayName || 'Unknown User',
-          previousTspContact: originalEvent.tspContact,
-        }
-      );
-
-      await logActivity(
-        req,
-        res,
-        'EVENT_REQUESTS_EDIT',
-        `${validatedData.tspContact ? 'Assigned' : 'Removed'} TSP contact for event: ${id}`,
-        {
-          eventId: id,
-          tspContact: validatedData.tspContact,
-          assignedBy: req.user?.email,
-          organizationName: originalEvent.organizationName,
-        }
-      );
-
-      res.json(updatedEventRequest);
-    } catch (error) {
-      console.error('Error updating TSP contact:', error);
-      
-      // Handle validation errors specifically
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          error: 'Validation failed', 
-          details: error.errors 
-        });
-      }
-      
-      res.status(500).json({ error: 'Failed to update TSP contact' });
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
     }
+
+    // Check permissions - only admin@sandwich.project and katielong2316@gmail.com
+    const userEmail = req.user?.email;
+    const allowedEmails = ['admin@sandwich.project', 'katielong2316@gmail.com'];
+
+    if (!userEmail || !allowedEmails.includes(userEmail)) {
+      return res.status(403).json({
+        error:
+          'Insufficient permissions. Only Christine and Katie can assign TSP contacts.',
+      });
+    }
+
+    // Create validation schema for the payload
+    const tspContactSchema = z.object({
+      tspContact: z.string().optional().nullable(),
+    });
+
+    const validatedData = tspContactSchema.parse(req.body);
+
+    // Get original data for audit logging
+    const originalEvent = await storage.getEventRequestById(id);
+    if (!originalEvent) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Prepare updates object
+    const updates: any = {
+      tspContact: validatedData.tspContact || null,
+      updatedAt: new Date(),
+    };
+
+    // If assigning a TSP contact (not removing), set the assignment date
+    if (validatedData.tspContact) {
+      updates.tspContactAssignedDate = new Date();
+    } else {
+      // If removing TSP contact, clear the assignment date
+      updates.tspContactAssignedDate = null;
+    }
+
+    const updatedEventRequest = await storage.updateEventRequest(id, updates);
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Enhanced audit logging for this operation
+    await logEventRequestAudit(
+      'UPDATE_TSP_CONTACT',
+      id.toString(),
+      originalEvent,
+      updatedEventRequest,
+      req,
+      {
+        action: validatedData.tspContact
+          ? 'TSP Contact Assigned'
+          : 'TSP Contact Removed',
+        tspContact: validatedData.tspContact,
+        assignedBy: req.user?.email || req.user?.displayName || 'Unknown User',
+        previousTspContact: originalEvent.tspContact,
+      }
+    );
+
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_EDIT',
+      `${validatedData.tspContact ? 'Assigned' : 'Removed'} TSP contact for event: ${id}`,
+      {
+        eventId: id,
+        tspContact: validatedData.tspContact,
+        assignedBy: req.user?.email,
+        organizationName: originalEvent.organizationName,
+      }
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    console.error('Error updating TSP contact:', error);
+
+    // Handle validation errors specifically
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: error.errors,
+      });
+    }
+
+    res.status(500).json({ error: 'Failed to update TSP contact' });
   }
-);
+});
 
 // GET /api/event-requests/audit-logs - Fetch audit log entries for event requests
 router.get('/audit-logs', isAuthenticated, async (req, res) => {
@@ -2648,31 +2676,34 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
 
     // Build query conditions using Drizzle ORM
     const conditions = [];
-    
+
     // Always filter for event_requests table
     conditions.push(eq(auditLogs.tableName, 'event_requests'));
-    
+
     // Add time filter if specified
     if (hours > 0) {
       conditions.push(gte(auditLogs.timestamp, hoursAgo));
     }
-    
+
     // Add action filter if specified
     if (action && action !== 'all') {
       conditions.push(eq(auditLogs.action, action));
     }
-    
+
     // Add user filter if specified
     if (userId && userId !== 'all') {
       conditions.push(eq(auditLogs.userId, userId));
     }
-    
+
     // Add event ID filter if specified
     if (eventId) {
       conditions.push(eq(auditLogs.recordId, eventId));
     }
 
-    console.log('📋 Executing audit log query with conditions:', conditions.length);
+    console.log(
+      '📋 Executing audit log query with conditions:',
+      conditions.length
+    );
 
     // Execute query using Drizzle ORM
     const rawLogs = await db
@@ -2682,22 +2713,24 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       .orderBy(desc(auditLogs.timestamp))
       .limit(limit)
       .offset(offset);
-      
+
     console.log(`📊 Raw audit logs found: ${rawLogs.length}`);
 
     // Get users for enriching the audit log data
     const allUsers = await storage.getAllUsers();
-    const userMap = new Map(allUsers.map(user => [user.id, user]));
+    const userMap = new Map(allUsers.map((user) => [user.id, user]));
 
     // Get all event requests for enriching audit data
     const allEventRequests = await storage.getAllEventRequests();
-    const eventMap = new Map(allEventRequests.map(event => [event.id.toString(), event]));
+    const eventMap = new Map(
+      allEventRequests.map((event) => [event.id.toString(), event])
+    );
 
     // Transform raw logs to the expected format
     const enrichedLogs = rawLogs.map((log: any) => {
       const user = userMap.get(log.user_id);
       const event = eventMap.get(log.record_id);
-      
+
       let newData, oldData;
       try {
         newData = log.new_data ? JSON.parse(log.new_data) : null;
@@ -2759,8 +2792,15 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
         timestamp: log.timestamp,
         userId: log.user_id,
         userEmail: user?.email || user?.preferredEmail || 'Unknown User',
-        organizationName: event?.organizationName || oldData?.organizationName || 'Unknown Organization',
-        contactName: event ? `${event.firstName} ${event.lastName}` : oldData ? `${oldData.firstName} ${oldData.lastName}` : 'Unknown Contact',
+        organizationName:
+          event?.organizationName ||
+          oldData?.organizationName ||
+          'Unknown Organization',
+        contactName: event
+          ? `${event.firstName} ${event.lastName}`
+          : oldData
+            ? `${oldData.firstName} ${oldData.lastName}`
+            : 'Unknown Contact',
         actionDescription,
         details: { oldData, newData },
         statusChange,
@@ -2768,7 +2808,9 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       };
     });
 
-    console.log(`✅ Returning ${enrichedLogs.length} enriched audit log entries`);
+    console.log(
+      `✅ Returning ${enrichedLogs.length} enriched audit log entries`
+    );
 
     res.json({
       logs: enrichedLogs,
@@ -2776,7 +2818,6 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       offset,
       limit,
     });
-
   } catch (error) {
     console.error('❌ Error fetching audit logs:', error);
     res.status(500).json({ error: 'Failed to fetch audit logs' });
