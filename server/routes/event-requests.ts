@@ -2717,80 +2717,46 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
     console.log(`📊 Raw audit logs found: ${rawLogs.length}`);
 
     // Get users for enriching the audit log data
+    // Get users for enriching the audit log data
     const allUsers = await storage.getAllUsers();
-    const userMap = new Map(allUsers.map((user) => [user.id, user]));
+    // Normalize keys to string
+    const userMap = new Map(allUsers.map((u) => [String(u.id), u]));
 
     // Get all event requests for enriching audit data
     const allEventRequests = await storage.getAllEventRequests();
-    const eventMap = new Map(
-      allEventRequests.map((event) => [event.id.toString(), event])
-    );
+    const eventMap = new Map(allEventRequests.map((e) => [String(e.id), e]));
+
+    // Helper to pull from camelCase or snake_case
+    const getField = (row: any, camel: string, snake: string) =>
+      row[camel] !== undefined ? row[camel] : row[snake];
 
     // Transform raw logs to the expected format
     const enrichedLogs = rawLogs.map((log: any) => {
-      const user = userMap.get(log.user_id);
-      const event = eventMap.get(log.record_id);
+      const recordId = String(getField(log, 'recordId', 'record_id'));
+      const userId = String(getField(log, 'userId', 'user_id'));
 
-      let newData, oldData;
+      let newData: any = null;
+      let oldData: any = null;
       try {
-        newData = log.new_data ? JSON.parse(log.new_data) : null;
-        oldData = log.old_data ? JSON.parse(log.old_data) : null;
-      } catch (e) {
-        console.warn('Failed to parse audit log data:', e);
-        newData = null;
-        oldData = null;
-      }
+        newData = getField(log, 'newData', 'new_data')
+          ? JSON.parse(getField(log, 'newData', 'new_data'))
+          : null;
+      } catch {}
+      try {
+        oldData = getField(log, 'oldData', 'old_data')
+          ? JSON.parse(getField(log, 'oldData', 'old_data'))
+          : null;
+      } catch {}
 
-      // Create a descriptive action description
-      let actionDescription = log.action;
-      let statusChange = null;
-      let followUpMethod = null;
-
-      switch (log.action) {
-        case 'CREATE':
-          actionDescription = `Created event request for ${event?.organizationName || 'unknown organization'}`;
-          break;
-        case 'PRIMARY_CONTACT_COMPLETED':
-          actionDescription = `Completed primary contact for ${event?.organizationName || 'Event #' + log.record_id}`;
-          break;
-        case 'EVENT_DETAILS_UPDATED':
-          actionDescription = `Updated event details for ${event?.organizationName || 'Event #' + log.record_id}`;
-          break;
-        case 'FOLLOW_UP_RECORDED':
-          actionDescription = `Recorded follow-up for ${event?.organizationName || 'Event #' + log.record_id}`;
-          if (newData?.followUpMethod) {
-            followUpMethod = newData.followUpMethod;
-            actionDescription += ` via ${newData.followUpMethod}`;
-          }
-          break;
-        case 'STATUS_CHANGED':
-          if (oldData?.status && newData?.status) {
-            statusChange = `${oldData.status} → ${newData.status}`;
-            actionDescription = `Changed status from ${oldData.status} to ${newData.status} for ${event?.organizationName || 'Event #' + log.record_id}`;
-          }
-          break;
-        case 'UPDATE_ACTUAL_SANDWICHES':
-          actionDescription = `Updated actual sandwich count for ${event?.organizationName || 'Event #' + log.record_id}`;
-          break;
-        case 'UPDATE_TSP_CONTACT':
-          actionDescription = `Updated TSP contact assignment for ${event?.organizationName || 'Event #' + log.record_id}`;
-          break;
-        case 'DELETE':
-          actionDescription = `Deleted event request for ${event?.organizationName || oldData?.organizationName || 'Event #' + log.record_id}`;
-          break;
-        case 'EVENT_REQUEST_UPDATED':
-          actionDescription = `Updated event request for ${event?.organizationName || 'Event #' + log.record_id}`;
-          break;
-        default:
-          actionDescription = `${log.action} - ${event?.organizationName || 'Event #' + log.record_id}`;
-      }
+      const user = userMap.get(userId);
+      const event = eventMap.get(recordId);
 
       return {
-        id: log.id,
-        action: log.action,
-        eventId: log.record_id,
-        timestamp: log.timestamp,
-        userId: log.user_id,
+        id: getField(log, 'id', 'id'),
+        action: getField(log, 'action', 'action'),
+        eventId: recordId,
+        timestamp: getField(log, 'timestamp', 'timestamp'),
+        userId,
         userEmail: user?.email || user?.preferredEmail || 'Unknown User',
         organizationName:
           event?.organizationName ||
@@ -2801,10 +2767,7 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
           : oldData
             ? `${oldData.firstName} ${oldData.lastName}`
             : 'Unknown Contact',
-        actionDescription,
         details: { oldData, newData },
-        statusChange,
-        followUpMethod,
       };
     });
 
