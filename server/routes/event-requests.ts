@@ -2628,12 +2628,25 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
     // Build query conditions using Drizzle ORM
     const conditions = [];
 
-    // Always filter for event_requests table
-    conditions.push(eq(auditLogs.tableName, 'event_requests'));
+    try {
+      // Always filter for event_requests table
+      conditions.push(eq(auditLogs.tableName, 'event_requests'));
 
-    // Add time filter if specified
-    if (hours > 0) {
-      conditions.push(gte(auditLogs.timestamp, hoursAgo));
+      // Add time filter if specified
+      if (hours > 0) {
+        // Convert the JavaScript Date to ISO string for comparison
+        console.log('Adding time filter with gte function:', typeof gte);
+        const timeCondition = gte(auditLogs.timestamp, hoursAgo.toISOString());
+        console.log('Time condition created:', timeCondition);
+        conditions.push(timeCondition);
+      }
+    } catch (buildError: any) {
+      console.error('Error building query conditions:', buildError);
+      return res.status(400).json({
+        error: 'Failed to build query',
+        message: buildError?.message || 'Query construction failed',
+        details: 'Error occurred while building database query conditions'
+      });
     }
 
     // Add action filter if specified
@@ -2656,11 +2669,15 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       conditions.length
     );
 
+    // Debug: Log the actual conditions
+    console.log('Query conditions:', conditions);
+    console.log('Hours ago timestamp:', hoursAgo.toISOString());
+
     // Execute query using Drizzle ORM
     const rawLogs = await db
       .select()
       .from(auditLogs)
-      .where(and(...conditions))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(auditLogs.timestamp))
       .limit(limit)
       .offset(offset);
@@ -2777,9 +2794,25 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       offset,
       limit,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error fetching audit logs:', error);
-    res.status(500).json({ error: 'Failed to fetch audit logs' });
+    console.error('Error stack:', error?.stack);
+    console.error('Error message:', error?.message);
+
+    // Check if it's a specific type of error
+    if (error?.message?.includes('gte is not a function') || error?.message?.includes('gte')) {
+      return res.status(400).json({
+        error: 'Query construction error',
+        message: 'Failed to build audit log query',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to fetch audit logs',
+      message: error?.message || 'Unknown error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
