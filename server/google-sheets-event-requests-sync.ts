@@ -410,6 +410,45 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
             );
           }
         } else {
+          // Before creating new, check if this was recently deleted
+          // Import AuditLogger at the top if not already imported
+          const AuditLogger = await import('../audit-logger.js').then(m => m.AuditLogger);
+          const recentDeletedLogs = await AuditLogger.getAuditHistory('event_requests', null, null, 50, 0);
+          
+          // Check if there's a recent deletion (within last 24 hours) matching this organization and contact
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          const wasRecentlyDeleted = recentDeletedLogs.some(log => {
+            if (log.action !== 'DELETE') return false;
+            if (new Date(log.timestamp) < twentyFourHoursAgo) return false;
+            
+            // Parse the audit log data to check if it matches this event
+            let oldData;
+            try {
+              oldData = log.oldData ? JSON.parse(log.oldData) : null;
+            } catch (e) {
+              return false;
+            }
+            
+            if (!oldData) return false;
+            
+            // Check if organization name and contact name match
+            const orgMatch = oldData.organizationName?.toLowerCase().trim() === 
+                           row.organizationName?.toLowerCase().trim();
+            const nameMatch = (oldData.firstName?.toLowerCase().trim() === firstName.toLowerCase().trim() &&
+                              oldData.lastName?.toLowerCase().trim() === lastName.toLowerCase().trim()) ||
+                             (oldData.email && row.email && 
+                              oldData.email.toLowerCase().trim() === row.email.toLowerCase().trim());
+            
+            return orgMatch && nameMatch;
+          });
+          
+          if (wasRecentlyDeleted) {
+            console.log(
+              `🚫 Skipping creation - item was recently deleted: ${row.organizationName} - ${row.contactName}`
+            );
+            continue; // Skip this iteration, don't create
+          }
+          
           // Create new
           console.log(
             `✨ Creating new event request: ${eventRequestData.phone} - ${eventRequestData.firstName} ${eventRequestData.lastName} ${eventRequestData.email}`

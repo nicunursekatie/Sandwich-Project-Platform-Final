@@ -46,7 +46,7 @@ The application uses The Sandwich Project's official color palette (Teal Primary
 - **Wishlist System**: Amazon wishlist suggestion system with database persistence and a responsive UI.
 - **Meeting Management**: Full-featured system with automated agenda compilation, project integration, Google Sheets export, task status controls, and PDF export.
 - **Event Requests Management System**: Complete tracking with database schema, duplicate detection, status tracking, permissions, CRUD API, responsive UI, and Google Sheets integration.
-- **Google Sheets Integration**: Bidirectional automatic synchronization with Google Sheets for project tracker and event requests.
+- **Google Sheets Integration**: Bidirectional automatic synchronization with Google Sheets for project tracker and event requests, with intelligent deletion tracking to prevent re-importing manually deleted items.
 - **Confidential Document Storage**: Secure file storage with email-based access control, audit logging, file type validation, and a 100MB upload limit.
 
 ## External Dependencies
