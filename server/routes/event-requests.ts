@@ -150,7 +150,7 @@ const logEventRequestAudit = async (
       performedBy: req.user?.email || req.user?.displayName || 'Unknown User',
     };
 
-    await AuditLogger.log(
+    await AuditLogger.logChange(
       action,
       'event_requests',
       eventId,
@@ -534,17 +534,17 @@ router.post(
       });
 
       // Enhanced audit logging for create operation
-      await logEventRequestAudit(
+      await AuditLogger.logChange(
         'CREATE',
+        'event_requests',
         newEventRequest.id?.toString() || 'unknown',
         null,
         newEventRequest,
-        req,
         {
-          action: 'Event Request Created',
-          organizationName: validatedData.organizationName,
-          contactName: `${validatedData.firstName} ${validatedData.lastName}`,
-          createdBy: user?.email || user?.displayName || 'Unknown User',
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -625,21 +625,15 @@ router.patch(
       }
 
       // Enhanced audit logging for contact completion
-      await logEventRequestAudit(
-        'PRIMARY_CONTACT_COMPLETED',
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
         {
-          action: 'Primary Contact Completed',
-          organizationName: originalEvent.organizationName,
-          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-          completedBy:
-            req.user?.email || req.user?.displayName || 'Unknown User',
-          communicationMethod: validatedData.communicationMethod,
-          estimatedSandwichCount: validatedData.estimatedSandwichCount,
-          statusChange: `${originalEvent.status} → contact_completed`,
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -858,24 +852,23 @@ router.post(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      // Enhanced audit logging with detailed context
-      await logEventRequestAudit(
-        'FOLLOW_UP_RECORDED',
+      // Enhanced audit logging with detailed field changes AND follow-up context
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
+        {
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
+        },
         {
           followUpMethod: method,
-          followUpAction:
-            method === 'email'
-              ? 'Email Follow-up Sent'
-              : 'Call Follow-up Scheduled',
-          statusChange: `${originalEvent.status} → ${updatedEventRequest.status}`,
-          organizationName: originalEvent.organizationName,
-          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-          notes: notes || null,
-          updatedEmail: updatedEmail || null,
+          followUpAction: method === 'call' ? 'phone_call_completed' : 'email_sent',
+          notes: notes || `Follow-up ${method} completed`,
+          actionType: 'FOLLOW_UP_COMPLETED',
+          updatedEmail: method === 'call' ? updatedEmail : undefined,
         }
       );
 
@@ -940,21 +933,15 @@ router.patch(
       }
 
       // Enhanced audit logging for event details update
-      await logEventRequestAudit(
-        'EVENT_DETAILS_UPDATED',
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
         {
-          action: 'Event Details Updated',
-          organizationName: originalEvent.organizationName,
-          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-          updatedBy: req.user?.email || req.user?.displayName || 'Unknown User',
-          updatedFields: Object.keys(updates),
-          statusChange: updates.status
-            ? `${originalEvent.status} → ${updates.status}`
-            : null,
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -1113,22 +1100,16 @@ router.patch(
         }
       }
 
-      // Enhanced audit logging
-      await logEventRequestAudit(
-        'EVENT_REQUEST_UPDATED',
+      // Enhanced audit logging with detailed field changes
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
         {
-          action: 'Event Request Updated',
-          organizationName: originalEvent.organizationName,
-          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-          updatedBy: req.user?.email || req.user?.displayName || 'Unknown User',
-          updatedFields: Object.keys(processedUpdates),
-          statusChange: processedUpdates.status
-            ? `${originalEvent.status} → ${processedUpdates.status}`
-            : null,
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -1399,14 +1380,17 @@ router.put(
         actionContext.contactMethod = updates.contactMethod;
       }
 
-      // Enhanced audit logging with detailed context
-      await logEventRequestAudit(
-        actionType,
+      // Enhanced audit logging with detailed field changes
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
-        actionContext
+        {
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
+        }
       );
 
       console.log(
@@ -1458,18 +1442,17 @@ router.delete(
       }
 
       // Enhanced audit logging for deletion
-      await logEventRequestAudit(
+      await AuditLogger.logChange(
         'DELETE',
+        'event_requests',
         id.toString(),
         originalEvent,
         null,
-        req,
         {
-          action: 'Event Request Deleted',
-          organizationName: originalEvent.organizationName,
-          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-          deletedBy: req.user?.email || req.user?.displayName || 'Unknown User',
-          deletionReason: 'Manual deletion via UI',
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -1835,21 +1818,22 @@ router.patch(
         updateData
       );
 
-      // Enhanced audit logging for follow-up completion
-      await logEventRequestAudit(
-        'FOLLOW_UP_COMPLETED',
+      // Enhanced audit logging for follow-up completion with specific context
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         eventRequest,
         updatedEventRequest,
-        req,
         {
-          action: `Follow-up Completed (${followUpType})`,
-          organizationName: eventRequest.organizationName,
-          contactName: `${eventRequest.firstName} ${eventRequest.lastName}`,
-          completedBy:
-            req.user?.email || req.user?.displayName || 'Unknown User',
-          followUpType,
-          followUpNotes: notes,
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
+        },
+        {
+          followUpMethod: followUpType === 'one_day' ? 'one_day_follow_up' : 'one_month_follow_up',
+          followUpAction: `${followUpType}_follow_up_completed`,
+          notes: notes || `${followUpType} follow-up marked as completed`,
+          actionType: 'FOLLOW_UP_COMPLETED',
         }
       );
 
@@ -1918,20 +1902,15 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     console.log(`Updated driver assignments for event ${eventId}:`, updateData);
 
     // Enhanced audit logging for driver assignment updates
-    await logEventRequestAudit(
-      'DRIVER_ASSIGNMENTS_UPDATED',
+    await AuditLogger.logEventRequestChange(
       eventId.toString(),
       existingEvent,
       updatedEvent,
-      req,
       {
-        action: 'Driver Assignments Updated',
-        organizationName: existingEvent.organizationName,
-        contactName: `${existingEvent.firstName} ${existingEvent.lastName}`,
-        updatedBy: req.user?.email || req.user?.displayName || 'Unknown User',
-        assignedDriverIds: assignedDriverIds || [],
-        vanDriverAssigned:
-          vanDriverNeeded && (assignedVanDriverId || customVanDriverName),
+        userId: req.user?.id,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.session?.id || req.sessionID,
       }
     );
 
@@ -2119,20 +2098,15 @@ router.patch(
       }
 
       // Enhanced audit logging for toolkit sent action
-      await logEventRequestAudit(
-        'TOOLKIT_SENT',
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
         {
-          action: 'Toolkit Sent',
-          organizationName: originalEvent.organizationName,
-          contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
-          toolkitSentBy:
-            req.user?.email || req.user?.displayName || 'Unknown User',
-          toolkitSentDate: sentDate.toISOString(),
-          statusChange: `${originalEvent.status} → in_process`,
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -2258,20 +2232,15 @@ router.patch(
 
       // Enhanced audit logging for social media tracking
       const originalEvent = await storage.getEventRequestById(id);
-      await logEventRequestAudit(
-        'SOCIAL_MEDIA_UPDATED',
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
         {
-          action: 'Social Media Tracking Updated',
-          organizationName: updatedEventRequest.organizationName,
-          contactName: `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`,
-          updatedBy: req.user?.email || req.user?.displayName || 'Unknown User',
-          socialMediaPostRequested,
-          socialMediaPostCompleted,
-          notes,
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -2323,20 +2292,15 @@ router.patch(
 
       // Enhanced audit logging for actual sandwich count
       const originalEvent = await storage.getEventRequestById(id);
-      await logEventRequestAudit(
-        'ACTUAL_SANDWICH_COUNT_RECORDED',
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
         {
-          action: 'Actual Sandwich Count Recorded',
-          organizationName: updatedEventRequest.organizationName,
-          contactName: `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`,
-          recordedBy:
-            req.user?.email || req.user?.displayName || 'Unknown User',
-          actualSandwichCount,
-          actualSandwichTypes,
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -2408,22 +2372,15 @@ router.patch(
 
       // Enhanced audit logging for sandwich distribution
       const originalEvent = await storage.getEventRequestById(id);
-      await logEventRequestAudit(
-        'SANDWICH_DISTRIBUTION_RECORDED',
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
         {
-          action: 'Sandwich Distribution Recorded',
-          organizationName: updatedEventRequest.organizationName,
-          contactName: `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`,
-          recordedBy:
-            req.user?.email || req.user?.displayName || 'Unknown User',
-          totalDistributed,
-          distributionLocations: sandwichDistributions.length,
-          distributionDetails: sandwichDistributions,
-          distributionNotes,
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -2501,17 +2458,15 @@ router.patch(
       }
 
       // Enhanced audit logging for this operation
-      await logEventRequestAudit(
-        'UPDATE_ACTUAL_SANDWICHES',
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         updatedEventRequest,
-        req,
         {
-          action: 'Actual Sandwich Count Recorded',
-          actualSandwichCount: validatedData.actualSandwichCount,
-          distributionNotesProvided: !!validatedData.distributionNotes,
-          recordedBy: updates.actualSandwichCountRecordedBy,
+          userId: req.user?.id,
+          ipAddress: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('User-Agent'),
+          sessionId: req.session?.id || req.sessionID,
         }
       );
 
@@ -2600,19 +2555,15 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
     }
 
     // Enhanced audit logging for this operation
-    await logEventRequestAudit(
-      'UPDATE_TSP_CONTACT',
+    await AuditLogger.logEventRequestChange(
       id.toString(),
       originalEvent,
       updatedEventRequest,
-      req,
       {
-        action: validatedData.tspContact
-          ? 'TSP Contact Assigned'
-          : 'TSP Contact Removed',
-        tspContact: validatedData.tspContact,
-        assignedBy: req.user?.email || req.user?.displayName || 'Unknown User',
-        previousTspContact: originalEvent.tspContact,
+        userId: req.user?.id,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.session?.id || req.sessionID,
       }
     );
 
@@ -2751,6 +2702,40 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       const user = userMap.get(userId);
       const event = eventMap.get(recordId);
 
+      // Extract follow-up context and audit metadata from newData or oldData
+      let followUpMethod = null;
+      let followUpAction = null;
+      let notes = null;
+      let actionDescription = '';
+      let changeDescription = '';
+      let statusChange = null;
+
+      // Try to extract follow-up context from newData first, then oldData
+      const dataWithContext = newData || oldData;
+      if (dataWithContext) {
+        // Extract follow-up context fields
+        followUpMethod = dataWithContext.followUpMethod || dataWithContext._auditMetadata?.followUpMethod || null;
+        followUpAction = dataWithContext.followUpAction || dataWithContext._auditMetadata?.followUpAction || null;
+        notes = dataWithContext.notes || dataWithContext._auditMetadata?.notes || null;
+        
+        // Extract action descriptions
+        actionDescription = dataWithContext._auditMetadata?.actionDescription || 
+                           dataWithContext.actionDescription || 
+                           getField(log, 'action', 'action') || '';
+        
+        changeDescription = dataWithContext._auditMetadata?.changeDescription || 
+                           dataWithContext.changeDescription || '';
+        
+        // Extract status change information
+        statusChange = dataWithContext._auditMetadata?.statusChange || 
+                      dataWithContext.statusChange || null;
+
+        // If we have both old and new data, try to determine status change
+        if (newData && oldData && newData.status !== oldData.status) {
+          statusChange = `${oldData.status || 'unknown'} → ${newData.status || 'unknown'}`;
+        }
+      }
+
       return {
         id: getField(log, 'id', 'id'),
         action: getField(log, 'action', 'action'),
@@ -2767,6 +2752,17 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
           : oldData
             ? `${oldData.firstName} ${oldData.lastName}`
             : 'Unknown Contact',
+        // CRITICAL FIX: Expose oldData/newData at top level (not buried in details)
+        oldData,
+        newData,
+        // CRITICAL FIX: Expose follow-up context fields that frontend expects
+        followUpMethod,
+        followUpAction,
+        notes,
+        actionDescription,
+        changeDescription,
+        statusChange,
+        // Keep details for backward compatibility but make it secondary
         details: { oldData, newData },
       };
     });

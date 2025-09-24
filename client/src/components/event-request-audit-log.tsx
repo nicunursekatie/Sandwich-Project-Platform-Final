@@ -58,6 +58,9 @@ interface AuditLogEntry {
   details: any;
   statusChange: string | null;
   followUpMethod: string | null;
+  oldData: any;
+  newData: any;
+  changeDescription: string;
 }
 
 interface EventRequestAuditLogProps {
@@ -199,6 +202,7 @@ export function EventRequestAuditLog({
       case 'PRIMARY_CONTACT_COMPLETED':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'EVENT_DETAILS_UPDATED':
+      case 'UPDATE':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
       case 'STATUS_CHANGED':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
@@ -211,6 +215,87 @@ export function EventRequestAuditLog({
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
+  };
+
+  // Helper function to render field changes from structured _auditMetadata or fallback to changeDescription
+  const renderFieldChanges = (log: AuditLogEntry) => {
+    // First, try to use structured data from _auditMetadata.changes (NEW enhanced format)
+    try {
+      if (log.newData || log.oldData) {
+        let metadataChanges: any[] = [];
+        
+        // Try to extract structured changes from newData or oldData
+        if (log.newData) {
+          const newDataParsed = typeof log.newData === 'string' ? JSON.parse(log.newData) : log.newData;
+          metadataChanges = newDataParsed?._auditMetadata?.changes || [];
+        }
+        
+        if (metadataChanges.length === 0 && log.oldData) {
+          const oldDataParsed = typeof log.oldData === 'string' ? JSON.parse(log.oldData) : log.oldData;
+          metadataChanges = oldDataParsed?._auditMetadata?.changes || [];
+        }
+
+        // If we have structured changes, render them properly
+        if (metadataChanges.length > 0) {
+          return (
+            <div className="mt-2 space-y-1">
+              {metadataChanges.map((change: any, index: number) => (
+                <div key={index} className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                  <Edit className="h-3 w-3 mr-1 text-orange-500" />
+                  <span className="font-medium text-gray-800 dark:text-gray-200">
+                    {change.fieldDisplayName}:
+                  </span>
+                  <span className="ml-1">
+                    {change.oldValue && change.oldValue !== '(empty)' && (
+                      <span className="line-through text-red-600 dark:text-red-400 mr-1">
+                        {String(change.oldValue).length > 50 
+                          ? `${String(change.oldValue).substring(0, 47)}...` 
+                          : String(change.oldValue)}
+                      </span>
+                    )}
+                    <span className="text-green-600 dark:text-green-400">
+                      {String(change.newValue).length > 50 
+                        ? `${String(change.newValue).substring(0, 47)}...` 
+                        : String(change.newValue)}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to parse structured audit metadata:', error);
+    }
+
+    // Fallback: If we have a changeDescription from the enhanced AuditLogger but no structured data
+    if (log.changeDescription && log.changeDescription !== log.actionDescription) {
+      // FIXED: Don't split on comma - this was breaking with comma-containing values
+      // Instead, treat the whole description as a single change
+      return (
+        <div className="mt-2 space-y-1">
+          <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+            <Edit className="h-3 w-3 mr-1 text-orange-500" />
+            <span>{log.changeDescription}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Fallback to legacy details display
+    if (log.details?.updatedFields) {
+      return (
+        <div className="mt-2 space-y-1">
+          <div className="flex items-center text-xs text-gray-500">
+            <Edit className="h-3 w-3 mr-1" />
+            Updated: {log.details.updatedFields.join(', ')}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   const handleRefresh = () => {
@@ -437,21 +522,83 @@ export function EventRequestAuditLog({
                         </div>
                       </div>
 
+                      {/* Primary description - use changeDescription if available, otherwise actionDescription */}
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {log.actionDescription}
+                        {log.changeDescription || log.actionDescription}
                       </p>
 
-                      {/* Additional Details */}
-                      {(log.statusChange ||
-                        log.followUpMethod ||
-                        log.details) && (
-                        <div className="mt-2 space-y-1 text-xs">
-                          {log.statusChange && (
-                            <div className="flex items-center text-brand-primary dark:text-blue-400">
-                              <RefreshCw className="h-3 w-3 mr-1" />
-                              Status: {log.statusChange}
+                      {/* Field Changes Display */}
+                      {renderFieldChanges(log)}
+
+                      {/* Enhanced Follow-up Context Display */}
+                      {(() => {
+                        // Try to get follow-up context from _auditActionContext
+                        let followUpContext: any = {};
+                        try {
+                          if (log.newData) {
+                            const newDataParsed = typeof log.newData === 'string' ? JSON.parse(log.newData) : log.newData;
+                            followUpContext = newDataParsed?._auditActionContext || {};
+                          }
+                        } catch (error) {
+                          console.warn('Failed to parse audit action context:', error);
+                        }
+                        
+                        const hasFollowUpData = log.statusChange || log.followUpMethod || followUpContext.followUpMethod;
+                        
+                        if (hasFollowUpData) {
+                          return (
+                            <div className="mt-2 space-y-1 text-xs">
+                              {log.statusChange && (
+                                <div className="flex items-center text-brand-primary dark:text-blue-400">
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                  Status: {log.statusChange}
+                                </div>
+                              )}
+                              {(log.followUpMethod || followUpContext.followUpMethod) && (
+                                <div className="flex items-center text-green-600 dark:text-green-400">
+                                  <Mail className="h-3 w-3 mr-1" />
+                                  Method: {log.followUpMethod || followUpContext.followUpMethod}
+                                </div>
+                              )}
+                              {followUpContext.followUpAction && (
+                                <div className="flex items-center text-blue-600 dark:text-blue-400">
+                                  <UserCheck className="h-3 w-3 mr-1" />
+                                  Action: {followUpContext.followUpAction}
+                                </div>
+                              )}
+                              {followUpContext.notes && (
+                                <div className="flex items-start text-gray-600 dark:text-gray-400">
+                                  <FileText className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
+                                  <span className="text-xs">{followUpContext.notes}</span>
+                                </div>
+                              )}
+                              {followUpContext.updatedEmail && (
+                                <div className="flex items-center text-purple-600 dark:text-purple-400">
+                                  <Mail className="h-3 w-3 mr-1" />
+                                  Updated Email: {followUpContext.updatedEmail}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      {/* Legacy Additional Details (kept for backward compatibility) */}
+                      {log.followUpMethod && !((() => {
+                        try {
+                          if (log.newData) {
+                            const newDataParsed = typeof log.newData === 'string' ? JSON.parse(log.newData) : log.newData;
+                            return newDataParsed?._auditActionContext?.followUpMethod;
+                          }
+                        } catch { }
+                        return false;
+                      })()) && (
+                        <div className="mt-2 space-y-1 text-xs">
+                          <div className="flex items-center text-green-600 dark:text-green-400">
+                            <Mail className="h-3 w-3 mr-1" />
+                            Follow-up: {log.followUpMethod}
+                          </div>
                           {log.followUpMethod && (
                             <div className="flex items-center text-green-600 dark:text-green-400">
                               {log.followUpMethod === 'email' ? (
@@ -460,12 +607,6 @@ export function EventRequestAuditLog({
                                 <Phone className="h-3 w-3 mr-1" />
                               )}
                               Follow-up: {log.followUpMethod}
-                            </div>
-                          )}
-                          {log.details?.updatedFields && (
-                            <div className="flex items-center text-gray-500">
-                              <Edit className="h-3 w-3 mr-1" />
-                              Updated: {log.details.updatedFields.join(', ')}
                             </div>
                           )}
                         </div>
