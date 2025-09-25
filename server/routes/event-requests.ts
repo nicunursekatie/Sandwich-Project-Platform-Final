@@ -125,6 +125,38 @@ const logActivity = async (
   );
 };
 
+// Valid status values for event requests
+const VALID_EVENT_REQUEST_STATUSES = [
+  'new',
+  'followed_up', 
+  'in_process',
+  'scheduled',
+  'completed',
+  'declined'
+] as const;
+
+// Helper function to validate and sanitize status values
+const validateEventRequestStatus = (status: string): string | null => {
+  if (!status) return null;
+  
+  // Convert common invalid statuses to valid ones
+  const statusMap: Record<string, string> = {
+    'approved': 'scheduled', // Map 'approved' to 'scheduled'
+    'pending': 'new',        // Map 'pending' to 'new'
+    'in_progress': 'in_process', // Map 'in_progress' to 'in_process'
+  };
+  
+  const normalizedStatus = status.toLowerCase();
+  const mappedStatus = statusMap[normalizedStatus] || normalizedStatus;
+  
+  if (VALID_EVENT_REQUEST_STATUSES.includes(mappedStatus as any)) {
+    return mappedStatus;
+  }
+  
+  console.warn(`⚠️ Invalid event request status "${status}" - will not be logged in audit`);
+  return null;
+};
+
 // Enhanced audit logging for event request actions
 const logEventRequestAudit = async (
   action: string,
@@ -135,6 +167,43 @@ const logEventRequestAudit = async (
   additionalContext?: any
 ) => {
   try {
+    // PROBLEM 1 FIX: Ensure we have complete event request data
+    // If newData is partial (like req.body), get the complete updated event request
+    let completeNewData = newData;
+    
+    // Check if newData has essential fields for audit logging
+    if (!newData?.organizationName || !newData?.firstName || !newData?.lastName) {
+      console.log('📋 Audit logging: newData appears incomplete, fetching complete event data...');
+      try {
+        const completeEventData = await storage.getEventRequestById(parseInt(eventId));
+        if (completeEventData) {
+          completeNewData = completeEventData;
+          console.log('✅ Retrieved complete event data for audit logging');
+        } else {
+          console.warn('⚠️ Could not retrieve complete event data for audit logging');
+        }
+      } catch (error) {
+        console.error('❌ Error retrieving complete event data for audit:', error);
+        // Continue with partial data rather than failing
+      }
+    }
+    
+    // PROBLEM 2 FIX: Validate status values before logging
+    if (completeNewData?.status) {
+      const validatedStatus = validateEventRequestStatus(completeNewData.status);
+      if (validatedStatus && validatedStatus !== completeNewData.status) {
+        console.log(`🔄 Status mapping: "${completeNewData.status}" -> "${validatedStatus}"`);
+        completeNewData = {
+          ...completeNewData,
+          status: validatedStatus
+        };
+      } else if (!validatedStatus) {
+        // Remove invalid status to prevent logging invalid data
+        const { status, ...dataWithoutStatus } = completeNewData;
+        completeNewData = dataWithoutStatus;
+      }
+    }
+    
     const context = {
       userId: req.user?.id,
       ipAddress: req.ip || req.connection?.remoteAddress,
@@ -142,18 +211,11 @@ const logEventRequestAudit = async (
       sessionId: req.session?.id || req.sessionID,
     };
 
-    // Enhanced logging with action-specific details
-    const enhancedNewData = {
-      ...newData,
-      actionContext: additionalContext || {},
-      actionTimestamp: new Date().toISOString(),
-      performedBy: req.user?.email || 'Unknown User',
-    };
-
+    // Call the audit logger with complete, validated data
     await AuditLogger.logEventRequestChange(
       eventId,
       oldData,
-      enhancedNewData,
+      completeNewData,
       context,
       additionalContext
     );

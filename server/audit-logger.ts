@@ -393,16 +393,48 @@ export class AuditLogger {
         significantChanges
       };
 
-      // Enhanced new data with change metadata
+      // PROBLEM 3 FIX: Separate change metadata from additional context to prevent duplication
+      // Create clean additional context without field change data
+      const cleanChangeContext = changeContext ? {
+        ...changeContext,
+        // Remove any field data that would duplicate the "What Changed" section
+        ...(changeContext.notes && { notes: changeContext.notes }), // Keep notes
+        ...(changeContext.actionType && { actionType: changeContext.actionType }), // Keep action type
+        ...(changeContext.operation && { operation: changeContext.operation }), // Keep operation
+        ...(changeContext.section && { section: changeContext.section }), // Keep section
+      } : undefined;
+      
+      // Filter out field-level changes from the clean context to avoid duplication
+      const fieldsInChanges = new Set(changes.map(change => change.field.toLowerCase()));
+      const filteredContext: any = {};
+      
+      if (cleanChangeContext) {
+        Object.keys(cleanChangeContext).forEach(key => {
+          const lowerKey = key.toLowerCase();
+          // Only include context items that are NOT already captured in field changes
+          if (!fieldsInChanges.has(lowerKey) && 
+              !['email', 'phone', 'firstname', 'lastname', 'organizationname', 'status'].includes(lowerKey)) {
+            filteredContext[key] = cleanChangeContext[key];
+          }
+        });
+      }
+
+      // Enhanced new data with properly separated metadata
       const enhancedNewData = {
         ...newData,
-        changeMetadata: metadata,
-        changeTimestamp: new Date().toISOString(),
-        changedBy: context.userId || 'Unknown User',
-        changeCount: changes.length
+        _auditMetadata: {
+          changes,
+          summary,
+          totalChanges: changes.length,
+          significantChanges,
+          changeTimestamp: new Date().toISOString(),
+          changedBy: context.userId || 'Unknown User',
+          // Only include non-duplicate additional context
+          additionalContext: Object.keys(filteredContext).length > 0 ? filteredContext : undefined
+        }
       };
 
-      // Log using the existing audit system
+      // Log using the existing audit system with clean separation of concerns
       await this.log(
         'EVENT_REQUEST_CHANGE',
         'event_requests',
