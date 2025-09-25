@@ -516,6 +516,30 @@ export class AuditLogger {
     oldData: any,
     context: AuditContext = {}
   ) {
+    // For event_requests table, create proper deletion audit metadata
+    if (tableName === 'event_requests' && oldData) {
+      const deletionData = {
+        ...oldData,
+        status: 'deleted', // Show the status as changing to "deleted"
+        _auditMetadata: {
+          changes: [{
+            fieldName: 'status',
+            fieldDisplayName: 'Status',
+            oldValue: oldData.status || 'new',
+            newValue: 'deleted'
+          }],
+          summary: `Status changed: ${oldData.status || 'new'} → deleted`,
+          totalChanges: 1,
+          significantChanges: ['status'],
+          changeTimestamp: new Date().toISOString(),
+          changedBy: context.userId || 'Unknown User',
+          isDeletion: true
+        }
+      };
+      return this.log('DELETE', tableName, recordId, oldData, deletionData, context);
+    }
+    
+    // For other tables, use the original logic
     return this.log('DELETE', tableName, recordId, oldData, null, context);
   }
 
