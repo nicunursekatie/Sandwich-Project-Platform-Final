@@ -217,13 +217,22 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
-   * Update a specific event request's status in Google Sheets
+   * DEPRECATED: No longer updating Google Sheets - one-way sync only
+   * @deprecated This method is no longer used as we only sync FROM sheets, not TO sheets
    */
   async updateEventRequestStatus(
     organizationName: string,
     contactName: string,
     newStatus: string
   ): Promise<{ success: boolean; message: string }> {
+    // DISABLED: One-way sync only - we don't write back to Google Sheets
+    console.warn('⚠️ updateEventRequestStatus called but is disabled - one-way sync only');
+    return {
+      success: false,
+      message: 'Google Sheets updates are disabled - one-way sync only'
+    };
+
+    /* Original implementation commented out:
     try {
       await this.ensureInitialized();
 
@@ -276,6 +285,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         message: `Failed to update Google Sheets: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
+    */
   }
 
   /**
@@ -374,41 +384,11 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         });
 
         if (existingRequest) {
-          // Selectively update message field from Google Sheets if missing in database
-          const hasSheetMessage = row.message && row.message.trim() && row.message.trim().length > 0;
-          const hasDbMessage = existingRequest.message && existingRequest.message.trim() && existingRequest.message.trim().length > 0;
-          const shouldUpdateMessage = hasSheetMessage && !hasDbMessage;
-          
-          console.log(`🔍 DEBUG: Checking message update for ${row.organizationName} - ${row.contactName}`);
-          console.log(`🔍 Sheet message: "${row.message?.substring(0, 50)}..."`);
-          console.log(`🔍 DB message: "${existingRequest.message?.substring(0, 50) || 'NULL'}..."`);
-          console.log(`🔍 hasSheetMessage: ${hasSheetMessage}, hasDbMessage: ${hasDbMessage}`);
-          
-          if (shouldUpdateMessage) {
-            console.log(
-              `📝 Updating message field for existing request: ${row.organizationName} - ${row.contactName}`
-            );
-            
-            try {
-              await this.storage.updateEventRequest(existingRequest.id, {
-                message: row.message.trim(),
-                updatedAt: new Date()
-              });
-              updatedCount++;
-              console.log(
-                `✅ Successfully updated message for: ${row.organizationName} - ${row.contactName}`
-              );
-            } catch (error) {
-              console.error(
-                `❌ Failed to update message for ${row.organizationName} - ${row.contactName}:`,
-                error
-              );
-            }
-          } else {
-            console.log(
-              `⏭️ Skipping existing event request (no message update needed): ${row.organizationName} - ${row.contactName}`
-            );
-          }
+          // SKIP ALL UPDATES - Once imported, records should only be updated manually in the app
+          console.log(
+            `⏭️ Skipping existing event request (already imported): ${row.organizationName} - ${row.contactName}`
+          );
+          // DO NOT update any fields for existing records
         } else {
           // Before creating new, check if this was recently deleted
           // Import AuditLogger at the top if not already imported
@@ -546,11 +526,17 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
-   * Smart sync: Update Google Sheets with event requests data while preserving manual edits
+   * DEPRECATED: No longer updating Google Sheets - one-way sync only
+   * @deprecated This method is no longer used as we only sync FROM sheets, not TO sheets
    */
   private async updateEventRequestsSheet(
     eventRequests: EventRequestSheetRow[]
   ): Promise<void> {
+    // DISABLED: One-way sync only - we don't write back to Google Sheets
+    console.warn('⚠️ updateEventRequestsSheet called but is disabled - one-way sync only');
+    return;
+
+    /* Original implementation commented out:
     if (!this.sheets) {
       throw new Error('Google Sheets service not initialized');
     }
@@ -610,6 +596,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     console.log(
       `✅ Smart-synced Google Sheets with ${eventRequests.length} event requests (preserving manual columns N+)`
     );
+    */
   }
 
   /**

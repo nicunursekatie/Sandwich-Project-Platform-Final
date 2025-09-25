@@ -603,22 +603,7 @@ router.patch(
         status: 'contact_completed',
       });
 
-      // Update Google Sheets with the new status
-      try {
-        const googleSheetsService =
-          getEventRequestsGoogleSheetsService(storage as any);
-        if (googleSheetsService && updatedEventRequest) {
-          const contactName =
-            `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
-          await googleSheetsService.updateEventRequestStatus(
-            updatedEventRequest.organizationName,
-            contactName,
-            'contact_completed'
-          );
-        }
-      } catch (error) {
-        console.warn('Failed to update Google Sheets status:', error);
-      }
+      // REMOVED: No longer updating Google Sheets - one-way sync only
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
@@ -913,24 +898,7 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      // Update Google Sheets if status was changed
-      if (updates.status) {
-        try {
-          const googleSheetsService =
-            getEventRequestsGoogleSheetsService(storage as any);
-          if (googleSheetsService) {
-            const contactName =
-              `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
-            await googleSheetsService.updateEventRequestStatus(
-              updatedEventRequest.organizationName,
-              contactName,
-              updates.status
-            );
-          }
-        } catch (error) {
-          console.warn('Failed to update Google Sheets status:', error);
-        }
-      }
+      // REMOVED: No longer updating Google Sheets - one-way sync only
 
       // Enhanced audit logging for event details update
       await AuditLogger.logEventRequestChange(
@@ -1049,14 +1017,28 @@ router.patch(
           typeof processedUpdates[field] === 'string'
         ) {
           try {
-            processedUpdates[field] = new Date(processedUpdates[field]);
+            const dateValue = new Date(processedUpdates[field]);
+            // Check if the date is valid
+            if (isNaN(dateValue.getTime())) {
+              console.error(
+                `Invalid date value for field ${field}:`,
+                processedUpdates[field]
+              );
+              delete processedUpdates[field]; // Remove invalid date fields
+            } else {
+              processedUpdates[field] = dateValue;
+            }
           } catch (error) {
             console.error(
               `Failed to parse date field ${field}:`,
-              processedUpdates[field]
+              processedUpdates[field],
+              error
             );
             delete processedUpdates[field]; // Remove invalid date fields
           }
+        } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
+          // Allow null or empty string to clear date fields
+          processedUpdates[field] = null;
         }
       });
 
@@ -1081,24 +1063,7 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      // Update Google Sheets if status was changed
-      if (processedUpdates.status) {
-        try {
-          const googleSheetsService =
-            getEventRequestsGoogleSheetsService(storage as any);
-          if (googleSheetsService) {
-            const contactName =
-              `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
-            await googleSheetsService.updateEventRequestStatus(
-              updatedEventRequest.organizationName,
-              contactName,
-              processedUpdates.status
-            );
-          }
-        } catch (error) {
-          console.warn('Failed to update Google Sheets status:', error);
-        }
-      }
+      // REMOVED: No longer updating Google Sheets - one-way sync only
 
       // Enhanced audit logging with detailed field changes
       await AuditLogger.logEventRequestChange(
@@ -1121,9 +1086,29 @@ router.patch(
       );
 
       res.json(updatedEventRequest);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating event request:', error);
-      res.status(500).json({ message: 'Failed to update event request' });
+      console.error('Error stack:', error?.stack);
+      console.error('Error details:', {
+        id: id,
+        updates: processedUpdates,
+        message: error?.message
+      });
+
+      // Check for specific database errors
+      if (error?.message?.includes('invalid input syntax')) {
+        return res.status(400).json({
+          message: 'Invalid data format',
+          error: error.message,
+          details: 'Please check that all fields contain valid data'
+        });
+      }
+
+      res.status(500).json({
+        message: 'Failed to update event request',
+        error: error?.message || 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      });
     }
   }
 );
@@ -1151,6 +1136,40 @@ router.put(
       // Process ALL date/timestamp fields to ensure they're proper Date objects
       const processedUpdates = { ...updates };
 
+      // Clean up phone field if it contains invalid data
+      if (processedUpdates.phone) {
+        const phoneStr = String(processedUpdates.phone).trim();
+
+        // Check if phone field contains an Excel serial number (5-6 digits)
+        if (/^\d{5,6}$/.test(phoneStr)) {
+          console.warn(`Phone field contains Excel serial number: "${phoneStr}" - clearing it`);
+          processedUpdates.phone = ''; // Clear invalid phone number
+        } else if (phoneStr.length > 30) {
+          // If phone field is too long, it might contain message text
+          console.warn(`Phone field too long (${phoneStr.length} chars), likely contains other data - clearing it`);
+          processedUpdates.phone = '';
+        } else {
+          // Clean the phone number - keep only digits and common separators
+          processedUpdates.phone = phoneStr.replace(/[^\d\s\-\(\)\+\.]/g, '').trim();
+        }
+      }
+
+      // Validate message field doesn't contain a phone number
+      if (processedUpdates.message) {
+        const messageStr = String(processedUpdates.message).trim();
+
+        // Check if message looks like a phone number
+        if (/^[\d\s\-\(\)\+\.]{7,20}$/.test(messageStr)) {
+          console.warn(`Message field might contain phone number: "${messageStr}"`);
+          // You might want to swap with phone field if phone is empty
+          if (!processedUpdates.phone || processedUpdates.phone === '') {
+            processedUpdates.phone = messageStr;
+            processedUpdates.message = '';
+            console.log(`Moved phone number from message to phone field`);
+          }
+        }
+      }
+
       // Convert timestamp fields that might come as strings to Date objects
       const timestampFields = [
         'desiredEventDate',
@@ -1170,14 +1189,28 @@ router.put(
           typeof processedUpdates[field] === 'string'
         ) {
           try {
-            processedUpdates[field] = new Date(processedUpdates[field]);
+            const dateValue = new Date(processedUpdates[field]);
+            // Check if the date is valid
+            if (isNaN(dateValue.getTime())) {
+              console.error(
+                `Invalid date value for field ${field}:`,
+                processedUpdates[field]
+              );
+              delete processedUpdates[field]; // Remove invalid date fields
+            } else {
+              processedUpdates[field] = dateValue;
+            }
           } catch (error) {
             console.error(
               `Failed to parse date field ${field}:`,
-              processedUpdates[field]
+              processedUpdates[field],
+              error
             );
             delete processedUpdates[field]; // Remove invalid date fields
           }
+        } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
+          // Allow null or empty string to clear date fields
+          processedUpdates[field] = null;
         }
       });
 
@@ -2080,22 +2113,7 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      // Update Google Sheets with the new status
-      try {
-        const googleSheetsService =
-          getEventRequestsGoogleSheetsService(storage as any);
-        if (googleSheetsService) {
-          const contactName =
-            `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}`.trim();
-          await googleSheetsService.updateEventRequestStatus(
-            updatedEventRequest.organizationName,
-            contactName,
-            'in_process'
-          );
-        }
-      } catch (error) {
-        console.warn('Failed to update Google Sheets status:', error);
-      }
+      // REMOVED: No longer updating Google Sheets - one-way sync only
 
       // Enhanced audit logging for toolkit sent action
       await AuditLogger.logEventRequestChange(
