@@ -735,21 +735,46 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
 
     // Map expected fields to their column indices - Updated for new sheet structure
     const columnMapping = {
-      submittedOn: getColumnIndex(['submitted on', 'timestamp', 'submission date', 'date']),
-      name: getColumnIndex(['name', 'full name', 'contact name']), // Single name field
+      submittedOn: getColumnIndex(['submitted on', 'timestamp', 'submission date', 'date submitted', 'created']),
+      name: getColumnIndex(['name', 'full name', 'contact name', 'your name']), // Single name field
       firstName: getColumnIndex(['first name', 'fname', 'first']), // Legacy support
       lastName: getColumnIndex(['last name', 'lname', 'last']), // Legacy support
-      email: getColumnIndex(['your email', 'email', 'email address', 'e-mail']),
-      organizationName: getColumnIndex(['group/organization name', 'organization', 'group', 'organization name', 'company']),
-      department: getColumnIndex(['department/team if applicable', 'department', 'team', 'dept', 'division']),
-      phone: getColumnIndex(['phone', 'phone number', 'contact', 'telephone']),
-      desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date']),
-      previouslyHosted: getColumnIndex(['has your organization done an event with us before?', 'previously hosted', 'previous', 'hosted before']),
-      message: getColumnIndex(['message', 'details', 'description', 'comments']),
-      status: getColumnIndex(['status', 'current status', 'state']),
+      email: getColumnIndex(['your email', 'email', 'email address', 'e-mail', 'contact email']),
+      organizationName: getColumnIndex(['group/organization name', 'organization', 'group', 'organization name', 'company', 'org name']),
+      department: getColumnIndex(['department/team if applicable', 'department', 'team', 'dept', 'division', 'department/team']),
+      phone: getColumnIndex(['phone number', 'phone', 'contact phone', 'telephone', 'mobile', 'cell phone']),
+      desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date']),
+      previouslyHosted: getColumnIndex(['has your organization done an event with us before?', 'previously hosted', 'previous event', 'hosted before', 'past event']),
+      message: getColumnIndex(['message', 'additional details', 'details', 'description', 'comments', 'notes', 'additional information']),
+      status: getColumnIndex(['status', 'current status', 'state', 'event status']),
     };
 
     console.log('📋 Column mapping results:', columnMapping);
+
+    // Check if we failed to detect most headers - might need fallback to fixed positions
+    const mappedColumnsCount = Object.values(columnMapping).filter(idx => idx >= 0).length;
+    const useFixedPositions = mappedColumnsCount < 5; // If less than 5 columns were found, use fixed positions
+
+    if (useFixedPositions) {
+      console.warn('⚠️ Header detection failed for most columns. Using fallback fixed column positions.');
+      console.warn('⚠️ Detected headers:', headers);
+      console.warn('⚠️ This may indicate the Google Sheet headers have changed.');
+
+      // Common Squarespace form export column order (adjust based on your actual sheet)
+      // These are typical positions - you may need to adjust based on your actual sheet
+      columnMapping.submittedOn = 0; // Column A - Timestamp/Submitted On
+      columnMapping.name = 1; // Column B - Name
+      columnMapping.email = 2; // Column C - Email
+      columnMapping.phone = 3; // Column D - Phone
+      columnMapping.organizationName = 4; // Column E - Organization
+      columnMapping.department = 5; // Column F - Department
+      columnMapping.desiredEventDate = 6; // Column G - Desired Event Date
+      columnMapping.message = 7; // Column H - Message
+      columnMapping.previouslyHosted = 8; // Column I - Previously Hosted
+      columnMapping.status = 9; // Column J - Status (if exists)
+
+      console.log('📋 Using FIXED column positions:', columnMapping);
+    }
 
     // Read data rows
     const response = await this.sheets.spreadsheets.values.get({
@@ -760,7 +785,13 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     const rows = response.data.values || [];
     console.log(`📊 Reading ${rows.length} rows from Google Sheets`);
     if (rows.length > 0) {
-      console.log('📋 First data row:', rows[0]);
+      console.log('📋 First data row (raw values):', rows[0]);
+      console.log('📋 First row field mapping:');
+      console.log(`  Col ${columnMapping.name}: ${rows[0][columnMapping.name]}`);
+      console.log(`  Col ${columnMapping.email}: ${rows[0][columnMapping.email]}`);
+      console.log(`  Col ${columnMapping.phone}: ${rows[0][columnMapping.phone]}`);
+      console.log(`  Col ${columnMapping.message}: ${rows[0][columnMapping.message]}`);
+      console.log(`  Col ${columnMapping.desiredEventDate}: ${rows[0][columnMapping.desiredEventDate]}`);
       if (rows.length > 1) {
         console.log('📋 Second data row:', rows[1]);
       }
@@ -770,10 +801,32 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       // ACTUALLY USE the dynamic column mapping computed above!
       const getFieldValue = (colIndex: number, defaultValue = '') => {
         if (colIndex < 0) {
-          console.warn(`⚠️ Column not found in sheet, using default: "${defaultValue}"`);
+          if (index === 0) { // Only warn once for missing columns
+            console.warn(`⚠️ Column not found in sheet, using default: "${defaultValue}"`);
+          }
           return defaultValue;
         }
-        return row[colIndex] || defaultValue;
+
+        let value = row[colIndex] || defaultValue;
+
+        // Clean up phone numbers if detected in phone column
+        if (colIndex === columnMapping.phone && value) {
+          // Remove any non-digit characters except common phone separators
+          const originalValue = value;
+          // Check if this looks like an Excel serial number (all digits, 5-6 digits long)
+          if (/^\d{5,6}$/.test(value)) {
+            console.warn(`⚠️ Phone field contains Excel serial number: "${value}" - likely a date field misplaced`);
+            value = ''; // Clear invalid phone numbers
+          } else {
+            // Clean normal phone numbers
+            value = value.replace(/[^\d\s\-\(\)\+\.]/g, '').trim();
+            if (value !== originalValue && index < 3) {
+              console.log(`📱 Cleaned phone: "${originalValue}" → "${value}"`);
+            }
+          }
+        }
+
+        return value;
       };
 
       // Handle single Name field from new sheet structure or legacy firstName/lastName
@@ -799,14 +852,35 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         contactName = `${firstName} ${lastName}`.trim();
       }
 
+      // Extract values with detailed logging for debugging
+      const phoneValue = getFieldValue(columnMapping.phone);
+      const messageValue = getFieldValue(columnMapping.message);
+      const dateValue = getFieldValue(columnMapping.desiredEventDate);
+
+      // Log potential issues with field extraction
+      if (index < 5 && (phoneValue || messageValue)) {
+        console.log(`🔍 Field extraction for row ${index + 2}:`);
+        console.log(`  Phone column [${columnMapping.phone}]: "${phoneValue}"`);
+        console.log(`  Message column [${columnMapping.message}]: "${messageValue}"`);
+        console.log(`  Date column [${columnMapping.desiredEventDate}]: "${dateValue}"`);
+
+        // Check if values seem to be in wrong columns
+        if (phoneValue && phoneValue.length > 20 && !phoneValue.match(/^[\d\s\-\(\)\+]+$/)) {
+          console.warn(`⚠️ Phone field contains non-phone data: "${phoneValue.substring(0, 50)}..."`);
+        }
+        if (messageValue && messageValue.match(/^[\d\s\-\(\)\+]+$/) && messageValue.length < 20) {
+          console.warn(`⚠️ Message field might contain phone number: "${messageValue}"`);
+        }
+      }
+
       const result = {
         submittedOn: getFieldValue(columnMapping.submittedOn),
         contactName: contactName || 'Unknown Contact',
         email: getFieldValue(columnMapping.email),
         organizationName: getFieldValue(columnMapping.organizationName),
-        message: getFieldValue(columnMapping.message),
-        phone: getFieldValue(columnMapping.phone), // Will default to '' if not found
-        desiredEventDate: getFieldValue(columnMapping.desiredEventDate),
+        message: messageValue,
+        phone: phoneValue || '', // Will default to '' if not found
+        desiredEventDate: dateValue,
         department: getFieldValue(columnMapping.department),
         previouslyHosted: getFieldValue(columnMapping.previouslyHosted, 'i_dont_know'),
         status: getFieldValue(columnMapping.status, 'new'),
