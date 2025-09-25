@@ -21,9 +21,9 @@ import coreRouter from './core';
 import meRouter from './me';
 import createAgendaItemsRouter from '../routes/agenda-items';
 import { createActivityLogRoutes } from './activity-log';
-import smsUsersRouter from './sms-users';
-import smsTestingRouter from './sms-testing';
-import smsAnnouncementRouter from './sms-announcement';
+import { smsUserRoutes } from './sms-users';
+import { smsTestingRoutes } from './sms-testing';
+import { smsAnnouncementRoutes } from './sms-announcement';
 import monitoringRouter from './monitoring';
 
 // Import centralized middleware
@@ -242,6 +242,38 @@ export function createMainRoutes(deps: RouterDependencies) {
     meRouter
   );
   router.use('/api/me', createErrorHandler('me'));
+
+  // SMS notification routes - SMS users router already includes /users prefix
+  router.use(
+    '/api',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    smsUserRoutes
+  );
+
+  router.use(
+    '/api/sms-testing',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    smsTestingRoutes
+  );
+  router.use('/api/sms-testing', createErrorHandler('sms-testing'));
+
+  router.use(
+    '/api/sms-announcement',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    smsAnnouncementRoutes
+  );
+  router.use('/api/sms-announcement', createErrorHandler('sms-announcement'));
+
+  router.use(
+    '/api/monitoring',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    monitoringRouter
+  );
+  router.use('/api/monitoring', createErrorHandler('monitoring'));
 
   return router;
 }
