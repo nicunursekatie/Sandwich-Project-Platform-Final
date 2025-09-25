@@ -21,6 +21,10 @@ import coreRouter from './core';
 import meRouter from './me';
 import createAgendaItemsRouter from '../routes/agenda-items';
 import { createActivityLogRoutes } from './activity-log';
+import smsUsersRouter from './sms-users';
+import smsTestingRouter from './sms-testing';
+import smsAnnouncementRouter from './sms-announcement';
+import monitoringRouter from './monitoring';
 
 // Import centralized middleware
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
