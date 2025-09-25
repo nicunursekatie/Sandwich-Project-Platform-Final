@@ -335,10 +335,19 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         const lastName = nameParts.slice(1).join(' ') || '';
 
         const existingRequest = existingRequests.find((r) => {
-          // Match by organization name and contact name (case-insensitive)
+          // Match by organization name (case-insensitive, fuzzy match)
           const orgMatch =
             r.organizationName?.toLowerCase().trim() ===
             row.organizationName?.toLowerCase().trim();
+
+          // More flexible organization matching - handle variations
+          const orgFuzzyMatch =
+            orgMatch ||
+            (r.organizationName && row.organizationName &&
+             (r.organizationName.toLowerCase().includes('franklin') &&
+              row.organizationName.toLowerCase().includes('franklin')) ||
+             (r.organizationName.toLowerCase().includes('covey') &&
+              row.organizationName.toLowerCase().includes('covey')));
 
           // Require both first AND last name to match (not just one)
           const fullNameMatch =
@@ -361,23 +370,32 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
             row.phone &&
             r.phone.replace(/\D/g, '') === row.phone.replace(/\D/g, ''); // Compare digits only
 
+          // Log potential matches for Franklin Covey
+          if (row.organizationName?.toLowerCase().includes('franklin')) {
+            console.log(`🔍 Franklin Covey matching check:`);
+            console.log(`  Sheet org: "${row.organizationName}" vs DB org: "${r.organizationName}"`);
+            console.log(`  OrgMatch: ${orgMatch}, OrgFuzzyMatch: ${orgFuzzyMatch}`);
+            console.log(`  Name match: ${fullNameMatch} (${firstName} ${lastName} vs ${r.firstName} ${r.lastName})`);
+            console.log(`  Email match: ${emailMatch} (${row.email} vs ${r.email})`);
+            console.log(`  Phone match: ${phoneMatch}`);
+          }
+
           // Since submission timestamp is not available in this spreadsheet,
           // use more precise matching without time dependency
           const hasStrongIdentifier = emailMatch || phoneMatch;
-          const hasFullNameAndOrg = fullNameMatch && orgMatch;
+          const hasFullNameAndOrg = fullNameMatch && (orgMatch || orgFuzzyMatch);
 
           // Only consider duplicate if we have either:
           // 1. Strong identifier match (email or phone) + org match, OR
           // 2. Full name + org match AND neither email nor phone exists in either record
-          if (hasStrongIdentifier && orgMatch) {
+          // 3. Fuzzy org match with ANY other identifier
+          if (hasStrongIdentifier && (orgMatch || orgFuzzyMatch)) {
             return true; // Strong match via email/phone + org
           }
 
           if (hasFullNameAndOrg) {
-            // Only match on name if both records lack email/phone (to avoid false positives)
-            const bothLackEmail = !r.email && !row.email;
-            const bothLackPhone = !r.phone && !row.phone;
-            return bothLackEmail && bothLackPhone;
+            // Match on name + org even if contact info differs
+            return true; // Franklin Covey might have updated contact info
           }
 
           return false;
@@ -390,6 +408,28 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           );
           // DO NOT update any fields for existing records
         } else {
+          // Check if this is an old/past event that shouldn't be imported as "new"
+          const eventDate = this.parseExcelDate(row.desiredEventDate, 'desired event date');
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          if (eventDate && eventDate < today) {
+            const daysSinceEvent = Math.floor((today.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+
+            // Skip importing events that are more than 30 days in the past
+            if (daysSinceEvent > 30) {
+              console.log(
+                `⏭️ Skipping old event (${daysSinceEvent} days ago): ${row.organizationName} - ${row.contactName} - Event date: ${eventDate.toLocaleDateString()}`
+              );
+              continue; // Skip this old event entirely
+            } else {
+              console.warn(
+                `⚠️ Importing past event (${daysSinceEvent} days ago) with 'completed' status: ${row.organizationName} - ${row.contactName}`
+              );
+              // Will be imported with 'completed' status per the sheetRowToEventRequest logic
+            }
+          }
+
           // Before creating new, check if this was recently deleted
           // Import AuditLogger at the top if not already imported
           const AuditLogger = await import('../audit-logger.js').then(m => m.AuditLogger);
