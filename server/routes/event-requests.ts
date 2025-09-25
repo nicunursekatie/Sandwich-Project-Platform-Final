@@ -150,13 +150,12 @@ const logEventRequestAudit = async (
       performedBy: req.user?.email || 'Unknown User',
     };
 
-    await AuditLogger.logChange(
-      action,
-      'event_requests',
+    await AuditLogger.logEventRequestChange(
       eventId,
       oldData,
       enhancedNewData,
-      context
+      context,
+      additionalContext
     );
 
     console.log(
@@ -534,9 +533,7 @@ router.post(
       });
 
       // Enhanced audit logging for create operation
-      await AuditLogger.logChange(
-        'CREATE',
-        'event_requests',
+      await AuditLogger.logEventRequestChange(
         newEventRequest.id?.toString() || 'unknown',
         null,
         newEventRequest,
@@ -545,7 +542,8 @@ router.post(
           ipAddress: req.ip || req.connection?.remoteAddress,
           userAgent: req.get('User-Agent'),
           sessionId: req.session?.id || req.sessionID,
-        }
+        },
+        { actionType: 'CREATE' }
       );
 
       await logActivity(
@@ -1090,8 +1088,8 @@ router.patch(
       console.error('Error updating event request:', error);
       console.error('Error stack:', error?.stack);
       console.error('Error details:', {
-        id: id,
-        updates: processedUpdates,
+        id: req.params.id,
+        updates: req.body,
         message: error?.message
       });
 
@@ -1475,9 +1473,7 @@ router.delete(
       }
 
       // Enhanced audit logging for deletion
-      await AuditLogger.logChange(
-        'DELETE',
-        'event_requests',
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         null,
@@ -1486,7 +1482,8 @@ router.delete(
           ipAddress: req.ip || req.connection?.remoteAddress,
           userAgent: req.get('User-Agent'),
           sessionId: req.session?.id || req.sessionID,
-        }
+        },
+        { actionType: 'DELETE' }
       );
 
       await logActivity(
