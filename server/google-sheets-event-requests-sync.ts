@@ -4,6 +4,7 @@ import {
 } from './google-sheets-service';
 import type { IStorage } from './storage';
 import { EventRequest, Organization } from '@shared/schema';
+import { AuditLogger } from './audit-logger';
 
 export interface EventRequestSheetRow {
   organizationName: string;
@@ -431,8 +432,6 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           }
 
           // Before creating new, check if this was recently deleted
-          // Import AuditLogger at the top if not already imported
-          const AuditLogger = await import('../audit-logger.js').then(m => m.AuditLogger);
           const recentDeletedLogs = await AuditLogger.getAuditHistory('event_requests', null, null, 50, 0);
           
           // Check if there's a recent deletion (within last 24 hours) matching this organization and contact
