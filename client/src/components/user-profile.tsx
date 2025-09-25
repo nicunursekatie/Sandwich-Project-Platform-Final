@@ -3,7 +3,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User, Lock, Mail, FileText, Save } from 'lucide-react';
+import { useLocation } from 'wouter';
+import { User, Lock, Mail, FileText, Save, MessageSquare, Smartphone, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -45,13 +48,44 @@ const passwordSchema = z
     path: ['confirmPassword'],
   });
 
+const smsSchema = z.object({
+  phoneNumber: z.string().min(1, 'Phone number is required'),
+  consent: z.boolean(),
+});
+
+interface SMSOptInData {
+  phoneNumber: string;
+  consent: boolean;
+}
+
 type ProfileFormData = z.infer<typeof profileSchema>;
 type PasswordFormData = z.infer<typeof passwordSchema>;
+type SMSFormData = z.infer<typeof smsSchema>;
 
 export default function UserProfile() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+  const [location] = useLocation();
+  
+  // Parse URL query parameters to get the tab
+  const getTabFromURL = () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'password' || tabParam === 'notifications' || tabParam === 'profile') {
+      return tabParam;
+    }
+    return 'profile'; // default
+  };
+  
+  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'notifications'>(getTabFromURL());
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [consent, setConsent] = useState(false);
+  
+  // Update active tab when URL changes
+  useEffect(() => {
+    const newTab = getTabFromURL();
+    setActiveTab(newTab);
+  }, [location]);
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -76,6 +110,13 @@ export default function UserProfile() {
   const { data: userProfile, isLoading } = useQuery({
     queryKey: ['/api/auth/profile'],
     enabled: !!user,
+  });
+
+  // Check if user already has SMS consent
+  const { data: userSMSStatus, isLoading: statusLoading } = useQuery({
+    queryKey: ['/api/users/sms-status'],
+    queryFn: () => apiRequest('GET', '/api/users/sms-status'),
+    enabled: !!user?.id,
   });
 
   // Update form when profile data loads
@@ -145,7 +186,112 @@ export default function UserProfile() {
     changePasswordMutation.mutate(data);
   };
 
-  if (isLoading) {
+  // SMS opt-in mutation
+  const optInMutation = useMutation({
+    mutationFn: (data: SMSOptInData) =>
+      apiRequest('POST', '/api/users/sms-opt-in', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/sms-status'] });
+      toast({
+        title: 'Success!',
+        description: "You've been signed up for SMS reminders.",
+      });
+      setPhoneNumber('');
+      setConsent(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to sign up for SMS reminders.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // SMS opt-out mutation
+  const optOutMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/users/sms-opt-out'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/sms-status'] });
+      toast({
+        title: 'Unsubscribed',
+        description: "You've been removed from SMS reminders.",
+      });
+      setPhoneNumber('');
+      setConsent(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description:
+          error.message || 'Failed to unsubscribe from SMS reminders.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // SMS form handling
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, '');
+
+    // Format as (XXX) XXX-XXXX for US numbers
+    if (digits.length >= 10) {
+      const match = digits.match(/^(\d{3})(\d{3})(\d{4})/);
+      if (match) {
+        return `(${match[1]}) ${match[2]}-${match[3]}`;
+      }
+    } else if (digits.length >= 6) {
+      const match = digits.match(/^(\d{3})(\d{3})/);
+      if (match) {
+        return `(${match[1]}) ${match[2]}`;
+      }
+    } else if (digits.length >= 3) {
+      const match = digits.match(/^(\d{3})/);
+      if (match) {
+        return `(${match[1]})`;
+      }
+    }
+
+    return digits;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhoneNumber(formatted);
+  };
+
+  const handleSMSSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!phoneNumber.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your phone number.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!consent) {
+      toast({
+        title: 'Error',
+        description: 'Please check the consent box to proceed.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    optInMutation.mutate({
+      phoneNumber: phoneNumber.trim(),
+      consent: true,
+    });
+  };
+
+  // Check if user already opted in
+  const isAlreadyOptedIn = userSMSStatus?.hasOptedIn;
+
+  if (isLoading || statusLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
@@ -190,6 +336,18 @@ export default function UserProfile() {
         >
           <Lock className="w-4 h-4 inline mr-2" />
           Password
+        </button>
+        <button
+          onClick={() => setActiveTab('notifications')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'notifications'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+          data-testid="button-notifications-tab"
+        >
+          <MessageSquare className="w-4 h-4 inline mr-2" />
+          Notifications
         </button>
       </div>
 
@@ -377,6 +535,141 @@ export default function UserProfile() {
                 </Button>
               </form>
             </Form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Notifications Tab */}
+      {activeTab === 'notifications' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              SMS Notifications
+            </CardTitle>
+            <CardDescription>
+              Manage your SMS reminder preferences for weekly sandwich collection submissions
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isAlreadyOptedIn ? (
+              // Already opted in - show status and opt-out option
+              <div className="space-y-4">
+                <Alert data-testid="alert-sms-opted-in">
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    You're signed up for SMS reminders!
+                    {userSMSStatus?.phoneNumber && (
+                      <span className="block mt-1 font-medium">
+                        Phone: {userSMSStatus.phoneNumber}
+                      </span>
+                    )}
+                  </AlertDescription>
+                </Alert>
+
+                <div className="bg-muted p-4 rounded-lg text-sm">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <Smartphone className="h-4 w-4" />
+                    What you'll receive:
+                  </h4>
+                  <ul className="space-y-1 text-muted-foreground">
+                    <li>• Friendly reminders when weekly sandwich counts are missing</li>
+                    <li>• Direct links to the app for easy submission</li>
+                    <li>• Only related to sandwich collection reminders</li>
+                  </ul>
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={() => optOutMutation.mutate()}
+                  disabled={optOutMutation.isPending}
+                  className="w-full"
+                  data-testid="button-sms-opt-out"
+                >
+                  {optOutMutation.isPending
+                    ? 'Unsubscribing...'
+                    : 'Unsubscribe from SMS Reminders'}
+                </Button>
+              </div>
+            ) : (
+              // Not opted in - show sign-up form
+              <form onSubmit={handleSMSSubmit} className="space-y-6">
+                <div className="bg-blue-50 dark:bg-blue-950/50 p-4 rounded-lg">
+                  <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                    <Smartphone className="h-4 w-4" />
+                    How SMS Reminders Work
+                  </h3>
+                  <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                    <li>• Get text reminders when weekly sandwich counts are missing</li>
+                    <li>• Includes direct links to the app for easy submission</li>
+                    <li>• Only used for sandwich collection reminders</li>
+                    <li>• You can unsubscribe at any time</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sms-phone">Phone Number *</Label>
+                  <Input
+                    id="sms-phone"
+                    type="tel"
+                    placeholder="(555) 123-4567"
+                    value={phoneNumber}
+                    onChange={handlePhoneChange}
+                    required
+                    className="text-lg"
+                    data-testid="input-sms-phone"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    We'll format this automatically. US numbers only.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="sms-consent"
+                      checked={consent}
+                      onCheckedChange={(checked) => setConsent(checked as boolean)}
+                      className="mt-1"
+                      data-testid="checkbox-sms-consent"
+                    />
+                    <div>
+                      <Label
+                        htmlFor="sms-consent"
+                        className="text-sm leading-relaxed cursor-pointer"
+                      >
+                        I consent to receive SMS text message reminders from The
+                        Sandwich Project about weekly collection submissions. I understand:
+                      </Label>
+                      <ul className="text-xs text-muted-foreground mt-2 space-y-1 ml-4">
+                        <li>• Messages will only be sent for sandwich collection reminders</li>
+                        <li>• I can unsubscribe at any time</li>
+                        <li>• Standard message and data rates may apply</li>
+                        <li>• My phone number will not be shared with third parties</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full btn-tsp-primary"
+                  disabled={optInMutation.isPending || !consent || !phoneNumber.trim()}
+                  data-testid="button-sms-opt-in"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  {optInMutation.isPending
+                    ? 'Signing Up...'
+                    : 'Sign Up for SMS Reminders'}
+                </Button>
+              </form>
+            )}
+
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Questions about SMS notifications? Contact us through the messaging system.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
