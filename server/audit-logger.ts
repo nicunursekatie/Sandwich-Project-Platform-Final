@@ -239,8 +239,8 @@ export class AuditLogger {
         continue;
       }
 
-      // Skip internal fields that aren't meaningful to users
-      if (['updatedAt', 'createdAt', 'id'].includes(key)) {
+      // Skip internal fields and transient metadata that aren't meaningful to users
+      if (['updatedAt', 'createdAt', 'id', 'actionContext', 'actionTimestamp', 'performedBy'].includes(key)) {
         continue;
       }
 
