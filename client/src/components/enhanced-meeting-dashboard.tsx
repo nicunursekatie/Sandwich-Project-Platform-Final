@@ -125,7 +125,9 @@ export default function EnhancedMeetingDashboard() {
   const [showEditOwnerDialog, setShowEditOwnerDialog] = useState(false);
   const [showAddTaskDialog, setShowAddTaskDialog] = useState(false);
   const [editSupportPeople, setEditSupportPeople] = useState<string>('');
+  const [editSupportPeopleIds, setEditSupportPeopleIds] = useState<string[]>([]);
   const [editProjectOwner, setEditProjectOwner] = useState<string>('');
+  const [editProjectOwnerIds, setEditProjectOwnerIds] = useState<string[]>([]);
   const [supportPeopleList, setSupportPeopleList] = useState<
     Array<{
       id?: string;
@@ -769,8 +771,12 @@ export default function EnhancedMeetingDashboard() {
           setEditingProject={setEditingProject}
           editSupportPeople={editSupportPeople}
           setEditSupportPeople={setEditSupportPeople}
+          editSupportPeopleIds={editSupportPeopleIds}
+          setEditSupportPeopleIds={setEditSupportPeopleIds}
           editProjectOwner={editProjectOwner}
           setEditProjectOwner={setEditProjectOwner}
+          editProjectOwnerIds={editProjectOwnerIds}
+          setEditProjectOwnerIds={setEditProjectOwnerIds}
           newTaskTitle={newTaskTitle}
           setNewTaskTitle={setNewTaskTitle}
           newTaskDescription={newTaskDescription}
@@ -825,12 +831,15 @@ export default function EnhancedMeetingDashboard() {
           </DialogHeader>
           <ProjectAssigneeSelector
             value={editSupportPeople}
-            onChange={(value) => {
+            onChange={(value, userIds) => {
               setEditSupportPeople(value);
+              const normalizedIds = userIds?.length ? userIds : [];
+              setEditSupportPeopleIds(normalizedIds);
               if (editingProject) {
                 updateProjectSupportPeopleMutation.mutate({
                   projectId: editingProject,
                   supportPeople: value,
+                  supportPeopleIds: normalizedIds,
                 });
               }
             }}
@@ -851,12 +860,15 @@ export default function EnhancedMeetingDashboard() {
           </DialogHeader>
           <ProjectAssigneeSelector
             value={editProjectOwner}
-            onChange={(value) => {
+            onChange={(value, userIds) => {
               setEditProjectOwner(value);
+              const normalizedIds = userIds?.length ? userIds : [];
+              setEditProjectOwnerIds(normalizedIds);
               if (editingProject) {
                 updateProjectOwnerMutation.mutate({
                   projectId: editingProject,
                   assigneeName: value,
+                  assigneeIds: normalizedIds,
                 });
               }
               setShowEditOwnerDialog(false);
