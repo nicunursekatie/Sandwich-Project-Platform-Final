@@ -109,6 +109,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     eventRequest: EventRequest
   ): EventRequestSheetRow {
     return {
+      externalId: eventRequest.externalId || '',
       submittedOn: eventRequest.createdAt
         ? (() => {
             const date =
