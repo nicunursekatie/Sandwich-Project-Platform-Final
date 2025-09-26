@@ -17,6 +17,16 @@ usersRouter.get('/for-assignments', async (req, res, next) => {
   }
 });
 
+// Basic user info for resolving user IDs to names (read-only, no special permission needed)
+usersRouter.get('/basic', async (req, res, next) => {
+  try {
+    const users = await userService.getUsersForAssignments(); // Reuse the same method for now
+    res.json(users);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // User management routes requiring USERS_EDIT permission
 usersRouter.get(
   '/',

@@ -25,6 +25,7 @@ import { smsUserRoutes } from './sms-users';
 import { smsTestingRoutes } from './sms-testing';
 import { smsAnnouncementRoutes } from './sms-announcement';
 import monitoringRouter from './monitoring';
+import enhancedActivityRouter from './enhanced-user-activity';
 
 // Import centralized middleware
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
@@ -275,9 +276,8 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/monitoring', createErrorHandler('monitoring'));
 
-  // Enhanced user activity tracking (stub) - commenting out for now
-  // const enhancedActivityRouter = (await import('./enhanced-user-activity')).default;
-  // router.use('/api/enhanced-user-activity', enhancedActivityRouter);
+  // Enhanced user activity tracking (stub) - enabled to prevent 404 errors
+  router.use('/api/enhanced-user-activity', enhancedActivityRouter);
 
   return router;
 }

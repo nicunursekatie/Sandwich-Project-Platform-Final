@@ -1456,7 +1456,7 @@ export default function EventRequestsManagement({
 
   // Fetch users for resolving user IDs to names
   const { data: users = [] } = useQuery<any[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/basic'],
   });
 
   // Fetch drivers, hosts, and volunteers for assignment modal
