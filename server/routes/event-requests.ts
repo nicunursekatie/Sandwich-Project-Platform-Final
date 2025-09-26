@@ -1187,6 +1187,14 @@ router.patch(
         'scheduledCallDate',
         'tspContactAssignedDate',
       ];
+      
+      console.log('🔍 Pre-conversion debug - checking timestamp fields:');
+      timestampFields.forEach(field => {
+        if (processedUpdates[field] !== undefined) {
+          console.log(`  ${field}:`, processedUpdates[field], typeof processedUpdates[field]);
+        }
+      });
+
       timestampFields.forEach((field) => {
         if (
           processedUpdates[field] &&
@@ -1197,16 +1205,17 @@ router.patch(
             // Check if the date is valid
             if (isNaN(dateValue.getTime())) {
               console.error(
-                `Invalid date value for field ${field}:`,
+                `❌ Invalid date value for field ${field}:`,
                 processedUpdates[field]
               );
               delete processedUpdates[field]; // Remove invalid date fields
             } else {
               processedUpdates[field] = dateValue;
+              console.log(`✅ Converted ${field} from string "${processedUpdates[field]}" to Date object:`, dateValue);
             }
           } catch (error) {
             console.error(
-              `Failed to parse date field ${field}:`,
+              `❌ Failed to parse date field ${field}:`,
               processedUpdates[field],
               error
             );
@@ -1215,6 +1224,14 @@ router.patch(
         } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
           // Allow null or empty string to clear date fields
           processedUpdates[field] = null;
+          console.log(`✅ Set ${field} to null`);
+        }
+      });
+
+      console.log('🔍 Post-conversion debug - final timestamp fields:');
+      timestampFields.forEach(field => {
+        if (processedUpdates[field] !== undefined) {
+          console.log(`  ${field}:`, processedUpdates[field], typeof processedUpdates[field]);
         }
       });
 
