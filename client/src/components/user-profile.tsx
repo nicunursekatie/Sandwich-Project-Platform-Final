@@ -683,10 +683,20 @@ export default function UserProfile() {
                   </Button>
                 </form>
 
-                <div className="text-center">
+                <div className="text-center space-y-2">
                   <p className="text-sm text-muted-foreground">
                     Didn't receive the code? Check your spam folder or try signing up again.
                   </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => optOutMutation.mutate()}
+                    disabled={optOutMutation.isPending}
+                    className="text-sm"
+                    data-testid="button-reset-sms-verification"
+                  >
+                    {optOutMutation.isPending ? 'Resetting...' : 'Reset SMS Verification'}
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -775,6 +785,7 @@ export default function UserProfile() {
       {/* Toll-Free Verification Panel - Admin Only */}
       {activeTab === 'notifications' && user && typeof user.permissions === 'number' && user.permissions >= 80 && (
         <div className="space-y-6">
+          <Separator />
           <TollFreeVerificationPanel />
         </div>
       )}
