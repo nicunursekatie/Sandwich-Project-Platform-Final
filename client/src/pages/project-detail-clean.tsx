@@ -618,8 +618,8 @@ export default function ProjectDetailClean({
       case 'tabled':
         return 'text-purple-600 bg-purple-50 border-purple-200';
       case 'waiting':
-        return 'text-gray-600 bg-gray-50 border-gray-200';
       case 'pending':
+        // Not-started statuses share the same neutral styling
         return 'text-gray-600 bg-gray-50 border-gray-200';
       default:
         return 'text-gray-600 bg-gray-50 border-gray-200';
