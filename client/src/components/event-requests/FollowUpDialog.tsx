@@ -163,7 +163,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
             <Button
               type="submit"
               disabled={!notes.trim() || isLoading}
-              className={`text-white ${isOneDay ? 'bg-orange-600 hover:bg-orange-700' : 'bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.9)]'}`}
+              className={`text-white ${isOneDay ? 'bg-orange-600 hover:bg-orange-700' : 'bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary)/0.9)]'}`}
               data-testid={`button-confirm-followup-${followUpType}`}
             >
               {isLoading ? 'Saving...' : `Complete ${title}`}

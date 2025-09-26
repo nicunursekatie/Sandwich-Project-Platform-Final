@@ -145,7 +145,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     const userId = user.id?.toString();
     const normalizedAssigneeIds = Array.isArray(project.assigneeIds)
       ? project.assigneeIds.map((id) => id?.toString())
-      : [];
+      : project.assigneeId !== null && project.assigneeId !== undefined
+        ? [project.assigneeId.toString()]
+        : [];
 
     if (userId && normalizedAssigneeIds.includes(userId)) {
       return true;
@@ -159,7 +161,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       const candidateNames = [
         [user.firstName, user.lastName].filter(Boolean).join(' ').trim(),
         user.displayName,
-        user.email,
       ]
         .filter((value): value is string => !!value)
         .map((value) => value.trim().toLowerCase());

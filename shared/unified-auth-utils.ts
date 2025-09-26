@@ -138,7 +138,7 @@ export function checkOwnershipPermission(
   user: User | null | undefined,
   ownPermission: string,
   allPermission: string,
-  resourceOwnerId?: string
+  resourceOwnerId?: string | string[] | null
 ): PermissionCheckResult {
   
   // Check for "ALL" permission first
@@ -153,7 +153,13 @@ export function checkOwnershipPermission(
   // Check for "OWN" permission with ownership verification
   const ownResult = checkPermission(user, ownPermission);
   if (ownResult.granted) {
-    if (!resourceOwnerId) {
+    const normalizedOwnerIds = Array.isArray(resourceOwnerId)
+      ? resourceOwnerId.filter((id) => typeof id === 'string' && id)
+      : resourceOwnerId
+        ? [resourceOwnerId]
+        : [];
+
+    if (normalizedOwnerIds.length === 0) {
       return {
         granted: false,
         reason: 'Resource owner ID required for ownership check',
@@ -162,7 +168,7 @@ export function checkOwnershipPermission(
       };
     }
 
-    if (user?.id === resourceOwnerId) {
+    if (normalizedOwnerIds.includes(user?.id ?? '')) {
       return {
         ...ownResult,
         reason: 'Own-resource permission granted'
