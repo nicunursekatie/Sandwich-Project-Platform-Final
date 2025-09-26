@@ -474,13 +474,13 @@ export class GoogleSheetsSyncService {
       } else {
         // Create new task (basic version from sheet)
         console.log(
-          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'pending'}"`
+          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'waiting'}"`
         );
         await this.storage.createProjectTask({
           projectId,
           title: taskItem.title,
           description: taskItem.description || '',
-          status: taskItem.status || 'pending',
+          status: taskItem.status || 'waiting',
           assigneeName: taskItem.assignee || undefined,
           assigneeNames: taskItem.assignee ? [taskItem.assignee] : [],
         });
@@ -565,13 +565,13 @@ export class GoogleSheetsSyncService {
       } else {
         // Create new task
         console.log(
-          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'pending'}"`
+          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'waiting'}"`
         );
         await this.storage.createProjectTask({
           projectId,
           title: taskItem.title,
           description: taskItem.description || '',
-          status: taskItem.status || 'pending',
+          status: taskItem.status || 'waiting',
           assigneeName: taskItem.assignee || undefined,
           assigneeNames: taskItem.assignee ? [taskItem.assignee] : [],
         });
@@ -772,7 +772,7 @@ export class GoogleSheetsSyncService {
 
       // Extract status indicators first
       let taskText = trimmed;
-      let status = 'pending'; // default status
+      let status = 'waiting'; // default status
 
       // Look for status indicators at the end: (C), (IP), C, IP
       const statusMatch = taskText.match(/\s*\(?(C|IP)\)?$/i);
