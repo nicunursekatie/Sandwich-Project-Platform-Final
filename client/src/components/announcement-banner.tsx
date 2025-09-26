@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Calendar, Users, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ interface Announcement {
 }
 
 export default function AnnouncementBanner() {
-  const [dismissedBanners, setDismissedBanners] = useState<number[]>(() => {
+  const [dismissedBanners, setDismissedBanners] = React.useState<number[]>(() => {
     const saved = localStorage.getItem('dismissedBanners');
     return saved ? JSON.parse(saved) : [];
   });
@@ -55,7 +55,7 @@ export default function AnnouncementBanner() {
   };
 
   // Clear dismissed banners daily
-  useEffect(() => {
+  React.useEffect(() => {
     const lastClear = localStorage.getItem('lastBannerClear');
     const today = new Date().toDateString();
 

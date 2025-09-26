@@ -14,7 +14,7 @@ import {
   Mail
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
-import { useState } from 'react';
+import * as React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 
 // Helper function to properly format status text
@@ -156,7 +156,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
     }
   };
 
-  const [quickViewEvent, setQuickViewEvent] = useState<DashboardItem | null>(null);
+  const [quickViewEvent, setQuickViewEvent] = React.useState<DashboardItem | null>(null);
 
   // Loading skeleton component
   const LoadingSkeleton = () => (

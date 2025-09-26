@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import {
   HelpCircle,
   X,
@@ -64,7 +64,7 @@ export const HelpBubble: React.FC<HelpBubbleProps> = ({
   className = '',
   children,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
   const characterData = characters[character] || characters['sandy'];
 
   const positionClasses = {
@@ -217,7 +217,7 @@ export const helpContent = {
 
 // Quick Help Component for floating help button
 export const QuickHelp: React.FC<{ section: string }> = ({ section }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
 
   const getSectionHelp = () => {
     switch (section) {

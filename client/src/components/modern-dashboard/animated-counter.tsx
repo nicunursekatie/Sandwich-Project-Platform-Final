@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
 
 interface AnimatedCounterProps {
   value: number | string;
@@ -15,15 +15,15 @@ export function AnimatedCounter({
   prefix = '',
   suffix = '',
 }: AnimatedCounterProps) {
-  const [displayValue, setDisplayValue] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  const [displayValue, setDisplayValue] = React.useState(0);
+  const [isVisible, setIsVisible] = React.useState(false);
 
   const numericValue =
     typeof value === 'string'
       ? parseFloat(value.replace(/,/g, '')) || 0
       : value;
 
-  useEffect(() => {
+  React.useEffect(() => {
     setIsVisible(true);
 
     if (numericValue === 0) {
@@ -44,7 +44,7 @@ export function AnimatedCounter({
       const easeOutQuart = 1 - Math.pow(1 - progress, 4);
       const currentValue = startValue + (endValue - startValue) * easeOutQuart;
 
-      setDisplayValue(Math.floor(currentValue));
+        setDisplayValue(Math.floor(currentValue));
 
       if (progress < 1) {
         requestAnimationFrame(updateValue);

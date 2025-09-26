@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react';
+import * as React from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { 
   Bell, 
@@ -95,10 +95,10 @@ const getPriorityBadgeColor = (priority: string) => {
 };
 
 function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [currentTab, setCurrentTab] = React.useState('all');
+  const [showFilters, setShowFilters] = React.useState(false);
+  const [filters, setFilters] = React.useState({
     unreadOnly: false,
     categories: [] as string[],
     priorities: [] as string[],
@@ -406,4 +406,4 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
   );
 }
 
-export default memo(EnhancedNotifications);
+export default React.memo(EnhancedNotifications);

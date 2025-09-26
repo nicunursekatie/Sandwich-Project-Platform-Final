@@ -1,8 +1,8 @@
+import * as React from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
 import { Trophy, X, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -27,8 +27,8 @@ interface KudosToast {
 export function KudosLoginNotifier() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [hasShownNotifications, setHasShownNotifications] = useState(false);
-  const [activeToasts, setActiveToasts] = useState<KudosToast[]>([]);
+  const [hasShownNotifications, setHasShownNotifications] = React.useState(false);
+  const [activeToasts, setActiveToasts] = React.useState<KudosToast[]>([]);
 
   const { data: unnotifiedKudos = [], isLoading } = useQuery<UnnotifiedKudos[]>(
     {
@@ -61,7 +61,7 @@ export function KudosLoginNotifier() {
   });
 
   // Handle showing notifications when unnotified kudos are fetched
-  useEffect(() => {
+  React.useEffect(() => {
     if (
       !user ||
       !safeUnnotifiedKudos ||

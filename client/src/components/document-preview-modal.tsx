@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import * as React from 'react';
 import { X, Download, ExternalLink, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +23,7 @@ export function DocumentPreviewModal({
   documentName,
   documentType,
 }: DocumentPreviewModalProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const handleDownload = () => {
     const link = document.createElement('a');
