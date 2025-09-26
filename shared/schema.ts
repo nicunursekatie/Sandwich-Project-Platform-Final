@@ -1530,6 +1530,7 @@ export const eventRequests = pgTable(
 
     // Google Sheets sync tracking
     googleSheetRowId: text('google_sheet_row_id'), // Stable identifier: Google Sheets row number for duplicate detection
+    externalId: varchar('external_id').notNull().unique(), // External ID from Google Sheets for duplicate prevention
     lastSyncedAt: timestamp('last_synced_at'), // When this record was last synced with Google Sheets
     driverDetails: jsonb('driver_details'), // Additional driver assignment details
     speakerDetails: jsonb('speaker_details'), // Additional speaker assignment details

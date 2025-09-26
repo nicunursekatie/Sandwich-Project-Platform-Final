@@ -3,10 +3,12 @@ import {
   GoogleSheetsConfig,
 } from './google-sheets-service';
 import type { IStorage } from './storage';
-import { EventRequest, Organization } from '@shared/schema';
+import { EventRequest, Organization, eventRequests } from '@shared/schema';
 import { AuditLogger } from './audit-logger';
+import { db } from './db';
 
 export interface EventRequestSheetRow {
+  externalId: string;
   organizationName: string;
   contactName: string;
   email: string;
@@ -172,6 +174,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
     const submissionDate = this.parseExcelDate(row.submittedOn, 'submission date') || new Date();
 
     return {
+      externalId: row.externalId,
       organizationName: row.organizationName,
       firstName: firstName,
       lastName: lastName,
@@ -603,7 +606,12 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
-   * Sync from Google Sheets to database
+   * Sync from Google Sheets to database using external_id for duplicate prevention
+   * REQUIREMENTS:
+   * 1. Require external_id from the sheet
+   * 2. Use .onConflictDoNothing() to never update existing rows
+   * 3. Skip blank external_id rows
+   * 4. Never update existing records - only insert new records
    */
   async syncFromGoogleSheets(): Promise<{
     success: boolean;
@@ -617,195 +625,108 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       // Read from Google Sheets
       const sheetRows = await this.readEventRequestsSheet();
 
-      let updatedCount = 0;
       let createdCount = 0;
-      let skippedExistingCount = 0;
+      let skippedNoExternalId = 0;
       let skippedOldCount = 0;
+      let conflictSkippedCount = 0;
 
       console.log(`🔍 SYNC ANALYSIS: Processing ${sheetRows.length} rows from Google Sheets`);
-      console.log(`🔍 SYNC SAFETY: This sync will NEVER modify existing records - only import truly new ones`);
+      console.log(`🔍 SYNC SAFETY: Using external_id for duplicate prevention with onConflictDoNothing()`);
 
       for (const row of sheetRows) {
-        if (!row.organizationName) continue; // Skip empty rows
+        // REQUIREMENT: Skip rows without external_id (blank/missing/null)
+        if (!row.externalId || !row.externalId.trim()) {
+          skippedNoExternalId++;
+          console.log(`⏭️ SKIPPED: Row missing external_id - ${row.organizationName || 'Unknown Org'} - ${row.contactName || 'Unknown Contact'}`);
+          continue;
+        }
 
-        // Convert row to event request data first to access parsed submission date
+        if (!row.organizationName) {
+          console.log(`⏭️ SKIPPED: Row missing organization name - external_id: ${row.externalId}`);
+          continue;
+        }
+
+        // Convert row to event request data
         const eventRequestData = this.sheetRowToEventRequest(row);
 
-        // Use enhanced duplicate detection with stable identifiers
-        const existingRequest = await this.findExistingEventRequest(row, eventRequestData);
+        // Check if this is an old event that shouldn't be imported
+        const eventDate = this.parseExcelDate(row.desiredEventDate, 'desired event date');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        if (existingRequest) {
-          // CRITICAL FIX: NEVER update existing records - strict "import once, never touch again"
-          skippedExistingCount++;
-          console.log(
-            `⏭️ SAFETY SKIP: Existing event request found (ID: ${existingRequest.id}, Status: ${existingRequest.status}) - ${row.organizationName} - ${row.contactName}`
-          );
-          console.log(
-            `   🛡️ NO UPDATES PERFORMED - Preserving existing status '${existingRequest.status}' and all other data`
-          );
-          // DO NOT update anything - not even googleSheetRowId or lastSyncedAt
-          // This ensures existing statuses, assignments, etc. are never overwritten
-        } else {
-          // Check if this is an old/past event that shouldn't be imported as "new"
-          const eventDate = this.parseExcelDate(row.desiredEventDate, 'desired event date');
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-
-          if (eventDate && eventDate < today) {
-            const daysSinceEvent = Math.floor((today.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
-
-            // Skip importing events that are more than 30 days in the past
-            if (daysSinceEvent > 30) {
-              skippedOldCount++;
-              console.log(
-                `⏭️ Skipping old event (${daysSinceEvent} days ago): ${row.organizationName} - ${row.contactName} - Event date: ${eventDate.toLocaleDateString()}`
-              );
-              continue; // Skip this old event entirely
-            } else {
-              console.warn(
-                `⚠️ Importing past event (${daysSinceEvent} days ago) with 'completed' status: ${row.organizationName} - ${row.contactName}`
-              );
-              // Will be imported with 'completed' status per the sheetRowToEventRequest logic
-            }
+        if (eventDate && eventDate < today) {
+          const daysSinceEvent = Math.floor((today.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Skip importing events that are more than 30 days in the past
+          if (daysSinceEvent > 30) {
+            skippedOldCount++;
+            console.log(
+              `⏭️ SKIPPED: Old event (${daysSinceEvent} days ago) - external_id: ${row.externalId} - ${row.organizationName}`
+            );
+            continue;
+          } else {
+            console.warn(
+              `⚠️ Importing past event (${daysSinceEvent} days ago) - external_id: ${row.externalId} - ${row.organizationName}`
+            );
           }
+        }
+        // Prepare data for Drizzle insertion using external_id for conflict detection
+        console.log(`✨ PROCESSING: external_id: ${row.externalId} - ${row.organizationName} - ${row.contactName}`);
 
-          // Before creating new, check if this was recently deleted
-          const recentDeletedLogs = await AuditLogger.getAuditHistory('event_requests', null, null, 50, 0);
-          
-          // Check if there's a recent deletion (within last 24 hours) matching this organization and contact
-          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          const wasRecentlyDeleted = recentDeletedLogs.some(log => {
-            if (log.action !== 'DELETE') return false;
-            if (new Date(log.timestamp) < twentyFourHoursAgo) return false;
-            
-            // Parse the audit log data to check if it matches this event
-            let oldData;
-            try {
-              oldData = log.oldData ? JSON.parse(log.oldData) : null;
-            } catch (e) {
-              return false;
-            }
-            
-            if (!oldData) return false;
-            
-            // Check if organization name and contact name match
-            const orgMatch = oldData.organizationName?.toLowerCase().trim() === 
-                           row.organizationName?.toLowerCase().trim();
-            const nameMatch = (oldData.firstName?.toLowerCase().trim() === firstName.toLowerCase().trim() &&
-                              oldData.lastName?.toLowerCase().trim() === lastName.toLowerCase().trim()) ||
-                             (oldData.email && row.email && 
-                              oldData.email.toLowerCase().trim() === row.email.toLowerCase().trim());
-            
-            return orgMatch && nameMatch;
-          });
-          
-          if (wasRecentlyDeleted) {
-            console.log(
-              `🚫 Skipping creation - item was recently deleted: ${row.organizationName} - ${row.contactName}`
-            );
-            continue; // Skip this iteration, don't create
-          }
-          
-          // Create new
-          console.log(
-            `✨ IMPORTING NEW event request: ${eventRequestData.firstName} ${eventRequestData.lastName} (${eventRequestData.email}) from ${row.organizationName}`
-          );
-          console.log(
-            `   📊 New import details: Status='${eventRequestData.status}', Event Date=${eventRequestData.desiredEventDate?.toLocaleDateString() || 'N/A'}, Row=${row.rowIndex}`
-          );
+        // Ensure dates are valid before saving to database
+        const sanitizedData = {
+          ...eventRequestData,
+          createdBy: 'google_sheets_sync',
+          googleSheetRowId: row.rowIndex?.toString(),
+          lastSyncedAt: new Date(),
+          // Ensure all date fields are either valid Date objects or null
+          desiredEventDate:
+            eventRequestData.desiredEventDate &&
+            !isNaN(new Date(eventRequestData.desiredEventDate).getTime())
+              ? eventRequestData.desiredEventDate
+              : null,
+          createdAt:
+            eventRequestData.createdAt &&
+            !isNaN(new Date(eventRequestData.createdAt).getTime())
+              ? eventRequestData.createdAt
+              : new Date(),
+          updatedAt: new Date(),
+        };
 
-          // Ensure dates are valid before saving to database
-          const sanitizedData = {
-            ...eventRequestData,
-            createdBy: 'google_sheets_sync',
-            googleSheetRowId: row.rowIndex?.toString(), // Store the Google Sheets row ID for future duplicate detection
-            lastSyncedAt: new Date(),
-            // Ensure all date fields are either valid Date objects or null
-            desiredEventDate:
-              eventRequestData.desiredEventDate &&
-              !isNaN(new Date(eventRequestData.desiredEventDate).getTime())
-                ? eventRequestData.desiredEventDate
-                : null,
-            createdAt:
-              eventRequestData.createdAt &&
-              !isNaN(new Date(eventRequestData.createdAt).getTime())
-                ? eventRequestData.createdAt
-                : new Date(),
-            updatedAt: new Date(),
-          };
+        try {
+          // REQUIREMENT: Use onConflictDoNothing() to never update existing rows
+          // Only insert new records, never modify existing ones
+          const result = await db
+            .insert(eventRequests)
+            .values(sanitizedData as any)
+            .onConflictDoNothing({
+              target: eventRequests.externalId,
+            })
+            .returning({ id: eventRequests.id, externalId: eventRequests.externalId });
 
-          try {
-            console.log(
-              `🔍 Attempting to create event request with data:`,
-              JSON.stringify(sanitizedData, null, 2)
-            );
-            const result = await this.storage.createEventRequest(
-              sanitizedData as any
-            );
-            console.log(
-              `✅ Successfully created event request with ID: ${result.id}`
-            );
+          if (result && result.length > 0) {
+            // Record was inserted (new)
+            console.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
             createdCount++;
-          } catch (error) {
-            console.error('❌ Primary storage operation failed:', error);
-            console.error(
-              '❌ Failed data was:',
-              JSON.stringify(sanitizedData, null, 2)
-            );
-
-            try {
-              // Fallback: try with minimal required fields only
-              const fallbackData = {
-                organizationName:
-                  eventRequestData.organizationName || 'Unknown Organization',
-                firstName: eventRequestData.firstName || '',
-                lastName: eventRequestData.lastName || '',
-                email: eventRequestData.email || '',
-                phone: eventRequestData.phone || '',
-                status: eventRequestData.status || 'new',
-                createdBy: 'google_sheets_sync',
-                googleSheetRowId: row.rowIndex?.toString(), // Store row ID even in fallback
-                lastSyncedAt: new Date(),
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              };
-              console.log(
-                `🔄 Attempting fallback creation with minimal data:`,
-                JSON.stringify(fallbackData, null, 2)
-              );
-              const fallbackResult = await this.storage.createEventRequest(
-                fallbackData as any
-              );
-              console.log(
-                `✅ Fallback creation succeeded with ID: ${fallbackResult.id}`
-              );
-              createdCount++;
-            } catch (fallbackError) {
-              console.error(
-                '❌ Fallback storage operation also failed:',
-                fallbackError
-              );
-              console.error(
-                '❌ Skipping this record - unable to create event request'
-              );
-              // Do NOT increment createdCount if both attempts failed
-            }
+          } else {
+            // Record already existed (conflict, not inserted due to onConflictDoNothing)
+            console.log(`⏭️ DUPLICATE: external_id already exists: ${row.externalId} - ${row.organizationName}`);
+            conflictSkippedCount++;
           }
+        } catch (error) {
+          console.error(`❌ Failed to insert record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
+          // Continue processing other records
         }
       }
 
-      console.log(`🔍 SYNC COMPLETE: ${createdCount} new imports, ${skippedExistingCount} existing skipped, ${skippedOldCount} old events skipped`);
-      console.log(`🛡️ SAFETY CONFIRMATION: ${updatedCount} existing records modified (should be 0)`);
-      
-      if (updatedCount > 0) {
-        console.error(`❌ CRITICAL ERROR: Sync modified ${updatedCount} existing records! This should never happen!`);
-      }
+      console.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${conflictSkippedCount} duplicates skipped by onConflictDoNothing, ${skippedNoExternalId} rows without external_id skipped, ${skippedOldCount} old events skipped`);
+      console.log(`🛡️ SAFETY CONFIRMATION: Using external_id + onConflictDoNothing ensures ZERO existing records are ever modified`);
 
       return {
         success: true,
-        message: `Successfully synced from Google Sheets: ${createdCount} created, ${skippedExistingCount} existing skipped (no modifications)`,
+        message: `Successfully synced from Google Sheets using external_id: ${createdCount} created, ${conflictSkippedCount} duplicates prevented, ${skippedNoExternalId} missing external_id skipped`,
         created: createdCount,
-        updated: 0, // Force to 0 since we never update existing records
+        updated: 0, // Always 0 - onConflictDoNothing never updates existing records
       };
     } catch (error) {
       console.error('Error syncing from Google Sheets:', error);
@@ -1013,6 +934,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
 
     // Map expected fields to their column indices - Updated for new sheet structure
     const columnMapping = {
+      externalId: getColumnIndex(['external_id', 'external id', 'id', 'unique_id', 'unique id', 'record_id', 'record id']),
       submittedOn: getColumnIndex(['submitted on', 'timestamp', 'submission date', 'date submitted', 'created']),
       name: getColumnIndex(['name', 'full name', 'contact name', 'your name']), // Single name field
       firstName: getColumnIndex(['first name', 'fname', 'first']), // Legacy support
@@ -1152,6 +1074,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       }
 
       const result = {
+        externalId: getFieldValue(columnMapping.externalId),
         submittedOn: getFieldValue(columnMapping.submittedOn),
         contactName: contactName || 'Unknown Contact',
         email: getFieldValue(columnMapping.email),
@@ -1169,7 +1092,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           }
           // Don't default to 'new' - let the sheetRowToEventRequest logic handle it
           return '';
-        })()
+        })(),
         createdDate: '',
         lastUpdated: new Date().toISOString(),
         duplicateCheck: 'No',
@@ -1180,6 +1103,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       // Log the first few rows for debugging
       if (index < 3) {
         console.log(`🔍 DYNAMIC Row ${index + 2} mapping (using header detection):`);
+        console.log(`  externalId[${columnMapping.externalId}]: "${result.externalId}"`);
         if (columnMapping.name >= 0) {
           console.log(`  name[${columnMapping.name}]: "${contactName}" → firstName: "${firstName}", lastName: "${lastName}"`);
         } else {
