@@ -8,7 +8,7 @@ import {
   type projectTasks,
   type taskCompletions,
 } from '@shared/schema';
-import { hasPermission } from '@shared/auth-utils';
+import { hasPermission, isProjectOwnerOrAssignee } from '@shared/auth-utils';
 import type { z } from 'zod';
 
 // Types
@@ -176,7 +176,7 @@ export class ProjectService implements IProjectService {
       this.triggerGoogleSheetsSync();
     }
 
-    return updatedProject;
+    return updatedProject || null;
   }
 
   async deleteProject(id: number, user: User): Promise<boolean> {
@@ -200,10 +200,12 @@ export class ProjectService implements IProjectService {
     id: number,
     assigneeName?: string
   ): Promise<Project | null> {
-    return this.storage.updateProject(id, {
+    const updatedProject = await this.storage.updateProject(id, {
       status: 'in_progress',
       assigneeName: assigneeName || 'You',
     });
+
+    return updatedProject || null;
   }
 
   async archiveProject(id: number, user: User): Promise<boolean> {
@@ -374,12 +376,19 @@ export class ProjectService implements IProjectService {
     const canEditAll =
       hasPermission(user, 'PROJECTS_EDIT_ALL') ||
       hasPermission(user, 'MANAGE_ALL_PROJECTS');
-    const canEditOwn =
-      hasPermission(user, 'PROJECTS_EDIT_OWN') &&
-      project &&
-      project.createdBy === user.id;
 
-    return canEditAll || canEditOwn;
+    if (canEditAll) {
+      return true;
+    }
+
+    const hasOwnLevelPermission =
+      hasPermission(user, 'PROJECTS_EDIT_OWN') ||
+      hasPermission(user, 'PROJECTS_ADD');
+    const isOwnerOrAssignee = project
+      ? isProjectOwnerOrAssignee(user, project)
+      : false;
+
+    return hasOwnLevelPermission && isOwnerOrAssignee;
   }
 
   validateCreatePermissions(user: User): boolean {
@@ -401,9 +410,10 @@ export class ProjectService implements IProjectService {
       user.role === 'admin' ||
       user.role === 'super_admin';
 
-    const canDeleteOwn =
+    const canDeleteOwn = Boolean(
       user.permissions?.includes('PROJECTS_DELETE_OWN') &&
-      project.createdBy === user.id;
+        project.createdBy === user.id
+    );
 
     return canDeleteAll || canDeleteOwn;
   }

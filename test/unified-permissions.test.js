@@ -113,10 +113,10 @@ describe('Unified Permission System', () => {
     });
 
     test('should deny access with OWN permission for non-owned resource', () => {
-      const user = { 
-        id: '1', 
-        role: 'volunteer', 
-        permissions: [PERMISSIONS.COLLECTIONS_EDIT_OWN] 
+      const user = {
+        id: '1',
+        role: 'volunteer',
+        permissions: [PERMISSIONS.COLLECTIONS_EDIT_OWN]
       };
       const result = checkOwnershipPermission(
         user,
@@ -128,11 +128,27 @@ describe('Unified Permission System', () => {
       expect(result.reason).toBe('User does not own this resource');
     });
 
+    test('should grant access when user is among multiple owners', () => {
+      const user = {
+        id: '2',
+        role: 'volunteer',
+        permissions: [PERMISSIONS.COLLECTIONS_EDIT_OWN]
+      };
+      const result = checkOwnershipPermission(
+        user,
+        PERMISSIONS.COLLECTIONS_EDIT_OWN,
+        PERMISSIONS.COLLECTIONS_EDIT_ALL,
+        ['1', '2', '3']
+      );
+      expect(result.granted).toBe(true);
+      expect(result.reason).toBe('Own-resource permission granted');
+    });
+
     test('should require resource owner ID for OWN permission', () => {
-      const user = { 
-        id: '1', 
-        role: 'volunteer', 
-        permissions: [PERMISSIONS.COLLECTIONS_EDIT_OWN] 
+      const user = {
+        id: '1',
+        role: 'volunteer',
+        permissions: [PERMISSIONS.COLLECTIONS_EDIT_OWN]
       };
       const result = checkOwnershipPermission(
         user,
