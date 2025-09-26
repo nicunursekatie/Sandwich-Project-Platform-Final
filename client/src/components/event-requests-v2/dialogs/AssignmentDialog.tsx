@@ -105,8 +105,8 @@ function ComprehensivePersonSelector({
     const searchLower = searchTerm.toLowerCase();
     return person.displayName.toLowerCase().includes(searchLower) ||
            (person.email && person.email.toLowerCase().includes(searchLower)) ||
-           (person.phone && person.phone.toLowerCase().includes(searchLower)) ||
-           (person.hostName && person.hostName.toLowerCase().includes(searchLower));
+           ((person as any).phone && (person as any).phone.toLowerCase().includes(searchLower)) ||
+           ((person as any).hostName && (person as any).hostName.toLowerCase().includes(searchLower));
   });
 
   // Sort all people alphabetically by displayName
