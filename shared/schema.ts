@@ -2014,3 +2014,242 @@ export const insertMeetingNoteSchema = createInsertSchema(meetingNotes).omit({
 
 export type MeetingNote = typeof meetingNotes.$inferSelect;
 export type InsertMeetingNote = z.infer<typeof insertMeetingNoteSchema>;
+
+// =============================================================================
+// SMART NOTIFICATIONS SYSTEM SCHEMA
+// =============================================================================
+// This builds on the existing notifications table to provide intelligent,
+// personalized notification delivery with learning capabilities
+
+// User notification preferences for smart delivery
+export const notificationPreferences = pgTable('notification_preferences', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  category: varchar('category').notNull(), // 'projects', 'tasks', 'meetings', 'chat', 'system', etc.
+  type: varchar('type').notNull(), // Specific notification type (e.g., 'task_assignment', 'project_update')
+  
+  // Delivery channel preferences
+  emailEnabled: boolean('email_enabled').notNull().default(true),
+  smsEnabled: boolean('sms_enabled').notNull().default(false),
+  inAppEnabled: boolean('in_app_enabled').notNull().default(true),
+  pushEnabled: boolean('push_enabled').notNull().default(true),
+  
+  // Smart delivery preferences
+  priority: varchar('priority').notNull().default('medium'), // 'low', 'medium', 'high', 'urgent'
+  frequency: varchar('frequency').notNull().default('immediate'), // 'immediate', 'hourly', 'daily', 'weekly'
+  quietHoursStart: time('quiet_hours_start'), // e.g., '22:00'
+  quietHoursEnd: time('quiet_hours_end'), // e.g., '08:00'
+  timezone: varchar('timezone').default('America/New_York'),
+  
+  // Learning and personalization
+  relevanceScore: decimal('relevance_score', { precision: 5, scale: 2 }).default('50.00'), // 0-100 score
+  lastInteraction: timestamp('last_interaction'), // When user last interacted with this type
+  totalReceived: integer('total_received').notNull().default(0), // Total notifications received
+  totalOpened: integer('total_opened').notNull().default(0), // Total notifications opened/clicked
+  totalDismissed: integer('total_dismissed').notNull().default(0), // Total notifications dismissed
+  
+  // Metadata for learning algorithms
+  engagementMetadata: jsonb('engagement_metadata').default('{}'), // Patterns, timing preferences, etc.
+  
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userCategoryTypeIdx: unique().on(table.userId, table.category, table.type),
+  userCategoryIdx: index('idx_notif_prefs_user_category').on(table.userId, table.category),
+  relevanceScoreIdx: index('idx_notif_prefs_relevance').on(table.relevanceScore),
+}));
+
+// Enhanced notification history with interaction tracking
+export const notificationHistory = pgTable('notification_history', {
+  id: serial('id').primaryKey(),
+  notificationId: integer('notification_id').notNull().references(() => notifications.id, { onDelete: 'cascade' }),
+  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Delivery tracking
+  deliveryChannel: varchar('delivery_channel').notNull(), // 'email', 'sms', 'in_app', 'push'
+  deliveryStatus: varchar('delivery_status').notNull().default('pending'), // 'pending', 'sent', 'delivered', 'failed', 'bounced'
+  deliveryAttempts: integer('delivery_attempts').notNull().default(0),
+  lastDeliveryAttempt: timestamp('last_delivery_attempt'),
+  deliveredAt: timestamp('delivered_at'),
+  failureReason: text('failure_reason'),
+  
+  // Interaction tracking
+  openedAt: timestamp('opened_at'), // When notification was opened/viewed
+  clickedAt: timestamp('clicked_at'), // When user clicked action button
+  dismissedAt: timestamp('dismissed_at'), // When user dismissed/archived
+  interactionType: varchar('interaction_type'), // 'opened', 'clicked', 'dismissed', 'snoozed', 'shared'
+  timeToInteraction: integer('time_to_interaction'), // Seconds from delivery to interaction
+  
+  // Context and relevance
+  relevanceScore: decimal('relevance_score', { precision: 5, scale: 2 }), // Computed relevance at delivery time
+  contextMetadata: jsonb('context_metadata').default('{}'), // User context when delivered (active page, time, etc.)
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  notificationUserIdx: index('idx_notif_history_notif_user').on(table.notificationId, table.userId),
+  userChannelIdx: index('idx_notif_history_user_channel').on(table.userId, table.deliveryChannel),
+  deliveryStatusIdx: index('idx_notif_history_delivery_status').on(table.deliveryStatus),
+  interactionTimeIdx: index('idx_notif_history_interaction_time').on(table.openedAt, table.clickedAt),
+}));
+
+// Smart notification rules for intelligent delivery timing and batching
+export const notificationRules = pgTable('notification_rules', {
+  id: serial('id').primaryKey(),
+  name: varchar('name').notNull(),
+  description: text('description'),
+  
+  // Rule conditions
+  category: varchar('category'), // Apply to specific category
+  type: varchar('type'), // Apply to specific type
+  priority: varchar('priority'), // Apply to specific priority level
+  userRole: varchar('user_role'), // Apply to specific user role
+  
+  // Smart delivery rules
+  batchingEnabled: boolean('batching_enabled').notNull().default(false),
+  batchingWindow: integer('batching_window').default(3600), // Seconds to wait before batching
+  maxBatchSize: integer('max_batch_size').default(5),
+  
+  // Timing rules
+  respectQuietHours: boolean('respect_quiet_hours').notNull().default(true),
+  minTimeBetween: integer('min_time_between').default(300), // Minimum seconds between similar notifications
+  maxDailyLimit: integer('max_daily_limit'), // Maximum notifications per day for this rule
+  
+  // Delivery optimization
+  smartChannelSelection: boolean('smart_channel_selection').notNull().default(true),
+  fallbackChannel: varchar('fallback_channel').default('in_app'),
+  retryAttempts: integer('retry_attempts').notNull().default(3),
+  retryDelay: integer('retry_delay').notNull().default(3600), // Seconds between retries
+  
+  // A/B testing
+  testVariant: varchar('test_variant'), // For A/B testing different rules
+  
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  categoryTypeIdx: index('idx_notif_rules_category_type').on(table.category, table.type),
+  activeRulesIdx: index('idx_notif_rules_active').on(table.isActive),
+}));
+
+// User behavior patterns for machine learning and personalization
+export const userNotificationPatterns = pgTable('user_notification_patterns', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Behavioral patterns
+  mostActiveHours: jsonb('most_active_hours').default('[]'), // Array of hour numbers (0-23)
+  mostActiveDays: jsonb('most_active_days').default('[]'), // Array of day numbers (0-6, Sun-Sat)
+  averageResponseTime: integer('average_response_time'), // Average seconds to respond to notifications
+  preferredChannels: jsonb('preferred_channels').default('[]'), // Ordered array of channel preferences
+  
+  // Engagement metrics
+  overallEngagementScore: decimal('overall_engagement_score', { precision: 5, scale: 2 }).default('50.00'),
+  categoryEngagement: jsonb('category_engagement').default('{}'), // Engagement scores by category
+  recentEngagementTrend: varchar('recent_engagement_trend').default('stable'), // 'increasing', 'decreasing', 'stable'
+  
+  // Learning model data
+  lastModelUpdate: timestamp('last_model_update'),
+  modelVersion: varchar('model_version').default('1.0'),
+  learningMetadata: jsonb('learning_metadata').default('{}'), // ML model parameters and features
+  
+  // Personalization features
+  contentPreferences: jsonb('content_preferences').default('{}'), // Preferred content types, lengths, etc.
+  timingPreferences: jsonb('timing_preferences').default('{}'), // Optimal delivery times and patterns
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdx: unique().on(table.userId),
+  engagementScoreIdx: index('idx_user_patterns_engagement').on(table.overallEngagementScore),
+  modelUpdateIdx: index('idx_user_patterns_model_update').on(table.lastModelUpdate),
+}));
+
+// Notification analytics for system optimization
+export const notificationAnalytics = pgTable('notification_analytics', {
+  id: serial('id').primaryKey(),
+  
+  // Time period this analytics entry covers
+  periodType: varchar('period_type').notNull(), // 'hourly', 'daily', 'weekly', 'monthly'
+  periodStart: timestamp('period_start').notNull(),
+  periodEnd: timestamp('period_end').notNull(),
+  
+  // Aggregated metrics
+  category: varchar('category'),
+  type: varchar('type'),
+  deliveryChannel: varchar('delivery_channel'),
+  
+  // Counts
+  totalSent: integer('total_sent').notNull().default(0),
+  totalDelivered: integer('total_delivered').notNull().default(0),
+  totalOpened: integer('total_opened').notNull().default(0),
+  totalClicked: integer('total_clicked').notNull().default(0),
+  totalDismissed: integer('total_dismissed').notNull().default(0),
+  totalFailed: integer('total_failed').notNull().default(0),
+  
+  // Calculated rates
+  deliveryRate: decimal('delivery_rate', { precision: 5, scale: 2 }),
+  openRate: decimal('open_rate', { precision: 5, scale: 2 }),
+  clickRate: decimal('click_rate', { precision: 5, scale: 2 }),
+  dismissalRate: decimal('dismissal_rate', { precision: 5, scale: 2 }),
+  
+  // Performance metrics
+  averageDeliveryTime: integer('average_delivery_time'), // Average seconds from trigger to delivery
+  averageResponseTime: integer('average_response_time'), // Average seconds from delivery to interaction
+  
+  // Additional insights
+  peakHours: jsonb('peak_hours').default('[]'), // Hours with highest engagement
+  insights: jsonb('insights').default('{}'), // ML-generated insights and patterns
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  periodTypeStartIdx: index('idx_notif_analytics_period').on(table.periodType, table.periodStart),
+  categoryTypeChannelIdx: index('idx_notif_analytics_category_type_channel').on(table.category, table.type, table.deliveryChannel),
+  performanceMetricsIdx: index('idx_notif_analytics_performance').on(table.openRate, table.clickRate),
+}));
+
+// A/B testing framework for notification optimization
+export const notificationABTests = pgTable('notification_ab_tests', {
+  id: serial('id').primaryKey(),
+  name: varchar('name').notNull(),
+  description: text('description'),
+  hypothesis: text('hypothesis'), // What we're testing
+  
+  // Test configuration
+  testType: varchar('test_type').notNull(), // 'delivery_time', 'content', 'channel', 'frequency'
+  category: varchar('category'), // Limit test to specific category
+  type: varchar('type'), // Limit test to specific type
+  
+  // Variants
+  controlGroup: jsonb('control_group').notNull(), // Configuration for control group
+  testGroup: jsonb('test_group').notNull(), // Configuration for test group
+  trafficSplit: integer('traffic_split').notNull().default(50), // Percentage going to test group (0-100)
+  
+  // Test status and timeline
+  status: varchar('status').notNull().default('draft'), // 'draft', 'running', 'paused', 'completed', 'cancelled'
+  startDate: timestamp('start_date'),
+  endDate: timestamp('end_date'),
+  targetSampleSize: integer('target_sample_size').default(1000),
+  
+  // Success metrics
+  primaryMetric: varchar('primary_metric').notNull(), // 'open_rate', 'click_rate', 'engagement_score'
+  targetImprovement: decimal('target_improvement', { precision: 5, scale: 2 }).default('5.00'), // % improvement needed
+  significanceLevel: decimal('significance_level', { precision: 3, scale: 2 }).default('0.05'),
+  
+  // Results
+  controlResults: jsonb('control_results').default('{}'),
+  testResults: jsonb('test_results').default('{}'),
+  statisticalSignificance: boolean('statistical_significance'),
+  winnerVariant: varchar('winner_variant'), // 'control', 'test', 'inconclusive'
+  
+  // Metadata
+  createdBy: varchar('created_by').references(() => users.id),
+  metadata: jsonb('metadata').default('{}'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  statusIdx: index('idx_notif_ab_tests_status').on(table.status),
+  categoryTypeIdx: index('idx_notif_ab_tests_category_type').on(table.category, table.type),
+  activeTestsIdx: index('idx_notif_ab_tests_active').on(table.status, table.startDate, table.endDate),
+}));

@@ -34,7 +34,7 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
           <Button
             size="sm"
             variant="outline"
-            className="min-h-[44px] min-w-[44px] p-2 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.08)]"
+            className="min-h-[44px] min-w-[44px] p-2 text-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary)/0.08)]"
             onClick={onSave}
             data-testid="save-inline-edit"
           >
@@ -43,7 +43,7 @@ const SandwichDestinationTracker: React.FC<SandwichDestinationTrackerProps> = ({
           <Button
             size="sm"
             variant="outline"
-            className="min-h-[44px] min-w-[44px] p-2 text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent)/0.08)]"
+            className="min-h-[44px] min-w-[44px] p-2 text-[hsl(var(--color-accent))] hover:bg-[hsl(var(--color-accent)/0.08)]"
             onClick={onCancel}
             data-testid="cancel-inline-edit"
           >

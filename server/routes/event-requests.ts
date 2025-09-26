@@ -1186,6 +1186,9 @@ router.patch(
         'callCompletedAt',
         'scheduledCallDate',
         'tspContactAssignedDate',
+        'statusChangedAt',
+        'pickupDateTime',
+        'scheduledEventDate',
       ];
       
       console.log('🔍 Pre-conversion debug - checking timestamp fields:');
@@ -1248,6 +1251,14 @@ router.patch(
       }
 
       // Always update the updatedAt timestamp
+      console.log('🔍 About to call storage.updateEventRequest. Checking all Date-like fields:');
+      Object.keys(processedUpdates).forEach(key => {
+        const val = processedUpdates[key];
+        if (val && (key.toLowerCase().includes('date') || key.toLowerCase().includes('at'))) {
+          console.log(`  ${key}:`, val, typeof val, val instanceof Date ? 'IS Date' : 'NOT A DATE!');
+        }
+      });
+
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
         updatedAt: new Date(),

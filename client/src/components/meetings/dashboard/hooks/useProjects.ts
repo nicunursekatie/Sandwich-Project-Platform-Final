@@ -15,7 +15,9 @@ export interface Project {
   meetingDiscussionPoints?: string;
   meetingDecisionItems?: string;
   supportPeople?: string;
+  supportPeopleIds?: string[];
   assigneeName?: string;
+  assigneeIds?: string[];
   category?: string;
   dueDate?: string;
   lastDiscussedDate?: string;
@@ -40,7 +42,9 @@ export interface ProjectUpdateData {
   reviewInNextMeeting?: boolean;
   priority?: string;
   supportPeople?: string;
+  supportPeopleIds?: string[];
   assigneeName?: string;
+  assigneeIds?: string[];
 }
 
 // Custom hook for all project-related operations
@@ -191,11 +195,16 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
     mutationFn: async ({
       projectId,
       supportPeople,
+      supportPeopleIds,
     }: {
       projectId: number;
       supportPeople: string;
+      supportPeopleIds?: string[];
     }) => {
-      return await apiRequest('PATCH', `/api/projects/${projectId}`, { supportPeople });
+      return await apiRequest('PATCH', `/api/projects/${projectId}`, {
+        supportPeople,
+        supportPeopleIds,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
@@ -218,11 +227,16 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
     mutationFn: async ({
       projectId,
       assigneeName,
+      assigneeIds,
     }: {
       projectId: number;
       assigneeName: string;
+      assigneeIds?: string[];
     }) => {
-      return await apiRequest('PATCH', `/api/projects/${projectId}`, { assigneeName });
+      return await apiRequest('PATCH', `/api/projects/${projectId}`, {
+        assigneeName,
+        assigneeIds,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });

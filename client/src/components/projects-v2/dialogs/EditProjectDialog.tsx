@@ -41,6 +41,9 @@ export const EditProjectDialog: React.FC = () => {
         : editingProject.assigneeId !== null && editingProject.assigneeId !== undefined
           ? [editingProject.assigneeId.toString()]
           : [];
+      const derivedSupportPeopleIds = Array.isArray(editingProject.supportPeopleIds)
+        ? editingProject.supportPeopleIds.map((id) => id?.toString())
+        : [];
 
       setFormData({
         title: editingProject.title || '',
@@ -51,6 +54,7 @@ export const EditProjectDialog: React.FC = () => {
         assigneeName: editingProject.assigneeName || '',
         assigneeIds: derivedAssigneeIds,
         supportPeople: editingProject.supportPeople || '',
+        supportPeopleIds: derivedSupportPeopleIds,
         dueDate: editingProject.dueDate ? editingProject.dueDate.split('T')[0] : '',
         estimatedHours: editingProject.estimatedHours || 0,
         actualHours: editingProject.actualHours || 0,
@@ -218,15 +222,22 @@ export const EditProjectDialog: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <ProjectAssigneeSelector
-                label="Support People"
-                value={formData.supportPeople || ''}
-                onChange={(supportPeople) => {
-                  setFormData({ ...formData, supportPeople });
-                }}
-                placeholder="Select or enter support people"
-                multiple={true}
-              />
+            <ProjectAssigneeSelector
+              label="Support People"
+              value={formData.supportPeople || ''}
+              onChange={(supportPeople, userIds) => {
+                setFormData({
+                  ...formData,
+                  supportPeople,
+                  supportPeopleIds:
+                    userIds && userIds.length > 0
+                      ? userIds
+                      : [],
+                });
+              }}
+              placeholder="Select or enter support people"
+              multiple={true}
+            />
             </div>
           </div>
 

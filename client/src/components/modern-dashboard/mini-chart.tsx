@@ -7,7 +7,7 @@ interface MiniChartProps {
 
 export function MiniChart({
   data,
-  color = 'var(--tsp-primary)',
+  color = 'var(--color-brand-primary)',
   type = 'line',
   className = '',
 }: MiniChartProps) {

@@ -619,6 +619,8 @@ export default function ProjectDetailClean({
         return 'text-purple-600 bg-purple-50 border-purple-200';
       case 'waiting':
         return 'text-gray-600 bg-gray-50 border-gray-200';
+      case 'pending':
+        return 'text-gray-600 bg-gray-50 border-gray-200';
       default:
         return 'text-gray-600 bg-gray-50 border-gray-200';
     }
@@ -1425,7 +1427,7 @@ export default function ProjectDetailClean({
                       size="sm"
                       className="bg-[#236383] hover:bg-[#16425B] text-white rounded px-2 py-1"
                       onClick={async () => {
-                        await apiRequest('PATCH', `/api/tasks/${task.id}`, { status: 'available' });
+                        await apiRequest('PATCH', `/api/tasks/${task.id}`, { status: 'waiting' });
                         queryClient.invalidateQueries({ queryKey: ['/api/projects', id, 'tasks'] });
                         toast({ description: 'Task unarchived.' });
                       }}

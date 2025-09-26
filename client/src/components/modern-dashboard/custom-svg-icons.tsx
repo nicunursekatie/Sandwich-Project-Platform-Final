@@ -13,7 +13,7 @@ export function SandwichStackIcon({
         <linearGradient id="sandwichGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop
             offset="0%"
-            style={{ stopColor: 'var(--tsp-secondary)', stopOpacity: 1 }}
+            style={{ stopColor: 'var(--color-brand-secondary)', stopOpacity: 1 }}
           />
           <stop
             offset="100%"
@@ -48,7 +48,7 @@ export function GrowthTrendIcon({
         <linearGradient id="growthGrad" x1="0%" y1="100%" x2="100%" y2="0%">
           <stop
             offset="0%"
-            style={{ stopColor: 'var(--tsp-primary)', stopOpacity: 1 }}
+            style={{ stopColor: 'var(--color-brand-primary)', stopOpacity: 1 }}
           />
           <stop
             offset="100%"
@@ -70,9 +70,9 @@ export function GrowthTrendIcon({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="9" cy="11" r="2" fill="var(--tsp-secondary)" opacity="0.8" />
-      <circle cx="15" cy="5" r="2" fill="var(--tsp-secondary)" opacity="0.8" />
-      <circle cx="21" cy="3" r="2" fill="var(--tsp-secondary)" opacity="0.8" />
+      <circle cx="9" cy="11" r="2" fill="var(--color-brand-secondary)" opacity="0.8" />
+      <circle cx="15" cy="5" r="2" fill="var(--color-brand-secondary)" opacity="0.8" />
+      <circle cx="21" cy="3" r="2" fill="var(--color-brand-secondary)" opacity="0.8" />
     </svg>
   );
 }
@@ -87,15 +87,15 @@ export function CommunityIcon({
         <linearGradient id="communityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop
             offset="0%"
-            style={{ stopColor: 'var(--tsp-accent)', stopOpacity: 1 }}
+            style={{ stopColor: 'var(--color-brand-accent)', stopOpacity: 1 }}
           />
           <stop
             offset="50%"
-            style={{ stopColor: 'var(--tsp-secondary)', stopOpacity: 1 }}
+            style={{ stopColor: 'var(--color-brand-secondary)', stopOpacity: 1 }}
           />
           <stop
             offset="100%"
-            style={{ stopColor: 'var(--tsp-primary)', stopOpacity: 1 }}
+            style={{ stopColor: 'var(--color-brand-primary)', stopOpacity: 1 }}
           />
         </linearGradient>
       </defs>
@@ -132,15 +132,15 @@ export function TargetIcon({
         <radialGradient id="targetGrad" cx="50%" cy="50%" r="50%">
           <stop
             offset="0%"
-            style={{ stopColor: 'var(--tsp-secondary)', stopOpacity: 1 }}
+            style={{ stopColor: 'var(--color-brand-secondary)', stopOpacity: 1 }}
           />
           <stop
             offset="70%"
-            style={{ stopColor: 'var(--tsp-primary)', stopOpacity: 0.8 }}
+            style={{ stopColor: 'var(--color-brand-primary)', stopOpacity: 0.8 }}
           />
           <stop
             offset="100%"
-            style={{ stopColor: 'var(--tsp-accent)', stopOpacity: 0.6 }}
+            style={{ stopColor: 'var(--color-brand-accent)', stopOpacity: 0.6 }}
           />
         </radialGradient>
       </defs>
@@ -180,7 +180,7 @@ export function SparkleIcon({
         <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop
             offset="0%"
-            style={{ stopColor: 'var(--tsp-secondary)', stopOpacity: 1 }}
+            style={{ stopColor: 'var(--color-brand-secondary)', stopOpacity: 1 }}
           />
           <stop offset="50%" style={{ stopColor: '#fbbf24', stopOpacity: 1 }} />
           <stop
@@ -197,7 +197,7 @@ export function SparkleIcon({
         cx="18"
         cy="6"
         r="1.5"
-        fill="var(--tsp-secondary)"
+        fill="var(--color-brand-secondary)"
         opacity="0.8"
         className="animate-pulse"
       />
@@ -205,7 +205,7 @@ export function SparkleIcon({
         cx="6"
         cy="18"
         r="1"
-        fill="var(--tsp-secondary)"
+        fill="var(--color-brand-secondary)"
         opacity="0.6"
         className="animate-pulse"
       />
@@ -213,7 +213,7 @@ export function SparkleIcon({
         cx="20"
         cy="16"
         r="1"
-        fill="var(--tsp-secondary)"
+        fill="var(--color-brand-secondary)"
         opacity="0.7"
         className="animate-pulse"
       />

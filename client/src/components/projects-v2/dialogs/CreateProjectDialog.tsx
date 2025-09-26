@@ -169,8 +169,15 @@ export const CreateProjectDialog: React.FC = () => {
               <ProjectAssigneeSelector
                 label="Support People"
                 value={newProject.supportPeople || ''}
-                onChange={(supportPeople) => {
-                  setNewProject({ ...newProject, supportPeople });
+                onChange={(supportPeople, userIds) => {
+                  setNewProject({
+                    ...newProject,
+                    supportPeople,
+                    supportPeopleIds:
+                      userIds && userIds.length > 0
+                        ? userIds
+                        : [],
+                  });
                 }}
                 placeholder="Select or enter support people"
                 multiple={true}
