@@ -309,6 +309,129 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
 });
 
 /**
+ * Reset SMS opt-in status (clear pending confirmation)
+ */
+router.post('/users/sms-reset', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const metadata = user.metadata as any || {};
+    const smsConsent = metadata.smsConsent || {};
+
+    // Clear SMS consent data
+    const updatedMetadata = {
+      ...(user.metadata as any || {}),
+      smsConsent: {
+        enabled: false,
+        status: 'not_opted_in',
+        phoneNumber: null,
+        verificationCode: undefined,
+        verificationCodeExpiry: undefined,
+        resetAt: new Date().toISOString(),
+      },
+    };
+
+    await storage.updateUser(userId, { metadata: updatedMetadata });
+
+    console.log(`✅ SMS status reset for user ${user.email}`);
+
+    res.json({
+      success: true,
+      message: 'SMS opt-in status has been reset. You can now start the opt-in process again.',
+    });
+  } catch (error) {
+    console.error('Error resetting SMS status:', error);
+    res.status(500).json({
+      error: 'Failed to reset SMS status',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * Resend SMS verification code
+ */
+router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const metadata = user.metadata as any || {};
+    const smsConsent = metadata.smsConsent || {};
+
+    // Check if there's a pending confirmation
+    if (smsConsent.status !== 'pending_confirmation') {
+      return res.status(400).json({
+        error: 'No pending SMS confirmation to resend',
+        currentStatus: smsConsent.status || 'not_opted_in'
+      });
+    }
+
+    const phoneNumber = smsConsent.phoneNumber;
+    if (!phoneNumber) {
+      return res.status(400).json({
+        error: 'No phone number found for pending confirmation'
+      });
+    }
+
+    // Generate new verification code
+    const verificationCode = generateVerificationCode();
+
+    // Send new confirmation SMS
+    const confirmationResult = await sendConfirmationSMS(phoneNumber, verificationCode);
+
+    if (!confirmationResult.success) {
+      return res.status(500).json({
+        error: 'Failed to resend confirmation SMS',
+        message: confirmationResult.message,
+      });
+    }
+
+    // Update verification code and expiry
+    const updatedMetadata = {
+      ...(user.metadata as any || {}),
+      smsConsent: {
+        ...smsConsent,
+        verificationCode,
+        verificationCodeExpiry: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+        lastResendAt: new Date().toISOString(),
+      },
+    };
+
+    await storage.updateUser(userId, { metadata: updatedMetadata });
+
+    console.log(`✅ Verification code resent to ${phoneNumber} for user ${user.email}`);
+
+    res.json({
+      success: true,
+      message: 'New verification code sent! Please check your phone.',
+      phoneNumber: phoneNumber,
+    });
+  } catch (error) {
+    console.error('Error resending verification code:', error);
+    res.status(500).json({
+      error: 'Failed to resend verification code',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
  * Twilio webhook endpoint for incoming SMS messages
  * SECURITY: Validates Twilio request signature to prevent spoofing
  */
