@@ -21,7 +21,7 @@ export const useProjectQueries = () => {
   } = useQuery<User[]>({
     queryKey: ['/api/users'],
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    enabled: canManageUsers,
+    enabled: Boolean(currentUser?.id) && canManageUsers,
   });
 
   // Fetch users specifically for assignments (might have different permissions)
@@ -56,14 +56,24 @@ export const useProjectQueries = () => {
     userId: string | number | null | undefined
   ): ProjectUser | undefined => {
     if (userId === null || userId === undefined) return undefined;
-    return userLookup.get(userId.toString());
+
+    const id = userId.toString();
+    if (userLookup.has(id)) {
+      return userLookup.get(id);
+    }
+
+    return usersForAssignments.find(
+      (assignmentUser) => assignmentUser?.id?.toString() === id
+    );
   };
 
   // Helper function to get user display name
-  const getUserDisplayName = (userId: string | number): string => {
+  const getUserDisplayName = (
+    userId: string | number | null | undefined
+  ): string => {
     const user = getUserById(userId);
     if (!user) {
-      return userId ? userId.toString() : 'Unknown';
+      return userId ? userId.toString() : 'Unknown User';
     }
 
     if (user.displayName) {
@@ -75,7 +85,7 @@ export const useProjectQueries = () => {
 
     if (user.email) return user.email;
 
-    return `User ${user.id}`;
+    return user.id ? `User ${user.id}` : 'Unknown User';
   };
 
   // Helper function to get multiple users by IDs
@@ -91,8 +101,16 @@ export const useProjectQueries = () => {
     return assigneeString.split(',').map(s => s.trim()).filter(Boolean);
   };
 
+  const effectiveUsers =
+    usersForAssignments.length > 0
+      ? usersForAssignments
+      : canManageUsers
+        ? adminUsers
+        : [];
+
   return {
-    users: canManageUsers ? adminUsers : usersForAssignments,
+    users: effectiveUsers,
+    adminUsers,
     usersForAssignments,
     usersLoading: canManageUsers ? adminUsersLoading : assignmentsLoading,
     assignmentsLoading,
