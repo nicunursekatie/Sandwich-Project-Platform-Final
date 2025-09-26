@@ -206,9 +206,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const createEventRequestMutation = useMutation({
     mutationFn: (data: any) => {
-      // Apply the same data transformation for create as we do for update
-      const transformedData = prepareFormData(data);
-      return apiRequest('POST', '/api/event-requests', transformedData);
+      return apiRequest('POST', '/api/event-requests', data);
     },
     onSuccess: () => {
       toast({
