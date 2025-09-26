@@ -315,45 +315,6 @@ export async function sendConfirmationSMS(
         message: result.message,
       };
     }
-  } catch (error) {
-    console.error('Error sending confirmation SMS:', error);
-    // Format phone number with improved AT&T compatibility
-    let formattedPhone = phoneNumber.replace(/[^\d+]/g, '');
-    if (formattedPhone.startsWith('1') && formattedPhone.length === 11) {
-      formattedPhone = `+${formattedPhone}`;
-    } else if (formattedPhone.length === 10) {
-      formattedPhone = `+1${formattedPhone}`;
-    } else if (!formattedPhone.startsWith('+')) {
-      formattedPhone = `+${formattedPhone}`;
-    }
-
-    console.log(`📱 Phone number formatting: ${phoneNumber} -> ${formattedPhone}`);
-
-    // Simplified message to avoid carrier filtering
-    const confirmationMessage = `Sandwich Project: Your verification code is ${verificationCode}. Reply with this code or YES to confirm weekly reminders.`;
-
-    console.log('📤 Sending SMS via Twilio...');
-    console.log('Message length:', confirmationMessage.length, 'characters');
-
-    const result = await twilioClient.messages.create({
-      body: confirmationMessage,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: formattedPhone,
-      // Add status callback to track delivery
-      statusCallback: process.env.REPLIT_DOMAIN
-        ? `https://${process.env.REPLIT_DOMAIN}/api/users/sms-webhook/status`
-        : undefined,
-    });
-
-    console.log(`✅ SMS confirmation sent to ${phoneNumber} (${result.sid})`);
-    console.log('Message status:', result.status);
-    console.log('Message price:', result.price);
-
-    return {
-      success: true,
-      message: `Confirmation SMS sent successfully to ${phoneNumber}`,
-      verificationCode,
-    };
   } catch (error: any) {
     console.error('❌ Error sending confirmation SMS:', error);
     console.error('Error code:', error.code);

@@ -1645,11 +1645,16 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     duplicateCheckDate: true,
   })
   .extend({
-    // Make core required fields optional for creation
-    firstName: z.string().optional(),
-    lastName: z.string().optional(), 
-    email: z.string().email().optional().or(z.literal('').transform(() => undefined)),
-    organizationName: z.string().optional(),
+    // Make core required fields optional and nullable for creation
+    firstName: z.string().nullable().optional(),
+    lastName: z.string().nullable().optional(),
+    email: z.union([
+      z.string().email(),
+      z.literal(''),
+      z.null(),
+      z.undefined()
+    ]).transform((val) => val || undefined).optional(),
+    organizationName: z.string().nullable().optional(),
     previouslyHosted: z.string().optional(),
     status: z.string().optional(),
     // Allow desiredEventDate to be either a Date object or a string that can be converted to a Date
