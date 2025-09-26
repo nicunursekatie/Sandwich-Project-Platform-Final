@@ -44,6 +44,7 @@ import {
   formatTimeForInput,
   formatEventDate,
 } from '@/components/event-requests/utils';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
 import {
   SANDWICH_TYPES,
   statusColors,
@@ -161,8 +162,8 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
   const [tempEndTime, setTempEndTime] = React.useState(
     request.eventEndTime || ''
   );
-  const [tempPickupTime, setTempPickupTime] = React.useState(
-    request.pickupTime || ''
+  const [tempPickupDateTime, setTempPickupDateTime] = React.useState(
+    request.pickupDateTime || ''
   );
 
   const handleSave = () => {
@@ -172,8 +173,8 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
     if (tempEndTime && !request.eventEndTime) {
       startEditing('eventEndTime', tempEndTime);
     }
-    if (tempPickupTime && !request.pickupTime) {
-      startEditing('pickupTime', tempPickupTime);
+    if (tempPickupDateTime && !request.pickupDateTime) {
+      startEditing('pickupDateTime', tempPickupDateTime);
     }
     saveEdit();
   };
@@ -182,7 +183,7 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
     return (
       (tempStartTime && !request.eventStartTime) ||
       (tempEndTime && !request.eventEndTime) ||
-      (tempPickupTime && !request.pickupTime)
+      (tempPickupDateTime && !request.pickupDateTime && !request.pickupTime)
     );
   };
 
@@ -212,15 +213,16 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
           />
         </div>
       )}
-      {!request.pickupTime && (
+      {!request.pickupDateTime && !request.pickupTime && (
         <div className="space-y-2">
-          <label className="text-sm font-medium">Pickup Time</label>
-          <Input
-            type="time"
-            value={tempPickupTime}
-            onChange={(e) => setTempPickupTime(e.target.value)}
+          <label className="text-sm font-medium">Pickup Date & Time</label>
+          <DateTimePicker
+            value={tempPickupDateTime}
+            onChange={setTempPickupDateTime}
+            placeholder="Select pickup date and time"
+            defaultToEventDate={request.scheduledEventDate || request.desiredEventDate}
             className="w-full"
-            placeholder="Select pickup time"
+            data-testid="pickup-datetime-picker"
           />
         </div>
       )}
@@ -950,7 +952,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {/* Times - only show if they exist */}
               {request.eventStartTime ||
               request.eventEndTime ||
-              request.pickupTime ? (
+              request.pickupTime ||
+              request.pickupDateTime ? (
                 <div className="space-y-2">
                   {request.eventStartTime && (
                     <div className="flex items-center gap-1 group">
@@ -1002,24 +1005,40 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       )}
                     </div>
                   )}
-                  {request.pickupTime && (
+                  {(request.pickupDateTime || request.pickupTime) && (
                     <div className="flex items-center gap-1 group">
                       <span className="text-base font-medium text-gray-600">
                         Pickup:
                       </span>
                       <span className="text-base">
-                        {formatTime12Hour(request.pickupTime)}
+                        {request.pickupDateTime ? (
+                          (() => {
+                            const date = new Date(request.pickupDateTime);
+                            const dateStr = date.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            });
+                            const timeStr = formatTime12Hour(
+                              date.toTimeString().slice(0, 5)
+                            );
+                            return `${dateStr} at ${timeStr}`;
+                          })()
+                        ) : (
+                          formatTime12Hour(request.pickupTime!)
+                        )}
                       </span>
                       {canEdit && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() =>
-                            startEditing(
-                              'pickupTime',
-                              formatTimeForInput(request.pickupTime || '')
-                            )
-                          }
+                          onClick={() => {
+                            if (request.pickupDateTime) {
+                              startEditing('pickupDateTime', request.pickupDateTime);
+                            } else {
+                              startEditing('pickupTime', formatTimeForInput(request.pickupTime || ''));
+                            }
+                          }}
                           className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -1049,6 +1068,27 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </Button>
                       </div>
                     )}
+                  {/* Inline editing for pickup datetime */}
+                  {isEditingThisCard && editingField === 'pickupDateTime' && (
+                    <div className="mt-2">
+                      <DateTimePicker
+                        value={editingValue}
+                        onChange={setEditingValue}
+                        placeholder="Select pickup date and time"
+                        defaultToEventDate={request.scheduledEventDate || request.desiredEventDate}
+                        className="w-full"
+                        data-testid="inline-pickup-datetime-picker"
+                      />
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-base text-gray-500 italic">
