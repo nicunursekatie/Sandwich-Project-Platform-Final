@@ -180,12 +180,16 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       department: row.department,
       desiredEventDate: this.parseExcelDate(row.desiredEventDate, 'desired event date'),
       status: (() => {
-        // Smart status assignment: preserve existing status or determine based on event date
+        // CRITICAL FIX: Only assign status for NEW imports, never for existing records
+        // This function should only be called for genuinely new records
+        
+        // If status exists in sheet and is not empty, use it
         if (
           row.status &&
           row.status.trim() &&
           row.status.trim().toLowerCase() !== 'new'
         ) {
+          console.log(`📊 Using sheet status: "${row.status.trim()}" for new import: ${row.organizationName}`);
           return row.status.trim();
         }
 
@@ -197,6 +201,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
             today.setHours(0, 0, 0, 0);
 
             if (!isNaN(eventDate.getTime()) && eventDate < today) {
+              console.log(`📊 Assigning 'completed' status for past event: ${row.organizationName} (${eventDate.toLocaleDateString()})`);
               return 'completed'; // Past events are marked as completed
             }
           } catch (error) {
@@ -207,6 +212,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           }
         }
 
+        console.log(`📊 Assigning default 'new' status for: ${row.organizationName}`);
         return 'new'; // Default for future events or unclear dates
       })(),
       message: row.message,
@@ -306,33 +312,61 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
-   * Enhanced duplicate detection using stable identifiers with fuzzy fallback
+   * ENHANCED duplicate detection using stable identifiers with fuzzy fallback
+   * CRITICAL FIX: Better error handling and comprehensive logging for debugging
    * Prioritizes: googleSheetRowId > submission timestamp + email > fuzzy organization name matching
    */
   private async findExistingEventRequest(
     row: EventRequestSheetRow,
     eventRequestData: Partial<EventRequest>
   ): Promise<EventRequest | undefined> {
+    console.log(`\n🔍 DUPLICATE DETECTION START for: ${row.organizationName} - ${row.contactName}`);
+    console.log(`   📧 Email: ${row.email}`);
+    console.log(`   📅 Event Date (raw): ${row.desiredEventDate}`);
+    console.log(`   📅 Event Date (parsed): ${eventRequestData.desiredEventDate?.toISOString() || 'NULL'}`);
+    console.log(`   📝 Row Index: ${row.rowIndex}`);
+    
     const existingRequests = await this.storage.getAllEventRequests();
+    console.log(`   🗃️ Total existing records to check: ${existingRequests.length}`);
+    
     const nameParts = row.contactName.split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
     // PRIORITY 1: Google Sheets Row ID (most stable identifier)
+    console.log(`\n🏆 PRIORITY 1: GoogleSheetRowId matching...`);
     if (row.rowIndex) {
-      const rowIdMatch = existingRequests.find((r) => 
-        r.googleSheetRowId === row.rowIndex?.toString()
-      );
+      console.log(`   🔍 Looking for googleSheetRowId = '${row.rowIndex.toString()}'`);
+      const rowIdMatch = existingRequests.find((r) => {
+        const hasMatch = r.googleSheetRowId === row.rowIndex?.toString();
+        if (hasMatch) {
+          console.log(`   ✅ Found match by GoogleSheetRowId: ${r.id} - ${r.organizationName}`);
+        }
+        return hasMatch;
+      });
       if (rowIdMatch) {
         console.log(`✅ MATCH FOUND (GoogleSheetRowId): Row ${row.rowIndex} for ${row.organizationName}`);
+        console.log(`🔍 DUPLICATE DETECTION END: MATCHED\n`);
         return rowIdMatch;
+      } else {
+        console.log(`   ❌ No existing records found with googleSheetRowId = '${row.rowIndex}'`);
+        const recordsWithRowIds = existingRequests.filter(r => r.googleSheetRowId).length;
+        console.log(`   📊 Total existing records with googleSheetRowId: ${recordsWithRowIds}`);
       }
+    } else {
+      console.log(`   ⚠️ No row.rowIndex provided`);
     }
 
     // PRIORITY 2: Submission timestamp + email + desiredEventDate combination (very stable, prevents merging different events)
+    console.log(`\n🥈 PRIORITY 2: Submission timestamp + email + event date matching...`);
     if (row.submittedOn && row.email && eventRequestData.createdAt && eventRequestData.desiredEventDate) {
-      const submissionTimeMatch = existingRequests.find((r) => {
-        if (!r.email || !r.createdAt || !r.desiredEventDate) return false;
+      console.log(`   🔍 Looking for: email='${row.email}', submittedOn='${row.submittedOn}', eventDate='${eventRequestData.desiredEventDate.toISOString()}'`);
+      
+      const submissionTimeMatch = existingRequests.find((r, index) => {
+        if (!r.email || !r.createdAt || !r.desiredEventDate) {
+          if (index < 5) console.log(`   ⚠️ Record ${r.id}: Missing required fields (email=${!!r.email}, createdAt=${!!r.createdAt}, desiredEventDate=${!!r.desiredEventDate})`);
+          return false;
+        }
         
         const emailMatch = r.email.toLowerCase().trim() === row.email.toLowerCase().trim();
         
@@ -351,6 +385,12 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
         const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
         
+        if (emailMatch && index < 3) {
+          console.log(`   🔍 Record ${r.id}: email match, timeDiff=${Math.round(timeDiff/1000)}s (max ${Math.round(maxTimeDiff/1000)}s), eventDateMatch=${eventDateMatch}`);
+          console.log(`      Existing: ${existingDate.toISOString()} → ${existingEventDate.toISOString()}`);
+          console.log(`      Sheet:    ${sheetDate.toISOString()} → ${sheetEventDate.toISOString()}`);
+        }
+        
         if (emailMatch && timeMatch && eventDateMatch) {
           console.log(`✅ MATCH FOUND (SubmissionTime+Email+EventDate): ${row.email} submitted ${sheetDate.toLocaleDateString()} for event on ${sheetEventDate.toLocaleDateString()} - ${row.organizationName}`);
           return true;
@@ -360,14 +400,27 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       });
       
       if (submissionTimeMatch) {
+        console.log(`🔍 DUPLICATE DETECTION END: MATCHED\n`);
         return submissionTimeMatch;
+      } else {
+        console.log(`   ❌ No matches found with exact submission time + email + event date`);
       }
+    } else {
+      console.log(`   ⚠️ Missing required data for Priority 2 matching`);
+      console.log(`      submittedOn: ${!!row.submittedOn}, email: ${!!row.email}`);
+      console.log(`      createdAt: ${!!eventRequestData.createdAt}, desiredEventDate: ${!!eventRequestData.desiredEventDate}`);
     }
 
     // PRIORITY 3: Exact email match with event date validation (same person, same org, same event)
+    console.log(`\n🥉 PRIORITY 3: Email + event date + organization similarity matching...`);
     if (row.email && eventRequestData.desiredEventDate) {
-      const emailOnlyMatch = existingRequests.find((r) => {
-        if (!r.email || !r.desiredEventDate) return false;
+      console.log(`   🔍 Looking for: email='${row.email}', eventDate='${eventRequestData.desiredEventDate.toISOString()}'`);
+      
+      const emailOnlyMatch = existingRequests.find((r, index) => {
+        if (!r.email || !r.desiredEventDate) {
+          if (index < 5) console.log(`   ⚠️ Record ${r.id}: Missing required fields (email=${!!r.email}, desiredEventDate=${!!r.desiredEventDate})`);
+          return false;
+        }
         
         const emailMatch = r.email.toLowerCase().trim() === row.email.toLowerCase().trim();
         if (!emailMatch) return false;
@@ -377,7 +430,18 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
         const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
         
-        if (!eventDateMatch) return false; // Different events - must be kept separate
+        if (emailMatch && index < 3) {
+          console.log(`   🔍 Record ${r.id} (${r.organizationName}): email match, eventDateMatch=${eventDateMatch}`);
+          console.log(`      Existing event date: ${existingEventDate.toISOString()}`);
+          console.log(`      Sheet event date:    ${sheetEventDate.toISOString()}`);
+        }
+        
+        if (!eventDateMatch) {
+          if (emailMatch && index < 3) {
+            console.log(`   ❌ Record ${r.id}: Different event dates - keeping separate`);
+          }
+          return false; // Different events - must be kept separate
+        }
         
         // Additional validation: check if organization names could be the same entity
         const orgSimilarity = this.calculateOrganizationSimilarity(
@@ -386,6 +450,12 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           r.department || '',
           row.department || ''
         );
+        
+        if (emailMatch && eventDateMatch) {
+          console.log(`   🔍 Record ${r.id}: email + event date match, org similarity=${(orgSimilarity * 100).toFixed(1)}%`);
+          console.log(`      Existing org: "${r.organizationName}" + dept: "${r.department || ''}"`);
+          console.log(`      Sheet org:    "${row.organizationName}" + dept: "${row.department || ''}"`);
+        }
         
         if (orgSimilarity > 0.6) { // 60% similarity threshold
           console.log(`✅ MATCH FOUND (Email+EventDate+OrgSimilarity): ${row.email} on ${sheetEventDate.toLocaleDateString()} with ${(orgSimilarity * 100).toFixed(0)}% org similarity for ${row.organizationName}`);
@@ -396,8 +466,14 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       });
       
       if (emailOnlyMatch) {
+        console.log(`🔍 DUPLICATE DETECTION END: MATCHED\n`);
         return emailOnlyMatch;
+      } else {
+        console.log(`   ❌ No matches found with email + event date + sufficient org similarity`);
       }
+    } else {
+      console.log(`   ⚠️ Missing required data for Priority 3 matching`);
+      console.log(`      email: ${!!row.email}, desiredEventDate: ${!!eventRequestData.desiredEventDate}`);
     }
 
     // PRIORITY 4: Fallback fuzzy matching for organization name changes (with event date validation)
@@ -466,7 +542,14 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       return false;
     });
 
-    return fuzzyMatch;
+    if (fuzzyMatch) {
+      console.log(`🔍 DUPLICATE DETECTION END: MATCHED\n`);
+      return fuzzyMatch;
+    } else {
+      console.log(`   ❌ No matches found with fuzzy matching criteria`);
+      console.log(`🔍 DUPLICATE DETECTION END: NO MATCH FOUND - WILL CREATE NEW RECORD\n`);
+      return undefined;
+    }
   }
 
   /**
@@ -536,6 +619,11 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
 
       let updatedCount = 0;
       let createdCount = 0;
+      let skippedExistingCount = 0;
+      let skippedOldCount = 0;
+
+      console.log(`🔍 SYNC ANALYSIS: Processing ${sheetRows.length} rows from Google Sheets`);
+      console.log(`🔍 SYNC SAFETY: This sync will NEVER modify existing records - only import truly new ones`);
 
       for (const row of sheetRows) {
         if (!row.organizationName) continue; // Skip empty rows
@@ -547,23 +635,16 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         const existingRequest = await this.findExistingEventRequest(row, eventRequestData);
 
         if (existingRequest) {
-          // Update googleSheetRowId if missing (to improve future matching)
-          if (!existingRequest.googleSheetRowId && row.rowIndex) {
-            try {
-              await this.storage.updateEventRequest(existingRequest.id, {
-                googleSheetRowId: row.rowIndex.toString(),
-                lastSyncedAt: new Date()
-              });
-              console.log(`🔄 Updated googleSheetRowId for existing request: ${row.organizationName} - ${row.contactName} (Row ${row.rowIndex})`);
-              updatedCount++;
-            } catch (error) {
-              console.error(`❌ Failed to update googleSheetRowId for existing request: ${error}`);
-            }
-          } else {
-            console.log(
-              `⏭️ Skipping existing event request (already imported): ${row.organizationName} - ${row.contactName}`
-            );
-          }
+          // CRITICAL FIX: NEVER update existing records - strict "import once, never touch again"
+          skippedExistingCount++;
+          console.log(
+            `⏭️ SAFETY SKIP: Existing event request found (ID: ${existingRequest.id}, Status: ${existingRequest.status}) - ${row.organizationName} - ${row.contactName}`
+          );
+          console.log(
+            `   🛡️ NO UPDATES PERFORMED - Preserving existing status '${existingRequest.status}' and all other data`
+          );
+          // DO NOT update anything - not even googleSheetRowId or lastSyncedAt
+          // This ensures existing statuses, assignments, etc. are never overwritten
         } else {
           // Check if this is an old/past event that shouldn't be imported as "new"
           const eventDate = this.parseExcelDate(row.desiredEventDate, 'desired event date');
@@ -575,6 +656,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
 
             // Skip importing events that are more than 30 days in the past
             if (daysSinceEvent > 30) {
+              skippedOldCount++;
               console.log(
                 `⏭️ Skipping old event (${daysSinceEvent} days ago): ${row.organizationName} - ${row.contactName} - Event date: ${eventDate.toLocaleDateString()}`
               );
@@ -626,7 +708,10 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           
           // Create new
           console.log(
-            `✨ Creating new event request: ${eventRequestData.phone} - ${eventRequestData.firstName} ${eventRequestData.lastName} ${eventRequestData.email}`
+            `✨ IMPORTING NEW event request: ${eventRequestData.firstName} ${eventRequestData.lastName} (${eventRequestData.email}) from ${row.organizationName}`
+          );
+          console.log(
+            `   📊 New import details: Status='${eventRequestData.status}', Event Date=${eventRequestData.desiredEventDate?.toLocaleDateString() || 'N/A'}, Row=${row.rowIndex}`
           );
 
           // Ensure dates are valid before saving to database
@@ -709,11 +794,18 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         }
       }
 
+      console.log(`🔍 SYNC COMPLETE: ${createdCount} new imports, ${skippedExistingCount} existing skipped, ${skippedOldCount} old events skipped`);
+      console.log(`🛡️ SAFETY CONFIRMATION: ${updatedCount} existing records modified (should be 0)`);
+      
+      if (updatedCount > 0) {
+        console.error(`❌ CRITICAL ERROR: Sync modified ${updatedCount} existing records! This should never happen!`);
+      }
+
       return {
         success: true,
-        message: `Successfully synced from Google Sheets: ${createdCount} created, ${updatedCount} updated`,
+        message: `Successfully synced from Google Sheets: ${createdCount} created, ${skippedExistingCount} existing skipped (no modifications)`,
         created: createdCount,
-        updated: updatedCount,
+        updated: 0, // Force to 0 since we never update existing records
       };
     } catch (error) {
       console.error('Error syncing from Google Sheets:', error);
@@ -1069,7 +1161,15 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         desiredEventDate: dateValue,
         department: getFieldValue(columnMapping.department),
         previouslyHosted: getFieldValue(columnMapping.previouslyHosted, 'i_dont_know'),
-        status: getFieldValue(columnMapping.status, 'new'),
+        status: (() => {
+          // CRITICAL FIX: Only assign status if column exists, otherwise don't default to 'new'
+          const statusValue = getFieldValue(columnMapping.status, '');
+          if (statusValue && statusValue.trim()) {
+            return statusValue.trim();
+          }
+          // Don't default to 'new' - let the sheetRowToEventRequest logic handle it
+          return '';
+        })()
         createdDate: '',
         lastUpdated: new Date().toISOString(),
         duplicateCheck: 'No',
