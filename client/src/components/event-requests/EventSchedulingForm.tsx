@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,8 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import { SANDWICH_TYPES } from './constants';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
+import { getPickupDateTimeForInput } from './utils';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -66,6 +68,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventStartTime: '',
     eventEndTime: '',
     pickupTime: '',
+    pickupDateTime: '',
     eventAddress: '',
     deliveryDestination: '',
     overnightHoldingLocation: '',
@@ -142,6 +145,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         eventStartTime: eventRequest?.eventStartTime || '',
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
+        pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, eventRequest?.desiredEventDate),
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
         overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
@@ -264,6 +268,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventStartTime: formData.eventStartTime || null,
       eventEndTime: formData.eventEndTime || null,
       pickupTime: formData.pickupTime || null,
+      pickupDateTime: formData.pickupDateTime || null,
       eventAddress: formData.eventAddress || null,
       deliveryDestination: formData.deliveryDestination || null,
       overnightHoldingLocation: formData.overnightHoldingLocation || null,
@@ -486,12 +491,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="pickupTime">Pickup Time</Label>
-                <Input
-                  id="pickupTime"
-                  type="time"
-                  value={formData.pickupTime}
-                  onChange={(e) => setFormData(prev => ({ ...prev, pickupTime: e.target.value }))}
+                <Label htmlFor="pickupDateTime">Pickup Date & Time</Label>
+                <DateTimePicker
+                  value={formData.pickupDateTime}
+                  onChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    pickupDateTime: value,
+                    // Clear legacy pickupTime when datetime is set
+                    pickupTime: ''
+                  }))}
+                  eventDate={formData.eventDate}
+                  data-testid="pickup-datetime-picker"
                 />
               </div>
             </div>
