@@ -8,6 +8,81 @@ import { isValid, parseISO } from 'date-fns';
 
 const router = Router();
 
+// Helper functions for pickup time data migration (same as in event-requests.ts)
+const convertTimeToDateTime = (timeStr: string, baseDate?: Date): string | null => {
+  if (!timeStr) return null;
+  
+  try {
+    // Use base date or today if not provided
+    const date = baseDate || new Date();
+    
+    // Parse time string (supports formats like "2:30 PM", "14:30", "2:30")
+    const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+    if (!timeMatch) return null;
+    
+    let hours = parseInt(timeMatch[1]);
+    const minutes = parseInt(timeMatch[2]);
+    const ampm = timeMatch[3]?.toUpperCase();
+    
+    // Convert to 24-hour format if needed
+    if (ampm === 'PM' && hours !== 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+    
+    // Create datetime with the same date but specified time
+    const dateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
+    return dateTime.toISOString();
+  } catch (error) {
+    console.warn('Failed to convert time to datetime:', timeStr, error);
+    return null;
+  }
+};
+
+const extractTimeFromDateTime = (dateTimeStr: string): string | null => {
+  if (!dateTimeStr) return null;
+  
+  try {
+    const date = new Date(dateTimeStr);
+    if (isNaN(date.getTime())) return null;
+    
+    // Extract time in 12-hour format with AM/PM
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    
+    return timeStr;
+  } catch (error) {
+    console.warn('Failed to extract time from datetime:', dateTimeStr, error);
+    return null;
+  }
+};
+
+// Process imported event data to ensure both pickup time fields are set
+const processImportedPickupTime = (eventData: any, eventDate?: Date) => {
+  const result = { ...eventData };
+  
+  // If we have pickupTime but no pickupDateTime, convert it
+  if (result.pickupTime && !result.pickupDateTime) {
+    console.log('📅 Converting imported pickupTime to pickupDateTime');
+    const baseDate = eventDate || new Date();
+    const convertedDateTime = convertTimeToDateTime(result.pickupTime, baseDate);
+    if (convertedDateTime) {
+      result.pickupDateTime = convertedDateTime;
+    }
+  }
+  // If we have pickupDateTime but no pickupTime, extract it
+  else if (result.pickupDateTime && !result.pickupTime) {
+    console.log('📅 Extracting pickupTime from imported pickupDateTime');
+    const extractedTime = extractTimeFromDateTime(result.pickupDateTime);
+    if (extractedTime) {
+      result.pickupTime = extractedTime;
+    }
+  }
+  
+  return result;
+};
+
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,7 +137,7 @@ router.post('/import-past-events', isAuthenticated, async (req, res) => {
       }
 
       if (firstName && eventInfo.organizationName && eventInfo.email) {
-        events.push({
+        const baseEventData = {
           firstName: firstName,
           lastName: lastName || '',
           email: eventInfo.email,
@@ -77,6 +152,7 @@ router.post('/import-past-events', isAuthenticated, async (req, res) => {
           eventStartTime: eventInfo.eventStartTime || null,
           eventEndTime: eventInfo.eventEndTime || null,
           pickupTime: eventInfo.pickupTime || null,
+          pickupDateTime: eventInfo.pickupDateTime || null,
           eventAddress: eventInfo.eventAddress || null,
           estimatedSandwichCount: eventInfo.estimatedSandwichCount || null,
           toolkitSent: eventInfo.toolkitSent || false,
@@ -84,7 +160,11 @@ router.post('/import-past-events', isAuthenticated, async (req, res) => {
           additionalRequirements: eventInfo.notes || null,
           planningNotes: eventInfo.tspContact || null,
           tspContactAssigned: eventInfo.tspContact || null,
-        });
+        };
+
+        // Process pickup time fields for data migration
+        const processedEventData = processImportedPickupTime(baseEventData, parsedDate);
+        events.push(processedEventData);
       }
     }
 
@@ -550,7 +630,7 @@ router.post('/import-excel', isAuthenticated, async (req, res) => {
 
       // Only add if we have required fields
       if (firstName && organization && email) {
-        events.push({
+        const baseEventData = {
           firstName: firstName,
           lastName: lastName || '',
           email: email,
@@ -573,7 +653,11 @@ router.post('/import-excel', isAuthenticated, async (req, res) => {
           additionalRequirements: allDetails ? allDetails.toString() : null,
           planningNotes: notes ? notes.toString() : null,
           tspContactAssigned: tspContact ? tspContact.toString() : null,
-        });
+        };
+
+        // Process pickup time fields for data migration
+        const processedEventData = processImportedPickupTime(baseEventData, parsedDate);
+        events.push(processedEventData);
 
         console.log(
           `✅ Prepared event: ${firstName} ${lastName} from ${organization}`

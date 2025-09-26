@@ -17,6 +17,114 @@ import { eq, desc, and, sql, gte } from 'drizzle-orm';
 
 const router = Router();
 
+// Helper functions for pickup time data migration
+const convertTimeToDateTime = (timeStr: string, baseDate?: Date): string | null => {
+  if (!timeStr) return null;
+  
+  try {
+    // Use base date or today if not provided
+    const date = baseDate || new Date();
+    
+    // Parse time string (supports formats like "2:30 PM", "14:30", "2:30")
+    const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+    if (!timeMatch) return null;
+    
+    let hours = parseInt(timeMatch[1]);
+    const minutes = parseInt(timeMatch[2]);
+    const ampm = timeMatch[3]?.toUpperCase();
+    
+    // Convert to 24-hour format if needed
+    if (ampm === 'PM' && hours !== 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+    
+    // Create datetime with the same date but specified time
+    const dateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
+    return dateTime.toISOString();
+  } catch (error) {
+    console.warn('Failed to convert time to datetime:', timeStr, error);
+    return null;
+  }
+};
+
+const extractTimeFromDateTime = (dateTimeStr: string): string | null => {
+  if (!dateTimeStr) return null;
+  
+  try {
+    const date = new Date(dateTimeStr);
+    if (isNaN(date.getTime())) return null;
+    
+    // Extract time in 12-hour format with AM/PM
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    
+    return timeStr;
+  } catch (error) {
+    console.warn('Failed to extract time from datetime:', dateTimeStr, error);
+    return null;
+  }
+};
+
+// Data migration logic for pickup time fields
+const processPickupTimeFields = (updates: any, existingData?: any) => {
+  const result = { ...updates };
+  
+  // Get existing values for reference
+  const existingPickupTime = existingData?.pickupTime;
+  const existingPickupDateTime = existingData?.pickupDateTime;
+  const existingScheduledDate = existingData?.scheduledEventDate || existingData?.desiredEventDate;
+  
+  // Handle the case where both fields are provided in the update
+  if (updates.pickupTime && updates.pickupDateTime) {
+    console.log('📅 Both pickup fields provided - prioritizing pickupDateTime');
+    // Prioritize pickupDateTime, but ensure pickupTime is consistent
+    const extractedTime = extractTimeFromDateTime(updates.pickupDateTime);
+    if (extractedTime) {
+      result.pickupTime = extractedTime;
+    }
+  }
+  // Handle the case where only pickupDateTime is provided
+  else if (updates.pickupDateTime && !updates.pickupTime) {
+    console.log('📅 Only pickupDateTime provided - extracting time for legacy field');
+    const extractedTime = extractTimeFromDateTime(updates.pickupDateTime);
+    if (extractedTime) {
+      result.pickupTime = extractedTime;
+    }
+  }
+  // Handle the case where only pickupTime is provided
+  else if (updates.pickupTime && !updates.pickupDateTime) {
+    console.log('📅 Only pickupTime provided - converting to datetime format');
+    // Try to convert using scheduled date or today as base
+    const baseDate = existingScheduledDate ? new Date(existingScheduledDate) : new Date();
+    const convertedDateTime = convertTimeToDateTime(updates.pickupTime, baseDate);
+    if (convertedDateTime) {
+      result.pickupDateTime = convertedDateTime;
+    }
+  }
+  // Handle existing data scenarios during reads/updates
+  else if (!updates.pickupTime && !updates.pickupDateTime && existingData) {
+    // Fill in missing fields from existing data
+    if (existingPickupTime && !existingPickupDateTime) {
+      console.log('📅 Migrating existing pickupTime to pickupDateTime');
+      const baseDate = existingScheduledDate ? new Date(existingScheduledDate) : new Date();
+      const convertedDateTime = convertTimeToDateTime(existingPickupTime, baseDate);
+      if (convertedDateTime) {
+        result.pickupDateTime = convertedDateTime;
+      }
+    } else if (existingPickupDateTime && !existingPickupTime) {
+      console.log('📅 Migrating existing pickupDateTime to pickupTime');
+      const extractedTime = extractTimeFromDateTime(existingPickupDateTime);
+      if (extractedTime) {
+        result.pickupTime = extractedTime;
+      }
+    }
+  }
+  
+  return result;
+};
+
 // Get available drivers for event assignments
 router.get('/drivers/available', isAuthenticated, async (req, res) => {
   try {
@@ -948,9 +1056,13 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
+      // Process pickup time fields for data migration
+      console.log('📅 Processing pickup time fields for event-details update');
+      const processedUpdates = processPickupTimeFields(updates, originalEvent);
+
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
-        ...updates,
+        ...processedUpdates,
         updatedAt: new Date(),
       });
 
@@ -1053,8 +1165,12 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
+      // Process pickup time fields for data migration
+      console.log('📅 Processing pickup time fields for PATCH update');
+      const pickupProcessedUpdates = processPickupTimeFields(updates, originalEvent);
+
       // Process timestamp fields to ensure they're proper Date objects
-      const processedUpdates = { ...updates };
+      const processedUpdates = { ...pickupProcessedUpdates };
 
       // Convert timestamp fields that might come as strings to Date objects
       const timestampFields = [
@@ -1193,8 +1309,12 @@ router.put(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
+      // Process pickup time fields for data migration
+      console.log('📅 Processing pickup time fields for PUT update');
+      const pickupProcessedUpdates = processPickupTimeFields(updates, originalEvent);
+
       // Process ALL date/timestamp fields to ensure they're proper Date objects
-      const processedUpdates = { ...updates };
+      const processedUpdates = { ...pickupProcessedUpdates };
 
       // Clean up phone field if it contains invalid data
       if (processedUpdates.phone) {
