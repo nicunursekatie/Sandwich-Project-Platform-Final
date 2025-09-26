@@ -67,7 +67,6 @@ import { queryClient } from '@/lib/queryClient';
 import SimpleNav from '@/components/simple-nav';
 import { NAV_ITEMS } from '@/nav.config';
 import AnnouncementBanner from '@/components/announcement-banner';
-import SMSOptInPrompt from '@/components/sms-opt-in-prompt';
 import MessageNotifications from '@/components/message-notifications';
 import EnhancedNotifications from '@/components/enhanced-notifications';
 import WorkLogPage from '@/pages/work-log';
@@ -467,11 +466,6 @@ export default function Dashboard({
       <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
         {/* Announcement Banner */}
         <AnnouncementBanner />
-        
-        {/* SMS Opt-in Prompt */}
-        <div className="px-2 sm:px-4 md:px-6">
-          <SMSOptInPrompt />
-        </div>
         
         {/* Top Header */}
         <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-hidden">
