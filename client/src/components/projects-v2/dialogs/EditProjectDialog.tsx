@@ -214,6 +214,8 @@ export const EditProjectDialog: React.FC = () => {
                     assigneeIds:
                       userIds && userIds.length > 0
                         ? userIds
+                            .map((id) => id?.toString())
+                            .filter((id): id is string => Boolean(id))
                         : [],
                   });
                 }}
@@ -232,6 +234,8 @@ export const EditProjectDialog: React.FC = () => {
                   supportPeopleIds:
                     userIds && userIds.length > 0
                       ? userIds
+                          .map((id) => id?.toString())
+                          .filter((id): id is string => Boolean(id))
                       : [],
                 });
               }}
