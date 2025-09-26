@@ -39,6 +39,15 @@ interface Project extends ProjectBase {
   attachments?: string | null;
 }
 
+const UNASSIGNED_STATUSES: Array<ProjectBase['status']> = ['waiting', 'tabled'];
+
+const isUnassignedStatus = (
+  status?: ProjectBase['status'] | string | null
+): boolean => {
+  if (!status) return false;
+  return UNASSIGNED_STATUSES.includes(status as ProjectBase['status']);
+};
+
 export default function ProjectList() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -52,7 +61,7 @@ export default function ProjectList() {
   const [newProject, setNewProject] = useState({
     title: '',
     description: '',
-    status: 'available',
+    status: 'tabled',
     priority: 'medium',
     category: 'general',
     assigneeId: null,
@@ -153,7 +162,7 @@ export default function ProjectList() {
       setNewProject({
         title: '',
         description: '',
-        status: 'available',
+        status: 'tabled',
         priority: 'medium',
         category: 'general',
         assigneeId: null,
@@ -257,17 +266,11 @@ export default function ProjectList() {
 
     // Auto-update status based on assignee
     const updatedProject = { ...editingProject };
-    if (
-      updatedProject.assigneeName &&
-      updatedProject.assigneeName.trim() &&
-      updatedProject.status === 'available'
-    ) {
+    const trimmedAssigneeName = updatedProject.assigneeName?.trim() || '';
+    if (trimmedAssigneeName && isUnassignedStatus(updatedProject.status)) {
       updatedProject.status = 'in_progress';
-    } else if (
-      !updatedProject.assigneeName &&
-      updatedProject.status === 'in_progress'
-    ) {
-      updatedProject.status = 'available';
+    } else if (!trimmedAssigneeName && updatedProject.status === 'in_progress') {
+      updatedProject.status = updatedProject.reviewInNextMeeting ? 'tabled' : 'waiting';
     }
 
     updateProjectMutation.mutate(updatedProject);
@@ -318,7 +321,8 @@ export default function ProjectList() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'available':
+      case 'waiting':
+      case 'tabled':
         return 'bg-green-500';
       case 'in_progress':
         return 'bg-amber-500';
@@ -333,7 +337,8 @@ export default function ProjectList() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'available':
+      case 'waiting':
+      case 'tabled':
         return 'px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full';
       case 'in_progress':
         return 'px-2 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full';
@@ -348,8 +353,10 @@ export default function ProjectList() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'available':
-        return 'Available';
+      case 'waiting':
+        return 'Waiting';
+      case 'tabled':
+        return 'Tabled';
       case 'in_progress':
         return 'In Progress';
       case 'planning':
@@ -379,28 +386,28 @@ export default function ProjectList() {
     );
   }
 
-  const availableProjects = projects.filter((p) => p.status === 'available');
-  const otherProjects = projects.filter((p) => p.status !== 'available');
+  const unassignedProjects = projects.filter((p) => isUnassignedStatus(p.status));
+  const otherProjects = projects.filter((p) => !isUnassignedStatus(p.status));
 
   return (
     <div className="space-y-6">
-      {/* Available Projects Section */}
-      {availableProjects.length > 0 && (
+      {/* Unassigned Projects Section */}
+      {unassignedProjects.length > 0 && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-200 shadow-sm">
           <div className="px-6 py-4 border-b border-green-200 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-green-900 flex items-center">
               <ListTodo className="text-green-600 mr-2 w-5 h-5" />
-              Available Projects - Ready to Claim!
+              Tabled & Waiting Projects - Ready to Claim!
             </h2>
             <div className="flex items-center gap-3">
               <span className="text-sm text-green-700 font-medium bg-green-100 px-2 py-1 rounded-full">
-                {availableProjects.length} available
+                {unassignedProjects.length} unassigned
               </span>
             </div>
           </div>
           <div className="p-6">
             <div className="grid gap-4">
-              {availableProjects.map((project) => (
+              {unassignedProjects.map((project) => (
                 <div
                   key={project.id}
                   className="bg-white p-4 rounded-lg border border-green-200 shadow-sm hover:shadow-md transition-shadow"
@@ -415,7 +422,7 @@ export default function ProjectList() {
                           {project.title}
                         </h3>
                         <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                          Available
+                          {getStatusText(project.status)}
                         </span>
                       </div>
                       {project.description && (
@@ -649,8 +656,8 @@ export default function ProjectList() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="available">Available</SelectItem>
-                        <SelectItem value="planning">Planning</SelectItem>
+                        <SelectItem value="tabled">Tabled</SelectItem>
+                        <SelectItem value="waiting">Waiting</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
                         <SelectItem value="completed">Completed</SelectItem>
                       </SelectContent>
@@ -943,7 +950,7 @@ export default function ProjectList() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    {project.status === 'available' ? (
+                    {isUnassignedStatus(project.status) ? (
                       claimingProjectId === project.id ? (
                         <div className="text-sm text-slate-500">
                           Claiming...
@@ -1097,8 +1104,8 @@ export default function ProjectList() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="available">Available</SelectItem>
-                            <SelectItem value="planning">Planning</SelectItem>
+                            <SelectItem value="tabled">Tabled</SelectItem>
+                            <SelectItem value="waiting">Waiting</SelectItem>
                             <SelectItem value="in_progress">
                               In Progress
                             </SelectItem>
@@ -1341,7 +1348,7 @@ export default function ProjectList() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    {project.status === 'available' ? (
+                    {isUnassignedStatus(project.status) ? (
                       claimingProjectId === project.id ? (
                         <div className="text-sm text-slate-500">
                           Claiming...

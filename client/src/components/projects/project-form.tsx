@@ -61,7 +61,7 @@ export function ProjectForm({
   const [formData, setFormData] = useState<ProjectFormData>({
     title: '',
     description: '',
-    status: 'available',
+    status: 'tabled',
     priority: 'medium',
     category: 'general',
     assigneeId: null,
@@ -136,10 +136,10 @@ export function ProjectForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="tabled">Tabled</SelectItem>
+                    <SelectItem value="waiting">Waiting</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="on-hold">On Hold</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

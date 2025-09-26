@@ -144,6 +144,8 @@ import {
 } from 'drizzle-orm';
 import type { IStorage } from './storage';
 
+const UNASSIGNED_PROJECT_STATUSES: Array<Project['status']> = ['waiting', 'tabled'];
+
 export class DatabaseStorage implements IStorage {
   // Users (required for authentication)
   async getUser(id: string): Promise<User | undefined> {
@@ -296,21 +298,33 @@ export class DatabaseStorage implements IStorage {
 
     // Auto-update status based on assignee changes
     const updateData = { ...updates, updatedAt: new Date() };
+    const statusWasProvided = Object.prototype.hasOwnProperty.call(updates, 'status');
+    const assigneeWasProvided = Object.prototype.hasOwnProperty.call(
+      updates,
+      'assigneeName'
+    );
+    const normalizedAssigneeName =
+      typeof updateData.assigneeName === 'string'
+        ? updateData.assigneeName.trim()
+        : updateData.assigneeName
+        ? String(updateData.assigneeName).trim()
+        : '';
+    const isAssigning = assigneeWasProvided && normalizedAssigneeName.length > 0;
+    const isUnassigning = assigneeWasProvided && normalizedAssigneeName.length === 0;
 
-    // If assigneeName is being set and project is currently available, change to in_progress
+    // If an assignee is set and the project is currently in an unassigned state, move it to in_progress
     if (
-      updateData.assigneeName &&
-      updateData.assigneeName.trim() &&
-      currentProject.status === 'available'
+      isAssigning &&
+      UNASSIGNED_PROJECT_STATUSES.includes(
+        currentProject.status as Project['status']
+      ) &&
+      !statusWasProvided
     ) {
       updateData.status = 'in_progress';
     }
-    // If assigneeName is being removed and project is currently in_progress, change to available
-    else if (
-      updateData.assigneeName === '' &&
-      currentProject.status === 'in_progress'
-    ) {
-      updateData.status = 'available';
+    // If the assignee is cleared and the project was in progress, move it back to an unassigned state
+    else if (isUnassigning && currentProject.status === 'in_progress' && !statusWasProvided) {
+      updateData.status = currentProject.reviewInNextMeeting ? 'tabled' : 'waiting';
     }
 
     const [project] = await db
