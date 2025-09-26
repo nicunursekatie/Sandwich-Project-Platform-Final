@@ -566,45 +566,78 @@ export function canDeleteCollection(user: any, collection: any): boolean {
 }
 
 // Function to check if user can edit a specific project
+export function isProjectOwnerOrAssignee(
+  user: any,
+  project: any
+): boolean {
+  if (!user || !project || !user.id) return false;
+
+  const userId = user.id;
+
+  const creatorIds = [project?.createdBy, project?.created_by];
+  if (creatorIds.some((id) => id && id === userId)) {
+    return true;
+  }
+
+  const multiAssigneeIds = Array.isArray(project?.assigneeIds)
+    ? project.assigneeIds
+    : Array.isArray(project?.assignee_ids)
+      ? project.assignee_ids
+      : [];
+  if (multiAssigneeIds.includes(userId)) {
+    return true;
+  }
+
+  const legacyAssigneeId = project?.assigneeId ?? project?.assignee_id;
+  if (legacyAssigneeId && legacyAssigneeId === userId) {
+    return true;
+  }
+
+  return false;
+}
+
 export function canEditProject(user: any, project: any): boolean {
-  if (!user || !user.permissions) return false;
+  if (!user) return false;
+
+  const userPermissions = Array.isArray(user.permissions)
+    ? user.permissions
+    : [];
 
   // Super admins and users with EDIT_ALL_PROJECTS or MANAGE_ALL_PROJECTS can edit all projects
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.PROJECTS_EDIT_ALL) ||
-    user.permissions.includes('MANAGE_ALL_PROJECTS')
-  )
+    userPermissions.includes(PERMISSIONS.PROJECTS_EDIT_ALL) ||
+    userPermissions.includes('MANAGE_ALL_PROJECTS')
+  ) {
     return true;
+  }
 
-  // Users with CREATE_PROJECTS can edit projects they created
+  const hasOwnLevelPermission =
+    userPermissions.includes(PERMISSIONS.PROJECTS_EDIT_OWN) ||
+    userPermissions.includes(PERMISSIONS.PROJECTS_ADD);
+
+  if (!hasOwnLevelPermission) {
+    return false;
+  }
+
+  if (isProjectOwnerOrAssignee(user, project)) {
+    return true;
+  }
+
+  // Backward compatibility: allow assignee name matches for users with create permission
   if (
-    user.permissions.includes(PERMISSIONS.PROJECTS_ADD) &&
-    (project?.createdBy === user.id || project?.created_by === user.id)
-  )
-    return true;
-
-  // Users with CREATE_PROJECTS can edit projects they're assigned to
-  if (user.permissions.includes(PERMISSIONS.PROJECTS_ADD)) {
-    // Check multi-assignee IDs
-    if (project?.assigneeIds && Array.isArray(project.assigneeIds)) {
-      if (project.assigneeIds.includes(user.id)) return true;
-    }
-
-    // Check legacy single assignee ID
-    if (project?.assigneeId === user.id) return true;
-
-    // Check assigneeName matches user's display name or email
-    if (project?.assigneeName) {
-      const userDisplayName =
-        user.firstName && user.lastName
-          ? `${user.firstName} ${user.lastName}`
-          : user.email;
-      if (
-        project.assigneeName === userDisplayName ||
-        project.assigneeName === user.email
-      )
-        return true;
+    userPermissions.includes(PERMISSIONS.PROJECTS_ADD) &&
+    project?.assigneeName
+  ) {
+    const userDisplayName =
+      user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user.email;
+    if (
+      project.assigneeName === userDisplayName ||
+      project.assigneeName === user.email
+    ) {
+      return true;
     }
   }
 

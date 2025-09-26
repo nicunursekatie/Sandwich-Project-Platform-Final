@@ -46,6 +46,8 @@ interface CompletedCardProps {
   onFollowUp1Month: () => void;
   onViewCollectionLog?: () => void;
   onReschedule: () => void;
+  onAssignTspContact: () => void;
+  onEditTspContact: () => void;
   resolveUserName: (id: string) => string;
   canDelete?: boolean;
 }
@@ -482,6 +484,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   onFollowUp1Month,
   onViewCollectionLog,
   onReschedule,
+  onAssignTspContact,
+  onEditTspContact,
   resolveUserName,
   canDelete = true,
 }) => {
@@ -621,6 +625,19 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             <Mail className="w-4 h-4 mr-1" />
             Contact
           </Button>
+
+          {/* TSP Contact Assignment - only show if not already assigned */}
+          {!(request.tspContact || request.customTspContact) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAssignTspContact}
+              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+            >
+              <UserPlus className="w-4 h-4 mr-1" />
+              Assign TSP Contact
+            </Button>
+          )}
 
           <div className="flex-1" />
 

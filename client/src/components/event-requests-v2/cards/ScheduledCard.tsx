@@ -173,6 +173,8 @@ interface ScheduledCardProps {
   onStatusChange: (status: string) => void;
   onFollowUp: () => void;
   onReschedule: () => void;
+  onAssignTspContact: () => void;
+  onEditTspContact: () => void;
 
   // Inline editing actions
   startEditing: (field: string, value: string) => void;
@@ -227,6 +229,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   onStatusChange,
   onFollowUp,
   onReschedule,
+  onAssignTspContact,
+  onEditTspContact,
   startEditing,
   saveEdit,
   cancelEdit,
@@ -1573,6 +1577,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <Button size="sm" onClick={onFollowUp}>
               Follow Up
             </Button>
+
+            {/* TSP Contact Assignment - only show if not already assigned */}
+            {!(request.tspContact || request.customTspContact) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onAssignTspContact}
+                className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+              >
+                <UserPlus className="w-4 h-4 mr-1" />
+                Assign TSP Contact
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

@@ -8,58 +8,58 @@
 
   [role="tab"] {
     @apply bg-white border-0 shadow-none;
-    color: var(--tsp-teal);
+    color: var(--color-brand-teal);
   }
 
   [role="tab"][data-state="active"] {
     @apply text-white border-0 shadow-none;
-    background-color: var(--tsp-teal);
+    background-color: var(--color-brand-teal);
   }
 
   [role="tab"]:hover {
-    background-color: var(--tsp-teal-light);
+    background-color: var(--color-brand-teal-light);
   }
 
   [role="tab"][data-state="active"]:hover {
-    background-color: var(--tsp-teal-hover);
+    background-color: var(--color-brand-teal-hover);
   }
 
   /* Professional Button Styling */
   .btn-primary {
-    background-color: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
+    background-color: hsl(var(--color-primary));
+    color: hsl(var(--color-primary-foreground));
     border-radius: 6px;
     font-weight: 500;
     transition: all 0.2s ease;
   }
 
   .btn-primary:hover {
-    background-color: hsl(var(--primary-hover));
+    background-color: hsl(var(--color-primary-hover));
   }
 
   .btn-secondary {
-    background-color: hsl(var(--secondary));
-    color: hsl(var(--secondary-foreground));
+    background-color: hsl(var(--color-secondary));
+    color: hsl(var(--color-secondary-foreground));
     border-radius: 6px;
     font-weight: 500;
     transition: all 0.2s ease;
   }
 
   .btn-secondary:hover {
-    background-color: hsl(var(--secondary) / 0.9);
+    background-color: hsl(var(--color-secondary) / 0.9);
   }
 
   .btn-outline {
     background-color: transparent;
-    color: hsl(var(--primary));
-    border: 2px solid hsl(var(--primary));
+    color: hsl(var(--color-primary));
+    border: 2px solid hsl(var(--color-primary));
     border-radius: 6px;
     font-weight: 500;
     transition: all 0.2s ease;
   }
 
   .btn-outline:hover {
-    background-color: hsl(var(--primary) / 0.1);
+    background-color: hsl(var(--color-primary) / 0.1);
   }
 
   /* Professional Badge Styling */
@@ -72,21 +72,21 @@
   }
 
   .status-completed {
-    background-color: hsl(var(--accent) / 0.1);
-    color: hsl(var(--accent));
-    border-color: hsl(var(--accent) / 0.3);
+    background-color: hsl(var(--color-accent) / 0.1);
+    color: hsl(var(--color-accent));
+    border-color: hsl(var(--color-accent) / 0.3);
   }
 
   .status-progress {
-    background-color: hsl(var(--secondary) / 0.1);
-    color: hsl(var(--secondary-foreground));
-    border-color: hsl(var(--secondary) / 0.3);
+    background-color: hsl(var(--color-secondary) / 0.1);
+    color: hsl(var(--color-secondary-foreground));
+    border-color: hsl(var(--color-secondary) / 0.3);
   }
 
   .status-pending {
-    background-color: hsl(var(--muted));
-    color: hsl(var(--muted-foreground));
-    border-color: hsl(var(--border));
+    background-color: hsl(var(--color-muted));
+    color: hsl(var(--color-muted-foreground));
+    border-color: hsl(var(--color-border));
   }
 
   /* Mobile header fix */
@@ -110,36 +110,36 @@
   /* TSP Brand Button Styles */
   .btn-claim {
     @apply px-3 py-1 text-sm font-medium rounded border transition-colors;
-    color: var(--tsp-teal);
-    border-color: var(--tsp-teal);
+    color: var(--color-brand-teal);
+    border-color: var(--color-brand-teal);
   }
   .btn-claim:hover {
-    color: var(--tsp-teal-hover);
-    background-color: var(--tsp-teal-light);
+    color: var(--color-brand-teal-hover);
+    background-color: var(--color-brand-teal-light);
   }
 
   .btn-view-all {
     @apply text-sm flex items-center w-full justify-center py-2 rounded-md transition-colors border;
-    color: var(--tsp-teal);
-    border-color: var(--tsp-teal);
+    color: var(--color-brand-teal);
+    border-color: var(--color-brand-teal);
   }
   .btn-view-all:hover {
-    color: var(--tsp-teal-hover);
-    background-color: var(--tsp-teal-light);
+    color: var(--color-brand-teal-hover);
+    background-color: var(--color-brand-teal-light);
   }
 
   .btn-tsp-primary {
-    background-color: var(--tsp-teal);
+    background-color: var(--color-brand-teal);
     color: white;
   }
   .btn-tsp-primary:hover {
-    background-color: var(--tsp-teal-hover);
+    background-color: var(--color-brand-teal-hover);
   }
 
   .btn-outline-tsp:hover {
-    background-color: var(--tsp-teal-light);
-    border-color: var(--tsp-teal);
-    color: var(--tsp-teal);
+    background-color: var(--color-brand-teal-light);
+    border-color: var(--color-brand-teal);
+    color: var(--color-brand-teal);
   }
 
   /* Status indicator styles */
@@ -153,7 +153,7 @@
 
   .status-planning {
     @apply w-3 h-3 rounded-full;
-    background-color: var(--tsp-teal);
+    background-color: var(--color-brand-teal);
   }
 
   .status-completed {
@@ -171,13 +171,13 @@
 
   .badge-planning {
     @apply px-2 py-1 text-xs font-medium rounded-full;
-    background-color: var(--tsp-teal-light);
-    color: var(--tsp-teal);
+    background-color: var(--color-brand-teal-light);
+    color: var(--color-brand-teal);
   }
 
   .badge-completed {
     @apply px-2 py-1 text-xs font-medium rounded-full;
-    background-color: var(--tsp-secondary);
+    background-color: var(--color-brand-secondary);
     color: #8B4513;
   }
 
@@ -354,7 +354,7 @@
 
     /* Tab optimizations for mobile */
     [data-state="active"] {
-      background-color: var(--tsp-teal);
+      background-color: var(--color-brand-teal);
       color: white;
     }
 
@@ -393,27 +393,27 @@
 
     /* Make edit buttons more prominent on mobile */
     .edit-project-btn {
-      background-color: var(--tsp-teal);
+      background-color: var(--color-brand-teal);
       color: white;
-      border: 1px solid var(--tsp-teal);
+      border: 1px solid var(--color-brand-teal);
       font-weight: 600;
       padding: 0.5rem 1rem;
     }
 
     .edit-project-btn:hover {
-      background-color: var(--tsp-teal-dark);
+      background-color: var(--color-brand-teal-dark);
     }
 
     /* Chat hub mobile optimizations */
     .chat-mobile-selector {
       width: 100%;
       padding: 0.75rem;
-      border: 2px solid var(--tsp-teal);
+      border: 2px solid var(--color-brand-teal);
       border-radius: 0.5rem;
       background: white;
       font-size: 0.875rem;
       font-weight: 500;
-      color: var(--tsp-teal);
+      color: var(--color-brand-teal);
       appearance: none;
       background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
       background-position: right 0.5rem center;
@@ -423,7 +423,7 @@
     }
 
     .chat-mobile-selector:focus {
-      outline: 2px solid var(--tsp-teal);
+      outline: 2px solid var(--color-brand-teal);
       outline-offset: 2px;
     }
   }

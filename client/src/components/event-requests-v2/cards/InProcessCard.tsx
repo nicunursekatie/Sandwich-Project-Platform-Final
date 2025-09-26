@@ -18,6 +18,7 @@ import {
   Save,
   X,
   User,
+  UserPlus,
   History,
   ChevronDown,
   ChevronUp,
@@ -49,6 +50,8 @@ interface InProcessCardProps {
   onContact: () => void;
   onScheduleCall: () => void;
   onResendToolkit?: () => void;
+  onAssignTspContact: () => void;
+  onEditTspContact: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -343,6 +346,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onContact,
   onScheduleCall,
   onResendToolkit,
+  onAssignTspContact,
+  onEditTspContact,
   canEdit = true,
   canDelete = true,
 }) => {
@@ -622,6 +627,19 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             <Button size="sm" variant="outline" onClick={onResendToolkit}>
               <Package className="w-4 h-4 mr-1" />
               Resend Toolkit
+            </Button>
+          )}
+
+          {/* TSP Contact Assignment - only show if not already assigned */}
+          {!(request.tspContact || request.customTspContact) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAssignTspContact}
+              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+            >
+              <UserPlus className="w-4 h-4 mr-1" />
+              Assign TSP Contact
             </Button>
           )}
 

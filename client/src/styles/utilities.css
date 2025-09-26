@@ -76,7 +76,7 @@
   }
 
   .progress-glow {
-    background: linear-gradient(90deg, var(--tsp-primary), var(--tsp-secondary));
+    background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
     box-shadow: 0 0 20px rgba(35, 99, 131, 0.3);
   }
 
