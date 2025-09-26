@@ -37,8 +37,8 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     console.error('❌ SendGrid email error:', error);
 
     // Log more details for debugging
-    if (error.response?.body) {
-      console.error('SendGrid error details:', error.response.body);
+    if ((error as any).response?.body) {
+      console.error('SendGrid error details:', (error as any).response.body);
     }
 
     throw error;
@@ -58,7 +58,7 @@ export async function sendBulkEmail(
       success++;
     } catch (error) {
       failed++;
-      errors.push(`Failed to send to ${email.to}: ${error.message}`);
+      errors.push(`Failed to send to ${email.to}: ${(error as Error).message}`);
     }
   }
 

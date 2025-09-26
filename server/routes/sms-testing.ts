@@ -24,13 +24,14 @@ router.get('/sms/config', isAuthenticated, requirePermission('USERS_EDIT'), asyn
     res.json({
       isConfigured: config.isConfigured,
       missingItems: config.missingItems,
-      twilioInitialized: !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN,
+      currentProvider: config.provider || 'unknown',
+      providersStatus: config.providersStatus || {},
     });
   } catch (error) {
     console.error('Error checking SMS configuration:', error);
     res.status(500).json({
       error: 'Failed to check SMS configuration',
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 });
@@ -59,16 +60,16 @@ router.post('/sms/test', isAuthenticated, requirePermission('USERS_EDIT'), async
   } catch (error) {
     console.error('Error sending test SMS:', error);
     
-    if (error.name === 'ZodError') {
+    if ((error as any).name === 'ZodError') {
       return res.status(400).json({
         error: 'Invalid request data',
-        details: error.errors,
+        details: (error as any).errors,
       });
     }
 
     res.status(500).json({
       error: 'Failed to send test SMS',
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 });
@@ -97,16 +98,16 @@ router.post('/sms/reminder', isAuthenticated, requirePermission('USERS_EDIT'), a
   } catch (error) {
     console.error('Error sending SMS reminder:', error);
     
-    if (error.name === 'ZodError') {
+    if ((error as any).name === 'ZodError') {
       return res.status(400).json({
         error: 'Invalid request data',
-        details: error.errors,
+        details: (error as any).errors,
       });
     }
 
     res.status(500).json({
       error: 'Failed to send SMS reminder',
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 });
@@ -148,16 +149,16 @@ router.post('/sms/weekly-reminders', isAuthenticated, requirePermission('USERS_E
   } catch (error) {
     console.error('Error sending weekly SMS reminders:', error);
     
-    if (error.name === 'ZodError') {
+    if ((error as any).name === 'ZodError') {
       return res.status(400).json({
         error: 'Invalid request data',
-        details: error.errors,
+        details: (error as any).errors,
       });
     }
 
     res.status(500).json({
       error: 'Failed to send weekly SMS reminders',
-      message: error.message,
+      message: (error as Error).message,
     });
   }
 });

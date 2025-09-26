@@ -9,19 +9,109 @@ import {
 
 const router = Router();
 
-// Get SMS configuration status
+// Get SMS configuration status with enhanced health checks
 router.get('/sms-config', async (req, res) => {
   try {
-    const { isConfigured, missingItems } = validateSMSConfig();
-    const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
-    res.json({
-      isConfigured,
-      phoneNumber: isConfigured ? twilioPhoneNumber : null,
-      missingItems,
-    });
+    const config = validateSMSConfig();
+    const response = {
+      isConfigured: config.isConfigured,
+      provider: config.provider || 'unknown',
+      phoneNumber: config.isConfigured ? (config.provider === 'twilio' ? process.env.TWILIO_PHONE_NUMBER : process.env.PHONE_GATEWAY_DEVICE_NUMBER) : null,
+      missingItems: config.missingItems,
+      providersStatus: config.providersStatus || {},
+    };
+
+    // Add health check for current provider if requested
+    if (req.query.includeHealthCheck === 'true' && config.isConfigured) {
+      try {
+        const { SMSProviderFactory } = await import('../sms-providers/provider-factory');
+        const factory = SMSProviderFactory.getInstance();
+        const provider = factory.getProvider();
+        
+        if (provider.name === 'phone_gateway' && 'healthCheck' in provider) {
+          const healthResult = await (provider as any).healthCheck();
+          (response as any).healthCheck = healthResult;
+        } else if (provider.name === 'twilio') {
+          // For Twilio, we can check if credentials work by validating the client
+          (response as any).healthCheck = {
+            success: provider.isConfigured(),
+            message: provider.isConfigured() ? 'Twilio credentials configured' : 'Twilio credentials missing'
+          };
+        }
+      } catch (healthError) {
+        (response as any).healthCheck = {
+          success: false,
+          message: `Health check failed: ${(healthError as Error).message}`
+        };
+      }
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Error checking SMS config:', error);
     res.status(500).json({ error: 'Failed to check SMS configuration' });
+  }
+});
+
+// Phone gateway specific health check endpoint
+router.get('/phone-gateway/health', async (req, res) => {
+  try {
+    const { SMSProviderFactory } = await import('../sms-providers/provider-factory');
+    const factory = SMSProviderFactory.getInstance();
+    const provider = factory.getProvider();
+    
+    if (provider.name !== 'phone_gateway') {
+      return res.status(400).json({ 
+        error: 'Phone gateway health check not available',
+        currentProvider: provider.name 
+      });
+    }
+
+    if (!('healthCheck' in provider)) {
+      return res.status(500).json({ 
+        error: 'Phone gateway provider does not support health checks' 
+      });
+    }
+
+    const healthResult = await (provider as any).healthCheck();
+    res.json(healthResult);
+  } catch (error) {
+    console.error('Error performing phone gateway health check:', error);
+    res.status(500).json({ 
+      error: 'Failed to perform health check',
+      message: (error as Error).message 
+    });
+  }
+});
+
+// Phone gateway device info endpoint
+router.get('/phone-gateway/device-info', async (req, res) => {
+  try {
+    const { SMSProviderFactory } = await import('../sms-providers/provider-factory');
+    const factory = SMSProviderFactory.getInstance();
+    const provider = factory.getProvider();
+    
+    if (provider.name !== 'phone_gateway') {
+      return res.status(400).json({ 
+        error: 'Phone gateway device info not available',
+        currentProvider: provider.name 
+      });
+    }
+
+    if (!('getDeviceInfo' in provider)) {
+      return res.status(500).json({ 
+        error: 'Phone gateway provider does not support device info' 
+      });
+    }
+
+    const deviceResult = await (provider as any).getDeviceInfo();
+    res.json(deviceResult);
+  } catch (error) {
+    console.error('Error getting phone gateway device info:', error);
+    res.status(500).json({ 
+      error: 'Failed to get device info',
+      message: (error as Error).message 
+    });
   }
 });
 
@@ -283,7 +373,7 @@ router.post('/send-sms-reminder/:location', async (req, res) => {
       res.status(400).json({
         success: false,
         location,
-        error: result.error,
+        error: result.message || 'SMS reminder failed',
       });
     }
   } catch (error) {
@@ -313,7 +403,7 @@ router.post('/test-sms', async (req, res) => {
     } else {
       res.status(400).json({
         success: false,
-        error: result.error,
+        error: result.message || 'Test SMS failed',
         phone: phoneNumber,
       });
     }

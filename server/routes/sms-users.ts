@@ -3,7 +3,7 @@ import { isAuthenticated } from '../temp-auth';
 import { storage } from '../storage-wrapper';
 import { z } from 'zod';
 import { generateVerificationCode, sendConfirmationSMS, submitTollFreeVerification, checkTollFreeVerificationStatus } from '../sms-service';
-import Twilio from 'twilio';
+// Note: SMS functionality now uses the provider abstraction from sms-service
 
 const router = Router();
 
@@ -116,44 +116,23 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    // Send welcome SMS to confirm opt-in
+    // Send provider-appropriate welcome SMS to confirm opt-in
     try {
-      // Check if Twilio is configured
-      const twilioConfigured = process.env.TWILIO_ACCOUNT_SID &&
-                              process.env.TWILIO_AUTH_TOKEN &&
-                              process.env.TWILIO_PHONE_NUMBER;
-
-      if (twilioConfigured) {
-        const Twilio = await import('twilio');
-        const twilioClient = Twilio.default(
-          process.env.TWILIO_ACCOUNT_SID,
-          process.env.TWILIO_AUTH_TOKEN
-        );
-
-        const welcomeMessage = `Welcome to The Sandwich Project SMS reminders! 🥪\n\nYou'll receive text reminders when weekly sandwich counts are missing.\n\nTo stop receiving messages, reply STOP at any time or visit the app settings.`;
-
-        const result = await twilioClient.messages.create({
-          body: welcomeMessage,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: formattedPhone,
-        });
-
-        console.log(`✅ Welcome SMS sent to ${formattedPhone}, Message SID: ${result.sid}`);
+      const { sendWelcomeSMS } = await import('../sms-service');
+      
+      // Use the new sendWelcomeSMS function which sends provider-appropriate messages
+      const result = await sendWelcomeSMS(formattedPhone);
+      
+      if (result.success) {
+        console.log(`✅ Welcome SMS sent to ${formattedPhone}`);
       } else {
-        console.warn('⚠️ Twilio not configured - skipping welcome SMS');
-        console.log('Missing Twilio config:', {
-          hasAccountSid: !!process.env.TWILIO_ACCOUNT_SID,
-          hasAuthToken: !!process.env.TWILIO_AUTH_TOKEN,
-          hasPhoneNumber: !!process.env.TWILIO_PHONE_NUMBER
-        });
+        console.warn(`⚠️ Welcome SMS failed: ${result.message}`);
       }
     } catch (smsError) {
       // Log the error but don't fail the opt-in
       console.error('Failed to send welcome SMS:', smsError);
       console.error('Error details:', {
-        message: (smsError as any).message,
-        code: (smsError as any).code,
-        moreInfo: (smsError as any).moreInfo
+        message: (smsError as any).message
       });
     }
 
@@ -456,7 +435,7 @@ router.post('/sms/webhook', async (req, res) => {
     const webhookUrl = `${protocol}://${host}${req.originalUrl}`;
     
     // Validate the Twilio request signature
-    const isValidRequest = Twilio.validateRequest(
+    const isValidRequest = validateRequest(
       process.env.TWILIO_AUTH_TOKEN,
       twilioSignature,
       webhookUrl,
