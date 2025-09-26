@@ -474,13 +474,13 @@ export class GoogleSheetsSyncService {
       } else {
         // Create new task (basic version from sheet)
         console.log(
-          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'available'}"`
+          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'pending'}"`
         );
         await this.storage.createProjectTask({
           projectId,
           title: taskItem.title,
           description: taskItem.description || '',
-          status: taskItem.status || 'available',
+          status: taskItem.status || 'pending',
           assigneeName: taskItem.assignee || undefined,
           assigneeNames: taskItem.assignee ? [taskItem.assignee] : [],
         });
@@ -565,13 +565,13 @@ export class GoogleSheetsSyncService {
       } else {
         // Create new task
         console.log(
-          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'available'}"`
+          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'pending'}"`
         );
         await this.storage.createProjectTask({
           projectId,
           title: taskItem.title,
           description: taskItem.description || '',
-          status: taskItem.status || 'available',
+          status: taskItem.status || 'pending',
           assigneeName: taskItem.assignee || undefined,
           assigneeNames: taskItem.assignee ? [taskItem.assignee] : [],
         });
@@ -606,6 +606,7 @@ export class GoogleSheetsSyncService {
     // Task, Priority, Status, Owner, Support people, Sub-Tasks | Owners, Start date, End date, Category, Milestone, Deliverable, Notes, Last Discussed Date
     const sheetRow = {
       task: project.title,
+      reviewStatus: this.mapReviewStatus(project.reviewInNextMeeting || false),
       priority: this.mapPriority(project.priority),
       status: this.mapStatus(project.status),
       owner: projectOwner,
@@ -630,7 +631,7 @@ export class GoogleSheetsSyncService {
     const projectData = {
       title: row.task,
       description: row.notes || undefined,
-      status: this.mapStatusFromSheet(row.status),
+      status: this.mapStatusFromSheet(row.status, row.reviewStatus),
       priority: this.mapPriorityFromSheet(row.priority),
       category: row.category || 'general', // Category from category column
       milestone: row.milestone || undefined, // Milestone from milestone column
@@ -771,7 +772,7 @@ export class GoogleSheetsSyncService {
 
       // Extract status indicators first
       let taskText = trimmed;
-      let status = 'available'; // default status
+      let status = 'pending'; // default status
 
       // Look for status indicators at the end: (C), (IP), C, IP
       const statusMatch = taskText.match(/\s*\(?(C|IP)\)?$/i);
@@ -847,23 +848,35 @@ export class GoogleSheetsSyncService {
     return map[priority] || 'medium';
   }
 
-  private mapStatus(status: string): string {
+  private mapStatus(status
+    : string): string {
     const map: Record<string, string> = {
       waiting: 'Not started',
-      available: 'Not started',
+      tabled: 'Not started',
       in_progress: 'In progress',
       completed: 'Completed',
     };
     return map[status] || 'Not started';
   }
 
-  private mapStatusFromSheet(status: string): string {
+  private mapStatusFromSheet(status: string, reviewStatus?: string): string {
     const map: Record<string, string> = {
-      'Not started': 'available',
+      'Not started': 'waiting', // Default for 'Not started'
       'In progress': 'in_progress',
       Completed: 'completed',
     };
-    return map[status] || 'available';
+    
+    // Special handling for 'Not started' status
+    if (status === 'Not started') {
+      // If reviewStatus indicates review in next meeting, it's 'tabled'
+      if (reviewStatus && this.mapReviewStatusFromSheet(reviewStatus)) {
+        return 'tabled';
+      }
+      // Otherwise it's 'waiting'
+      return 'waiting';
+    }
+    
+    return map[status] || 'waiting';
   }
 }
 
@@ -896,4 +909,62 @@ export async function triggerGoogleSheetsSync(): Promise<void> {
   } catch (error) {
     console.error('Error during Google Sheets sync trigger:', error);
   }
+}
+
+// Test function to verify status mapping fix
+export function testStatusMappingFix(): void {
+  console.log('🧪 Testing status mapping fix...');
+  
+  // Create a mock sync service instance for testing
+  const mockStorage = {} as any;
+  const syncService = new GoogleSheetsSyncService(mockStorage);
+  
+  // Test cases
+  const testCases = [
+    { status: 'waiting', reviewInNextMeeting: false, expectedSheetStatus: 'Not started', expectedReviewStatus: '' },
+    { status: 'tabled', reviewInNextMeeting: true, expectedSheetStatus: 'Not started', expectedReviewStatus: 'P1' },
+    { status: 'in_progress', reviewInNextMeeting: false, expectedSheetStatus: 'In progress', expectedReviewStatus: '' },
+    { status: 'completed', reviewInNextMeeting: false, expectedSheetStatus: 'Completed', expectedReviewStatus: '' },
+  ];
+  
+  for (const testCase of testCases) {
+    // Test app -> sheet conversion
+    const mockProject = {
+      status: testCase.status,
+      reviewInNextMeeting: testCase.reviewInNextMeeting,
+      title: 'Test Project',
+      priority: 'medium',
+      category: 'general',
+      assigneeName: 'Test User',
+      supportPeople: '',
+      startDate: '',
+      dueDate: '',
+      deliverables: '',
+      notes: '',
+      lastDiscussedDate: '',
+    } as any;
+    
+    const sheetRow = (syncService as any).projectToSheetRow(mockProject, []);
+    
+    console.log(`📤 App -> Sheet: ${testCase.status} (review: ${testCase.reviewInNextMeeting}) -> Status: "${sheetRow.status}", Review: "${sheetRow.reviewStatus}"`);
+    
+    // Test sheet -> app conversion
+    const convertedProject = (syncService as any).sheetRowToProject(sheetRow);
+    
+    console.log(`📥 Sheet -> App: Status: "${sheetRow.status}", Review: "${sheetRow.reviewStatus}" -> ${convertedProject.status} (review: ${convertedProject.reviewInNextMeeting})`);
+    
+    // Verify round-trip preservation
+    const statusPreserved = convertedProject.status === testCase.status;
+    const reviewPreserved = convertedProject.reviewInNextMeeting === testCase.reviewInNextMeeting;
+    
+    if (statusPreserved && reviewPreserved) {
+      console.log(`✅ Round-trip test PASSED for ${testCase.status}`);
+    } else {
+      console.error(`❌ Round-trip test FAILED for ${testCase.status}: expected ${testCase.status}/${testCase.reviewInNextMeeting}, got ${convertedProject.status}/${convertedProject.reviewInNextMeeting}`);
+    }
+    
+    console.log('---');
+  }
+  
+  console.log('🧪 Status mapping test complete');
 }
