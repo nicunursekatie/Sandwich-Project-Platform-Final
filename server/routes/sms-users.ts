@@ -87,6 +87,47 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
+    // Send welcome SMS to confirm opt-in
+    try {
+      // Check if Twilio is configured
+      const twilioConfigured = process.env.TWILIO_ACCOUNT_SID &&
+                              process.env.TWILIO_AUTH_TOKEN &&
+                              process.env.TWILIO_PHONE_NUMBER;
+
+      if (twilioConfigured) {
+        const Twilio = await import('twilio');
+        const twilioClient = Twilio.default(
+          process.env.TWILIO_ACCOUNT_SID,
+          process.env.TWILIO_AUTH_TOKEN
+        );
+
+        const welcomeMessage = `Welcome to The Sandwich Project SMS reminders! 🥪\n\nYou'll receive text reminders when weekly sandwich counts are missing.\n\nTo stop receiving messages, reply STOP at any time or visit the app settings.`;
+
+        const result = await twilioClient.messages.create({
+          body: welcomeMessage,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: formattedPhone,
+        });
+
+        console.log(`✅ Welcome SMS sent to ${formattedPhone}, Message SID: ${result.sid}`);
+      } else {
+        console.warn('⚠️ Twilio not configured - skipping welcome SMS');
+        console.log('Missing Twilio config:', {
+          hasAccountSid: !!process.env.TWILIO_ACCOUNT_SID,
+          hasAuthToken: !!process.env.TWILIO_AUTH_TOKEN,
+          hasPhoneNumber: !!process.env.TWILIO_PHONE_NUMBER
+        });
+      }
+    } catch (smsError) {
+      // Log the error but don't fail the opt-in
+      console.error('Failed to send welcome SMS:', smsError);
+      console.error('Error details:', {
+        message: smsError.message,
+        code: smsError.code,
+        moreInfo: smsError.moreInfo
+      });
+    }
+
     console.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone})`);
 
     res.json({
