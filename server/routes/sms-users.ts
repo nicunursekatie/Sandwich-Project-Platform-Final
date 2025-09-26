@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { isAuthenticated } from '../temp-auth';
 import { storage } from '../storage-wrapper';
 import { z } from 'zod';
-import { generateVerificationCode, sendConfirmationSMS } from '../sms-service';
+import { generateVerificationCode, sendConfirmationSMS, submitTollFreeVerification, checkTollFreeVerificationStatus } from '../sms-service';
 import Twilio from 'twilio';
 
 const router = Router();
@@ -667,6 +667,77 @@ router.post('/users/sms-webhook/status', async (req, res) => {
     console.error('Error processing SMS status webhook:', error);
     // Always respond with 200 OK to Twilio even on errors
     res.status(200).send('OK');
+  }
+});
+
+/**
+ * Submit toll-free verification request
+ */
+router.post('/users/toll-free-verification/submit', isAuthenticated, async (req, res) => {
+  try {
+    // Only admin users can submit toll-free verification
+    const userPermissions = typeof req.user?.permissions === 'number' ? req.user.permissions : 0;
+    if (!req.user?.permissions || userPermissions < 80) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    const result = await submitTollFreeVerification();
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        verificationSid: result.verificationSid,
+        status: result.status
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error submitting toll-free verification:', error);
+    res.status(500).json({
+      error: 'Failed to submit toll-free verification',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * Check toll-free verification status
+ */
+router.get('/users/toll-free-verification/status', isAuthenticated, async (req, res) => {
+  try {
+    // Only admin users can check toll-free verification
+    const userPermissions = typeof req.user?.permissions === 'number' ? req.user.permissions : 0;
+    if (!req.user?.permissions || userPermissions < 80) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    const verificationSid = req.query.verificationSid as string;
+    const result = await checkTollFreeVerificationStatus(verificationSid);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        verificationSid: result.verificationSid,
+        status: result.status
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error checking toll-free verification status:', error);
+    res.status(500).json({
+      error: 'Failed to check toll-free verification status',
+      message: (error as Error).message,
+    });
   }
 });
 

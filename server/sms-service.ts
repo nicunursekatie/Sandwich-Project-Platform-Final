@@ -30,6 +30,13 @@ interface SMSConfirmationResult {
   verificationCode?: string;
 }
 
+interface TollFreeVerificationResult {
+  success: boolean;
+  message: string;
+  verificationSid?: string;
+  status?: string;
+}
+
 /**
  * Send SMS reminder to a specific host location using opted-in users
  */
@@ -359,4 +366,157 @@ export function validateSMSConfig(): {
     isConfigured: missingItems.length === 0,
     missingItems,
   };
+}
+
+/**
+ * Submit toll-free verification request to Twilio
+ */
+export async function submitTollFreeVerification(): Promise<TollFreeVerificationResult> {
+  if (!twilioClient) {
+    return {
+      success: false,
+      message: 'SMS service not configured - missing Twilio credentials',
+    };
+  }
+
+  if (!process.env.TWILIO_PHONE_NUMBER) {
+    return {
+      success: false,
+      message: 'SMS service not configured - missing Twilio phone number',
+    };
+  }
+
+  try {
+    // Submit toll-free verification using REST API directly
+    const response = await fetch('https://messaging.twilio.com/v1/Tollfree/Verifications', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        TollfreePhoneNumber: process.env.TWILIO_PHONE_NUMBER,
+        BusinessName: 'The Sandwich Project',
+        BusinessWebsite: 'https://www.thesandwichproject.org',
+        NotificationEmail: 'admin@sandwich.project',
+        'UseCaseCategories': 'PUBLIC_SERVICE_ANNOUNCEMENT',
+        UseCaseSummary: 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.',
+        ProductionMessageVolume: '500',
+        OptInType: 'WEB_FORM',
+        'OptInImageUrls': `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png`,
+        MessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
+        BusinessStreetAddress: '123 Main Street',
+        BusinessCity: 'Atlanta',
+        BusinessStateProvinceRegion: 'GA',
+        BusinessPostalCode: '30309',
+        BusinessCountry: 'US',
+        BusinessContactFirstName: 'Admin',
+        BusinessContactLastName: 'User',
+        BusinessContactEmail: 'admin@sandwich.project',
+        BusinessContactPhone: '+14045551234'
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Twilio API error: ${response.status} ${errorText}`);
+    }
+
+    const verification = await response.json();
+    console.log(`✅ Toll-free verification submitted: ${verification.sid}`);
+    
+    return {
+      success: true,
+      message: `Toll-free verification submitted successfully. SID: ${verification.sid}`,
+      verificationSid: verification.sid,
+      status: verification.status
+    };
+
+  } catch (error) {
+    console.error('Error submitting toll-free verification:', error);
+    return {
+      success: false,
+      message: `Failed to submit toll-free verification: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Check status of toll-free verification
+ */
+export async function checkTollFreeVerificationStatus(verificationSid?: string): Promise<TollFreeVerificationResult> {
+  if (!twilioClient) {
+    return {
+      success: false,
+      message: 'SMS service not configured - missing Twilio credentials',
+    };
+  }
+
+  try {
+    if (verificationSid) {
+      // Check specific verification using REST API
+      const response = await fetch(`https://messaging.twilio.com/v1/Tollfree/Verifications/${verificationSid}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Twilio API error: ${response.status} ${errorText}`);
+      }
+
+      const verification = await response.json();
+      
+      return {
+        success: true,
+        message: `Verification status: ${verification.status}`,
+        verificationSid: verification.sid,
+        status: verification.status
+      };
+    } else {
+      // Get all verifications for this account using REST API
+      const response = await fetch('https://messaging.twilio.com/v1/Tollfree/Verifications?PageSize=20', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Twilio API error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      const verifications = data.verifications || [];
+      
+      const phoneVerifications = verifications.filter((v: any) => 
+        v.tollfree_phone_number === process.env.TWILIO_PHONE_NUMBER
+      );
+
+      if (phoneVerifications.length === 0) {
+        return {
+          success: false,
+          message: 'No toll-free verifications found for this phone number',
+        };
+      }
+
+      const latest = phoneVerifications[0]; // Most recent
+      return {
+        success: true,
+        message: `Latest verification status: ${latest.status}`,
+        verificationSid: latest.sid,
+        status: latest.status
+      };
+    }
+
+  } catch (error) {
+    console.error('Error checking toll-free verification status:', error);
+    return {
+      success: false,
+      message: `Failed to check verification status: ${(error as Error).message}`,
+    };
+  }
 }

@@ -29,6 +29,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { TollFreeVerificationPanel } from './toll-free-verification-panel';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -769,6 +770,14 @@ export default function UserProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Toll-Free Verification Panel - Admin Only */}
+        {user && user.permissions && user.permissions >= 80 && (
+          <div className="space-y-6">
+            <Separator />
+            <TollFreeVerificationPanel />
+          </div>
+        )}
       )}
     </div>
   );
