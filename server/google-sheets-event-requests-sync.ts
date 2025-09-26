@@ -306,6 +306,220 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
+   * Enhanced duplicate detection using stable identifiers with fuzzy fallback
+   * Prioritizes: googleSheetRowId > submission timestamp + email > fuzzy organization name matching
+   */
+  private async findExistingEventRequest(
+    row: EventRequestSheetRow,
+    eventRequestData: Partial<EventRequest>
+  ): Promise<EventRequest | undefined> {
+    const existingRequests = await this.storage.getAllEventRequests();
+    const nameParts = row.contactName.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    // PRIORITY 1: Google Sheets Row ID (most stable identifier)
+    if (row.rowIndex) {
+      const rowIdMatch = existingRequests.find((r) => 
+        r.googleSheetRowId === row.rowIndex?.toString()
+      );
+      if (rowIdMatch) {
+        console.log(`✅ MATCH FOUND (GoogleSheetRowId): Row ${row.rowIndex} for ${row.organizationName}`);
+        return rowIdMatch;
+      }
+    }
+
+    // PRIORITY 2: Submission timestamp + email + desiredEventDate combination (very stable, prevents merging different events)
+    if (row.submittedOn && row.email && eventRequestData.createdAt && eventRequestData.desiredEventDate) {
+      const submissionTimeMatch = existingRequests.find((r) => {
+        if (!r.email || !r.createdAt || !r.desiredEventDate) return false;
+        
+        const emailMatch = r.email.toLowerCase().trim() === row.email.toLowerCase().trim();
+        
+        // Compare submission timestamps with minimal tolerance for minor timing differences only
+        const existingDate = new Date(r.createdAt);
+        const sheetDate = new Date(eventRequestData.createdAt!);
+        
+        // Allow only 5 minutes difference for submission timestamp matching to handle minor timing differences
+        const timeDiff = Math.abs(existingDate.getTime() - sheetDate.getTime());
+        const maxTimeDiff = 5 * 60 * 1000; // 5 minutes in milliseconds
+        
+        const timeMatch = timeDiff <= maxTimeDiff;
+        
+        // CRITICAL: Also match desired event dates to prevent merging different events from same person
+        const existingEventDate = new Date(r.desiredEventDate);
+        const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
+        const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
+        
+        if (emailMatch && timeMatch && eventDateMatch) {
+          console.log(`✅ MATCH FOUND (SubmissionTime+Email+EventDate): ${row.email} submitted ${sheetDate.toLocaleDateString()} for event on ${sheetEventDate.toLocaleDateString()} - ${row.organizationName}`);
+          return true;
+        }
+        
+        return false;
+      });
+      
+      if (submissionTimeMatch) {
+        return submissionTimeMatch;
+      }
+    }
+
+    // PRIORITY 3: Exact email match with event date validation (same person, same org, same event)
+    if (row.email && eventRequestData.desiredEventDate) {
+      const emailOnlyMatch = existingRequests.find((r) => {
+        if (!r.email || !r.desiredEventDate) return false;
+        
+        const emailMatch = r.email.toLowerCase().trim() === row.email.toLowerCase().trim();
+        if (!emailMatch) return false;
+        
+        // CRITICAL: Require matching event dates to prevent merging different events
+        const existingEventDate = new Date(r.desiredEventDate);
+        const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
+        const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
+        
+        if (!eventDateMatch) return false; // Different events - must be kept separate
+        
+        // Additional validation: check if organization names could be the same entity
+        const orgSimilarity = this.calculateOrganizationSimilarity(
+          r.organizationName || '', 
+          row.organizationName || '',
+          r.department || '',
+          row.department || ''
+        );
+        
+        if (orgSimilarity > 0.6) { // 60% similarity threshold
+          console.log(`✅ MATCH FOUND (Email+EventDate+OrgSimilarity): ${row.email} on ${sheetEventDate.toLocaleDateString()} with ${(orgSimilarity * 100).toFixed(0)}% org similarity for ${row.organizationName}`);
+          return true;
+        }
+        
+        return false;
+      });
+      
+      if (emailOnlyMatch) {
+        return emailOnlyMatch;
+      }
+    }
+
+    // PRIORITY 4: Fallback fuzzy matching for organization name changes (with event date validation)
+    const fuzzyMatch = existingRequests.find((r) => {
+      // CRITICAL: Require event date match first to prevent merging different events
+      if (!r.desiredEventDate || !eventRequestData.desiredEventDate) {
+        return false; // Cannot safely match without event date information
+      }
+      
+      const existingEventDate = new Date(r.desiredEventDate);
+      const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
+      const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
+      
+      if (!eventDateMatch) {
+        return false; // Different event dates = different events, must be kept separate
+      }
+      
+      // Basic field matches (only proceed if event dates match)
+      const emailMatch = r.email && row.email && 
+        r.email.toLowerCase().trim() === row.email.toLowerCase().trim();
+      
+      const phoneMatch = r.phone && row.phone && 
+        r.phone.replace(/\D/g, '') === row.phone.replace(/\D/g, '');
+      
+      const fullNameMatch = 
+        r.firstName?.toLowerCase().trim() === firstName.toLowerCase().trim() &&
+        r.lastName?.toLowerCase().trim() === lastName.toLowerCase().trim() &&
+        firstName.trim() && lastName.trim();
+
+      // Enhanced organization matching to handle restructuring
+      const orgSimilarity = this.calculateOrganizationSimilarity(
+        r.organizationName || '', 
+        row.organizationName || '',
+        r.department || '',
+        row.department || ''
+      );
+
+      // Log debug info for suspicious matches
+      if (row.organizationName?.toLowerCase().includes('marietta') ||
+          row.organizationName?.toLowerCase().includes('franklin') ||
+          row.organizationName?.toLowerCase().includes('cherokee')) {
+        console.log(`🔍 Fuzzy matching ${row.organizationName} (Event: ${sheetEventDate.toLocaleDateString()}):`);
+        console.log(`  Event date match: ${eventDateMatch} (${existingEventDate.toLocaleDateString()} vs ${sheetEventDate.toLocaleDateString()})`);
+        console.log(`  Email match: ${emailMatch} (${row.email} vs ${r.email})`);
+        console.log(`  Name match: ${fullNameMatch} (${firstName} ${lastName} vs ${r.firstName} ${r.lastName})`);
+        console.log(`  Phone match: ${phoneMatch}`);
+        console.log(`  Org similarity: ${(orgSimilarity * 100).toFixed(1)}% ("${r.organizationName}" + "${r.department || ''}" vs "${row.organizationName}" + "${r.department || ''}")`);
+      }
+
+      // Match criteria (any of these strong combinations) - all require same event date
+      if (emailMatch && orgSimilarity > 0.5) {
+        console.log(`✅ MATCH FOUND (Email+EventDate+FuzzyOrg): ${row.email} on ${sheetEventDate.toLocaleDateString()} with ${(orgSimilarity * 100).toFixed(0)}% org similarity for ${row.organizationName}`);
+        return true;
+      }
+      
+      if (phoneMatch && orgSimilarity > 0.7) {
+        console.log(`✅ MATCH FOUND (Phone+EventDate+FuzzyOrg): ${row.phone} on ${sheetEventDate.toLocaleDateString()} with ${(orgSimilarity * 100).toFixed(0)}% org similarity for ${row.organizationName}`);
+        return true;
+      }
+      
+      if (fullNameMatch && orgSimilarity > 0.8) {
+        console.log(`✅ MATCH FOUND (FullName+EventDate+FuzzyOrg): ${firstName} ${lastName} on ${sheetEventDate.toLocaleDateString()} with ${(orgSimilarity * 100).toFixed(0)}% org similarity for ${row.organizationName}`);
+        return true;
+      }
+
+      return false;
+    });
+
+    return fuzzyMatch;
+  }
+
+  /**
+   * Calculate organization similarity to handle name restructuring
+   * Considers: exact matches, word overlap, department combinations, common abbreviations
+   */
+  private calculateOrganizationSimilarity(
+    existingOrg: string, 
+    newOrg: string, 
+    existingDept: string = '', 
+    newDept: string = ''
+  ): number {
+    if (!existingOrg || !newOrg) return 0;
+
+    // Normalize strings for comparison
+    const normalize = (str: string) => str.toLowerCase().trim().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ');
+    
+    const existing = normalize(existingOrg + ' ' + existingDept);
+    const newValue = normalize(newOrg + ' ' + newDept);
+    
+    // Exact match
+    if (existing === newValue) return 1.0;
+    
+    // Check if one contains the other (handles "School" vs "School NHS")
+    if (existing.includes(newValue) || newValue.includes(existing)) {
+      return 0.9;
+    }
+    
+    // Word-based similarity
+    const existingWords = new Set(existing.split(' ').filter(w => w.length > 2));
+    const newWords = new Set(newValue.split(' ').filter(w => w.length > 2));
+    
+    const intersection = new Set([...existingWords].filter(w => newWords.has(w)));
+    const union = new Set([...existingWords, ...newWords]);
+    
+    if (union.size === 0) return 0;
+    
+    const jaccardSimilarity = intersection.size / union.size;
+    
+    // Boost score for common organization patterns
+    const hasCommonSchoolPattern = 
+      (existing.includes('school') && newValue.includes('school')) ||
+      (existing.includes('high') && newValue.includes('high')) ||
+      (existing.includes('middle') && newValue.includes('middle'));
+    
+    if (hasCommonSchoolPattern && jaccardSimilarity > 0.3) {
+      return Math.min(jaccardSimilarity + 0.2, 1.0);
+    }
+    
+    return jaccardSimilarity;
+  }
+
+  /**
    * Sync from Google Sheets to database
    */
   async syncFromGoogleSheets(): Promise<{
@@ -329,97 +543,27 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         // Convert row to event request data first to access parsed submission date
         const eventRequestData = this.sheetRowToEventRequest(row);
 
-        // Try to find existing event request by organization name and contact name (case-insensitive)
-        const existingRequests = await this.storage.getAllEventRequests();
-        const nameParts = row.contactName.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
-        const existingRequest = existingRequests.find((r) => {
-          // Match by organization name (case-insensitive, exact match)
-          const orgMatch =
-            r.organizationName?.toLowerCase().trim() ===
-            row.organizationName?.toLowerCase().trim();
-
-          // More flexible organization matching - handle variations
-          const orgFuzzyMatch =
-            orgMatch ||
-            (r.organizationName && row.organizationName &&
-             (r.organizationName.toLowerCase().includes('franklin') &&
-              row.organizationName.toLowerCase().includes('franklin')) ||
-             (r.organizationName.toLowerCase().includes('covey') &&
-              row.organizationName.toLowerCase().includes('covey')) ||
-             (r.organizationName.toLowerCase().includes('cherokee') &&
-              row.organizationName.toLowerCase().includes('cherokee')));
-
-          // Require both first AND last name to match (not just one)
-          const fullNameMatch =
-            r.firstName?.toLowerCase().trim() ===
-              firstName.toLowerCase().trim() &&
-            r.lastName?.toLowerCase().trim() ===
-              lastName.toLowerCase().trim() &&
-            firstName.trim() &&
-            lastName.trim(); // Both names must exist
-
-          // Email match (both must exist and match)
-          const emailMatch =
-            r.email &&
-            row.email &&
-            r.email.toLowerCase().trim() === row.email.toLowerCase().trim();
-
-          // Phone match (both must exist and match)
-          const phoneMatch =
-            r.phone &&
-            row.phone &&
-            r.phone.replace(/\D/g, '') === row.phone.replace(/\D/g, ''); // Compare digits only
-
-          // Enhanced logging for debugging matches
-          if (row.organizationName?.toLowerCase().includes('franklin') ||
-              row.organizationName?.toLowerCase().includes('cherokee')) {
-            console.log(`🔍 ${row.organizationName} matching check:`);
-            console.log(`  Sheet org: "${row.organizationName}" vs DB org: "${r.organizationName}"`);
-            console.log(`  OrgMatch: ${orgMatch}, OrgFuzzyMatch: ${orgFuzzyMatch}`);
-            console.log(`  Name match: ${fullNameMatch} (${firstName} ${lastName} vs ${r.firstName} ${r.lastName})`);
-            console.log(`  Email match: ${emailMatch} (${row.email} vs ${r.email})`);
-            console.log(`  Phone match: ${phoneMatch}`);
-          }
-
-          // STRENGTHENED MATCHING LOGIC:
-          // Consider it a duplicate if ANY of these strong criteria match:
-          
-          // 1. Email match with any organization similarity
-          if (emailMatch && (orgMatch || orgFuzzyMatch)) {
-            console.log(`✅ MATCH FOUND: Email + Org match for ${row.organizationName}`);
-            return true;
-          }
-
-          // 2. Phone match with any organization similarity  
-          if (phoneMatch && (orgMatch || orgFuzzyMatch)) {
-            console.log(`✅ MATCH FOUND: Phone + Org match for ${row.organizationName}`);
-            return true;
-          }
-
-          // 3. Full name + exact organization match
-          if (fullNameMatch && orgMatch) {
-            console.log(`✅ MATCH FOUND: Full name + Exact org match for ${row.organizationName}`);
-            return true;
-          }
-
-          // 4. SUPER STRICT: Same email address anywhere (prevents obvious duplicates)
-          if (emailMatch && row.email && r.email) {
-            console.log(`✅ MATCH FOUND: Same email address for ${row.organizationName} (${row.email})`);
-            return true;
-          }
-
-          return false;
-        });
+        // Use enhanced duplicate detection with stable identifiers
+        const existingRequest = await this.findExistingEventRequest(row, eventRequestData);
 
         if (existingRequest) {
-          // SKIP ALL UPDATES - Once imported, records should only be updated manually in the app
-          console.log(
-            `⏭️ Skipping existing event request (already imported): ${row.organizationName} - ${row.contactName}`
-          );
-          // DO NOT update any fields for existing records
+          // Update googleSheetRowId if missing (to improve future matching)
+          if (!existingRequest.googleSheetRowId && row.rowIndex) {
+            try {
+              await this.storage.updateEventRequest(existingRequest.id, {
+                googleSheetRowId: row.rowIndex.toString(),
+                lastSyncedAt: new Date()
+              });
+              console.log(`🔄 Updated googleSheetRowId for existing request: ${row.organizationName} - ${row.contactName} (Row ${row.rowIndex})`);
+              updatedCount++;
+            } catch (error) {
+              console.error(`❌ Failed to update googleSheetRowId for existing request: ${error}`);
+            }
+          } else {
+            console.log(
+              `⏭️ Skipping existing event request (already imported): ${row.organizationName} - ${row.contactName}`
+            );
+          }
         } else {
           // Check if this is an old/past event that shouldn't be imported as "new"
           const eventDate = this.parseExcelDate(row.desiredEventDate, 'desired event date');
@@ -489,6 +633,8 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           const sanitizedData = {
             ...eventRequestData,
             createdBy: 'google_sheets_sync',
+            googleSheetRowId: row.rowIndex?.toString(), // Store the Google Sheets row ID for future duplicate detection
+            lastSyncedAt: new Date(),
             // Ensure all date fields are either valid Date objects or null
             desiredEventDate:
               eventRequestData.desiredEventDate &&
@@ -533,6 +679,8 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
                 phone: eventRequestData.phone || '',
                 status: eventRequestData.status || 'new',
                 createdBy: 'google_sheets_sync',
+                googleSheetRowId: row.rowIndex?.toString(), // Store row ID even in fallback
+                lastSyncedAt: new Date(),
                 createdAt: new Date(),
                 updatedAt: new Date(),
               };

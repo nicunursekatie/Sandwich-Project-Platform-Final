@@ -1529,6 +1529,7 @@ export const eventRequests = pgTable(
     unresponsiveNotes: text('unresponsive_notes'), // Detailed notes about unresponsive status
 
     // Google Sheets sync tracking
+    googleSheetRowId: text('google_sheet_row_id'), // Stable identifier: Google Sheets row number for duplicate detection
     lastSyncedAt: timestamp('last_synced_at'), // When this record was last synced with Google Sheets
     driverDetails: jsonb('driver_details'), // Additional driver assignment details
     speakerDetails: jsonb('speaker_details'), // Additional speaker assignment details
