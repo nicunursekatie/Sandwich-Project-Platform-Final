@@ -399,11 +399,11 @@ export default function Dashboard({
             <div className="flex items-center gap-4 mb-6">
               <div
                 className="flex items-center justify-center w-12 h-12 rounded-xl"
-                style={{ backgroundColor: 'var(--tsp-teal-light)' }}
+                style={{ backgroundColor: 'var(--color-brand-teal-light)' }}
               >
                 <MessageCircle
                   className="w-6 h-6"
-                  style={{ color: 'var(--tsp-teal)' }}
+                  style={{ color: 'var(--color-brand-teal)' }}
                 />
               </div>
               <div>
