@@ -17,7 +17,7 @@ interface DateTimePickerProps {
   minDate?: Date; // Minimum selectable date
   maxDate?: Date; // Maximum selectable date
   defaultToEventDate?: string; // Default date (e.g., event date)
-  data-testid?: string;
+  'data-testid'?: string;
 }
 
 export function DateTimePicker({

@@ -251,3 +251,201 @@ export const formatToolkitDate = (dateString: string | null | undefined): string
     return 'Invalid date';
   }
 };
+
+// Utility functions for pickup date and time formatting with backward compatibility
+
+/**
+ * Formats pickup time for display with full date and time support
+ * Handles both legacy pickupTime (time only) and new pickupDateTime (full datetime) fields
+ * @param pickupDateTime - Full datetime string (preferred)
+ * @param pickupTime - Legacy time string (fallback)
+ * @param eventDate - Event date for context when only time is available
+ * @returns Formatted pickup datetime string or fallback
+ */
+export const formatPickupDateTime = (
+  pickupDateTime?: string | null,
+  pickupTime?: string | null,
+  eventDate?: string | null
+): string => {
+  try {
+    // Priority 1: Use pickupDateTime if available (new format)
+    if (pickupDateTime) {
+      const date = new Date(pickupDateTime);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('en-US', {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
+    }
+
+    // Priority 2: Combine pickupTime with eventDate (legacy format)
+    if (pickupTime && eventDate) {
+      try {
+        // Parse the event date
+        let baseDateStr = eventDate;
+        if (eventDate.includes('T')) {
+          baseDateStr = eventDate.split('T')[0];
+        }
+        
+        // Combine date and time
+        const combinedDateTime = new Date(`${baseDateStr}T${pickupTime}:00`);
+        if (!isNaN(combinedDateTime.getTime())) {
+          return combinedDateTime.toLocaleDateString('en-US', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+        }
+      } catch (error) {
+        console.warn('Error combining pickupTime with eventDate:', error);
+      }
+    }
+
+    // Priority 3: Show just the time if no date context available
+    if (pickupTime) {
+      return `${formatTime12Hour(pickupTime)} (time only)`;
+    }
+
+    return 'Not set';
+  } catch (error) {
+    console.warn('Error formatting pickup datetime:', error);
+    return pickupTime ? `${formatTime12Hour(pickupTime)} (time only)` : 'Not set';
+  }
+};
+
+/**
+ * Formats pickup time for display with enhanced context
+ * Similar to formatPickupDateTime but with more compact output
+ * @param pickupDateTime - Full datetime string (preferred)
+ * @param pickupTime - Legacy time string (fallback)
+ * @param eventDate - Event date for context when only time is available
+ * @returns Formatted pickup datetime string or fallback
+ */
+export const formatPickupTimeDisplay = (
+  pickupDateTime?: string | null,
+  pickupTime?: string | null,
+  eventDate?: string | null
+): string => {
+  try {
+    // Priority 1: Use pickupDateTime if available (new format)
+    if (pickupDateTime) {
+      const date = new Date(pickupDateTime);
+      if (!isNaN(date.getTime())) {
+        const today = new Date();
+        const isToday = date.toDateString() === today.toDateString();
+        
+        if (isToday) {
+          return `Today at ${date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          })}`;
+        } else {
+          return `${date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+          })} at ${date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          })}`;
+        }
+      }
+    }
+
+    // Priority 2: Combine pickupTime with eventDate (legacy format)
+    if (pickupTime && eventDate) {
+      try {
+        let baseDateStr = eventDate;
+        if (eventDate.includes('T')) {
+          baseDateStr = eventDate.split('T')[0];
+        }
+        
+        const combinedDateTime = new Date(`${baseDateStr}T${pickupTime}:00`);
+        if (!isNaN(combinedDateTime.getTime())) {
+          const today = new Date();
+          const isToday = combinedDateTime.toDateString() === today.toDateString();
+          
+          if (isToday) {
+            return `Today at ${formatTime12Hour(pickupTime)}`;
+          } else {
+            return `${combinedDateTime.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: combinedDateTime.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+            })} at ${formatTime12Hour(pickupTime)}`;
+          }
+        }
+      } catch (error) {
+        console.warn('Error combining pickupTime with eventDate:', error);
+      }
+    }
+
+    // Priority 3: Show just the time if no date context available
+    if (pickupTime) {
+      return formatTime12Hour(pickupTime);
+    }
+
+    return 'Not set';
+  } catch (error) {
+    console.warn('Error formatting pickup time display:', error);
+    return pickupTime ? formatTime12Hour(pickupTime) : 'Not set';
+  }
+};
+
+/**
+ * Gets the effective pickup datetime value for editing purposes
+ * Prioritizes pickupDateTime over pickupTime
+ * @param pickupDateTime - Full datetime string (preferred)
+ * @param pickupTime - Legacy time string (fallback)
+ * @param eventDate - Event date for context when only time is available
+ * @returns ISO datetime string for input fields
+ */
+export const getPickupDateTimeForInput = (
+  pickupDateTime?: string | null,
+  pickupTime?: string | null,
+  eventDate?: string | null
+): string => {
+  try {
+    // Priority 1: Use pickupDateTime if available
+    if (pickupDateTime) {
+      const date = new Date(pickupDateTime);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().slice(0, 16); // Format for datetime-local input
+      }
+    }
+
+    // Priority 2: Combine pickupTime with eventDate
+    if (pickupTime && eventDate) {
+      try {
+        let baseDateStr = eventDate;
+        if (eventDate.includes('T')) {
+          baseDateStr = eventDate.split('T')[0];
+        }
+        
+        const combinedDateTime = new Date(`${baseDateStr}T${pickupTime}:00`);
+        if (!isNaN(combinedDateTime.getTime())) {
+          return combinedDateTime.toISOString().slice(0, 16);
+        }
+      } catch (error) {
+        console.warn('Error combining pickupTime with eventDate for input:', error);
+      }
+    }
+
+    return '';
+  } catch (error) {
+    console.warn('Error getting pickup datetime for input:', error);
+    return '';
+  }
+};

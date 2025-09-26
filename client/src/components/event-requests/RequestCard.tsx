@@ -51,6 +51,8 @@ import {
   getSandwichTypesSummary,
   formatEventDate,
   formatToolkitDate,
+  formatPickupTimeDisplay,
+  getPickupDateTimeForInput,
 } from './utils';
 
 interface RequestCardProps {
@@ -982,7 +984,11 @@ export default function RequestCard({
                           ) : (
                             <div className="flex items-center gap-1">
                               <span className="text-base font-medium">
-                                {request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set'}
+                                {formatPickupTimeDisplay(
+                                  (request as any).pickupDateTime,
+                                  request.pickupTime,
+                                  request.desiredEventDate || request.scheduledEventDate
+                                )}
                               </span>
                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_TIMES) && (
                                 <Button variant="ghost" size="icon" onClick={(e) => {
