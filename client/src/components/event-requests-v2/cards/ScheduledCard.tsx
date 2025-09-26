@@ -1251,10 +1251,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               const detailName = (
                                 request.speakerDetails as any
                               )?.[speakerId]?.name;
-                              name =
-                                detailName && !/^\d+$/.test(detailName)
-                                  ? detailName
-                                  : resolveUserName(speakerId);
+                              const isActualName = detailName &&
+                                !/^[\d]+$/.test(detailName) &&
+                                !detailName.startsWith('user_') &&
+                                !detailName.startsWith('admin_');
+                              name = isActualName ? detailName : resolveUserName(speakerId);
                             }
                             return (
                               <div
