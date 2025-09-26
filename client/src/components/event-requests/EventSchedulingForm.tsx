@@ -101,7 +101,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   // Fetch users for TSP contact selection
   const { data: users = [] } = useQuery<any[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/for-assignments'],
     staleTime: 10 * 60 * 1000,
   });
 
