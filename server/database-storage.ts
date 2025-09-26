@@ -144,7 +144,12 @@ import {
 } from 'drizzle-orm';
 import type { IStorage } from './storage';
 
-const UNASSIGNED_PROJECT_STATUSES: Array<Project['status']> = ['waiting', 'tabled'];
+const UNASSIGNED_PROJECT_STATUSES: Array<Project['status']> = [
+  'waiting',
+  'tabled',
+  // Support legacy data that may still use the deprecated 'available' status
+  'available' as Project['status'],
+];
 
 export class DatabaseStorage implements IStorage {
   // Users (required for authentication)
@@ -311,6 +316,10 @@ export class DatabaseStorage implements IStorage {
         : '';
     const isAssigning = assigneeWasProvided && normalizedAssigneeName.length > 0;
     const isUnassigning = assigneeWasProvided && normalizedAssigneeName.length === 0;
+
+    if (statusWasProvided && updateData.status === 'available') {
+      updateData.status = currentProject.reviewInNextMeeting ? 'tabled' : 'waiting';
+    }
 
     // If an assignee is set and the project is currently in an unassigned state, move it to in_progress
     if (

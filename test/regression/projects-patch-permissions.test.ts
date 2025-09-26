@@ -53,7 +53,7 @@ function createProjectTestContext(overrides: Partial<TestProject> = {}) {
     id: 1,
     title: 'Mock Project',
     description: 'Initial description',
-    status: 'available',
+    status: 'waiting',
     createdBy: 'creator-1',
     assigneeId: 'assigned-owner',
     assigneeIds: ['assigned-owner', 'own-editor'],
@@ -139,7 +139,7 @@ describe('PATCH /api/projects/:id permissions', () => {
     expect(response.status).toBe(403);
 
     const latest = await storage.getProject(1);
-    expect(latest?.status).toBe('available');
+    expect(latest?.status).toBe('waiting');
   });
 
   test('allows assigned user with edit-own permission to update project', async () => {
