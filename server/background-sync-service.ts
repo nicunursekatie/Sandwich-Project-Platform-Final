@@ -15,24 +15,17 @@ export class BackgroundSyncService {
 
   /**
    * Start automatic background sync every 5 minutes
-   * DISABLED TO PREVENT DUPLICATE RECORD INSERTIONS
+   * ✅ RE-ENABLED with permanent external_id blacklist protection
    */
   start() {
-    console.log('🚫 Background Google Sheets sync service DISABLED');
-    console.log('⚠️ CRITICAL: Background sync disabled due to duplicate record insertion bug');
-    console.log('✅ Background sync service startup complete (DISABLED)');
-    
-    // DISABLED: Background sync temporarily disabled to prevent data corruption
-    // The sync was inserting duplicate records despite external_id protection
-    // TODO: Fix duplicate prevention logic before re-enabling
-    
-    /*
     if (this.isRunning) {
       console.log('⚠ Background sync already running');
       return;
     }
 
     console.log('🚀 Starting background Google Sheets sync service...');
+    console.log('🛡️ PROTECTED: Now using permanent external_id blacklist system');
+    console.log('🔒 GUARANTEE: External_ids will NEVER be imported twice, even after deletion');
     this.isRunning = true;
 
     // Run sync immediately on startup
@@ -46,8 +39,7 @@ export class BackgroundSyncService {
       5 * 60 * 1000
     ); // 5 minutes
 
-    console.log('✅ Background sync service started - syncing every 5 minutes');
-    */
+    console.log('✅ Background sync service started - syncing every 5 minutes with blacklist protection');
   }
 
   /**

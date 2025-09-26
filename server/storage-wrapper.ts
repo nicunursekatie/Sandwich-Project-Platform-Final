@@ -1552,6 +1552,42 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  // External ID Blacklist methods for permanent import tracking
+  async checkExternalIdExists(externalId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.checkExternalIdExists(externalId),
+      () => this.fallbackStorage.checkExternalIdExists(externalId)
+    );
+  }
+
+  async addExternalIdToBlacklist(externalId: string, sourceTable: string = 'event_requests', notes?: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.addExternalIdToBlacklist(externalId, sourceTable, notes),
+      () => this.fallbackStorage.addExternalIdToBlacklist(externalId, sourceTable, notes)
+    );
+  }
+
+  async getBlacklistedExternalIds() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getBlacklistedExternalIds(),
+      () => this.fallbackStorage.getBlacklistedExternalIds()
+    );
+  }
+
+  async removeExternalIdFromBlacklist(externalId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.removeExternalIdFromBlacklist(externalId),
+      () => this.fallbackStorage.removeExternalIdFromBlacklist(externalId)
+    );
+  }
+
+  async backfillExistingExternalIds() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.backfillExistingExternalIds(),
+      () => this.fallbackStorage.backfillExistingExternalIds()
+    );
+  }
+
   // Organization methods
   async getAllOrganizations() {
     return this.executeWithFallback(
