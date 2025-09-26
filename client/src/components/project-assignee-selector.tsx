@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Users, X } from 'lucide-react';
+import { UserPlus, X } from 'lucide-react';
 
 interface ProjectAssigneeSelectorProps {
   value: string;
@@ -55,44 +55,45 @@ export function ProjectAssigneeSelector({
 
   // Initialize from existing value - handle both single names and comma-separated
   useEffect(() => {
-    if (value && users.length > 0) {
-      const names = value
-        .split(',')
-        .map((name) => name.trim())
-        .filter((name) => name.length > 0);
-      const allUsers: SelectedUser[] = [];
+    if (!value) {
+      setSelectedUsers([]);
+      return;
+    }
 
-      names.forEach((name) => {
-        const matchedUser = users.find((user) => {
-          const fullName = `${user.firstName || ''} ${
-            user.lastName || ''
-          }`.trim();
-          return fullName === name || user.email === name;
-        });
+    const names = value
+      .split(',')
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0);
 
-        if (matchedUser) {
-          const fullName =
-            `${matchedUser.firstName || ''} ${
-              matchedUser.lastName || ''
-            }`.trim() || matchedUser.email;
-          allUsers.push({
-            id: matchedUser.id,
-            name: fullName,
-            isSystemUser: true,
-          });
-        } else {
-          // Add as custom name
-          allUsers.push({
-            id: `custom_${Date.now()}_${Math.random()}`,
-            name,
-            isSystemUser: false,
-          });
-        }
+    const normalizedNames = multiple ? names : names.slice(0, 1);
+
+    const allUsers: SelectedUser[] = normalizedNames.map((name) => {
+      const matchedUser = users.find((user) => {
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        return fullName === name || user.email === name;
       });
 
-      setSelectedUsers(allUsers);
-    }
-  }, [users, value]);
+      if (matchedUser) {
+        const fullName =
+          `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim() ||
+          matchedUser.email;
+        return {
+          id: matchedUser.id,
+          name: fullName,
+          isSystemUser: true,
+        };
+      }
+
+      const safeCustomId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      return {
+        id: `custom_${safeCustomId}_${Math.random()}`,
+        name,
+        isSystemUser: false,
+      };
+    });
+
+    setSelectedUsers(allUsers);
+  }, [multiple, users, value]);
 
   const addUserById = (userId: string) => {
     if (userId === 'none') {
@@ -108,10 +109,9 @@ export function ProjectAssigneeSelector({
     // Check if already selected
     if (selectedUsers.some((u) => u.id === user.id)) return;
 
-    const updatedUsers = [
-      ...selectedUsers,
-      { id: user.id, name: fullName, isSystemUser: true },
-    ];
+    const updatedUsers = multiple
+      ? [...selectedUsers, { id: user.id, name: fullName, isSystemUser: true }]
+      : [{ id: user.id, name: fullName, isSystemUser: true }];
     setSelectedUsers(updatedUsers);
 
     // Update parent
@@ -119,12 +119,13 @@ export function ProjectAssigneeSelector({
   };
 
   const addCustomName = () => {
-    if (!customNameInput.trim()) return;
+    const trimmedName = customNameInput.trim();
+    if (!trimmedName) return;
 
     // Check if already exists
     if (
       selectedUsers.some(
-        (u) => u.name.toLowerCase() === customNameInput.trim().toLowerCase()
+        (u) => u.name.toLowerCase() === trimmedName.toLowerCase()
       )
     ) {
       setCustomNameInput('');
@@ -132,12 +133,12 @@ export function ProjectAssigneeSelector({
     }
 
     const customUser: SelectedUser = {
-      id: `custom_${Date.now()}_${Math.random()}`,
-      name: customNameInput.trim(),
+      id: `custom_${trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}_${Math.random()}`,
+      name: trimmedName,
       isSystemUser: false,
     };
 
-    const updatedUsers = [...selectedUsers, customUser];
+    const updatedUsers = multiple ? [...selectedUsers, customUser] : [customUser];
     setSelectedUsers(updatedUsers);
     setCustomNameInput('');
 
@@ -146,9 +147,19 @@ export function ProjectAssigneeSelector({
   };
 
   const updateParent = (users: SelectedUser[]) => {
-    const names = users.map((u) => u.name).join(', ');
-    const systemUserIds = users.filter((u) => u.isSystemUser).map((u) => u.id);
-    onChange(names, systemUserIds);
+    if (multiple) {
+      const names = users.map((u) => u.name).join(', ');
+      const systemUserIds = users.filter((u) => u.isSystemUser).map((u) => u.id);
+      onChange(names, systemUserIds);
+      return;
+    }
+
+    const selectedUser = users[0];
+    const name = selectedUser ? selectedUser.name : '';
+    const systemUserIds =
+      selectedUser && selectedUser.isSystemUser ? [selectedUser.id] : [];
+
+    onChange(name, systemUserIds);
   };
 
   const removeUser = (userId: string) => {
