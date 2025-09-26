@@ -336,7 +336,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         const lastName = nameParts.slice(1).join(' ') || '';
 
         const existingRequest = existingRequests.find((r) => {
-          // Match by organization name (case-insensitive, fuzzy match)
+          // Match by organization name (case-insensitive, exact match)
           const orgMatch =
             r.organizationName?.toLowerCase().trim() ===
             row.organizationName?.toLowerCase().trim();
@@ -348,7 +348,9 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
              (r.organizationName.toLowerCase().includes('franklin') &&
               row.organizationName.toLowerCase().includes('franklin')) ||
              (r.organizationName.toLowerCase().includes('covey') &&
-              row.organizationName.toLowerCase().includes('covey')));
+              row.organizationName.toLowerCase().includes('covey')) ||
+             (r.organizationName.toLowerCase().includes('cherokee') &&
+              row.organizationName.toLowerCase().includes('cherokee')));
 
           // Require both first AND last name to match (not just one)
           const fullNameMatch =
@@ -371,9 +373,10 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
             row.phone &&
             r.phone.replace(/\D/g, '') === row.phone.replace(/\D/g, ''); // Compare digits only
 
-          // Log potential matches for Franklin Covey
-          if (row.organizationName?.toLowerCase().includes('franklin')) {
-            console.log(`🔍 Franklin Covey matching check:`);
+          // Enhanced logging for debugging matches
+          if (row.organizationName?.toLowerCase().includes('franklin') ||
+              row.organizationName?.toLowerCase().includes('cherokee')) {
+            console.log(`🔍 ${row.organizationName} matching check:`);
             console.log(`  Sheet org: "${row.organizationName}" vs DB org: "${r.organizationName}"`);
             console.log(`  OrgMatch: ${orgMatch}, OrgFuzzyMatch: ${orgFuzzyMatch}`);
             console.log(`  Name match: ${fullNameMatch} (${firstName} ${lastName} vs ${r.firstName} ${r.lastName})`);
@@ -381,22 +384,31 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
             console.log(`  Phone match: ${phoneMatch}`);
           }
 
-          // Since submission timestamp is not available in this spreadsheet,
-          // use more precise matching without time dependency
-          const hasStrongIdentifier = emailMatch || phoneMatch;
-          const hasFullNameAndOrg = fullNameMatch && (orgMatch || orgFuzzyMatch);
-
-          // Only consider duplicate if we have either:
-          // 1. Strong identifier match (email or phone) + org match, OR
-          // 2. Full name + org match AND neither email nor phone exists in either record
-          // 3. Fuzzy org match with ANY other identifier
-          if (hasStrongIdentifier && (orgMatch || orgFuzzyMatch)) {
-            return true; // Strong match via email/phone + org
+          // STRENGTHENED MATCHING LOGIC:
+          // Consider it a duplicate if ANY of these strong criteria match:
+          
+          // 1. Email match with any organization similarity
+          if (emailMatch && (orgMatch || orgFuzzyMatch)) {
+            console.log(`✅ MATCH FOUND: Email + Org match for ${row.organizationName}`);
+            return true;
           }
 
-          if (hasFullNameAndOrg) {
-            // Match on name + org even if contact info differs
-            return true; // Franklin Covey might have updated contact info
+          // 2. Phone match with any organization similarity  
+          if (phoneMatch && (orgMatch || orgFuzzyMatch)) {
+            console.log(`✅ MATCH FOUND: Phone + Org match for ${row.organizationName}`);
+            return true;
+          }
+
+          // 3. Full name + exact organization match
+          if (fullNameMatch && orgMatch) {
+            console.log(`✅ MATCH FOUND: Full name + Exact org match for ${row.organizationName}`);
+            return true;
+          }
+
+          // 4. SUPER STRICT: Same email address anywhere (prevents obvious duplicates)
+          if (emailMatch && row.email && r.email) {
+            console.log(`✅ MATCH FOUND: Same email address for ${row.organizationName} (${row.email})`);
+            return true;
           }
 
           return false;
