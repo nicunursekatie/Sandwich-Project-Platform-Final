@@ -275,6 +275,10 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/monitoring', createErrorHandler('monitoring'));
 
+  // Enhanced user activity tracking (stub)
+  const enhancedActivityRouter = (await import('./enhanced-user-activity')).default;
+  router.use('/api/enhanced-user-activity', enhancedActivityRouter);
+
   return router;
 }
 
