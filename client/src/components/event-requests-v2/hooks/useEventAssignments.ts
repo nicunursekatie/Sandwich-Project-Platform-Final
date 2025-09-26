@@ -12,7 +12,7 @@ export const useEventAssignments = () => {
   
   // Use usersForAssignments for TSP contact resolution (no special permissions required)
   const allUsers = users.length > 0 ? users : usersForAssignments;
-  const { updateEventRequestMutation } = useEventMutations();
+  const { updateEventRequestMutation, assignRecipientsMutation } = useEventMutations();
   const {
     eventRequests,
     setShowAssignmentDialog,
@@ -127,7 +127,7 @@ export const useEventAssignments = () => {
   // Open assignment dialog
   const openAssignmentDialog = (
     eventId: number,
-    type: 'driver' | 'speaker' | 'volunteer'
+    type: 'driver' | 'speaker' | 'volunteer' | 'recipient'
   ) => {
     setAssignmentEventId(eventId);
     setAssignmentType(type);
@@ -140,7 +140,7 @@ export const useEventAssignments = () => {
   // Open assignment dialog in edit mode
   const openEditAssignmentDialog = (
     eventId: number,
-    type: 'driver' | 'speaker' | 'volunteer',
+    type: 'driver' | 'speaker' | 'volunteer' | 'recipient',
     personId: string
   ) => {
     setAssignmentEventId(eventId);

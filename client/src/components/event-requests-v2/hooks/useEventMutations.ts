@@ -333,6 +333,48 @@ export const useEventMutations = () => {
     },
   });
 
+  // Recipient assignment mutation - uses the specific recipients endpoint
+  const assignRecipientsMutation = useMutation({
+    mutationFn: ({ id, assignedRecipientIds }: { id: number; assignedRecipientIds: string[] }) => {
+      console.log('=== RECIPIENT ASSIGNMENT MUTATION ===');
+      console.log('Event ID:', id);
+      console.log('Recipient IDs:', assignedRecipientIds);
+      return apiRequest('PATCH', `/api/event-requests/${id}/recipients`, { assignedRecipientIds });
+    },
+    onSuccess: async (updatedEvent, variables) => {
+      console.log('=== RECIPIENT ASSIGNMENT SUCCESS ===');
+      console.log('Updated event:', updatedEvent);
+      
+      toast({
+        title: 'Recipients assigned',
+        description: 'Recipients have been successfully assigned to this event.',
+      });
+      
+      // Invalidate and refetch event requests
+      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      
+      // Update the selected event if it matches
+      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          console.error('Failed to fetch updated event data:', error);
+        }
+      }
+    },
+    onError: (error) => {
+      console.error('=== RECIPIENT ASSIGNMENT ERROR ===');
+      console.error(error);
+      
+      toast({
+        title: 'Failed to assign recipients',
+        description: 'There was an error assigning recipients to this event.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     deleteEventRequestMutation,
     updateEventRequestMutation,
@@ -343,5 +385,6 @@ export const useEventMutations = () => {
     oneDayFollowUpMutation,
     oneMonthFollowUpMutation,
     rescheduleEventMutation,
+    assignRecipientsMutation,
   };
 };

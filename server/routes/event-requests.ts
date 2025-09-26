@@ -2870,4 +2870,54 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
   }
 });
 
+// Update recipient assignment for event requests
+router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+    const { assignedRecipientIds } = req.body;
+
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+
+    console.log('=== RECIPIENT ASSIGNMENT UPDATE ===');
+    console.log('Event ID:', eventId);
+    console.log('Recipient IDs:', assignedRecipientIds);
+
+    // Check permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_EDIT)) {
+      return res.status(403).json({ error: 'Insufficient permissions to assign recipients' });
+    }
+
+    // Validate that the event exists
+    const existingEvent = await storage.getEventRequestById(eventId);
+    if (!existingEvent) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Update the event with recipient assignment
+    const updatedEventRequest = await storage.updateEventRequest(eventId, {
+      assignedRecipientIds: assignedRecipientIds || [],
+      updatedAt: new Date(),
+    });
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ error: 'Failed to update event request' });
+    }
+
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_EDIT',
+      `Updated recipient assignments for event request: ${eventId}`,
+      { recipientIds: assignedRecipientIds }
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    console.error('Error updating recipient assignment:', error);
+    res.status(500).json({ error: 'Failed to update recipient assignment' });
+  }
+});
+
 export default router;

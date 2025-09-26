@@ -1469,6 +1469,7 @@ export const eventRequests = pgTable(
     assignedSpeakerIds: text('assigned_speaker_ids').array(), // Array of assigned speaker IDs/names
     assignedDriverSpeakers: text('assigned_driver_speakers').array(), // Array of driver IDs who are also speakers
     assignedVolunteerIds: text('assigned_volunteer_ids').array(), // Array of assigned volunteer IDs/names
+    assignedRecipientIds: text('assigned_recipient_ids').array(), // Array of assigned recipient IDs
 
     // Van driver assignment
     vanDriverNeeded: boolean('van_driver_needed').default(false), // Whether a van driver is required

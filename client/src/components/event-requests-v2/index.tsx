@@ -123,6 +123,7 @@ const EventRequestsManagementContent: React.FC = () => {
     markToolkitSentMutation,
     scheduleCallMutation,
     oneDayFollowUpMutation,
+    assignRecipientsMutation,
     oneMonthFollowUpMutation,
     updateEventRequestMutation,
   } = useEventMutations();
@@ -518,6 +519,23 @@ const EventRequestsManagementContent: React.FC = () => {
 
                 updateData.volunteerDetails = volunteerDetails;
                 updateData.volunteerAssignments = volunteerAssignments;
+
+              } else if (assignmentType === 'recipient') {
+                // Handle recipient assignments using the specific recipients endpoint
+                console.log('=== RECIPIENT ASSIGNMENT LOGIC ===');
+                console.log('Assignees for recipients:', assignees);
+                
+                await assignRecipientsMutation.mutateAsync({
+                  id: assignmentEventId,
+                  assignedRecipientIds: assignees,
+                });
+                
+                // Close the dialog and reset state
+                setShowAssignmentDialog(false);
+                setAssignmentType(null);
+                setAssignmentEventId(null);
+                setSelectedAssignees([]);
+                return; // Exit early since we handled recipients differently
               }
 
               console.log('Update data:', updateData);

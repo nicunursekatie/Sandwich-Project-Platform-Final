@@ -68,8 +68,8 @@ interface EventRequestContextType {
   setTspContactEventRequest: (event: EventRequest | null) => void;
 
   // Assignment state
-  assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
-  setAssignmentType: (type: 'driver' | 'speaker' | 'volunteer' | null) => void;
+  assignmentType: 'driver' | 'speaker' | 'volunteer' | 'recipient' | null;
+  setAssignmentType: (type: 'driver' | 'speaker' | 'volunteer' | 'recipient' | null) => void;
   assignmentEventId: number | null;
   setAssignmentEventId: (id: number | null) => void;
   selectedAssignees: string[];
