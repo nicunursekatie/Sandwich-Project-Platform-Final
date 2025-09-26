@@ -1137,10 +1137,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               const detailName = (
                                 request.driverDetails as any
                               )?.[driverId]?.name;
-                              name =
-                                detailName && !/^[\d]+$/.test(detailName)
-                                  ? detailName
-                                  : resolveUserName(driverId);
+                              // Check if detailName is actually a name (not an ID)
+                              const isActualName = detailName &&
+                                !/^[\d]+$/.test(detailName) &&
+                                !detailName.startsWith('user_') &&
+                                !detailName.startsWith('admin_');
+                              name = isActualName ? detailName : resolveUserName(driverId);
                             }
                             return (
                               <div
