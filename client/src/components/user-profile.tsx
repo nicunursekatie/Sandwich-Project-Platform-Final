@@ -252,34 +252,36 @@ export default function UserProfile() {
     },
   });
 
-  // SMS form handling
+  // SMS form handling - improved phone number formatting
   const formatPhoneNumber = (value: string) => {
     // Remove all non-digits
     const digits = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits maximum
+    const limitedDigits = digits.slice(0, 10);
 
-    // Format as (XXX) XXX-XXXX for US numbers
-    if (digits.length >= 10) {
-      const match = digits.match(/^(\d{3})(\d{3})(\d{4})/);
-      if (match) {
-        return `(${match[1]}) ${match[2]}-${match[3]}`;
-      }
-    } else if (digits.length >= 6) {
-      const match = digits.match(/^(\d{3})(\d{3})/);
-      if (match) {
-        return `(${match[1]}) ${match[2]}`;
-      }
-    } else if (digits.length >= 3) {
-      const match = digits.match(/^(\d{3})/);
-      if (match) {
-        return `(${match[1]})`;
-      }
+    // Format progressively as user types
+    if (limitedDigits.length === 0) return '';
+    if (limitedDigits.length <= 3) return limitedDigits;
+    if (limitedDigits.length <= 6) {
+      return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`;
     }
-
-    return digits;
+    // Format full number
+    return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumber(e.target.value);
+    const input = e.target.value;
+    
+    // Allow backspacing and deletion
+    if (input.length < phoneNumber.length) {
+      const digits = input.replace(/\D/g, '');
+      setPhoneNumber(formatPhoneNumber(digits));
+      return;
+    }
+    
+    // Format normally for new input
+    const formatted = formatPhoneNumber(input);
     setPhoneNumber(formatted);
   };
 
