@@ -18,6 +18,7 @@ import {
   Save,
   X,
   User,
+  UserPlus,
   History,
   ChevronDown,
   ChevronUp,
