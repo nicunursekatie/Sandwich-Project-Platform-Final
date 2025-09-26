@@ -175,10 +175,19 @@ export async function sendTestSMS(
   }
 
   try {
-    // Clean and format phone number
-    const cleanPhone = toPhoneNumber.replace(/[^\d+]/g, '');
-    const formattedPhone =
-      cleanPhone.length === 10 ? `+1${cleanPhone}` : cleanPhone;
+    // Clean and format phone number with improved handling for AT&T
+    let formattedPhone = toPhoneNumber.replace(/[^\d+]/g, '');
+
+    // Ensure proper E.164 format for US numbers
+    if (formattedPhone.startsWith('1') && formattedPhone.length === 11) {
+      formattedPhone = `+${formattedPhone}`;
+    } else if (formattedPhone.length === 10) {
+      formattedPhone = `+1${formattedPhone}`;
+    } else if (!formattedPhone.startsWith('+')) {
+      formattedPhone = `+${formattedPhone}`;
+    }
+
+    console.log(`📱 Formatting phone number: ${toPhoneNumber} -> ${formattedPhone}`);
 
     const testMessage = `🧪 Test SMS from The Sandwich Project! This is a test of the SMS reminder system. App link: ${
       appUrl || 'https://your-app.replit.app'
@@ -218,9 +227,18 @@ export function generateVerificationCode(): string {
  */
 export async function sendConfirmationSMS(
   phoneNumber: string,
-  verificationCode: string
+  verificationCode: string,
+  retryCount: number = 0
 ): Promise<SMSConfirmationResult> {
+  console.log('📱 Attempting to send confirmation SMS...');
+  console.log('Phone number:', phoneNumber);
+  console.log('Verification code:', verificationCode);
+  console.log('Retry attempt:', retryCount);
+  console.log('Twilio configured:', !!twilioClient);
+  console.log('Twilio phone:', process.env.TWILIO_PHONE_NUMBER);
+
   if (!twilioClient) {
+    console.error('❌ Twilio client not initialized');
     return {
       success: false,
       message: 'SMS service not configured - missing Twilio credentials',
@@ -228,6 +246,7 @@ export async function sendConfirmationSMS(
   }
 
   if (!process.env.TWILIO_PHONE_NUMBER) {
+    console.error('❌ TWILIO_PHONE_NUMBER not set');
     return {
       success: false,
       message: 'SMS service not configured - missing Twilio phone number',
@@ -235,26 +254,89 @@ export async function sendConfirmationSMS(
   }
 
   try {
-    const confirmationMessage = `Welcome to The Sandwich Project! 🥪\n\nTo complete your SMS signup, please reply with your verification code:\n\n${verificationCode}\n\nOr simply reply "YES" to confirm.\n\nThis confirms you want to receive weekly sandwich collection reminders.`;
+    // Format phone number with improved AT&T compatibility
+    let formattedPhone = phoneNumber.replace(/[^\d+]/g, '');
+    if (formattedPhone.startsWith('1') && formattedPhone.length === 11) {
+      formattedPhone = `+${formattedPhone}`;
+    } else if (formattedPhone.length === 10) {
+      formattedPhone = `+1${formattedPhone}`;
+    } else if (!formattedPhone.startsWith('+')) {
+      formattedPhone = `+${formattedPhone}`;
+    }
+
+    console.log(`📱 Phone number formatting: ${phoneNumber} -> ${formattedPhone}`);
+
+    // Simplified message to avoid carrier filtering
+    const confirmationMessage = `Sandwich Project: Your verification code is ${verificationCode}. Reply with this code or YES to confirm weekly reminders.`;
+
+    console.log('📤 Sending SMS via Twilio...');
+    console.log('Message length:', confirmationMessage.length, 'characters');
 
     const result = await twilioClient.messages.create({
       body: confirmationMessage,
       from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneNumber,
+      to: formattedPhone,
+      // Add status callback to track delivery
+      statusCallback: process.env.REPLIT_DOMAIN
+        ? `https://${process.env.REPLIT_DOMAIN}/api/users/sms-webhook/status`
+        : undefined,
     });
 
     console.log(`✅ SMS confirmation sent to ${phoneNumber} (${result.sid})`);
+    console.log('Message status:', result.status);
+    console.log('Message price:', result.price);
 
     return {
       success: true,
       message: `Confirmation SMS sent successfully to ${phoneNumber}`,
       verificationCode,
     };
-  } catch (error) {
-    console.error('Error sending confirmation SMS:', error);
+  } catch (error: any) {
+    console.error('❌ Error sending confirmation SMS:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('More info:', error.moreInfo);
+
+    // Check for specific Twilio error codes
+    if (error.code === 21211) {
+      return {
+        success: false,
+        message: `Invalid phone number format: ${phoneNumber}. Please use format: +1XXXXXXXXXX`,
+      };
+    } else if (error.code === 21608) {
+      return {
+        success: false,
+        message: `The phone number ${phoneNumber} is not verified with your Twilio trial account. Add it as a verified number in Twilio console.`,
+      };
+    } else if (error.code === 21610) {
+      return {
+        success: false,
+        message: `The phone number ${phoneNumber} has opted out of receiving messages. Reply START to opt back in.`,
+      };
+    } else if (error.code === 30032 || error.code === 30005) {
+      // Error 30032: Unknown destination handset (carrier issue)
+      // Error 30005: Unknown destination handset (number unreachable)
+      console.log(`⚠️ Carrier delivery issue (${error.code}), attempting retry...`);
+
+      if (retryCount < 2) {
+        // Wait before retry (exponential backoff)
+        const delay = (retryCount + 1) * 2000;
+        console.log(`⏱️ Waiting ${delay}ms before retry ${retryCount + 1}...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        // Retry with incremented count
+        return sendConfirmationSMS(phoneNumber, verificationCode, retryCount + 1);
+      }
+
+      return {
+        success: false,
+        message: `Unable to deliver SMS to ${phoneNumber}. This may be due to carrier restrictions. Please ensure the number can receive SMS messages and try again.`,
+      };
+    }
+
     return {
       success: false,
-      message: `Failed to send confirmation SMS: ${(error as Error).message}`,
+      message: `Failed to send SMS: ${error.message}`,
     };
   }
 }

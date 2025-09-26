@@ -581,4 +581,93 @@ router.post('/sms/webhook', async (req, res) => {
   }
 });
 
+/**
+ * Twilio status webhook endpoint for message delivery status
+ * This endpoint tracks delivery status of outbound SMS messages
+ */
+router.post('/users/sms-webhook/status', async (req, res) => {
+  try {
+    console.log('📱 Received Twilio status webhook:', req.body);
+
+    const { MessageSid, MessageStatus, ErrorCode, To, From } = req.body;
+
+    if (MessageStatus === 'undelivered' || MessageStatus === 'failed') {
+      console.error(`❌ SMS delivery failed:`, {
+        sid: MessageSid,
+        status: MessageStatus,
+        errorCode: ErrorCode,
+        to: To,
+        from: From,
+      });
+
+      // Log specific error code details
+      if (ErrorCode === '30032') {
+        console.error('⚠️ Error 30032: Carrier unreachable. This may be due to:');
+        console.error('- The number may be a landline');
+        console.error('- Carrier-specific filtering (AT&T/Verizon may block unregistered numbers)');
+        console.error('- The number needs to be registered with A2P 10DLC');
+        console.error('- Try texting "START" to the Twilio number from the recipient phone first');
+      } else if (ErrorCode === '30005') {
+        console.error('⚠️ Error 30005: Unknown destination handset');
+        console.error('- The phone number format may be incorrect');
+        console.error('- The number may not exist or be deactivated');
+      } else if (ErrorCode === '30003') {
+        console.error('⚠️ Error 30003: Unreachable destination handset');
+        console.error('- The phone is likely turned off or out of service area');
+      } else if (ErrorCode === '30006') {
+        console.error('⚠️ Error 30006: Landline or unreachable carrier');
+        console.error('- The number is likely a landline that cannot receive SMS');
+      } else if (ErrorCode === '30007') {
+        console.error('⚠️ Error 30007: Carrier violation');
+        console.error('- Message content was blocked by the carrier');
+        console.error('- May need to register for A2P 10DLC');
+      } else if (ErrorCode === '30008') {
+        console.error('⚠️ Error 30008: Unknown error');
+        console.error('- Carrier returned an unknown error');
+      }
+
+      // Update user's SMS status if delivery fails with certain error codes
+      if (['30032', '30005', '30006'].includes(ErrorCode)) {
+        // These errors indicate the number cannot receive SMS
+        const allUsers = await storage.getAllUsers();
+        const affectedUser = allUsers.find((user) => {
+          const metadata = user.metadata as any || {};
+          const smsConsent = metadata.smsConsent || {};
+          return smsConsent.phoneNumber === To;
+        });
+
+        if (affectedUser) {
+          const metadata = affectedUser.metadata as any || {};
+          const updatedMetadata = {
+            ...metadata,
+            smsConsent: {
+              ...metadata.smsConsent,
+              lastDeliveryError: {
+                errorCode: ErrorCode,
+                errorTime: new Date().toISOString(),
+                messageSid: MessageSid,
+              },
+            },
+          };
+
+          await storage.updateUser(affectedUser.id, { metadata: updatedMetadata });
+          console.log(`📝 Updated user ${affectedUser.email} with delivery error information`);
+        }
+      }
+    } else if (MessageStatus === 'delivered') {
+      console.log(`✅ SMS delivered successfully:`, {
+        sid: MessageSid,
+        to: To,
+      });
+    }
+
+    // Always respond with 200 OK to Twilio
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Error processing SMS status webhook:', error);
+    // Always respond with 200 OK to Twilio even on errors
+    res.status(200).send('OK');
+  }
+});
+
 export { router as smsUserRoutes };

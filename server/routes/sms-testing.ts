@@ -21,12 +21,46 @@ const reminderSMSSchema = z.object({
 router.get('/sms/config', isAuthenticated, requirePermission('USERS_EDIT'), async (req, res) => {
   try {
     const config = validateSMSConfig();
+
+    // Test Twilio connection if configured
+    let twilioStatus = 'not_configured';
+    let twilioError = null;
+
+    if (config.isConfigured) {
+      try {
+        const Twilio = await import('twilio');
+        const client = Twilio.default(
+          process.env.TWILIO_ACCOUNT_SID,
+          process.env.TWILIO_AUTH_TOKEN
+        );
+
+        // Try to fetch account info to verify credentials
+        const account = await client.api.accounts(process.env.TWILIO_ACCOUNT_SID).fetch();
+        twilioStatus = 'connected';
+        console.log('✅ Twilio connection successful:', account.friendlyName);
+      } catch (err: any) {
+        twilioStatus = 'error';
+        twilioError = err.message;
+        console.error('❌ Twilio connection error:', err);
+      }
+    }
+
     res.json({
       isConfigured: config.isConfigured,
       missingItems: config.missingItems,
       twilioInitialized: !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN,
+      twilioStatus,
+      twilioError,
+      twilioPhone: process.env.TWILIO_PHONE_NUMBER ?
+        process.env.TWILIO_PHONE_NUMBER.substring(0, 3) + '****' + process.env.TWILIO_PHONE_NUMBER.slice(-4) :
+        null,
+      environment: {
+        hasAccountSid: !!process.env.TWILIO_ACCOUNT_SID,
+        hasAuthToken: !!process.env.TWILIO_AUTH_TOKEN,
+        hasPhoneNumber: !!process.env.TWILIO_PHONE_NUMBER,
+      }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error checking SMS configuration:', error);
     res.status(500).json({
       error: 'Failed to check SMS configuration',
