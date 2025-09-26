@@ -770,14 +770,13 @@ export default function UserProfile() {
             </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* Toll-Free Verification Panel - Admin Only */}
-        {user && user.permissions && user.permissions >= 80 && (
-          <div className="space-y-6">
-            <Separator />
-            <TollFreeVerificationPanel />
-          </div>
-        )}
+      {/* Toll-Free Verification Panel - Admin Only */}
+      {activeTab === 'notifications' && user && typeof user.permissions === 'number' && user.permissions >= 80 && (
+        <div className="space-y-6">
+          <TollFreeVerificationPanel />
+        </div>
       )}
     </div>
   );
