@@ -1573,6 +1573,30 @@ export const organizations = pgTable(
   })
 );
 
+// Imported external IDs tracking table for permanent blacklist system
+// Prevents re-importing external_ids that have ever been imported, even if the original record is deleted
+export const importedExternalIds = pgTable(
+  'imported_external_ids',
+  {
+    id: serial('id').primaryKey(),
+    externalId: varchar('external_id').notNull().unique(), // External ID from Google Sheets or other sources
+    importedAt: timestamp('imported_at').defaultNow().notNull(), // When this external_id was first imported
+    sourceTable: varchar('source_table').notNull().default('event_requests'), // Which table the external_id was imported to
+    notes: text('notes'), // Optional notes about the import
+  },
+  (table) => ({
+    externalIdIdx: index('idx_imported_external_ids_external_id').on(
+      table.externalId
+    ),
+    sourceTableIdx: index('idx_imported_external_ids_source_table').on(
+      table.sourceTable
+    ),
+    importedAtIdx: index('idx_imported_external_ids_imported_at').on(
+      table.importedAt
+    ),
+  })
+);
+
 // Event volunteers table for managing volunteer assignments to events
 export const eventVolunteers = pgTable(
   'event_volunteers',
@@ -2016,6 +2040,15 @@ export const insertMeetingNoteSchema = createInsertSchema(meetingNotes).omit({
 
 export type MeetingNote = typeof meetingNotes.$inferSelect;
 export type InsertMeetingNote = z.infer<typeof insertMeetingNoteSchema>;
+
+// Imported external IDs schema types for permanent blacklist system
+export const insertImportedExternalIdSchema = createInsertSchema(importedExternalIds).omit({
+  id: true,
+  importedAt: true,
+});
+
+export type ImportedExternalId = typeof importedExternalIds.$inferSelect;
+export type InsertImportedExternalId = z.infer<typeof insertImportedExternalIdSchema>;
 
 // =============================================================================
 // SMART NOTIFICATIONS SYSTEM SCHEMA

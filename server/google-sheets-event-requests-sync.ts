@@ -607,12 +607,14 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
   }
 
   /**
-   * Sync from Google Sheets to database using external_id for duplicate prevention
+   * Sync from Google Sheets to database using permanent blacklist for external_id tracking
    * REQUIREMENTS:
    * 1. Require external_id from the sheet
-   * 2. Use .onConflictDoNothing() to never update existing rows
-   * 3. Skip blank external_id rows
-   * 4. Never update existing records - only insert new records
+   * 2. Check permanent blacklist before attempting any insertions
+   * 3. Skip external_ids that have EVER been imported (even if deleted)
+   * 4. Add external_id to blacklist when successfully inserting new records
+   * 5. Skip blank external_id rows
+   * 6. Never update existing records - only insert new records
    */
   async syncFromGoogleSheets(): Promise<{
     success: boolean;
@@ -630,9 +632,11 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       let skippedNoExternalId = 0;
       let skippedOldCount = 0;
       let conflictSkippedCount = 0;
+      let blacklistSkippedCount = 0;
 
       console.log(`🔍 SYNC ANALYSIS: Processing ${sheetRows.length} rows from Google Sheets`);
-      console.log(`🔍 SYNC SAFETY: Using external_id for duplicate prevention with onConflictDoNothing()`);
+      console.log(`🔍 SYNC SAFETY: Using permanent blacklist system for external_id duplicate prevention`);
+      console.log(`🛡️ BLACKLIST: Checking imported_external_ids table to prevent re-importing deleted records`);
 
       for (const row of sheetRows) {
         // REQUIREMENT: Skip rows without external_id (blank/missing/null)
@@ -641,6 +645,19 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           console.log(`⏭️ SKIPPED: Row missing external_id - ${row.organizationName || 'Unknown Org'} - ${row.contactName || 'Unknown Contact'}`);
           continue;
         }
+
+        // CRITICAL: Check permanent blacklist BEFORE attempting any insertion
+        const externalIdTrimmed = row.externalId.trim();
+        const isBlacklisted = await this.storage.checkExternalIdExists(externalIdTrimmed, 'event_requests');
+        
+        if (isBlacklisted) {
+          blacklistSkippedCount++;
+          console.log(`🚫 BLACKLIST: External_id already imported (permanently blocked): ${externalIdTrimmed} - ${row.organizationName}`);
+          console.log(`    ↳ This external_id has been imported before and will NEVER be imported again`);
+          continue;
+        }
+
+        console.log(`✅ BLACKLIST: External_id ${externalIdTrimmed} is clear for import - ${row.organizationName}`);
 
         if (!row.organizationName) {
           console.log(`⏭️ SKIPPED: Row missing organization name - external_id: ${row.externalId}`);
@@ -695,23 +712,34 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         };
 
         try {
-          // REQUIREMENT: Use onConflictDoNothing() to never update existing rows
-          // Only insert new records, never modify existing ones
+          // SAFE INSERT: Since we've checked the blacklist, this should be a new record
+          // No need for onConflictDoNothing() since blacklist already prevents duplicates
           const result = await db
             .insert(eventRequests)
             .values(sanitizedData as any)
-            .onConflictDoNothing({
-              target: eventRequests.externalId,
-            })
             .returning({ id: eventRequests.id, externalId: eventRequests.externalId });
 
           if (result && result.length > 0) {
-            // Record was inserted (new)
+            // Record was successfully inserted
             console.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
+            
+            // CRITICAL: Add external_id to permanent blacklist immediately after successful insertion
+            try {
+              await this.storage.addExternalIdToBlacklist(
+                externalIdTrimmed,
+                'event_requests',
+                `Imported from Google Sheets on ${new Date().toISOString()}`
+              );
+              console.log(`🛡️ BLACKLIST: Added external_id ${externalIdTrimmed} to permanent blacklist`);
+            } catch (blacklistError) {
+              console.error(`⚠️ WARNING: Failed to add external_id ${externalIdTrimmed} to blacklist:`, blacklistError);
+              // Continue processing - the record was still inserted successfully
+            }
+            
             createdCount++;
           } else {
-            // Record already existed (conflict, not inserted due to onConflictDoNothing)
-            console.log(`⏭️ DUPLICATE: external_id already exists: ${row.externalId} - ${row.organizationName}`);
+            // This shouldn't happen since we checked the blacklist, but handle gracefully
+            console.warn(`⚠️ UNEXPECTED: Insert returned no result for external_id: ${row.externalId} - ${row.organizationName}`);
             conflictSkippedCount++;
           }
         } catch (error) {
@@ -720,14 +748,15 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         }
       }
 
-      console.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${conflictSkippedCount} duplicates skipped by onConflictDoNothing, ${skippedNoExternalId} rows without external_id skipped, ${skippedOldCount} old events skipped`);
-      console.log(`🛡️ SAFETY CONFIRMATION: Using external_id + onConflictDoNothing ensures ZERO existing records are ever modified`);
+      console.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${blacklistSkippedCount} blocked by permanent blacklist, ${conflictSkippedCount} other conflicts, ${skippedNoExternalId} rows without external_id skipped, ${skippedOldCount} old events skipped`);
+      console.log(`🛡️ SAFETY CONFIRMATION: Permanent blacklist system ensures external_ids are NEVER imported twice`);
+      console.log(`🛡️ IMPORT ONCE GUARANTEE: ${blacklistSkippedCount} external_ids were permanently blocked from re-import`);
 
       return {
         success: true,
-        message: `Successfully synced from Google Sheets using external_id: ${createdCount} created, ${conflictSkippedCount} duplicates prevented, ${skippedNoExternalId} missing external_id skipped`,
+        message: `Successfully synced using permanent blacklist: ${createdCount} created, ${blacklistSkippedCount} permanently blocked, ${skippedNoExternalId} missing external_id skipped`,
         created: createdCount,
-        updated: 0, // Always 0 - onConflictDoNothing never updates existing records
+        updated: 0, // Always 0 - we never update existing records
       };
     } catch (error) {
       console.error('Error syncing from Google Sheets:', error);
@@ -941,7 +970,7 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       firstName: getColumnIndex(['first name', 'fname', 'first']), // Legacy support
       lastName: getColumnIndex(['last name', 'lname', 'last']), // Legacy support
       email: getColumnIndex(['your email', 'email', 'email address', 'e-mail', 'contact email']),
-      organizationName: getColumnIndex(['group/organization name', 'organization', 'group', 'organization name', 'company', 'org name']),
+      organizationName: getColumnIndex(['grouporganization', 'group/organization name', 'organization', 'group', 'organization name', 'company', 'org name']),
       department: getColumnIndex(['department/team if applicable', 'department', 'team', 'dept', 'division', 'department/team']),
       phone: getColumnIndex(['phone number', 'phone', 'contact phone', 'telephone', 'mobile', 'cell phone']),
       desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date']),
