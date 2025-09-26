@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Shield,
   Clock,
@@ -36,6 +37,9 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
+  ChevronDown,
+  Calendar,
+  Activity,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
@@ -79,20 +83,21 @@ export function EventRequestAuditLog({
   const [actionFilter, setActionFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const { trackView, trackClick, trackFilter, trackSearch } =
     useActivityTracker();
 
   // Check permissions
   if (!hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-              <Shield className="h-6 w-6 text-red-600" />
+      <div className="flex items-center justify-center min-h-[300px]" data-testid="audit-log-access-denied">
+        <Card className="w-full max-w-md text-center shadow-lg">
+          <CardHeader className="pb-4">
+            <div className="mx-auto w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <Shield className="h-8 w-8 text-red-600" />
             </div>
-            <CardTitle className="text-xl">Access Restricted</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl font-sub-heading text-gray-900">Access Restricted</CardTitle>
+            <CardDescription className="text-base text-gray-600 leading-relaxed">
               You don't have permission to view event request audit logs. Contact an
               administrator if you need access.
             </CardDescription>
@@ -175,45 +180,46 @@ export function EventRequestAuditLog({
   }, [auditLogs, searchTerm]);
 
   const getActionIcon = (action: string) => {
+    const iconClass = "h-5 w-5";
     switch (action) {
       case 'CREATE':
-        return <Plus className="h-4 w-4" />;
+        return <Plus className={iconClass} />;
       case 'PRIMARY_CONTACT_COMPLETED':
-        return <UserCheck className="h-4 w-4" />;
+        return <UserCheck className={iconClass} />;
       case 'EVENT_DETAILS_UPDATED':
-        return <Edit className="h-4 w-4" />;
+        return <Edit className={iconClass} />;
       case 'STATUS_CHANGED':
-        return <RefreshCw className="h-4 w-4" />;
+        return <RefreshCw className={iconClass} />;
       case 'FOLLOW_UP_RECORDED':
-        return <Mail className="h-4 w-4" />;
+        return <Mail className={iconClass} />;
       case 'MARKED_UNRESPONSIVE':
-        return <AlertTriangle className="h-4 w-4" />;
+        return <AlertTriangle className={iconClass} />;
       case 'DELETE':
-        return <Trash2 className="h-4 w-4" />;
+        return <Trash2 className={iconClass} />;
       default:
-        return <FileText className="h-4 w-4" />;
+        return <FileText className={iconClass} />;
     }
   };
 
-  const getActionColor = (action: string) => {
+  const getActionStyle = (action: string) => {
     switch (action) {
       case 'CREATE':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        return 'bg-green-50 text-green-700 border-green-200';
       case 'PRIMARY_CONTACT_COMPLETED':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'EVENT_DETAILS_UPDATED':
       case 'UPDATE':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+        return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'STATUS_CHANGED':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+        return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'FOLLOW_UP_RECORDED':
-        return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
+        return 'bg-cyan-50 text-cyan-700 border-cyan-200';
       case 'MARKED_UNRESPONSIVE':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
       case 'DELETE':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        return 'bg-red-50 text-red-700 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
@@ -238,27 +244,31 @@ export function EventRequestAuditLog({
         // If we have structured changes, render them properly
         if (metadataChanges.length > 0) {
           return (
-            <div className="mt-2 space-y-1">
+            <div className="mt-3 space-y-2">
+              <div className="text-sm font-medium text-gray-700 mb-2">What Changed:</div>
               {metadataChanges.map((change: any, index: number) => (
-                <div key={index} className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                  <Edit className="h-3 w-3 mr-1 text-orange-500" />
-                  <span className="font-medium text-gray-800 dark:text-gray-200">
-                    {change.fieldDisplayName}:
-                  </span>
-                  <span className="ml-1">
-                    {change.oldValue && change.oldValue !== '(empty)' && (
-                      <span className="line-through text-red-600 dark:text-red-400 mr-1">
-                        {String(change.oldValue).length > 50 
-                          ? `${String(change.oldValue).substring(0, 47)}...` 
-                          : String(change.oldValue)}
-                      </span>
-                    )}
-                    <span className="text-green-600 dark:text-green-400">
-                      {String(change.newValue).length > 50 
-                        ? `${String(change.newValue).substring(0, 47)}...` 
-                        : String(change.newValue)}
+                <div key={index} className="flex items-start text-sm bg-gray-50 p-2 rounded border-l-4 border-l-teal-500">
+                  <Edit className="h-4 w-4 mr-2 mt-0.5 text-orange-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-gray-900">
+                      {change.fieldDisplayName}:
                     </span>
-                  </span>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      {change.oldValue && change.oldValue !== '(empty)' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs bg-red-100 text-red-700 rounded line-through">
+                          {String(change.oldValue).length > 30 
+                            ? `${String(change.oldValue).substring(0, 27)}...` 
+                            : String(change.oldValue)}
+                        </span>
+                      )}
+                      {change.oldValue && change.oldValue !== '(empty)' && <span className="text-gray-400">→</span>}
+                      <span className="inline-flex items-center px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
+                        {String(change.newValue).length > 30 
+                          ? `${String(change.newValue).substring(0, 27)}...` 
+                          : String(change.newValue)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -271,13 +281,12 @@ export function EventRequestAuditLog({
 
     // Fallback: If we have a changeDescription from the enhanced AuditLogger but no structured data
     if (log.changeDescription && log.changeDescription !== log.actionDescription) {
-      // FIXED: Don't split on comma - this was breaking with comma-containing values
-      // Instead, treat the whole description as a single change
       return (
-        <div className="mt-2 space-y-1">
-          <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-            <Edit className="h-3 w-3 mr-1 text-orange-500" />
-            <span>{log.changeDescription}</span>
+        <div className="mt-3">
+          <div className="text-sm font-medium text-gray-700 mb-2">What Changed:</div>
+          <div className="flex items-start text-sm bg-gray-50 p-2 rounded border-l-4 border-l-teal-500">
+            <Edit className="h-4 w-4 mr-2 mt-0.5 text-orange-600 flex-shrink-0" />
+            <span className="text-gray-800">{log.changeDescription}</span>
           </div>
         </div>
       );
@@ -286,10 +295,11 @@ export function EventRequestAuditLog({
     // Fallback to legacy details display
     if (log.details?.updatedFields) {
       return (
-        <div className="mt-2 space-y-1">
-          <div className="flex items-center text-xs text-gray-500">
-            <Edit className="h-3 w-3 mr-1" />
-            Updated: {log.details.updatedFields.join(', ')}
+        <div className="mt-3">
+          <div className="text-sm font-medium text-gray-700 mb-2">Fields Updated:</div>
+          <div className="flex items-center text-sm bg-gray-50 p-2 rounded">
+            <Edit className="h-4 w-4 mr-2 text-orange-600" />
+            <span className="text-gray-800">{log.details.updatedFields.join(', ')}</span>
           </div>
         </div>
       );
@@ -334,18 +344,18 @@ export function EventRequestAuditLog({
 
   if (isLoading) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+      <Card className="w-full shadow-lg" data-testid="audit-log-loading">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl font-sub-heading text-gray-900">
+            <Shield className="h-6 w-6 text-teal-600" />
             Loading Audit Log...
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="h-6 bg-gray-200 rounded-md w-3/4"></div>
+            <div className="h-6 bg-gray-200 rounded-md w-1/2"></div>
+            <div className="h-6 bg-gray-200 rounded-md w-2/3"></div>
           </div>
         </CardContent>
       </Card>
@@ -353,129 +363,152 @@ export function EventRequestAuditLog({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <Card className="w-full shadow-lg" data-testid="audit-log">
+      <CardHeader className="pb-4">
         <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Event Request Audit Log
-            {eventId && <Badge variant="outline">Event #{eventId}</Badge>}
+          <div className="flex items-center gap-3">
+            <Shield className="h-6 w-6 text-teal-600" />
+            <div>
+              <h1 className="text-2xl font-sub-heading text-gray-900">Event Request Audit Log</h1>
+              {eventId && (
+                <Badge variant="outline" className="mt-1 text-teal-700 border-teal-300 bg-teal-50">
+                  Event #{eventId}
+                </Badge>
+              )}
+            </div>
           </div>
-          <Button onClick={handleRefresh} size="sm" variant="outline">
+          <Button 
+            onClick={handleRefresh} 
+            className="btn-tsp-primary"
+            data-testid="button-refresh-audit-log"
+          >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
         </CardTitle>
-        <CardDescription>
-          Complete tracking of all changes made to event requests - who did what
-          and when
+        <CardDescription className="text-base text-gray-600 leading-relaxed">
+          Complete tracking of all changes made to event requests - who did what and when
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {showFilters && (
-          <div className="space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search by organization, contact, user, or action..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <Select
-                  value={timeFilter}
-                  onValueChange={(value) => handleFilterChange('time', value)}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Last Hour</SelectItem>
-                    <SelectItem value="24">Last 24h</SelectItem>
-                    <SelectItem value="72">Last 3 days</SelectItem>
-                    <SelectItem value="168">Last Week</SelectItem>
-                    <SelectItem value="720">Last Month</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center gap-2">
+          <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <CollapsibleTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full md:w-auto flex items-center gap-2 text-base"
+                data-testid="button-toggle-filters"
+              >
                 <Filter className="h-4 w-4" />
-                <Select
-                  value={actionFilter}
-                  onValueChange={(value) => handleFilterChange('action', value)}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Actions</SelectItem>
-                    <SelectItem value="CREATE">Create Request</SelectItem>
-                    <SelectItem value="PRIMARY_CONTACT_COMPLETED">
-                      Contact Completed
-                    </SelectItem>
-                    <SelectItem value="EVENT_DETAILS_UPDATED">
-                      Details Updated
-                    </SelectItem>
-                    <SelectItem value="STATUS_CHANGED">
-                      Status Changed
-                    </SelectItem>
-                    <SelectItem value="FOLLOW_UP_RECORDED">
-                      Follow-up Recorded
-                    </SelectItem>
-                    <SelectItem value="MARKED_UNRESPONSIVE">
-                      Marked Unresponsive
-                    </SelectItem>
-                    <SelectItem value="DELETE">Deleted</SelectItem>
-                  </SelectContent>
-                </Select>
+                Filters
+                <ChevronDown className={`h-4 w-4 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent className="space-y-4 mt-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  placeholder="Search by organization, contact, user, or action..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10 text-base h-12"
+                  data-testid="input-search-audit-log"
+                />
               </div>
 
-              {uniqueUsers.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
+              {/* Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Time Range
+                  </label>
                   <Select
-                    value={userFilter}
-                    onValueChange={(value) => handleFilterChange('user', value)}
+                    value={timeFilter}
+                    onValueChange={(value) => handleFilterChange('time', value)}
                   >
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="h-12 text-base" data-testid="select-time-filter">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Users</SelectItem>
-                      {uniqueUsers.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.email}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="1">Last Hour</SelectItem>
+                      <SelectItem value="24">Last 24h</SelectItem>
+                      <SelectItem value="72">Last 3 days</SelectItem>
+                      <SelectItem value="168">Last Week</SelectItem>
+                      <SelectItem value="720">Last Month</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              )}
-            </div>
-          </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Action Type
+                  </label>
+                  <Select
+                    value={actionFilter}
+                    onValueChange={(value) => handleFilterChange('action', value)}
+                  >
+                    <SelectTrigger className="h-12 text-base" data-testid="select-action-filter">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Actions</SelectItem>
+                      <SelectItem value="CREATE">Create Request</SelectItem>
+                      <SelectItem value="PRIMARY_CONTACT_COMPLETED">Contact Completed</SelectItem>
+                      <SelectItem value="EVENT_DETAILS_UPDATED">Details Updated</SelectItem>
+                      <SelectItem value="STATUS_CHANGED">Status Changed</SelectItem>
+                      <SelectItem value="FOLLOW_UP_RECORDED">Follow-up Recorded</SelectItem>
+                      <SelectItem value="MARKED_UNRESPONSIVE">Marked Unresponsive</SelectItem>
+                      <SelectItem value="DELETE">Deleted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {uniqueUsers.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      User
+                    </label>
+                    <Select
+                      value={userFilter}
+                      onValueChange={(value) => handleFilterChange('user', value)}
+                    >
+                      <SelectTrigger className="h-12 text-base" data-testid="select-user-filter">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Users</SelectItem>
+                        {uniqueUsers.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
         {/* Results Summary */}
-        <div className="flex items-center justify-between text-sm text-gray-600">
-          <span>
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <span className="text-base font-medium text-gray-700">
             {filteredLogs.length}{' '}
             {filteredLogs.length === 1 ? 'entry' : 'entries'} found
           </span>
           {searchTerm && (
             <Button
               variant="ghost"
-              size="sm"
               onClick={() => handleSearch('')}
-              className="h-6 px-2"
+              className="text-teal-600 hover:text-teal-700"
+              data-testid="button-clear-search"
             >
               Clear search
             </Button>
@@ -483,145 +516,116 @@ export function EventRequestAuditLog({
         </div>
 
         {/* Audit Log Entries */}
-        <ScrollArea className={compact ? 'h-96' : 'h-[600px]'}>
-          <div className="space-y-3">
+        <ScrollArea className={compact ? 'h-96' : 'h-[600px]'} data-testid="audit-log-entries">
+          <div className="space-y-4">
             {filteredLogs.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No audit entries found for the selected criteria</p>
+              <div className="text-center py-12 text-gray-500">
+                <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-2">No audit entries found</p>
+                <p className="text-base">Try adjusting your search criteria or time range</p>
               </div>
             ) : (
               filteredLogs.map((log, index) => (
-                <div key={log.id}>
-                  <div className="flex items-start space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
-                    <Badge
-                      variant="outline"
-                      className={`${getActionColor(log.action)} shrink-0`}
-                    >
-                      {getActionIcon(log.action)}
-                      <span className="ml-1 text-xs">
-                        {log.action.replace('_', ' ')}
-                      </span>
-                    </Badge>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {log.organizationName} - {log.contactName}
-                        </p>
-                        <div className="flex items-center text-xs text-gray-500 space-x-2">
-                          <User className="h-3 w-3" />
-                          <span>{log.userEmail}</span>
-                          <Clock className="h-3 w-3 ml-2" />
-                          <span>
-                            {format(
-                              new Date(log.timestamp),
-                              'MMM d, yyyy h:mm a'
-                            )}
-                          </span>
-                        </div>
+                <Card key={log.id} className="shadow-sm hover:shadow-md transition-shadow" data-testid={`audit-entry-${log.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start space-x-4">
+                      {/* Action Badge */}
+                      <div className={`inline-flex items-center px-3 py-2 rounded-lg border ${getActionStyle(log.action)} flex-shrink-0`}>
+                        {getActionIcon(log.action)}
+                        <span className="ml-2 text-sm font-medium">
+                          {log.action.replace(/_/g, ' ')}
+                        </span>
                       </div>
 
-                      {/* Primary description - use changeDescription if available, otherwise actionDescription */}
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {log.changeDescription || log.actionDescription}
-                      </p>
-
-                      {/* Field Changes Display */}
-                      {renderFieldChanges(log)}
-
-                      {/* Enhanced Follow-up Context Display */}
-                      {(() => {
-                        // Try to get follow-up context from _auditActionContext
-                        let followUpContext: any = {};
-                        try {
-                          if (log.newData) {
-                            const newDataParsed = typeof log.newData === 'string' ? JSON.parse(log.newData) : log.newData;
-                            followUpContext = newDataParsed?._auditActionContext || {};
-                          }
-                        } catch (error) {
-                          console.warn('Failed to parse audit action context:', error);
-                        }
-                        
-                        const hasFollowUpData = log.statusChange || log.followUpMethod || followUpContext.followUpMethod;
-                        
-                        if (hasFollowUpData) {
-                          return (
-                            <div className="mt-2 space-y-1 text-xs">
-                              {log.statusChange && (
-                                <div className="flex items-center text-brand-primary dark:text-blue-400">
-                                  <RefreshCw className="h-3 w-3 mr-1" />
-                                  Status: {log.statusChange}
-                                </div>
-                              )}
-                              {(log.followUpMethod || followUpContext.followUpMethod) && (
-                                <div className="flex items-center text-green-600 dark:text-green-400">
-                                  <Mail className="h-3 w-3 mr-1" />
-                                  Method: {log.followUpMethod || followUpContext.followUpMethod}
-                                </div>
-                              )}
-                              {followUpContext.followUpAction && (
-                                <div className="flex items-center text-blue-600 dark:text-blue-400">
-                                  <UserCheck className="h-3 w-3 mr-1" />
-                                  Action: {followUpContext.followUpAction}
-                                </div>
-                              )}
-                              {followUpContext.notes && (
-                                <div className="flex items-start text-gray-600 dark:text-gray-400">
-                                  <FileText className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
-                                  <span className="text-xs">{followUpContext.notes}</span>
-                                </div>
-                              )}
-                              {followUpContext.updatedEmail && (
-                                <div className="flex items-center text-purple-600 dark:text-purple-400">
-                                  <Mail className="h-3 w-3 mr-1" />
-                                  Updated Email: {followUpContext.updatedEmail}
-                                </div>
-                              )}
+                      {/* Main Content */}
+                      <div className="flex-1 min-w-0">
+                        {/* Header */}
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {log.organizationName} - {log.contactName}
+                          </h3>
+                          <div className="flex items-center text-sm text-gray-500 space-x-4">
+                            <div className="flex items-center">
+                              <User className="h-4 w-4 mr-1" />
+                              <span>{log.userEmail}</span>
                             </div>
-                          );
-                        }
-                        return null;
-                      })()}
-
-                      {/* Legacy Additional Details (kept for backward compatibility) */}
-                      {log.followUpMethod && !((() => {
-                        try {
-                          if (log.newData) {
-                            const newDataParsed = typeof log.newData === 'string' ? JSON.parse(log.newData) : log.newData;
-                            return newDataParsed?._auditActionContext?.followUpMethod;
-                          }
-                        } catch { }
-                        return false;
-                      })()) && (
-                        <div className="mt-2 space-y-1 text-xs">
-                          <div className="flex items-center text-green-600 dark:text-green-400">
-                            <Mail className="h-3 w-3 mr-1" />
-                            Follow-up: {log.followUpMethod}
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              <span>
+                                {format(new Date(log.timestamp), 'MMM d, yyyy h:mm a')}
+                              </span>
+                            </div>
                           </div>
-                          {log.followUpMethod && (
-                            <div className="flex items-center text-green-600 dark:text-green-400">
-                              {log.followUpMethod === 'email' ? (
-                                <Mail className="h-3 w-3 mr-1" />
-                              ) : (
-                                <Phone className="h-3 w-3 mr-1" />
-                              )}
-                              Follow-up: {log.followUpMethod}
-                            </div>
-                          )}
                         </div>
-                      )}
-                    </div>
 
-                    <div className="text-xs text-gray-400 shrink-0">
-                      Event #{log.eventId}
-                    </div>
-                  </div>
+                        {/* Primary description */}
+                        <p className="text-base text-gray-700 mb-3 leading-relaxed">
+                          {log.changeDescription || log.actionDescription}
+                        </p>
 
-                  {index < filteredLogs.length - 1 && (
-                    <Separator className="my-2" />
-                  )}
-                </div>
+                        {/* Field Changes Display */}
+                        {renderFieldChanges(log)}
+
+                        {/* Enhanced Follow-up Context Display */}
+                        {(() => {
+                          // Try to get follow-up context from _auditActionContext
+                          let followUpContext: any = {};
+                          try {
+                            if (log.newData) {
+                              const newDataParsed = typeof log.newData === 'string' ? JSON.parse(log.newData) : log.newData;
+                              followUpContext = newDataParsed?._auditActionContext || {};
+                            }
+                          } catch (error) {
+                            console.warn('Failed to parse audit action context:', error);
+                          }
+                          
+                          const hasFollowUpData = log.statusChange || log.followUpMethod || followUpContext.followUpMethod;
+                          
+                          if (hasFollowUpData) {
+                            return (
+                              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                                <div className="text-sm font-medium text-gray-700 mb-2">Additional Context:</div>
+                                <div className="space-y-2">
+                                  {log.statusChange && (
+                                    <div className="flex items-center text-sm text-blue-700">
+                                      <RefreshCw className="h-4 w-4 mr-2" />
+                                      Status: {log.statusChange}
+                                    </div>
+                                  )}
+                                  {(log.followUpMethod || followUpContext.followUpMethod) && (
+                                    <div className="flex items-center text-sm text-green-700">
+                                      <Mail className="h-4 w-4 mr-2" />
+                                      Method: {log.followUpMethod || followUpContext.followUpMethod}
+                                    </div>
+                                  )}
+                                  {followUpContext.followUpAction && (
+                                    <div className="flex items-center text-sm text-blue-700">
+                                      <UserCheck className="h-4 w-4 mr-2" />
+                                      Action: {followUpContext.followUpAction}
+                                    </div>
+                                  )}
+                                  {followUpContext.notes && (
+                                    <div className="flex items-start text-sm text-gray-700">
+                                      <FileText className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                                      <span>{followUpContext.notes}</span>
+                                    </div>
+                                  )}
+                                  {followUpContext.updatedEmail && (
+                                    <div className="flex items-center text-sm text-purple-700">
+                                      <Mail className="h-4 w-4 mr-2" />
+                                      Updated Email: {followUpContext.updatedEmail}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))
             )}
           </div>

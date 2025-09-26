@@ -24,6 +24,12 @@ interface SMSReminderResult {
   sentTo?: string;
 }
 
+interface SMSConfirmationResult {
+  success: boolean;
+  message: string;
+  verificationCode?: string;
+}
+
 /**
  * Send SMS reminder to a specific host location using opted-in users
  */
@@ -51,12 +57,17 @@ export async function sendSMSReminder(
     // Import storage to get users who have opted in to SMS
     const { storage } = await import('./storage');
 
-    // Get all users who have opted in to SMS
+    // Get all users who have confirmed SMS opt-in
     const allUsers = await storage.getAllUsers();
     const optedInUsers = allUsers.filter((user) => {
-      const metadata = user.metadata || {};
+      const metadata = user.metadata as any || {};
       const smsConsent = metadata.smsConsent || {};
-      return smsConsent.enabled && smsConsent.phoneNumber;
+      // Only include users with confirmed status and enabled flag
+      return (
+        smsConsent.status === 'confirmed' &&
+        smsConsent.enabled && 
+        smsConsent.phoneNumber
+      );
     });
 
     if (optedInUsers.length === 0) {
@@ -70,7 +81,7 @@ export async function sendSMSReminder(
     const results = [];
     for (const user of optedInUsers) {
       try {
-        const metadata = user.metadata || {};
+        const metadata = user.metadata as any || {};
         const smsConsent = metadata.smsConsent || {};
         const phoneNumber = smsConsent.phoneNumber;
 
@@ -96,8 +107,8 @@ export async function sendSMSReminder(
         console.error(`❌ Failed to send SMS to ${user.email}:`, error);
         results.push({
           user: user.email,
-          phone: user.metadata?.smsConsent?.phoneNumber || 'unknown',
-          error: error.message,
+          phone: (user.metadata as any)?.smsConsent?.phoneNumber || 'unknown',
+          error: (error as Error).message,
           success: false,
         });
       }
@@ -118,7 +129,7 @@ export async function sendSMSReminder(
     console.error('Error sending SMS reminder:', error);
     return {
       success: false,
-      message: `Failed to send SMS reminder: ${error.message}`,
+      message: `Failed to send SMS reminder: ${(error as Error).message}`,
     };
   }
 }
@@ -190,7 +201,60 @@ export async function sendTestSMS(
     console.error('Error sending test SMS:', error);
     return {
       success: false,
-      message: `Failed to send test SMS: ${error.message}`,
+      message: `Failed to send test SMS: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Generate secure verification code for SMS confirmation
+ */
+export function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Send SMS confirmation message with verification code
+ */
+export async function sendConfirmationSMS(
+  phoneNumber: string,
+  verificationCode: string
+): Promise<SMSConfirmationResult> {
+  if (!twilioClient) {
+    return {
+      success: false,
+      message: 'SMS service not configured - missing Twilio credentials',
+    };
+  }
+
+  if (!process.env.TWILIO_PHONE_NUMBER) {
+    return {
+      success: false,
+      message: 'SMS service not configured - missing Twilio phone number',
+    };
+  }
+
+  try {
+    const confirmationMessage = `Welcome to The Sandwich Project! 🥪\n\nTo complete your SMS signup, please reply with your verification code:\n\n${verificationCode}\n\nOr simply reply "YES" to confirm.\n\nThis confirms you want to receive weekly sandwich collection reminders.`;
+
+    const result = await twilioClient.messages.create({
+      body: confirmationMessage,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: phoneNumber,
+    });
+
+    console.log(`✅ SMS confirmation sent to ${phoneNumber} (${result.sid})`);
+
+    return {
+      success: true,
+      message: `Confirmation SMS sent successfully to ${phoneNumber}`,
+      verificationCode,
+    };
+  } catch (error) {
+    console.error('Error sending confirmation SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send confirmation SMS: ${(error as Error).message}`,
     };
   }
 }

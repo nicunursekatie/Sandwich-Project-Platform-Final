@@ -37,7 +37,7 @@ The application uses The Sandwich Project's official color palette (Teal Primary
 - **Authentication & Authorization**: Role-based access with consistent permission logic, role templates (Volunteer, Host, Core Team, Admin), 30-day session management, and SendGrid-powered password reset.
 - **Search & Filtering**: Real-time search and filtering across management interfaces.
 - **Performance**: Optimized with query optimization, LRU caching, pagination, memoization, database connection pooling, and Express compression.
-- **Messaging & Notifications**: Multi-layered communication including email interface, committee-specific messaging, real-time Socket.IO chat, dashboard notifications, and a Kudos System.
+- **Messaging & Notifications**: Multi-layered communication including email interface, committee-specific messaging, real-time Socket.IO chat, dashboard notifications, SMS notifications with Twilio integration, and a Kudos System.
 - **Operational Tools**: Project management, meeting management, work logs, user feedback, analytics dashboards, and an important documents toolkit.
 - **Collection Walkthrough Tool**: Permissions-based data entry with a standard form and a step-by-step walkthrough.
 - **Analytics**: Comprehensive dashboard for community impact insights with interactive visualizations and user activity tracking.
@@ -47,6 +47,7 @@ The application uses The Sandwich Project's official color palette (Teal Primary
 - **Meeting Management**: Full-featured system with automated agenda compilation, project integration, Google Sheets export, task status controls, and PDF export.
 - **Event Requests Management System**: Complete tracking with database schema, duplicate detection, status tracking, permissions, CRUD API, responsive UI, and Google Sheets integration.
 - **Google Sheets Integration**: Bidirectional automatic synchronization with Google Sheets for project tracker and event requests, with intelligent deletion tracking to prevent re-importing manually deleted items.
+- **SMS Notifications System**: Complete Twilio-powered SMS reminder system with user opt-in/opt-out functionality, dashboard prompts for adoption, integrated user profile notifications tab, and admin-controlled weekly reminders for missing sandwich collection submissions.
 - **Confidential Document Storage**: Secure file storage with email-based access control, audit logging, file type validation, and a 100MB upload limit.
 
 ## External Dependencies

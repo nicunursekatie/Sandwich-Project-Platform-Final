@@ -125,6 +125,38 @@ const logActivity = async (
   );
 };
 
+// Valid status values for event requests
+const VALID_EVENT_REQUEST_STATUSES = [
+  'new',
+  'followed_up', 
+  'in_process',
+  'scheduled',
+  'completed',
+  'declined'
+] as const;
+
+// Helper function to validate and sanitize status values
+const validateEventRequestStatus = (status: string): string | null => {
+  if (!status) return null;
+  
+  // Convert common invalid statuses to valid ones
+  const statusMap: Record<string, string> = {
+    'approved': 'scheduled', // Map 'approved' to 'scheduled'
+    'pending': 'new',        // Map 'pending' to 'new'
+    'in_progress': 'in_process', // Map 'in_progress' to 'in_process'
+  };
+  
+  const normalizedStatus = status.toLowerCase();
+  const mappedStatus = statusMap[normalizedStatus] || normalizedStatus;
+  
+  if (VALID_EVENT_REQUEST_STATUSES.includes(mappedStatus as any)) {
+    return mappedStatus;
+  }
+  
+  console.warn(`⚠️ Invalid event request status "${status}" - will not be logged in audit`);
+  return null;
+};
+
 // Enhanced audit logging for event request actions
 const logEventRequestAudit = async (
   action: string,
@@ -135,6 +167,43 @@ const logEventRequestAudit = async (
   additionalContext?: any
 ) => {
   try {
+    // PROBLEM 1 FIX: Ensure we have complete event request data
+    // If newData is partial (like req.body), get the complete updated event request
+    let completeNewData = newData;
+    
+    // Check if newData has essential fields for audit logging
+    if (!newData?.organizationName || !newData?.firstName || !newData?.lastName) {
+      console.log('📋 Audit logging: newData appears incomplete, fetching complete event data...');
+      try {
+        const completeEventData = await storage.getEventRequestById(parseInt(eventId));
+        if (completeEventData) {
+          completeNewData = completeEventData;
+          console.log('✅ Retrieved complete event data for audit logging');
+        } else {
+          console.warn('⚠️ Could not retrieve complete event data for audit logging');
+        }
+      } catch (error) {
+        console.error('❌ Error retrieving complete event data for audit:', error);
+        // Continue with partial data rather than failing
+      }
+    }
+    
+    // PROBLEM 2 FIX: Validate status values before logging
+    if (completeNewData?.status) {
+      const validatedStatus = validateEventRequestStatus(completeNewData.status);
+      if (validatedStatus && validatedStatus !== completeNewData.status) {
+        console.log(`🔄 Status mapping: "${completeNewData.status}" -> "${validatedStatus}"`);
+        completeNewData = {
+          ...completeNewData,
+          status: validatedStatus
+        };
+      } else if (!validatedStatus) {
+        // Remove invalid status to prevent logging invalid data
+        const { status, ...dataWithoutStatus } = completeNewData;
+        completeNewData = dataWithoutStatus;
+      }
+    }
+    
     const context = {
       userId: req.user?.id,
       ipAddress: req.ip || req.connection?.remoteAddress,
@@ -142,21 +211,13 @@ const logEventRequestAudit = async (
       sessionId: req.session?.id || req.sessionID,
     };
 
-    // Enhanced logging with action-specific details
-    const enhancedNewData = {
-      ...newData,
-      actionContext: additionalContext || {},
-      actionTimestamp: new Date().toISOString(),
-      performedBy: req.user?.email || 'Unknown User',
-    };
-
-    await AuditLogger.logChange(
-      action,
-      'event_requests',
+    // Call the audit logger with complete, validated data
+    await AuditLogger.logEventRequestChange(
       eventId,
       oldData,
-      enhancedNewData,
-      context
+      completeNewData,
+      context,
+      additionalContext
     );
 
     console.log(
@@ -534,9 +595,7 @@ router.post(
       });
 
       // Enhanced audit logging for create operation
-      await AuditLogger.logChange(
-        'CREATE',
-        'event_requests',
+      await AuditLogger.logEventRequestChange(
         newEventRequest.id?.toString() || 'unknown',
         null,
         newEventRequest,
@@ -545,7 +604,8 @@ router.post(
           ipAddress: req.ip || req.connection?.remoteAddress,
           userAgent: req.get('User-Agent'),
           sessionId: req.session?.id || req.sessionID,
-        }
+        },
+        { actionType: 'CREATE' }
       );
 
       await logActivity(
@@ -1090,8 +1150,8 @@ router.patch(
       console.error('Error updating event request:', error);
       console.error('Error stack:', error?.stack);
       console.error('Error details:', {
-        id: id,
-        updates: processedUpdates,
+        id: req.params.id,
+        updates: req.body,
         message: error?.message
       });
 
@@ -1475,9 +1535,7 @@ router.delete(
       }
 
       // Enhanced audit logging for deletion
-      await AuditLogger.logChange(
-        'DELETE',
-        'event_requests',
+      await AuditLogger.logEventRequestChange(
         id.toString(),
         originalEvent,
         null,
@@ -1486,7 +1544,8 @@ router.delete(
           ipAddress: req.ip || req.connection?.remoteAddress,
           userAgent: req.get('User-Agent'),
           sessionId: req.session?.id || req.sessionID,
-        }
+        },
+        { actionType: 'DELETE' }
       );
 
       await logActivity(

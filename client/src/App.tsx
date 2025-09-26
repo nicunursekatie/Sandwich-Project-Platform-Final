@@ -219,6 +219,9 @@ function Router() {
         path="/sms-opt-in"
         component={lazy(() => import('./pages/sms-opt-in'))}
       />
+      <Route path="/profile">
+        {() => <Dashboard initialSection="profile" />}
+      </Route>
       <Route path="/dashboard">{() => <Dashboard />}</Route>
       <Route path="/dashboard/:section">
         {(params) => <Dashboard initialSection={params.section} />}
