@@ -474,13 +474,13 @@ export class GoogleSheetsSyncService {
       } else {
         // Create new task (basic version from sheet)
         console.log(
-          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'waiting'}"`
+          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'pending'}"`
         );
         await this.storage.createProjectTask({
           projectId,
           title: taskItem.title,
           description: taskItem.description || '',
-          status: taskItem.status || 'waiting',
+          status: taskItem.status || 'pending',
           assigneeName: taskItem.assignee || undefined,
           assigneeNames: taskItem.assignee ? [taskItem.assignee] : [],
         });
@@ -565,13 +565,13 @@ export class GoogleSheetsSyncService {
       } else {
         // Create new task
         console.log(
-          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'waiting'}"`
+          `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'pending'}"`
         );
         await this.storage.createProjectTask({
           projectId,
           title: taskItem.title,
           description: taskItem.description || '',
-          status: taskItem.status || 'waiting',
+          status: taskItem.status || 'pending',
           assigneeName: taskItem.assignee || undefined,
           assigneeNames: taskItem.assignee ? [taskItem.assignee] : [],
         });
@@ -772,7 +772,7 @@ export class GoogleSheetsSyncService {
 
       // Extract status indicators first
       let taskText = trimmed;
-      let status = 'waiting'; // default status
+      let status = 'pending'; // default status
 
       // Look for status indicators at the end: (C), (IP), C, IP
       const statusMatch = taskText.match(/\s*\(?(C|IP)\)?$/i);
@@ -848,7 +848,8 @@ export class GoogleSheetsSyncService {
     return map[priority] || 'medium';
   }
 
-  private mapStatus(status: string): string {
+  private mapStatus(status
+    : string): string {
     const map: Record<string, string> = {
       waiting: 'Not started',
       tabled: 'Not started',

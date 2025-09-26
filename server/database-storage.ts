@@ -3803,10 +3803,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEventRequest(id: number): Promise<EventRequest | undefined> {
+    console.log(`🔍 getEventRequest called with id: ${id}, type: ${typeof id}`);
     const [result] = await db
       .select()
       .from(eventRequests)
       .where(eq(eventRequests.id, id));
+    console.log(`🔍 getEventRequest result for id ${id}:`, result ? `Found (${result.organizationName})` : 'NOT FOUND');
     return result || undefined;
   }
 
