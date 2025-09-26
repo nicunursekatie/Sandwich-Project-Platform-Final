@@ -13,6 +13,60 @@ import {
   insertMeetingNoteSchema,
 } from '@shared/schema';
 
+type InsertMeetingPayload = z.infer<typeof insertMeetingSchema>;
+
+const MEETING_FIELDS: Array<keyof InsertMeetingPayload> = [
+  'title',
+  'type',
+  'date',
+  'time',
+  'location',
+  'description',
+  'finalAgenda',
+  'status',
+];
+
+function mapRequestToMeetingPayload(body: any): Partial<InsertMeetingPayload> {
+  const source = body ?? {};
+  const mapped: Record<string, any> = { ...source };
+
+  if (mapped.meetingDate !== undefined && mapped.date === undefined) {
+    mapped.date = mapped.meetingDate;
+  }
+  if (mapped.startTime !== undefined && mapped.time === undefined) {
+    mapped.time = mapped.startTime;
+  }
+  if (mapped.meetingLink !== undefined && mapped.location === undefined) {
+    mapped.location = mapped.meetingLink;
+  }
+  if (mapped.agenda !== undefined && mapped.finalAgenda === undefined) {
+    mapped.finalAgenda = mapped.agenda;
+  }
+
+  const payload: Partial<InsertMeetingPayload> = {};
+  for (const field of MEETING_FIELDS) {
+    if (mapped[field] !== undefined) {
+      payload[field] = mapped[field];
+    }
+  }
+
+  return payload;
+}
+
+function mapMeetingToResponse(meeting: any) {
+  if (!meeting) {
+    return meeting;
+  }
+
+  return {
+    ...meeting,
+    meetingDate: meeting.date,
+    startTime: meeting.time,
+    meetingLink: meeting.location,
+    agenda: meeting.finalAgenda,
+  };
+}
+
 const meetingsRouter = Router();
 
 // Meeting Minutes
@@ -522,6 +576,18 @@ meetingsRouter.delete('/agenda-items/:id', async (req: any, res) => {
 });
 
 // Meetings
+meetingsRouter.get('/', async (req, res) => {
+  try {
+    const meetings = await storage.getAllMeetings();
+    const meetingsArray = Array.isArray(meetings) ? meetings : [];
+    const mappedMeetings = meetingsArray.map(mapMeetingToResponse);
+    res.json(mappedMeetings);
+  } catch (error) {
+    logger.error('Failed to fetch meetings', error);
+    res.status(500).json({ message: 'Failed to fetch meetings' });
+  }
+});
+
 meetingsRouter.get('/current', async (req, res) => {
   try {
     const meeting = await storage.getCurrentMeeting();
@@ -531,13 +597,32 @@ meetingsRouter.get('/current', async (req, res) => {
   }
 });
 
+meetingsRouter.get('/type/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const meetings = await storage.getMeetingsByType(type);
+    const meetingsArray = Array.isArray(meetings) ? meetings : [];
+    const mappedMeetings = meetingsArray.map(mapMeetingToResponse);
+    res.json(mappedMeetings);
+  } catch (error) {
+    logger.error('Failed to fetch meetings by type', error);
+    res.status(500).json({ message: 'Failed to fetch meetings' });
+  }
+});
+
 meetingsRouter.post('/', async (req, res) => {
   try {
-    const meetingData = insertMeetingSchema.parse(req.body);
+    const meetingPayload = mapRequestToMeetingPayload(req.body);
+    const meetingData = insertMeetingSchema.parse(meetingPayload);
     const meeting = await storage.createMeeting(meetingData);
     res.status(201).json(meeting);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create meeting' });
+    logger.error('Failed to create meeting', error);
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ message: 'Invalid meeting data', errors: error.errors });
+    } else {
+      res.status(500).json({ message: 'Failed to create meeting' });
+    }
   }
 });
 
@@ -678,6 +763,74 @@ meetingsRouter.delete('/notes/:id', async (req, res) => {
   } catch (error) {
     logger.error('Failed to delete meeting note', error);
     res.status(500).json({ message: 'Failed to delete meeting note' });
+  }
+});
+
+meetingsRouter.get('/:id', async (req, res) => {
+  try {
+    const meetingId = parseInt(req.params.id, 10);
+    if (isNaN(meetingId)) {
+      return res.status(400).json({ message: 'Invalid meeting ID' });
+    }
+
+    const meetings = await storage.getAllMeetings();
+    const meetingsArray = Array.isArray(meetings) ? meetings : [];
+    const meeting = meetingsArray.find((item: any) => item.id === meetingId);
+
+    if (!meeting) {
+      return res.status(404).json({ message: 'Meeting not found' });
+    }
+
+    res.json(mapMeetingToResponse(meeting));
+  } catch (error) {
+    logger.error('Failed to fetch meeting', error);
+    res.status(500).json({ message: 'Failed to fetch meeting' });
+  }
+});
+
+meetingsRouter.patch('/:id', async (req, res) => {
+  try {
+    const meetingId = parseInt(req.params.id, 10);
+    if (isNaN(meetingId)) {
+      return res.status(400).json({ message: 'Invalid meeting ID' });
+    }
+
+    const updates = mapRequestToMeetingPayload(req.body);
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
+
+    const updatedMeeting = await storage.updateMeeting(meetingId, updates);
+
+    if (!updatedMeeting) {
+      return res.status(404).json({ message: 'Meeting not found' });
+    }
+
+    res.json(updatedMeeting);
+  } catch (error) {
+    logger.error('Failed to update meeting', error);
+    res.status(500).json({ message: 'Failed to update meeting' });
+  }
+});
+
+meetingsRouter.delete('/:id', async (req, res) => {
+  try {
+    const meetingId = parseInt(req.params.id, 10);
+    if (isNaN(meetingId)) {
+      return res.status(400).json({ message: 'Invalid meeting ID' });
+    }
+
+    const success = await storage.deleteMeeting(meetingId);
+
+    if (!success) {
+      return res.status(404).json({ message: 'Meeting not found' });
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Failed to delete meeting', error);
+    res.status(500).json({ message: 'Failed to delete meeting' });
   }
 });
 
