@@ -208,7 +208,7 @@ export default function HostChat() {
                     <Avatar className="w-10 h-10">
                       <AvatarFallback
                         className="text-white"
-                        style={{ backgroundColor: 'var(--tsp-teal)' }}
+                        style={{ backgroundColor: 'var(--color-brand-teal)' }}
                       >
                         {host.name
                           .split(' ')
@@ -264,7 +264,7 @@ export default function HostChat() {
           <Avatar className="w-8 h-8">
             <AvatarFallback
               className="text-white text-sm"
-              style={{ backgroundColor: 'var(--tsp-teal)' }}
+              style={{ backgroundColor: 'var(--color-brand-teal)' }}
             >
               {selectedHost.name
                 .split(' ')

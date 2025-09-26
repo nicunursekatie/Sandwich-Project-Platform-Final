@@ -1678,8 +1678,8 @@ export default function SandwichCollectionLog() {
               size="sm"
               className="flex items-center space-x-2 w-full sm:w-auto btn-outline-tsp h-10 text-sm"
               style={{
-                borderColor: 'var(--tsp-teal)',
-                color: 'var(--tsp-teal)',
+                borderColor: 'var(--color-brand-teal)',
+                color: 'var(--color-brand-teal)',
               }}
             >
               <Database className="w-4 h-4" />

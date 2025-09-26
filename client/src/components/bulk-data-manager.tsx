@@ -300,7 +300,7 @@ export default function BulkDataManager({
                       <div className="flex items-center space-x-3">
                         <div
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: 'var(--tsp-teal)' }}
+                          style={{ backgroundColor: 'var(--color-brand-teal)' }}
                         ></div>
                         <span className="font-medium">{stat.hostName}</span>
                         {stat.mapped && (

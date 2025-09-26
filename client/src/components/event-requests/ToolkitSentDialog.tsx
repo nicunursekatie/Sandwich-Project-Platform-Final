@@ -75,7 +75,7 @@ const ToolkitSentDialog = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <Shield className="w-5 h-5 text-[hsl(var(--primary))]" />
+            <Shield className="w-5 h-5 text-[hsl(var(--color-primary))]" />
             <span>Mark Toolkit as Sent</span>
           </DialogTitle>
           <DialogDescription>
@@ -212,7 +212,7 @@ const ToolkitSentDialog = ({
                   type="button"
                   onClick={handleSubmit}
                   disabled={!toolkitSentDate || !toolkitSentTime || isLoading}
-                  className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.9)] text-white"
+                  className="bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary)/0.9)] text-white"
                   data-testid="button-confirm-toolkit-sent"
                 >
                   {isLoading ? 'Marking as Sent...' : 'Mark as Sent'}
