@@ -25,7 +25,7 @@ import {
 interface ComprehensivePersonSelectorProps {
   selectedPeople: string[];
   onSelectionChange: (selected: string[]) => void;
-  assignmentType: 'driver' | 'speaker' | 'volunteer' | 'recipient' | null;
+  assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
 }
 
 function ComprehensivePersonSelector({
@@ -318,7 +318,7 @@ function ComprehensivePersonSelector({
 interface AssignmentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  assignmentType: 'driver' | 'speaker' | 'volunteer' | 'recipient' | null;
+  assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
   selectedAssignees: string[];
   setSelectedAssignees: (assignees: string[]) => void;
   onAssign: (assignees: string[]) => void;
