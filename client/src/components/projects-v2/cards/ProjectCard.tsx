@@ -47,7 +47,7 @@ interface ProjectCardProps {
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const { user } = useAuth();
-  const { getUserDisplayName, parseAssignees } = useProjectQueries();
+  const { parseAssignees } = useProjectQueries();
   const {
     updateProjectStatusMutation,
     deleteProjectMutation,
@@ -136,8 +136,40 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   };
 
   const canEditProject = () => {
-    return hasPermission(user, PERMISSIONS.PROJECTS_EDIT) ||
-           project.assigneeName === user?.email;
+    if (!user) return false;
+
+    if (hasPermission(user, PERMISSIONS.PROJECTS_EDIT)) {
+      return true;
+    }
+
+    const userId = user.id?.toString();
+    const normalizedAssigneeIds = Array.isArray(project.assigneeIds)
+      ? project.assigneeIds.map((id) => id?.toString())
+      : [];
+
+    if (userId && normalizedAssigneeIds.includes(userId)) {
+      return true;
+    }
+
+    const normalizedOwnerNames = parseAssignees(project.assigneeName || '')
+      .map((name) => name.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (normalizedOwnerNames.length > 0) {
+      const candidateNames = [
+        [user.firstName, user.lastName].filter(Boolean).join(' ').trim(),
+        user.displayName,
+        user.email,
+      ]
+        .filter((value): value is string => !!value)
+        .map((value) => value.trim().toLowerCase());
+
+      if (candidateNames.some((candidate) => normalizedOwnerNames.includes(candidate))) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   const canDeleteProject = () => {

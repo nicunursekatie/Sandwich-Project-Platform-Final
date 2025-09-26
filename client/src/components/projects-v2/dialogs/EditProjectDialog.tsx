@@ -36,6 +36,12 @@ export const EditProjectDialog: React.FC = () => {
   // Populate form when editing project changes
   useEffect(() => {
     if (editingProject) {
+      const derivedAssigneeIds = Array.isArray(editingProject.assigneeIds)
+        ? editingProject.assigneeIds.map((id) => id?.toString())
+        : editingProject.assigneeId !== null && editingProject.assigneeId !== undefined
+          ? [editingProject.assigneeId.toString()]
+          : [];
+
       setFormData({
         title: editingProject.title || '',
         description: editingProject.description || '',
@@ -43,6 +49,7 @@ export const EditProjectDialog: React.FC = () => {
         priority: editingProject.priority || 'medium',
         category: editingProject.category || 'technology',
         assigneeName: editingProject.assigneeName || '',
+        assigneeIds: derivedAssigneeIds,
         supportPeople: editingProject.supportPeople || '',
         dueDate: editingProject.dueDate ? editingProject.dueDate.split('T')[0] : '',
         estimatedHours: editingProject.estimatedHours || 0,
@@ -196,8 +203,15 @@ export const EditProjectDialog: React.FC = () => {
               <ProjectAssigneeSelector
                 label="Project Owner"
                 value={formData.assigneeName || ''}
-                onChange={(assigneeName) => {
-                  setFormData({ ...formData, assigneeName });
+                onChange={(assigneeName, userIds) => {
+                  setFormData({
+                    ...formData,
+                    assigneeName,
+                    assigneeIds:
+                      userIds && userIds.length > 0
+                        ? userIds
+                        : [],
+                  });
                 }}
                 placeholder="Select or enter project owner"
                 multiple={false}
