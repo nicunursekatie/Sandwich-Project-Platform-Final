@@ -83,11 +83,12 @@ export function isOriginAllowed(origin: string | undefined): boolean {
     }
   }
   
-  // Allow any replit.dev domain in development
-  if (process.env.NODE_ENV === 'development' && origin.includes('.replit.dev')) {
+  // Allow any replit.dev domain (both development and production)
+  // Replit uses dynamic .replit.dev domains for deployments
+  if (origin.includes('.replit.dev')) {
     return true;
   }
-  
+
   // In production, only allow explicitly configured domains
   return false;
 }
