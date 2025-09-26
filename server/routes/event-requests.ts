@@ -1187,6 +1187,8 @@ router.patch(
         'scheduledCallDate',
         'tspContactAssignedDate',
         'statusChangedAt',
+        'pickupDateTime',
+        'scheduledEventDate',
       ];
       
       console.log('🔍 Pre-conversion debug - checking timestamp fields:');
