@@ -275,9 +275,9 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/monitoring', createErrorHandler('monitoring'));
 
-  // Enhanced user activity tracking (stub)
-  const enhancedActivityRouter = (await import('./enhanced-user-activity')).default;
-  router.use('/api/enhanced-user-activity', enhancedActivityRouter);
+  // Enhanced user activity tracking (stub) - commenting out for now
+  // const enhancedActivityRouter = (await import('./enhanced-user-activity')).default;
+  // router.use('/api/enhanced-user-activity', enhancedActivityRouter);
 
   return router;
 }
