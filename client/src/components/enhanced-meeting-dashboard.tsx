@@ -833,7 +833,12 @@ export default function EnhancedMeetingDashboard() {
             value={editSupportPeople}
             onChange={(value, userIds) => {
               setEditSupportPeople(value);
-              const normalizedIds = userIds?.length ? userIds : [];
+              const normalizedIds =
+                userIds && userIds.length > 0
+                  ? userIds
+                      .map((id) => id?.toString())
+                      .filter((id): id is string => Boolean(id))
+                  : [];
               setEditSupportPeopleIds(normalizedIds);
               if (editingProject) {
                 updateProjectSupportPeopleMutation.mutate({
@@ -862,7 +867,12 @@ export default function EnhancedMeetingDashboard() {
             value={editProjectOwner}
             onChange={(value, userIds) => {
               setEditProjectOwner(value);
-              const normalizedIds = userIds?.length ? userIds : [];
+              const normalizedIds =
+                userIds && userIds.length > 0
+                  ? userIds
+                      .map((id) => id?.toString())
+                      .filter((id): id is string => Boolean(id))
+                  : [];
               setEditProjectOwnerIds(normalizedIds);
               if (editingProject) {
                 updateProjectOwnerMutation.mutate({

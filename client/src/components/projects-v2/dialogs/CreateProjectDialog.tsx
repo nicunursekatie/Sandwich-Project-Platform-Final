@@ -158,6 +158,8 @@ export const CreateProjectDialog: React.FC = () => {
                     assigneeIds:
                       userIds && userIds.length > 0
                         ? userIds
+                            .map((id) => id?.toString())
+                            .filter((id): id is string => Boolean(id))
                         : [],
                   });
                 }}
@@ -176,6 +178,8 @@ export const CreateProjectDialog: React.FC = () => {
                     supportPeopleIds:
                       userIds && userIds.length > 0
                         ? userIds
+                            .map((id) => id?.toString())
+                            .filter((id): id is string => Boolean(id))
                         : [],
                   });
                 }}

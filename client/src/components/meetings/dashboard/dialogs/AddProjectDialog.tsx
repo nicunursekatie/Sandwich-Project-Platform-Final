@@ -86,7 +86,12 @@ export function AddProjectDialog({
                 setNewProjectData({
                   ...newProjectData,
                   assigneeName: value || '',
-                  assigneeIds: userIds || [],
+                  assigneeIds:
+                    userIds && userIds.length > 0
+                      ? userIds
+                          .map((id) => id?.toString())
+                          .filter((id): id is string => Boolean(id))
+                      : [],
                 });
               }}
               placeholder="Select or enter project owner"
@@ -103,7 +108,12 @@ export function AddProjectDialog({
                 setNewProjectData({
                   ...newProjectData,
                   supportPeople: value || '',
-                  supportPeopleIds: userIds || [],
+                  supportPeopleIds:
+                    userIds && userIds.length > 0
+                      ? userIds
+                          .map((id) => id?.toString())
+                          .filter((id): id is string => Boolean(id))
+                      : [],
                 });
               }}
               placeholder="Select or enter support team members"
