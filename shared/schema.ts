@@ -1446,6 +1446,7 @@ export const eventRequests = pgTable(
     eventStartTime: varchar('event_start_time'), // Event start time (stored as string for flexibility)
     eventEndTime: varchar('event_end_time'), // Event end time
     pickupTime: varchar('pickup_time'), // Driver pickup time for sandwiches
+    pickupDateTime: timestamp('pickup_date_time'), // Full datetime for pickup time with date and time selection
     additionalRequirements: text('additional_requirements'), // Special requirements or notes
     planningNotes: text('planning_notes'), // General planning notes
     schedulingNotes: text('scheduling_notes'), // Scheduling notes and instructions
@@ -1663,6 +1664,7 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     eventStartTime: z.string().nullable().optional(),
     eventEndTime: z.string().nullable().optional(),
     pickupTime: z.string().nullable().optional(),
+    pickupDateTime: z.string().datetime().nullable().optional(),
     customTspContact: z.string().nullable().optional(),
     additionalContact1: z.string().nullable().optional(),
     additionalContact2: z.string().nullable().optional(),
