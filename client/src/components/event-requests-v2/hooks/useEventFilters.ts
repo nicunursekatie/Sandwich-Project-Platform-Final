@@ -48,6 +48,7 @@ export const useEventFilters = () => {
         request.organizationName
           .toLowerCase()
           .includes(searchQuery.toLowerCase()) ||
+        (request.department && request.department.toLowerCase().includes(searchQuery.toLowerCase())) ||
         request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (request.email && request.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -109,6 +110,7 @@ export const useEventFilters = () => {
           request.organizationName
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
+          (request.department && request.department.toLowerCase().includes(searchQuery.toLowerCase())) ||
           request.firstName
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
