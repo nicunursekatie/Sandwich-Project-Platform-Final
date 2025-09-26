@@ -355,12 +355,25 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   // Helper function to extract name from custom entries
   const extractCustomName = (id: string): string => {
+    if (!id || typeof id !== 'string') {
+      return 'Unknown';
+    }
+    
     if (id.startsWith('custom-')) {
       const parts = id.split('-');
       if (parts.length >= 3) {
-        return parts.slice(2).join('-').replace(/-/g, ' ');
+        // Extract name parts (everything after "custom-" and the timestamp)
+        const nameParts = parts.slice(2);
+        const cleanName = nameParts.join('-').replace(/-/g, ' ');
+        
+        // Return the cleaned name, or fallback if empty
+        return cleanName.trim() || 'Custom Volunteer';
       }
+      // If custom ID doesn't have enough parts, return a fallback
+      return 'Custom Volunteer';
     }
+    
+    // For non-custom IDs, return as-is
     return id;
   };
 

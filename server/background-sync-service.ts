@@ -172,6 +172,7 @@ export class BackgroundSyncService {
 
   /**
    * Auto-transition scheduled events to completed if their date has passed
+   * Events only transition the night after they end, not on the day of the event
    */
   private async autoTransitionPastEvents() {
     try {
@@ -186,13 +187,29 @@ export class BackgroundSyncService {
         return;
       }
 
-      const today = new Date();
-      today.setHours(23, 59, 59, 999); // End of today for comparison
+      const now = new Date();
       
       let transitionedCount = 0;
       
       for (const event of scheduledEvents) {
-        if (event.desiredEventDate && new Date(event.desiredEventDate) < today) {
+        // Determine the actual event date: prioritize scheduledEventDate, fallback to desiredEventDate
+        const eventDate = event.scheduledEventDate || event.desiredEventDate;
+        
+        if (!eventDate) {
+          syncLogger.debug('Skipping event with no date information', {
+            eventId: event.id,
+            organizationName: event.organizationName
+          });
+          continue;
+        }
+
+        // Create the event end date by adding 1 day to account for the event lasting the full day
+        const eventEndDate = new Date(eventDate);
+        eventEndDate.setDate(eventEndDate.getDate() + 1);
+        eventEndDate.setHours(0, 0, 0, 0); // Start of the day after the event
+        
+        // Only transition if we're past the end of the day after the event
+        if (now >= eventEndDate) {
           try {
             await this.storage.updateEventRequest(event.id, {
               status: 'completed',
@@ -203,6 +220,9 @@ export class BackgroundSyncService {
             syncLogger.info('Auto-transitioned past event', {
               eventId: event.id,
               organizationName: event.organizationName,
+              originalEventDate: eventDate,
+              eventEndDate: eventEndDate,
+              scheduledEventDate: event.scheduledEventDate,
               desiredEventDate: event.desiredEventDate,
               fromStatus: 'scheduled',
               toStatus: 'completed'

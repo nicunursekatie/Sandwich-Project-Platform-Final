@@ -400,127 +400,132 @@ const EventRequestsManagementContent: React.FC = () => {
             console.log('Available drivers:', (drivers as any[]).map((d: any) => ({ id: d.id, name: d.name })));
             console.log('Available users:', (users as any[]).map((u: any) => ({ id: u.id, name: `${u.firstName} ${u.lastName}` })));
 
-            try {
-              // Get the current event to preserve existing assignments
-              const currentEvent = eventRequests.find(e => e.id === assignmentEventId);
-              if (!currentEvent) {
-                throw new Error('Event not found');
-              }
+            // Get the current event to preserve existing assignments
+            const currentEvent = eventRequests.find(e => e.id === assignmentEventId);
+            if (!currentEvent) {
+              toast({
+                title: 'Error',
+                description: 'Event not found',
+                variant: 'destructive',
+              });
+              return;
+            }
 
-              // Build the update data based on assignment type
-              let updateData: any = {};
+            // Build the update data based on assignment type
+            let updateData: any = {};
 
-              if (assignmentType === 'driver') {
-                // Get existing drivers and merge with new ones
-                const existingDrivers = currentEvent.assignedDriverIds || [];
-                const existingDriverDetails = currentEvent.driverDetails || {};
+            if (assignmentType === 'driver') {
+              // Get existing drivers and merge with new ones
+              const existingDrivers = currentEvent.assignedDriverIds || [];
+              const existingDriverDetails = currentEvent.driverDetails || {};
 
-                // Merge new drivers with existing ones (avoiding duplicates)
-                const allDriverIds = [...new Set([...existingDrivers, ...assignees])];
-                updateData.assignedDriverIds = allDriverIds;
+              // Merge new drivers with existing ones (avoiding duplicates)
+              const allDriverIds = [...new Set([...existingDrivers, ...assignees])];
+              updateData.assignedDriverIds = allDriverIds;
 
-                // Build driver details object, preserving existing details
-                const driverDetails: any = { ...existingDriverDetails };
-                allDriverIds.forEach(driverId => {
-                  // Only add new details if they don't exist yet
-                  if (!driverDetails[driverId]) {
-                  // Check if it's a numeric driver ID
-                  const isNumericId = /^\d+$/.test(driverId);
+              // Build driver details object, preserving existing details
+              const driverDetails: any = { ...existingDriverDetails };
+              allDriverIds.forEach(driverId => {
+                // Only add new details if they don't exist yet
+                if (!driverDetails[driverId]) {
+                // Check if it's a numeric driver ID
+                const isNumericId = /^\d+$/.test(driverId);
 
-                  let driverName = driverId; // fallback to ID if name not found
+                let driverName = driverId; // fallback to ID if name not found
 
-                  if (isNumericId) {
-                    // It's a traditional driver ID - look it up in the drivers array
-                    const driver = (drivers as any[]).find((d: any) => d.id.toString() === driverId || d.id === parseInt(driverId));
-                    if (driver) {
-                      driverName = driver.name;
-                      console.log(`Found driver: ID=${driverId}, Name=${driver.name}`);
-                    } else {
-                      console.warn(`Driver not found in loaded drivers: ID=${driverId}`);
-                      // Keep the ID as-is, it will show as "Driver #350" in the UI
-                    }
+                if (isNumericId) {
+                  // It's a traditional driver ID - look it up in the drivers array
+                  const driver = (drivers as any[]).find((d: any) => d.id.toString() === driverId || d.id === parseInt(driverId));
+                  if (driver) {
+                    driverName = driver.name;
+                    console.log(`Found driver: ID=${driverId}, Name=${driver.name}`);
                   } else {
-                    // It's a user ID - look it up in the users array
-                    const foundUser = (users as any[]).find((u: any) => u.id === driverId);
-                    if (foundUser) {
-                      driverName = `${foundUser.firstName} ${foundUser.lastName}`.trim();
-                    }
+                    console.warn(`Driver not found in loaded drivers: ID=${driverId}`);
+                    // Keep the ID as-is, it will show as "Driver #350" in the UI
                   }
-
-                    driverDetails[driverId] = {
-                      name: driverName,
-                      assignedAt: new Date().toISOString(),
-                      assignedBy: user?.id || 'system'
-                    };
+                } else {
+                  // It's a user ID - look it up in the users array
+                  const foundUser = (users as any[]).find((u: any) => u.id === driverId);
+                  if (foundUser) {
+                    driverName = `${foundUser.firstName} ${foundUser.lastName}`.trim();
                   }
-                });
-                updateData.driverDetails = driverDetails;
+                }
 
-              } else if (assignmentType === 'speaker') {
-                // Get existing speakers and merge with new ones
-                const existingSpeakers = currentEvent.assignedSpeakerIds || [];
-                const existingSpeakerDetails = currentEvent.speakerDetails || {};
+                  driverDetails[driverId] = {
+                    name: driverName,
+                    assignedAt: new Date().toISOString(),
+                    assignedBy: user?.id || 'system'
+                  };
+                }
+              });
+              updateData.driverDetails = driverDetails;
 
-                // Merge new speakers with existing ones (avoiding duplicates)
-                const allSpeakerIds = [...new Set([...existingSpeakers, ...assignees])];
-                updateData.assignedSpeakerIds = allSpeakerIds;
+            } else if (assignmentType === 'speaker') {
+              // Get existing speakers and merge with new ones
+              const existingSpeakers = currentEvent.assignedSpeakerIds || [];
+              const existingSpeakerDetails = currentEvent.speakerDetails || {};
 
-                // Build speaker details object, preserving existing details
-                const speakerDetails: any = { ...existingSpeakerDetails };
-                const speakerAssignments: string[] = [];
+              // Merge new speakers with existing ones (avoiding duplicates)
+              const allSpeakerIds = [...new Set([...existingSpeakers, ...assignees])];
+              updateData.assignedSpeakerIds = allSpeakerIds;
 
-                // Add details for all speakers (existing + new)
-                allSpeakerIds.forEach(speakerId => {
-                  // Only add new details if they don't exist yet
-                  if (!speakerDetails[speakerId]) {
-                    const foundUser = (users as any[]).find((u: any) => u.id === speakerId);
-                    const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : speakerId;
+              // Build speaker details object, preserving existing details
+              const speakerDetails: any = { ...existingSpeakerDetails };
+              const speakerAssignments: string[] = [];
 
-                    speakerDetails[speakerId] = {
-                      name: name,
-                      assignedAt: new Date().toISOString(),
-                      assignedBy: user?.id || 'system'
-                    };
-                  }
-                  speakerAssignments.push(speakerDetails[speakerId].name || speakerId);
-                });
+              // Add details for all speakers (existing + new)
+              allSpeakerIds.forEach(speakerId => {
+                // Only add new details if they don't exist yet
+                if (!speakerDetails[speakerId]) {
+                  const foundUser = (users as any[]).find((u: any) => u.id === speakerId);
+                  const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : speakerId;
 
-                updateData.speakerDetails = speakerDetails;
-                updateData.speakerAssignments = speakerAssignments;
+                  speakerDetails[speakerId] = {
+                    name: name,
+                    assignedAt: new Date().toISOString(),
+                    assignedBy: user?.id || 'system'
+                  };
+                }
+                speakerAssignments.push(speakerDetails[speakerId].name || speakerId);
+              });
 
-              } else if (assignmentType === 'volunteer') {
-                // Get existing volunteers and merge with new ones
-                const existingVolunteers = currentEvent.assignedVolunteerIds || [];
-                const existingVolunteerDetails = currentEvent.volunteerDetails || {};
+              updateData.speakerDetails = speakerDetails;
+              updateData.speakerAssignments = speakerAssignments;
 
-                // Merge new volunteers with existing ones (avoiding duplicates)
-                const allVolunteerIds = [...new Set([...existingVolunteers, ...assignees])];
-                updateData.assignedVolunteerIds = allVolunteerIds;
+            } else if (assignmentType === 'volunteer') {
+              // Get existing volunteers and merge with new ones
+              const existingVolunteers = currentEvent.assignedVolunteerIds || [];
+              const existingVolunteerDetails = currentEvent.volunteerDetails || {};
 
-                // Build volunteer details object, preserving existing details
-                const volunteerDetails: any = { ...existingVolunteerDetails };
-                const volunteerAssignments: string[] = [];
+              // Merge new volunteers with existing ones (avoiding duplicates)
+              const allVolunteerIds = [...new Set([...existingVolunteers, ...assignees])];
+              updateData.assignedVolunteerIds = allVolunteerIds;
 
-                // Add details for all volunteers (existing + new)
-                allVolunteerIds.forEach(volunteerId => {
-                  // Only add new details if they don't exist yet
-                  if (!volunteerDetails[volunteerId]) {
-                    const foundUser = (users as any[]).find((u: any) => u.id === volunteerId);
-                    const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : volunteerId;
+              // Build volunteer details object, preserving existing details
+              const volunteerDetails: any = { ...existingVolunteerDetails };
+              const volunteerAssignments: string[] = [];
 
-                    volunteerDetails[volunteerId] = {
-                      name: name,
-                      assignedAt: new Date().toISOString(),
-                      assignedBy: user?.id || 'system'
-                    };
-                  }
-                  volunteerAssignments.push(volunteerDetails[volunteerId].name || volunteerId);
-                });
+              // Add details for all volunteers (existing + new)
+              allVolunteerIds.forEach(volunteerId => {
+                // Only add new details if they don't exist yet
+                if (!volunteerDetails[volunteerId]) {
+                  const foundUser = (users as any[]).find((u: any) => u.id === volunteerId);
+                  const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : volunteerId;
 
-                updateData.volunteerDetails = volunteerDetails;
-                updateData.volunteerAssignments = volunteerAssignments;
+                  volunteerDetails[volunteerId] = {
+                    name: name,
+                    assignedAt: new Date().toISOString(),
+                    assignedBy: user?.id || 'system'
+                  };
+                }
+                volunteerAssignments.push(volunteerDetails[volunteerId].name || volunteerId);
+              });
 
+              updateData.volunteerDetails = volunteerDetails;
+              updateData.volunteerAssignments = volunteerAssignments;
+            }
 
+            try {
               console.log('Update data:', updateData);
 
               const result = await updateEventRequestMutation.mutateAsync({
