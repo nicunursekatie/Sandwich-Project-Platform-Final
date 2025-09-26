@@ -648,9 +648,10 @@ export default function Dashboard({
                 aria-label={
                   isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
                 }
+                title={isSidebarCollapsed ? 'Click to expand navigation menu' : 'Click to collapse navigation menu'}
               >
                 {isSidebarCollapsed ? (
-                  <img src={sandwichLogo} alt="Expand" className="w-5 h-5" />
+                  <ChevronRight className="w-4 h-4 text-amber-700" />
                 ) : (
                   <ChevronDown className="w-4 h-4 text-amber-700 rotate-90" />
                 )}
