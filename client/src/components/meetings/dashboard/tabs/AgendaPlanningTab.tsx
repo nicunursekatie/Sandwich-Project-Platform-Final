@@ -100,8 +100,12 @@ interface AgendaPlanningTabProps {
   setEditingProject: (projectId: number | null) => void;
   editSupportPeople: string;
   setEditSupportPeople: (people: string) => void;
+  editSupportPeopleIds: string[];
+  setEditSupportPeopleIds: (ids: string[]) => void;
   editProjectOwner: string;
   setEditProjectOwner: (owner: string) => void;
+  editProjectOwnerIds: string[];
+  setEditProjectOwnerIds: (ids: string[]) => void;
   newTaskTitle: string;
   setNewTaskTitle: (title: string) => void;
   newTaskDescription: string;
@@ -129,7 +133,24 @@ interface AgendaPlanningTabProps {
   handleCreateProject: () => void;
   
   // Mutations - properly typed based on the hooks
-  updateProjectDiscussionMutation: UseMutationResult<unknown, Error, { projectId: number; updates: { meetingDiscussionPoints?: string; meetingDecisionItems?: string; reviewInNextMeeting?: boolean; priority?: string; supportPeople?: string; assigneeName?: string } }, unknown>;
+  updateProjectDiscussionMutation: UseMutationResult<
+    unknown,
+    Error,
+    {
+      projectId: number;
+      updates: {
+        meetingDiscussionPoints?: string;
+        meetingDecisionItems?: string;
+        reviewInNextMeeting?: boolean;
+        priority?: string;
+        supportPeople?: string;
+        supportPeopleIds?: string[];
+        assigneeName?: string;
+        assigneeIds?: string[];
+      };
+    },
+    unknown
+  >;
   updateProjectPriorityMutation: UseMutationResult<unknown, Error, { projectId: number; priority: string }, unknown>;
   createTasksFromNotesMutation: UseMutationResult<unknown, Error, void, unknown>;
   resetAgendaPlanningMutation: UseMutationResult<{ notesProcessed: number; notesCleared: number }, Error, void, unknown>;
@@ -177,8 +198,12 @@ export function AgendaPlanningTab({
   setEditingProject,
   editSupportPeople,
   setEditSupportPeople,
+  editSupportPeopleIds,
+  setEditSupportPeopleIds,
   editProjectOwner,
   setEditProjectOwner,
+  editProjectOwnerIds,
+  setEditProjectOwnerIds,
   newTaskTitle,
   setNewTaskTitle,
   newTaskDescription,
@@ -769,6 +794,11 @@ export function AgendaPlanningTab({
                                         setEditProjectOwner(
                                           project.assigneeName || ''
                                         );
+                                        setEditProjectOwnerIds(
+                                          Array.isArray(project.assigneeIds)
+                                            ? project.assigneeIds.map((id) => id?.toString())
+                                            : []
+                                        );
                                         setShowEditOwnerDialog(true);
                                       }}
                                       data-testid={`button-edit-owner-${project.id}`}
@@ -793,6 +823,11 @@ export function AgendaPlanningTab({
                                         setEditingProject(project.id);
                                         setEditSupportPeople(
                                           project.supportPeople || ''
+                                        );
+                                        setEditSupportPeopleIds(
+                                          Array.isArray(project.supportPeopleIds)
+                                            ? project.supportPeopleIds.map((id) => id?.toString())
+                                            : []
                                         );
                                         setShowEditPeopleDialog(true);
                                       }}
@@ -1288,8 +1323,9 @@ export function AgendaPlanningTab({
           </DialogHeader>
           <ProjectAssigneeSelector
             value={editSupportPeople}
-            onChange={(value) => {
+            onChange={(value, userIds) => {
               setEditSupportPeople(value);
+              setEditSupportPeopleIds(userIds?.length ? userIds : []);
             }}
             label="Support People"
             placeholder="Select or enter support people"
@@ -1319,6 +1355,7 @@ export function AgendaPlanningTab({
                       `/api/projects/${editingProject}`,
                       {
                         supportPeople: editSupportPeople,
+                        supportPeopleIds: editSupportPeopleIds,
                       }
                     );
 
@@ -1367,8 +1404,9 @@ export function AgendaPlanningTab({
           </DialogHeader>
           <ProjectAssigneeSelector
             value={editProjectOwner}
-            onChange={(value) => {
+            onChange={(value, userIds) => {
               setEditProjectOwner(value);
+              setEditProjectOwnerIds(userIds?.length ? userIds : []);
             }}
             label="Project Owner"
             placeholder="Select or enter project owner"
@@ -1394,6 +1432,7 @@ export function AgendaPlanningTab({
                       `/api/projects/${editingProject}`,
                       {
                         assigneeName: editProjectOwner,
+                        assigneeIds: editProjectOwnerIds,
                       }
                     );
 

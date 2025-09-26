@@ -73,6 +73,7 @@ const initialNewProject: Partial<InsertProject> = {
   assigneeName: '',
   assigneeIds: [],
   supportPeople: '',
+  supportPeopleIds: [],
   dueDate: '',
   startDate: '',
   estimatedHours: 0,
