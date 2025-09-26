@@ -1210,8 +1210,9 @@ router.patch(
               );
               delete processedUpdates[field]; // Remove invalid date fields
             } else {
+              const originalValue = processedUpdates[field];
               processedUpdates[field] = dateValue;
-              console.log(`✅ Converted ${field} from string "${processedUpdates[field]}" to Date object:`, dateValue);
+              console.log(`✅ Converted ${field} from string "${originalValue}" to Date object:`, dateValue);
             }
           } catch (error) {
             console.error(
