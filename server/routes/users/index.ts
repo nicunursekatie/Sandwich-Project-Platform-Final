@@ -17,10 +17,11 @@ usersRouter.get('/for-assignments', async (req, res, next) => {
   }
 });
 
-// User management routes requiring USERS_EDIT permission
+// User management routes
+// GET all users - requires USERS_VIEW for read access
 usersRouter.get(
   '/',
-  requirePermission('USERS_EDIT'),
+  requirePermission('USERS_VIEW'),
   async (req, res, next) => {
     try {
       const users = await userService.getAllUsers();
