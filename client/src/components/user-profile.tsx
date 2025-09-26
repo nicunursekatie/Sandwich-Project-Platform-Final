@@ -80,6 +80,7 @@ export default function UserProfile() {
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'notifications'>(getTabFromURL());
   const [phoneNumber, setPhoneNumber] = useState('');
   const [consent, setConsent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
   
   // Update active tab when URL changes
   useEffect(() => {
@@ -193,8 +194,8 @@ export default function UserProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users/sms-status'] });
       toast({
-        title: 'Success!',
-        description: "You've been signed up for SMS reminders.",
+        title: 'Confirmation SMS Sent!',
+        description: "Please check your phone and reply with your verification code or 'YES' to complete signup.",
       });
       setPhoneNumber('');
       setConsent(false);
@@ -202,7 +203,28 @@ export default function UserProfile() {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to sign up for SMS reminders.',
+        description: error.message || 'Failed to send confirmation SMS.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // SMS confirmation mutation
+  const confirmSMSMutation = useMutation({
+    mutationFn: (verificationCode: string) =>
+      apiRequest('POST', '/api/users/sms-confirm', { verificationCode }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/sms-status'] });
+      toast({
+        title: 'SMS Confirmed!',
+        description: "You'll now receive weekly sandwich collection reminders.",
+      });
+      setVerificationCode('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to confirm SMS signup.',
         variant: 'destructive',
       });
     },
@@ -288,8 +310,26 @@ export default function UserProfile() {
     });
   };
 
-  // Check if user already opted in
-  const isAlreadyOptedIn = userSMSStatus?.hasOptedIn;
+  // Check user SMS status
+  const isAlreadyOptedIn = userSMSStatus?.hasConfirmedOptIn;
+  const isPendingConfirmation = userSMSStatus?.isPendingConfirmation;
+  const smsStatus = userSMSStatus?.status;
+
+  // SMS confirmation form handler
+  const handleConfirmSMS = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!verificationCode.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your verification code.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    confirmSMSMutation.mutate(verificationCode.trim());
+  };
 
   if (isLoading || statusLoading) {
     return (
@@ -553,15 +593,20 @@ export default function UserProfile() {
           </CardHeader>
           <CardContent className="space-y-6">
             {isAlreadyOptedIn ? (
-              // Already opted in - show status and opt-out option
+              // Already confirmed SMS opt-in - show status and opt-out option
               <div className="space-y-4">
                 <Alert data-testid="alert-sms-opted-in">
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
-                    You're signed up for SMS reminders!
+                    You're confirmed for SMS reminders!
                     {userSMSStatus?.phoneNumber && (
                       <span className="block mt-1 font-medium">
                         Phone: {userSMSStatus.phoneNumber}
+                      </span>
+                    )}
+                    {userSMSStatus?.confirmedAt && (
+                      <span className="block mt-1 text-xs text-muted-foreground">
+                        Confirmed: {new Date(userSMSStatus.confirmedAt).toLocaleDateString()}
                       </span>
                     )}
                   </AlertDescription>
@@ -590,6 +635,56 @@ export default function UserProfile() {
                     ? 'Unsubscribing...'
                     : 'Unsubscribe from SMS Reminders'}
                 </Button>
+              </div>
+            ) : isPendingConfirmation ? (
+              // Pending confirmation - show verification code form
+              <div className="space-y-4">
+                <Alert data-testid="alert-sms-pending-confirmation">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>SMS Confirmation Required</strong>
+                    <br />
+                    We sent a verification code to {userSMSStatus?.phoneNumber}. 
+                    Please enter the 6-digit code below or reply "YES" to the text message.
+                  </AlertDescription>
+                </Alert>
+
+                <form onSubmit={handleConfirmSMS} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="verification-code">Verification Code</Label>
+                    <Input
+                      id="verification-code"
+                      type="text"
+                      placeholder="Enter 6-digit code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      maxLength={6}
+                      className="text-lg text-center tracking-widest"
+                      data-testid="input-verification-code"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      You can also reply "YES" to the text message instead of entering the code here.
+                    </p>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full btn-tsp-primary"
+                    disabled={confirmSMSMutation.isPending || verificationCode.length !== 6}
+                    data-testid="button-confirm-sms"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {confirmSMSMutation.isPending
+                      ? 'Confirming...'
+                      : 'Confirm SMS Signup'}
+                  </Button>
+                </form>
+
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Didn't receive the code? Check your spam folder or try signing up again.
+                  </p>
+                </div>
               </div>
             ) : (
               // Not opted in - show sign-up form
