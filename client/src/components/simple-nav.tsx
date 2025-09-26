@@ -125,14 +125,14 @@ export default function SimpleNav({
       <nav className="flex flex-col gap-1 p-2">
         {groupedItems.map((groupItem, index) => {
           if (groupItem.type === 'separator') {
-            return (
+            return !isCollapsed ? (
               <div key={`separator-${groupItem.group}-${index}`} className="my-2">
                 <div className="text-sm font-semibold text-muted-foreground px-2 mb-1 text-right">
                   {getGroupLabel(groupItem.group)}
                 </div>
                 <div className="border-t border-border" />
               </div>
-            );
+            ) : null;
           }
 
           const item = groupItem;
