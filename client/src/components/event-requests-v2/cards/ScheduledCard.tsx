@@ -57,91 +57,8 @@ import {
 } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { RecipientSelector } from '@/components/ui/recipient-selector';
 
-interface DeliveryDestinationEditorProps {
-  currentValue: string;
-  onSave: () => void;
-  onCancel: () => void;
-  setEditingValue: (value: string) => void;
-}
-
-const DeliveryDestinationEditor: React.FC<DeliveryDestinationEditorProps> = ({
-  currentValue,
-  onSave,
-  onCancel,
-  setEditingValue,
-}) => {
-  const [selectedOption, setSelectedOption] = React.useState(
-    currentValue ? 'custom' : ''
-  );
-  const [customValue, setCustomValue] = React.useState(currentValue);
-
-  // Fetch recipients from the API
-  const {
-    data: recipients = [],
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['recipients'],
-    queryFn: async () => {
-      const response = await fetch('/api/recipients');
-      if (!response.ok) {
-        throw new Error('Failed to fetch recipients');
-      }
-      return response.json();
-    },
-  });
-
-  const handleSave = () => {
-    if (selectedOption === 'custom') {
-      setEditingValue(customValue);
-    } else {
-      setEditingValue(selectedOption);
-    }
-    onSave();
-  };
-
-  return (
-    <div className="space-y-2">
-      <select
-        value={selectedOption}
-        onChange={(e) => setSelectedOption(e.target.value)}
-        className="h-8 px-2 border border-gray-300 rounded text-sm w-full"
-        autoFocus
-        disabled={isLoading}
-      >
-        <option value="">Select recipient organization...</option>
-        {isLoading && <option disabled>Loading recipients...</option>}
-        {error && <option disabled>Error loading recipients</option>}
-        {recipients.map((recipient: any) => (
-          <option key={recipient.id} value={recipient.name}>
-            {recipient.name}
-          </option>
-        ))}
-        <option value="custom">Custom destination...</option>
-      </select>
-      {selectedOption === 'custom' && (
-        <Input
-          type="text"
-          placeholder="Enter custom destination..."
-          value={customValue}
-          onChange={(e) => setCustomValue(e.target.value)}
-          className="h-8 w-full"
-        />
-      )}
-      <div className="flex gap-2">
-        <Button size="sm" onClick={handleSave}>
-          <Save className="w-3 h-3 mr-1" />
-          Save
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onCancel}>
-          <X className="w-3 h-3 mr-1" />
-          Cancel
-        </Button>
-      </div>
-    </div>
-  );
-};
 
 interface TimeDialogContentProps {
   request: EventRequest;
@@ -877,11 +794,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   Recipients:
                 </span>
                 {isEditingThisCard && editingField === 'deliveryDestination' ? (
-                  <DeliveryDestinationEditor
-                    currentValue={request.deliveryDestination || ''}
+                  <RecipientSelector
+                    value={editingValue}
+                    onChange={setEditingValue}
+                    isInlineEditing={true}
                     onSave={saveEdit}
                     onCancel={cancelEdit}
-                    setEditingValue={setEditingValue}
+                    autoFocus={true}
+                    data-testid="delivery-destination-editor"
                   />
                 ) : (
                   <div className="flex items-center gap-1 group">

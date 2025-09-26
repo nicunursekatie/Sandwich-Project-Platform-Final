@@ -39,6 +39,7 @@ import type { EventRequest } from '@shared/schema';
 import { SANDWICH_TYPES } from './constants';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { getPickupDateTimeForInput } from './utils';
+import { RecipientSelector } from '@/components/ui/recipient-selector';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -556,13 +557,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <Label htmlFor="deliveryDestination">
                 {formData.overnightHoldingLocation ? '📍 Final Delivery Destination' : '📍 Delivery Destination'}
               </Label>
-              <Input
-                id="deliveryDestination"
+              <RecipientSelector
                 value={formData.deliveryDestination}
-                onChange={(e) => setFormData(prev => ({ ...prev, deliveryDestination: e.target.value }))}
+                onChange={(value) => setFormData(prev => ({ ...prev, deliveryDestination: value }))}
                 placeholder={formData.overnightHoldingLocation
                   ? "Final destination after overnight hold (organization, address, etc.)"
                   : "Where should the sandwiches be delivered? (organization, address, etc.)"}
+                data-testid="delivery-destination-selector"
               />
             </div>
           </div>

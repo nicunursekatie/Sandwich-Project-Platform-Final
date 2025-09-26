@@ -151,8 +151,15 @@ export const CreateProjectDialog: React.FC = () => {
               <ProjectAssigneeSelector
                 label="Project Owner"
                 value={newProject.assigneeName || ''}
-                onChange={(assigneeName) => {
-                  setNewProject({ ...newProject, assigneeName });
+                onChange={(assigneeName, userIds) => {
+                  setNewProject({
+                    ...newProject,
+                    assigneeName,
+                    assigneeIds:
+                      userIds && userIds.length > 0
+                        ? userIds
+                        : [],
+                  });
                 }}
                 placeholder="Select or enter project owner"
                 multiple={false}
