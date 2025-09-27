@@ -284,8 +284,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
       setSortBy('created_date_desc');
     } else if ((activeTab === 'scheduled' || activeTab === 'in_process') && sortBy !== 'event_date_asc') {
       setSortBy('event_date_asc');
-    } else if (activeTab === 'completed' && sortBy !== 'event_date_desc') {
-      setSortBy('event_date_desc');
+    } else if (activeTab === 'completed' && sortBy !== 'organization_asc') {
+      setSortBy('organization_asc');
     }
   }, [activeTab, sortBy]);
 
