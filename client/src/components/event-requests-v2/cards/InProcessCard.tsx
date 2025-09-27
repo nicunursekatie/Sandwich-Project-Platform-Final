@@ -150,109 +150,95 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   const isEditingDate = isEditingThisCard && editingField === dateFieldToEdit;
 
   return (
-    <div className="flex items-start justify-between mb-4">
-      <div className="flex items-start space-x-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg text-[#1A2332]">
-              {request.organizationName}
-              {request.department && (
-                <span className="text-gray-600 ml-1">
-                  &bull; {request.department}
+    <div className="flex items-start justify-between mb-6">
+      <div className="flex-1">
+        <div className="flex items-center gap-3 mb-4">
+          <h3 className="text-2xl font-bold text-[#236383] flex items-center gap-2">
+            {request.organizationName}
+            {request.department && (
+              <span className="text-lg font-normal text-[#646464]">
+                &bull; {request.department}
+              </span>
+            )}
+          </h3>
+          <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
+            <StatusIcon className="w-3 h-3 mr-1" />
+            {getStatusLabel(request.status)}
+          </Badge>
+          {isInProcessStale && (
+            <Badge
+              variant="outline"
+              className="bg-amber-50 text-amber-700 border-amber-300"
+            >
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              Needs follow-up
+            </Badge>
+          )}
+        </div>
+
+        {/* Prominent Event Date Display */}
+        <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="w-5 h-5" />
+            <span className="font-semibold text-sm uppercase tracking-wide">Event Date</span>
+          </div>
+          {isEditingDate ? (
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={formatDateForInput(editingValue)}
+                onChange={(e) => setEditingValue?.(e.target.value)}
+                className="h-8 w-full bg-white text-gray-900"
+                autoFocus
+                data-testid="input-date"
+              />
+              <Button
+                size="sm"
+                onClick={saveEdit}
+                className="bg-[#FBAD3F] hover:bg-[#e89a2d]"
+                data-testid="button-save-date"
+              >
+                <Save className="w-3 h-3" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={cancelEdit}
+                className="text-white hover:bg-white/20"
+                data-testid="button-cancel-date"
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group">
+              <span className="text-lg font-bold" data-testid="text-date-value">
+                {displayDate && dateInfo ? dateInfo.text : 'No date set'}
+              </span>
+              {displayDate && getRelativeTime(displayDate.toString()) && (
+                <span className="text-sm opacity-80">
+                  ({getRelativeTime(displayDate.toString())})
                 </span>
               )}
-            </h3>
-            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
-              <StatusIcon className="w-3 h-3 mr-1" />
-              {getStatusLabel(request.status)}
-            </Badge>
-            {isInProcessStale && (
-              <Badge
-                variant="outline"
-                className="bg-amber-50 text-amber-700 border-amber-300"
-              >
-                <AlertTriangle className="w-3 h-3 mr-1" />
-                Needs follow-up
-              </Badge>
-            )}
-          </div>
-          <div className="text-sm text-[#236383] mt-1 space-y-1">
-            {/* Contact Information */}
-            <div className="text-sm text-gray-700 mb-2">
-              <strong>{request.firstName} {request.lastName}</strong>
-              {request.email && (
-                <span className="ml-2">• {request.email}</span>
-              )}
-              {request.phone && (
-                <span className="ml-2">• {request.phone}</span>
+              {canEdit && startEditing && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() =>
+                    startEditing(
+                      dateFieldToEdit,
+                      formatDateForInput(displayDate?.toString() || '')
+                    )
+                  }
+                  className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity text-white hover:bg-white/20"
+                  title={`Edit ${dateLabel}`}
+                  data-testid="button-edit-date"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
               )}
             </div>
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {isEditingDate ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{dateLabel}:</span>
-                  <Input
-                    type="date"
-                    value={formatDateForInput(editingValue)}
-                    onChange={(e) => setEditingValue?.(e.target.value)}
-                    className="h-8 w-40"
-                    autoFocus
-                    data-testid="input-date"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={saveEdit}
-                    data-testid="button-save-date"
-                  >
-                    <Save className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={cancelEdit}
-                    data-testid="button-cancel-date"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 group">
-                  <span data-testid="text-date-label" className="text-[16px] font-bold">
-                    {dateLabel}:{' '}
-                    <strong
-                      className="text-[16px] font-normal"
-                      data-testid="text-date-value"
-                    >
-                      {displayDate && dateInfo ? dateInfo.text : 'No date set'}
-                    </strong>
-                    {displayDate && getRelativeTime(displayDate.toString()) && (
-                      <span className="text-[#236383] ml-1">
-                        ({getRelativeTime(displayDate.toString())})
-                      </span>
-                    )}
-                  </span>
-                  {canEdit && startEditing && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        startEditing(
-                          dateFieldToEdit,
-                          formatDateForInput(displayDate?.toString() || '')
-                        )
-                      }
-                      className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                      title={`Edit ${dateLabel}`}
-                      data-testid="button-edit-date"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
