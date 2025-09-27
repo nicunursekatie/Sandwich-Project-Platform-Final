@@ -755,9 +755,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border rounded-md h-6 px-2 text-sm border-white/60 text-white hover:bg-white hover:text-[#007E8C] font-semibold shadow-sm bg-[#47b3cb]"
+                        className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm bg-[#47b3cb]"
                       >
-                        + Add Times
+                        Add
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">

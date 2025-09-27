@@ -224,7 +224,7 @@ export default function GroupCatalog({
 
   // Deduplicate by creating unique key from organization + contact + email
   const uniqueOrganizationsMap = new Map<string, OrganizationContact>();
-  allContactsAndDepartments.forEach((org) => {
+  allContactsAndDepartments.forEach((org: any) => {
     const uniqueKey = `${org.organizationName}|${org.contactName}|${org.email || 'no-email'}`;
     if (!uniqueOrganizationsMap.has(uniqueKey)) {
       uniqueOrganizationsMap.set(uniqueKey, org);
