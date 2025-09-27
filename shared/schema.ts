@@ -778,6 +778,9 @@ export const recipients = pgTable('recipients', {
   collectionTime: text('collection_time'), // Time they collect sandwiches (e.g., "9:00 AM", "2:30 PM")
   feedingDay: text('feeding_day'), // Day of week they feed people (e.g., "Wednesday", "Sunday")
   feedingTime: text('feeding_time'), // Time they feed people (e.g., "12:00 PM", "6:00 PM")
+  // Social media post tracking fields
+  hasSharedPost: boolean('has_shared_post').notNull().default(false), // Whether recipient has shared a post about TSP on their social media
+  sharedPostDate: timestamp('shared_post_date'), // When the post was shared (nullable)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -77,6 +78,7 @@ export default function RecipientsManagement() {
   const [secondContactSectionOpen, setSecondContactSectionOpen] =
     useState(false);
   const [operationalSectionOpen, setOperationalSectionOpen] = useState(false);
+  const [socialMediaSectionOpen, setSocialMediaSectionOpen] = useState(false);
 
   // Edit form collapsible states
   const [editBasicInfoSectionOpen, setEditBasicInfoSectionOpen] =
@@ -85,6 +87,8 @@ export default function RecipientsManagement() {
   const [editSecondContactSectionOpen, setEditSecondContactSectionOpen] =
     useState(false);
   const [editOperationalSectionOpen, setEditOperationalSectionOpen] =
+    useState(false);
+  const [editSocialMediaSectionOpen, setEditSocialMediaSectionOpen] = 
     useState(false);
   const [newRecipient, setNewRecipient] = useState({
     name: '',
@@ -119,6 +123,9 @@ export default function RecipientsManagement() {
     collectionTime: '',
     feedingDay: '',
     feedingTime: '',
+    // Social media post tracking fields
+    hasSharedPost: false,
+    sharedPostDate: '',
   });
 
   const { data: recipients = [], isLoading } = useQuery<Recipient[]>({
@@ -279,6 +286,9 @@ export default function RecipientsManagement() {
         collectionTime: '',
         feedingDay: '',
         feedingTime: '',
+        // Reset social media post tracking fields
+        hasSharedPost: false,
+        sharedPostDate: '',
       });
       toast({
         title: 'Success',
@@ -1133,6 +1143,72 @@ export default function RecipientsManagement() {
                                 data-testid="input-feeding-time"
                               />
                             </div>
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+
+                    {/* Social Media Tracking */}
+                    <Collapsible
+                      open={socialMediaSectionOpen}
+                      onOpenChange={setSocialMediaSectionOpen}
+                    >
+                      <div className="border-t pt-4 mt-4">
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-between p-0 h-auto"
+                          >
+                            <h4 className="font-medium text-sm text-slate-700">
+                              Social Media Tracking
+                            </h4>
+                            {socialMediaSectionOpen ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-3">
+                          <div className="grid grid-cols-1 gap-3">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="hasSharedPost"
+                                checked={newRecipient.hasSharedPost}
+                                onCheckedChange={(checked) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    hasSharedPost: !!checked,
+                                  })
+                                }
+                                data-testid="checkbox-shared-post"
+                              />
+                              <Label
+                                htmlFor="hasSharedPost"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                Has shared a post about us on social media
+                              </Label>
+                            </div>
+                            {newRecipient.hasSharedPost && (
+                              <div>
+                                <Label htmlFor="sharedPostDate">
+                                  Date post was shared
+                                </Label>
+                                <Input
+                                  id="sharedPostDate"
+                                  type="date"
+                                  value={newRecipient.sharedPostDate}
+                                  onChange={(e) =>
+                                    setNewRecipient({
+                                      ...newRecipient,
+                                      sharedPostDate: e.target.value,
+                                    })
+                                  }
+                                  data-testid="input-shared-post-date"
+                                />
+                              </div>
+                            )}
                           </div>
                         </CollapsibleContent>
                       </div>
@@ -2253,6 +2329,72 @@ export default function RecipientsManagement() {
                           data-testid="input-edit-feeding-time"
                         />
                       </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Social Media Tracking */}
+              <Collapsible
+                open={editSocialMediaSectionOpen}
+                onOpenChange={setEditSocialMediaSectionOpen}
+              >
+                <div className="border-t pt-4 mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-between p-0 h-auto"
+                    >
+                      <h4 className="font-medium text-sm text-slate-700">
+                        Social Media Tracking
+                      </h4>
+                      {editSocialMediaSectionOpen ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="edit-hasSharedPost"
+                          checked={(editingRecipient as any).hasSharedPost || false}
+                          onCheckedChange={(checked) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              hasSharedPost: !!checked,
+                            })
+                          }
+                          data-testid="checkbox-shared-post"
+                        />
+                        <Label
+                          htmlFor="edit-hasSharedPost"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Has shared a post about us on social media
+                        </Label>
+                      </div>
+                      {(editingRecipient as any).hasSharedPost && (
+                        <div>
+                          <Label htmlFor="edit-sharedPostDate">
+                            Date post was shared
+                          </Label>
+                          <Input
+                            id="edit-sharedPostDate"
+                            type="date"
+                            value={(editingRecipient as any).sharedPostDate || ''}
+                            onChange={(e) =>
+                              setEditingRecipient({
+                                ...editingRecipient,
+                                sharedPostDate: e.target.value,
+                              })
+                            }
+                            data-testid="input-shared-post-date"
+                          />
+                        </div>
+                      )}
                     </div>
                   </CollapsibleContent>
                 </div>

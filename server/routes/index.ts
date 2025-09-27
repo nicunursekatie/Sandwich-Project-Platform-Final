@@ -8,6 +8,7 @@ import usersRouter from './users';
 import createProjectRoutes from './projects';
 import tasksRouter from './tasks';
 import collectionsRouter from './collections';
+import recipientsRouter from './recipients';
 import meetingsRouter from './meetings/index';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
@@ -101,6 +102,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     collectionsRouter
   );
   router.use('/api/sandwich-collections', createErrorHandler('collections'));
+
+  router.use(
+    '/api/recipients',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    recipientsRouter
+  );
+  router.use('/api/recipients', createErrorHandler('recipients'));
 
   router.use(
     '/api/import-collections',
