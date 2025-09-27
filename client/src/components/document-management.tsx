@@ -43,10 +43,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
-interface Document {
+export interface Document {
   id: number;
   title: string;
-  description: string;
+  description?: string | null;
   fileName: string;
   originalName: string;
   filePath: string;
@@ -107,6 +107,23 @@ const PERMISSION_TYPES = [
     description: 'Full access including permissions',
   },
 ];
+
+export function documentMatchesFilters(
+  doc: Document,
+  searchTerm: string,
+  categoryFilter: string
+) {
+  const normalizedSearch = searchTerm.toLowerCase();
+  const matchesSearch =
+    normalizedSearch === '' ||
+    doc.title.toLowerCase().includes(normalizedSearch) ||
+    (doc.description ?? '').toLowerCase().includes(normalizedSearch);
+
+  const matchesCategory =
+    categoryFilter === 'all' || doc.category === categoryFilter;
+
+  return matchesSearch && matchesCategory;
+}
 
 function DocumentUploadDialog({ onSuccess }: { onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
@@ -633,14 +650,9 @@ export default function DocumentManagement() {
     },
   });
 
-  const filteredDocuments = documents.filter((doc: Document) => {
-    const matchesSearch =
-      doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      categoryFilter === 'all' || doc.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredDocuments = documents.filter((doc: Document) =>
+    documentMatchesFilters(doc, searchTerm, categoryFilter)
+  );
 
   const getCategoryBadgeVariant = (category: string) => {
     switch (category) {
