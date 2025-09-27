@@ -1601,7 +1601,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
         </div>
       </CardContent>
-      );
     </Card>
   );
 };
