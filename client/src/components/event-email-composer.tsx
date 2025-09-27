@@ -282,15 +282,31 @@ ${userEmail}`;
       setSubject(
         `The Sandwich Project - Event Resources for ${eventRequest.organizationName}`
       );
-
-      // Pre-select standard toolkit documents 
-      setSelectedAttachments([
-        '/toolkit/food-safety-volunteers.pdf',
-        '/toolkit/deli-sandwich-making-101.pdf',
-        '/toolkit/pbj-sandwich-making-101.pdf',
-      ]);
     }
-  }, [isOpen, eventRequest, formatEventDetails]);
+  }, [isOpen, eventRequest, formatEventDetails, includeSchedulingLink, user]);
+
+  // Separate effect to handle default attachment selection after documents load
+  useEffect(() => {
+    // Only run when dialog is open, documents are loaded, and no attachments are currently selected
+    // This ensures we don't override manually selected attachments or loaded drafts
+    if (isOpen && documents.length > 0 && selectedAttachments.length === 0) {
+      // Pre-select standard toolkit documents based on available documents
+      const defaultAttachments = documents
+        .filter(doc => {
+          const searchText = `${doc.title} ${doc.fileName}`.toLowerCase();
+          return searchText.includes('food safety') || 
+                 searchText.includes('deli') || 
+                 searchText.includes('pbj') || 
+                 searchText.includes('pb&j') ||
+                 searchText.includes('sandwich making');
+        })
+        .map(doc => doc.filePath);
+      
+      if (defaultAttachments.length > 0) {
+        setSelectedAttachments(defaultAttachments);
+      }
+    }
+  }, [isOpen, documents, selectedAttachments.length]);
 
   const sendEmailMutation = useMutation({
     mutationFn: async (emailData: {
@@ -417,28 +433,13 @@ ${userEmail}`;
     });
   };
 
-  const getDocumentIcon = (fileName: string) => {
-    if (fileName.includes('Inventory')) return Calculator;
-    if (fileName.includes('Safety')) return Shield;
-    if (fileName.includes('Making')) return Users;
+  const getDocumentIcon = (document: Document) => {
+    const searchText = `${document.title} ${document.fileName}`.toLowerCase();
+    if (searchText.includes('inventory') || searchText.includes('calculator')) return Calculator;
+    if (searchText.includes('safety')) return Shield;
+    if (searchText.includes('making') || searchText.includes('sandwich')) return Users;
     return FileText;
   };
-
-  // Available toolkit documents (inventory calculator is now online)
-  const toolkitDocuments = [
-    {
-      name: 'Food Safety Guidelines',
-      url: '/toolkit/food-safety-volunteers.pdf',
-    },
-    {
-      name: 'Deli Sandwich Instructions',
-      url: '/toolkit/deli-sandwich-making-101.pdf',
-    },
-    {
-      name: 'PB&J Sandwich Instructions',
-      url: '/toolkit/pbj-sandwich-making-101.pdf',
-    },
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -696,28 +697,28 @@ ${userEmail}`;
           <div className="space-y-3">
             <Label className="text-sm font-medium flex items-center gap-2">
               <Paperclip className="w-4 h-4" />
-              Attach Toolkit Documents (optional)
+              Attach Documents (optional)
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {toolkitDocuments.map((doc) => {
-                const IconComponent = getDocumentIcon(doc.name);
-                const isSelected = selectedAttachments.includes(doc.url);
+              {documents.map((doc) => {
+                const IconComponent = getDocumentIcon(doc);
+                const isSelected = selectedAttachments.includes(doc.filePath);
 
                 return (
                   <Card
-                    key={doc.url}
+                    key={doc.id}
                     className={`cursor-pointer transition-all duration-200 ${
                       isSelected
                         ? 'bg-gradient-to-r from-teal-100 to-cyan-200 border-teal-300 shadow-md'
                         : 'bg-gradient-to-r from-gray-50 to-white border-gray-200 hover:border-teal-200'
                     }`}
-                    onClick={() => toggleAttachment(doc.url)}
+                    onClick={() => toggleAttachment(doc.filePath)}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-center gap-3">
                         <Checkbox
                           checked={isSelected}
-                          onChange={() => toggleAttachment(doc.url)}
+                          onChange={() => toggleAttachment(doc.filePath)}
                           className="flex-shrink-0"
                         />
                         <IconComponent
@@ -731,9 +732,11 @@ ${userEmail}`;
                               isSelected ? 'text-teal-900' : 'text-gray-700'
                             }`}
                           >
-                            {doc.name}
+                            {doc.title}
                           </p>
-                          <p className="text-xs text-gray-500 uppercase">PDF</p>
+                          <p className="text-xs text-gray-500 uppercase">
+                            {doc.category || 'Document'}
+                          </p>
                         </div>
                       </div>
                     </CardContent>
