@@ -50,6 +50,7 @@ import { setupVite, serveStatic, log } from './vite';
 import { initializeDatabase } from './db-init';
 import { setupSocketChat } from './socket-chat';
 import { startBackgroundSync } from './background-sync-service';
+import { smartDeliveryService } from './services/notifications/smart-delivery';
 import logger, { createServiceLogger, logRequest } from './utils/logger.js';
 
 const app = express();
@@ -173,6 +174,9 @@ async function startServer() {
 
     // Set up Socket.io for chat system
     const io = setupSocketChat(httpServer);
+    
+    // Configure smart delivery service with Socket.IO for real-time notifications
+    smartDeliveryService.setSocketIO(io);
 
     // Set up WebSocket server for real-time notifications
     const wss = new WebSocketServer({

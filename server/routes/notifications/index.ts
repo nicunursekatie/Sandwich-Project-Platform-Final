@@ -4,12 +4,26 @@ import { db } from '../../db';
 import { notifications, users } from '../../../shared/schema';
 import { insertNotificationSchema } from '../../../shared/schema';
 import { createStandardMiddleware } from '../../middleware';
+import { smartNotificationsRouter } from './smart';
+import { analyticsRouter } from './analytics';
 import { z } from 'zod';
 
 const notificationsRouter = Router();
 
 // Apply standard middleware (authentication, logging, etc.)
 notificationsRouter.use(createStandardMiddleware());
+
+// Mount smart notification routes
+notificationsRouter.use('/smart', smartNotificationsRouter);
+
+// Mount analytics routes
+notificationsRouter.use('/analytics', analyticsRouter);
+
+// Mount test routes (remove in production)
+if (process.env.NODE_ENV === 'development') {
+  const { testRouter } = await import('./test-endpoints');
+  notificationsRouter.use('/test', testRouter);
+}
 
 // Get notifications for current user
 notificationsRouter.get('/', async (req, res) => {

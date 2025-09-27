@@ -2,14 +2,18 @@
  * Notifications Service Module
  *
  * Centralizes all notification-related business logic including:
+ * - Smart ML-powered notification delivery
  * - Email notifications (announcements, shoutouts, etc.)
  * - SMS announcements via Twilio
- * - In-app notification management
+ * - In-app notification management with real-time WebSocket delivery
  * - Notification templates and formatting
  * - Delivery tracking and retry logic
+ * - User behavior analytics and learning
  */
 
 import { storage } from '../../storage-wrapper';
+import { smartDeliveryService } from './smart-delivery';
+import { mlEngine } from './ml-engine';
 import type { User, Project, SandwichCollection } from '../../../shared/schema';
 
 // TODO: Move email notification logic from email-notification-service.ts
