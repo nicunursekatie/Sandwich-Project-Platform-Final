@@ -80,7 +80,7 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
     request.eventEndTime || ''
   );
   const [tempPickupDateTime, setTempPickupDateTime] = React.useState(
-    request.pickupDateTime || ''
+    request.pickupDateTime?.toString() || ''
   );
 
   const handleSave = () => {
@@ -137,7 +137,7 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
             value={tempPickupDateTime}
             onChange={setTempPickupDateTime}
             placeholder="Select pickup date and time"
-            defaultToEventDate={request.scheduledEventDate || request.desiredEventDate}
+            defaultToEventDate={request.scheduledEventDate?.toString() || request.desiredEventDate?.toString()}
             className="w-full"
             data-testid="pickup-datetime-picker"
           />
@@ -607,10 +607,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {/* Key Information - Prominently Displayed */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* Event Date - Most Important */}
-              <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
+              <div className="bg-white/90 rounded-lg p-4 border border-[#236383]/30 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-5 h-5" />
-                  <span className="font-semibold text-sm uppercase tracking-wide">Event Date</span>
+                  <Calendar className="w-4 h-4 text-[#236383]" />
+                  <span className="font-semibold text-[#236383]">Event Date</span>
                 </div>
                 {isEditingThisCard && editingField === dateFieldToEdit ? (
                   <div className="flex items-center gap-2">
@@ -618,19 +618,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       type="date"
                       value={formatDateForInput(editingValue)}
                       onChange={(e) => setEditingValue(e.target.value)}
-                      className="h-8 w-full bg-white text-gray-900"
+                      className="h-8 w-full"
                       autoFocus
                     />
                     <Button size="sm" onClick={saveEdit} className="bg-[#FBAD3F] hover:bg-[#e89a2d]">
                       <Save className="w-3 h-3" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
+                    <Button size="sm" variant="ghost" onClick={cancelEdit}>
                       <X className="w-3 h-3" />
                     </Button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 group">
-                    <span className="text-lg font-bold">
+                    <span className="text-lg font-bold text-[#236383]">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </span>
                     {canEdit && (
@@ -643,7 +643,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             formatDateForInput(displayDate?.toString() || '')
                           )
                         }
-                        className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity text-white hover:bg-white/20"
+                        className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                       >
                         <Edit2 className="w-3 h-3" />
                       </Button>
@@ -654,16 +654,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {/* Event Address - Google Maps Link */}
               {request.eventAddress && (
-                <div className="bg-[#47B3CB] text-white rounded-lg p-4 shadow-md">
+                <div className="bg-white/90 rounded-lg p-4 border border-[#47B3CB]/30 shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-5 h-5" />
-                    <span className="font-semibold text-sm uppercase tracking-wide">Location</span>
+                    <MapPin className="w-4 h-4 text-[#47B3CB]" />
+                    <span className="font-semibold text-[#47B3CB]">Location</span>
                   </div>
                   <a
                     href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium hover:underline block truncate"
+                    className="text-sm font-medium text-[#47B3CB] hover:text-[#236383] hover:underline block truncate"
                     title={request.eventAddress}
                   >
                     {request.eventAddress}
@@ -672,12 +672,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
 
               {/* Sandwich Count - Prominent Display */}
-              <div className="bg-[#FBAD3F] text-white rounded-lg p-4 shadow-md">
+              <div className="bg-white/90 rounded-lg p-4 border border-[#FBAD3F]/30 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                  <Package className="w-5 h-5" />
-                  <span className="font-semibold text-sm uppercase tracking-wide">Sandwiches</span>
+                  <Package className="w-4 h-4 text-[#FBAD3F]" />
+                  <span className="font-semibold text-[#FBAD3F]">Sandwiches</span>
                 </div>
-                <div className="text-lg font-bold">
+                <div className="text-lg font-bold text-[#FBAD3F]">
                   {formatSandwichTypesDisplay(
                     request.sandwichTypes,
                     request.estimatedSandwichCount ?? undefined
@@ -979,7 +979,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           variant="ghost"
                           onClick={() => {
                             if (request.pickupDateTime) {
-                              startEditing('pickupDateTime', request.pickupDateTime);
+                              startEditing('pickupDateTime', request.pickupDateTime.toString());
                             } else {
                               startEditing('pickupTime', formatTimeForInput(request.pickupTime || ''));
                             }
@@ -1020,7 +1020,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         value={editingValue}
                         onChange={setEditingValue}
                         placeholder="Select pickup date and time"
-                        defaultToEventDate={request.scheduledEventDate || request.desiredEventDate}
+                        defaultToEventDate={request.scheduledEventDate?.toString() || request.desiredEventDate?.toString()}
                         className="w-full"
                         data-testid="inline-pickup-datetime-picker"
                       />
@@ -1059,32 +1059,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </span>
                 </div>
                 {/* Show email and phone if available */}
-                {(request.tspContactEmail || request.tspContactPhone) && (
+                {request.customTspContact && (
                   <div className="flex flex-col gap-1 ml-7 mt-1">
-                    {request.tspContactEmail && (
-                      <div className="flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        <span className="text-sm">{request.tspContactEmail}</span>
-                        <a
-                          href={`mailto:${request.tspContactEmail}`}
-                          className="text-blue-600 hover:text-blue-800 text-sm ml-1"
-                        >
-                          (email)
-                        </a>
-                      </div>
-                    )}
-                    {request.tspContactPhone && (
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        <span className="text-sm">{request.tspContactPhone}</span>
-                        <a
-                          href={`tel:${request.tspContactPhone}`}
-                          className="text-blue-600 hover:text-blue-800 text-sm ml-1"
-                        >
-                          (call)
-                        </a>
-                      </div>
-                    )}
+                    <div className="text-sm text-gray-600">
+                      Custom TSP Contact
+                    </div>
                   </div>
                 )}
               </div>
