@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,8 @@ import {
   Calendar,
   History,
   Loader2,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -101,6 +103,12 @@ export function EventEmailComposer({
   const [includeSchedulingLink, setIncludeSchedulingLink] = useState(false);
   const [requestPhoneCall, setRequestPhoneCall] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  
+  // Smart regeneration state management
+  const [hasManualEdits, setHasManualEdits] = useState(false);
+  const [isResettingToTemplate, setIsResettingToTemplate] = useState(false);
+  const lastGeneratedContentRef = useRef<string>('');
+  const isInitialLoad = useRef(true);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -115,6 +123,34 @@ export function EventEmailComposer({
     queryFn: () => apiRequest('GET', `/api/emails/event/${eventRequest.id}/drafts`),
     enabled: isOpen, // Only fetch when dialog is open
   });
+
+  // Check if current content has been manually edited
+  const isContentManuallyEdited = () => {
+    // If we don't have a last generated content, assume it's manual
+    if (!lastGeneratedContentRef.current) return true;
+    
+    // Compare current content with last generated template (ignore whitespace differences)
+    const currentContentNormalized = content.trim().replace(/\s+/g, ' ');
+    const lastGeneratedNormalized = lastGeneratedContentRef.current.trim().replace(/\s+/g, ' ');
+    
+    return currentContentNormalized !== lastGeneratedNormalized;
+  };
+
+  // Smart regenerate - only regenerate if content hasn't been manually edited
+  const smartRegenerateEmailContent = (includeScheduling: boolean, requestPhone: boolean, force: boolean = false) => {
+    // If hasManualEdits is true, never regenerate (unless forced)
+    if (hasManualEdits && !force) {
+      return false; // Content was not regenerated
+    }
+    
+    // If forced (Reset to Template) or content hasn't been manually edited, regenerate
+    if (force || !isContentManuallyEdited()) {
+      regenerateEmailContent(includeScheduling, requestPhone);
+      setHasManualEdits(false);
+      return true; // Content was regenerated
+    }
+    return false; // Content was not regenerated
+  };
 
   // Regenerate email content based on selected options
   const regenerateEmailContent = (includeScheduling: boolean, requestPhone: boolean) => {
@@ -157,7 +193,7 @@ This tool lets you:
 
 What you'll need for your event (the basics):
 • Food-safe gloves for all volunteers
-• Hair & beard nets for volunteers  
+• Hair ties for long hair to be tied back or even better- hair & beard nets for sandwich-makers  
 • Indoor space for sandwich making
 • Refrigerator access (if making deli sandwiches)
 
@@ -179,6 +215,8 @@ ${userName}${userPhone ? '\n' + userPhone : ''}
 ${userEmail}`;
 
     setContent(template);
+    // Store the generated content for comparison
+    lastGeneratedContentRef.current = template;
   };
 
   // Format event details for template insertion
@@ -222,6 +260,24 @@ ${userEmail}`;
       setSubject(processedSubject);
     }
   }, [selectedSubjectSuggestion, eventRequest]);
+
+  // Effect to handle option changes with smart regeneration
+  useEffect(() => {
+    // Skip on initial load or when resetting to template
+    if (isInitialLoad.current || isResettingToTemplate) return;
+    
+    // Skip if dialog is not open
+    if (!isOpen) return;
+    
+    // Skip if no content exists yet
+    if (!content) return;
+    
+    // Attempt smart regeneration when options change
+    const wasRegenerated = smartRegenerateEmailContent(includeSchedulingLink, requestPhoneCall);
+    
+    // If content wasn't regenerated due to manual edits, we could optionally show a notification
+    // For now, we silently preserve user content
+  }, [includeSchedulingLink, requestPhoneCall, isOpen]);
 
   // Initialize with comprehensive template when component opens
   useEffect(() => {
@@ -279,9 +335,17 @@ ${userName}${userPhone ? '\n' + userPhone : ''}
 ${userEmail}`;
 
       setContent(template);
+      // Store the initial generated content
+      lastGeneratedContentRef.current = template;
+      // Mark as not having manual edits initially
+      setHasManualEdits(false);
+      
       setSubject(
         `The Sandwich Project - Event Resources for ${eventRequest.organizationName}`
       );
+      
+      // Clear initial load flag after first template generation
+      isInitialLoad.current = false;
     }
   }, [isOpen, eventRequest, formatEventDetails, includeSchedulingLink, user]);
 
@@ -307,6 +371,18 @@ ${userEmail}`;
       }
     }
   }, [isOpen, documents, selectedAttachments.length]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset all state when dialog closes
+      setHasManualEdits(false);
+      setIsResettingToTemplate(false);
+      lastGeneratedContentRef.current = '';
+      isInitialLoad.current = true;
+      setDraftSaved(false);
+    }
+  }, [isOpen]);
 
   const sendEmailMutation = useMutation({
     mutationFn: async (emailData: {
@@ -397,6 +473,32 @@ ${userEmail}`;
     );
   };
 
+  // Handle content changes to track manual edits
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
+    
+    // Don't mark as manual edit if we're resetting to template or on initial load
+    if (!isResettingToTemplate && !isInitialLoad.current) {
+      // Only mark as manual edit if the content differs from last generated
+      if (lastGeneratedContentRef.current && newContent.trim() !== lastGeneratedContentRef.current.trim()) {
+        setHasManualEdits(true);
+      }
+    }
+  };
+
+  // Reset to template functionality
+  const resetToTemplate = () => {
+    setIsResettingToTemplate(true);
+    smartRegenerateEmailContent(includeSchedulingLink, requestPhoneCall, true);
+    setIsResettingToTemplate(false);
+    
+    toast({
+      title: '✨ Template Refreshed',
+      description: 'Email content has been reset to the current template with your selected options.',
+      duration: 3000,
+    });
+  };
+
   // Load draft functionality
   const loadDraft = (draft: any) => {
     // Hydrate all state from the selected draft
@@ -424,6 +526,10 @@ ${userEmail}`;
     
     // Clear draft saved state since we're now editing
     setDraftSaved(false);
+    
+    // Mark as manual edits since we're loading custom draft content
+    setHasManualEdits(true);
+    lastGeneratedContentRef.current = draft.content || '';
     
     // Show success toast
     toast({
@@ -619,9 +725,29 @@ ${userEmail}`;
 
           {/* Content */}
           <div className="space-y-2">
-            <Label htmlFor="content" className="text-sm font-medium">
-              Message
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="content" className="text-sm font-medium">
+                Message
+              </Label>
+              {hasManualEdits && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                    <AlertTriangle className="w-3 h-3" />
+                    Custom content - template won't auto-update
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetToTemplate}
+                    className="text-xs h-7 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                    data-testid="button-reset-template"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Reset to Template
+                  </Button>
+                </div>
+              )}
+            </div>
             <div className="text-xs text-gray-500 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
               💡 <strong>Quick Links:</strong> Inventory Calculator:
               https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
@@ -630,7 +756,7 @@ ${userEmail}`;
             <Textarea
               id="content"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => handleContentChange(e.target.value)}
               placeholder="Write your message here..."
               className="min-h-[300px] w-full resize-none"
             />
@@ -652,7 +778,6 @@ ${userEmail}`;
                   if (checked) {
                     setRequestPhoneCall(false); // Make them mutually exclusive
                   }
-                  regenerateEmailContent(checked as boolean, false);
                 }}
               />
               <Label 
@@ -674,7 +799,6 @@ ${userEmail}`;
                   if (checked) {
                     setIncludeSchedulingLink(false); // Make them mutually exclusive
                   }
-                  regenerateEmailContent(false, checked as boolean);
                 }}
               />
               <Label 
@@ -689,6 +813,12 @@ ${userEmail}`;
             {!includeSchedulingLink && !requestPhoneCall && (
               <p className="text-xs text-amber-600 italic">
                 ⚠️ At least one follow-up method should be selected
+              </p>
+            )}
+            
+            {hasManualEdits && (includeSchedulingLink || requestPhoneCall) && (
+              <p className="text-xs text-blue-600 italic bg-blue-50 p-2 rounded border border-blue-200">
+                💡 Your custom content is preserved. Use "Reset to Template" above to apply these new options.
               </p>
             )}
           </div>

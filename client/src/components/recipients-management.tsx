@@ -114,6 +114,11 @@ export default function RecipientsManagement() {
     tspContactUserId: '',
     contractSigned: false,
     contractSignedDate: '',
+    // Collection and feeding schedule fields
+    collectionDay: '',
+    collectionTime: '',
+    feedingDay: '',
+    feedingTime: '',
   });
 
   const { data: recipients = [], isLoading } = useQuery<Recipient[]>({
@@ -269,6 +274,11 @@ export default function RecipientsManagement() {
         tspContactUserId: '',
         contractSigned: false,
         contractSignedDate: '',
+        // Reset collection and feeding schedule fields
+        collectionDay: '',
+        collectionTime: '',
+        feedingDay: '',
+        feedingTime: '',
       });
       toast({
         title: 'Success',
@@ -1044,6 +1054,85 @@ export default function RecipientsManagement() {
                                 />
                               </div>
                             )}
+                            
+                            {/* Collection and Feeding Schedule Fields */}
+                            <div className="col-span-2 border-t pt-3 mt-3">
+                              <h5 className="font-medium text-sm text-slate-700 mb-3">
+                                Collection & Feeding Schedule
+                              </h5>
+                            </div>
+                            <div>
+                              <Label htmlFor="collectionDay">
+                                Collection Day
+                              </Label>
+                              <Input
+                                id="collectionDay"
+                                type="text"
+                                value={newRecipient.collectionDay}
+                                onChange={(e) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    collectionDay: e.target.value,
+                                  })
+                                }
+                                placeholder="Monday"
+                                data-testid="input-collection-day"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="collectionTime">
+                                Collection Time
+                              </Label>
+                              <Input
+                                id="collectionTime"
+                                type="text"
+                                value={newRecipient.collectionTime}
+                                onChange={(e) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    collectionTime: e.target.value,
+                                  })
+                                }
+                                placeholder="9:00 AM"
+                                data-testid="input-collection-time"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="feedingDay">
+                                Feeding Day
+                              </Label>
+                              <Input
+                                id="feedingDay"
+                                type="text"
+                                value={newRecipient.feedingDay}
+                                onChange={(e) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    feedingDay: e.target.value,
+                                  })
+                                }
+                                placeholder="Wednesday"
+                                data-testid="input-feeding-day"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="feedingTime">
+                                Feeding Time
+                              </Label>
+                              <Input
+                                id="feedingTime"
+                                type="text"
+                                value={newRecipient.feedingTime}
+                                onChange={(e) =>
+                                  setNewRecipient({
+                                    ...newRecipient,
+                                    feedingTime: e.target.value,
+                                  })
+                                }
+                                placeholder="12:00 PM"
+                                data-testid="input-feeding-time"
+                              />
+                            </div>
                           </div>
                         </CollapsibleContent>
                       </div>
@@ -2085,6 +2174,85 @@ export default function RecipientsManagement() {
                           />
                         </div>
                       )}
+                      
+                      {/* Collection and Feeding Schedule Fields */}
+                      <div className="col-span-2 border-t pt-3 mt-3">
+                        <h5 className="font-medium text-sm text-slate-700 mb-3">
+                          Collection & Feeding Schedule
+                        </h5>
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-collectionDay">
+                          Collection Day
+                        </Label>
+                        <Input
+                          id="edit-collectionDay"
+                          type="text"
+                          value={(editingRecipient as any).collectionDay || ''}
+                          onChange={(e) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              collectionDay: e.target.value,
+                            })
+                          }
+                          placeholder="Monday"
+                          data-testid="input-edit-collection-day"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-collectionTime">
+                          Collection Time
+                        </Label>
+                        <Input
+                          id="edit-collectionTime"
+                          type="text"
+                          value={(editingRecipient as any).collectionTime || ''}
+                          onChange={(e) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              collectionTime: e.target.value,
+                            })
+                          }
+                          placeholder="9:00 AM"
+                          data-testid="input-edit-collection-time"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-feedingDay">
+                          Feeding Day
+                        </Label>
+                        <Input
+                          id="edit-feedingDay"
+                          type="text"
+                          value={(editingRecipient as any).feedingDay || ''}
+                          onChange={(e) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              feedingDay: e.target.value,
+                            })
+                          }
+                          placeholder="Wednesday"
+                          data-testid="input-edit-feeding-day"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-feedingTime">
+                          Feeding Time
+                        </Label>
+                        <Input
+                          id="edit-feedingTime"
+                          type="text"
+                          value={(editingRecipient as any).feedingTime || ''}
+                          onChange={(e) =>
+                            setEditingRecipient({
+                              ...editingRecipient,
+                              feedingTime: e.target.value,
+                            })
+                          }
+                          placeholder="12:00 PM"
+                          data-testid="input-edit-feeding-time"
+                        />
+                      </div>
                     </div>
                   </CollapsibleContent>
                 </div>
