@@ -193,7 +193,7 @@ This tool lets you:
 
 What you'll need for your event (the basics):
 • Food-safe gloves for all volunteers
-• Hair & beard nets for volunteers  
+• Hair ties for long hair to be tied back or even better- hair & beard nets for sandwich-makers  
 • Indoor space for sandwich making
 • Refrigerator access (if making deli sandwiches)
 
