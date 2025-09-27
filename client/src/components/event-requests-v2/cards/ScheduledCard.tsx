@@ -740,688 +740,346 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Main Content */}
         <div className="space-y-4">
-            {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Event Times */}
-              <div className="bg-[#007E8C] text-white rounded-lg p-4 shadow-md">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span className="font-semibold text-lg">Event Times</span>
-                  </div>
-                  {canEdit && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border rounded-md h-6 px-2 text-sm border-white/60 text-white hover:bg-white hover:text-[#007E8C] font-semibold shadow-sm bg-[#47b3cb]"
-                        >
-                          + Add Times
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Add Event Times</DialogTitle>
-                        </DialogHeader>
-                        <TimeDialogContent
-                          request={request}
-                          startEditing={startEditing}
-                          saveEdit={saveEdit}
-                          cancelEdit={cancelEdit}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                  )}
+          {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Event Times */}
+            <div className="bg-[#007E8C] text-white rounded-lg p-4 shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-semibold text-lg">Event Times</span>
                 </div>
-                <div className="space-y-2">
-                  {/* Times - only show if they exist */}
-                  {request.eventStartTime ||
-                  request.eventEndTime ||
-                  request.pickupTime ||
-                  request.pickupDateTime ? (
-                    <div className="space-y-2">
-                      {request.eventStartTime && (
-                        <div className="flex items-center gap-1 group">
-                          <span className="text-base font-medium">Start:</span>
-                          <span className="text-base">
-                            {formatTime12Hour(request.eventStartTime)}
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                startEditing(
-                                  'eventStartTime',
-                                  formatTimeForInput(
-                                    request.eventStartTime || ''
-                                  )
-                                )
-                              }
-                              className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                      {request.eventEndTime && (
-                        <div className="flex items-center gap-1 group">
-                          <span className="text-base font-medium">End:</span>
-                          <span className="text-base">
-                            {formatTime12Hour(request.eventEndTime)}
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                startEditing(
-                                  'eventEndTime',
-                                  formatTimeForInput(request.eventEndTime || '')
-                                )
-                              }
-                              className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                      {(request.pickupDateTime || request.pickupTime) && (
-                        <div className="flex items-center gap-1 group">
-                          <span className="text-base font-medium">Pickup:</span>
-                          <span className="text-base">
-                            {request.pickupDateTime
-                              ? (() => {
-                                  const date = new Date(request.pickupDateTime);
-                                  const dateStr = date.toLocaleDateString(
-                                    'en-US',
-                                    {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric',
-                                    }
-                                  );
-                                  const timeStr = formatTime12Hour(
-                                    date.toTimeString().slice(0, 5)
-                                  );
-                                  return `${dateStr} at ${timeStr}`;
-                                })()
-                              : formatTime12Hour(request.pickupTime!)}
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                if (request.pickupDateTime) {
-                                  startEditing(
-                                    'pickupDateTime',
-                                    request.pickupDateTime.toString()
-                                  );
-                                } else {
-                                  startEditing(
-                                    'pickupTime',
-                                    formatTimeForInput(request.pickupTime || '')
-                                  );
-                                }
-                              }}
-                              className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Inline editing for times */}
-                      {isEditingThisCard &&
-                        (editingField === 'eventStartTime' ||
-                          editingField === 'eventEndTime' ||
-                          editingField === 'pickupTime') && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <Input
-                              type="time"
-                              value={editingValue}
-                              onChange={(e) => setEditingValue(e.target.value)}
-                              className="h-8 w-32 text-gray-900 bg-white"
-                              autoFocus
-                            />
-                            <Button size="sm" onClick={saveEdit}>
-                              <Save className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={cancelEdit}
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
-                      {/* Inline editing for pickup datetime */}
-                      {isEditingThisCard &&
-                        editingField === 'pickupDateTime' && (
-                          <div className="mt-2">
-                            <DateTimePicker
-                              value={editingValue}
-                              onChange={setEditingValue}
-                              placeholder="Select pickup date and time"
-                              defaultToEventDate={
-                                request.scheduledEventDate?.toString() ||
-                                request.desiredEventDate?.toString()
-                              }
-                              className="w-full"
-                              data-testid="inline-pickup-datetime-picker"
-                            />
-                            <div className="flex items-center gap-2 mt-2">
-                              <Button size="sm" onClick={saveEdit}>
-                                <Save className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={cancelEdit}
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  ) : (
-                    <div className="text-base italic">
-                      No times set yet. Click "Add Times" to add event times.
-                    </div>
-                  )}
-                </div>
+                {canEdit && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border rounded-md h-6 px-2 text-sm border-white/60 text-white hover:bg-white hover:text-[#007E8C] font-semibold shadow-sm bg-[#47b3cb]"
+                      >
+                        + Add Times
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Add Event Times</DialogTitle>
+                      </DialogHeader>
+                      <TimeDialogContent
+                        request={request}
+                        startEditing={startEditing}
+                        saveEdit={saveEdit}
+                        cancelEdit={cancelEdit}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
+              <div className="space-y-2">
+                {/* Times - only show if they exist */}
+                {request.eventStartTime ||
+                request.eventEndTime ||
+                request.pickupTime ||
+                request.pickupDateTime ? (
+                  <div className="space-y-2">
+                    {request.eventStartTime && (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-base font-medium">Start:</span>
+                        <span className="text-base">
+                          {formatTime12Hour(request.eventStartTime)}
+                        </span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              startEditing(
+                                'eventStartTime',
+                                formatTimeForInput(request.eventStartTime || '')
+                              )
+                            }
+                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {request.eventEndTime && (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-base font-medium">End:</span>
+                        <span className="text-base">
+                          {formatTime12Hour(request.eventEndTime)}
+                        </span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              startEditing(
+                                'eventEndTime',
+                                formatTimeForInput(request.eventEndTime || '')
+                              )
+                            }
+                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {(request.pickupDateTime || request.pickupTime) && (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-base font-medium">Pickup:</span>
+                        <span className="text-base">
+                          {request.pickupDateTime
+                            ? (() => {
+                                const date = new Date(request.pickupDateTime);
+                                const dateStr = date.toLocaleDateString(
+                                  'en-US',
+                                  {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  }
+                                );
+                                const timeStr = formatTime12Hour(
+                                  date.toTimeString().slice(0, 5)
+                                );
+                                return `${dateStr} at ${timeStr}`;
+                              })()
+                            : formatTime12Hour(request.pickupTime!)}
+                        </span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (request.pickupDateTime) {
+                                startEditing(
+                                  'pickupDateTime',
+                                  request.pickupDateTime.toString()
+                                );
+                              } else {
+                                startEditing(
+                                  'pickupTime',
+                                  formatTimeForInput(request.pickupTime || '')
+                                );
+                              }
+                            }}
+                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
 
-              {/* Sandwich Information */}
-              <div className="bg-[#FBAD3F] text-white rounded-lg p-4 shadow-md">
-                <div className="flex items-center gap-2 mb-3">
+                    {/* Inline editing for times */}
+                    {isEditingThisCard &&
+                      (editingField === 'eventStartTime' ||
+                        editingField === 'eventEndTime' ||
+                        editingField === 'pickupTime') && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            type="time"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-8 w-32 text-gray-900 bg-white"
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={saveEdit}>
+                            <Save className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEdit}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    {/* Inline editing for pickup datetime */}
+                    {isEditingThisCard && editingField === 'pickupDateTime' && (
+                      <div className="mt-2">
+                        <DateTimePicker
+                          value={editingValue}
+                          onChange={setEditingValue}
+                          placeholder="Select pickup date and time"
+                          defaultToEventDate={
+                            request.scheduledEventDate?.toString() ||
+                            request.desiredEventDate?.toString()
+                          }
+                          className="w-full"
+                          data-testid="inline-pickup-datetime-picker"
+                        />
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button size="sm" onClick={saveEdit}>
+                            <Save className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEdit}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-base italic">
+                    No times set yet. Click "Add Times" to add event times.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sandwich Information */}
+            <div className="bg-[#FBAD3F] text-white rounded-lg p-4 shadow-md">
+              <div className="flex items-center gap-2 mb-3">
+                <Package className="w-4 h-4" />
+                <span className="font-semibold text-lg">Sandwich Details</span>
+              </div>
+              <div className="space-y-2">{renderSandwichEdit()}</div>
+            </div>
+
+            {/* Delivery Logistics */}
+            <div className="bg-[#47B3CB] text-white rounded-lg p-4 shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
                   <span className="font-semibold text-lg">
-                    Sandwich Details
+                    Delivery Logistics
                   </span>
                 </div>
-                <div className="space-y-2">{renderSandwichEdit()}</div>
               </div>
-
-              {/* Delivery Logistics */}
-              <div className="bg-[#47B3CB] text-white rounded-lg p-4 shadow-md">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Package className="w-4 h-4" />
-                    <span className="font-semibold text-lg">
-                      Delivery Logistics
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-medium">
-                      Overnight Holding:
-                    </span>
-                    {isEditingThisCard &&
-                    editingField === 'overnightHoldingLocation' ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="text"
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-8 w-48 text-gray-900 bg-white"
-                          autoFocus
-                        />
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 group">
-                        <span className="text-base">
-                          {request.overnightHoldingLocation || 'Not specified'}
-                        </span>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              startEditing(
-                                'overnightHoldingLocation',
-                                request.overnightHoldingLocation || ''
-                              )
-                            }
-                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Recipients:</span>
-                    {isEditingThisCard &&
-                    editingField === 'deliveryDestination' ? (
-                      <RecipientSelector
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-medium">
+                    Overnight Holding:
+                  </span>
+                  {isEditingThisCard &&
+                  editingField === 'overnightHoldingLocation' ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="text"
                         value={editingValue}
-                        onChange={setEditingValue}
-                        isInlineEditing={true}
-                        onSave={saveEdit}
-                        onCancel={cancelEdit}
-                        autoFocus={true}
-                        data-testid="delivery-destination-editor"
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="h-8 w-48 text-gray-900 bg-white"
+                        autoFocus
                       />
-                    ) : (
-                      <div className="flex items-center gap-1 group">
-                        <span className="text-base">
-                          {request.deliveryDestination || 'Not specified'}
-                        </span>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              startEditing(
-                                'deliveryDestination',
-                                request.deliveryDestination || ''
-                              )
-                            }
-                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Two-column grid for Contact Information and Team Assignments */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Contact Information */}
-              <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-5 h-5" />
-                  <span className="font-semibold text-lg">
-                    Contact Information
-                  </span>
-                </div>
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-base">
-                      {request.firstName} {request.lastName}
-                    </span>
-                    {request.email && (
-                      <div className="flex items-center gap-1">
-                        <Mail className="w-4 h-4" />
-                        <a
-                          href={`mailto:${request.email}`}
-                          className="text-base hover:underline"
+                      <Button size="sm" onClick={saveEdit}>
+                        <Save className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-base">
+                        {request.overnightHoldingLocation || 'Not specified'}
+                      </span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            startEditing(
+                              'overnightHoldingLocation',
+                              request.overnightHoldingLocation || ''
+                            )
+                          }
+                          className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                         >
-                          {request.email}
-                        </a>
-                      </div>
-                    )}
-                    {request.phone && (
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-4 h-4" />
-                        <a
-                          href={`tel:${request.phone}`}
-                          className="text-base hover:underline"
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Recipients:</span>
+                  {isEditingThisCard &&
+                  editingField === 'deliveryDestination' ? (
+                    <RecipientSelector
+                      value={editingValue}
+                      onChange={setEditingValue}
+                      isInlineEditing={true}
+                      onSave={saveEdit}
+                      onCancel={cancelEdit}
+                      autoFocus={true}
+                      data-testid="delivery-destination-editor"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-base">
+                        {request.deliveryDestination || 'Not specified'}
+                      </span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            startEditing(
+                              'deliveryDestination',
+                              request.deliveryDestination || ''
+                            )
+                          }
+                          className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                         >
-                          {request.phone}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Team Assignments */}
-              {totalNeeded > 0 && (
-                <div className="bg-[#A31C41] text-white rounded-lg p-4 shadow-md">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-semibold text-lg">
-                      Team Assignments
-                    </span>
-                    <span
-                      className={`text-base font-bold px-2 py-1 rounded-full ${
-                        staffingComplete
-                          ? 'bg-white/20 text-white'
-                          : 'bg-white/20 text-white'
-                      }`}
-                    >
-                      {totalAssigned}/{totalNeeded} assigned
-                    </span>
-                  </div>
-
-                  <div className="space-y-3">
-                    {/* Drivers */}
-                    {driverNeeded > 0 && (
-                      <div
-                        className={`rounded-lg p-3 border ${
-                          driverAssigned >= driverNeeded
-                            ? 'bg-white/20 border-white/30'
-                            : 'bg-white/20 border-white/30'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Car className="w-4 h-4" />
-                            <span className="font-medium">Drivers</span>
-                            <span
-                              className={`text-sm px-2 py-1 rounded-full font-bold ${
-                                driverAssigned >= driverNeeded
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-white/20 text-white'
-                              }`}
-                            >
-                              {driverAssigned}/{driverNeeded}
-                            </span>
-                          </div>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openAssignmentDialog('driver')}
-                              className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
-                            >
-                              <UserPlus className="w-3 h-3 mr-1" />
-                              {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
-                            </Button>
-                          )}
-                        </div>
-                        {driverAssigned > 0 || request.assignedVanDriverId ? (
-                          <div className="space-y-1">
-                            {parsePostgresArray(request.assignedDriverIds).map(
-                              (driverId: string) => {
-                                let name = '';
-                                if (driverId.startsWith('custom-')) {
-                                  name = extractCustomName(driverId);
-                                } else {
-                                  const detailName = (
-                                    request.driverDetails as any
-                                  )?.[driverId]?.name;
-                                  // Check if detailName is actually a name (not an ID)
-                                  const isActualName =
-                                    detailName &&
-                                    !/^[\d]+$/.test(detailName) &&
-                                    !detailName.startsWith('user_') &&
-                                    !detailName.startsWith('admin_');
-                                  name = isActualName
-                                    ? detailName
-                                    : resolveUserName(driverId);
-                                }
-                                return (
-                                  <div
-                                    key={driverId}
-                                    className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
-                                  >
-                                    <span className="text-base font-medium">
-                                      {name}
-                                    </span>
-                                    {canEdit && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() =>
-                                          handleRemoveAssignment(
-                                            'driver',
-                                            driverId
-                                          )
-                                        }
-                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                );
-                              }
-                            )}
-                            {/* Van Driver in Drivers List */}
-                            {request.assignedVanDriverId && (
-                              <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                                <span className="text-base font-medium">
-                                  {resolveUserName(request.assignedVanDriverId)}
-                                  <span className="ml-2 text-xs text-[#A31C41]">
-                                    (van driver, counts as driver)
-                                  </span>
-                                </span>
-                                {canEdit && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleRemoveAssignment(
-                                        'driver',
-                                        request.assignedVanDriverId!
-                                      )
-                                    }
-                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-base italic">
-                            No drivers assigned
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Speakers */}
-                    {speakerNeeded > 0 && (
-                      <div
-                        className={`rounded-lg p-3 border ${
-                          speakerAssigned >= speakerNeeded
-                            ? 'bg-white/20 border-white/30'
-                            : 'bg-white/20 border-white/30'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Megaphone className="w-4 h-4" />
-                            <span className="font-medium">Speakers</span>
-                            <span
-                              className={`text-sm px-2 py-1 rounded-full font-bold ${
-                                speakerAssigned >= speakerNeeded
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-white/20 text-white'
-                              }`}
-                            >
-                              {speakerAssigned}/{speakerNeeded}
-                            </span>
-                          </div>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openAssignmentDialog('speaker')}
-                              className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
-                            >
-                              <UserPlus className="w-3 h-3 mr-1" />
-                              {speakerAssigned < speakerNeeded ? 'Assign' : 'Add'}
-                            </Button>
-                          )}
-                        </div>
-                        {speakerAssigned > 0 ? (
-                          <div className="space-y-1">
-                            {Object.keys(request.speakerDetails || {}).map(
-                              (speakerId: string) => {
-                                let name = '';
-                                if (speakerId.startsWith('custom-')) {
-                                  name = extractCustomName(speakerId);
-                                } else {
-                                  const detailName = (
-                                    request.speakerDetails as any
-                                  )?.[speakerId]?.name;
-                                  const isActualName =
-                                    detailName &&
-                                    !/^[\d]+$/.test(detailName) &&
-                                    !detailName.startsWith('user_') &&
-                                    !detailName.startsWith('admin_');
-                                  name = isActualName
-                                    ? detailName
-                                    : resolveUserName(speakerId);
-                                }
-                                return (
-                                  <div
-                                    key={speakerId}
-                                    className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
-                                  >
-                                    <span className="text-base font-medium">
-                                      {name}
-                                    </span>
-                                    {canEdit && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() =>
-                                          handleRemoveAssignment(
-                                            'speaker',
-                                            speakerId
-                                          )
-                                        }
-                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                );
-                              }
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-base italic">
-                            No speakers assigned
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Volunteers */}
-                    {volunteerNeeded > 0 && (
-                      <div
-                        className={`rounded-lg p-3 border ${
-                          volunteerAssigned >= volunteerNeeded
-                            ? 'bg-white/20 border-white/30'
-                            : 'bg-white/20 border-white/30'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4" />
-                            <span className="font-medium">Volunteers</span>
-                            <span
-                              className={`text-sm px-2 py-1 rounded-full font-bold ${
-                                volunteerAssigned >= volunteerNeeded
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-white/20 text-white'
-                              }`}
-                            >
-                              {volunteerAssigned}/{volunteerNeeded}
-                            </span>
-                          </div>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openAssignmentDialog('volunteer')}
-                              className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
-                            >
-                              <UserPlus className="w-3 h-3 mr-1" />
-                              {volunteerAssigned < volunteerNeeded
-                                ? 'Assign'
-                                : 'Add'}
-                            </Button>
-                          )}
-                        </div>
-                        {volunteerAssigned > 0 ? (
-                          <div className="space-y-1">
-                            {parsePostgresArray(request.assignedVolunteerIds).map(
-                              (volunteerId: string) => {
-                                const name = volunteerId.startsWith('custom-')
-                                  ? extractCustomName(volunteerId)
-                                  : resolveUserName(volunteerId);
-                                return (
-                                  <div
-                                    key={volunteerId}
-                                    className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
-                                  >
-                                    <span className="text-base font-medium">
-                                      {name}
-                                    </span>
-                                    {canEdit && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() =>
-                                          handleRemoveAssignment(
-                                            'volunteer',
-                                            volunteerId
-                                          )
-                                        }
-                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                );
-                              }
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-base italic">
-                            No volunteers assigned
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* TSP Contact */}
-            {(request.tspContact || request.customTspContact) && (
-              <div className="bg-[#FBAD3F] text-white rounded-lg p-4 mb-4 shadow-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <Building className="w-4 h-4" />
-                  <span className="font-semibold text-lg">TSP Contact</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold">
-                      {request.tspContact
-                        ? resolveUserName(request.tspContact)
-                        : request.customTspContact}
-                    </span>
-                  </div>
-                  {/* Show email and phone if available */}
-                  {request.customTspContact && (
-                    <div className="flex flex-col gap-1 ml-7 mt-1">
-                      <div className="text-base">Custom TSP Contact</div>
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* Two-column grid for Contact Information and Team Assignments */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Contact Information */}
+            <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="w-5 h-5" />
+                <span className="font-semibold text-lg">
+                  Contact Information
+                </span>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium text-base">
+                    {request.firstName} {request.lastName}
+                  </span>
+                  {request.email && (
+                    <div className="flex items-center gap-1">
+                      <Mail className="w-4 h-4" />
+                      <a
+                        href={`mailto:${request.email}`}
+                        className="text-base hover:underline"
+                      >
+                        {request.email}
+                      </a>
+                    </div>
+                  )}
+                  {request.phone && (
+                    <div className="flex items-center gap-1">
+                      <Phone className="w-4 h-4" />
+                      <a
+                        href={`tel:${request.phone}`}
+                        className="text-base hover:underline"
+                      >
+                        {request.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Team Assignments */}
             {totalNeeded > 0 && (
@@ -1943,6 +1601,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
         </div>
       </CardContent>
-    );</Card>
+      );
+    </Card>
   );
 };
