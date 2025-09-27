@@ -414,7 +414,7 @@ export class AuditLogger {
           // Only include context items that are NOT already captured in field changes
           if (!fieldsInChanges.has(lowerKey) && 
               !['email', 'phone', 'firstname', 'lastname', 'organizationname', 'status'].includes(lowerKey)) {
-            filteredContext[key] = cleanChangeContext[key];
+            filteredContext[key] = (cleanChangeContext as any)[key];
           }
         });
       }
