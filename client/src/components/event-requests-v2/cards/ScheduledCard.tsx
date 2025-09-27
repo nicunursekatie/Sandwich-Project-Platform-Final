@@ -607,7 +607,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {/* Key Information - Prominently Displayed */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* Event Date - Most Important */}
-              <div className="bg-white/90 rounded-lg p-4 border border-[#236383]/30 shadow-sm">
+              <div className="bg-[#236383]/10 rounded-lg p-4 border border-[#236383]/30 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="w-4 h-4 text-[#236383]" />
                   <span className="font-semibold text-[#236383]">Event Date</span>
@@ -654,7 +654,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {/* Event Address - Google Maps Link */}
               {request.eventAddress && (
-                <div className="bg-white/90 rounded-lg p-4 border border-[#47B3CB]/30 shadow-sm">
+                <div className="bg-[#47B3CB]/10 rounded-lg p-4 border border-[#47B3CB]/30 shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4 text-[#47B3CB]" />
                     <span className="font-semibold text-[#47B3CB]">Location</span>
@@ -672,7 +672,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
 
               {/* Sandwich Count - Prominent Display */}
-              <div className="bg-white/90 rounded-lg p-4 border border-[#FBAD3F]/30 shadow-sm">
+              <div className="bg-[#FBAD3F]/10 rounded-lg p-4 border border-[#FBAD3F]/30 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <Package className="w-4 h-4 text-[#FBAD3F]" />
                   <span className="font-semibold text-[#FBAD3F]">Sandwiches</span>
@@ -687,7 +687,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Contact Information */}
-            <div className="bg-white/90 rounded-lg p-4 mb-4 border border-white/50 shadow-sm">
+            <div className="bg-[#236383]/10 rounded-lg p-4 mb-4 border border-[#236383]/30 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Users className="w-4 h-4 text-[#236383]" />
                 <span className="font-semibold text-[#236383]">Contact Information</span>
