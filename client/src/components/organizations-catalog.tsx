@@ -95,7 +95,7 @@ export default function GroupCatalog({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [selectedOrganization, setSelectedOrganization] =
     useState<OrganizationContact | null>(null);
   const [showEventDetailsDialog, setShowEventDetailsDialog] = useState(false);
@@ -401,6 +401,15 @@ export default function GroupCatalog({
   // Pagination logic for active groups
   const totalActiveItems = sortedActiveGroups.length;
   const totalActivePages = Math.ceil(totalActiveItems / itemsPerPage);
+  
+  // Debug logging
+  console.log('🔍 Pagination Debug:', {
+    totalActiveItems,
+    totalActivePages,
+    itemsPerPage,
+    currentPage,
+    shouldShowPagination: totalActiveItems > 0 && totalActivePages > 1
+  });
   const activeStartIndex = (currentPage - 1) * itemsPerPage;
   const activeEndIndex = activeStartIndex + itemsPerPage;
   const paginatedActiveGroups = sortedActiveGroups.slice(
