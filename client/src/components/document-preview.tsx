@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Download, ExternalLink, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -15,8 +15,19 @@ export function DocumentPreview({
   documentType,
   onClose,
 }: DocumentPreviewProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(
+    documentType?.toLowerCase() === 'pdf'
+  );
   const [showFallback, setShowFallback] = useState(false);
+
+  useEffect(() => {
+    setShowFallback(false);
+    if (documentType?.toLowerCase() === 'pdf') {
+      setIsLoading(true);
+    } else {
+      setIsLoading(false);
+    }
+  }, [documentPath, documentType]);
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -258,7 +269,7 @@ export function DocumentPreview({
 
         {/* Preview Content */}
         <div className="flex-1 relative">
-          {isLoading && (
+          {documentType?.toLowerCase() === 'pdf' && isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mx-auto mb-2"></div>
