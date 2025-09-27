@@ -566,30 +566,110 @@ export function canDeleteCollection(user: any, collection: any): boolean {
 }
 
 // Function to check if user can edit a specific project
+const normalizeToString = (value: unknown): string | null => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (typeof value === 'number' || typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  return null;
+};
+
+const normalizeIdArray = (value: unknown): string[] => {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value
+      .map((id) => normalizeToString(id))
+      .filter((id): id is string => Boolean(id));
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return normalizeIdArray(parsed);
+        }
+      } catch {
+        // Ignore JSON parse errors and fall back to comma-separated parsing
+      }
+    }
+
+    return trimmed
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
+const parseNameList = (value: unknown): string[] => {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 export function isProjectOwnerOrAssignee(
   user: any,
   project: any
 ): boolean {
-  if (!user || !project || !user.id) return false;
+  if (!user || !project) return false;
 
-  const userId = user.id;
+  const userId = normalizeToString(user.id);
+  if (!userId) return false;
 
-  const creatorIds = [project?.createdBy, project?.created_by];
-  if (creatorIds.some((id) => id && id === userId)) {
+  const creatorIds = [
+    normalizeToString(project?.createdBy),
+    normalizeToString(project?.created_by),
+  ].filter((id): id is string => Boolean(id));
+
+  if (creatorIds.includes(userId)) {
     return true;
   }
 
-  const multiAssigneeIds = Array.isArray(project?.assigneeIds)
-    ? project.assigneeIds
-    : Array.isArray(project?.assignee_ids)
-      ? project.assignee_ids
-      : [];
-  if (multiAssigneeIds.includes(userId)) {
-    return true;
+  const assigneeIdSet = new Set<string>();
+
+  normalizeIdArray(project?.assigneeIds).forEach((id) => assigneeIdSet.add(id));
+  normalizeIdArray(project?.assignee_ids).forEach((id) => assigneeIdSet.add(id));
+  normalizeIdArray(project?.supportPeopleIds).forEach((id) => assigneeIdSet.add(id));
+  normalizeIdArray(project?.support_people_ids).forEach((id) =>
+    assigneeIdSet.add(id)
+  );
+
+  const legacyAssigneeId = normalizeToString(
+    project?.assigneeId ?? project?.assignee_id
+  );
+  if (legacyAssigneeId) {
+    assigneeIdSet.add(legacyAssigneeId);
   }
 
-  const legacyAssigneeId = project?.assigneeId ?? project?.assignee_id;
-  if (legacyAssigneeId && legacyAssigneeId === userId) {
+  if (assigneeIdSet.has(userId)) {
     return true;
   }
 
@@ -624,19 +704,28 @@ export function canEditProject(user: any, project: any): boolean {
     return true;
   }
 
-  // Backward compatibility: allow assignee name matches for users with create permission
-  if (
-    userPermissions.includes(PERMISSIONS.PROJECTS_ADD) &&
-    project?.assigneeName
-  ) {
-    const userDisplayName =
-      user.firstName && user.lastName
-        ? `${user.firstName} ${user.lastName}`
-        : user.email;
-    if (
-      project.assigneeName === userDisplayName ||
-      project.assigneeName === user.email
-    ) {
+  const projectNames = new Set(
+    [
+      ...parseNameList(project?.assigneeName),
+      ...parseNameList(project?.assigneeNames),
+      ...parseNameList(project?.supportPeople),
+    ]
+      .map((name) => name.toLowerCase())
+      .filter(Boolean)
+  );
+
+  if (projectNames.size > 0) {
+    const candidateNames = [
+      [user.firstName, user.lastName].filter(Boolean).join(' ').trim(),
+      user.displayName,
+      user.preferredEmail,
+      user.email,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (candidateNames.some((candidate) => projectNames.has(candidate))) {
       return true;
     }
   }

@@ -35,7 +35,10 @@ import {
 } from 'lucide-react';
 import { Project } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import {
+  canEditProject as canEditProjectPermission,
+  canDeleteProject as canDeleteProjectPermission,
+} from '@shared/auth-utils';
 import { useProjectQueries } from '../hooks/useProjectQueries';
 import { useProjectMutations } from '../hooks/useProjectMutations';
 import { useProjectContext } from '../context/ProjectContext';
@@ -135,47 +138,33 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     }
   };
 
-  const canEditProject = () => {
-    if (!user) return false;
+  const userCanEditProject = React.useMemo(
+    () => (user ? canEditProjectPermission(user, project) : false),
+    [user, project]
+  );
 
-    if (hasPermission(user, PERMISSIONS.PROJECTS_EDIT)) {
-      return true;
-    }
+  const userCanDeleteProject = React.useMemo(
+    () => (user ? canDeleteProjectPermission(user, project) : false),
+    [user, project]
+  );
 
-    const userId = user.id?.toString();
-    const normalizedAssigneeIds = Array.isArray(project.assigneeIds)
-      ? project.assigneeIds.map((id) => id?.toString())
-      : project.assigneeId !== null && project.assigneeId !== undefined
-        ? [project.assigneeId.toString()]
-        : [];
+  const primaryAssigneeId = React.useMemo(() => {
+    if (Array.isArray(project.assigneeIds) && project.assigneeIds.length > 0) {
+      const firstValid = project.assigneeIds.find(
+        (id) => id !== null && id !== undefined && `${id}`.trim().length > 0
+      );
 
-    if (userId && normalizedAssigneeIds.includes(userId)) {
-      return true;
-    }
-
-    const normalizedOwnerNames = parseAssignees(project.assigneeName || '')
-      .map((name) => name.trim().toLowerCase())
-      .filter(Boolean);
-
-    if (normalizedOwnerNames.length > 0) {
-      const candidateNames = [
-        [user.firstName, user.lastName].filter(Boolean).join(' ').trim(),
-        user.displayName,
-      ]
-        .filter((value): value is string => !!value)
-        .map((value) => value.trim().toLowerCase());
-
-      if (candidateNames.some((candidate) => normalizedOwnerNames.includes(candidate))) {
-        return true;
+      if (firstValid !== undefined && firstValid !== null) {
+        return firstValid.toString();
       }
     }
 
-    return false;
-  };
+    if (project.assigneeId !== null && project.assigneeId !== undefined) {
+      return project.assigneeId.toString();
+    }
 
-  const canDeleteProject = () => {
-    return hasPermission(user, PERMISSIONS.PROJECTS_DELETE);
-  };
+    return '';
+  }, [project.assigneeIds, project.assigneeId]);
 
   const handleEdit = () => {
     setEditingProject(project);
@@ -260,7 +249,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {canEditProject() && (
+              {userCanEditProject && (
                 <>
                   <DropdownMenuItem onClick={handleEdit}>
                     <Edit className="w-4 h-4 mr-2" />
@@ -271,7 +260,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               )}
 
               {/* Status Changes */}
-              {project.status !== 'completed' && project.status !== 'archived' && (
+              {userCanEditProject &&
+                project.status !== 'completed' &&
+                project.status !== 'archived' && (
                 <>
                   {project.status === 'tabled' && (
                     <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
@@ -291,21 +282,21 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
               )}
 
               {/* Completed projects can be archived */}
-              {project.status === 'completed' && (
+              {userCanEditProject && project.status === 'completed' && (
                 <DropdownMenuItem onClick={() => handleStatusChange('archived')}>
                   <Archive className="w-4 h-4 mr-2" />
                   Archive
                 </DropdownMenuItem>
               )}
 
-              {project.status === 'archived' && (
+              {userCanEditProject && project.status === 'archived' && (
                 <DropdownMenuItem onClick={handleUnarchive}>
                   <FolderOpen className="w-4 h-4 mr-2" />
                   Restore from Archive
                 </DropdownMenuItem>
               )}
 
-              {canDeleteProject() && (
+              {userCanDeleteProject && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleDelete} className="text-red-600">
@@ -354,11 +345,17 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
                   <span className="text-[14px]">Owner:</span>
                   <span className="font-medium text-[14px]">{project.assigneeName}</span>
                 </Badge>
-                <SendKudosButton
-                  recipientName={project.assigneeName}
-                  size="sm"
-                  variant="ghost"
-                />
+                {primaryAssigneeId && (
+                  <SendKudosButton
+                    recipientId={primaryAssigneeId}
+                    recipientName={project.assigneeName}
+                    contextType="project"
+                    contextId={project.id.toString()}
+                    contextTitle={project.title}
+                    size="sm"
+                    variant="ghost"
+                  />
+                )}
               </div>
             )}
 

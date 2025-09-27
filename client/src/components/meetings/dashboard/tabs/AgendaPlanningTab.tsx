@@ -1325,7 +1325,13 @@ export function AgendaPlanningTab({
             value={editSupportPeople}
             onChange={(value, userIds) => {
               setEditSupportPeople(value);
-              setEditSupportPeopleIds(userIds?.length ? userIds : []);
+              setEditSupportPeopleIds(
+                userIds && userIds.length > 0
+                  ? userIds
+                      .map((id) => id?.toString())
+                      .filter((id): id is string => Boolean(id))
+                  : []
+              );
             }}
             label="Support People"
             placeholder="Select or enter support people"
@@ -1406,7 +1412,13 @@ export function AgendaPlanningTab({
             value={editProjectOwner}
             onChange={(value, userIds) => {
               setEditProjectOwner(value);
-              setEditProjectOwnerIds(userIds?.length ? userIds : []);
+              setEditProjectOwnerIds(
+                userIds && userIds.length > 0
+                  ? userIds
+                      .map((id) => id?.toString())
+                      .filter((id): id is string => Boolean(id))
+                  : []
+              );
             }}
             label="Project Owner"
             placeholder="Select or enter project owner"

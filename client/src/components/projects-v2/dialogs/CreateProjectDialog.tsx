@@ -156,7 +156,12 @@ export const CreateProjectDialog: React.FC = () => {
                   setNewProject({
                     ...newProject,
                     assigneeName,
-                    assigneeIds: normalizedIds,
+                    assigneeIds:
+                      userIds && userIds.length > 0
+                        ? userIds
+                            .map((id) => id?.toString())
+                            .filter((id): id is string => Boolean(id))
+                        : [],
                   });
                 }}
                 placeholder="Select or enter project owner"
@@ -174,6 +179,8 @@ export const CreateProjectDialog: React.FC = () => {
                     supportPeopleIds:
                       userIds && userIds.length > 0
                         ? userIds
+                            .map((id) => id?.toString())
+                            .filter((id): id is string => Boolean(id))
                         : [],
                   });
                 }}

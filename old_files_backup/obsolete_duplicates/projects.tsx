@@ -173,7 +173,7 @@ export default function ProjectsPage({
       assigneeNames: newProject.assignedTo || null,
       assigneeIds: JSON.stringify(newProject.assigneeIds || []),
       dueDate: newProject.dueDate || null,
-      status: 'available',
+      status: 'waiting',
       category: 'general',
       progressPercentage: 0,
     };
@@ -208,7 +208,7 @@ export default function ProjectsPage({
   );
   const availableProjects = projects.filter(
     (project: any) =>
-      project.status === 'available' || project.status === 'not_started'
+      project.status === 'waiting' || project.status === 'tabled'
   );
   const waitingProjects = projects.filter(
     (project: any) =>

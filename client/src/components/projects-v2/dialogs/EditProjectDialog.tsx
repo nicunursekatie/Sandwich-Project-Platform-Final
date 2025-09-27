@@ -212,7 +212,12 @@ export const EditProjectDialog: React.FC = () => {
                   setFormData({
                     ...formData,
                     assigneeName,
-                    assigneeIds: normalizedIds,
+                    assigneeIds:
+                      userIds && userIds.length > 0
+                        ? userIds
+                            .map((id) => id?.toString())
+                            .filter((id): id is string => Boolean(id))
+                        : [],
                   });
                 }}
                 placeholder="Select or enter project owner"
@@ -230,6 +235,8 @@ export const EditProjectDialog: React.FC = () => {
                   supportPeopleIds:
                     userIds && userIds.length > 0
                       ? userIds
+                          .map((id) => id?.toString())
+                          .filter((id): id is string => Boolean(id))
                       : [],
                 });
               }}

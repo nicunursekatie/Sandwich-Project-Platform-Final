@@ -1506,9 +1506,9 @@ export default function ProjectDetailClean({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="waiting">Waiting</SelectItem>
+                    <SelectItem value="tabled">Tabled</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1714,7 +1714,7 @@ export default function ProjectDetailClean({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="waiting">Waiting</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>

@@ -34,6 +34,7 @@ import {
   organizations,
   eventVolunteers,
   meetingNotes,
+  importedExternalIds,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -105,6 +106,8 @@ import {
   type InsertEventVolunteer,
   type MeetingNote,
   type InsertMeetingNote,
+  type ImportedExternalId,
+  type InsertImportedExternalId,
 } from '@shared/schema';
 
 export interface IStorage {
@@ -637,6 +640,21 @@ export interface IStorage {
   createEventReminder(reminderData: any): Promise<any>;
   updateEventReminder(id: number, updates: any): Promise<any>;
   deleteEventReminder(id: number): Promise<boolean>;
+
+  // Imported External IDs (Permanent Blacklist System)
+  // These methods manage the permanent blacklist to prevent re-importing external_ids
+  checkExternalIdExists(externalId: string, sourceTable?: string): Promise<boolean>;
+  addExternalIdToBlacklist(
+    externalId: string,
+    sourceTable?: string,
+    notes?: string
+  ): Promise<ImportedExternalId>;
+  getAllImportedExternalIds(sourceTable?: string): Promise<ImportedExternalId[]>;
+  getImportedExternalId(
+    externalId: string,
+    sourceTable?: string
+  ): Promise<ImportedExternalId | undefined>;
+  backfillExistingExternalIds(): Promise<number>;
 }
 
 export class MemStorage implements IStorage {

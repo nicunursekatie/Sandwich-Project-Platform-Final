@@ -31,6 +31,8 @@ import {
   X,
   Shield,
   Calendar,
+  History,
+  Loader2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -98,12 +100,20 @@ export function EventEmailComposer({
   const [isDraft, setIsDraft] = useState(false);
   const [includeSchedulingLink, setIncludeSchedulingLink] = useState(false);
   const [requestPhoneCall, setRequestPhoneCall] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
   // Fetch available documents
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ['/api/documents'],
+  });
+
+  // Fetch available drafts for this event request
+  const { data: availableDrafts = [], isLoading: isDraftsLoading } = useQuery({
+    queryKey: ['/api/emails/event', eventRequest.id, 'drafts'],
+    queryFn: () => apiRequest('GET', `/api/emails/event/${eventRequest.id}/drafts`),
+    enabled: isOpen, // Only fetch when dialog is open
   });
 
   // Regenerate email content based on selected options
@@ -272,15 +282,31 @@ ${userEmail}`;
       setSubject(
         `The Sandwich Project - Event Resources for ${eventRequest.organizationName}`
       );
-
-      // Pre-select toolkit documents from attached_assets folder
-      setSelectedAttachments([
-        '/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf',
-        '/attached_assets/20250205-TSP-PBJ Sandwich Making 101_1753670644141.pdf',
-        '/attached_assets/20230525-TSP-Food Safety Volunteers (1)_1753670644140.pdf',
-      ]);
     }
-  }, [isOpen, eventRequest, formatEventDetails]);
+  }, [isOpen, eventRequest, formatEventDetails, includeSchedulingLink, user]);
+
+  // Separate effect to handle default attachment selection after documents load
+  useEffect(() => {
+    // Only run when dialog is open, documents are loaded, and no attachments are currently selected
+    // This ensures we don't override manually selected attachments or loaded drafts
+    if (isOpen && documents.length > 0 && selectedAttachments.length === 0) {
+      // Pre-select standard toolkit documents based on available documents
+      const defaultAttachments = documents
+        .filter(doc => {
+          const searchText = `${doc.title} ${doc.fileName}`.toLowerCase();
+          return searchText.includes('food safety') || 
+                 searchText.includes('deli') || 
+                 searchText.includes('pbj') || 
+                 searchText.includes('pb&j') ||
+                 searchText.includes('sandwich making');
+        })
+        .map(doc => doc.filePath);
+      
+      if (defaultAttachments.length > 0) {
+        setSelectedAttachments(defaultAttachments);
+      }
+    }
+  }, [isOpen, documents, selectedAttachments.length]);
 
   const sendEmailMutation = useMutation({
     mutationFn: async (emailData: {
@@ -289,6 +315,8 @@ ${userEmail}`;
       content: string;
       isDraft: boolean;
       attachments: string[];
+      includeSchedulingLink: boolean;
+      requestPhoneCall: boolean;
     }) => {
       return apiRequest('POST', '/api/emails/event', {
         eventRequestId: eventRequest.id,
@@ -299,21 +327,35 @@ ${userEmail}`;
         content: emailData.content,
         isDraft: emailData.isDraft,
         attachments: emailData.attachments,
+        includeSchedulingLink: emailData.includeSchedulingLink,
+        requestPhoneCall: emailData.requestPhoneCall,
         contextType: 'event_request',
         contextId: eventRequest.id.toString(),
         contextTitle: `Event: ${eventRequest.organizationName}`,
       });
     },
     onSuccess: () => {
-      toast({
-        title: isDraft ? 'Draft saved successfully' : 'Email sent successfully',
-        description: isDraft
-          ? 'You can find the draft in your email drafts folder'
-          : `Email sent to ${eventRequest.firstName} ${eventRequest.lastName}`,
-      });
       queryClient.invalidateQueries({ queryKey: ['/api/emails'] });
-      onEmailSent?.();
-      onClose();
+      
+      if (isDraft) {
+        // For drafts: Keep dialog open, show clear feedback
+        toast({
+          title: '📝 Draft Saved Successfully',
+          description: `Your draft has been saved. You can continue editing or find it later in Communication > Inbox > Drafts folder.`,
+          duration: 6000, // Longer duration for important info
+        });
+        // Reset the isDraft flag but keep dialog open for continued editing
+        setIsDraft(false);
+        setDraftSaved(true);
+      } else {
+        // For sent emails: Close dialog, show success
+        toast({
+          title: '✅ Email Sent Successfully',
+          description: `Email sent to ${eventRequest.firstName} ${eventRequest.lastName}`,
+        });
+        onEmailSent?.();
+        onClose();
+      }
     },
     onError: (error) => {
       toast({
@@ -342,6 +384,8 @@ ${userEmail}`;
       content: content.trim(),
       isDraft: asDraft,
       attachments: selectedAttachments,
+      includeSchedulingLink: includeSchedulingLink,
+      requestPhoneCall: requestPhoneCall,
     });
   };
 
@@ -353,28 +397,49 @@ ${userEmail}`;
     );
   };
 
-  const getDocumentIcon = (fileName: string) => {
-    if (fileName.includes('Inventory')) return Calculator;
-    if (fileName.includes('Safety')) return Shield;
-    if (fileName.includes('Making')) return Users;
-    return FileText;
+  // Load draft functionality
+  const loadDraft = (draft: any) => {
+    // Hydrate all state from the selected draft
+    setSubject(draft.subject || '');
+    setContent(draft.content || '');
+    
+    // Parse attachments if they exist (they might be stored as JSON)
+    if (draft.attachments) {
+      try {
+        const attachments = typeof draft.attachments === 'string' 
+          ? JSON.parse(draft.attachments) 
+          : draft.attachments;
+        setSelectedAttachments(attachments || []);
+      } catch {
+        setSelectedAttachments([]);
+      }
+    }
+    
+    // Load explicit boolean preferences from the draft data
+    setIncludeSchedulingLink(draft.includeSchedulingLink || false);
+    setRequestPhoneCall(draft.requestPhoneCall || false);
+    
+    // Clear the subject suggestion since we're loading a custom draft
+    setSelectedSubjectSuggestion('custom');
+    
+    // Clear draft saved state since we're now editing
+    setDraftSaved(false);
+    
+    // Show success toast
+    toast({
+      title: '📝 Draft Loaded',
+      description: `Draft from ${new Date(draft.updatedAt).toLocaleDateString()} has been loaded. You can continue editing.`,
+      duration: 4000,
+    });
   };
 
-  // Available toolkit documents (inventory calculator is now online)
-  const toolkitDocuments = [
-    {
-      name: 'Food Safety Guidelines',
-      url: '/toolkit/food-safety-volunteers.pdf',
-    },
-    {
-      name: 'Deli Sandwich Instructions',
-      url: '/toolkit/deli-sandwich-making-101.pdf',
-    },
-    {
-      name: 'PB&J Sandwich Instructions',
-      url: '/toolkit/pbj-sandwich-making-101.pdf',
-    },
-  ];
+  const getDocumentIcon = (document: Document) => {
+    const searchText = `${document.title} ${document.fileName}`.toLowerCase();
+    if (searchText.includes('inventory') || searchText.includes('calculator')) return Calculator;
+    if (searchText.includes('safety')) return Shield;
+    if (searchText.includes('making') || searchText.includes('sandwich')) return Users;
+    return FileText;
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -383,6 +448,14 @@ ${userEmail}`;
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Mail className="w-5 h-5 text-teal-600" />
             Send Email to Event Contact
+            {draftSaved && (
+              <Badge 
+                variant="outline" 
+                className="ml-2 bg-amber-50 text-amber-700 border-amber-300"
+              >
+                📝 Draft Saved
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -409,6 +482,78 @@ ${userEmail}`;
               </div>
             </CardContent>
           </Card>
+
+          {/* Load Draft Section */}
+          {isDraftsLoading && (
+            <Card className="bg-blue-50 border border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                  <div>
+                    <p className="font-medium text-blue-900">Loading drafts...</p>
+                    <p className="text-sm text-blue-600">
+                      Checking for previously saved drafts for this event.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isDraftsLoading && availableDrafts.length > 0 && (
+            <Card className="bg-amber-50 border border-amber-200">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <History className="w-5 h-5 text-amber-600" />
+                    <Label className="text-sm font-medium text-amber-900">
+                      Previous Drafts Found ({availableDrafts.length})
+                    </Label>
+                  </div>
+                  <p className="text-sm text-amber-700">
+                    You have saved drafts for this event. Load one to continue where you left off.
+                  </p>
+                  <div className="space-y-2">
+                    {availableDrafts.map((draft: any) => (
+                      <div
+                        key={draft.id}
+                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 truncate">
+                            {draft.subject || 'Untitled Draft'}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span>
+                              Saved: {new Date(draft.updatedAt).toLocaleDateString()} at {new Date(draft.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span>
+                              To: {draft.recipientName}
+                            </span>
+                          </div>
+                          {draft.content && (
+                            <p className="text-sm text-gray-500 mt-1 truncate">
+                              {draft.content.substring(0, 100)}...
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => loadDraft(draft)}
+                          className="ml-3 bg-amber-100 border-amber-300 text-amber-700 hover:bg-amber-200"
+                          data-testid={`button-load-draft-${draft.id}`}
+                        >
+                          <History className="w-4 h-4 mr-1" />
+                          Load Draft
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Original Request Message */}
           {eventRequest.message && (
@@ -552,28 +697,28 @@ ${userEmail}`;
           <div className="space-y-3">
             <Label className="text-sm font-medium flex items-center gap-2">
               <Paperclip className="w-4 h-4" />
-              Attach Toolkit Documents (optional)
+              Attach Documents (optional)
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {toolkitDocuments.map((doc) => {
-                const IconComponent = getDocumentIcon(doc.name);
-                const isSelected = selectedAttachments.includes(doc.url);
+              {documents.map((doc) => {
+                const IconComponent = getDocumentIcon(doc);
+                const isSelected = selectedAttachments.includes(doc.filePath);
 
                 return (
                   <Card
-                    key={doc.url}
+                    key={doc.id}
                     className={`cursor-pointer transition-all duration-200 ${
                       isSelected
                         ? 'bg-gradient-to-r from-teal-100 to-cyan-200 border-teal-300 shadow-md'
                         : 'bg-gradient-to-r from-gray-50 to-white border-gray-200 hover:border-teal-200'
                     }`}
-                    onClick={() => toggleAttachment(doc.url)}
+                    onClick={() => toggleAttachment(doc.filePath)}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-center gap-3">
                         <Checkbox
                           checked={isSelected}
-                          onChange={() => toggleAttachment(doc.url)}
+                          onChange={() => toggleAttachment(doc.filePath)}
                           className="flex-shrink-0"
                         />
                         <IconComponent
@@ -587,9 +732,11 @@ ${userEmail}`;
                               isSelected ? 'text-teal-900' : 'text-gray-700'
                             }`}
                           >
-                            {doc.name}
+                            {doc.title}
                           </p>
-                          <p className="text-xs text-gray-500 uppercase">PDF</p>
+                          <p className="text-xs text-gray-500 uppercase">
+                            {doc.category || 'Document'}
+                          </p>
                         </div>
                       </div>
                     </CardContent>
@@ -627,10 +774,10 @@ ${userEmail}`;
                 variant="outline"
                 onClick={() => handleSend(true)}
                 disabled={sendEmailMutation.isPending}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
               >
                 <Clock className="w-4 h-4" />
-                Save as Draft
+                {sendEmailMutation.isPending && isDraft ? 'Saving Draft...' : 'Save as Draft'}
               </Button>
 
               <Button
@@ -643,7 +790,7 @@ ${userEmail}`;
                 className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800"
               >
                 <Send className="w-4 h-4" />
-                {sendEmailMutation.isPending ? 'Sending...' : 'Send Email'}
+                {sendEmailMutation.isPending && !isDraft ? 'Sending Email...' : 'Send Email Now'}
               </Button>
             </div>
           </div>

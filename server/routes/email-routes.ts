@@ -2,8 +2,9 @@ import { Router } from 'express';
 import { emailService } from '../services/email-service';
 import { isAuthenticated } from '../temp-auth';
 import { db } from '../db';
-import { kudosTracking } from '@shared/schema';
+import { kudosTracking, users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { storage } from '../storage-wrapper';
 
 const router = Router();
 
@@ -74,6 +75,9 @@ router.post('/', isAuthenticated, async (req: any, res) => {
       contextType,
       contextId,
       contextTitle,
+      attachments,
+      includeSchedulingLink,
+      requestPhoneCall,
     } = req.body;
 
     if (!subject || !content) {
@@ -92,10 +96,15 @@ router.post('/', isAuthenticated, async (req: any, res) => {
       `[Email API] Sending email from ${user.email} to ${recipientEmail}`
     );
 
+    // Get user's complete profile data including preferred email and phone number
+    const fullUserData = await storage.getUser(user.id);
+    
     const newEmail = await emailService.sendEmail({
       senderId: user.id,
       senderName: `${user.firstName} ${user.lastName}`.trim() || user.email,
       senderEmail: user.email,
+      senderPreferredEmail: fullUserData?.preferredEmail,
+      senderPhoneNumber: fullUserData?.phoneNumber,
       recipientId: recipientId || user.id, // For drafts
       recipientName: recipientName || 'Draft',
       recipientEmail: recipientEmail || user.email,
@@ -105,6 +114,9 @@ router.post('/', isAuthenticated, async (req: any, res) => {
       contextType: contextType || null,
       contextId: contextId || null,
       contextTitle: contextTitle || null,
+      attachments: attachments || [],
+      includeSchedulingLink: includeSchedulingLink || false,
+      requestPhoneCall: requestPhoneCall || false,
       isDraft: isDraft || false,
     });
 
@@ -242,6 +254,53 @@ router.get('/search', isAuthenticated, async (req: any, res) => {
   } catch (error) {
     console.error('[Email API] Error searching emails:', error);
     res.status(500).json({ message: 'Failed to search emails' });
+  }
+});
+
+// Get drafts for a specific event request
+router.get('/event/:eventRequestId/drafts', isAuthenticated, async (req: any, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { eventRequestId } = req.params;
+    
+    if (!eventRequestId) {
+      return res.status(400).json({ message: 'Event request ID is required' });
+    }
+
+    console.log(`[Email API] Getting drafts for event request ${eventRequestId}, user: ${user.email}`);
+
+    const drafts = await emailService.getDraftsByContext(
+      user.id,
+      'event_request',
+      eventRequestId
+    );
+
+    // Format drafts for the email composer
+    const formattedDrafts = drafts.map((draft) => ({
+      id: draft.id,
+      subject: draft.subject,
+      content: draft.content,
+      recipientName: draft.recipientName,
+      recipientEmail: draft.recipientEmail,
+      contextType: draft.contextType,
+      contextId: draft.contextId,
+      contextTitle: draft.contextTitle,
+      attachments: draft.attachments || [],
+      includeSchedulingLink: draft.includeSchedulingLink || false,
+      requestPhoneCall: draft.requestPhoneCall || false,
+      createdAt: draft.createdAt,
+      updatedAt: draft.updatedAt,
+    }));
+
+    console.log(`[Email API] Found ${formattedDrafts.length} drafts for event request ${eventRequestId}`);
+    res.json(formattedDrafts);
+  } catch (error) {
+    console.error('[Email API] Error fetching event drafts:', error);
+    res.status(500).json({ message: 'Failed to fetch event drafts' });
   }
 });
 
@@ -400,10 +459,15 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
         .join('\n')}`;
     }
 
+    // Get user's complete profile data including preferred email and phone number
+    const fullUserData = await storage.getUser(user.id);
+    
     const newEmail = await emailService.sendEmail({
       senderId: user.id,
-      senderName: user.name || user.email,
+      senderName: `${fullUserData?.firstName} ${fullUserData?.lastName}`.trim() || user.email,
       senderEmail: user.email,
+      senderPreferredEmail: fullUserData?.preferredEmail,
+      senderPhoneNumber: fullUserData?.phoneNumber,
       recipientId: 'external',
       recipientName: recipientName || 'Event Contact',
       recipientEmail: recipientEmail,

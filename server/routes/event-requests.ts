@@ -1345,6 +1345,73 @@ router.put(
       // Process ALL date/timestamp fields to ensure they're proper Date objects
       const processedUpdates = { ...pickupProcessedUpdates };
 
+      // Convert timestamp fields that might come as strings to Date objects
+      const timestampFields = [
+        'toolkitSentDate',
+        'contactedAt',
+        'desiredEventDate',
+        'duplicateCheckDate',
+        'markedUnresponsiveAt',
+        'lastContactAttempt',
+        'nextFollowUpDate',
+        'contactCompletedAt',
+        'callScheduledAt',
+        'callCompletedAt',
+        'scheduledCallDate',
+        'tspContactAssignedDate',
+        'statusChangedAt',
+        'pickupDateTime',
+        'scheduledEventDate',
+      ];
+      
+      console.log('🔍 PUT Pre-conversion debug - checking timestamp fields:');
+      timestampFields.forEach(field => {
+        if (processedUpdates[field] !== undefined) {
+          console.log(`  ${field}:`, processedUpdates[field], typeof processedUpdates[field]);
+        }
+      });
+
+      timestampFields.forEach((field) => {
+        if (
+          processedUpdates[field] &&
+          typeof processedUpdates[field] === 'string'
+        ) {
+          try {
+            const dateValue = new Date(processedUpdates[field]);
+            // Check if the date is valid
+            if (isNaN(dateValue.getTime())) {
+              console.error(
+                `❌ PUT Invalid date value for field ${field}:`,
+                processedUpdates[field]
+              );
+              delete processedUpdates[field]; // Remove invalid date fields
+            } else {
+              const originalValue = processedUpdates[field];
+              processedUpdates[field] = dateValue;
+              console.log(`✅ PUT Converted ${field} from string "${originalValue}" to Date object:`, dateValue);
+            }
+          } catch (error) {
+            console.error(
+              `❌ PUT Failed to parse date field ${field}:`,
+              processedUpdates[field],
+              error
+            );
+            delete processedUpdates[field]; // Remove invalid fields
+          }
+        } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
+          // Allow null or empty string to clear date fields
+          processedUpdates[field] = null;
+          console.log(`✅ PUT Set ${field} to null`);
+        }
+      });
+
+      console.log('🔍 PUT Post-conversion debug - final timestamp fields:');
+      timestampFields.forEach(field => {
+        if (processedUpdates[field] !== undefined) {
+          console.log(`  ${field}:`, processedUpdates[field], typeof processedUpdates[field]);
+        }
+      });
+
       // Clean up phone field if it contains invalid data
       if (processedUpdates.phone) {
         const phoneStr = String(processedUpdates.phone).trim();
@@ -1378,50 +1445,6 @@ router.put(
           }
         }
       }
-
-      // Convert timestamp fields that might come as strings to Date objects
-      const timestampFields = [
-        'desiredEventDate',
-        'contactedAt',
-        'toolkitSentDate',
-        'duplicateCheckDate',
-        'markedUnresponsiveAt',
-        'lastContactAttempt',
-        'nextFollowUpDate',
-        'contactCompletedAt',
-        'callScheduledAt',
-        'callCompletedAt',
-      ];
-      timestampFields.forEach((field) => {
-        if (
-          processedUpdates[field] &&
-          typeof processedUpdates[field] === 'string'
-        ) {
-          try {
-            const dateValue = new Date(processedUpdates[field]);
-            // Check if the date is valid
-            if (isNaN(dateValue.getTime())) {
-              console.error(
-                `Invalid date value for field ${field}:`,
-                processedUpdates[field]
-              );
-              delete processedUpdates[field]; // Remove invalid date fields
-            } else {
-              processedUpdates[field] = dateValue;
-            }
-          } catch (error) {
-            console.error(
-              `Failed to parse date field ${field}:`,
-              processedUpdates[field],
-              error
-            );
-            delete processedUpdates[field]; // Remove invalid date fields
-          }
-        } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
-          // Allow null or empty string to clear date fields
-          processedUpdates[field] = null;
-        }
-      });
 
       // Validate that in_process status is not set for past/current date events
       if (processedUpdates.status === 'in_process') {

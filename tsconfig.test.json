@@ -3,7 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "types": ["node", "jest"],
-    "module": "ESNext"
+    "module": "ESNext",
+    "jsx": "react-jsx"
   },
   "include": [
     "client/src/lib/**/*",

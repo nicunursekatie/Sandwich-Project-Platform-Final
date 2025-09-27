@@ -15,6 +15,7 @@ export class BackgroundSyncService {
 
   /**
    * Start automatic background sync every 5 minutes
+   * ✅ RE-ENABLED with permanent external_id blacklist protection
    */
   start() {
     if (this.isRunning) {
@@ -23,6 +24,8 @@ export class BackgroundSyncService {
     }
 
     console.log('🚀 Starting background Google Sheets sync service...');
+    console.log('🛡️ PROTECTED: Now using permanent external_id blacklist system');
+    console.log('🔒 GUARANTEE: External_ids will NEVER be imported twice, even after deletion');
     this.isRunning = true;
 
     // Run sync immediately on startup
@@ -36,7 +39,7 @@ export class BackgroundSyncService {
       5 * 60 * 1000
     ); // 5 minutes
 
-    console.log('✅ Background sync service started - syncing every 5 minutes');
+    console.log('✅ Background sync service started - syncing every 5 minutes with blacklist protection');
   }
 
   /**

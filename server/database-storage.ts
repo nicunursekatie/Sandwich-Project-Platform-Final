@@ -44,6 +44,7 @@ import {
   organizations,
   eventVolunteers,
   meetingNotes,
+  importedExternalIds,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -123,6 +124,8 @@ import {
   type InsertEventVolunteer,
   type MeetingNote,
   type InsertMeetingNote,
+  type ImportedExternalId,
+  type InsertImportedExternalId,
 } from '@shared/schema';
 import { db } from './db';
 import {
@@ -144,7 +147,12 @@ import {
 } from 'drizzle-orm';
 import type { IStorage } from './storage';
 
-const UNASSIGNED_PROJECT_STATUSES: Array<Project['status']> = ['waiting', 'tabled'];
+const UNASSIGNED_PROJECT_STATUSES: Array<Project['status']> = [
+  'waiting',
+  'tabled',
+  // Support legacy data that may still use the deprecated 'available' status
+  'available' as Project['status'],
+];
 
 export class DatabaseStorage implements IStorage {
   // Users (required for authentication)
@@ -311,6 +319,10 @@ export class DatabaseStorage implements IStorage {
         : '';
     const isAssigning = assigneeWasProvided && normalizedAssigneeName.length > 0;
     const isUnassigning = assigneeWasProvided && normalizedAssigneeName.length === 0;
+
+    if (statusWasProvided && updateData.status === 'available') {
+      updateData.status = currentProject.reviewInNextMeeting ? 'tabled' : 'waiting';
+    }
 
     // If an assignee is set and the project is currently in an unassigned state, move it to in_progress
     if (
@@ -4011,5 +4023,152 @@ export class DatabaseStorage implements IStorage {
       .delete(eventVolunteers)
       .where(eq(eventVolunteers.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Imported External IDs (Permanent Blacklist System) Methods
+  // These methods manage the permanent blacklist to prevent re-importing external_ids
+
+  async checkExternalIdExists(
+    externalId: string,
+    sourceTable: string = 'event_requests'
+  ): Promise<boolean> {
+    try {
+      const [result] = await db
+        .select({ id: importedExternalIds.id })
+        .from(importedExternalIds)
+        .where(
+          and(
+            eq(importedExternalIds.externalId, externalId),
+            eq(importedExternalIds.sourceTable, sourceTable)
+          )
+        )
+        .limit(1);
+
+      return !!result;
+    } catch (error) {
+      console.error('❌ Error checking if external_id exists:', error);
+      return false;
+    }
+  }
+
+  async addExternalIdToBlacklist(
+    externalId: string,
+    sourceTable: string = 'event_requests',
+    notes?: string
+  ): Promise<ImportedExternalId> {
+    try {
+      const [result] = await db
+        .insert(importedExternalIds)
+        .values({
+          externalId,
+          sourceTable,
+          notes,
+        })
+        .onConflictDoNothing({
+          target: importedExternalIds.externalId,
+        })
+        .returning();
+
+      // If insert was skipped due to conflict, get the existing record
+      if (!result) {
+        const [existing] = await db
+          .select()
+          .from(importedExternalIds)
+          .where(eq(importedExternalIds.externalId, externalId))
+          .limit(1);
+        
+        if (existing) {
+          return existing;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('❌ Error adding external_id to blacklist:', error);
+      throw error;
+    }
+  }
+
+  async getAllImportedExternalIds(
+    sourceTable?: string
+  ): Promise<ImportedExternalId[]> {
+    try {
+      const query = db.select().from(importedExternalIds);
+      
+      if (sourceTable) {
+        return await query
+          .where(eq(importedExternalIds.sourceTable, sourceTable))
+          .orderBy(desc(importedExternalIds.importedAt));
+      }
+
+      return await query.orderBy(desc(importedExternalIds.importedAt));
+    } catch (error) {
+      console.error('❌ Error getting all imported external_ids:', error);
+      return [];
+    }
+  }
+
+  async getImportedExternalId(
+    externalId: string,
+    sourceTable: string = 'event_requests'
+  ): Promise<ImportedExternalId | undefined> {
+    try {
+      const [result] = await db
+        .select()
+        .from(importedExternalIds)
+        .where(
+          and(
+            eq(importedExternalIds.externalId, externalId),
+            eq(importedExternalIds.sourceTable, sourceTable)
+          )
+        )
+        .limit(1);
+
+      return result || undefined;
+    } catch (error) {
+      console.error('❌ Error getting imported external_id:', error);
+      return undefined;
+    }
+  }
+
+  async backfillExistingExternalIds(): Promise<number> {
+    try {
+      console.log('🔄 Starting backfill of existing external_ids...');
+
+      // Get all existing external_ids from event_requests table
+      const existingExternalIds = await db
+        .select({
+          externalId: eventRequests.externalId,
+        })
+        .from(eventRequests)
+        .where(isNotNull(eventRequests.externalId));
+
+      console.log(`📊 Found ${existingExternalIds.length} existing external_ids to backfill`);
+
+      let backfilledCount = 0;
+
+      // Insert each external_id into the blacklist table
+      for (const { externalId } of existingExternalIds) {
+        if (externalId && externalId.trim()) {
+          try {
+            await this.addExternalIdToBlacklist(
+              externalId,
+              'event_requests',
+              'Backfilled from existing data'
+            );
+            backfilledCount++;
+          } catch (error) {
+            // Skip if already exists or other error
+            console.warn(`⚠️ Failed to backfill external_id ${externalId}:`, error);
+          }
+        }
+      }
+
+      console.log(`✅ Successfully backfilled ${backfilledCount} external_ids`);
+      return backfilledCount;
+    } catch (error) {
+      console.error('❌ Error during backfill process:', error);
+      throw error;
+    }
   }
 }

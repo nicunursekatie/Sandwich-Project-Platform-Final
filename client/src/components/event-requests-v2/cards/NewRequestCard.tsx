@@ -46,6 +46,8 @@ interface NewRequestCardProps {
   onScheduleCall: () => void;
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
+  onApprove: () => void;
+  onDecline: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -309,6 +311,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onScheduleCall,
   onAssignTspContact,
   onEditTspContact,
+  onApprove,
+  onDecline,
   canEdit = true,
   canDelete = true,
 }) => {

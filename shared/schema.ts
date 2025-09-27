@@ -487,6 +487,9 @@ export const emailMessages = pgTable(
     contextType: varchar('context_type'), // 'project', 'task', 'suggestion', etc.
     contextId: varchar('context_id'), // ID of the related entity
     contextTitle: varchar('context_title'), // Display name of related entity
+    attachments: text('attachments').array().default('[]'), // Array of attachment file paths
+    includeSchedulingLink: boolean('include_scheduling_link').default(false), // Whether to include scheduling link in email
+    requestPhoneCall: boolean('request_phone_call').default(false), // Whether to request phone call
     readAt: timestamp('read_at'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
@@ -1530,6 +1533,7 @@ export const eventRequests = pgTable(
 
     // Google Sheets sync tracking
     googleSheetRowId: text('google_sheet_row_id'), // Stable identifier: Google Sheets row number for duplicate detection
+    externalId: varchar('external_id').notNull().unique(), // External ID from Google Sheets for duplicate prevention
     lastSyncedAt: timestamp('last_synced_at'), // When this record was last synced with Google Sheets
     driverDetails: jsonb('driver_details'), // Additional driver assignment details
     speakerDetails: jsonb('speaker_details'), // Additional speaker assignment details
@@ -1569,6 +1573,30 @@ export const organizations = pgTable(
   },
   (table) => ({
     nameIdx: index('idx_organizations_name').on(table.name),
+  })
+);
+
+// Imported external IDs tracking table for permanent blacklist system
+// Prevents re-importing external_ids that have ever been imported, even if the original record is deleted
+export const importedExternalIds = pgTable(
+  'imported_external_ids',
+  {
+    id: serial('id').primaryKey(),
+    externalId: varchar('external_id').notNull().unique(), // External ID from Google Sheets or other sources
+    importedAt: timestamp('imported_at').defaultNow().notNull(), // When this external_id was first imported
+    sourceTable: varchar('source_table').notNull().default('event_requests'), // Which table the external_id was imported to
+    notes: text('notes'), // Optional notes about the import
+  },
+  (table) => ({
+    externalIdIdx: index('idx_imported_external_ids_external_id').on(
+      table.externalId
+    ),
+    sourceTableIdx: index('idx_imported_external_ids_source_table').on(
+      table.sourceTable
+    ),
+    importedAtIdx: index('idx_imported_external_ids_imported_at').on(
+      table.importedAt
+    ),
   })
 );
 
@@ -2015,6 +2043,15 @@ export const insertMeetingNoteSchema = createInsertSchema(meetingNotes).omit({
 
 export type MeetingNote = typeof meetingNotes.$inferSelect;
 export type InsertMeetingNote = z.infer<typeof insertMeetingNoteSchema>;
+
+// Imported external IDs schema types for permanent blacklist system
+export const insertImportedExternalIdSchema = createInsertSchema(importedExternalIds).omit({
+  id: true,
+  importedAt: true,
+});
+
+export type ImportedExternalId = typeof importedExternalIds.$inferSelect;
+export type InsertImportedExternalId = z.infer<typeof insertImportedExternalIdSchema>;
 
 // =============================================================================
 // SMART NOTIFICATIONS SYSTEM SCHEMA

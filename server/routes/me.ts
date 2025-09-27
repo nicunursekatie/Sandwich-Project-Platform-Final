@@ -51,6 +51,54 @@ interface DashboardData {
   };
 }
 
+const normalizeToString = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (typeof value === 'number' || typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  return null;
+};
+
+const toStringArray = (value: unknown): string[] => {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => normalizeToString(entry))
+      .filter((entry): entry is string => Boolean(entry));
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return toStringArray(parsed);
+        }
+      } catch {
+        // Fallback to comma-separated parsing below
+      }
+    }
+
+    return trimmed
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 // Create me routes router
 const meRouter = Router();
 
@@ -67,7 +115,12 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const userId = user.id;
+    const normalizedUserId = normalizeToString(user.id);
+    if (!normalizedUserId) {
+      return res.status(400).json({ message: 'Invalid user identifier' });
+    }
+    const userId = normalizedUserId;
+
     logger.info(`Fetching dashboard data for user: ${userId}`);
 
     // Fetch assigned projects (excluding completed, order by priority)
@@ -75,20 +128,27 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     const allUsers = await storage.getAllUsers();
     
     // Find current user details
-    const currentUser = allUsers.find((u: any) => u.id === userId);
+    const currentUser = allUsers.find(
+      (u: any) => normalizeToString(u.id) === userId
+    );
     const userFullName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : '';
     const userDisplayName = currentUser?.displayName || '';
     
-    logger.info(`Looking for projects assigned to user: ${userId}, name: "${userFullName}", display: "${userDisplayName}"`);
+    logger.info(
+      `Looking for projects assigned to user: ${userId}, name: "${userFullName}", display: "${userDisplayName}"`
+    );
     logger.info(`Total projects to check: ${allProjects.length}`);
     
     const assignedProjects = allProjects
       .filter((project: any) => {
         // Check if user is assigned via ID fields (new way)
         const idAssigned = (
-          (project.assigneeId && project.assigneeId === userId) ||
-          (project.assigneeIds && Array.isArray(project.assigneeIds) && project.assigneeIds.includes(userId)) ||
-          (project.supportPeopleIds && Array.isArray(project.supportPeopleIds) && project.supportPeopleIds.includes(userId))
+          normalizeToString(project.assigneeId) === userId ||
+          normalizeToString(project.assignee_id) === userId ||
+          toStringArray(project.assigneeIds).includes(userId) ||
+          toStringArray(project.assignee_ids).includes(userId) ||
+          toStringArray(project.supportPeopleIds).includes(userId) ||
+          toStringArray(project.support_people_ids).includes(userId)
         );
         
         // Check if user is assigned via name fields (current way)
