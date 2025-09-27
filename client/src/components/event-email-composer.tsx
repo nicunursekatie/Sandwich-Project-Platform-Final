@@ -98,6 +98,7 @@ export function EventEmailComposer({
   const [isDraft, setIsDraft] = useState(false);
   const [includeSchedulingLink, setIncludeSchedulingLink] = useState(false);
   const [requestPhoneCall, setRequestPhoneCall] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -305,15 +306,27 @@ ${userEmail}`;
       });
     },
     onSuccess: () => {
-      toast({
-        title: isDraft ? 'Draft saved successfully' : 'Email sent successfully',
-        description: isDraft
-          ? 'You can find the draft in your email drafts folder'
-          : `Email sent to ${eventRequest.firstName} ${eventRequest.lastName}`,
-      });
       queryClient.invalidateQueries({ queryKey: ['/api/emails'] });
-      onEmailSent?.();
-      onClose();
+      
+      if (isDraft) {
+        // For drafts: Keep dialog open, show clear feedback
+        toast({
+          title: '📝 Draft Saved Successfully',
+          description: `Your draft has been saved. You can continue editing or find it later in Communication > Inbox > Drafts folder.`,
+          duration: 6000, // Longer duration for important info
+        });
+        // Reset the isDraft flag but keep dialog open for continued editing
+        setIsDraft(false);
+        setDraftSaved(true);
+      } else {
+        // For sent emails: Close dialog, show success
+        toast({
+          title: '✅ Email Sent Successfully',
+          description: `Email sent to ${eventRequest.firstName} ${eventRequest.lastName}`,
+        });
+        onEmailSent?.();
+        onClose();
+      }
     },
     onError: (error) => {
       toast({
@@ -383,6 +396,14 @@ ${userEmail}`;
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Mail className="w-5 h-5 text-teal-600" />
             Send Email to Event Contact
+            {draftSaved && (
+              <Badge 
+                variant="outline" 
+                className="ml-2 bg-amber-50 text-amber-700 border-amber-300"
+              >
+                📝 Draft Saved
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -627,10 +648,10 @@ ${userEmail}`;
                 variant="outline"
                 onClick={() => handleSend(true)}
                 disabled={sendEmailMutation.isPending}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
               >
                 <Clock className="w-4 h-4" />
-                Save as Draft
+                {sendEmailMutation.isPending && isDraft ? 'Saving Draft...' : 'Save as Draft'}
               </Button>
 
               <Button
@@ -643,7 +664,7 @@ ${userEmail}`;
                 className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800"
               >
                 <Send className="w-4 h-4" />
-                {sendEmailMutation.isPending ? 'Sending...' : 'Send Email'}
+                {sendEmailMutation.isPending && !isDraft ? 'Sending Email...' : 'Send Email Now'}
               </Button>
             </div>
           </div>
