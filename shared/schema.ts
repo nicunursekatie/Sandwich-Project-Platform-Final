@@ -773,6 +773,11 @@ export const recipients = pgTable('recipients', {
   tspContactUserId: varchar('tsp_contact_user_id'), // Link to users table if TSP contact is an app user
   contractSigned: boolean('contract_signed').notNull().default(false), // Whether contract has been signed
   contractSignedDate: timestamp('contract_signed_date'), // When contract was signed
+  // Collection and feeding schedule fields
+  collectionDay: text('collection_day'), // Day of week they collect sandwiches (e.g., "Monday", "Tuesday")
+  collectionTime: text('collection_time'), // Time they collect sandwiches (e.g., "9:00 AM", "2:30 PM")
+  feedingDay: text('feeding_day'), // Day of week they feed people (e.g., "Wednesday", "Sunday")
+  feedingTime: text('feeding_time'), // Time they feed people (e.g., "12:00 PM", "6:00 PM")
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
