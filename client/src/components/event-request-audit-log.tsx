@@ -41,7 +41,7 @@ import {
   Calendar,
   Activity,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -223,6 +223,268 @@ export function EventRequestAuditLog({
     }
   };
 
+  // Helper function to convert technical field names to human-readable labels
+  const getHumanReadableFieldName = (fieldName: string): string => {
+    const fieldMapping: Record<string, string> = {
+      // Contact Information
+      'contactName': 'Contact Name',
+      'contactEmail': 'Contact Email',
+      'contactPhone': 'Contact Phone',
+      'organizationName': 'Organization',
+      'organizationType': 'Organization Type',
+      'websiteUrl': 'Website URL',
+      
+      // Event Details
+      'eventStartTime': 'Event Start Time',
+      'eventEndTime': 'Event End Time',
+      'eventDate': 'Event Date',
+      'eventTime': 'Event Time',
+      'setupTime': 'Setup Time',
+      'cleanupTime': 'Cleanup Time',
+      'eventDuration': 'Event Duration',
+      'expectedAttendance': 'Expected Attendance',
+      'actualAttendance': 'Actual Attendance',
+      'eventDescription': 'Event Description',
+      'eventPurpose': 'Event Purpose',
+      'eventType': 'Event Type',
+      'eventCategory': 'Event Category',
+      'eventTitle': 'Event Title',
+      'eventName': 'Event Name',
+      
+      // Location
+      'location': 'Location',
+      'eventLocation': 'Event Location',
+      'address': 'Address',
+      'streetAddress': 'Street Address',
+      'city': 'City',
+      'state': 'State',
+      'zipCode': 'ZIP Code',
+      'country': 'Country',
+      'venue': 'Venue',
+      'room': 'Room',
+      'floor': 'Floor',
+      
+      // Status and Tracking
+      'status': 'Status',
+      'eventStatus': 'Event Status',
+      'followUpRequired': 'Follow-up Required',
+      'followUpDate': 'Follow-up Date',
+      'followUpMethod': 'Follow-up Method',
+      'followUpNotes': 'Follow-up Notes',
+      'priority': 'Priority',
+      'urgency': 'Urgency',
+      'completed': 'Completed',
+      'approved': 'Approved',
+      'confirmed': 'Confirmed',
+      'cancelled': 'Cancelled',
+      'postponed': 'Postponed',
+      
+      // Requirements
+      'specialRequirements': 'Special Requirements',
+      'dietaryRestrictions': 'Dietary Restrictions',
+      'accessibilityNeeds': 'Accessibility Needs',
+      'equipmentNeeded': 'Equipment Needed',
+      'setupInstructions': 'Setup Instructions',
+      'deliveryInstructions': 'Delivery Instructions',
+      'parkingInstructions': 'Parking Instructions',
+      
+      // Logistics
+      'sandwichCount': 'Sandwich Count',
+      'sandwichType': 'Sandwich Type',
+      'mealCount': 'Meal Count',
+      'beverageCount': 'Beverage Count',
+      'additionalItems': 'Additional Items',
+      'budget': 'Budget',
+      'cost': 'Cost',
+      'estimatedCost': 'Estimated Cost',
+      'actualCost': 'Actual Cost',
+      
+      // Communications
+      'communicationPreference': 'Communication Preference',
+      'alternateContact': 'Alternate Contact',
+      'emergencyContact': 'Emergency Contact',
+      'notificationSettings': 'Notification Settings',
+      
+      // Timestamps
+      'createdAt': 'Created Date',
+      'updatedAt': 'Last Modified',
+      'submittedAt': 'Submitted Date',
+      'completedAt': 'Completed Date',
+      'scheduledAt': 'Scheduled Date',
+      'lastContactedAt': 'Last Contacted',
+      
+      // Technical fields
+      'userId': 'User ID',
+      'eventId': 'Event ID',
+      'requestId': 'Request ID',
+      'organizationId': 'Organization ID',
+      'submittedBy': 'Submitted By',
+      'assignedTo': 'Assigned To',
+      'modifiedBy': 'Modified By',
+      
+      // Boolean flags
+      'isPublic': 'Public Event',
+      'isRecurring': 'Recurring Event',
+      'requiresApproval': 'Requires Approval',
+      'hasSpecialNeeds': 'Has Special Needs',
+      'isUrgent': 'Urgent',
+      'hasContactedOrganization': 'Organization Contacted',
+      'isPrimaryContactCompleted': 'Primary Contact Completed',
+      'isEventDetailsConfirmed': 'Event Details Confirmed',
+      'isMarkedUnresponsive': 'Marked as Unresponsive',
+      'hasFollowUpScheduled': 'Follow-up Scheduled',
+      'isReadyForDelivery': 'Ready for Delivery',
+      'isDelivered': 'Delivered',
+      'hasPhotoUpload': 'Photo Uploaded',
+      'hasFeedback': 'Feedback Provided',
+      'emailVerified': 'Email Verified',
+      'phoneVerified': 'Phone Verified'
+    };
+    
+    // Return mapped name or format the original field name
+    return fieldMapping[fieldName] || formatFieldName(fieldName);
+  };
+  
+  // Helper function to format field names when not in mapping
+  const formatFieldName = (fieldName: string): string => {
+    return fieldName
+      .replace(/([A-Z])/g, ' $1') // Add space before uppercase letters
+      .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .trim();
+  };
+  
+  // Helper function to format values based on type and content
+  const formatValue = (value: any, fieldName?: string): string => {
+    if (value === null || value === undefined) {
+      return '(not set)';
+    }
+    
+    // Handle empty strings
+    if (value === '') {
+      return '(empty)';
+    }
+    
+    // Convert to string for processing
+    const stringValue = String(value);
+    
+    // Handle boolean values
+    if (typeof value === 'boolean') {
+      return value ? 'Yes' : 'No';
+    }
+    
+    // Handle string representations of booleans
+    if (stringValue.toLowerCase() === 'true') {
+      return 'Yes';
+    }
+    if (stringValue.toLowerCase() === 'false') {
+      return 'No';
+    }
+    
+    // Handle dates and times
+    if (fieldName && (fieldName.includes('Time') || fieldName.includes('Date') || fieldName.includes('At'))) {
+      try {
+        // Try parsing as ISO date first
+        if (stringValue.includes('T') || stringValue.includes('-')) {
+          const date = parseISO(stringValue);
+          if (isValid(date)) {
+            return format(date, 'MMMM d, yyyy \'at\' h:mm a');
+          }
+        }
+        
+        // Try parsing as regular date
+        const date = new Date(stringValue);
+        if (isValid(date) && !isNaN(date.getTime())) {
+          return format(date, 'MMMM d, yyyy \'at\' h:mm a');
+        }
+      } catch (error) {
+        // If date parsing fails, fall through to other formatting
+      }
+    }
+    
+    // Handle phone numbers (basic formatting)
+    if (fieldName && fieldName.toLowerCase().includes('phone')) {
+      const cleaned = stringValue.replace(/\D/g, '');
+      if (cleaned.length === 10) {
+        return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+      }
+      if (cleaned.length === 11 && cleaned.startsWith('1')) {
+        return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+      }
+      return stringValue; // Return original if not standard format
+    }
+    
+    // Handle email addresses (just return as-is, they're already formatted)
+    if (fieldName && fieldName.toLowerCase().includes('email')) {
+      return stringValue;
+    }
+    
+    // Handle URLs
+    if (fieldName && (fieldName.toLowerCase().includes('url') || fieldName.toLowerCase().includes('website'))) {
+      if (!stringValue.startsWith('http')) {
+        return `https://${stringValue}`;
+      }
+      return stringValue;
+    }
+    
+    // Handle numeric values with context
+    if (!isNaN(Number(stringValue)) && stringValue !== '') {
+      const num = Number(stringValue);
+      
+      // Handle counts and quantities
+      if (fieldName && (fieldName.toLowerCase().includes('count') || 
+                       fieldName.toLowerCase().includes('attendance') ||
+                       fieldName.toLowerCase().includes('quantity'))) {
+        return num === 1 ? '1 person' : `${num} people`;
+      }
+      
+      // Handle monetary values
+      if (fieldName && (fieldName.toLowerCase().includes('cost') || 
+                       fieldName.toLowerCase().includes('budget') ||
+                       fieldName.toLowerCase().includes('price'))) {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD'
+        }).format(num);
+      }
+      
+      // Return formatted number for other numeric fields
+      return new Intl.NumberFormat('en-US').format(num);
+    }
+    
+    // Handle long text (truncate if necessary)
+    if (stringValue.length > 100) {
+      return `${stringValue.substring(0, 97)}...`;
+    }
+    
+    // Default: return the string value
+    return stringValue;
+  };
+  
+  // Helper function to convert action names to human-readable format
+  const getHumanReadableActionName = (action: string): string => {
+    const actionMapping: Record<string, string> = {
+      'CREATE': 'Request Created',
+      'UPDATE': 'Request Updated', 
+      'PRIMARY_CONTACT_COMPLETED': 'Initial Contact Made',
+      'EVENT_DETAILS_UPDATED': 'Event Details Updated',
+      'STATUS_CHANGED': 'Status Changed',
+      'FOLLOW_UP_RECORDED': 'Follow-up Recorded',
+      'MARKED_UNRESPONSIVE': 'Marked Unresponsive',
+      'DELETE': 'Request Deleted',
+      'APPROVED': 'Request Approved',
+      'REJECTED': 'Request Rejected',
+      'CANCELLED': 'Request Cancelled',
+      'COMPLETED': 'Request Completed',
+      'ASSIGNED': 'Request Assigned',
+      'UNASSIGNED': 'Request Unassigned',
+      'REOPENED': 'Request Reopened',
+      'ARCHIVED': 'Request Archived'
+    };
+    
+    return actionMapping[action] || formatFieldName(action);
+  };
+
   // Helper function to render field changes from structured _auditMetadata or fallback to changeDescription
   const renderFieldChanges = (log: AuditLogEntry) => {
     // First, try to use structured data from _auditMetadata.changes (NEW enhanced format)
@@ -246,31 +508,43 @@ export function EventRequestAuditLog({
           return (
             <div className="mt-3 space-y-2">
               <div className="text-sm font-medium text-gray-700 mb-2">What Changed:</div>
-              {metadataChanges.map((change: any, index: number) => (
-                <div key={index} className="flex items-start text-sm bg-gray-50 p-2 rounded border-l-4 border-l-teal-500">
-                  <Edit className="h-4 w-4 mr-2 mt-0.5 text-orange-600 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium text-gray-900">
-                      {change.fieldDisplayName}:
-                    </span>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      {change.oldValue && change.oldValue !== '(empty)' && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs bg-red-100 text-red-700 rounded line-through">
-                          {String(change.oldValue).length > 30 
-                            ? `${String(change.oldValue).substring(0, 27)}...` 
-                            : String(change.oldValue)}
-                        </span>
-                      )}
-                      {change.oldValue && change.oldValue !== '(empty)' && <span className="text-gray-400">→</span>}
-                      <span className="inline-flex items-center px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
-                        {String(change.newValue).length > 30 
-                          ? `${String(change.newValue).substring(0, 27)}...` 
-                          : String(change.newValue)}
-                      </span>
+              {metadataChanges.map((change: any, index: number) => {
+                // Get human-readable field name
+                const fieldName = change.fieldDisplayName || getHumanReadableFieldName(change.field || change.fieldName || 'Unknown Field');
+                
+                // Format old and new values
+                const oldValueFormatted = formatValue(change.oldValue, fieldName);
+                const newValueFormatted = formatValue(change.newValue, fieldName);
+                
+                return (
+                  <div key={index} className="flex items-start text-sm bg-gray-50 p-3 rounded-lg border-l-4 border-l-teal-500">
+                    <Edit className="h-4 w-4 mr-3 mt-0.5 text-orange-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 mb-2">
+                        {fieldName}
+                      </div>
+                      <div className="space-y-1">
+                        {change.oldValue !== null && change.oldValue !== undefined && (
+                          <div className="flex items-center text-xs text-gray-600">
+                            <span className="font-medium mr-2">Previous:</span>
+                            <span className="px-2 py-1 bg-red-50 text-red-700 rounded border border-red-200 line-through">
+                              {oldValueFormatted}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center text-xs">
+                          <span className="font-medium mr-2 text-gray-600">
+                            {change.oldValue !== null && change.oldValue !== undefined ? 'Updated to:' : 'Set to:'}
+                          </span>
+                          <span className="px-2 py-1 bg-green-50 text-green-700 rounded border border-green-200 font-medium">
+                            {newValueFormatted}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           );
         }
@@ -284,9 +558,11 @@ export function EventRequestAuditLog({
       return (
         <div className="mt-3">
           <div className="text-sm font-medium text-gray-700 mb-2">What Changed:</div>
-          <div className="flex items-start text-sm bg-gray-50 p-2 rounded border-l-4 border-l-teal-500">
-            <Edit className="h-4 w-4 mr-2 mt-0.5 text-orange-600 flex-shrink-0" />
-            <span className="text-gray-800">{log.changeDescription}</span>
+          <div className="flex items-start text-sm bg-gray-50 p-3 rounded-lg border-l-4 border-l-teal-500">
+            <Edit className="h-4 w-4 mr-3 mt-0.5 text-orange-600 flex-shrink-0" />
+            <div className="flex-1">
+              <span className="text-gray-800 leading-relaxed">{log.changeDescription}</span>
+            </div>
           </div>
         </div>
       );
@@ -297,9 +573,20 @@ export function EventRequestAuditLog({
       return (
         <div className="mt-3">
           <div className="text-sm font-medium text-gray-700 mb-2">Fields Updated:</div>
-          <div className="flex items-center text-sm bg-gray-50 p-2 rounded">
-            <Edit className="h-4 w-4 mr-2 text-orange-600" />
-            <span className="text-gray-800">{log.details.updatedFields.join(', ')}</span>
+          <div className="flex items-start text-sm bg-gray-50 p-3 rounded-lg border-l-4 border-l-blue-500">
+            <Edit className="h-4 w-4 mr-3 mt-0.5 text-orange-600 flex-shrink-0" />
+            <div className="flex-1">
+              <div className="flex flex-wrap gap-2">
+                {log.details.updatedFields.map((fieldName: string, index: number) => (
+                  <span 
+                    key={index}
+                    className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-200 font-medium"
+                  >
+                    {getHumanReadableFieldName(fieldName)}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -533,7 +820,7 @@ export function EventRequestAuditLog({
                       <div className={`inline-flex items-center px-3 py-2 rounded-lg border ${getActionStyle(log.action)} flex-shrink-0`}>
                         {getActionIcon(log.action)}
                         <span className="ml-2 text-sm font-medium">
-                          {log.action.replace(/_/g, ' ')}
+                          {getHumanReadableActionName(log.action)}
                         </span>
                       </div>
 
