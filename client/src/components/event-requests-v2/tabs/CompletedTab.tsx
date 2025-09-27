@@ -22,6 +22,8 @@ export const CompletedTab: React.FC = () => {
     setContactEventRequest,
     setShowOneDayFollowUpDialog,
     setShowOneMonthFollowUpDialog,
+    setTspContactEventRequest,
+    setShowTspContactAssignmentDialog,
   } = useEventRequestContext();
 
   const completedRequests = filterRequestsByStatus('completed') || [];
@@ -96,6 +98,14 @@ export const CompletedTab: React.FC = () => {
               ) {
                 handleStatusChange(request.id, 'new');
               }
+            }}
+            onAssignTspContact={() => {
+              setTspContactEventRequest(request);
+              setShowTspContactAssignmentDialog(true);
+            }}
+            onEditTspContact={() => {
+              setTspContactEventRequest(request);
+              setShowTspContactAssignmentDialog(true);
             }}
           />
         ))
