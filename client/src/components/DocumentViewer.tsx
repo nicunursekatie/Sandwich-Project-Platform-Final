@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { FileText, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -19,6 +19,17 @@ export function DocumentViewer({
 }: DocumentViewerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+  }, [fileName, filePath]);
+
+  useEffect(() => {
+    if (fileType !== 'pdf') {
+      setIsLoading(false);
+    }
+  }, [fileType]);
 
   // Extract filename from full path if needed
   const getFileName = (path: string) => {
