@@ -88,6 +88,10 @@ function Router() {
           path="/sms-opt-in"
           component={lazy(() => import('./pages/sms-opt-in'))}
         />
+        <Route
+          path="/sms-verification-docs"
+          component={lazy(() => import('./pages/sms-verification-docs'))}
+        />
         <Route path="/login">
           {() => {
             // Redirect to the backend login page
@@ -218,6 +222,10 @@ function Router() {
       <Route
         path="/sms-opt-in"
         component={lazy(() => import('./pages/sms-opt-in'))}
+      />
+      <Route
+        path="/sms-verification-docs"
+        component={lazy(() => import('./pages/sms-verification-docs'))}
       />
       <Route path="/profile">
         {() => <Dashboard initialSection="profile" />}
