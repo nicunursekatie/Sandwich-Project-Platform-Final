@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { apiRequest } from '@/lib/queryClient';
 import type { SandwichCollection, Host } from '@shared/schema';
 import { parseCollectionDate } from '@/lib/analytics-utils';
 
@@ -61,11 +62,11 @@ export default function HostAnalytics({
   // Fetch all collections data
   const { data: collectionsResponse, isLoading } = useQuery({
     queryKey: ['/api/sandwich-collections', 'analytics'],
-    queryFn: async () => {
-      const response = await fetch('/api/sandwich-collections?page=1&limit=10000');
-      if (!response.ok) throw new Error('Failed to fetch collections');
-      return response.json();
-    },
+    queryFn: async () =>
+      apiRequest(
+        'GET',
+        '/api/sandwich-collections?page=1&limit=10000'
+      ),
   });
 
   // Fetch hosts list

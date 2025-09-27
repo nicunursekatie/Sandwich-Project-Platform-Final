@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { FileText, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -17,7 +17,7 @@ export function DocumentViewer({
   mimeType,
   className = '',
 }: DocumentViewerProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(fileType === 'pdf');
   const [error, setError] = useState<string | null>(null);
 
   // Extract filename from full path if needed
@@ -31,6 +31,19 @@ export function DocumentViewer({
   const fileUrl = filePath
     ? `/api/files/${getFileName(filePath)}`
     : `/api/files/${fileName}`;
+
+  // Keep loading and error states consistent across file changes
+  useEffect(() => {
+    // Clear any previous error when the document changes
+    setError(null);
+    // PDFs load inside an iframe and should show a loading indicator until onLoad
+    // Non-PDFs don't have a load event so we should not show the loader
+    if (fileType === 'pdf') {
+      setIsLoading(true);
+    } else {
+      setIsLoading(false);
+    }
+  }, [fileType, fileUrl]);
 
   const handleLoad = () => {
     setIsLoading(false);
