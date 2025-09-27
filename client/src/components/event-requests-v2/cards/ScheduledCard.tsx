@@ -1576,7 +1576,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 justify-end">
-            <Button size="sm" variant="outline" onClick={onContact}>
+            <Button size="sm" variant="outline" onClick={onContact} className="bg-[#007e8c] text-[#ffffff]">
               Contact Organizer
             </Button>
             <Button size="sm" variant="outline" onClick={onReschedule}>
