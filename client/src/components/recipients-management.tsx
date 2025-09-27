@@ -1574,7 +1574,9 @@ export default function RecipientsManagement() {
                   (recipient as any).weekly_estimate ||
                   recipient.sandwichType ||
                   recipient.tspContact ||
-                  recipient.contractSigned) && (
+                  recipient.contractSigned ||
+                  (recipient as any).collectionDay ||
+                  (recipient as any).feedingDay) && (
                   <div className="border-t pt-3 mt-3">
                     <div className="text-sm font-medium text-slate-700 mb-2">
                       Operational Details
@@ -1591,7 +1593,7 @@ export default function RecipientsManagement() {
                         (recipient as any).estimated_sandwiches ||
                         (recipient as any).weekly_estimate) && (
                         <div className="text-sm text-slate-600">
-                          <span className="font-medium">Weekly Estimate:</span>{' '}
+                          <span className="font-medium">Estimated Sandwiches:</span>{' '}
                           {(recipient as any).estimatedSandwiches ||
                             (recipient as any).weeklyEstimate ||
                             (recipient as any).estimated_sandwiches ||
@@ -1601,8 +1603,34 @@ export default function RecipientsManagement() {
                       )}
                       {recipient.sandwichType && (
                         <div className="text-sm text-slate-600">
-                          <span className="font-medium">Type:</span>{' '}
+                          <span className="font-medium">Sandwich Type:</span>{' '}
                           {recipient.sandwichType}
+                        </div>
+                      )}
+
+                      {/* Collection Schedule */}
+                      {((recipient as any).collectionDay || (recipient as any).collectionTime) && (
+                        <div className="text-sm text-slate-600">
+                          <span className="font-medium">Collection:</span>{' '}
+                          {(recipient as any).collectionDay && (
+                            <span>{(recipient as any).collectionDay}</span>
+                          )}
+                          {(recipient as any).collectionTime && (
+                            <span> at {(recipient as any).collectionTime}</span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Feeding Schedule */}
+                      {((recipient as any).feedingDay || (recipient as any).feedingTime) && (
+                        <div className="text-sm text-slate-600">
+                          <span className="font-medium">Feeding:</span>{' '}
+                          {(recipient as any).feedingDay && (
+                            <span>{(recipient as any).feedingDay}</span>
+                          )}
+                          {(recipient as any).feedingTime && (
+                            <span> at {(recipient as any).feedingTime}</span>
+                          )}
                         </div>
                       )}
 
@@ -1629,6 +1657,34 @@ export default function RecipientsManagement() {
                           </Badge>
                         )}
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Social Media Tracking */}
+                {((recipient as any).hasSharedPost || (recipient as any).sharedPostDate) && (
+                  <div className="border-t pt-3 mt-3">
+                    <div className="text-sm font-medium text-slate-700 mb-2">
+                      Social Media Engagement
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {(recipient as any).hasSharedPost && (
+                        <Badge
+                          variant="default"
+                          className="text-xs bg-purple-100 text-purple-800"
+                        >
+                          Shared Post
+                          {(recipient as any).sharedPostDate && (
+                            <span className="ml-1">
+                              (
+                              {new Date(
+                                (recipient as any).sharedPostDate
+                              ).toLocaleDateString()}
+                              )
+                            </span>
+                          )}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 )}
