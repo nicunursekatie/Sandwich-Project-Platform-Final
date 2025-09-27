@@ -12,7 +12,7 @@ import {
 import { Save, X } from 'lucide-react';
 
 export interface Recipient {
-  id: string;
+  id: number;
   name: string;
 }
 
