@@ -188,6 +188,8 @@ export class EmailService {
     senderId: string;
     senderName: string;
     senderEmail: string;
+    senderPreferredEmail?: string | null;
+    senderPhoneNumber?: string | null;
     recipientId: string;
     recipientName: string;
     recipientEmail: string;
@@ -234,11 +236,35 @@ export class EmailService {
       if (!data.isDraft) {
         try {
           const { sendEmail: sendGridEmail } = await import('../sendgrid');
+          
+          // Use preferred email for Reply-To, fallback to sender email
+          const replyToEmail = data.senderPreferredEmail || data.senderEmail;
+          
+          // Create email signature
+          const createSignature = () => {
+            const signatureParts = [];
+            signatureParts.push(`${data.senderName}`);
+            
+            // Always include an email address (preferred or fallback to sender email)
+            const emailToShow = data.senderPreferredEmail || data.senderEmail;
+            signatureParts.push(`Email: ${emailToShow}`);
+            
+            if (data.senderPhoneNumber) {
+              signatureParts.push(`Phone: ${data.senderPhoneNumber}`);
+            }
+            
+            return signatureParts.join('\n');
+          };
+          
+          const signature = createSignature();
+          const contentWithSignature = `${data.content}\n\n---\n${signature}`;
+          
           await sendGridEmail({
             to: data.recipientEmail,
             from: 'katielong2316@gmail.com', // Your verified sender
+            replyTo: replyToEmail, // Use preferred email for Reply-To
             subject: `New message: ${data.subject}`,
-            text: `You have a new message from ${data.senderName}.\n\nSubject: ${data.subject}\n\n${data.content}\n\nPlease log in to your account to view and respond to this message.`,
+            text: `You have a new message from ${data.senderName}.\n\nSubject: ${data.subject}\n\n${contentWithSignature}\n\nPlease log in to your account to view and respond to this message.`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #236383;">New Message</h2>
@@ -246,6 +272,9 @@ export class EmailService {
                 <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <h3 style="margin-top: 0; color: #333;">Subject: ${data.subject}</h3>
                   <p style="white-space: pre-wrap;">${data.content}</p>
+                  <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em;">
+                    <p style="margin: 0; white-space: pre-wrap;">${signature}</p>
+                  </div>
                 </div>
                 <p>Please log in to your account to view and respond to this message.</p>
               </div>

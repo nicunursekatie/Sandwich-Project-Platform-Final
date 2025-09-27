@@ -36,6 +36,8 @@ const profileSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   displayName: z.string().min(1, 'Display name is required'),
   email: z.string().email('Invalid email address'),
+  preferredEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
+  phoneNumber: z.string().optional(),
 });
 
 const passwordSchema = z
@@ -96,6 +98,8 @@ export default function UserProfile() {
       lastName: '',
       displayName: '',
       email: '',
+      preferredEmail: '',
+      phoneNumber: '',
     },
   });
 
@@ -130,6 +134,8 @@ export default function UserProfile() {
         lastName: profile.lastName || '',
         displayName: profile.displayName || '',
         email: profile.email || '',
+        preferredEmail: profile.preferredEmail || '',
+        phoneNumber: profile.phoneNumber || '',
       });
     }
   }, [userProfile, profileForm]);
@@ -475,6 +481,56 @@ export default function UserProfile() {
                     </FormItem>
                   )}
                 />
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Contact Information</h4>
+                  
+                  <FormField
+                    control={profileForm.control}
+                    name="preferredEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preferred Email (Optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="my-preferred@email.com"
+                            {...field}
+                            data-testid="input-preferred-email"
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          This email will be used as the Reply-To address in toolkit emails. If left blank, your main email will be used.
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={profileForm.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cell Phone Number (Optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="tel"
+                            placeholder="(555) 123-4567"
+                            {...field}
+                            data-testid="input-phone-number"
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Your contact phone number. This will be included in email signatures and is separate from SMS notifications.
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <Button
                   type="submit"

@@ -813,6 +813,8 @@ export function setupTempAuth(app: Express) {
           lastName: userData.lastName,
           displayName: userData.displayName,
           profileImageUrl: userData.profileImageUrl,
+          preferredEmail: userData.preferredEmail,
+          phoneNumber: userData.phoneNumber,
         });
       } else {
         res.status(404).json({ message: 'User not found' });
@@ -826,7 +828,7 @@ export function setupTempAuth(app: Express) {
   app.put('/api/auth/profile', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.session.user;
-      const { firstName, lastName, displayName, email } = req.body;
+      const { firstName, lastName, displayName, email, preferredEmail, phoneNumber } = req.body;
 
       const userData = await storage.getUserByEmail(user.email);
       if (!userData) {
@@ -838,6 +840,8 @@ export function setupTempAuth(app: Express) {
         lastName,
         displayName,
         email,
+        preferredEmail: preferredEmail || null,
+        phoneNumber: phoneNumber || null,
         updatedAt: new Date(),
       });
 
@@ -853,6 +857,8 @@ export function setupTempAuth(app: Express) {
         lastName: updatedUser?.lastName,
         displayName: updatedUser?.displayName,
         profileImageUrl: updatedUser?.profileImageUrl,
+        preferredEmail: updatedUser?.preferredEmail,
+        phoneNumber: updatedUser?.phoneNumber,
       });
     } catch (error) {
       console.error('Profile update error:', error);
