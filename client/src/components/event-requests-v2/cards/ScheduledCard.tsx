@@ -385,7 +385,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             type={type}
             value={editingValue}
             onChange={(e) => setEditingValue(e.target.value)}
-            className="h-8"
+            className="h-8 text-gray-900 bg-white"
             autoFocus
           />
           <Button size="sm" onClick={saveEdit}>
@@ -502,6 +502,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             value={inlineTotalCount}
             onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
             placeholder="Total sandwich count"
+            className="text-gray-900 bg-white"
           />
         ) : (
           <div className="space-y-2">
@@ -535,7 +536,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )
                   }
                   placeholder="Qty"
-                  className="w-24"
+                  className="w-24 text-gray-900 bg-white"
                 />
                 <Button
                   size="sm"
@@ -618,7 +619,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       type="date"
                       value={formatDateForInput(editingValue)}
                       onChange={(e) => setEditingValue(e.target.value)}
-                      className="h-8 w-full"
+                      className="h-8 w-full text-gray-900 bg-white"
                       autoFocus
                     />
                     <Button size="sm" onClick={saveEdit} className="bg-[#FBAD3F] hover:bg-[#e89a2d]">
@@ -689,20 +690,20 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {/* Contact Information */}
             <div className="bg-[#236383] text-white rounded-lg p-4 mb-4 shadow-md">
               <div className="flex items-center gap-2 mb-3">
-                <Users className="w-4 h-4" />
-                <span className="font-semibold">Contact Information</span>
+                <Users className="w-5 h-5" />
+                <span className="font-semibold text-lg">Contact Information</span>
               </div>
               <div className="flex items-center gap-6">
                 <div className="flex flex-col gap-1">
-                  <span className="font-medium">
+                  <span className="font-medium text-base">
                     {request.firstName} {request.lastName}
                   </span>
                   {request.email && (
                     <div className="flex items-center gap-1">
-                      <Mail className="w-3 h-3" />
+                      <Mail className="w-4 h-4" />
                       <a
                         href={`mailto:${request.email}`}
-                        className="text-sm hover:underline"
+                        className="text-base hover:underline"
                       >
                         {request.email}
                       </a>
@@ -710,10 +711,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   )}
                   {request.phone && (
                     <div className="flex items-center gap-1">
-                      <Phone className="w-3 h-3" />
+                      <Phone className="w-4 h-4" />
                       <a
                         href={`tel:${request.phone}`}
-                        className="text-sm hover:underline"
+                        className="text-base hover:underline"
                       >
                         {request.phone}
                       </a>
@@ -769,8 +770,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <DialogTrigger asChild>
                       <Button
                         size="sm"
-                        variant="ghost"
-                        className="h-6 px-2 text-sm hover:bg-white/20"
+                        variant="outline"
+                        className="h-6 px-2 text-sm border-white/60 text-white hover:bg-white hover:text-[#007E8C] font-semibold shadow-sm"
                       >
                         + Add Times
                       </Button>
@@ -798,10 +799,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <div className="space-y-2">
                     {request.eventStartTime && (
                       <div className="flex items-center gap-1 group">
-                        <span className="text-sm font-medium">
+                        <span className="text-base font-medium">
                           Start:
                         </span>
-                        <span className="text-sm">
+                        <span className="text-base">
                           {formatTime12Hour(request.eventStartTime)}
                         </span>
                         {canEdit && (
@@ -823,10 +824,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )}
                     {request.eventEndTime && (
                       <div className="flex items-center gap-1 group">
-                        <span className="text-sm font-medium">
+                        <span className="text-base font-medium">
                           End:
                         </span>
-                        <span className="text-sm">
+                        <span className="text-base">
                           {formatTime12Hour(request.eventEndTime)}
                         </span>
                         {canEdit && (
@@ -848,10 +849,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )}
                     {(request.pickupDateTime || request.pickupTime) && (
                       <div className="flex items-center gap-1 group">
-                        <span className="text-sm font-medium">
+                        <span className="text-base font-medium">
                           Pickup:
                         </span>
-                        <span className="text-sm">
+                        <span className="text-base">
                           {request.pickupDateTime ? (
                             (() => {
                               const date = new Date(request.pickupDateTime);
@@ -898,7 +899,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             type="time"
                             value={editingValue}
                             onChange={(e) => setEditingValue(e.target.value)}
-                            className="h-8 w-32"
+                            className="h-8 w-32 text-gray-900 bg-white"
                             autoFocus
                           />
                           <Button size="sm" onClick={saveEdit}>
@@ -932,7 +933,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="text-sm italic">
+                  <div className="text-base italic">
                     No times set yet. Click "Add Times" to add event times.
                   </div>
                 )}
@@ -962,7 +963,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">
+                  <span className="text-base font-medium">
                     Overnight Holding:
                   </span>
                   {isEditingThisCard &&
@@ -972,7 +973,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         type="text"
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-8 w-48"
+                        className="h-8 w-48 text-gray-900 bg-white"
                         autoFocus
                       />
                       <Button size="sm" onClick={saveEdit}>
@@ -984,7 +985,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </div>
                   ) : (
                     <div className="flex items-center gap-1 group">
-                      <span className="text-sm">
+                      <span className="text-base">
                         {request.overnightHoldingLocation || 'Not specified'}
                       </span>
                       {canEdit && (
@@ -1452,7 +1453,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <textarea
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded text-sm min-h-[80px]"
+                          className="w-full p-2 border border-gray-300 rounded text-base min-h-[80px] text-gray-900 bg-white"
                           placeholder="Add planning notes..."
                           autoFocus
                         />
