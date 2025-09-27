@@ -49,6 +49,7 @@ The application uses The Sandwich Project's official color palette (Teal Primary
 - **Google Sheets Integration**: Bidirectional automatic synchronization with Google Sheets for project tracker and event requests, with intelligent deletion tracking to prevent re-importing manually deleted items.
 - **SMS Notifications System**: Complete Twilio-powered SMS reminder system with user opt-in/opt-out functionality, dashboard prompts for adoption, integrated user profile notifications tab, and admin-controlled weekly reminders for missing sandwich collection submissions.
 - **Confidential Document Storage**: Secure file storage with email-based access control, audit logging, file type validation, and a 100MB upload limit.
+- **Enhanced Audit Log Display**: User-friendly audit trail system with human-readable field names, properly formatted values (dates, booleans, phone numbers), and complete tracking of all meaningful value changes including falsy values (0, empty strings, false). Converts technical field names to plain English and provides clear "Previous/Updated to" formatting for easy comprehension by non-technical users.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
