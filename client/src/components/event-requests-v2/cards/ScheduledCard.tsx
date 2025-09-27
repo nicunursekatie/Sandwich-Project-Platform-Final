@@ -558,14 +558,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   return (
     <Card className="w-full transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg">
       <CardContent className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
+        {/* Header with Organization and Status */}
+        <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <div className="flex items-center gap-3 mb-4">
+              <h3 className="text-2xl font-bold text-[#236383] flex items-center gap-2">
                 {request.organizationName}
                 {request.department && (
-                  <span className="text-lg font-normal text-gray-500">
+                  <span className="text-lg font-normal text-[#646464]">
                     &bull; {request.department}
                   </span>
                 )}
@@ -604,58 +604,33 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
             </div>
 
-            {/* Contact & Date */}
-            <div className="flex items-center gap-6 text-base text-gray-600 mb-3">
-              <div className="flex flex-col gap-1">
-                <span className="font-medium">
-                  {request.firstName} {request.lastName}
-                </span>
-                {request.email && (
-                  <div className="flex items-center gap-1">
-                    <Mail className="w-3 h-3" />
-                    <a
-                      href={`mailto:${request.email}`}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      {request.email}
-                    </a>
-                  </div>
-                )}
-                {request.phone && (
-                  <div className="flex items-center gap-1">
-                    <Phone className="w-3 h-3" />
-                    <a
-                      href={`tel:${request.phone}`}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      {request.phone}
-                    </a>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
+            {/* Key Information - Prominently Displayed */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Event Date - Most Important */}
+              <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-5 h-5" />
+                  <span className="font-semibold text-sm uppercase tracking-wide">Event Date</span>
+                </div>
                 {isEditingThisCard && editingField === dateFieldToEdit ? (
                   <div className="flex items-center gap-2">
                     <Input
                       type="date"
                       value={formatDateForInput(editingValue)}
                       onChange={(e) => setEditingValue(e.target.value)}
-                      className="h-7 w-36"
+                      className="h-8 w-full bg-white text-gray-900"
                       autoFocus
                     />
-                    <Button size="sm" onClick={saveEdit}>
+                    <Button size="sm" onClick={saveEdit} className="bg-[#FBAD3F] hover:bg-[#e89a2d]">
                       <Save className="w-3 h-3" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
                       <X className="w-3 h-3" />
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 group">
-                    <span className="font-medium">{dateLabel}:</span>
-                    <span>
+                  <div className="flex items-center gap-2 group">
+                    <span className="text-lg font-bold">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </span>
                     {canEdit && (
@@ -668,7 +643,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             formatDateForInput(displayDate?.toString() || '')
                           )
                         }
-                        className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity text-white hover:bg-white/20"
                       >
                         <Edit2 className="w-3 h-3" />
                       </Button>
@@ -676,13 +651,83 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Event Address - Google Maps Link */}
+              {request.eventAddress && (
+                <div className="bg-[#47B3CB] text-white rounded-lg p-4 shadow-md">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="w-5 h-5" />
+                    <span className="font-semibold text-sm uppercase tracking-wide">Location</span>
+                  </div>
+                  <a
+                    href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium hover:underline block truncate"
+                    title={request.eventAddress}
+                  >
+                    {request.eventAddress}
+                  </a>
+                </div>
+              )}
+
+              {/* Sandwich Count - Prominent Display */}
+              <div className="bg-[#FBAD3F] text-white rounded-lg p-4 shadow-md">
+                <div className="flex items-center gap-2 mb-2">
+                  <Package className="w-5 h-5" />
+                  <span className="font-semibold text-sm uppercase tracking-wide">Sandwiches</span>
+                </div>
+                <div className="text-lg font-bold">
+                  {formatSandwichTypesDisplay(
+                    request.sandwichTypes,
+                    request.estimatedSandwichCount ?? undefined
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="bg-white/90 rounded-lg p-4 mb-4 border border-white/50 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="w-4 h-4 text-[#236383]" />
+                <span className="font-semibold text-[#236383]">Contact Information</span>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium text-gray-900">
+                    {request.firstName} {request.lastName}
+                  </span>
+                  {request.email && (
+                    <div className="flex items-center gap-1">
+                      <Mail className="w-3 h-3 text-[#47B3CB]" />
+                      <a
+                        href={`mailto:${request.email}`}
+                        className="text-[#47B3CB] hover:text-[#236383] text-sm hover:underline"
+                      >
+                        {request.email}
+                      </a>
+                    </div>
+                  )}
+                  {request.phone && (
+                    <div className="flex items-center gap-1">
+                      <Phone className="w-3 h-3 text-[#47B3CB]" />
+                      <a
+                        href={`tel:${request.phone}`}
+                        className="text-[#47B3CB] hover:text-[#236383] text-sm hover:underline"
+                      >
+                        {request.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Quick Actions */}
           {canEdit && (
             <div className="flex gap-1">
-              <Button size="sm" variant="ghost" onClick={onEdit}>
+              <Button size="sm" variant="ghost" onClick={onEdit} className="text-[#236383] hover:bg-[#236383]/10">
                 <Edit2 className="w-4 h-4" />
               </Button>
               <ConfirmationDialog
@@ -690,7 +735,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-red-600 hover:text-red-700"
+                    className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10"
                     data-testid="button-delete-request"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -709,37 +754,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Main Content */}
         <div className="space-y-4">
-          {/* Event Location */}
-          {request.eventAddress && (
-            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin className="w-4 h-4 text-[#47B3CB]" />
-                <span className="font-semibold text-gray-800">
-                  Event Location
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-medium text-gray-600">
-                  Address:
-                </span>
-                <a
-                  href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-base text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  {request.eventAddress}
-                </a>
-              </div>
-            </div>
-          )}
 
           {/* Delivery Logistics */}
-          <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
+          <div className="bg-[#47B3CB]/10 rounded-lg p-4 mb-4 border border-[#47B3CB]/30 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-[#47B3CB]" />
-                <span className="font-semibold text-gray-800">
+                <span className="font-semibold text-[#47B3CB] text-lg">
                   Delivery Logistics
                 </span>
               </div>
@@ -830,10 +851,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
           {/* Sandwich Information */}
-          <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Package className="w-4 h-4 text-[#47B3CB]" />
-              <span className="font-semibold text-gray-800">
+          <div className="bg-[#FBAD3F]/10 rounded-lg p-4 mb-4 border border-[#FBAD3F]/30 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Package className="w-4 h-4 text-[#FBAD3F]" />
+              <span className="font-semibold text-[#FBAD3F] text-lg">
                 Sandwich Details
               </span>
             </div>
@@ -841,11 +862,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
           {/* Event Times */}
-          <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
+          <div className="bg-[#007E8C]/10 rounded-lg p-4 mb-4 border border-[#007E8C]/30 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#47B3CB]" />
-                <span className="font-semibold text-gray-800">Event Times</span>
+                <Clock className="w-4 h-4 text-[#007E8C]" />
+                <span className="font-semibold text-[#007E8C] text-lg">Event Times</span>
               </div>
               {canEdit && (
                 <Dialog>
@@ -1024,14 +1045,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
           {/* TSP Contact */}
           {(request.tspContact || request.customTspContact) && (
-            <div className="bg-white/90 rounded-lg p-3 mb-4 border border-white/50 shadow-sm">
+            <div className="bg-[#FBAD3F]/10 rounded-lg p-4 mb-4 border border-[#FBAD3F]/30 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Building className="w-4 h-4 text-[#FBAD3F]" />
+                <span className="font-semibold text-[#FBAD3F] text-lg">TSP Contact</span>
+              </div>
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-[#FBAD3F]" />
-                  <span className="text-base">
-                    <span className="font-medium text-[#FBAD3F]">
-                      TSP Contact:
-                    </span>{' '}
+                  <span className="text-lg font-bold text-[#236383]">
                     {request.tspContact
                       ? resolveUserName(request.tspContact)
                       : request.customTspContact}
@@ -1072,9 +1093,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
           {/* Team Assignments */}
           {totalNeeded > 0 && (
-            <div className="bg-white/90 rounded-lg p-4 mb-4 border border-white/50 shadow-sm">
+            <div className="bg-[#A31C41]/10 rounded-lg p-4 mb-4 border border-[#A31C41]/30 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <span className="font-semibold text-gray-800">
+                <span className="font-semibold text-[#A31C41] text-lg">
                   Team Assignments
                 </span>
                 <span
