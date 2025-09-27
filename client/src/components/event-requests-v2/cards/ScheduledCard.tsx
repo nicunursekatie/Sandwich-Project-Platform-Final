@@ -755,291 +755,294 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {/* Main Content */}
         <div className="space-y-4">
 
-          {/* Delivery Logistics */}
-          <div className="bg-[#47B3CB] text-white rounded-lg p-4 mb-4 shadow-md">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
+          {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Event Times */}
+            <div className="bg-[#007E8C] text-white rounded-lg p-4 shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-semibold text-lg">Event Times</span>
+                </div>
+                {canEdit && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-sm hover:bg-white/20"
+                      >
+                        + Add Times
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Add Event Times</DialogTitle>
+                      </DialogHeader>
+                      <TimeDialogContent
+                        request={request}
+                        startEditing={startEditing}
+                        saveEdit={saveEdit}
+                        cancelEdit={cancelEdit}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+              <div className="space-y-2">
+                {/* Times - only show if they exist */}
+                {request.eventStartTime ||
+                request.eventEndTime ||
+                request.pickupTime ||
+                request.pickupDateTime ? (
+                  <div className="space-y-2">
+                    {request.eventStartTime && (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-sm font-medium">
+                          Start:
+                        </span>
+                        <span className="text-sm">
+                          {formatTime12Hour(request.eventStartTime)}
+                        </span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              startEditing(
+                                'eventStartTime',
+                                formatTimeForInput(request.eventStartTime || '')
+                              )
+                            }
+                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {request.eventEndTime && (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-sm font-medium">
+                          End:
+                        </span>
+                        <span className="text-sm">
+                          {formatTime12Hour(request.eventEndTime)}
+                        </span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              startEditing(
+                                'eventEndTime',
+                                formatTimeForInput(request.eventEndTime || '')
+                              )
+                            }
+                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {(request.pickupDateTime || request.pickupTime) && (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-sm font-medium">
+                          Pickup:
+                        </span>
+                        <span className="text-sm">
+                          {request.pickupDateTime ? (
+                            (() => {
+                              const date = new Date(request.pickupDateTime);
+                              const dateStr = date.toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              });
+                              const timeStr = formatTime12Hour(
+                                date.toTimeString().slice(0, 5)
+                              );
+                              return `${dateStr} at ${timeStr}`;
+                            })()
+                          ) : (
+                            formatTime12Hour(request.pickupTime!)
+                          )}
+                        </span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (request.pickupDateTime) {
+                                startEditing('pickupDateTime', request.pickupDateTime.toString());
+                              } else {
+                                startEditing('pickupTime', formatTimeForInput(request.pickupTime || ''));
+                              }
+                            }}
+                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Inline editing for times */}
+                    {isEditingThisCard &&
+                      (editingField === 'eventStartTime' ||
+                        editingField === 'eventEndTime' ||
+                        editingField === 'pickupTime') && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            type="time"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-8 w-32"
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={saveEdit}>
+                            <Save className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    {/* Inline editing for pickup datetime */}
+                    {isEditingThisCard && editingField === 'pickupDateTime' && (
+                      <div className="mt-2">
+                        <DateTimePicker
+                          value={editingValue}
+                          onChange={setEditingValue}
+                          placeholder="Select pickup date and time"
+                          defaultToEventDate={request.scheduledEventDate?.toString() || request.desiredEventDate?.toString()}
+                          className="w-full"
+                          data-testid="inline-pickup-datetime-picker"
+                        />
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button size="sm" onClick={saveEdit}>
+                            <Save className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm italic">
+                    No times set yet. Click "Add Times" to add event times.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sandwich Information */}
+            <div className="bg-[#FBAD3F] text-white rounded-lg p-4 shadow-md">
+              <div className="flex items-center gap-2 mb-3">
                 <Package className="w-4 h-4" />
                 <span className="font-semibold text-lg">
-                  Delivery Logistics
+                  Sandwich Details
                 </span>
               </div>
+              <div className="space-y-2">{renderSandwichEdit()}</div>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-base font-medium">
-                  Overnight Holding:
-                </span>
-                {isEditingThisCard &&
-                editingField === 'overnightHoldingLocation' ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="text"
-                      value={editingValue}
-                      onChange={(e) => setEditingValue(e.target.value)}
-                      className="h-8 w-48"
-                      autoFocus
-                    />
-                    <Button size="sm" onClick={saveEdit}>
-                      <Save className="w-3 h-3" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 group">
-                    <span className="text-base">
-                      {request.overnightHoldingLocation || 'Not specified'}
-                    </span>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          startEditing(
-                            'overnightHoldingLocation',
-                            request.overnightHoldingLocation || ''
-                          )
-                        }
-                        className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-medium">
-                  Recipients:
-                </span>
-                {isEditingThisCard && editingField === 'deliveryDestination' ? (
-                  <RecipientSelector
-                    value={editingValue}
-                    onChange={setEditingValue}
-                    isInlineEditing={true}
-                    onSave={saveEdit}
-                    onCancel={cancelEdit}
-                    autoFocus={true}
-                    data-testid="delivery-destination-editor"
-                  />
-                ) : (
-                  <div className="flex items-center gap-1 group">
-                    <span className="text-base">
-                      {request.deliveryDestination || 'Not specified'}
-                    </span>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          startEditing(
-                            'deliveryDestination',
-                            request.deliveryDestination || ''
-                          )
-                        }
-                        className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
 
-          {/* Sandwich Information */}
-          <div className="bg-[#FBAD3F] text-white rounded-lg p-4 mb-4 shadow-md">
-            <div className="flex items-center gap-2 mb-3">
-              <Package className="w-4 h-4" />
-              <span className="font-semibold text-lg">
-                Sandwich Details
-              </span>
-            </div>
-            <div className="space-y-2">{renderSandwichEdit()}</div>
-          </div>
-
-          {/* Event Times */}
-          <div className="bg-[#007E8C] text-white rounded-lg p-4 mb-4 shadow-md">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span className="font-semibold text-lg">Event Times</span>
+            {/* Delivery Logistics */}
+            <div className="bg-[#47B3CB] text-white rounded-lg p-4 shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  <span className="font-semibold text-lg">
+                    Delivery Logistics
+                  </span>
+                </div>
               </div>
-              {canEdit && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-sm hover:bg-white/20"
-                    >
-                      + Add Times
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Add Event Times</DialogTitle>
-                    </DialogHeader>
-                    <TimeDialogContent
-                      request={request}
-                      startEditing={startEditing}
-                      saveEdit={saveEdit}
-                      cancelEdit={cancelEdit}
-                    />
-                  </DialogContent>
-                </Dialog>
-              )}
-            </div>
-            <div className="space-y-2">
-              {/* Times - only show if they exist */}
-              {request.eventStartTime ||
-              request.eventEndTime ||
-              request.pickupTime ||
-              request.pickupDateTime ? (
-                <div className="space-y-2">
-                  {request.eventStartTime && (
-                    <div className="flex items-center gap-1 group">
-                      <span className="text-base font-medium">
-                        Start:
-                      </span>
-                      <span className="text-base">
-                        {formatTime12Hour(request.eventStartTime)}
-                      </span>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            startEditing(
-                              'eventStartTime',
-                              formatTimeForInput(request.eventStartTime || '')
-                            )
-                          }
-                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                  {request.eventEndTime && (
-                    <div className="flex items-center gap-1 group">
-                      <span className="text-base font-medium">
-                        End:
-                      </span>
-                      <span className="text-base">
-                        {formatTime12Hour(request.eventEndTime)}
-                      </span>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            startEditing(
-                              'eventEndTime',
-                              formatTimeForInput(request.eventEndTime || '')
-                            )
-                          }
-                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                  {(request.pickupDateTime || request.pickupTime) && (
-                    <div className="flex items-center gap-1 group">
-                      <span className="text-base font-medium">
-                        Pickup:
-                      </span>
-                      <span className="text-base">
-                        {request.pickupDateTime ? (
-                          (() => {
-                            const date = new Date(request.pickupDateTime);
-                            const dateStr = date.toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            });
-                            const timeStr = formatTime12Hour(
-                              date.toTimeString().slice(0, 5)
-                            );
-                            return `${dateStr} at ${timeStr}`;
-                          })()
-                        ) : (
-                          formatTime12Hour(request.pickupTime!)
-                        )}
-                      </span>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            if (request.pickupDateTime) {
-                              startEditing('pickupDateTime', request.pickupDateTime.toString());
-                            } else {
-                              startEditing('pickupTime', formatTimeForInput(request.pickupTime || ''));
-                            }
-                          }}
-                          className="h-5 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Inline editing for times */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    Overnight Holding:
+                  </span>
                   {isEditingThisCard &&
-                    (editingField === 'eventStartTime' ||
-                      editingField === 'eventEndTime' ||
-                      editingField === 'pickupTime') && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <Input
-                          type="time"
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-8 w-32"
-                          autoFocus
-                        />
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    )}
-                  {/* Inline editing for pickup datetime */}
-                  {isEditingThisCard && editingField === 'pickupDateTime' && (
-                    <div className="mt-2">
-                      <DateTimePicker
+                  editingField === 'overnightHoldingLocation' ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="text"
                         value={editingValue}
-                        onChange={setEditingValue}
-                        placeholder="Select pickup date and time"
-                        defaultToEventDate={request.scheduledEventDate?.toString() || request.desiredEventDate?.toString()}
-                        className="w-full"
-                        data-testid="inline-pickup-datetime-picker"
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="h-8 w-48"
+                        autoFocus
                       />
-                      <div className="flex items-center gap-2 mt-2">
-                        <Button size="sm" onClick={saveEdit}>
-                          <Save className="w-3 h-3" />
+                      <Button size="sm" onClick={saveEdit}>
+                        <Save className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-sm">
+                        {request.overnightHoldingLocation || 'Not specified'}
+                      </span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            startEditing(
+                              'overnightHoldingLocation',
+                              request.overnightHoldingLocation || ''
+                            )
+                          }
+                          className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="text-base italic">
-                  No times set yet. Click "Add Times" to add event times.
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    Recipients:
+                  </span>
+                  {isEditingThisCard && editingField === 'deliveryDestination' ? (
+                    <RecipientSelector
+                      value={editingValue}
+                      onChange={setEditingValue}
+                      isInlineEditing={true}
+                      onSave={saveEdit}
+                      onCancel={cancelEdit}
+                      autoFocus={true}
+                      data-testid="delivery-destination-editor"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-1 group">
+                      <span className="text-sm">
+                        {request.deliveryDestination || 'Not specified'}
+                      </span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            startEditing(
+                              'deliveryDestination',
+                              request.deliveryDestination || ''
+                            )
+                          }
+                          className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -1119,7 +1122,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           size="sm"
                           variant="outline"
                           onClick={() => openAssignmentDialog('driver')}
-                          className="h-8 text-sm border-white/40 text-white hover:bg-white hover:text-[#A31C41]"
+                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
                         >
                           <UserPlus className="w-3 h-3 mr-1" />
                           {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
@@ -1233,7 +1236,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           size="sm"
                           variant="outline"
                           onClick={() => openAssignmentDialog('speaker')}
-                          className="h-8 text-sm border-white/40 text-white hover:bg-white hover:text-[#A31C41]"
+                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
                         >
                           <UserPlus className="w-3 h-3 mr-1" />
                           {speakerAssigned < speakerNeeded ? 'Assign' : 'Add'}
@@ -1323,7 +1326,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           size="sm"
                           variant="outline"
                           onClick={() => openAssignmentDialog('volunteer')}
-                          className="h-8 text-sm border-white/40 text-white hover:bg-white hover:text-[#A31C41]"
+                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
                         >
                           <UserPlus className="w-3 h-3 mr-1" />
                           {volunteerAssigned < volunteerNeeded
