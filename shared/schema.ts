@@ -487,6 +487,9 @@ export const emailMessages = pgTable(
     contextType: varchar('context_type'), // 'project', 'task', 'suggestion', etc.
     contextId: varchar('context_id'), // ID of the related entity
     contextTitle: varchar('context_title'), // Display name of related entity
+    attachments: text('attachments').array().default('[]'), // Array of attachment file paths
+    includeSchedulingLink: boolean('include_scheduling_link').default(false), // Whether to include scheduling link in email
+    requestPhoneCall: boolean('request_phone_call').default(false), // Whether to request phone call
     readAt: timestamp('read_at'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),

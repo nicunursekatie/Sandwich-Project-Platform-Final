@@ -21,6 +21,9 @@ export interface EmailMessage {
   contextType: string | null;
   contextId: string | null;
   contextTitle: string | null;
+  attachments: string[];
+  includeSchedulingLink: boolean;
+  requestPhoneCall: boolean;
   readAt: Date | null;
   createdAt: Date | null;
   updatedAt: Date | null;
@@ -194,6 +197,9 @@ export class EmailService {
     contextType?: string;
     contextId?: string;
     contextTitle?: string;
+    attachments?: string[];
+    includeSchedulingLink?: boolean;
+    requestPhoneCall?: boolean;
     isDraft?: boolean;
   }): Promise<EmailMessage> {
     try {
@@ -213,6 +219,9 @@ export class EmailService {
           contextType: data.contextType || null,
           contextId: data.contextId || null,
           contextTitle: data.contextTitle || null,
+          attachments: data.attachments || [],
+          includeSchedulingLink: data.includeSchedulingLink || false,
+          requestPhoneCall: data.requestPhoneCall || false,
           isDraft: data.isDraft || false,
           isRead: false, // All new messages start as unread for recipient (drafts and sent messages)
           isStarred: false,
@@ -430,6 +439,36 @@ export class EmailService {
       return results as EmailMessage[];
     } catch (error) {
       console.error('Failed to search emails:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get drafts for a specific context (e.g., event request)
+   */
+  async getDraftsByContext(
+    userId: string,
+    contextType: string,
+    contextId: string
+  ): Promise<EmailMessage[]> {
+    try {
+      const results = await db
+        .select()
+        .from(emailMessages)
+        .where(
+          and(
+            eq(emailMessages.senderId, userId), // Only user's own drafts
+            eq(emailMessages.isDraft, true),
+            eq(emailMessages.contextType, contextType),
+            eq(emailMessages.contextId, contextId)
+          )
+        )
+        .orderBy(desc(emailMessages.updatedAt))
+        .limit(20); // Limit to most recent 20 drafts
+
+      return results as EmailMessage[];
+    } catch (error) {
+      console.error('Failed to get drafts by context:', error);
       throw error;
     }
   }

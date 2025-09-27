@@ -31,6 +31,8 @@ import {
   X,
   Shield,
   Calendar,
+  History,
+  Loader2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -105,6 +107,13 @@ export function EventEmailComposer({
   // Fetch available documents
   const { data: documents = [] } = useQuery<Document[]>({
     queryKey: ['/api/documents'],
+  });
+
+  // Fetch available drafts for this event request
+  const { data: availableDrafts = [], isLoading: isDraftsLoading } = useQuery({
+    queryKey: ['/api/emails/event', eventRequest.id, 'drafts'],
+    queryFn: () => apiRequest('GET', `/api/emails/event/${eventRequest.id}/drafts`),
+    enabled: isOpen, // Only fetch when dialog is open
   });
 
   // Regenerate email content based on selected options
@@ -290,6 +299,8 @@ ${userEmail}`;
       content: string;
       isDraft: boolean;
       attachments: string[];
+      includeSchedulingLink: boolean;
+      requestPhoneCall: boolean;
     }) => {
       return apiRequest('POST', '/api/emails/event', {
         eventRequestId: eventRequest.id,
@@ -300,6 +311,8 @@ ${userEmail}`;
         content: emailData.content,
         isDraft: emailData.isDraft,
         attachments: emailData.attachments,
+        includeSchedulingLink: emailData.includeSchedulingLink,
+        requestPhoneCall: emailData.requestPhoneCall,
         contextType: 'event_request',
         contextId: eventRequest.id.toString(),
         contextTitle: `Event: ${eventRequest.organizationName}`,
@@ -355,6 +368,8 @@ ${userEmail}`;
       content: content.trim(),
       isDraft: asDraft,
       attachments: selectedAttachments,
+      includeSchedulingLink: includeSchedulingLink,
+      requestPhoneCall: requestPhoneCall,
     });
   };
 
@@ -364,6 +379,42 @@ ${userEmail}`;
         ? prev.filter((f) => f !== fileUrl)
         : [...prev, fileUrl]
     );
+  };
+
+  // Load draft functionality
+  const loadDraft = (draft: any) => {
+    // Hydrate all state from the selected draft
+    setSubject(draft.subject || '');
+    setContent(draft.content || '');
+    
+    // Parse attachments if they exist (they might be stored as JSON)
+    if (draft.attachments) {
+      try {
+        const attachments = typeof draft.attachments === 'string' 
+          ? JSON.parse(draft.attachments) 
+          : draft.attachments;
+        setSelectedAttachments(attachments || []);
+      } catch {
+        setSelectedAttachments([]);
+      }
+    }
+    
+    // Load explicit boolean preferences from the draft data
+    setIncludeSchedulingLink(draft.includeSchedulingLink || false);
+    setRequestPhoneCall(draft.requestPhoneCall || false);
+    
+    // Clear the subject suggestion since we're loading a custom draft
+    setSelectedSubjectSuggestion('custom');
+    
+    // Clear draft saved state since we're now editing
+    setDraftSaved(false);
+    
+    // Show success toast
+    toast({
+      title: '📝 Draft Loaded',
+      description: `Draft from ${new Date(draft.updatedAt).toLocaleDateString()} has been loaded. You can continue editing.`,
+      duration: 4000,
+    });
   };
 
   const getDocumentIcon = (fileName: string) => {
@@ -430,6 +481,78 @@ ${userEmail}`;
               </div>
             </CardContent>
           </Card>
+
+          {/* Load Draft Section */}
+          {isDraftsLoading && (
+            <Card className="bg-blue-50 border border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                  <div>
+                    <p className="font-medium text-blue-900">Loading drafts...</p>
+                    <p className="text-sm text-blue-600">
+                      Checking for previously saved drafts for this event.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isDraftsLoading && availableDrafts.length > 0 && (
+            <Card className="bg-amber-50 border border-amber-200">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <History className="w-5 h-5 text-amber-600" />
+                    <Label className="text-sm font-medium text-amber-900">
+                      Previous Drafts Found ({availableDrafts.length})
+                    </Label>
+                  </div>
+                  <p className="text-sm text-amber-700">
+                    You have saved drafts for this event. Load one to continue where you left off.
+                  </p>
+                  <div className="space-y-2">
+                    {availableDrafts.map((draft: any) => (
+                      <div
+                        key={draft.id}
+                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 truncate">
+                            {draft.subject || 'Untitled Draft'}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span>
+                              Saved: {new Date(draft.updatedAt).toLocaleDateString()} at {new Date(draft.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span>
+                              To: {draft.recipientName}
+                            </span>
+                          </div>
+                          {draft.content && (
+                            <p className="text-sm text-gray-500 mt-1 truncate">
+                              {draft.content.substring(0, 100)}...
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => loadDraft(draft)}
+                          className="ml-3 bg-amber-100 border-amber-300 text-amber-700 hover:bg-amber-200"
+                          data-testid={`button-load-draft-${draft.id}`}
+                        >
+                          <History className="w-4 h-4 mr-1" />
+                          Load Draft
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Original Request Message */}
           {eventRequest.message && (

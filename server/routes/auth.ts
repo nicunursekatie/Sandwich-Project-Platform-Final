@@ -114,6 +114,9 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         isActive: user.isActive,
       };
 
+      // Update last login time for development auto-login too
+      await storage.updateUser(user.id, { lastLoginAt: new Date() });
+
       // Store user in session with explicit save
       req.session.user = sessionUser;
       req.user = sessionUser;
