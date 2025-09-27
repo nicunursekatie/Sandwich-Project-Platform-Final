@@ -705,82 +705,41 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           </div>
 
-          {/* Two-column grid for Contact Information and Team Assignments */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Contact Information */}
-            <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="w-5 h-5" />
-                <span className="font-semibold text-lg">
-                  Contact Information
-                </span>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium text-base">
-                    {request.firstName} {request.lastName}
-                  </span>
-                  {request.email && (
-                    <div className="flex items-center gap-1">
-                      <Mail className="w-4 h-4" />
-                      <a
-                        href={`mailto:${request.email}`}
-                        className="text-base hover:underline"
-                      >
-                        {request.email}
-                      </a>
-                    </div>
-                  )}
-                  {request.phone && (
-                    <div className="flex items-center gap-1">
-                      <Phone className="w-4 h-4" />
-                      <a
-                        href={`tel:${request.phone}`}
-                        className="text-base hover:underline"
-                      >
-                        {request.phone}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Quick Actions */}
+          {canEdit && (
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onEdit}
+                className="text-[#236383] hover:bg-[#236383]/10"
+              >
+                <Edit2 className="w-4 h-4" />
+              </Button>
+              <ConfirmationDialog
+                trigger={
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10"
+                    data-testid="button-delete-request"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                }
+                title="Delete Scheduled Event"
+                description={`Are you sure you want to delete the scheduled event from ${request.organizationName}? This will remove all scheduling and assignment data and cannot be undone.`}
+                confirmText="Delete Event"
+                cancelText="Cancel"
+                onConfirm={onDelete}
+                variant="destructive"
+              />
             </div>
+          )}
+        </div>
 
-            {/* Quick Actions */}
-            {canEdit && (
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onEdit}
-                  className="text-[#236383] hover:bg-[#236383]/10"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <ConfirmationDialog
-                  trigger={
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10"
-                      data-testid="button-delete-request"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  }
-                  title="Delete Scheduled Event"
-                  description={`Are you sure you want to delete the scheduled event from ${request.organizationName}? This will remove all scheduling and assignment data and cannot be undone.`}
-                  confirmText="Delete Event"
-                  cancelText="Cancel"
-                  onConfirm={onDelete}
-                  variant="destructive"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Main Content */}
-          <div className="space-y-4">
+        {/* Main Content */}
+        <div className="space-y-4">
             {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Event Times */}
@@ -796,7 +755,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-6 px-2 text-sm border-white/60 text-white hover:bg-white hover:text-[#007E8C] font-semibold shadow-sm bg-[#47B3Cb]"
+                          className="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border rounded-md h-6 px-2 text-sm border-white/60 text-white hover:bg-white hover:text-[#007E8C] font-semibold shadow-sm bg-[#47b3cb]"
                         >
                           + Add Times
                         </Button>
