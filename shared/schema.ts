@@ -2299,3 +2299,61 @@ export const notificationABTests = pgTable('notification_ab_tests', {
   categoryTypeIdx: index('idx_notif_ab_tests_category_type').on(table.category, table.type),
   activeTestsIdx: index('idx_notif_ab_tests_active').on(table.status, table.startDate, table.endDate),
 }));
+
+// =============================================================================
+// SMART NOTIFICATIONS SYSTEM - INSERT SCHEMAS AND TYPES
+// =============================================================================
+
+// Smart notification insert schemas
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertNotificationHistorySchema = createInsertSchema(notificationHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertNotificationRulesSchema = createInsertSchema(notificationRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserNotificationPatternsSchema = createInsertSchema(userNotificationPatterns).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertNotificationAnalyticsSchema = createInsertSchema(notificationAnalytics).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertNotificationABTestsSchema = createInsertSchema(notificationABTests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Smart notification types
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+
+export type NotificationHistory = typeof notificationHistory.$inferSelect;
+export type InsertNotificationHistory = z.infer<typeof insertNotificationHistorySchema>;
+
+export type NotificationRules = typeof notificationRules.$inferSelect;
+export type InsertNotificationRules = z.infer<typeof insertNotificationRulesSchema>;
+
+export type UserNotificationPatterns = typeof userNotificationPatterns.$inferSelect;
+export type InsertUserNotificationPatterns = z.infer<typeof insertUserNotificationPatternsSchema>;
+
+export type NotificationAnalytics = typeof notificationAnalytics.$inferSelect;
+export type InsertNotificationAnalytics = z.infer<typeof insertNotificationAnalyticsSchema>;
+
+export type NotificationABTests = typeof notificationABTests.$inferSelect;
+export type InsertNotificationABTests = z.infer<typeof insertNotificationABTestsSchema>;
