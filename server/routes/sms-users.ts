@@ -3,7 +3,8 @@ import { isAuthenticated } from '../temp-auth';
 import { storage } from '../storage-wrapper';
 import { z } from 'zod';
 import { generateVerificationCode, sendConfirmationSMS, submitTollFreeVerification, checkTollFreeVerificationStatus } from '../sms-service';
-import { validateRequest } from 'twilio';
+import twilio from 'twilio';
+const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
 const router = Router();
