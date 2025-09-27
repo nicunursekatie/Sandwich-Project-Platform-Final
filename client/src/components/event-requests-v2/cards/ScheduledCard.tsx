@@ -1128,7 +1128,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             size="sm"
                             variant="outline"
                             onClick={() => openAssignmentDialog('driver')}
-                            className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
+                            className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm !bg-[#47b3cb]"
                           >
                             <UserPlus className="w-3 h-3 mr-1" />
                             {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
@@ -1576,7 +1576,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 justify-end">
-            <Button size="sm" variant="outline" onClick={onContact} className="bg-[#007e8c] text-[#ffffff]">
+            <Button size="sm" variant="outline" onClick={onContact} className="!bg-[#007e8c] !text-[#ffffff] !border-[#007e8c] hover:!bg-[#006975] hover:!text-white">
               Contact Organizer
             </Button>
             <Button size="sm" variant="outline" onClick={onReschedule}>
