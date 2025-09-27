@@ -687,8 +687,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             </div>
 
+          </div>
+
+          {/* Two-column grid for Contact Information and Team Assignments */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Contact Information */}
-            <div className="bg-[#236383] text-white rounded-lg p-4 mb-4 shadow-md">
+            <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
               <div className="flex items-center gap-2 mb-3">
                 <Users className="w-5 h-5" />
                 <span className="font-semibold text-lg">Contact Information</span>
@@ -723,7 +727,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Quick Actions */}
           {canEdit && (
@@ -771,7 +774,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-6 px-2 text-sm border-white/60 text-white hover:bg-white hover:text-[#007E8C] font-semibold shadow-sm"
+                        className="h-6 px-2 text-sm border-white text-white hover:bg-white hover:text-[#007E8C] font-bold shadow-md"
                       >
                         + Add Times
                       </Button>
@@ -1022,7 +1025,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     />
                   ) : (
                     <div className="flex items-center gap-1 group">
-                      <span className="text-sm">
+                      <span className="text-base">
                         {request.deliveryDestination || 'Not specified'}
                       </span>
                       {canEdit && (
@@ -1065,7 +1068,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {/* Show email and phone if available */}
                 {request.customTspContact && (
                   <div className="flex flex-col gap-1 ml-7 mt-1">
-                    <div className="text-sm">
+                    <div className="text-base">
                       Custom TSP Contact
                     </div>
                   </div>
@@ -1074,23 +1077,23 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           )}
 
-          {/* Team Assignments */}
-          {totalNeeded > 0 && (
-            <div className="bg-[#A31C41] text-white rounded-lg p-4 mb-4 shadow-md">
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-semibold text-lg">
-                  Team Assignments
-                </span>
-                <span
-                  className={`text-base font-bold px-2 py-1 rounded-full ${
-                    staffingComplete
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/20 text-white'
-                  }`}
-                >
-                  {totalAssigned}/{totalNeeded} assigned
-                </span>
-              </div>
+            {/* Team Assignments */}
+            {totalNeeded > 0 && (
+              <div className="bg-[#A31C41] text-white rounded-lg p-4 shadow-md">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-semibold text-lg">
+                    Team Assignments
+                  </span>
+                  <span
+                    className={`text-base font-bold px-2 py-1 rounded-full ${
+                      staffingComplete
+                        ? 'bg-white/20 text-white'
+                        : 'bg-white/20 text-white'
+                    }`}
+                  >
+                    {totalAssigned}/{totalNeeded} assigned
+                  </span>
+                </div>
 
               <div className="space-y-3">
                 {/* Drivers */}
@@ -1383,6 +1386,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             </div>
           )}
+          </div>
 
           {/* Comprehensive Notes & Requirements Section */}
           {(request.message ||
