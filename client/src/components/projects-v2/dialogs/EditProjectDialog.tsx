@@ -208,13 +208,11 @@ export const EditProjectDialog: React.FC = () => {
                 label="Project Owner"
                 value={formData.assigneeName || ''}
                 onChange={(assigneeName, userIds) => {
+                  const normalizedIds = userIds?.length ? [userIds[0]] : [];
                   setFormData({
                     ...formData,
                     assigneeName,
-                    assigneeIds:
-                      userIds && userIds.length > 0
-                        ? userIds
-                        : [],
+                    assigneeIds: normalizedIds,
                   });
                 }}
                 placeholder="Select or enter project owner"

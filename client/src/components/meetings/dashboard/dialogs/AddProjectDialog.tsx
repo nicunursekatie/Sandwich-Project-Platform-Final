@@ -83,10 +83,11 @@ export function AddProjectDialog({
             <ProjectAssigneeSelector
               value={newProjectData.assigneeName || ''}
               onChange={(value, userIds) => {
+                const normalizedIds = userIds?.length ? [userIds[0]] : [];
                 setNewProjectData({
                   ...newProjectData,
                   assigneeName: value || '',
-                  assigneeIds: userIds || [],
+                  assigneeIds: normalizedIds,
                 });
               }}
               placeholder="Select or enter project owner"
