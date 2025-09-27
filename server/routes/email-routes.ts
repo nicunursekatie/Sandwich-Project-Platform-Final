@@ -2,8 +2,9 @@ import { Router } from 'express';
 import { emailService } from '../services/email-service';
 import { isAuthenticated } from '../temp-auth';
 import { db } from '../db';
-import { kudosTracking } from '@shared/schema';
+import { kudosTracking, users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { storage } from '../storage-wrapper';
 
 const router = Router();
 
@@ -95,10 +96,15 @@ router.post('/', isAuthenticated, async (req: any, res) => {
       `[Email API] Sending email from ${user.email} to ${recipientEmail}`
     );
 
+    // Get user's complete profile data including preferred email and phone number
+    const fullUserData = await storage.getUser(user.id);
+    
     const newEmail = await emailService.sendEmail({
       senderId: user.id,
       senderName: `${user.firstName} ${user.lastName}`.trim() || user.email,
       senderEmail: user.email,
+      senderPreferredEmail: fullUserData?.preferredEmail,
+      senderPhoneNumber: fullUserData?.phoneNumber,
       recipientId: recipientId || user.id, // For drafts
       recipientName: recipientName || 'Draft',
       recipientEmail: recipientEmail || user.email,
@@ -453,10 +459,15 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
         .join('\n')}`;
     }
 
+    // Get user's complete profile data including preferred email and phone number
+    const fullUserData = await storage.getUser(user.id);
+    
     const newEmail = await emailService.sendEmail({
       senderId: user.id,
-      senderName: user.name || user.email,
+      senderName: `${fullUserData?.firstName} ${fullUserData?.lastName}`.trim() || user.email,
       senderEmail: user.email,
+      senderPreferredEmail: fullUserData?.preferredEmail,
+      senderPhoneNumber: fullUserData?.phoneNumber,
       recipientId: 'external',
       recipientName: recipientName || 'Event Contact',
       recipientEmail: recipientEmail,

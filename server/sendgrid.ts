@@ -10,6 +10,7 @@ mailService.setApiKey(process.env.SENDGRID_API_KEY);
 interface EmailParams {
   to: string;
   from: string;
+  replyTo?: string;
   subject: string;
   text?: string;
   html?: string;
@@ -20,13 +21,20 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     console.log(
       `Attempting to send email to ${params.to} from ${params.from} with subject: ${params.subject}`
     );
-    await mailService.send({
+    const emailData: any = {
       to: params.to,
       from: params.from,
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
-    });
+    };
+    
+    // Add Reply-To header if provided
+    if (params.replyTo) {
+      emailData.replyTo = params.replyTo;
+    }
+    
+    await mailService.send(emailData);
     console.log(`Email sent successfully to ${params.to}`);
     return true;
   } catch (error) {

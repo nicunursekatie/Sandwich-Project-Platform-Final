@@ -20,6 +20,17 @@ export function DocumentViewer({
   const [isLoading, setIsLoading] = useState(fileType === 'pdf');
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+  }, [fileName, filePath]);
+
+  useEffect(() => {
+    if (fileType !== 'pdf') {
+      setIsLoading(false);
+    }
+  }, [fileType]);
+
   // Extract filename from full path if needed
   const getFileName = (path: string) => {
     if (path.includes('/')) {

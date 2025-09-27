@@ -26,7 +26,14 @@ const MEETING_FIELDS: Array<keyof InsertMeetingPayload> = [
   'status',
 ];
 
-function mapRequestToMeetingPayload(body: any): Partial<InsertMeetingPayload> {
+interface MapMeetingOptions {
+  includeDefaults?: boolean;
+}
+
+function mapRequestToMeetingPayload(
+  body: any,
+  options: MapMeetingOptions = {}
+): Partial<InsertMeetingPayload> {
   const source = body ?? {};
   const mapped: Record<string, any> = { ...source };
 
@@ -47,6 +54,15 @@ function mapRequestToMeetingPayload(body: any): Partial<InsertMeetingPayload> {
   for (const field of MEETING_FIELDS) {
     if (mapped[field] !== undefined) {
       payload[field] = mapped[field];
+    }
+  }
+
+  if (options.includeDefaults) {
+    if (payload.type === undefined) {
+      payload.type = 'weekly' as InsertMeetingPayload['type'];
+    }
+    if (payload.status === undefined) {
+      payload.status = 'planning' as InsertMeetingPayload['status'];
     }
   }
 
@@ -584,13 +600,17 @@ meetingsRouter.get('/', async (req, res) => {
     res.json(mappedMeetings);
   } catch (error) {
     logger.error('Failed to fetch meetings', error);
-    res.status(500).json({ message: 'Failed to fetch meetings' });
+    res.json([]);
   }
 });
 
 meetingsRouter.get('/current', async (req, res) => {
   try {
     const meeting = await storage.getCurrentMeeting();
+    if (!meeting) {
+      return res.status(404).json({ message: 'No current meeting found' });
+    }
+
     res.json(meeting);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch current meeting' });
@@ -606,13 +626,21 @@ meetingsRouter.get('/type/:type', async (req, res) => {
     res.json(mappedMeetings);
   } catch (error) {
     logger.error('Failed to fetch meetings by type', error);
-    res.status(500).json({ message: 'Failed to fetch meetings' });
+    res.json([]);
   }
 });
 
 meetingsRouter.post('/', async (req, res) => {
   try {
-    const meetingPayload = mapRequestToMeetingPayload(req.body);
+    const user = req.user;
+    const userId = user?.claims?.sub || user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const meetingPayload = mapRequestToMeetingPayload(req.body, {
+      includeDefaults: true,
+    });
     const meetingData = insertMeetingSchema.parse(meetingPayload);
     const meeting = await storage.createMeeting(meetingData);
     res.status(201).json(meeting);
@@ -790,6 +818,12 @@ meetingsRouter.get('/:id', async (req, res) => {
 
 meetingsRouter.patch('/:id', async (req, res) => {
   try {
+    const user = req.user;
+    const userId = user?.claims?.sub || user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     const meetingId = parseInt(req.params.id, 10);
     if (isNaN(meetingId)) {
       return res.status(400).json({ message: 'Invalid meeting ID' });
@@ -814,8 +848,41 @@ meetingsRouter.patch('/:id', async (req, res) => {
   }
 });
 
+meetingsRouter.patch('/:id/agenda', async (req, res) => {
+  try {
+    const user = req.user;
+    const userId = user?.claims?.sub || user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const meetingId = parseInt(req.params.id, 10);
+    if (isNaN(meetingId)) {
+      return res.status(400).json({ message: 'Invalid meeting ID' });
+    }
+
+    const { agenda } = req.body;
+    const updatedMeeting = await storage.updateMeetingAgenda(meetingId, agenda);
+
+    if (!updatedMeeting) {
+      return res.status(404).json({ message: 'Meeting not found' });
+    }
+
+    res.json(updatedMeeting);
+  } catch (error) {
+    logger.error('Failed to update meeting agenda', error);
+    res.status(500).json({ message: 'Failed to update meeting agenda' });
+  }
+});
+
 meetingsRouter.delete('/:id', async (req, res) => {
   try {
+    const user = req.user;
+    const userId = user?.claims?.sub || user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     const meetingId = parseInt(req.params.id, 10);
     if (isNaN(meetingId)) {
       return res.status(400).json({ message: 'Invalid meeting ID' });
