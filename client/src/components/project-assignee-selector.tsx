@@ -55,7 +55,7 @@ export function ProjectAssigneeSelector({
 
   // Initialize from existing value - handle both single names and comma-separated
   useEffect(() => {
-    if (!value) {
+    if (!value || value.trim().length === 0) {
       setSelectedUsers([]);
       return;
     }
@@ -109,9 +109,17 @@ export function ProjectAssigneeSelector({
     // Check if already selected
     if (selectedUsers.some((u) => u.id === user.id)) return;
 
-    const updatedUsers = multiple
-      ? [...selectedUsers, { id: user.id, name: fullName, isSystemUser: true }]
-      : [{ id: user.id, name: fullName, isSystemUser: true }];
+    if (!multiple) {
+      const singleUser = [{ id: user.id, name: fullName, isSystemUser: true }];
+      setSelectedUsers(singleUser);
+      updateParent(singleUser);
+      return;
+    }
+
+    const updatedUsers = [
+      ...selectedUsers,
+      { id: user.id, name: fullName, isSystemUser: true },
+    ];
     setSelectedUsers(updatedUsers);
 
     // Update parent
@@ -138,7 +146,15 @@ export function ProjectAssigneeSelector({
       isSystemUser: false,
     };
 
-    const updatedUsers = multiple ? [...selectedUsers, customUser] : [customUser];
+    if (!multiple) {
+      const singleUser = [customUser];
+      setSelectedUsers(singleUser);
+      setCustomNameInput('');
+      updateParent(singleUser);
+      return;
+    }
+
+    const updatedUsers = [...selectedUsers, customUser];
     setSelectedUsers(updatedUsers);
     setCustomNameInput('');
 

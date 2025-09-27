@@ -152,6 +152,7 @@ export const CreateProjectDialog: React.FC = () => {
                 label="Project Owner"
                 value={newProject.assigneeName || ''}
                 onChange={(assigneeName, userIds) => {
+                  const normalizedIds = userIds?.length ? [userIds[0]] : [];
                   setNewProject({
                     ...newProject,
                     assigneeName,
