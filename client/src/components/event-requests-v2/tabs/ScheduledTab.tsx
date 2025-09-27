@@ -41,6 +41,8 @@ export const ScheduledTab: React.FC = () => {
     setContactEventRequest,
     setShowOneDayFollowUpDialog,
     setShowOneMonthFollowUpDialog,
+    setTspContactEventRequest,
+    setShowTspContactAssignmentDialog,
 
     // Inline editing states - IMPORTANT for scheduled tab
     editingScheduledId,
@@ -226,6 +228,14 @@ export const ScheduledTab: React.FC = () => {
                   setShowOneDayFollowUpDialog(true);
                 }}
                 onReschedule={() => handleReschedule(request)}
+                onAssignTspContact={() => {
+                  setTspContactEventRequest(request);
+                  setShowTspContactAssignmentDialog(true);
+                }}
+                onEditTspContact={() => {
+                  setTspContactEventRequest(request);
+                  setShowTspContactAssignmentDialog(true);
+                }}
                 startEditing={(field, value) => startEditing(request.id, field, value)}
                 saveEdit={saveEdit}
                 cancelEdit={cancelEdit}
