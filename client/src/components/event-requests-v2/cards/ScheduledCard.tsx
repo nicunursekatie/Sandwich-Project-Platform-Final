@@ -607,10 +607,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {/* Key Information - Prominently Displayed */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* Event Date - Most Important */}
-              <div className="bg-[#236383]/10 rounded-lg p-4 border border-[#236383]/30 shadow-sm">
+              <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-[#236383]" />
-                  <span className="font-semibold text-[#236383]">Event Date</span>
+                  <Calendar className="w-5 h-5" />
+                  <span className="font-semibold text-sm uppercase tracking-wide">Event Date</span>
                 </div>
                 {isEditingThisCard && editingField === dateFieldToEdit ? (
                   <div className="flex items-center gap-2">
@@ -624,13 +624,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <Button size="sm" onClick={saveEdit} className="bg-[#FBAD3F] hover:bg-[#e89a2d]">
                       <Save className="w-3 h-3" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
                       <X className="w-3 h-3" />
                     </Button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 group">
-                    <span className="text-lg font-bold text-[#236383]">
+                    <span className="text-lg font-bold">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </span>
                     {canEdit && (
@@ -643,7 +643,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             formatDateForInput(displayDate?.toString() || '')
                           )
                         }
-                        className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity text-white hover:bg-white/20"
                       >
                         <Edit2 className="w-3 h-3" />
                       </Button>
@@ -654,16 +654,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {/* Event Address - Google Maps Link */}
               {request.eventAddress && (
-                <div className="bg-[#47B3CB]/10 rounded-lg p-4 border border-[#47B3CB]/30 shadow-sm">
+                <div className="bg-[#47B3CB] text-white rounded-lg p-4 shadow-md">
                   <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-4 h-4 text-[#47B3CB]" />
-                    <span className="font-semibold text-[#47B3CB]">Location</span>
+                    <MapPin className="w-5 h-5" />
+                    <span className="font-semibold text-sm uppercase tracking-wide">Location</span>
                   </div>
                   <a
                     href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium text-[#47B3CB] hover:text-[#236383] hover:underline block truncate"
+                    className="text-sm font-medium hover:underline block truncate"
                     title={request.eventAddress}
                   >
                     {request.eventAddress}
@@ -672,12 +672,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
 
               {/* Sandwich Count - Prominent Display */}
-              <div className="bg-[#FBAD3F]/10 rounded-lg p-4 border border-[#FBAD3F]/30 shadow-sm">
+              <div className="bg-[#FBAD3F] text-white rounded-lg p-4 shadow-md">
                 <div className="flex items-center gap-2 mb-2">
-                  <Package className="w-4 h-4 text-[#FBAD3F]" />
-                  <span className="font-semibold text-[#FBAD3F]">Sandwiches</span>
+                  <Package className="w-5 h-5" />
+                  <span className="font-semibold text-sm uppercase tracking-wide">Sandwiches</span>
                 </div>
-                <div className="text-lg font-bold text-[#FBAD3F]">
+                <div className="text-lg font-bold">
                   {formatSandwichTypesDisplay(
                     request.sandwichTypes,
                     request.estimatedSandwichCount ?? undefined
