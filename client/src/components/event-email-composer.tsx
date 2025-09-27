@@ -273,11 +273,11 @@ ${userEmail}`;
         `The Sandwich Project - Event Resources for ${eventRequest.organizationName}`
       );
 
-      // Pre-select toolkit documents from attached_assets folder
+      // Pre-select standard toolkit documents 
       setSelectedAttachments([
-        '/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf',
-        '/attached_assets/20250205-TSP-PBJ Sandwich Making 101_1753670644141.pdf',
-        '/attached_assets/20230525-TSP-Food Safety Volunteers (1)_1753670644140.pdf',
+        '/toolkit/food-safety-volunteers.pdf',
+        '/toolkit/deli-sandwich-making-101.pdf',
+        '/toolkit/pbj-sandwich-making-101.pdf',
       ]);
     }
   }, [isOpen, eventRequest, formatEventDetails]);
