@@ -685,7 +685,15 @@ router.post(
     try {
       const user = req.user;
 
-      const validatedData = insertEventRequestSchema.parse(req.body);
+      // Generate externalId for manual entries if not provided
+      let requestData = { ...req.body };
+      if (!requestData.externalId) {
+        const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        requestData.externalId = `manual-${timestamp}-${randomSuffix}`;
+      }
+      
+      const validatedData = insertEventRequestSchema.parse(requestData);
 
       // Check for organization duplicates
       const duplicateCheck = { exists: false, matches: [] as any[] };
