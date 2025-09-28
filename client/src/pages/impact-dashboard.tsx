@@ -489,7 +489,7 @@ export default function ImpactDashboard() {
           </Card>
 
           <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <CardHeader className="pb-2 bg-[#236383]">
+            <CardHeader className="flex flex-col space-y-1.5 p-6 pb-2 bg-[#236383]">
               <CardTitle className="text-lg font-medium flex items-center">
                 <Users className="w-5 h-5 mr-2" />
                 Active Hosts

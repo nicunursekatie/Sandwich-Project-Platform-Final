@@ -27,6 +27,7 @@ import { smsTestingRoutes } from './sms-testing';
 import { smsAnnouncementRoutes } from './sms-announcement';
 import monitoringRouter from './monitoring';
 import enhancedActivityRouter from './enhanced-user-activity';
+import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 
 // Import centralized middleware
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
@@ -284,6 +285,23 @@ export function createMainRoutes(deps: RouterDependencies) {
     monitoringRouter
   );
   router.use('/api/monitoring', createErrorHandler('monitoring'));
+
+  // Wishlist routes - mount directly to match frontend expectations
+  router.use(
+    '/api/wishlist-suggestions',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    wishlistSuggestionsRouter
+  );
+  router.use('/api/wishlist-suggestions', createErrorHandler('wishlist-suggestions'));
+
+  router.use(
+    '/api/wishlist-activity',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    wishlistActivityRouter
+  );
+  router.use('/api/wishlist-activity', createErrorHandler('wishlist-activity'));
 
   // Enhanced user activity tracking (stub) - enabled to prevent 404 errors
   router.use('/api/enhanced-user-activity', enhancedActivityRouter);
