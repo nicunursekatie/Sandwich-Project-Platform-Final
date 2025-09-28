@@ -2122,7 +2122,7 @@ export default function EventRequestsManagement({
     setStatusFilter(activeTab);
   }, [activeTab]);
 
-  // Auto-sort by appropriate default for each tab
+  // Auto-sort by appropriate default for each tab (only when tab changes)
   // New requests: most recent submissions first
   // Scheduled/In-process/My Assignments: soonest event dates first  
   // Completed: most recent event dates first
@@ -2134,7 +2134,7 @@ export default function EventRequestsManagement({
     } else if (activeTab === 'completed' && sortBy !== 'event_date_desc') {
       setSortBy('event_date_desc');
     }
-  }, [activeTab, sortBy]);
+  }, [activeTab]);
 
   // Group requests by status for tab display
   const requestsByStatus = useMemo(() => {
