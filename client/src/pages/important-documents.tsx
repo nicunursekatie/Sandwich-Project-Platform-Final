@@ -344,7 +344,7 @@ export default function ImportantDocuments() {
           title: 'Shared Successfully',
           description: `${doc.name} has been shared.`,
         });
-      } catch (error) {
+      } catch (error: any) {
         if (error.name !== 'AbortError') {
           await navigator.clipboard.writeText(doc.path);
           toast({
@@ -406,7 +406,7 @@ export default function ImportantDocuments() {
           title: 'Shared Successfully',
           description: `${displayName} has been shared.`,
         });
-      } catch (error) {
+      } catch (error: any) {
         if (error.name !== 'AbortError') {
           console.error('Share failed:', error);
           toast({

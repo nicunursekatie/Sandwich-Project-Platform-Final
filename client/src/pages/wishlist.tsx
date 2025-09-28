@@ -151,16 +151,26 @@ export default function WishlistPage() {
     },
   });
 
-  // Amazon wishlist URL
-  const WISHLIST_URL =
-    'https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV?ref_=wl_share';
+  // Amazon wishlists
+  const WISHLISTS = [
+    {
+      name: 'Main TSP Wishlist',
+      description: 'Essential supplies and equipment for The Sandwich Project',
+      url: 'https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV?ref_=wl_share',
+    },
+    {
+      name: 'UGA Wishlist',
+      description: 'University of Georgia specific supplies and materials',
+      url: 'https://www.amazon.com/hz/wishlist/ls/16YMNRMG1WHHS?ref_=wl_share',
+    },
+  ];
 
-  const copyToClipboard = async (text: string) => {
+  const copyToClipboard = async (text: string, wishlistName?: string) => {
     try {
       await navigator.clipboard.writeText(text);
       toast({
         title: 'Copied!',
-        description: 'Wishlist link copied to clipboard',
+        description: `${wishlistName ? wishlistName + ' link' : 'Wishlist link'} copied to clipboard`,
       });
     } catch (err) {
       toast({
@@ -171,21 +181,21 @@ export default function WishlistPage() {
     }
   };
 
-  const shareWishlist = async () => {
+  const shareWishlist = async (wishlist: typeof WISHLISTS[0]) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'The Sandwich Project - Amazon Wishlist',
-          text: 'Help support The Sandwich Project by checking out our Amazon wishlist!',
-          url: WISHLIST_URL,
+          title: `The Sandwich Project - ${wishlist.name}`,
+          text: `Help support The Sandwich Project by checking out our ${wishlist.name}!`,
+          url: wishlist.url,
         });
       } catch (err) {
         // User cancelled sharing or sharing failed
-        copyToClipboard(WISHLIST_URL);
+        copyToClipboard(wishlist.url, wishlist.name);
       }
     } else {
       // Fallback to copying
-      copyToClipboard(WISHLIST_URL);
+      copyToClipboard(wishlist.url, wishlist.name);
     }
   };
 
@@ -231,47 +241,54 @@ export default function WishlistPage() {
           </p>
         </div>
 
-        {/* Quick Share Section */}
-        <Card className="border-brand-primary border-2">
-          <CardHeader className="bg-brand-primary text-white">
-            <CardTitle className="flex items-center gap-2">
-              <Share2 className="w-5 h-5" />
-              Share Our Wishlist
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                <div className="flex-1 text-sm font-mono text-slate-700 break-all">
-                  {WISHLIST_URL}
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => copyToClipboard(WISHLIST_URL)}
-                  className="flex-shrink-0"
-                >
-                  <Copy className="w-4 h-4 mr-1" />
-                  Copy
-                </Button>
-              </div>
+        {/* Amazon Wishlists Section */}
+        <div className="space-y-4">
+          {WISHLISTS.map((wishlist, index) => (
+            <Card key={index} className="border-brand-primary border-2">
+              <CardHeader className="bg-brand-primary text-white">
+                <CardTitle className="flex items-center gap-2">
+                  <Share2 className="w-5 h-5" />
+                  {wishlist.name}
+                </CardTitle>
+                <p className="text-brand-primary-light text-sm">
+                  {wishlist.description}
+                </p>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                    <div className="flex-1 text-sm font-mono text-slate-700 break-all">
+                      {wishlist.url}
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => copyToClipboard(wishlist.url, wishlist.name)}
+                      className="flex-shrink-0"
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
 
-              <div className="flex gap-3">
-                <Button onClick={shareWishlist} className="flex-1">
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share Wishlist
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => window.open(WISHLIST_URL, '_blank')}
-                  className="flex-1"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View on Amazon
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  <div className="flex gap-3">
+                    <Button onClick={() => shareWishlist(wishlist)} className="flex-1">
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share Wishlist
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open(wishlist.url, '_blank')}
+                      className="flex-1"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View on Amazon
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -641,7 +658,7 @@ export default function WishlistPage() {
         {user &&
           hasPermission(
             (user as any)?.permissions || 0,
-            PERMISSIONS.WISHLIST_MANAGE
+            PERMISSIONS.ADMIN_ACCESS
           ) && (
             <Card>
               <CardHeader>
