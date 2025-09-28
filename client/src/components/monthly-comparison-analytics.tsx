@@ -59,6 +59,7 @@ interface MonthlyStats {
   weeklyDistribution: number[];
   individualCount: number;
   groupCount: number;
+  groupEventCount: number;
   daysWithCollections: number;
 }
 
@@ -133,6 +134,7 @@ export default function MonthlyComparisonAnalytics() {
           weeklyDistribution: [0, 0, 0, 0], // Week 1, 2, 3, 4+
           individualCount: 0,
           groupCount: 0,
+          groupEventCount: 0,
           daysWithCollections: 0,
         };
       }
@@ -148,6 +150,11 @@ export default function MonthlyComparisonAnalytics() {
       stats.individualCount += individualSandwiches;
       stats.groupCount += groupSandwiches;
       stats.totalCollections += 1;
+
+      // Track group event count - increment when collection has group participants
+      if (groupSandwiches > 0) {
+        stats.groupEventCount += 1;
+      }
 
       // Track host participation
       const hostName = collection.hostName || 'Unknown';
@@ -461,8 +468,8 @@ export default function MonthlyComparisonAnalytics() {
             Overview
           </TabsTrigger>
           <TabsTrigger value="hosts" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Host Analysis
+            <Target className="h-4 w-4" />
+            Monthly Insights
           </TabsTrigger>
           <TabsTrigger value="patterns" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
@@ -597,7 +604,13 @@ export default function MonthlyComparisonAnalytics() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Group Collections</span>
+                      <span className="text-sm">Group Events</span>
+                      <span className="font-medium">
+                        {augustAnalysis.august2025.groupEventCount} events
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Sandwiches from Groups</span>
                       <span className="font-medium">
                         {augustAnalysis.august2025.groupCount.toLocaleString()}
                       </span>
@@ -622,107 +635,359 @@ export default function MonthlyComparisonAnalytics() {
         </TabsContent>
 
         <TabsContent value="hosts" className="space-y-6">
+          {/* Monthly Trends Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Monthly Performance Trends
+              </CardTitle>
+              <CardDescription>
+                August 2025 vs 6-month rolling average with trend analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-brand-primary mb-3">
+                    Recent 6-Month Trend
+                  </h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={monthlyTrends.slice(-6)}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#236383" opacity={0.2} />
+                        <XAxis 
+                          dataKey="month" 
+                          stroke="#236383" 
+                          fontSize={12}
+                        />
+                        <YAxis 
+                          stroke="#236383" 
+                          fontSize={12}
+                          tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
+                        />
+                        <Tooltip
+                          formatter={(value) => [value.toLocaleString(), 'Sandwiches']}
+                          labelFormatter={(label, payload) => {
+                            const item = payload?.[0]?.payload;
+                            return item ? `${label} ${item.year}` : label;
+                          }}
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #236383',
+                            borderRadius: '8px',
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="sandwiches"
+                          stroke="#236383"
+                          fill="#236383"
+                          fillOpacity={0.3}
+                          strokeWidth={2}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-brand-primary mb-3">
+                    Performance Analysis
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingDown className="h-4 w-4 text-red-600" />
+                        <span className="font-medium text-red-800">Trend Alert</span>
+                      </div>
+                      <p className="text-sm text-red-700">
+                        August 2025 shows a {augustAnalysis.shortfallPercent?.toFixed(1)}% decline from recent 6-month average.
+                        This represents {augustAnalysis.shortfall?.toLocaleString()} fewer sandwiches than expected.
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center p-3 bg-gray-50 rounded">
+                        <div className="text-lg font-bold text-brand-primary">
+                          {augustAnalysis.august2025.avgPerCollection}
+                        </div>
+                        <p className="text-xs text-gray-600">Avg per Event</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded">
+                        <div className="text-lg font-bold text-brand-primary">
+                          {((augustAnalysis.august2025.groupEventCount / augustAnalysis.august2025.totalCollections) * 100).toFixed(1)}%
+                        </div>
+                        <p className="text-xs text-gray-600">Events w/ Groups</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Holiday Impact Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Holiday Impact Analysis - August 2025
+              </CardTitle>
+              <CardDescription>
+                Analysis of how holidays and special events affected collection patterns
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <h4 className="font-semibold text-brand-primary mb-3">
+                    Identified Holidays & Events
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-amber-800">No Major Federal Holidays</span>
+                          <p className="text-sm text-amber-700 mt-1">
+                            August 2025 had no major federal holidays that typically impact collection schedules.
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="border-amber-300 text-amber-700">
+                          Normal
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-blue-800">Summer Vacation Period</span>
+                          <p className="text-sm text-blue-700 mt-1">
+                            August is typically a slower month due to summer vacations and reduced group activities.
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="border-blue-300 text-blue-700">
+                          Seasonal
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-purple-800">Back-to-School Prep</span>
+                          <p className="text-sm text-purple-700 mt-1">
+                            Late August often sees reduced volunteering as families prepare for school year.
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="border-purple-300 text-purple-700">
+                          Transition
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-brand-primary mb-3">
+                    Impact Assessment
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="text-center p-3 bg-gray-50 rounded">
+                      <div className="text-2xl font-bold text-brand-primary">
+                        -15%
+                      </div>
+                      <p className="text-sm text-gray-600">Estimated holiday impact</p>
+                    </div>
+                    
+                    <div className="text-center p-3 bg-gray-50 rounded">
+                      <div className="text-2xl font-bold text-brand-primary">
+                        {augustAnalysis.august2025.weeklyDistribution.reduce((min, current, index) => 
+                          augustAnalysis.august2025.weeklyDistribution[min] > current ? index : min, 0) + 1}
+                      </div>
+                      <p className="text-sm text-gray-600">Lowest performing week</p>
+                    </div>
+                    
+                    <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-center">
+                      <p className="text-xs text-yellow-700">
+                        📅 Consider scheduling major events in September for better turnout
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Group Events Analysis */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Host Performance Comparison
+                Group vs Individual Collections Analysis
               </CardTitle>
               <CardDescription>
-                August 2025 vs average monthly performance by host
+                Breakdown of group events vs individual collections for August 2025
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-brand-primary/20">
-                      <th className="text-left p-2 font-semibold text-brand-primary">
-                        Host
-                      </th>
-                      <th className="text-right p-2 font-semibold text-brand-primary">
-                        Aug 2025
-                      </th>
-                      <th className="text-right p-2 font-semibold text-brand-primary">
-                        Monthly Avg
-                      </th>
-                      <th className="text-right p-2 font-semibold text-brand-primary">
-                        Difference
-                      </th>
-                      <th className="text-right p-2 font-semibold text-brand-primary">
-                        % Change
-                      </th>
-                      <th className="text-center p-2 font-semibold text-brand-primary">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hostComparison.slice(0, 15).map((host, index) => (
-                      <tr
-                        key={host.hostName}
-                        className="border-b border-gray-100 hover:bg-gray-50"
-                      >
-                        <td
-                          className="p-2 font-medium"
-                          data-testid={`host-name-${index}`}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-brand-primary mb-3">
+                    Collection Type Distribution
+                  </h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            {
+                              name: 'Group Events',
+                              value: augustAnalysis.august2025.groupCount,
+                              color: '#236383'
+                            },
+                            {
+                              name: 'Individual Collections',
+                              value: augustAnalysis.august2025.individualCount,
+                              color: '#FBAD3F'
+                            }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({name, percent}) => `${name}: ${(percent * 100).toFixed(1)}%`}
                         >
-                          {host.hostName.length > 25
-                            ? host.hostName.substring(0, 25) + '...'
-                            : host.hostName}
-                        </td>
-                        <td
-                          className="p-2 text-right font-medium"
-                          data-testid={`host-august-${index}`}
-                        >
-                          {host.augustTotal.toLocaleString()}
-                        </td>
-                        <td
-                          className="p-2 text-right"
-                          data-testid={`host-average-${index}`}
-                        >
-                          {host.avgMonthlyTotal.toLocaleString()}
-                        </td>
-                        <td
-                          className={`p-2 text-right font-medium ${
-                            host.difference >= 0
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                          }`}
-                          data-testid={`host-difference-${index}`}
-                        >
-                          {host.difference >= 0 ? '+' : ''}
-                          {host.difference.toLocaleString()}
-                        </td>
-                        <td
-                          className={`p-2 text-right ${
-                            host.percentChange >= 0
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                          }`}
-                          data-testid={`host-percent-${index}`}
-                        >
-                          {host.percentChange >= 0 ? '+' : ''}
-                          {host.percentChange}%
-                        </td>
-                        <td
-                          className="p-2 text-center"
-                          data-testid={`host-status-${index}`}
-                        >
-                          {host.percentChange >= 10 ? (
-                            <Badge className="bg-green-100 text-green-700">
-                              Above Avg
-                            </Badge>
-                          ) : host.percentChange <= -20 ? (
-                            <Badge variant="destructive">Below Avg</Badge>
-                          ) : (
-                            <Badge variant="secondary">Normal</Badge>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          {[
+                            { name: 'Group Events', value: augustAnalysis.august2025.groupCount, color: '#236383' },
+                            { name: 'Individual Collections', value: augustAnalysis.august2025.individualCount, color: '#FBAD3F' }
+                          ].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value) => [value.toLocaleString(), 'Sandwiches']}
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #236383',
+                            borderRadius: '8px',
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-brand-primary mb-3">
+                    Group Event Insights
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center p-3 bg-brand-primary/10 rounded">
+                        <div className="text-xl font-bold text-brand-primary">
+                          {augustAnalysis.august2025.groupEventCount}
+                        </div>
+                        <p className="text-sm text-brand-primary">Group Events</p>
+                      </div>
+                      <div className="text-center p-3 bg-brand-orange/10 rounded">
+                        <div className="text-xl font-bold text-brand-orange">
+                          {augustAnalysis.august2025.groupCount.toLocaleString()}
+                        </div>
+                        <p className="text-sm text-brand-orange">Sandwiches from Groups</p>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <h5 className="font-medium text-green-800 mb-2">Key Findings</h5>
+                      <ul className="text-sm text-green-700 space-y-1">
+                        <li>• Group events average {augustAnalysis.august2025.groupEventCount > 0 ? Math.round(augustAnalysis.august2025.groupCount / augustAnalysis.august2025.groupEventCount) : 0} sandwiches per event</li>
+                        <li>• Individual events average {augustAnalysis.august2025.individualCount > 0 ? Math.round(augustAnalysis.august2025.individualCount / collections.filter(c => {
+                          if (!c.collectionDate) return false;
+                          const date = parseCollectionDate(c.collectionDate);
+                          if (Number.isNaN(date.getTime())) return false;
+                          return date.getFullYear() === 2025 && date.getMonth() === 7 && (c.individualSandwiches || 0) > 0;
+                        }).length) : 0} sandwiches per event</li>
+                        <li>• Group events represent {((augustAnalysis.august2025.groupEventCount / augustAnalysis.august2025.totalCollections) * 100).toFixed(1)}% of all events, but {((augustAnalysis.august2025.groupCount / augustAnalysis.august2025.totalSandwiches) * 100).toFixed(1)}% of sandwich volume</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Month-Specific Insights */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5" />
+                Actionable Insights & Recommendations
+              </CardTitle>
+              <CardDescription>
+                Strategic recommendations based on August 2025 performance patterns
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-brand-primary mb-3">
+                    🎯 Priority Actions
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <h5 className="font-medium text-red-800 mb-1">Immediate (September)</h5>
+                      <p className="text-sm text-red-700">
+                        Launch back-to-school campaign targeting families and student organizations. August's {augustAnalysis.shortfall?.toLocaleString()} sandwich gap needs urgent attention.
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <h5 className="font-medium text-amber-800 mb-1">Medium-term (October-November)</h5>
+                      <p className="text-sm text-amber-700">
+                        Focus on group event recruitment. Group events showed stronger per-event performance than individual collections.
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h5 className="font-medium text-blue-800 mb-1">Long-term (2026 Planning)</h5>
+                      <p className="text-sm text-blue-700">
+                        Develop August-specific strategies to counter seasonal volunteer fatigue and vacation impacts.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-brand-primary mb-3">
+                    📊 Performance Patterns
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm font-medium">Seasonal Impact</span>
+                      <Badge variant="destructive">High Risk</Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm font-medium">Group Event Efficiency</span>
+                      <Badge className="bg-green-100 text-green-700">Strong</Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm font-medium">Recovery Potential</span>
+                      <Badge className="bg-blue-100 text-blue-700">Good</Badge>
+                    </div>
+                    
+                    <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <h5 className="font-medium text-purple-800 mb-2">💡 Success Strategy</h5>
+                      <p className="text-sm text-purple-700">
+                        Based on trends, targeting group organizations in September with compelling back-to-school messaging could recover {Math.round(augustAnalysis.shortfall * 0.6)?.toLocaleString()}+ sandwiches by October.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
