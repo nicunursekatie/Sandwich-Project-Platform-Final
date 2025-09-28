@@ -125,10 +125,10 @@ export default function RequestFilters({
                   value={sortBy}
                   onValueChange={(value: any) => onSortByChange(value)}
                 >
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-48" data-testid="sort-select-trigger">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[100]" position="popper" sideOffset={5}>
                     <SelectItem value="created_date_desc">Submission Date (Most Recent First)</SelectItem>
                     <SelectItem value="created_date_asc">Submission Date (Oldest First)</SelectItem>
                     <SelectItem value="event_date_asc">Event Date (Soonest First)</SelectItem>

@@ -331,16 +331,16 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setStatusFilter(activeTab);
   }, [activeTab]);
 
-  // Auto-sort by appropriate default for each tab
+  // Auto-sort by appropriate default for each tab (only when tab changes)
   useEffect(() => {
-    if (activeTab === 'new' && sortBy !== 'created_date_desc') {
+    if (activeTab === 'new') {
       setSortBy('created_date_desc');
-    } else if ((activeTab === 'scheduled' || activeTab === 'in_process') && sortBy !== 'event_date_asc') {
+    } else if (activeTab === 'scheduled' || activeTab === 'in_process') {
       setSortBy('event_date_asc');
-    } else if (activeTab === 'completed' && sortBy !== 'organization_asc') {
+    } else if (activeTab === 'completed') {
       setSortBy('organization_asc');
     }
-  }, [activeTab, sortBy]);
+  }, [activeTab]);
 
   // Reset pagination when filters change
   useEffect(() => {
