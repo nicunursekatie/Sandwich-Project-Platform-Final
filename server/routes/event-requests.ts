@@ -2856,6 +2856,13 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
 // GET /api/event-requests/audit-logs - Fetch audit log entries for event requests
 router.get('/audit-logs', isAuthenticated, async (req, res) => {
   try {
+    // Disable caching for audit logs - they should always be fresh
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+
     // Check permissions
     if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
