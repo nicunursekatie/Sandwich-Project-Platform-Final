@@ -229,6 +229,13 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'documentation',
   },
   {
+    id: 'wishlist',
+    label: 'Amazon Wishlist',
+    icon: Gift,
+    href: 'wishlist',
+    group: 'documentation',
+  },
+  {
     id: 'document-management',
     label: 'Document Management',
     icon: FileText,
