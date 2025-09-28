@@ -41,6 +41,7 @@ interface RequestFiltersProps {
     scheduled: number;
     completed: number;
     declined: number;
+    my_assignments: number;
   };
   
   // Content for each tab
@@ -50,6 +51,7 @@ interface RequestFiltersProps {
     scheduled: ReactNode;
     completed: ReactNode;
     declined: ReactNode;
+    my_assignments: ReactNode;
   };
   
   // Pagination info
@@ -79,7 +81,7 @@ export default function RequestFilters({
     <div className="space-y-6">
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="new" className="relative">
             New ({statusCounts.new})
             {statusCounts.new > 0 && (
@@ -98,10 +100,13 @@ export default function RequestFilters({
           <TabsTrigger value="declined">
             Declined ({statusCounts.declined})
           </TabsTrigger>
+          <TabsTrigger value="my_assignments" data-testid="tab-my-assignments">
+            My Assignments ({statusCounts.my_assignments})
+          </TabsTrigger>
         </TabsList>
 
         {/* Status-based tabs */}
-        {['new', 'in_process', 'scheduled', 'completed', 'declined'].map(
+        {['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].map(
           (status) => (
             <TabsContent key={status} value={status} className="space-y-4">
               {/* Search and Filters for this specific status */}

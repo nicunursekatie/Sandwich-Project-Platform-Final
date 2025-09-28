@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { EventRequest } from '@shared/schema';
+import type { EventRequest, EventVolunteer } from '@shared/schema';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EventRequestContextType {
   // Event requests data
@@ -137,6 +138,7 @@ interface EventRequestContextType {
     scheduled: number;
     completed: number;
     declined: number;
+    my_assignments: number;
   };
 }
 
@@ -161,9 +163,18 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   initialTab,
   initialEventId
 }) => {
+  // Get current user for assignment checking
+  const { user } = useAuth();
+
   // Fetch event requests using the same query pattern
   const { data: eventRequests = [], isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
+  });
+
+  // Fetch event volunteers data for assignment checking
+  const { data: eventVolunteers = [] } = useQuery<EventVolunteer[]>({
+    queryKey: ['/api/event-requests/my-volunteers'],
+    enabled: !!user?.id,
   });
 
   // View state
@@ -264,6 +275,47 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     return groups;
   }, [eventRequests]);
 
+  // Helper function to check if current user is assigned to an event
+  const isUserAssignedToEvent = React.useCallback((request: EventRequest): boolean => {
+    if (!user?.id) return false;
+
+    // Check TSP Contact assignment
+    if (request.tspContactUserId === user.id) {
+      return true;
+    }
+
+    // Check driver assignment in driverDetails JSONB field
+    if (request.driverDetails) {
+      try {
+        const driverDetails = typeof request.driverDetails === 'string' 
+          ? JSON.parse(request.driverDetails) 
+          : request.driverDetails;
+        
+        // Check various possible structures in driverDetails
+        if (driverDetails?.userId === user.id || 
+            driverDetails?.driverId === user.id ||
+            driverDetails?.assignedUserId === user.id ||
+            (Array.isArray(driverDetails) && driverDetails.some(d => d.userId === user.id || d.driverId === user.id))) {
+          return true;
+        }
+      } catch (e) {
+        // If parsing fails, continue with other checks
+      }
+    }
+
+    // Check event volunteers assignment (driver, speaker, general)
+    const userVolunteerAssignment = eventVolunteers.find(volunteer => 
+      volunteer.eventRequestId === request.id && 
+      volunteer.volunteerUserId === user.id
+    );
+    
+    if (userVolunteerAssignment) {
+      return true;
+    }
+
+    return false;
+  }, [user?.id, eventVolunteers]);
+
   // Calculate status counts
   const statusCounts = {
     new: requestsByStatus.new?.length || 0,
@@ -271,6 +323,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     scheduled: requestsByStatus.scheduled?.length || 0,
     completed: requestsByStatus.completed?.length || 0,
     declined: requestsByStatus.declined?.length || 0,
+    my_assignments: eventRequests.filter(isUserAssignedToEvent).length,
   };
 
   // Synchronize statusFilter with activeTab
@@ -296,7 +349,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
 

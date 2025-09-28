@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
-import type { EventRequest } from '@shared/schema';
+import { useQuery } from '@tanstack/react-query';
+import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export const useEventFilters = () => {
   const {
@@ -11,6 +13,60 @@ export const useEventFilters = () => {
     currentPage,
     itemsPerPage,
   } = useEventRequestContext();
+
+  const { user } = useAuth();
+
+  // Fetch event volunteers data
+  const { data: eventVolunteers = [] } = useQuery<EventVolunteer[]>({
+    queryKey: ['/api/event-requests/my-volunteers'],
+    enabled: !!user?.id,
+  });
+
+  // Helper function to check if current user is assigned to an event
+  const isUserAssignedToEvent = (request: EventRequest): boolean => {
+    if (!user?.id) return false;
+
+    // Check TSP Contact assignment
+    if (request.tspContactUserId === user.id) {
+      return true;
+    }
+
+    // Check driver assignment in driverDetails JSONB field
+    if (request.driverDetails) {
+      try {
+        const driverDetails = typeof request.driverDetails === 'string' 
+          ? JSON.parse(request.driverDetails) 
+          : request.driverDetails;
+        
+        // Check various possible structures in driverDetails
+        if (driverDetails?.userId === user.id || 
+            driverDetails?.driverId === user.id ||
+            driverDetails?.assignedUserId === user.id ||
+            (Array.isArray(driverDetails) && driverDetails.some(d => d.userId === user.id || d.driverId === user.id))) {
+          return true;
+        }
+      } catch (e) {
+        // If parsing fails, continue with other checks
+      }
+    }
+
+    // Check event volunteers assignment (driver, speaker, general)
+    const userVolunteerAssignment = eventVolunteers.find(volunteer => 
+      volunteer.eventRequestId === request.id && 
+      volunteer.volunteerUserId === user.id
+    );
+    
+    if (userVolunteerAssignment) {
+      return true;
+    }
+
+    return false;
+  };
+
+  // Get user's assigned events regardless of status
+  const userAssignedEvents = useMemo(() => {
+    return eventRequests.filter(isUserAssignedToEvent);
+  }, [eventRequests, eventVolunteers, user?.id]);
 
   // Helper function to check if a date matches the search query
   const dateMatchesSearch = (dateValue: string | Date | null | undefined, searchQuery: string): boolean => {
@@ -104,7 +160,16 @@ export const useEventFilters = () => {
   const filterRequestsByStatus = (status: string) => {
     return eventRequests
       .filter((request: EventRequest) => {
-        const matchesStatus = request.status === status;
+        let matchesStatus: boolean;
+        
+        if (status === 'my_assignments') {
+          // Special handling for my assignments - check if user is assigned
+          matchesStatus = isUserAssignedToEvent(request);
+        } else {
+          // Regular status filtering
+          matchesStatus = request.status === status;
+        }
+        
         const matchesSearch =
           searchQuery === '' ||
           request.organizationName
@@ -160,5 +225,7 @@ export const useEventFilters = () => {
     totalPages,
     filterRequestsByStatus,
     dateMatchesSearch,
+    userAssignedEvents,
+    isUserAssignedToEvent,
   };
 };
