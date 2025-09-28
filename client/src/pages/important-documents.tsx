@@ -203,9 +203,38 @@ const adminDocuments: AdminDocument[] = [
     type: 'link',
     importance: 'high',
   },
+  
+  // Reference Lists
+  {
+    id: 'master-congregations-list',
+    name: 'Master Congregations List',
+    description: 'Comprehensive final confirmed list of all congregations including churches, synagogues, and religious organizations',
+    category: 'Reference Lists',
+    path: '/attached_assets/Master_Congregations_List_Final_1759034641771.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
+  {
+    id: 'tsp-company-partners',
+    name: 'TSP Company Partners List',
+    description: 'Complete directory of corporate partners, businesses, and company organizations working with The Sandwich Project',
+    category: 'Reference Lists',
+    path: '/attached_assets/TSP Company List _1759034641773.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
+  {
+    id: 'unified-schools-list',
+    name: 'Unified Schools List',
+    description: 'Comprehensive list of educational institutions including elementary, middle, high schools, and universities',
+    category: 'Reference Lists',
+    path: '/attached_assets/Unified_Schools_List_1759034641773.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
 ];
 
-const categories = ['All', 'Legal & Tax', 'Governance', 'Forms', 'Safety Guidelines', 'Labels & Printing', 'Sandwich Making', 'Toolkit'];
+const categories = ['All', 'Legal & Tax', 'Governance', 'Forms', 'Safety Guidelines', 'Labels & Printing', 'Sandwich Making', 'Reference Lists', 'Toolkit'];
 
 // Logo files information
 const logoFiles = [
