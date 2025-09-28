@@ -1454,6 +1454,11 @@ export default function EventRequestsManagement({
     queryKey: ['/api/event-requests'],
   });
 
+  // Fetch events assigned to current user
+  const { data: myAssignments = [], isLoading: isLoadingMyAssignments } = useQuery<EventRequest[]>({
+    queryKey: ['/api/event-requests/my-volunteers'],
+  });
+
   // Fetch users for resolving user IDs to names
   const { data: users = [] } = useQuery<any[]>({
     queryKey: ['/api/users/basic'],
@@ -1480,7 +1485,7 @@ export default function EventRequestsManagement({
   // Handle initial tab and event ID - auto-open event details if specified
   useEffect(() => {
     // Set initial tab if provided
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
     
@@ -2119,12 +2124,12 @@ export default function EventRequestsManagement({
 
   // Auto-sort by appropriate default for each tab
   // New requests: most recent submissions first
-  // Scheduled/In-process: soonest event dates first  
+  // Scheduled/In-process/My Assignments: soonest event dates first  
   // Completed: most recent event dates first
   useEffect(() => {
     if (activeTab === 'new' && sortBy !== 'created_date_desc') {
       setSortBy('created_date_desc');
-    } else if ((activeTab === 'scheduled' || activeTab === 'in_process') && sortBy !== 'event_date_asc') {
+    } else if ((activeTab === 'scheduled' || activeTab === 'in_process' || activeTab === 'my_assignments') && sortBy !== 'event_date_asc') {
       setSortBy('event_date_asc');
     } else if (activeTab === 'completed' && sortBy !== 'event_date_desc') {
       setSortBy('event_date_desc');
@@ -2141,6 +2146,9 @@ export default function EventRequestsManagement({
       return acc;
     }, {});
 
+    // Add my assignments as a separate group
+    groups.my_assignments = myAssignments;
+
     // Sort each group by newest first
     Object.keys(groups).forEach((status) => {
       groups[status].sort(
@@ -2150,7 +2158,7 @@ export default function EventRequestsManagement({
     });
 
     return groups;
-  }, [eventRequests]);
+  }, [eventRequests, myAssignments]);
 
   const handleEventClick = (eventRequest: EventRequest) => {
     setSelectedEventRequest(eventRequest);
@@ -2202,6 +2210,7 @@ export default function EventRequestsManagement({
     scheduled: requestsByStatus.scheduled?.length || 0,
     completed: requestsByStatus.completed?.length || 0,
     declined: requestsByStatus.declined?.length || 0,
+    my_assignments: requestsByStatus.my_assignments?.length || 0,
   };
 
   return (
@@ -2290,6 +2299,7 @@ export default function EventRequestsManagement({
             scheduled: <div className="w-full flex flex-col space-y-4">{renderEventsForStatus('scheduled')}</div>,
             completed: <div className="w-full flex flex-col space-y-4">{renderEventsForStatus('completed')}</div>,
             declined: <div className="w-full flex flex-col space-y-4">{renderEventsForStatus('declined')}</div>,
+            my_assignments: <div className="w-full flex flex-col space-y-4">{renderEventsForStatus('my_assignments')}</div>,
           }}
         />
 
