@@ -32,13 +32,27 @@ export function formatDateForInput(dateString: string): string {
 /**
  * Format a date string for display purposes
  * Returns a user-friendly formatted date
+ * Handles both date-only strings (YYYY-MM-DD) and full datetime strings (YYYY-MM-DD HH:MM:SS.microseconds)
  */
 export function formatDateForDisplay(dateString: string): string {
   if (!dateString) return '';
 
   try {
-    // Parse as local date to avoid timezone issues
-    const date = new Date(dateString + 'T12:00:00');
+    let date: Date;
+
+    // Check if it's already a full datetime string (contains time portion)
+    if (dateString.includes(' ') || dateString.includes('T')) {
+      // It's a full datetime string, parse directly
+      date = new Date(dateString);
+    } else {
+      // It's a date-only string, add noon time to avoid timezone edge cases
+      date = new Date(dateString + 'T12:00:00');
+    }
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return dateString; // Return original if parsing fails
+    }
 
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
