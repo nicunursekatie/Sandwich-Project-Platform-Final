@@ -194,15 +194,28 @@ export default function MonthlyComparisonAnalytics() {
       })
       .map(([_, m]) => m);
 
-    const avgRecentMonth = recentMonths.length > 0 
+    const avgRecentMonth = recentMonths.length > 0
       ? recentMonths.reduce((sum, m) => sum + m.totalSandwiches, 0) / recentMonths.length
       : august2024?.totalSandwiches || 0;
+
+    // Calculate top months for 2024-2025
+    const topMonths = Object.entries(monthlyAnalytics)
+      .filter(([key]) => {
+        const [year] = key.split('-').map(Number);
+        return year === 2024 || year === 2025;
+      })
+      .map(([key, month]) => ({
+        month: key,
+        totalSandwiches: month.totalSandwiches,
+      }))
+      .sort((a, b) => b.totalSandwiches - a.totalSandwiches);
 
     return {
       august2025,
       august2024,
       recentMonths,
       avgRecentMonth,
+      topMonths,
       shortfall: avgRecentMonth - august2025.totalSandwiches,
       shortfallPercent:
         ((avgRecentMonth - august2025.totalSandwiches) / avgRecentMonth) * 100,
@@ -554,7 +567,7 @@ export default function MonthlyComparisonAnalytics() {
                     Top 5 Months (2024-2025)
                   </h4>
                   <div className="space-y-2">
-                    {augustAnalysis.topMonths
+                    {(augustAnalysis?.topMonths || [])
                       .slice(0, 5)
                       .map((month, index) => (
                         <div
