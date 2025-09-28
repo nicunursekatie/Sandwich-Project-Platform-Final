@@ -487,7 +487,7 @@ export const emailMessages = pgTable(
     contextType: varchar('context_type'), // 'project', 'task', 'suggestion', etc.
     contextId: varchar('context_id'), // ID of the related entity
     contextTitle: varchar('context_title'), // Display name of related entity
-    attachments: text('attachments').array().default('[]'), // Array of attachment file paths
+    attachments: text('attachments').array(), // Array of attachment file paths
     includeSchedulingLink: boolean('include_scheduling_link').default(false), // Whether to include scheduling link in email
     requestPhoneCall: boolean('request_phone_call').default(false), // Whether to request phone call
     readAt: timestamp('read_at'),
@@ -1511,6 +1511,13 @@ export const eventRequests = pgTable(
     socialMediaPostCompletedDate: timestamp('social_media_post_completed_date'), // When they completed the post
     socialMediaPostNotes: text('social_media_post_notes'), // Notes about social media posts
 
+    // Event attendance tracking for completed events
+    actualAttendance: integer('actual_attendance'), // Actual number of people who attended the event
+    estimatedAttendance: integer('estimated_attendance'), // Estimated number of people expected to attend
+    attendanceRecordedDate: timestamp('attendance_recorded_date'), // When attendance was recorded
+    attendanceRecordedBy: varchar('attendance_recorded_by'), // User ID who recorded attendance
+    attendanceNotes: text('attendance_notes'), // Notes about attendance
+
     // Actual sandwich count and distribution tracking for completed events
     actualSandwichCount: integer('actual_sandwich_count'), // Final count of sandwiches made
     actualSandwichTypes: jsonb('actual_sandwich_types'), // Array of {type: string, quantity: number} for actual sandwiches made
@@ -1717,6 +1724,10 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     overnightHoldingLocation: z.string().nullable().optional(),
     overnightPickupTime: z.string().nullable().optional(),
     estimatedSandwichCount: z.number().nullable().optional(),
+    // Attendance tracking fields
+    actualAttendance: z.number().nullable().optional(),
+    estimatedAttendance: z.number().nullable().optional(),
+    attendanceNotes: z.string().nullable().optional(),
     driversArranged: z.boolean().nullable().optional(),
     driverDetails: z.any().nullable().optional(), // JSONB field
     speakerDetails: z.string().nullable().optional(),

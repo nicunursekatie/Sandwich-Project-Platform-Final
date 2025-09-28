@@ -308,7 +308,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
         isUnderStaffed 
           ? 'bg-red-50 border-red-200' 
           : isFullyStaffed && !isOverStaffed
-            ? 'bg-green-50 border-green-200'
+            ? 'bg-teal-50 border-teal-200'
             : isOverStaffed
               ? 'bg-blue-50 border-blue-200'
               : 'bg-white/60 border-white/80'
@@ -325,7 +325,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
                 isUnderStaffed 
                   ? 'bg-red-100 text-red-700 border border-red-200' 
                   : isFullyStaffed && !isOverStaffed
-                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    ? 'bg-teal-100 text-teal-700 border border-teal-200'
                     : isOverStaffed
                       ? 'bg-blue-100 text-blue-700 border border-blue-200'
                       : 'bg-gray-100 text-gray-600'
@@ -358,7 +358,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               const name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
               return (
                 <div key={personId} className="flex items-center bg-white/90 rounded px-3 py-2 shadow-sm">
-                  <Check className="w-3 h-3 text-green-600 mr-2" />
+                  <Check className="w-3 h-3 text-teal-600 mr-2" />
                   <span className="text-sm font-medium">{name}</span>
                 </div>
               );
@@ -507,9 +507,13 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Actual Attendance</p>
+                <p className="text-sm text-gray-500">Event Participation</p>
                 <p className="font-medium">
-                  {request.actualAttendance || request.estimatedAttendance || 'Not recorded'}
+                  {request.actualAttendance 
+                    ? `${request.actualAttendance} people attended`
+                    : request.estimatedAttendance 
+                      ? `~${request.estimatedAttendance} estimated`
+                      : 'Not recorded'}
                 </p>
               </div>
             </div>
@@ -527,14 +531,14 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
             {/* Sandwich Info */}
             {(request.actualSandwichCount || request.estimatedSandwichCount || request.sandwichTypes) && (
-              <div className="bg-green-50 rounded-lg p-3">
+              <div className="bg-teal-50 rounded-lg p-3">
                 <div className="flex items-center gap-2 text-sm">
-                  <Package className="w-4 h-4 text-green-600" />
+                  <Package className="w-4 h-4 text-teal-600" />
                   <span className="font-medium">Sandwiches Delivered:</span>
                   <span>
                     {request.actualSandwichCount
                       ? `${request.actualSandwichCount} delivered`
-                      : formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount)}
+                      : formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount ?? undefined)}
                   </span>
                 </div>
               </div>
@@ -543,13 +547,13 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             {/* Follow-up Status */}
             <div className="flex gap-2">
               {request.followUpOneDayCompleted && (
-                <Badge variant="success">
+                <Badge variant="default" className="bg-teal-100 text-teal-700 border-teal-300">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   1-Day Follow-up Done
                 </Badge>
               )}
               {request.followUpOneMonthCompleted && (
-                <Badge variant="success">
+                <Badge variant="default" className="bg-teal-100 text-teal-700 border-teal-300">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   1-Month Follow-up Done
                 </Badge>
@@ -557,10 +561,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             </div>
 
             {/* Completion Notes */}
-            {request.completionNotes && (
+            {request.followUpNotes && (
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-sm font-medium mb-1">Completion Notes:</p>
-                <p className="text-sm text-gray-600">{request.completionNotes}</p>
+                <p className="text-sm text-gray-600">{request.followUpNotes}</p>
               </div>
             )}
           </div>
