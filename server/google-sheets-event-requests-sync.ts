@@ -639,11 +639,20 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       console.log(`🛡️ BLACKLIST: Checking imported_external_ids table to prevent re-importing deleted records`);
 
       for (const row of sheetRows) {
-        // REQUIREMENT: Skip rows without external_id (blank/missing/null)
+        // UPDATED: External ID is now optional - generate one if missing
         if (!row.externalId || !row.externalId.trim()) {
-          skippedNoExternalId++;
-          console.log(`⏭️ SKIPPED: Row missing external_id - ${row.organizationName || 'Unknown Org'} - ${row.contactName || 'Unknown Contact'}`);
-          continue;
+          // Generate a unique identifier based on email + timestamp + organization
+          const uniqueParts = [
+            row.email || 'no-email',
+            row.submittedOn || new Date().toISOString(),
+            row.organizationName || 'no-org'
+          ].join('|');
+          
+          // Create a simple hash-like identifier
+          const hash = Buffer.from(uniqueParts).toString('base64').substring(0, 16).replace(/[^a-zA-Z0-9]/g, '');
+          row.externalId = `auto-${hash}-${Date.now()}`;
+          
+          console.log(`📝 Generated external_id for row: ${row.externalId} - ${row.organizationName || 'Unknown Org'} - ${row.contactName || 'Unknown Contact'}`);
         }
 
         // CRITICAL: Check permanent blacklist BEFORE attempting any insertion
@@ -748,13 +757,13 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
         }
       }
 
-      console.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${blacklistSkippedCount} blocked by permanent blacklist, ${conflictSkippedCount} other conflicts, ${skippedNoExternalId} rows without external_id skipped, ${skippedOldCount} old events skipped`);
+      console.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${blacklistSkippedCount} blocked by permanent blacklist, ${conflictSkippedCount} other conflicts, ${skippedOldCount} old events skipped`);
       console.log(`🛡️ SAFETY CONFIRMATION: Permanent blacklist system ensures external_ids are NEVER imported twice`);
       console.log(`🛡️ IMPORT ONCE GUARANTEE: ${blacklistSkippedCount} external_ids were permanently blocked from re-import`);
 
       return {
         success: true,
-        message: `Successfully synced using permanent blacklist: ${createdCount} created, ${blacklistSkippedCount} permanently blocked, ${skippedNoExternalId} missing external_id skipped`,
+        message: `Successfully synced using permanent blacklist: ${createdCount} created, ${blacklistSkippedCount} permanently blocked`,
         created: createdCount,
         updated: 0, // Always 0 - we never update existing records
       };

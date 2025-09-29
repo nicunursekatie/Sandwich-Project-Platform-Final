@@ -2891,6 +2891,39 @@ export class MemStorage implements IStorage {
     return this.eventReminders.delete(id);
   }
 
+  // External ID Blacklist methods (stub implementations for memory storage)
+  async checkExternalIdExists(externalId: string, sourceTable?: string): Promise<boolean> {
+    // Memory storage doesn't persist blacklist, always return false
+    return false;
+  }
+
+  async addExternalIdToBlacklist(externalId: string, sourceTable?: string, notes?: string): Promise<ImportedExternalId> {
+    // Memory storage stub - just return a minimal object
+    const now = new Date();
+    return {
+      id: Date.now(),
+      externalId,
+      sourceTable: sourceTable || 'event_requests',
+      importedAt: now,
+      notes: notes || null,
+    };
+  }
+
+  async getAllImportedExternalIds(sourceTable?: string): Promise<ImportedExternalId[]> {
+    // Memory storage doesn't persist blacklist, always return empty
+    return [];
+  }
+
+  async getImportedExternalId(externalId: string, sourceTable?: string): Promise<ImportedExternalId | undefined> {
+    // Memory storage doesn't persist blacklist, always return undefined
+    return undefined;
+  }
+
+  async backfillExistingExternalIds(): Promise<number> {
+    // Memory storage stub - no backfill needed
+    return 0;
+  }
+
   // Confidential Document Methods (fallback implementations for memory storage)
   async createConfidentialDocument(data: InsertConfidentialDocument): Promise<ConfidentialDocument> {
     // For memory storage, create a minimal implementation
