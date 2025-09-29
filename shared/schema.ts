@@ -1732,11 +1732,71 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     driverDetails: z.any().nullable().optional(), // JSONB field
     speakerDetails: z.string().nullable().optional(),
     // Follow-up tracking fields
-    scheduledCallDate: z.date().nullable().optional(),
+    scheduledCallDate: z
+      .union([
+        z.date(),
+        z.string()
+          .trim()
+          .transform((str) => {
+            // Handle empty strings immediately
+            if (!str) return null;
+            
+            // Validate non-empty strings with regex
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+              throw new Error("Invalid date format, expected YYYY-MM-DD");
+            }
+            
+            const date = new Date(str);
+            return isNaN(date.getTime()) ? null : date;
+          }),
+        z.null(),
+      ])
+      .nullable()
+      .optional(),
     followUpOneDayCompleted: z.boolean().nullable().optional(),
-    followUpOneDayDate: z.date().nullable().optional(),
+    followUpOneDayDate: z
+      .union([
+        z.date(),
+        z.string()
+          .trim()
+          .transform((str) => {
+            // Handle empty strings immediately
+            if (!str) return null;
+            
+            // Validate non-empty strings with regex
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+              throw new Error("Invalid date format, expected YYYY-MM-DD");
+            }
+            
+            const date = new Date(str);
+            return isNaN(date.getTime()) ? null : date;
+          }),
+        z.null(),
+      ])
+      .nullable()
+      .optional(),
     followUpOneMonthCompleted: z.boolean().nullable().optional(),
-    followUpOneMonthDate: z.date().nullable().optional(),
+    followUpOneMonthDate: z
+      .union([
+        z.date(),
+        z.string()
+          .trim()
+          .transform((str) => {
+            // Handle empty strings immediately
+            if (!str) return null;
+            
+            // Validate non-empty strings with regex
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+              throw new Error("Invalid date format, expected YYYY-MM-DD");
+            }
+            
+            const date = new Date(str);
+            return isNaN(date.getTime()) ? null : date;
+          }),
+        z.null(),
+      ])
+      .nullable()
+      .optional(),
     followUpNotes: z.string().nullable().optional(),
     // Fix type conversion issues for manual creation
     sandwichTypes: z
