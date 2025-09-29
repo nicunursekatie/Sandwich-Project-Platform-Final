@@ -242,7 +242,7 @@ const EventRequestsManagementContent: React.FC = () => {
           <EventSchedulingForm
             eventRequest={selectedEventRequest}
             isOpen={showEventDetails}
-            mode={selectedEventRequest ? 'edit' : 'schedule'}
+            mode={selectedEventRequest ? 'edit' : 'create'}
             onClose={() => {
               setShowEventDetails(false);
               setSelectedEventRequest(null);

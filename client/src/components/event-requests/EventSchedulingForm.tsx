@@ -261,12 +261,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     const eventData: any = {
       // Only change status to 'scheduled' when in schedule mode (for updates)
       ...(eventRequest && mode === 'schedule' ? { status: 'scheduled' } : {}),
-      // For new events, default to 'new' status
-      ...(!eventRequest ? { status: 'new' } : {}),
+      // For new events (create mode), use the status from form data
+      ...(!eventRequest ? { status: formData.status || 'new' } : {}),
       // For edit mode, include the status from form data
       ...(eventRequest && mode === 'edit' ? { status: formData.status } : {}),
       // Serialize date properly to avoid timezone issues
       desiredEventDate: serializeDateToISO(formData.eventDate),
+      // If status is scheduled, also set scheduledEventDate
+      ...(formData.status === 'scheduled' ? { scheduledEventDate: serializeDateToISO(formData.eventDate) } : {}),
       eventStartTime: formData.eventStartTime || null,
       eventEndTime: formData.eventEndTime || null,
       pickupTime: formData.pickupTime || null,
