@@ -666,36 +666,21 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
           continue;
         }
 
-        console.log(`✅ BLACKLIST: External_id ${externalIdTrimmed} is clear for import - ${row.organizationName}`);
-
-        if (!row.organizationName) {
-          console.log(`⏭️ SKIPPED: Row missing organization name - external_id: ${row.externalId}`);
-          continue;
-        }
+        console.log(`✅ BLACKLIST: External_id ${externalIdTrimmed} is clear for import - ${row.organizationName || 'Unknown Org'}`);
 
         // Convert row to event request data
         const eventRequestData = this.sheetRowToEventRequest(row);
 
-        // Check if this is an old event that shouldn't be imported
+        // Log info about event date if available
         const eventDate = this.parseExcelDate(row.desiredEventDate, 'desired event date');
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         if (eventDate && eventDate < today) {
           const daysSinceEvent = Math.floor((today.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          // Skip importing events that are more than 30 days in the past
-          if (daysSinceEvent > 30) {
-            skippedOldCount++;
-            console.log(
-              `⏭️ SKIPPED: Old event (${daysSinceEvent} days ago) - external_id: ${row.externalId} - ${row.organizationName}`
-            );
-            continue;
-          } else {
-            console.warn(
-              `⚠️ Importing past event (${daysSinceEvent} days ago) - external_id: ${row.externalId} - ${row.organizationName}`
-            );
-          }
+          console.warn(
+            `⚠️ Importing past event (${daysSinceEvent} days ago) - external_id: ${row.externalId} - ${row.organizationName || 'Unknown Org'}`
+          );
         }
         // Prepare data for Drizzle insertion using external_id for conflict detection
         console.log(`✨ PROCESSING: external_id: ${row.externalId} - ${row.organizationName} - ${row.contactName}`);
