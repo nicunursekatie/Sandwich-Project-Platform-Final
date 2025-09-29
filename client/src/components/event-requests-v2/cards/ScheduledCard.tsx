@@ -1034,7 +1034,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           onClick={() =>
                             startEditing('overnightHoldingLocation', '')
                           }
-                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#47B3CB] font-medium shadow-sm"
+                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#47B3CB] font-medium shadow-sm bg-[#236383]"
                         >
                           + Add Overnight Holding
                         </Button>
