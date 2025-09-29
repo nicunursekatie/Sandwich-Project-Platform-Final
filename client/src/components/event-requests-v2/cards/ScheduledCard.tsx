@@ -956,50 +956,92 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-medium">
-                    Overnight Holding:
-                  </span>
-                  {isEditingThisCard &&
-                  editingField === 'overnightHoldingLocation' ? (
+                {/* Overnight holding field - show value when populated, show add button when empty */}
+                {request.overnightHoldingLocation ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium">
+                      Overnight Holding:
+                    </span>
+                    {isEditingThisCard &&
+                    editingField === 'overnightHoldingLocation' ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-8 w-48 text-gray-900 bg-white"
+                          autoFocus
+                        />
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 group">
+                        <span className="text-base">
+                          {request.overnightHoldingLocation}
+                        </span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              startEditing(
+                                'overnightHoldingLocation',
+                                request.overnightHoldingLocation || ''
+                              )
+                            }
+                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Show add button when field is empty */
+                  canEdit && (
                     <div className="flex items-center gap-2">
-                      <Input
-                        type="text"
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-8 w-48 text-gray-900 bg-white"
-                        autoFocus
-                      />
-                      <Button size="sm" onClick={saveEdit}>
-                        <Save className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 group">
-                      <span className="text-base">
-                        {request.overnightHoldingLocation || 'Not specified'}
-                      </span>
-                      {canEdit && (
+                      {isEditingThisCard &&
+                      editingField === 'overnightHoldingLocation' ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-medium">
+                            Overnight Holding:
+                          </span>
+                          <Input
+                            type="text"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-8 w-48 text-gray-900 bg-white"
+                            autoFocus
+                            placeholder="Enter overnight holding location"
+                          />
+                          <Button size="sm" onClick={saveEdit}>
+                            <Save className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           onClick={() =>
-                            startEditing(
-                              'overnightHoldingLocation',
-                              request.overnightHoldingLocation || ''
-                            )
+                            startEditing('overnightHoldingLocation', '')
                           }
-                          className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#47B3CB] font-medium shadow-sm"
                         >
-                          <Edit2 className="w-3 h-3" />
+                          + Add Overnight Holding
                         </Button>
                       )}
                     </div>
-                  )}
-                </div>
+                  )
+                )}
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Recipients:</span>
                   {isEditingThisCard &&
