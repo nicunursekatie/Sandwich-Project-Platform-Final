@@ -67,7 +67,7 @@ import {
   CheckSquare,
   Square,
 } from 'lucide-react';
-import { PERMISSIONS, USER_ROLES, getDefaultPermissionsForRole } from '@shared/auth-utils';
+import { PERMISSIONS, USER_ROLES, getDefaultPermissionsForRole, PERMISSION_DEPENDENCIES } from '@shared/auth-utils';
 
 interface User {
   id: string;
@@ -1008,11 +1008,23 @@ export default function ModernPermissionsEditor({
   }, [searchQuery]);
 
   const handlePermissionToggle = (permissionKey: string) => {
-    setSelectedPermissions(prev => 
-      prev.includes(permissionKey)
-        ? prev.filter(p => p !== permissionKey)
-        : [...prev, permissionKey]
-    );
+    setSelectedPermissions(prev => {
+      if (prev.includes(permissionKey)) {
+        // Removing a permission - just remove it (dependencies will be checked on other permissions)
+        return prev.filter(p => p !== permissionKey);
+      } else {
+        // Adding a permission - also add its dependencies
+        const newPermissions = new Set([...prev, permissionKey]);
+        
+        // Add dependencies for this permission
+        const dependencies = PERMISSION_DEPENDENCIES[permissionKey];
+        if (dependencies) {
+          dependencies.forEach(dep => newPermissions.add(dep));
+        }
+        
+        return Array.from(newPermissions);
+      }
+    });
   };
 
   // Bulk toggle functions
@@ -1026,14 +1038,17 @@ export default function ModernPermissionsEditor({
     
     setSelectedPermissions(prev => {
       if (enable) {
-        // Add all category permissions that aren't already selected
-        const newPermissions = [...prev];
+        // Add all category permissions and their dependencies
+        const newPermissions = new Set(prev);
         categoryPermissionKeys.forEach(key => {
-          if (!newPermissions.includes(key)) {
-            newPermissions.push(key);
+          newPermissions.add(key);
+          // Add dependencies for each permission
+          const dependencies = PERMISSION_DEPENDENCIES[key];
+          if (dependencies) {
+            dependencies.forEach(dep => newPermissions.add(dep));
           }
         });
-        return newPermissions;
+        return Array.from(newPermissions);
       } else {
         // Remove all category permissions
         return prev.filter(p => !categoryPermissionKeys.includes(p));
@@ -1044,13 +1059,16 @@ export default function ModernPermissionsEditor({
   const handleBulkToggle = (permissionKeys: string[], enable: boolean) => {
     setSelectedPermissions(prev => {
       if (enable) {
-        const newPermissions = [...prev];
+        const newPermissions = new Set(prev);
         permissionKeys.forEach(key => {
-          if (!newPermissions.includes(key)) {
-            newPermissions.push(key);
+          newPermissions.add(key);
+          // Add dependencies for each permission
+          const dependencies = PERMISSION_DEPENDENCIES[key];
+          if (dependencies) {
+            dependencies.forEach(dep => newPermissions.add(dep));
           }
         });
-        return newPermissions;
+        return Array.from(newPermissions);
       } else {
         return prev.filter(p => !permissionKeys.includes(p));
       }
@@ -1071,7 +1089,17 @@ export default function ModernPermissionsEditor({
     const template = ROLE_TEMPLATES[templateRole as keyof typeof ROLE_TEMPLATES];
     if (template) {
       setSelectedRole(templateRole);
-      setSelectedPermissions(template.permissions);
+      
+      // Apply permission dependencies to template permissions
+      const permissionsWithDeps = new Set(template.permissions);
+      template.permissions.forEach(permission => {
+        const dependencies = PERMISSION_DEPENDENCIES[permission];
+        if (dependencies) {
+          dependencies.forEach(dep => permissionsWithDeps.add(dep));
+        }
+      });
+      
+      setSelectedPermissions(Array.from(permissionsWithDeps));
     }
   };
 
