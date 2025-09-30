@@ -627,7 +627,7 @@ export default function DocumentManagement() {
   const { toast } = useToast();
 
   const { data: documents = [], refetch } = useQuery({
-    queryKey: ['/api/documents'],
+    queryKey: ['/api/storage/documents'],
   });
 
   const deleteDocumentMutation = useMutation({
