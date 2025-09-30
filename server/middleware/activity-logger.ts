@@ -35,7 +35,14 @@ const routeToSectionAndFeature: Record<
   '/api/messages': { section: 'Communication', feature: 'Messaging' },
   '/api/conversations': { section: 'Communication', feature: 'Conversations' },
   '/api/user-activity': { section: 'Analytics', feature: 'Activity Analytics' },
-  '/api/suggestions': { section: 'Suggestions', feature: 'Suggestion Portal' },
+  '/api/wishlist-suggestions': {
+    section: 'Wishlist',
+    feature: 'Wishlist Suggestions',
+  },
+  '/api/wishlist-activity': {
+    section: 'Wishlist',
+    feature: 'Wishlist Activity',
+  },
   '/api/auth': { section: 'Authentication', feature: 'Login/Logout' },
   '/api/reports': { section: 'Reports', feature: 'Report Generation' },
   '/api/work-logs': { section: 'Work Log', feature: 'Time Tracking' },
