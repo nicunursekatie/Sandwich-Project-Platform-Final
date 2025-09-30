@@ -47,6 +47,7 @@ The application uses The Sandwich Project's official color palette (Teal Primary
 - **Recipients Focus Area Tracking**: Enhanced recipients management with a focus area field.
 - **Wishlist System**: Amazon wishlist suggestion system with database persistence and a responsive UI.
 - **Meeting Management**: Full-featured system with automated agenda compilation, project integration, Google Sheets export, task status controls, and PDF export.
+- **Meeting Notes System**: Complete database-backed meeting notes with CRUD operations, bulk actions, filtering by project/meeting/type/status, and specialized rendering for different note types (discussion points, decision items, tabled projects, off-agenda items). Fixed recurring issue where API routes were stubbed out - now fully connected to database storage via `server/routes/meeting-notes.ts`.
 - **Event Requests Management System**: Complete tracking with database schema, duplicate detection, status tracking, permissions, CRUD API, responsive UI, and Google Sheets integration.
 - **Google Sheets Integration**: Bidirectional automatic synchronization with Google Sheets for project tracker and event requests, with intelligent deletion tracking to prevent re-importing manually deleted items.
 - **SMS Notifications System**: Complete Twilio-powered SMS reminder system with user opt-in/opt-out functionality, dashboard prompts for adoption, integrated user profile notifications tab, and admin-controlled weekly reminders for missing sandwich collection submissions.

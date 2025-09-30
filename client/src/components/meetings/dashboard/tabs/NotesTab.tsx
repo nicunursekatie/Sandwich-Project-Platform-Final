@@ -343,6 +343,19 @@ export function NotesTab({
       if (parsed.projectTitle || parsed.title) {
         return (
           <div className="space-y-3">
+            {/* Tabled Project - Show reason */}
+            {parsed.status === 'tabled' && parsed.reason && (
+              <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-orange-600 mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-orange-800 mb-1">Project Tabled</p>
+                    <p className="text-gray-900 leading-relaxed">{parsed.reason}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Main Content - Discussion Points and Decision Items */}
             {parsed.discussionPoints && (
               <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
@@ -369,23 +382,25 @@ export function NotesTab({
             )}
             
             {/* Project metadata - smaller, less prominent */}
-            <div className="text-xs text-gray-500 flex flex-wrap gap-3 pt-2 border-t border-gray-200">
-              {parsed.priority && (
-                <span className="bg-gray-100 px-2 py-1 rounded">
-                  Priority: {parsed.priority}
-                </span>
-              )}
-              {parsed.assignee && (
-                <span className="bg-gray-100 px-2 py-1 rounded">
-                  Assigned: {parsed.assignee}
-                </span>
-              )}
-              {parsed.status === 'tabled' && (
-                <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                  Tabled
-                </span>
-              )}
-            </div>
+            {(parsed.priority || parsed.assignee || (parsed.status === 'tabled' && !parsed.reason)) && (
+              <div className="text-xs text-gray-500 flex flex-wrap gap-3 pt-2 border-t border-gray-200">
+                {parsed.priority && (
+                  <span className="bg-gray-100 px-2 py-1 rounded">
+                    Priority: {parsed.priority}
+                  </span>
+                )}
+                {parsed.assignee && (
+                  <span className="bg-gray-100 px-2 py-1 rounded">
+                    Assigned: {parsed.assignee}
+                  </span>
+                )}
+                {parsed.status === 'tabled' && !parsed.reason && (
+                  <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                    Tabled
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Off-Agenda Content */}
             {parsed.type === 'off-agenda' && parsed.content && (
