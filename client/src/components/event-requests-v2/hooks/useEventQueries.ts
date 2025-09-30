@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 
 export const useEventQueries = () => {
-  // Fetch users for resolving user IDs to names
+  // Fetch users for resolving user IDs to names without requiring admin permissions
   const { data: users = [] } = useQuery<any[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/basic'],
   });
 
   // Fetch users specifically for assignments
