@@ -633,7 +633,7 @@ export default function MonthlyComparisonAnalytics() {
               <div className="text-3xl font-bold text-brand-primary">
                 {selectedMonthAnalysis.rolling3MonthAvg.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Rolling average</p>
+              <p className="text-gray-500 mt-1 text-[14px]">Rolling average</p>
             </div>
           )}
         </div>
