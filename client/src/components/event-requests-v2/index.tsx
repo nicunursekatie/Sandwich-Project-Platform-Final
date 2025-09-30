@@ -37,6 +37,7 @@ import { useEventMutations } from './hooks/useEventMutations';
 import { useEventQueries } from './hooks/useEventQueries';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
@@ -132,6 +133,7 @@ const EventRequestsManagementContent: React.FC = () => {
   const { users, drivers } = useEventQueries();
   const { user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const handleScheduleCall = () => {
     if (!selectedEventRequest || !scheduleCallDate || !scheduleCallTime) return;
@@ -158,52 +160,56 @@ const EventRequestsManagementContent: React.FC = () => {
     <TooltipProvider>
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
           <div>
-            <h1 className="text-3xl font-bold">Event Requests Management</h1>
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
             <p className="text-[#236383]">
-              Manage and track event requests from organizations
+              {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
             </p>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={() => {
-                setShowScheduleCallDialog(false);
-                setShowOneDayFollowUpDialog(false);
-                setShowOneMonthFollowUpDialog(false);
-                setShowToolkitSentDialog(false);
-                setSelectedEventRequest(null);
-                setIsEditing(true);
-                setShowEventDetails(true);
-              }}
-              className="text-white"
-              style={{ backgroundColor: '#007E8C' }}
-              data-testid="button-add-manual-event"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Manual Event Request
-            </Button>
-            <Button
-              onClick={() => setShowSandwichPlanningModal(true)}
-              variant="outline"
-              className="flex items-center space-x-2"
-              data-testid="button-sandwich-planning"
-            >
-              <span className="text-lg mr-1">🥪</span>
-              <span>Sandwich Planning</span>
-            </Button>
-            <Button
-              onClick={() => setShowStaffingPlanningModal(true)}
-              variant="outline"
-              className="flex items-center space-x-2"
-              data-testid="button-staffing-planning"
-            >
-              <Users className="w-4 h-4" />
-              <span>Staffing Planning</span>
-            </Button>
+          <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
+            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
+              <Button
+                onClick={() => {
+                  setShowScheduleCallDialog(false);
+                  setShowOneDayFollowUpDialog(false);
+                  setShowOneMonthFollowUpDialog(false);
+                  setShowToolkitSentDialog(false);
+                  setSelectedEventRequest(null);
+                  setIsEditing(true);
+                  setShowEventDetails(true);
+                }}
+                className="text-white w-full"
+                style={{ backgroundColor: '#007E8C' }}
+                data-testid="button-add-manual-event"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {isMobile ? 'Add Event' : 'Add Manual Event Request'}
+              </Button>
+              <div className={`${isMobile ? 'flex space-x-2' : 'flex items-center space-x-2'}`}>
+                <Button
+                  onClick={() => setShowSandwichPlanningModal(true)}
+                  variant="outline"
+                  className={`flex items-center space-x-2 ${isMobile ? 'flex-1' : ''}`}
+                  data-testid="button-sandwich-planning"
+                >
+                  <span className="text-lg mr-1">🥪</span>
+                  <span className={isMobile ? 'hidden' : ''}>Sandwich Planning</span>
+                </Button>
+                <Button
+                  onClick={() => setShowStaffingPlanningModal(true)}
+                  variant="outline"
+                  className={`flex items-center space-x-2 ${isMobile ? 'flex-1' : ''}`}
+                  data-testid="button-staffing-planning"
+                >
+                  <Users className="w-4 h-4" />
+                  <span className={isMobile ? 'hidden' : ''}>Staffing Planning</span>
+                </Button>
+              </div>
+            </div>
             <Badge
               variant="secondary"
-              className="bg-brand-primary text-white px-3 py-1 text-sm"
+              className="bg-brand-primary text-white px-3 py-1 text-sm self-start"
             >
               {eventRequests.length} Total Requests
             </Badge>

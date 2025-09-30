@@ -40,6 +40,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { apiRequest } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   SANDWICH_TYPES,
   statusColors,
@@ -153,6 +154,7 @@ export default function RequestCard({
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   
   // State for managing original message collapsed/expanded state
   const [isOriginalMessageExpanded, setIsOriginalMessageExpanded] = useState(false);
@@ -400,14 +402,15 @@ export default function RequestCard({
         {request.status === 'scheduled' && (
           <div className="h-1 bg-[#236383] rounded-t-md"></div>
         )}
-        <div className="p-6 w-full">
-          <div className="flex items-start justify-between w-full">
+        <div className={`${isMobile ? 'p-4' : 'p-6'} w-full`}>
+          <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-start justify-between'} w-full`}>
             <div className="flex-1 space-y-4">
-              <div className="flex items-start justify-between mb-3 w-full">
+              <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-start justify-between'} mb-3 w-full`}>
                 <div className="flex-1">
-                  <div className="flex items-center space-x-3">
-                    <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
-                    <h2 className="text-2xl font-bold text-brand-primary leading-tight flex items-center gap-2">
+                  <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-3'}`}>
+                    <div className={`${isMobile ? 'flex items-center space-x-3' : ''}`}>
+                      <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
+                      <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-brand-primary leading-tight flex items-center gap-2`}>
                       {request.organizationName}
                       {request.department && (
                         <span className="text-lg font-normal text-gray-500">&bull; {request.department}</span>
@@ -1724,7 +1727,7 @@ export default function RequestCard({
 
               {/* Action Buttons for New Status */}
               {request.status === 'new' && (hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_ALL_DETAILS)) && (
-                <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-[#007E8C]/20">
+                <div className={`mt-4 ${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-[#007E8C]/20`}>
                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT) && (
                     <Button
                       size="sm"
@@ -1791,7 +1794,7 @@ export default function RequestCard({
 
               {/* Action Buttons for In Process Status */}
               {request.status === 'in_process' && (hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_ALL_DETAILS)) && (
-                <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-[#007E8C]/20">
+                <div className={`mt-4 ${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-[#007E8C]/20`}>
                   {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT) && (
                     <Button
                       size="sm"
@@ -1855,7 +1858,7 @@ export default function RequestCard({
 
               {/* Action Buttons for Scheduled Status */}
               {request.status === 'scheduled' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-[#007E8C]/20">
+                <div className={`mt-4 ${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-[#007E8C]/20`}>
                   <Button
                     size="sm"
                     variant="outline"
@@ -2004,7 +2007,7 @@ export default function RequestCard({
 
               {/* Action Buttons for Completed Status */}
               {request.status === 'completed' && (hasPermission(user, PERMISSIONS.EVENT_REQUESTS_FOLLOW_UP) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_ALL_DETAILS) || hasPermission(user, PERMISSIONS.EVENT_REQUESTS_DELETE)) && (
-                <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-[#007E8C]/20">
+                <div className={`mt-4 ${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-[#007E8C]/20`}>
                   <Button
                     size="sm"
                     variant="outline"
@@ -2072,7 +2075,7 @@ export default function RequestCard({
 
               {/* Action Buttons for Declined Status */}
               {request.status === 'declined' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-[#007E8C]/20">
+                <div className={`mt-4 ${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-[#007E8C]/20`}>
                   <Button
                     size="sm"
                     variant="outline"

@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface RequestFiltersProps {
   // Search and filter states
@@ -77,31 +78,64 @@ export default function RequestFilters({
   totalItems,
   totalPages,
 }: RequestFiltersProps) {
+  const isMobile = useIsMobile();
+
   return (
     <div className="space-y-6">
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="new" className="relative">
-            New ({statusCounts.new})
+        <TabsList className={`w-full ${isMobile ? 'flex flex-wrap gap-1 p-1' : 'grid grid-cols-6'}`}>
+          <TabsTrigger 
+            value="new" 
+            className={`relative ${isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}`}
+          >
+            <span className={isMobile ? 'truncate' : ''}>
+              {isMobile ? 'New' : 'New'} ({statusCounts.new})
+            </span>
             {statusCounts.new > 0 && (
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
             )}
           </TabsTrigger>
-          <TabsTrigger value="in_process">
-            In Process ({statusCounts.in_process})
+          <TabsTrigger 
+            value="in_process"
+            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
+          >
+            <span className={isMobile ? 'truncate' : ''}>
+              {isMobile ? 'Process' : 'In Process'} ({statusCounts.in_process})
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="scheduled">
-            Scheduled ({statusCounts.scheduled})
+          <TabsTrigger 
+            value="scheduled"
+            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
+          >
+            <span className={isMobile ? 'truncate' : ''}>
+              {isMobile ? 'Scheduled' : 'Scheduled'} ({statusCounts.scheduled})
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed ({statusCounts.completed})
+          <TabsTrigger 
+            value="completed"
+            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
+          >
+            <span className={isMobile ? 'truncate' : ''}>
+              {isMobile ? 'Done' : 'Completed'} ({statusCounts.completed})
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="declined">
-            Declined ({statusCounts.declined})
+          <TabsTrigger 
+            value="declined"
+            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
+          >
+            <span className={isMobile ? 'truncate' : ''}>
+              {isMobile ? 'Declined' : 'Declined'} ({statusCounts.declined})
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="my_assignments" data-testid="tab-my-assignments">
-            My Assignments ({statusCounts.my_assignments})
+          <TabsTrigger 
+            value="my_assignments" 
+            data-testid="tab-my-assignments"
+            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
+          >
+            <span className={isMobile ? 'truncate' : ''}>
+              {isMobile ? 'Mine' : 'My Assignments'} ({statusCounts.my_assignments})
+            </span>
           </TabsTrigger>
         </TabsList>
 
@@ -114,7 +148,7 @@ export default function RequestFilters({
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
                   <Input
-                    placeholder="Search by organization, name, email, date, or location..."
+                    placeholder={isMobile ? "Search requests..." : "Search by organization, name, email, date, or location..."}
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     className="pl-10"
@@ -125,16 +159,28 @@ export default function RequestFilters({
                   value={sortBy}
                   onValueChange={(value: any) => onSortByChange(value)}
                 >
-                  <SelectTrigger className="w-48" data-testid="sort-select-trigger">
+                  <SelectTrigger className={`${isMobile ? 'w-full' : 'w-48'}`} data-testid="sort-select-trigger">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-                    <SelectItem value="created_date_desc">Submission Date (Most Recent First)</SelectItem>
-                    <SelectItem value="created_date_asc">Submission Date (Oldest First)</SelectItem>
-                    <SelectItem value="event_date_asc">Event Date (Soonest First)</SelectItem>
-                    <SelectItem value="event_date_desc">Event Date (Latest First)</SelectItem>
-                    <SelectItem value="organization_asc">Organization A-Z</SelectItem>
-                    <SelectItem value="organization_desc">Organization Z-A</SelectItem>
+                    <SelectItem value="created_date_desc">
+                      {isMobile ? 'Newest First' : 'Submission Date (Most Recent First)'}
+                    </SelectItem>
+                    <SelectItem value="created_date_asc">
+                      {isMobile ? 'Oldest First' : 'Submission Date (Oldest First)'}
+                    </SelectItem>
+                    <SelectItem value="event_date_asc">
+                      {isMobile ? 'Soonest Event' : 'Event Date (Soonest First)'}
+                    </SelectItem>
+                    <SelectItem value="event_date_desc">
+                      {isMobile ? 'Latest Event' : 'Event Date (Latest First)'}
+                    </SelectItem>
+                    <SelectItem value="organization_asc">
+                      {isMobile ? 'Org A-Z' : 'Organization A-Z'}
+                    </SelectItem>
+                    <SelectItem value="organization_desc">
+                      {isMobile ? 'Org Z-A' : 'Organization Z-A'}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

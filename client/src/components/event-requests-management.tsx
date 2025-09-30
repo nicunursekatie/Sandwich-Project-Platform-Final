@@ -92,6 +92,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import type { EventRequest } from '@shared/schema';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { TaskAssigneeSelector } from './task-assignee-selector';
 import { VolunteerSelectionModal } from './volunteer-selection-modal';
 import {
@@ -1448,6 +1449,7 @@ export default function EventRequestsManagement({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   // Fetch event requests
   const { data: eventRequests = [], isLoading } = useQuery<EventRequest[]>({
@@ -2217,59 +2219,63 @@ export default function EventRequestsManagement({
     <TooltipProvider>
       <div className="w-full flex flex-col space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between w-full">
+        <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'} w-full`}>
           <div>
-            <h1 className="text-3xl font-bold">Event Requests Management</h1>
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
             <p className="text-[#236383]">
-              Manage and track event requests from organizations
+              {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
             </p>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={() => {
-                // Close any open dialogs first
-                setShowScheduleCallDialog(false);
-                setShowOneDayFollowUpDialog(false);
-                setShowOneMonthFollowUpDialog(false);
-                setShowToolkitSentDialog(false);
-                setShowAssignmentDialog(false);
-                
-                // Set up for manual event request creation
-                setSelectedEventRequest(null);
-                setIsEditing(true);
-                setShowEventDetails(true);
-                
-                // Initialize modal sandwich state for new event
-                initializeModalSandwichState(null);
-              }}
-              className="text-white"
-              style={{ backgroundColor: '#007E8C' }}
-              data-testid="button-add-manual-event"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Manual Event Request
-            </Button>
-            <Button
-              onClick={() => setShowSandwichPlanningModal(true)}
-              variant="outline"
-              className="flex items-center space-x-2"
-              data-testid="button-sandwich-planning"
-            >
-              <span className="text-lg mr-1">🥪</span>
-              <span>Sandwich Planning</span>
-            </Button>
-            <Button
-              onClick={() => setShowStaffingPlanningModal(true)}
-              variant="outline"
-              className="flex items-center space-x-2"
-              data-testid="button-staffing-planning"
-            >
-              <Users className="w-4 h-4" />
-              <span>Staffing Planning</span>
-            </Button>
+          <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
+            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
+              <Button
+                onClick={() => {
+                  // Close any open dialogs first
+                  setShowScheduleCallDialog(false);
+                  setShowOneDayFollowUpDialog(false);
+                  setShowOneMonthFollowUpDialog(false);
+                  setShowToolkitSentDialog(false);
+                  setShowAssignmentDialog(false);
+                  
+                  // Set up for manual event request creation
+                  setSelectedEventRequest(null);
+                  setIsEditing(true);
+                  setShowEventDetails(true);
+                  
+                  // Initialize modal sandwich state for new event
+                  initializeModalSandwichState(null);
+                }}
+                className="text-white w-full"
+                style={{ backgroundColor: '#007E8C' }}
+                data-testid="button-add-manual-event"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {isMobile ? 'Add Event' : 'Add Manual Event Request'}
+              </Button>
+              <div className={`${isMobile ? 'flex space-x-2' : 'flex items-center space-x-2'}`}>
+                <Button
+                  onClick={() => setShowSandwichPlanningModal(true)}
+                  variant="outline"
+                  className={`flex items-center space-x-2 ${isMobile ? 'flex-1' : ''}`}
+                  data-testid="button-sandwich-planning"
+                >
+                  <span className="text-lg mr-1">🥪</span>
+                  <span className={isMobile ? 'hidden' : ''}>Sandwich Planning</span>
+                </Button>
+                <Button
+                  onClick={() => setShowStaffingPlanningModal(true)}
+                  variant="outline"
+                  className={`flex items-center space-x-2 ${isMobile ? 'flex-1' : ''}`}
+                  data-testid="button-staffing-planning"
+                >
+                  <Users className="w-4 h-4" />
+                  <span className={isMobile ? 'hidden' : ''}>Staffing Planning</span>
+                </Button>
+              </div>
+            </div>
             <Badge
               variant="secondary"
-              className="bg-brand-primary text-white px-3 py-1 text-sm"
+              className="bg-brand-primary text-white px-3 py-1 text-sm self-start"
             >
               {eventRequests.length} Total Requests
             </Badge>
