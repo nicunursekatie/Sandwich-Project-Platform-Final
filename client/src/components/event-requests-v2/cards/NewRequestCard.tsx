@@ -154,7 +154,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="flex items-start space-x-3">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg text-[#1A2332]">
+            <h3 className="font-semibold text-[#1A2332] text-[20px]">
               {request.organizationName}
               {request.department && (
                 <span className="text-gray-600 ml-1">
@@ -196,9 +196,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
-                  <span data-testid="text-date-label" className="text-[16px]">
+                  <span data-testid="text-date-label" className="text-[19px]">
                     {dateLabel}: {' '}
-                    <strong className="text-[16px]" data-testid="text-date-value">
+                    <strong className="text-[18px]" data-testid="text-date-value">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </strong>
                     {displayDate && getRelativeTime(displayDate.toString()) && (
@@ -245,7 +245,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-[16px]">
+            <span className="font-medium text-[18px]">
               {request.firstName} {request.lastName}
             </span>
           </div>
@@ -254,7 +254,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               <Mail className="w-4 h-4 text-gray-400" />
               <a
                 href={`mailto:${request.email}`}
-                className="text-blue-600 hover:text-blue-800 text-[16px]"
+                className="text-blue-600 hover:text-blue-800 text-[18px]"
               >
                 {request.email}
               </a>
@@ -265,7 +265,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               <Phone className="w-4 h-4 text-gray-400" />
               <a
                 href={`tel:${request.phone}`}
-                className="text-blue-600 hover:text-blue-800 text-[16px]"
+                className="text-blue-600 hover:text-blue-800 text-[18px]"
               >
                 {request.phone}
               </a>
@@ -399,7 +399,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               Submitted
             </p>
             <div className="space-y-1">
-              <div className="font-medium flex items-center gap-2 text-[16px]">
+              <div className="font-medium flex items-center gap-2 text-[18px]">
                 <Clock className="w-4 h-4" />
                 {request.createdAt
                   ? new Date(request.createdAt).toLocaleDateString() +
