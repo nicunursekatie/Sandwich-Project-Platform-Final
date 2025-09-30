@@ -643,7 +643,7 @@ export default function MonthlyComparisonAnalytics() {
           <div className="flex items-start gap-3">
             <Activity className="h-5 w-5 text-gray-500 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm text-gray-700">
+              <p className="text-gray-700 text-[16px]">
                 <span className="font-medium text-[16px]">Change from {selectedMonthAnalysis.comparisonLabel}:</span>
                 {' '}
                 {selectedMonthAnalysis.comparisonChange !== null ? (
