@@ -321,7 +321,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
   // Fetch users data for TSP contact name lookup
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/basic'],
     enabled: !!request.tspContact, // Only fetch if there's a TSP contact assigned
   });
 
