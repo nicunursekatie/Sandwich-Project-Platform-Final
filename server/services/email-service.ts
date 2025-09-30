@@ -259,6 +259,10 @@ export class EmailService {
           const signature = createSignature();
           const contentWithSignature = `${data.content}\n\n---\n${signature}`;
           
+          // Convert markdown-style bold **text** to HTML <strong>text</strong>
+          const contentHtml = data.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          const signatureHtml = signature.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          
           await sendGridEmail({
             to: data.recipientEmail,
             from: 'katielong2316@gmail.com', // Your verified sender
@@ -271,9 +275,9 @@ export class EmailService {
                 <p>You have a new message from <strong>${data.senderName}</strong>.</p>
                 <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <h3 style="margin-top: 0; color: #333;">Subject: ${data.subject}</h3>
-                  <p style="white-space: pre-wrap;">${data.content}</p>
+                  <p style="white-space: pre-wrap;">${contentHtml}</p>
                   <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em;">
-                    <p style="margin: 0; white-space: pre-wrap;">${signature}</p>
+                    <p style="margin: 0; white-space: pre-wrap;">${signatureHtml}</p>
                   </div>
                 </div>
                 <p>Please log in to your account to view and respond to this message.</p>
