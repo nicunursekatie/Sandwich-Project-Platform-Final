@@ -185,23 +185,25 @@ export class GoogleSheetsMeetingExporter {
       } else {
         // Empty section
         data.push([
-          section.title, // A
-          'No items', // B
-          '', // C
-          '', // D
-          '', // E
-          '', // F
-          '', // G
-          'Not Started', // H - Default status for empty sections
-          '', // I
-          '', // J
-          '', // K
-          '', // L
+          section.title, // A - Task
+          'Medium', // B - Priority
+          'Not Started', // C - Status
+          '', // D - Owner
+          '', // E - Support people
+          '', // F - Sub-Tasks | Owners
+          'm/d/yyyy', // G - Start date
+          'm/d/yyyy', // H - End date
+          'general', // I - Category
+          '', // J - Milestone
+          '', // K - Deliverable
+          '', // L - Notes
+          'm/d/yyyy', // M - Last Discussed
+          new Date().toLocaleDateString(), // N - Date
         ]);
       }
 
       // Add separator row between sections
-      data.push(Array(12).fill(''));
+      data.push(Array(14).fill(''));
     });
 
     // Footer with meeting summary
