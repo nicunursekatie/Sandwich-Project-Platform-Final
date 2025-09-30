@@ -74,6 +74,9 @@ interface HostComparison {
 }
 
 export default function MonthlyComparisonAnalytics() {
+  // Define months array at the top to avoid initialization errors
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
   const [selectedTab, setSelectedTab] = useState<
     'overview' | 'hosts' | 'patterns' | 'insights'
   >('overview');
@@ -552,8 +555,7 @@ export default function MonthlyComparisonAnalytics() {
     '#EF4444',
   ];
 
-  // Generate month/year options
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  // Generate year options
   const availableYears = Array.from(new Set(Object.keys(monthlyAnalytics || {}).map(key => parseInt(key.split('-')[0])))).sort((a, b) => b - a);
 
   return (
