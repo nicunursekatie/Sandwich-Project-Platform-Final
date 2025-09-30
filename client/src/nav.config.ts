@@ -174,6 +174,14 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'planning',
   },
   {
+    id: 'signup-genius',
+    label: 'Sign Up Genius',
+    icon: Link,
+    href: 'signup-genius',
+    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
+    group: 'planning',
+  },
+  {
     id: 'projects',
     label: 'Projects',
     icon: ListTodo,

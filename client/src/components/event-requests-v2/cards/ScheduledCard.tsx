@@ -253,7 +253,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   canEdit = true,
 }) => {
   const isMobile = useIsMobile();
-  
+
   // Helper functions
   const parsePostgresArray = (arr: any): string[] => {
     if (!arr) return [];
@@ -562,13 +562,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   };
 
   return (
-    <Card className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg`}>
+    <Card
+      className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg`}
+    >
       <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
         {/* Header with Organization and Status */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
-            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'} mb-4`}>
-              <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-[#236383] flex items-center gap-2`}>
+            <div
+              className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'} mb-4`}
+            >
+              <h3
+                className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-[#236383] flex items-center gap-2`}
+              >
                 {request.organizationName}
                 {request.department && (
                   <span className="text-lg font-normal text-[#646464]">
@@ -580,7 +586,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {getStatusLabel(request.status)}
               </Badge>
-              
+
               {/* Sandwich Count Badge */}
               <Badge className="bg-[#FBAD3F] text-white px-2 py-1 text-xs shadow-sm">
                 <Package className="w-3 h-3 mr-1" />
@@ -589,14 +595,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   request.estimatedSandwichCount ?? undefined
                 )}
               </Badge>
-              
+
               {staffingComplete ? (
                 <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
                   <Check className="w-3 h-3 mr-1" />
                   Fully Staffed
                 </Badge>
               ) : (
-                <div className={`${isMobile ? 'flex flex-wrap gap-1' : 'flex gap-1'}`}>
+                <div
+                  className={`${isMobile ? 'flex flex-wrap gap-1' : 'flex gap-1'}`}
+                >
                   {driverNeeded > driverAssigned && (
                     <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
                       {driverNeeded - driverAssigned} driver
@@ -621,12 +629,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Key Information - Prominently Displayed */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
               {/* Event Date - Most Important */}
-              <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-5 h-5" />
-                  <span className="font-semibold text-sm uppercase tracking-wide">
+              <div className="bg-gradient-to-br from-[#236383] to-[#1a4d65] text-white rounded-lg p-3 shadow-md text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4" />
+                  <span className="font-semibold text-xs uppercase tracking-wide">
                     Event Date
                   </span>
                 </div>
@@ -656,8 +664,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 group">
-                    <span className="text-lg font-bold">
+                  <div className="flex items-center justify-center gap-2 group">
+                    <span className="text-base font-bold">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </span>
                     {canEdit && (
@@ -681,10 +689,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {/* Event Address - Google Maps Link */}
               {request.eventAddress && (
-                <div className="bg-[#47B3CB] text-white rounded-lg p-4 shadow-md">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-5 h-5" />
-                    <span className="font-semibold text-sm uppercase tracking-wide">
+                <div className="bg-gradient-to-br from-[#47B3CB] to-[#2d9bb0] text-white rounded-lg p-3 shadow-md text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <MapPin className="w-4 h-4" />
+                    <span className="font-semibold text-xs uppercase tracking-wide">
                       Location
                     </span>
                   </div>
@@ -692,7 +700,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-base font-medium hover:underline block break-words"
+                    className="text-sm font-medium hover:underline block break-words text-center"
                     title={request.eventAddress}
                   >
                     {request.eventAddress}
@@ -1020,7 +1028,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           <Button size="sm" onClick={saveEdit}>
                             <Save className="w-3 h-3" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEdit}
+                          >
                             <X className="w-3 h-3" />
                           </Button>
                         </div>
@@ -1122,311 +1134,306 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
             {/* Team Assignments */}
             <div className="bg-[#A31C41] text-white rounded-lg p-4 shadow-md">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-semibold text-lg">
-                    Team Assignments
-                  </span>
-                  <span
-                    className={`text-base font-bold px-2 py-1 rounded-full ${
-                      staffingComplete
-                        ? 'bg-white/20 text-white'
-                        : 'bg-white/20 text-white'
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-semibold text-lg">Team Assignments</span>
+                <span
+                  className={`text-base font-bold px-2 py-1 rounded-full ${
+                    staffingComplete
+                      ? 'bg-white/20 text-white'
+                      : 'bg-white/20 text-white'
+                  }`}
+                >
+                  {totalAssigned}/{totalNeeded} assigned
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {/* Drivers */}
+                {driverNeeded > 0 && (
+                  <div
+                    className={`rounded-lg p-3 border ${
+                      driverAssigned >= driverNeeded
+                        ? 'bg-white/20 border-white/30'
+                        : 'bg-white/20 border-white/30'
                     }`}
                   >
-                    {totalAssigned}/{totalNeeded} assigned
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Drivers */}
-                  {driverNeeded > 0 && (
-                    <div
-                      className={`rounded-lg p-3 border ${
-                        driverAssigned >= driverNeeded
-                          ? 'bg-white/20 border-white/30'
-                          : 'bg-white/20 border-white/30'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Car className="w-4 h-4" />
-                          <span className="font-medium">Drivers</span>
-                          <span
-                            className={`text-sm px-2 py-1 rounded-full font-bold ${
-                              driverAssigned >= driverNeeded
-                                ? 'bg-white/20 text-white'
-                                : 'bg-white/20 text-white'
-                            }`}
-                          >
-                            {driverAssigned}/{driverNeeded}
-                          </span>
-                        </div>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openAssignmentDialog('driver')}
-                            className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm !bg-[#47b3cb]"
-                          >
-                            <UserPlus className="w-3 h-3 mr-1" />
-                            {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
-                          </Button>
-                        )}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Car className="w-4 h-4" />
+                        <span className="font-medium">Drivers</span>
+                        <span
+                          className={`text-sm px-2 py-1 rounded-full font-bold ${
+                            driverAssigned >= driverNeeded
+                              ? 'bg-white/20 text-white'
+                              : 'bg-white/20 text-white'
+                          }`}
+                        >
+                          {driverAssigned}/{driverNeeded}
+                        </span>
                       </div>
-                      {driverAssigned > 0 || request.assignedVanDriverId ? (
-                        <div className="space-y-1">
-                          {parsePostgresArray(request.assignedDriverIds).map(
-                            (driverId: string) => {
-                              let name = '';
-                              if (driverId.startsWith('custom-')) {
-                                name = extractCustomName(driverId);
-                              } else {
-                                const detailName = (
-                                  request.driverDetails as any
-                                )?.[driverId]?.name;
-                                // Check if detailName is actually a name (not an ID)
-                                const isActualName =
-                                  detailName &&
-                                  !/^[\d]+$/.test(detailName) &&
-                                  !detailName.startsWith('user_') &&
-                                  !detailName.startsWith('admin_');
-                                name = isActualName
-                                  ? detailName
-                                  : resolveUserName(driverId);
-                              }
-                              return (
-                                <div
-                                  key={driverId}
-                                  className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
-                                >
-                                  <span className="text-base font-medium">
-                                    {name}
-                                  </span>
-                                  {canEdit && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() =>
-                                        handleRemoveAssignment(
-                                          'driver',
-                                          driverId
-                                        )
-                                      }
-                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              );
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAssignmentDialog('driver')}
+                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm !bg-[#47b3cb]"
+                        >
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
+                        </Button>
+                      )}
+                    </div>
+                    {driverAssigned > 0 || request.assignedVanDriverId ? (
+                      <div className="space-y-1">
+                        {parsePostgresArray(request.assignedDriverIds).map(
+                          (driverId: string) => {
+                            let name = '';
+                            if (driverId.startsWith('custom-')) {
+                              name = extractCustomName(driverId);
+                            } else {
+                              const detailName = (
+                                request.driverDetails as any
+                              )?.[driverId]?.name;
+                              // Check if detailName is actually a name (not an ID)
+                              const isActualName =
+                                detailName &&
+                                !/^[\d]+$/.test(detailName) &&
+                                !detailName.startsWith('user_') &&
+                                !detailName.startsWith('admin_');
+                              name = isActualName
+                                ? detailName
+                                : resolveUserName(driverId);
                             }
-                          )}
-                          {/* Van Driver in Drivers List */}
-                          {request.assignedVanDriverId && (
-                            <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                              <span className="text-base font-medium">
-                                {resolveUserName(request.assignedVanDriverId)}
-                                <span className="ml-2 text-xs text-[#A31C41]">
-                                  (van driver, counts as driver)
+                            return (
+                              <div
+                                key={driverId}
+                                className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
+                              >
+                                <span className="text-base font-medium">
+                                  {name}
                                 </span>
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleRemoveAssignment('driver', driverId)
+                                    }
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          }
+                        )}
+                        {/* Van Driver in Drivers List */}
+                        {request.assignedVanDriverId && (
+                          <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
+                            <span className="text-base font-medium">
+                              {resolveUserName(request.assignedVanDriverId)}
+                              <span className="ml-2 text-xs text-[#A31C41]">
+                                (van driver, counts as driver)
                               </span>
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() =>
-                                    handleRemoveAssignment(
-                                      'driver',
-                                      request.assignedVanDriverId!
-                                    )
-                                  }
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-base italic">
-                          No drivers assigned
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Speakers */}
-                  {speakerNeeded > 0 && (
-                    <div
-                      className={`rounded-lg p-3 border ${
-                        speakerAssigned >= speakerNeeded
-                          ? 'bg-white/20 border-white/30'
-                          : 'bg-white/20 border-white/30'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Megaphone className="w-4 h-4" />
-                          <span className="font-medium">Speakers</span>
-                          <span
-                            className={`text-sm px-2 py-1 rounded-full font-bold ${
-                              speakerAssigned >= speakerNeeded
-                                ? 'bg-white/20 text-white'
-                                : 'bg-white/20 text-white'
-                            }`}
-                          >
-                            {speakerAssigned}/{speakerNeeded}
-                          </span>
-                        </div>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openAssignmentDialog('speaker')}
-                            className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
-                          >
-                            <UserPlus className="w-3 h-3 mr-1" />
-                            {speakerAssigned < speakerNeeded ? 'Assign' : 'Add'}
-                          </Button>
+                            </span>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  handleRemoveAssignment(
+                                    'driver',
+                                    request.assignedVanDriverId!
+                                  )
+                                }
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
-                      {speakerAssigned > 0 ? (
-                        <div className="space-y-1">
-                          {Object.keys(request.speakerDetails || {}).map(
-                            (speakerId: string) => {
-                              let name = '';
-                              if (speakerId.startsWith('custom-')) {
-                                name = extractCustomName(speakerId);
-                              } else {
-                                const detailName = (
-                                  request.speakerDetails as any
-                                )?.[speakerId]?.name;
-                                const isActualName =
-                                  detailName &&
-                                  !/^[\d]+$/.test(detailName) &&
-                                  !detailName.startsWith('user_') &&
-                                  !detailName.startsWith('admin_');
-                                name = isActualName
-                                  ? detailName
-                                  : resolveUserName(speakerId);
-                              }
-                              return (
-                                <div
-                                  key={speakerId}
-                                  className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
-                                >
-                                  <span className="text-base font-medium">
-                                    {name}
-                                  </span>
-                                  {canEdit && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() =>
-                                        handleRemoveAssignment(
-                                          'speaker',
-                                          speakerId
-                                        )
-                                      }
-                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              );
-                            }
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-base italic">
-                          No speakers assigned
-                        </div>
+                    ) : (
+                      <div className="text-base italic">
+                        No drivers assigned
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Speakers */}
+                {speakerNeeded > 0 && (
+                  <div
+                    className={`rounded-lg p-3 border ${
+                      speakerAssigned >= speakerNeeded
+                        ? 'bg-white/20 border-white/30'
+                        : 'bg-white/20 border-white/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Megaphone className="w-4 h-4" />
+                        <span className="font-medium">Speakers</span>
+                        <span
+                          className={`text-sm px-2 py-1 rounded-full font-bold ${
+                            speakerAssigned >= speakerNeeded
+                              ? 'bg-white/20 text-white'
+                              : 'bg-white/20 text-white'
+                          }`}
+                        >
+                          {speakerAssigned}/{speakerNeeded}
+                        </span>
+                      </div>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAssignmentDialog('speaker')}
+                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
+                        >
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          {speakerAssigned < speakerNeeded ? 'Assign' : 'Add'}
+                        </Button>
                       )}
                     </div>
-                  )}
-
-                  {/* Volunteers */}
-                  {volunteerNeeded > 0 && (
-                    <div
-                      className={`rounded-lg p-3 border ${
-                        volunteerAssigned >= volunteerNeeded
-                          ? 'bg-white/20 border-white/30'
-                          : 'bg-white/20 border-white/30'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          <span className="font-medium">Volunteers</span>
-                          <span
-                            className={`text-sm px-2 py-1 rounded-full font-bold ${
-                              volunteerAssigned >= volunteerNeeded
-                                ? 'bg-white/20 text-white'
-                                : 'bg-white/20 text-white'
-                            }`}
-                          >
-                            {volunteerAssigned}/{volunteerNeeded}
-                          </span>
-                        </div>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openAssignmentDialog('volunteer')}
-                            className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
-                          >
-                            <UserPlus className="w-3 h-3 mr-1" />
-                            {volunteerAssigned < volunteerNeeded
-                              ? 'Assign'
-                              : 'Add'}
-                          </Button>
+                    {speakerAssigned > 0 ? (
+                      <div className="space-y-1">
+                        {Object.keys(request.speakerDetails || {}).map(
+                          (speakerId: string) => {
+                            let name = '';
+                            if (speakerId.startsWith('custom-')) {
+                              name = extractCustomName(speakerId);
+                            } else {
+                              const detailName = (
+                                request.speakerDetails as any
+                              )?.[speakerId]?.name;
+                              const isActualName =
+                                detailName &&
+                                !/^[\d]+$/.test(detailName) &&
+                                !detailName.startsWith('user_') &&
+                                !detailName.startsWith('admin_');
+                              name = isActualName
+                                ? detailName
+                                : resolveUserName(speakerId);
+                            }
+                            return (
+                              <div
+                                key={speakerId}
+                                className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
+                              >
+                                <span className="text-base font-medium">
+                                  {name}
+                                </span>
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleRemoveAssignment(
+                                        'speaker',
+                                        speakerId
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          }
                         )}
                       </div>
-                      {volunteerAssigned > 0 ? (
-                        <div className="space-y-1">
-                          {parsePostgresArray(request.assignedVolunteerIds).map(
-                            (volunteerId: string) => {
-                              const name = volunteerId.startsWith('custom-')
-                                ? extractCustomName(volunteerId)
-                                : resolveUserName(volunteerId);
-                              return (
-                                <div
-                                  key={volunteerId}
-                                  className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
-                                >
-                                  <span className="text-base font-medium">
-                                    {name}
-                                  </span>
-                                  {canEdit && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() =>
-                                        handleRemoveAssignment(
-                                          'volunteer',
-                                          volunteerId
-                                        )
-                                      }
-                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              );
-                            }
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-base italic">
-                          No volunteers assigned
-                        </div>
+                    ) : (
+                      <div className="text-base italic">
+                        No speakers assigned
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Volunteers */}
+                {volunteerNeeded > 0 && (
+                  <div
+                    className={`rounded-lg p-3 border ${
+                      volunteerAssigned >= volunteerNeeded
+                        ? 'bg-white/20 border-white/30'
+                        : 'bg-white/20 border-white/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        <span className="font-medium">Volunteers</span>
+                        <span
+                          className={`text-sm px-2 py-1 rounded-full font-bold ${
+                            volunteerAssigned >= volunteerNeeded
+                              ? 'bg-white/20 text-white'
+                              : 'bg-white/20 text-white'
+                          }`}
+                        >
+                          {volunteerAssigned}/{volunteerNeeded}
+                        </span>
+                      </div>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAssignmentDialog('volunteer')}
+                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
+                        >
+                          <UserPlus className="w-3 h-3 mr-1" />
+                          {volunteerAssigned < volunteerNeeded
+                            ? 'Assign'
+                            : 'Add'}
+                        </Button>
                       )}
                     </div>
-                  )}
-                </div>
+                    {volunteerAssigned > 0 ? (
+                      <div className="space-y-1">
+                        {parsePostgresArray(request.assignedVolunteerIds).map(
+                          (volunteerId: string) => {
+                            const name = volunteerId.startsWith('custom-')
+                              ? extractCustomName(volunteerId)
+                              : resolveUserName(volunteerId);
+                            return (
+                              <div
+                                key={volunteerId}
+                                className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
+                              >
+                                <span className="text-base font-medium">
+                                  {name}
+                                </span>
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      handleRemoveAssignment(
+                                        'volunteer',
+                                        volunteerId
+                                      )
+                                    }
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          }
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-base italic">
+                        No volunteers assigned
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1612,8 +1619,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-3 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}>
-            <Button size="sm" variant="outline" onClick={onContact} className="!bg-[#007e8c] !text-[#ffffff] !border-[#007e8c] hover:!bg-[#006975] hover:!text-white">
+          <div
+            className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-3 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
+          >
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onContact}
+              className="!bg-[#007e8c] !text-[#ffffff] !border-[#007e8c] hover:!bg-[#006975] hover:!text-white"
+            >
               Contact Organizer
             </Button>
             <Button size="sm" variant="outline" onClick={onReschedule}>

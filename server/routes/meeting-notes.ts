@@ -8,26 +8,17 @@ router.get('/', async (req, res) => {
   try {
     const { meetingId, projectId, type, status } = req.query;
 
-    // For now, return empty array until storage methods are implemented
-    const notes: any[] = [];
+    // Build filters object
+    const filters: any = {};
+    if (meetingId) filters.meetingId = Number(meetingId);
+    if (projectId) filters.projectId = Number(projectId);
+    if (type) filters.type = String(type);
+    if (status) filters.status = String(status);
 
-    // Apply filters if provided
-    let filteredNotes = notes;
+    // Use storage method with filters
+    const notes = await storage.getMeetingNotesByFilters(filters);
 
-    if (meetingId) {
-      filteredNotes = filteredNotes.filter(n => n.meetingId === Number(meetingId));
-    }
-    if (projectId) {
-      filteredNotes = filteredNotes.filter(n => n.projectId === Number(projectId));
-    }
-    if (type) {
-      filteredNotes = filteredNotes.filter(n => n.type === type);
-    }
-    if (status) {
-      filteredNotes = filteredNotes.filter(n => n.status === status);
-    }
-
-    res.json(filteredNotes);
+    res.json(notes);
   } catch (error) {
     console.error('Error fetching meeting notes:', error);
     res.status(500).json({ error: 'Failed to fetch meeting notes' });
@@ -38,20 +29,11 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const noteId = parseInt(req.params.id, 10);
+    const note = await storage.getMeetingNote(noteId);
 
-    // For now, return a mock note
-    const note = {
-      id: noteId,
-      meetingId: null,
-      projectId: null,
-      type: 'meeting',
-      content: '',
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: req.session?.userId || null,
-      createdByName: req.session?.userName || null,
-    };
+    if (!note) {
+      return res.status(404).json({ error: 'Meeting note not found' });
+    }
 
     res.json(note);
   } catch (error) {
@@ -69,25 +51,29 @@ router.post('/', async (req, res) => {
     if (!content) {
       return res.status(400).json({ error: 'Note content is required' });
     }
+    if (!projectId) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+
+    // Get user info from session
+    const userId = (req.session as any)?.user?.id || (req as any).user?.id;
+    const userName = (req.session as any)?.user?.name || (req as any).user?.name;
 
     // Create the note object
-    const newNote = {
-      id: Date.now(), // Temporary ID generation
-      projectId: projectId || null,
-      meetingId: meetingId || null,
+    const noteData = {
+      projectId: Number(projectId),
+      meetingId: meetingId ? Number(meetingId) : null,
       type: type || 'meeting',
       content,
       status: status || 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: req.session?.userId || null,
-      createdByName: req.session?.userName || null,
+      createdBy: userId?.toString() || null,
+      createdByName: userName || null,
     };
 
-    // TODO: Save to database when storage method is available
-    // const savedNote = await storage.createMeetingNote(newNote);
+    // Save to database
+    const savedNote = await storage.createMeetingNote(noteData);
 
-    res.status(201).json(newNote);
+    res.status(201).json(savedNote);
   } catch (error) {
     console.error('Error creating meeting note:', error);
     res.status(500).json({ error: 'Failed to create meeting note' });
@@ -100,14 +86,12 @@ router.patch('/:id', async (req, res) => {
     const noteId = parseInt(req.params.id, 10);
     const updates = req.body;
 
-    // TODO: Update in database when storage method is available
-    // const updatedNote = await storage.updateMeetingNote(noteId, updates);
+    // Update in database
+    const updatedNote = await storage.updateMeetingNote(noteId, updates);
 
-    const updatedNote = {
-      id: noteId,
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
+    if (!updatedNote) {
+      return res.status(404).json({ error: 'Meeting note not found' });
+    }
 
     res.json(updatedNote);
   } catch (error) {
@@ -121,13 +105,74 @@ router.delete('/:id', async (req, res) => {
   try {
     const noteId = parseInt(req.params.id, 10);
 
-    // TODO: Delete from database when storage method is available
-    // await storage.deleteMeetingNote(noteId);
+    // Delete from database
+    const success = await storage.deleteMeetingNote(noteId);
+
+    if (!success) {
+      return res.status(404).json({ error: 'Meeting note not found' });
+    }
 
     res.json({ success: true, message: 'Note deleted successfully' });
   } catch (error) {
     console.error('Error deleting meeting note:', error);
     res.status(500).json({ error: 'Failed to delete meeting note' });
+  }
+});
+
+// Bulk update note status
+router.patch('/bulk/status', async (req, res) => {
+  try {
+    const { noteIds, status } = req.body;
+
+    if (!noteIds || !Array.isArray(noteIds) || noteIds.length === 0) {
+      return res.status(400).json({ error: 'Note IDs array is required' });
+    }
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    // Update each note
+    const updates = await Promise.all(
+      noteIds.map(id => storage.updateMeetingNote(Number(id), { status }))
+    );
+
+    const successCount = updates.filter(note => note !== undefined).length;
+
+    res.json({ 
+      success: true, 
+      message: `${successCount} note(s) updated`,
+      updated: successCount 
+    });
+  } catch (error) {
+    console.error('Error bulk updating meeting notes:', error);
+    res.status(500).json({ error: 'Failed to bulk update meeting notes' });
+  }
+});
+
+// Bulk delete notes
+router.delete('/bulk', async (req, res) => {
+  try {
+    const { noteIds } = req.body;
+
+    if (!noteIds || !Array.isArray(noteIds) || noteIds.length === 0) {
+      return res.status(400).json({ error: 'Note IDs array is required' });
+    }
+
+    // Delete each note
+    const deletions = await Promise.all(
+      noteIds.map(id => storage.deleteMeetingNote(Number(id)))
+    );
+
+    const successCount = deletions.filter(success => success).length;
+
+    res.json({ 
+      success: true, 
+      message: `${successCount} note(s) deleted`,
+      deleted: successCount 
+    });
+  } catch (error) {
+    console.error('Error bulk deleting meeting notes:', error);
+    res.status(500).json({ error: 'Failed to bulk delete meeting notes' });
   }
 });
 
