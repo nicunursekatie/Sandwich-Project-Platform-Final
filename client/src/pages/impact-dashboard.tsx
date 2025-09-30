@@ -49,6 +49,8 @@ export default function ImpactDashboard() {
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>(
     'monthly'
   );
+  const [dateRange, setDateRange] = useState<'3months' | '6months' | '1year' | 'all'>('1year');
+  const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
 
   // Fetch sandwich collections data
   const { data: collectionsData } = useQuery({
@@ -88,22 +90,38 @@ export default function ImpactDashboard() {
 
   // Process data for visualizations
   const processCollectionData = () => {
-    // Debug logging
-    console.log('processCollectionData - chartView:', chartView);
-    console.log('processCollectionData - collections:', collections);
-    console.log(
-      'processCollectionData - collections length:',
-      collections?.length
-    );
-    console.log('processCollectionData - collectionsData:', collectionsData);
-
     // Return empty array if no collections data available
     if (!Array.isArray(collections) || collections.length === 0) {
-      console.log('No collections data available - returning empty array');
       return [];
     }
 
-    console.log('Processing real collections data...');
+    // Calculate date cutoff based on selected range
+    const now = new Date();
+    let cutoffDate: Date | null = null;
+
+    switch (dateRange) {
+      case '3months':
+        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        break;
+      case '6months':
+        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        break;
+      case '1year':
+        cutoffDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        break;
+      case 'all':
+        cutoffDate = null; // No filter
+        break;
+    }
+
+    // Filter collections by date range
+    const filteredCollections = cutoffDate
+      ? collections.filter((collection: any) => {
+          if (!collection.collectionDate) return false;
+          const date = parseCollectionDate(collection.collectionDate);
+          return !Number.isNaN(date.getTime()) && date >= cutoffDate;
+        })
+      : collections;
 
     const timeData: Record<
       string,
@@ -115,7 +133,7 @@ export default function ImpactDashboard() {
       }
     > = {};
 
-    collections.forEach((collection: any) => {
+    filteredCollections.forEach((collection: any) => {
       const collectionDate = collection.collectionDate;
       if (collectionDate) {
         const date = parseCollectionDate(collectionDate);
@@ -553,52 +571,143 @@ export default function ImpactDashboard() {
 
           {/* Trends Tab */}
           <TabsContent value="trends">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* View Selection */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Collection Trends Views</CardTitle>
+                <CardDescription>Choose the right view for your analysis</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button
+                    variant={trendsView === 'recent' ? 'default' : 'outline'}
+                    className="h-auto py-4 px-4 flex flex-col items-start"
+                    onClick={() => {
+                      setTrendsView('recent');
+                      setDateRange('3months');
+                      setChartView('weekly');
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-5 h-5" />
+                      <span className="font-semibold">Recent Trends</span>
+                    </div>
+                    <span className="text-xs text-left opacity-80">
+                      3 months of weekly data - see recent performance patterns
+                    </span>
+                  </Button>
+
+                  <Button
+                    variant={trendsView === 'seasonal' ? 'default' : 'outline'}
+                    className="h-auto py-4 px-4 flex flex-col items-start"
+                    onClick={() => {
+                      setTrendsView('seasonal');
+                      setDateRange('1year');
+                      setChartView('monthly');
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Activity className="w-5 h-5" />
+                      <span className="font-semibold">Seasonal Patterns</span>
+                    </div>
+                    <span className="text-xs text-left opacity-80">
+                      1 year of monthly data - identify seasonal trends
+                    </span>
+                  </Button>
+
+                  <Button
+                    variant={trendsView === 'historical' ? 'default' : 'outline'}
+                    className="h-auto py-4 px-4 flex flex-col items-start"
+                    onClick={() => {
+                      setTrendsView('historical');
+                      setDateRange('all');
+                      setChartView('monthly');
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="w-5 h-5" />
+                      <span className="font-semibold">Historical Growth</span>
+                    </div>
+                    <span className="text-xs text-left opacity-80">
+                      All-time monthly totals - track long-term growth
+                    </span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 gap-6">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex-1">
+                      <CardTitle className="flex items-center mb-2">
                         <BarChart3 className="w-5 h-5 mr-2" />
-                        {chartView === 'weekly' ? 'Weekly' : 'Monthly'} Sandwich
-                        Collections
+                        {trendsView === 'recent' && 'Recent Collection Trends'}
+                        {trendsView === 'seasonal' && 'Seasonal Collection Patterns'}
+                        {trendsView === 'historical' && 'Historical Collection Growth'}
                       </CardTitle>
                       <CardDescription>
-                        Tracking sandwich collection trends over time
+                        {trendsView === 'recent' && 'Weekly collections over the last 3 months'}
+                        {trendsView === 'seasonal' && 'Monthly collections showing seasonal patterns'}
+                        {trendsView === 'historical' && 'All-time monthly collection totals'}
                       </CardDescription>
                     </div>
-                    <div className="flex gap-2">
+
+                    {/* Date Range Controls */}
+                    <div className="flex flex-wrap gap-2">
                       <Button
-                        variant={
-                          chartView === 'monthly' ? 'default' : 'outline'
-                        }
+                        variant={dateRange === '3months' ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setChartView('monthly')}
+                        onClick={() => setDateRange('3months')}
                       >
-                        Monthly
+                        3 Months
                       </Button>
                       <Button
-                        variant={chartView === 'weekly' ? 'default' : 'outline'}
+                        variant={dateRange === '6months' ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setChartView('weekly')}
+                        onClick={() => setDateRange('6months')}
                       >
-                        Weekly
+                        6 Months
+                      </Button>
+                      <Button
+                        variant={dateRange === '1year' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDateRange('1year')}
+                      >
+                        1 Year
+                      </Button>
+                      <Button
+                        variant={dateRange === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDateRange('all')}
+                      >
+                        All Time
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {chartData && chartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={400}>
                       <AreaChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
+                        <defs>
+                          <linearGradient id="colorSandwiches" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#236383" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="#236383" stopOpacity={0.1}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                         <XAxis
                           dataKey={chartView === 'weekly' ? 'week' : 'month'}
                           tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
                           tickFormatter={(value) => {
                             if (chartView === 'weekly') {
                               return value.includes('Week of')
-                                ? value.replace('Week of ', '')
+                                ? value.replace('Week of ', '').slice(5)
                                 : value;
                             }
                             const parts = (value || '').split('-');
@@ -607,38 +716,44 @@ export default function ImpactDashboard() {
                               : value;
                           }}
                         />
-                        <YAxis tick={{ fontSize: 12 }} />
+                        <YAxis
+                          tick={{ fontSize: 12 }}
+                          label={{ value: 'Sandwiches', angle: -90, position: 'insideLeft' }}
+                        />
                         <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            border: '1px solid #ccc',
+                            borderRadius: '8px',
+                            padding: '10px'
+                          }}
                           labelFormatter={(value) =>
-                            `${
-                              chartView === 'weekly' ? 'Week' : 'Month'
-                            }: ${value}`
+                            `${chartView === 'weekly' ? 'Week' : 'Month'}: ${value}`
                           }
-                          formatter={(value, name) => [
-                            value,
-                            name === 'sandwiches'
-                              ? 'Sandwiches'
-                              : 'Collections',
+                          formatter={(value: any, name: string) => [
+                            typeof value === 'number' ? value.toLocaleString() : value,
+                            name === 'sandwiches' ? 'Sandwiches' : name === 'collections' ? 'Collections' : 'Hosts',
                           ]}
                         />
                         <Area
                           type="monotone"
                           dataKey="sandwiches"
-                          stroke="#8884d8"
-                          fill="#8884d8"
-                          fillOpacity={0.6}
+                          stroke="#236383"
+                          strokeWidth={2}
+                          fill="url(#colorSandwiches)"
+                          fillOpacity={1}
                         />
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex items-center justify-center h-[300px] text-gray-500">
+                    <div className="flex items-center justify-center h-[400px] text-gray-500">
                       <div className="text-center">
                         <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
                         <p className="text-lg mb-2">
-                          No collection data available
+                          No collection data available for this time period
                         </p>
                         <p className="text-sm">
-                          Chart will display when collections are recorded
+                          Try selecting a different date range
                         </p>
                       </div>
                     </div>
@@ -649,57 +764,56 @@ export default function ImpactDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    Weekly Collection Consistency
+                    <BarChart3 className="w-5 h-5 mr-2" />
+                    Period Summary
                   </CardTitle>
                   <CardDescription>
-                    Team collection frequency and patterns
+                    Key metrics for the selected time range
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-600">
-                        Weekly Collection Rate
-                      </span>
-                      <span className="font-bold text-green-600">
-                        Consistent
-                      </span>
-                    </div>
-                    <div className="bg-gray-100 rounded-full h-2">
-                      <div
-                        className="bg-green-500 h-2 rounded-full"
-                        style={{ width: '88%' }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Regular weekly collections maintained
-                    </p>
-                  </div>
+                <CardContent className="space-y-4">
+                  {chartData && chartData.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <div className="text-2xl font-bold text-brand-primary">
+                            {chartData.reduce((sum, item) => sum + item.sandwiches, 0).toLocaleString()}
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">Total Sandwiches</p>
+                        </div>
 
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-600">
-                        Total Weekly Collections
-                      </span>
-                      <span className="font-bold">
-                        {stats?.totalEntries || 1809}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Collection entries recorded in system
-                    </p>
-                  </div>
+                        <div className="bg-teal-50 p-4 rounded-lg">
+                          <div className="text-2xl font-bold text-teal-700">
+                            {chartData.reduce((sum, item) => sum + item.collections, 0).toLocaleString()}
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">Total Collections</p>
+                        </div>
+                      </div>
 
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900">
-                      Weekly Collection Focus
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      Consistent weekly sandwich collection schedule with team
-                      coordination across all active collection locations.
-                    </p>
-                  </div>
+                      <div className="bg-purple-50 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-700">
+                          {Math.round(
+                            chartData.reduce((sum, item) => sum + item.sandwiches, 0) /
+                            chartData.reduce((sum, item) => sum + item.collections, 0)
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">Average Sandwiches per Collection</p>
+                      </div>
+
+                      <div className="pt-4 border-t">
+                        <h4 className="font-medium text-gray-900 mb-2">Data Range</h4>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          <p>• {chartData.length} {chartView === 'weekly' ? 'weeks' : 'months'} of data</p>
+                          <p>• {dateRange === '3months' ? 'Last 3 months' : dateRange === '6months' ? 'Last 6 months' : dateRange === '1year' ? 'Last 12 months' : 'All-time history'}</p>
+                          <p>• Peak: {Math.max(...chartData.map(d => d.sandwiches)).toLocaleString()} sandwiches</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No data available for the selected period</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
