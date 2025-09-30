@@ -679,7 +679,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium hover:underline block truncate"
+                    className="text-base font-medium hover:underline block break-words"
                     title={request.eventAddress}
                   >
                     {request.eventAddress}
