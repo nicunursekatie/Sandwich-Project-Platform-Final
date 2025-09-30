@@ -161,7 +161,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Event Requests',
     icon: Calendar,
     href: 'event-requests',
-    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
+    permission: PERMISSIONS.NAV_EVENT_PLANNING,
     group: 'planning',
   },
   {

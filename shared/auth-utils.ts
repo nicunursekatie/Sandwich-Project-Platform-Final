@@ -197,6 +197,37 @@ export const PERMISSIONS = {
 
 } as const;
 
+// Permission dependencies: When a permission is granted, these dependencies are automatically included
+export const PERMISSION_DEPENDENCIES: Record<string, string[]> = {
+  // Navigation permissions automatically grant their corresponding functional permissions
+  [PERMISSIONS.NAV_EVENT_PLANNING]: [PERMISSIONS.EVENT_REQUESTS_VIEW],
+  [PERMISSIONS.NAV_HOSTS]: [PERMISSIONS.HOSTS_VIEW],
+  [PERMISSIONS.NAV_DRIVERS]: [PERMISSIONS.DRIVERS_VIEW],
+  [PERMISSIONS.NAV_VOLUNTEERS]: [PERMISSIONS.VOLUNTEERS_VIEW],
+  [PERMISSIONS.NAV_RECIPIENTS]: [PERMISSIONS.RECIPIENTS_VIEW],
+  [PERMISSIONS.NAV_COLLECTIONS_LOG]: [PERMISSIONS.COLLECTIONS_VIEW],
+  [PERMISSIONS.NAV_PROJECTS]: [PERMISSIONS.PROJECTS_VIEW],
+  [PERMISSIONS.NAV_MEETINGS]: [PERMISSIONS.MEETINGS_VIEW],
+  [PERMISSIONS.NAV_ANALYTICS]: [PERMISSIONS.ANALYTICS_VIEW],
+  [PERMISSIONS.NAV_SUGGESTIONS]: [PERMISSIONS.SUGGESTIONS_VIEW],
+  [PERMISSIONS.NAV_GROUPS_CATALOG]: [PERMISSIONS.ORGANIZATIONS_VIEW],
+};
+
+// Helper function to apply permission dependencies
+export function applyPermissionDependencies(permissions: string[]): string[] {
+  const result = new Set(permissions);
+  
+  // For each permission, add its dependencies
+  permissions.forEach(permission => {
+    const dependencies = PERMISSION_DEPENDENCIES[permission];
+    if (dependencies) {
+      dependencies.forEach(dep => result.add(dep));
+    }
+  });
+  
+  return Array.from(result);
+}
+
 // Note: This application uses individual permission assignment, not role-based defaults
 // The getDefaultPermissionsForRole function is kept for backwards compatibility only
 
