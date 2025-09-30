@@ -58,6 +58,7 @@ import {
 import type { EventRequest } from '@shared/schema';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TimeDialogContentProps {
   request: EventRequest;
@@ -251,6 +252,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   isUserSignedUp,
   canEdit = true,
 }) => {
+  const isMobile = useIsMobile();
+  
   // Helper functions
   const parsePostgresArray = (arr: any): string[] => {
     if (!arr) return [];
@@ -559,13 +562,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   };
 
   return (
-    <Card className="w-full transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg">
-      <CardContent className="p-6">
+    <Card className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg`}>
+      <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
         {/* Header with Organization and Status */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-4">
-              <h3 className="text-2xl font-bold text-[#236383] flex items-center gap-2">
+            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'} mb-4`}>
+              <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-[#236383] flex items-center gap-2`}>
                 {request.organizationName}
                 {request.department && (
                   <span className="text-lg font-normal text-[#646464]">
@@ -593,7 +596,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   Fully Staffed
                 </Badge>
               ) : (
-                <div className="flex gap-1">
+                <div className={`${isMobile ? 'flex flex-wrap gap-1' : 'flex gap-1'}`}>
                   {driverNeeded > driverAssigned && (
                     <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
                       {driverNeeded - driverAssigned} driver
@@ -618,7 +621,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Key Information - Prominently Displayed */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {/* Event Date - Most Important */}
               <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
                 <div className="flex items-center gap-2 mb-2">
@@ -735,7 +738,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {/* Main Content */}
         <div className="space-y-4">
           {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Event Times */}
             <div className="bg-[#007E8C] text-white rounded-lg p-4 shadow-md">
               <div className="flex items-center justify-between mb-3">
@@ -1077,7 +1080,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
           {/* Two-column grid for Contact Information and Team Assignments */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Contact Information */}
             <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
               <div className="flex items-center gap-2 mb-3">
@@ -1609,7 +1612,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 justify-end">
+          <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-3 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}>
             <Button size="sm" variant="outline" onClick={onContact} className="!bg-[#007e8c] !text-[#ffffff] !border-[#007e8c] hover:!bg-[#006975] hover:!text-white">
               Contact Organizer
             </Button>
