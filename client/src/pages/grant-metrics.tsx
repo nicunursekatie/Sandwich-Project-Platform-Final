@@ -318,25 +318,25 @@ export default function GrantMetrics() {
             </CardContent>
           </Card>
 
-          {/* Top Performer */}
+          {/* Host Network Strength */}
           <Card className="border-2 border-[#A31C41] shadow-lg">
             <CardHeader className="bg-[#FCE4E6]">
               <CardTitle className="flex items-center text-[#A31C41]">
-                <Trophy className="w-5 h-5 mr-2 text-[#A31C41]" />
-                Top Performing Partner
+                <MapPin className="w-5 h-5 mr-2 text-[#A31C41]" />
+                Collective Host Network
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
-                <MapPin className="w-12 h-12 mx-auto mb-3 opacity-90" />
+                <Building2 className="w-12 h-12 mx-auto mb-3 opacity-90" />
                 <h2 className="text-3xl font-black mb-2">
-                  {metrics.topHost.name}
+                  {metrics.uniqueHosts} Active Hosts
                 </h2>
                 <div className="text-4xl font-black mb-2">
-                  {metrics.topHost.total.toLocaleString()}
+                  {metrics.avgPerCollection}
                 </div>
                 <p className="text-white/90 text-lg">
-                  Total sandwiches contributed - our #1 partner
+                  Average sandwiches per collection - consistent quality across all hosts
                 </p>
               </div>
 
@@ -345,15 +345,15 @@ export default function GrantMetrics() {
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Strong partnership model driving consistent results</span>
+                    <span>Distributed network prevents single points of failure</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Proven scalability through successful host relationships</span>
+                    <span>Geographic diversity ensures consistent community coverage</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Community engagement model with measurable outcomes</span>
+                    <span>Every host location is essential to our collective impact</span>
                   </li>
                 </ul>
               </div>
