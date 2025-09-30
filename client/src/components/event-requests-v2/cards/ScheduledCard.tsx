@@ -1117,8 +1117,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Team Assignments */}
-            {totalNeeded > 0 && (
-              <div className="bg-[#A31C41] text-white rounded-lg p-4 shadow-md">
+            <div className="bg-[#A31C41] text-white rounded-lg p-4 shadow-md">
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-semibold text-lg">
                     Team Assignments
@@ -1425,7 +1424,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Comprehensive Notes & Requirements Section */}
