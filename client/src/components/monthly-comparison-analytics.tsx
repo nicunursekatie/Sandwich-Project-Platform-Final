@@ -631,10 +631,17 @@ export default function MonthlyComparisonAnalytics() {
 
           <div className="bg-white p-4 rounded-lg border border-blue-200 border-l-4">
             <div className="text-sm text-gray-600 mb-1">✓ Wed/Thu vs Off-Day Split</div>
-            <div className="text-lg font-bold text-brand-primary">
-              {selectedMonthAnalysis.wedThuSandwiches.toLocaleString()} Wed/Thu | {selectedMonthAnalysis.otherDaysSandwiches.toLocaleString()} Other days
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <div>
+                <div className="text-2xl font-bold text-brand-primary">{selectedMonthAnalysis.wedThuSandwiches.toLocaleString()}</div>
+                <div className="text-xs text-gray-500">Wed/Thu</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-brand-primary">{selectedMonthAnalysis.otherDaysSandwiches.toLocaleString()}</div>
+                <div className="text-xs text-gray-500">Other days</div>
+              </div>
             </div>
-            <p className="text-gray-500 mt-1 text-[14px]">Collection day distribution</p>
+            <p className="text-gray-500 mt-2 text-[12px]">Collection day distribution</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4">
