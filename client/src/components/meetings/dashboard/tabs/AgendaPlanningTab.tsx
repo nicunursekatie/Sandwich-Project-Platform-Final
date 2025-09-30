@@ -805,7 +805,7 @@ export function AgendaPlanningTab({
                                         );
                                         setEditProjectOwnerIds(
                                           Array.isArray(project.assigneeIds)
-                                            ? project.assigneeIds.map((id) => id?.toString())
+                                            ? project.assigneeIds.map((id: string | number) => id?.toString())
                                             : []
                                         );
                                         setShowEditOwnerDialog(true);
@@ -835,7 +835,7 @@ export function AgendaPlanningTab({
                                         );
                                         setEditSupportPeopleIds(
                                           Array.isArray(project.supportPeopleIds)
-                                            ? project.supportPeopleIds.map((id) => id?.toString())
+                                            ? project.supportPeopleIds.map((id: string | number) => id?.toString())
                                             : []
                                         );
                                         setShowEditPeopleDialog(true);
@@ -1057,10 +1057,6 @@ export function AgendaPlanningTab({
                               {/* Project Tasks View */}
                               <ProjectTasksView
                                 projectId={project.id}
-                                onAddTask={() => {
-                                  setEditingProject(project.id);
-                                  setShowAddTaskDialog(true);
-                                }}
                               />
                             </div>
 
@@ -1071,18 +1067,18 @@ export function AgendaPlanningTab({
                                   Attachments
                                 </Label>
                                 <ObjectUploader
-                                  onUpload={(files) => {
-                                    setUploadedFiles((prev) => ({
-                                      ...prev,
+                                  onComplete={(files: { url: string; name: string }[]) => {
+                                    const updatedFiles = {
+                                      ...uploadedFiles,
                                       [project.id]: [
-                                        ...(prev[project.id] || []),
+                                        ...(uploadedFiles[project.id] || []),
                                         ...files,
                                       ],
-                                    }));
+                                    };
+                                    setUploadedFiles(updatedFiles);
                                   }}
-                                  multiple={true}
-                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                                  maxSize={10 * 1024 * 1024} // 10MB
+                                  maxNumberOfFiles={5}
+                                  maxFileSize={10 * 1024 * 1024}
                                 >
                                   <Button size="sm" variant="outline">
                                     <Plus className="w-4 h-4 mr-1" />

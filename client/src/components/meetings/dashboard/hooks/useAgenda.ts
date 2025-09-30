@@ -16,6 +16,9 @@ export interface AgendaItem {
   meetingId?: number;
   section?: string;
   submittedAt?: string;
+  isOffAgendaItem?: boolean;
+  projectId?: number;
+  content?: string;
 }
 
 export interface AgendaSection {
