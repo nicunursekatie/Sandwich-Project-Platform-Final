@@ -183,20 +183,20 @@ Or within 24 hours if your event is happening in the next week
 Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with an inventory calculator and food safety tips.
 
 Event Scheduling
-Groups may host events on any day of the week if making 200+ sandwiches.
-If you have some flexibility with dates, let us know! We can suggest times when sandwiches are especially needed.
-Once you have set a date, we ask for at least two weeks' notice so we can add you to our schedule.
+• Groups may host events on any day of the week if making 200+ sandwiches.
+• If you have some flexibility with dates, let us know! We can suggest times when sandwiches are especially needed.
+• Once you have set a date, we ask for at least two weeks' notice so we can add you to our schedule.
 
 Transportation
-We provide transportation for 200+ deli sandwiches and for larger amounts of PBJs (based on volunteer driver availability).
-If you're located outside our host home radius, we would be happy to discuss delivery options with you.
+• We provide transportation for 200+ deli sandwiches and for larger amounts of PBJs (based on volunteer driver availability).
+• If you're located outside our host home radius, we would be happy to discuss delivery options with you.
 
 Food Safety Reminders
-A refrigerator is required to make deli sandwiches so that meat, cheese, and sandwiches are always cold.
-Food-safe gloves must be worn.
-Hair should be tied back or in a hairnet.
-Sandwiches must be made indoors.
-We provide food to vulnerable populations, so please read and follow all safety rules.
+• A refrigerator is required to make deli sandwiches so that meat, cheese, and sandwiches are always cold.
+• Food-safe gloves must be worn.
+• Hair should be tied back or in a hairnet.
+• Sandwiches must be made indoors.
+• We provide food to vulnerable populations, so please read and follow all safety rules.
 
 ${schedulingCallText}
 
