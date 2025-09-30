@@ -288,6 +288,29 @@ export default function MonthlyComparisonAnalytics() {
     const selectedMonthData = monthlyAnalytics[monthKey];
     if (!selectedMonthData) return null;
 
+    // Calculate Wed/Thu vs Other Days split for selected month
+    let wedThuSandwiches = 0;
+    let otherDaysSandwiches = 0;
+
+    collections.forEach((collection: any) => {
+      if (!collection.collectionDate) return;
+
+      const date = parseCollectionDate(collection.collectionDate);
+      if (Number.isNaN(date.getTime())) return;
+
+      // Check if this collection is in the selected month
+      if (date.getFullYear() === selectedYear && date.getMonth() === selectedMonth) {
+        const total = calculateTotalSandwiches(collection);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 3 = Wednesday, 4 = Thursday
+
+        if (dayOfWeek === 3 || dayOfWeek === 4) {
+          wedThuSandwiches += total;
+        } else {
+          otherDaysSandwiches += total;
+        }
+      }
+    });
+
     // Year-over-year comparison (same month last year)
     const prevYearMonthKey = `${selectedYear - 1}-${String(selectedMonth + 1).padStart(2, '0')}`;
     const prevYearMonth = monthlyAnalytics[prevYearMonthKey];
@@ -407,6 +430,9 @@ export default function MonthlyComparisonAnalytics() {
       shortfall: avgRecentMonth - selectedMonthData.totalSandwiches,
       shortfallPercent:
         ((avgRecentMonth - selectedMonthData.totalSandwiches) / avgRecentMonth) * 100,
+      // Wed/Thu vs Other Days split
+      wedThuSandwiches,
+      otherDaysSandwiches,
     };
   }, [monthlyAnalytics, selectedMonth, selectedYear]);
 
@@ -604,11 +630,11 @@ export default function MonthlyComparisonAnalytics() {
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-blue-200 border-l-4">
-            <div className="text-sm text-gray-600 mb-1">✓ Collections Completed</div>
-            <div className="text-3xl font-bold text-brand-primary">
-              {selectedMonthAnalysis.selectedMonthData.totalCollections}
+            <div className="text-sm text-gray-600 mb-1">✓ Wed/Thu vs Off-Day Split</div>
+            <div className="text-lg font-bold text-brand-primary">
+              {selectedMonthAnalysis.wedThuSandwiches.toLocaleString()} Wed/Thu | {selectedMonthAnalysis.otherDaysSandwiches.toLocaleString()} Other days
             </div>
-            <p className="text-xs text-gray-500 mt-1">Zero missed pickups</p>
+            <p className="text-xs text-gray-500 mt-1">Collection day distribution</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4">
