@@ -618,7 +618,7 @@ export default function ImpactDashboard() {
                       <Clock className="w-5 h-5 flex-shrink-0" />
                       <span className="font-semibold whitespace-nowrap">Recent Trends</span>
                     </div>
-                    <span className="text-xs text-left opacity-80 whitespace-normal break-words w-full">
+                    <span className="text-left opacity-80 whitespace-normal break-words w-full text-[16px]">
                       3 months of weekly data - see recent performance patterns
                     </span>
                   </Button>
