@@ -200,6 +200,32 @@ export default function GrantMetrics() {
 
   const metrics = calculateGrantMetrics();
 
+  // Debug peak month calculation
+  console.log('=== PEAK MONTH DEBUG ===');
+  console.log('Peak Month:', metrics.peakMonth);
+  console.log('All Monthly Totals:', metrics.monthlyData);
+
+  const november2023Collections = collections.filter((c: any) =>
+    c.collectionDate && c.collectionDate.startsWith('2023-11')
+  );
+
+  console.log('November 2023 Collections Count:', november2023Collections.length);
+  console.log('November 2023 Sample Collections:', november2023Collections.slice(0, 5).map((c: any) => ({
+    date: c.collectionDate,
+    individual: c.individualSandwiches,
+    group1: c.group1Count,
+    group2: c.group2Count,
+    groupCollections: c.groupCollections,
+    calculated: calculateTotalSandwiches(c),
+    hostName: c.hostName,
+  })));
+
+  const november2023Total = november2023Collections.reduce((sum: number, c: any) =>
+    sum + calculateTotalSandwiches(c), 0
+  );
+  console.log('November 2023 Manually Calculated Total:', november2023Total);
+  console.log('=======================');
+
   // Prepare year-over-year chart data
   const yearChartData = [
     { year: '2023', sandwiches: metrics.yearTotals[2023] || 0 },
