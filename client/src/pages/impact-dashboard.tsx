@@ -50,7 +50,7 @@ export default function ImpactDashboard() {
     'monthly'
   );
   const [dateRange, setDateRange] = useState<'3months' | '6months' | '1year' | 'all'>('1year');
-  const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical' | 'weekly'>('recent');
+  const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
 
   // Fetch sandwich collections data
   const { data: collectionsData } = useQuery({
@@ -604,7 +604,7 @@ export default function ImpactDashboard() {
                 <CardDescription>Choose the right view for your analysis</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Button
                     variant={trendsView === 'recent' ? 'default' : 'outline'}
                     className="h-auto min-h-[100px] w-full py-4 px-4 flex flex-col items-start justify-start"
@@ -658,24 +658,6 @@ export default function ImpactDashboard() {
                       All-time monthly totals - track long-term growth
                     </span>
                   </Button>
-
-                  <Button
-                    variant={trendsView === 'weekly' ? 'default' : 'outline'}
-                    className="h-auto min-h-[100px] w-full py-4 px-4 flex flex-col items-start justify-start"
-                    onClick={() => {
-                      setTrendsView('weekly');
-                      setDateRange('all');
-                      setChartView('weekly');
-                    }}
-                  >
-                    <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-                      <Calendar className="w-5 h-5 flex-shrink-0" />
-                      <span className="font-semibold whitespace-nowrap">Weekly Trends</span>
-                    </div>
-                    <span className="text-left opacity-80 whitespace-normal break-words w-full text-[16px]">
-                      All-time weekly data - detailed planning and historical analysis
-                    </span>
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -690,13 +672,11 @@ export default function ImpactDashboard() {
                         {trendsView === 'recent' && 'Recent Collection Trends'}
                         {trendsView === 'seasonal' && 'Seasonal Collection Patterns'}
                         {trendsView === 'historical' && 'Historical Collection Growth'}
-                        {trendsView === 'weekly' && 'Weekly Collection Trends'}
                       </CardTitle>
                       <CardDescription>
                         {trendsView === 'recent' && 'Weekly collections over the last 3 months'}
                         {trendsView === 'seasonal' && 'Monthly collections showing seasonal patterns'}
                         {trendsView === 'historical' && 'All-time monthly collection totals'}
-                        {trendsView === 'weekly' && 'All-time weekly data for detailed planning and historical analysis'}
                       </CardDescription>
                     </div>
 
@@ -860,6 +840,96 @@ export default function ImpactDashboard() {
                       <p>No data available for the selected period</p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* Weekly Breakdown for Planning */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Calendar className="w-5 h-5 mr-2" />
+                    Weekly Breakdown
+                  </CardTitle>
+                  <CardDescription>
+                    Week-by-week collection totals for operational planning
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart
+                      data={(() => {
+                        // Calculate weekly data for last 16 weeks
+                        const weeklyData: Record<string, { sandwiches: number; collections: number }> = {};
+                        const now = new Date();
+                        const sixteenWeeksAgo = new Date(now);
+                        sixteenWeeksAgo.setDate(now.getDate() - (16 * 7));
+
+                        collections.forEach((collection: any) => {
+                          if (!collection.collectionDate) return;
+
+                          const date = parseCollectionDate(collection.collectionDate);
+                          if (Number.isNaN(date.getTime()) || date < sixteenWeeksAgo) return;
+
+                          // Calculate week starting Monday
+                          const monday = new Date(date);
+                          const day = monday.getDay();
+                          const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
+                          monday.setDate(diff);
+                          monday.setHours(0, 0, 0, 0);
+                          const weekKey = monday.toISOString().split('T')[0];
+
+                          if (!weeklyData[weekKey]) {
+                            weeklyData[weekKey] = { sandwiches: 0, collections: 0 };
+                          }
+
+                          weeklyData[weekKey].sandwiches += calculateTotalSandwiches(collection);
+                          weeklyData[weekKey].collections += 1;
+                        });
+
+                        return Object.entries(weeklyData)
+                          .map(([week, data]) => ({
+                            week: new Date(week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                            sandwiches: data.sandwiches,
+                            collections: data.collections,
+                          }))
+                          .sort((a, b) => {
+                            const dateA = new Date(a.week);
+                            const dateB = new Date(b.week);
+                            return dateA.getTime() - dateB.getTime();
+                          });
+                      })()}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                      <XAxis
+                        dataKey="week"
+                        tick={{ fontSize: 11 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        label={{ value: 'Sandwiches', angle: -90, position: 'insideLeft' }}
+                      />
+                      <Tooltip
+                        formatter={(value: number, name: string) => {
+                          if (name === 'sandwiches') return [value.toLocaleString(), 'Sandwiches'];
+                          if (name === 'collections') return [value, 'Collections'];
+                          return [value, name];
+                        }}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          border: '1px solid #ccc',
+                          borderRadius: '8px',
+                          padding: '10px'
+                        }}
+                      />
+                      <Bar dataKey="sandwiches" fill="#236383" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="mt-4 text-sm text-gray-600">
+                    <p>Showing last 16 weeks of collection activity • Week starting Monday</p>
+                  </div>
                 </CardContent>
               </Card>
             </div>
