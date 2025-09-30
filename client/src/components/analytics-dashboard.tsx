@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   BarChart,
   Bar,
@@ -300,6 +301,17 @@ export default function AnalyticsDashboard() {
     };
   }, [collections, statsData, hostsData]);
 
+  // Add period selection state
+  const [selectedPeriod, setSelectedPeriod] = useState('1year');
+
+  // Map for display labels
+  const periodLabels = {
+    '3months': '3 Month Summary',
+    '6months': '6 Month Summary',
+    '1year': '1 Year Summary',
+    'all': 'All Time Summary',
+  };
+
   // Show loading state while authenticating or fetching data
   if (isLoading) {
     return (
@@ -341,6 +353,34 @@ export default function AnalyticsDashboard() {
         <p className="text-lg text-[#646464]">
           Data insights and impact visualization
         </p>
+      </div>
+
+      {/* Period Selection Buttons */}
+      <div className="flex justify-center gap-2 mb-4">
+        <Button
+          variant={selectedPeriod === '3months' ? 'default' : 'outline'}
+          onClick={() => setSelectedPeriod('3months')}
+        >
+          3 Months
+        </Button>
+        <Button
+          variant={selectedPeriod === '6months' ? 'default' : 'outline'}
+          onClick={() => setSelectedPeriod('6months')}
+        >
+          6 Months
+        </Button>
+        <Button
+          variant={selectedPeriod === '1year' ? 'default' : 'outline'}
+          onClick={() => setSelectedPeriod('1year')}
+        >
+          1 Year
+        </Button>
+        <Button
+          variant={selectedPeriod === 'all' ? 'default' : 'outline'}
+          onClick={() => setSelectedPeriod('all')}
+        >
+          All Time
+        </Button>
       </div>
 
       {/* Key Metrics */}
@@ -397,6 +437,53 @@ export default function AnalyticsDashboard() {
           </div>
           <p className="text-[#646464] font-medium">Total Hosts</p>
         </div>
+      </div>
+
+      {/* Period Summary Section */}
+      <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all mt-8">
+        <h2 className="text-2xl font-bold text-brand-primary mb-4">
+          {periodLabels[selectedPeriod] || 'Period Summary'}
+        </h2>
+        <div className="space-y-4">
+              <div className="bg-brand-orange/10 p-4 rounded-lg border border-brand-orange/30">
+                <h4 className="font-semibold text-brand-primary mb-2">
+                  Host Expansion
+                </h4>
+                <p className="text-sm text-[#646464] mb-2">
+                  {analyticsData.totalHosts} total hosts (
+                  {analyticsData.activeHosts} active) - Growing network
+                </p>
+                <Badge className="bg-brand-orange/20 text-brand-orange">
+                  Special campaign needed
+                </Badge>
+              </div>
+
+              <div className="bg-brand-primary/10 p-4 rounded-lg border border-brand-primary/30">
+                <h4 className="font-semibold text-brand-primary mb-2">
+                  Capacity Building
+                </h4>
+                <p className="text-sm text-[#646464] mb-2">
+                  Weekly avg: {analyticsData.avgWeekly.toLocaleString()} -
+                  Support volunteer recruitment
+                </p>
+                <Badge className="bg-brand-primary/20 text-brand-primary">
+                  → Target 10K/week
+                </Badge>
+              </div>
+
+              <div className="bg-green-100 p-4 rounded-lg border border-green-300">
+                <h4 className="font-semibold text-green-800 mb-2">
+                  🎉 Milestone Achieved!
+                </h4>
+                <p className="text-sm text-green-700 mb-2">
+                  {(analyticsData.totalSandwiches - 2000000).toLocaleString()}{' '}
+                  sandwiches BEYOND 2M goal!
+                </p>
+                <Badge className="bg-green-200 text-green-800">
+                  2M+ Goal Exceeded!
+                </Badge>
+              </div>
+            </div>
       </div>
 
       {/* Charts Section - Vertical Layout */}
