@@ -265,7 +265,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               <Phone className="w-4 h-4 text-gray-400" />
               <a
                 href={`tel:${request.phone}`}
-                className="text-blue-600 hover:text-blue-800 text-[16px]"
+                className="text-blue-600 hover:text-blue-800 text-[18px]"
               >
                 {request.phone}
               </a>
