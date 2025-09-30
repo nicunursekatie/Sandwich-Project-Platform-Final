@@ -154,7 +154,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="flex items-start space-x-3">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[#1A2332] text-[20px]">
+            <h3 className="font-semibold text-[20px] bg-[47b3cb] text-[#04414a]">
               {request.organizationName}
               {request.department && (
                 <span className="text-gray-600 ml-1">
