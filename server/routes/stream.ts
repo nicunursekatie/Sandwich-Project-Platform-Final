@@ -98,6 +98,37 @@ streamRoutes.post('/credentials', async (req, res) => {
       // Generate user token
       const userToken = streamServerClient.createToken(streamUserId);
 
+      // Initialize team chat rooms based on user permissions
+      const teamRooms = [
+        { id: 'general', name: 'General Chat', permission: 'CHAT_GENERAL' },
+        { id: 'core-team', name: 'Core Team', permission: 'CHAT_CORE_TEAM' },
+        { id: 'grants-committee', name: 'Grants Committee', permission: 'CHAT_GRANTS_COMMITTEE' },
+        { id: 'events-committee', name: 'Events Committee', permission: 'CHAT_EVENTS_COMMITTEE' },
+        { id: 'board-chat', name: 'Board Chat', permission: 'CHAT_BOARD' },
+        { id: 'web-committee', name: 'Web Committee', permission: 'CHAT_WEB_COMMITTEE' },
+        { id: 'volunteer-management', name: 'Volunteer Management', permission: 'CHAT_VOLUNTEER_MANAGEMENT' },
+        { id: 'host', name: 'Host Chat', permission: 'CHAT_HOST' },
+        { id: 'driver', name: 'Driver Chat', permission: 'CHAT_DRIVER' },
+        { id: 'recipient', name: 'Recipient Chat', permission: 'CHAT_RECIPIENT' },
+      ];
+
+      // Create team channels that the user has permission for
+      const userPermissions = user.permissions || [];
+      for (const room of teamRooms) {
+        if (userPermissions.includes(room.permission)) {
+          try {
+            const channel = streamServerClient.channel('team', room.id, {
+              name: room.name,
+              created_by_id: streamUserId,
+            });
+            await channel.create();
+          } catch (channelError) {
+            // Channel might already exist, that's okay
+            console.log(`Channel ${room.id} already exists or couldn't be created`);
+          }
+        }
+      }
+
       res.json({
         apiKey,
         userToken,
