@@ -162,56 +162,47 @@ export function EventEmailComposer({
     const userPhone = user?.phoneNumber || '';
     const userEmail = user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
     
-    // Determine the next steps section based on selected options
-    let nextStepsSection = '';
-    let introText = 'Read through this email, then ';
+    // Determine scheduling section based on selected options
+    let schedulingCallText = '';
     
     if (includeScheduling) {
-      nextStepsSection = `Schedule a planning call to get your event on our calendar:
+      schedulingCallText = `Once you have reviewed everything, we would love to connect! Please use the link below to schedule a quick call:
+
+Within 2–3 business days of this email
+Or within 24 hours if your event is happening in the next week
+
 🗓️ https://thesandwichproject.as.me/`;
-      introText += 'schedule a call with us so we can';
     } else if (requestPhone) {
-      nextStepsSection = `Reply to this email with your phone number and best times to call you. We'll reach out within 1-2 business days to schedule your event.`;
-      introText += 'reply with your contact information so we can';
+      schedulingCallText = `Once you have reviewed everything, we would love to connect! Please reply to this email with your phone number and best times to call you. We'll reach out within 1-2 business days.`;
     } else {
-      // Default if neither is selected (though we warn about this)
-      nextStepsSection = `Reply to this email with your preferred event dates and we'll work with you to get your event scheduled.`;
-      introText += 'let us know your preferred dates so we can';
+      schedulingCallText = `Once you have reviewed everything, we would love to connect! Please reply to this email to schedule a planning call.`;
     }
     
     const template = `Hi ${eventRequest.firstName},
 
-Thanks for your interest in organizing a sandwich-making event! We're thrilled you want to help us feed our community—every sandwich makes a real difference in someone's day. ${introText} get you on our event roster as soon as possible!
+Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with an inventory calculator and food safety tips.
 
-Here's how it works: Groups make 200+ sandwiches at their events—but you'd be surprised how quickly they come together when everyone's working as a team. Many of our groups make 500 or even 1,000 sandwiches in just a few hours. You can choose any day that works for your group.
+Event Scheduling
+Groups may host events on any day of the week if making 200+ sandwiches.
+If you have some flexibility with dates, let us know! We can suggest times when sandwiches are especially needed.
+Once you have set a date, we ask for at least two weeks' notice so we can add you to our schedule.
 
-Planning your budget:
-📊 Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
-This tool lets you:
-• Enter your budget to see how many sandwiches you can make, OR
-• Enter your sandwich goal to see what it'll cost
-• Export a complete shopping list with quantities and supplies needed
+Transportation
+We provide transportation for 200+ deli sandwiches and for larger amounts of PBJs (based on volunteer driver availability).
+If you're located outside our host home radius, we would be happy to discuss delivery options with you.
 
-What you'll need for your event (the basics):
-• Food-safe gloves for all volunteers
-• Hair ties for long hair to be tied back or even better- hair & beard nets for sandwich-makers  
-• Indoor space for sandwich making
-• Refrigerator access (if making deli sandwiches)
+Food Safety Reminders
+A refrigerator is required to make deli sandwiches so that meat, cheese, and sandwiches are always cold.
+Food-safe gloves must be worn.
+Hair should be tied back or in a hairnet.
+Sandwiches must be made indoors.
+We provide food to vulnerable populations, so please read and follow all safety rules.
 
-Next steps to book your event:
-• Review the attached food safety guidelines
-• ${nextStepsSection}
+${schedulingCallText}
 
-When choosing your event date, we prefer about 2 weeks' notice to schedule drivers, but we can usually accommodate tighter timelines.
+We look forward to working with you!
 
-Resources attached:
-• Sandwich-making instructions (PBJ and deli options)
-• Food safety guidelines
-• Sandwich labels (for day of event)
-
-We really appreciate you taking the time to do this. Looking forward to working together!
-
-Best,
+Warmly,
 ${userName}${userPhone ? '\n' + userPhone : ''}
 ${userEmail}`;
 
@@ -283,72 +274,20 @@ ${userEmail}`;
   // Initialize with comprehensive template when component opens
   useEffect(() => {
     if (isOpen && !content) {
-      const eventDetails = formatEventDetails();
+      // Just call regenerateEmailContent to avoid duplicating template logic
+      regenerateEmailContent(includeSchedulingLink, requestPhoneCall);
       
-      // Generate user signature dynamically
-      const userName = user?.firstName && user?.lastName 
-        ? `${user.firstName} ${user.lastName}`
-        : user?.email || 'The Sandwich Project Team';
-      
-      const userPhone = user?.phoneNumber || '';
-      const userEmail = user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
-      
-      // Build the scheduling section conditionally
-      const schedulingSection = includeSchedulingLink 
-        ? `Schedule a planning call to get your event on our calendar:
-🗓️ https://thesandwichproject.as.me/`
-        : '';
-      
-      const template = `Hi ${eventRequest.firstName},
-
-Thanks for your interest in organizing a sandwich-making event! We're thrilled you want to help us feed our community—every sandwich makes a real difference in someone's day. Read through this email, then ${includeSchedulingLink ? 'schedule a call with us so we can' : 'we can'} get you on our event roster as soon as possible!
-
-Here's how it works: Groups make 200+ sandwiches at their events—but you'd be surprised how quickly they come together when everyone's working as a team. Many of our groups make 500 or even 1,000 sandwiches in just a few hours. You can choose any day that works for your group.
-
-Planning your budget:
-📊 Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
-This tool lets you:
-• Enter your budget to see how many sandwiches you can make, OR
-• Enter your sandwich goal to see what it'll cost
-• Export a complete shopping list with quantities and supplies needed
-
-What you'll need for your event (the basics):
-• Food-safe gloves for all volunteers
-• Hair & beard nets for volunteers  
-• Indoor space for sandwich making
-• Refrigerator access (if making deli sandwiches)
-
-Next steps to book your event:
-• Review the attached food safety guidelines
-${schedulingSection ? '• ' + schedulingSection : ''}
-
-When choosing your event date, we prefer about 2 weeks' notice to schedule drivers, but we can usually accommodate tighter timelines.
-
-Resources attached:
-• Sandwich-making instructions (PBJ and deli options)
-• Food safety guidelines
-• Sandwich labels (for day of event)
-
-We really appreciate you taking the time to do this. Looking forward to working together!
-
-Best,
-${userName}${userPhone ? '\n' + userPhone : ''}
-${userEmail}`;
-
-      setContent(template);
-      // Store the initial generated content
-      lastGeneratedContentRef.current = template;
       // Mark as not having manual edits initially
       setHasManualEdits(false);
       
       setSubject(
-        `The Sandwich Project - Event Resources for ${eventRequest.organizationName}`
+        `Thanks for reaching out to The Sandwich Project!`
       );
       
       // Clear initial load flag after first template generation
       isInitialLoad.current = false;
     }
-  }, [isOpen, eventRequest, formatEventDetails, includeSchedulingLink, user]);
+  }, [isOpen, eventRequest, formatEventDetails, includeSchedulingLink, requestPhoneCall, user]);
 
   // Separate effect to handle default attachment selection after documents load
   useEffect(() => {
