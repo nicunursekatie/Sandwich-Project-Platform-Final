@@ -1,7 +1,5 @@
-import {
-  GoogleSheetsService,
-  GoogleSheetsConfig,
-} from './google-sheets-service';
+import { google } from 'googleapis';
+import { JWT } from 'google-auth-library';
 import type { IStorage } from './storage';
 import { EventRequest, Organization, eventRequests } from '@shared/schema';
 import { AuditLogger } from './audit-logger';
@@ -26,18 +24,40 @@ export interface EventRequestSheetRow {
   rowIndex?: number;
 }
 
-export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
+export class EventRequestsGoogleSheetsService {
+  private auth!: JWT;
+  private sheets: any;
+  private spreadsheetId: string;
+
   constructor(private storage: IStorage) {
-    const config: GoogleSheetsConfig = {
-      spreadsheetId: process.env.EVENT_REQUESTS_SHEET_ID!,
-      worksheetName: 'Sheet1',
-    };
-    super(config);
+    this.spreadsheetId = process.env.EVENT_REQUESTS_SHEET_ID!;
+    // Don't call async initialization in constructor
   }
 
-  // Make ensureInitialized method accessible
-  async ensureInitialized() {
-    return super.ensureInitialized();
+  private async ensureInitialized() {
+    if (!this.sheets) {
+      await this.initializeAuth();
+    }
+  }
+
+  private async initializeAuth() {
+    // Use JWT authentication (same as other Google Sheets integrations)
+    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    if (!privateKey || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+      throw new Error('Google Sheets credentials not configured');
+    }
+
+    this.auth = new google.auth.JWT(
+      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      undefined,
+      privateKey,
+      [
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/drive',
+      ]
+    );
+
+    this.sheets = google.sheets({ version: 'v4', auth: this.auth });
   }
 
   /**
