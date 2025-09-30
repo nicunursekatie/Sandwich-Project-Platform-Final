@@ -2464,7 +2464,142 @@ export class MemStorage implements IStorage {
 
   // Document Management Methods
   async getAllDocuments(): Promise<Document[]> {
-    return Array.from(this.documents.values()).filter((doc) => doc.isActive);
+    const docs = Array.from(this.documents.values()).filter((doc) => doc.isActive);
+    
+    // If no documents exist, try to populate from public folders
+    if (docs.length === 0) {
+      await this.populateDocumentsFromPublicFolders();
+      return Array.from(this.documents.values()).filter((doc) => doc.isActive);
+    }
+    
+    return docs;
+  }
+
+  // Helper method to populate documents from public folders
+  private async populateDocumentsFromPublicFolders(): Promise<void> {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const DOCUMENT_CATEGORIES = {
+        'toolkit': {
+          folder: path.join(process.cwd(), 'public/toolkit'),
+          description: 'Event toolkit documents for hosts'
+        },
+        'documents': {
+          folder: path.join(process.cwd(), 'public/documents'), 
+          description: 'General organization documents'
+        }
+      };
+
+      const MIME_TYPES = {
+        '.pdf': 'application/pdf',
+        '.doc': 'application/msword',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.xls': 'application/vnd.ms-excel',
+        '.txt': 'text/plain',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp'
+      };
+
+      const getMimeType = (filePath: string) => {
+        const ext = path.extname(filePath).toLowerCase();
+        return MIME_TYPES[ext] || 'application/octet-stream';
+      };
+
+      const generateTitle = (fileName: string) => {
+        const nameWithoutExt = path.parse(fileName).name;
+        return nameWithoutExt
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+      };
+
+      const determineCategory = (fileName: string, folderCategory: string) => {
+        const lowerName = fileName.toLowerCase();
+        
+        if (lowerName.includes('food safety') || lowerName.includes('safety')) {
+          return 'food-safety';
+        }
+        if (lowerName.includes('sandwich making') || lowerName.includes('making')) {
+          return 'sandwich-making';
+        }
+        if (lowerName.includes('pbj') || lowerName.includes('pb&j')) {
+          return 'pbj-guide';
+        }
+        if (lowerName.includes('deli')) {
+          return 'deli-guide';
+        }
+        if (lowerName.includes('label')) {
+          return 'labels';
+        }
+        if (lowerName.includes('inventory') || lowerName.includes('calculator')) {
+          return 'inventory';
+        }
+        if (lowerName.includes('bylaw') || lowerName.includes('incorporation') || lowerName.includes('501c3') || lowerName.includes('tax exempt')) {
+          return 'governance';
+        }
+        
+        return folderCategory;
+      };
+
+      let addedCount = 0;
+
+      for (const [categoryKey, categoryInfo] of Object.entries(DOCUMENT_CATEGORIES)) {
+        if (!fs.existsSync(categoryInfo.folder)) {
+          continue;
+        }
+        
+        const files = fs.readdirSync(categoryInfo.folder);
+        
+        for (const fileName of files) {
+          const filePath = path.join(categoryInfo.folder, fileName);
+          const stat = fs.statSync(filePath);
+          
+          // Skip directories, hidden files, and README files
+          if (stat.isDirectory() || fileName.startsWith('.') || fileName.toLowerCase().includes('readme')) {
+            continue;
+          }
+          
+          // Check if document already exists
+          const existingDoc = Array.from(this.documents.values()).find(doc => 
+            doc.fileName === fileName && doc.filePath === filePath
+          );
+          
+          if (existingDoc) {
+            continue;
+          }
+          
+          // Create document entry
+          const documentData = {
+            title: generateTitle(fileName),
+            description: `${categoryInfo.description} - ${fileName}`,
+            fileName: fileName,
+            originalName: fileName,
+            filePath: filePath,
+            fileSize: stat.size,
+            mimeType: getMimeType(fileName),
+            category: determineCategory(fileName, categoryKey),
+            isActive: true,
+            uploadedBy: 'system',
+            uploadedByName: 'System Import'
+          };
+          
+          await this.createDocument(documentData);
+          addedCount++;
+        }
+      }
+      
+      if (addedCount > 0) {
+        console.log(`📄 Auto-populated ${addedCount} documents from public folders`);
+      }
+      
+    } catch (error) {
+      console.error('Error auto-populating documents:', error);
+    }
   }
 
   async getDocument(id: number): Promise<Document | undefined> {

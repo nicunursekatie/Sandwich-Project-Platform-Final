@@ -341,6 +341,183 @@ storageRouter.get('/documents', async (req: AuthenticatedRequest, res: Response)
   }
 });
 
+// POST /api/storage/documents/populate - Populate documents table with public files
+storageRouter.post('/documents/populate', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Only allow admin users to populate documents
+    if (user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    logger.info(`User ${user.email} populating documents table`);
+
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Document categories and their corresponding folders
+    const DOCUMENT_CATEGORIES = {
+      'toolkit': {
+        folder: path.join(process.cwd(), 'public/toolkit'),
+        description: 'Event toolkit documents for hosts'
+      },
+      'documents': {
+        folder: path.join(process.cwd(), 'public/documents'), 
+        description: 'General organization documents'
+      }
+    };
+
+    // Map file extensions to MIME types
+    const MIME_TYPES = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.xls': 'application/vnd.ms-excel',
+      '.txt': 'text/plain',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp'
+    };
+
+    // Helper functions
+    const getMimeType = (filePath: string) => {
+      const ext = path.extname(filePath).toLowerCase();
+      return MIME_TYPES[ext] || 'application/octet-stream';
+    };
+
+    const generateTitle = (fileName: string) => {
+      const nameWithoutExt = path.parse(fileName).name;
+      return nameWithoutExt
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+    };
+
+    const determineCategory = (fileName: string, folderCategory: string) => {
+      const lowerName = fileName.toLowerCase();
+      
+      if (lowerName.includes('food safety') || lowerName.includes('safety')) {
+        return 'food-safety';
+      }
+      if (lowerName.includes('sandwich making') || lowerName.includes('making')) {
+        return 'sandwich-making';
+      }
+      if (lowerName.includes('pbj') || lowerName.includes('pb&j')) {
+        return 'pbj-guide';
+      }
+      if (lowerName.includes('deli')) {
+        return 'deli-guide';
+      }
+      if (lowerName.includes('label')) {
+        return 'labels';
+      }
+      if (lowerName.includes('inventory') || lowerName.includes('calculator')) {
+        return 'inventory';
+      }
+      if (lowerName.includes('bylaw') || lowerName.includes('incorporation') || lowerName.includes('501c3') || lowerName.includes('tax exempt')) {
+        return 'governance';
+      }
+      
+      return folderCategory;
+    };
+
+    let totalProcessed = 0;
+    let totalAdded = 0;
+    let totalSkipped = 0;
+    const results = [];
+
+    // Process each category
+    for (const [categoryKey, categoryInfo] of Object.entries(DOCUMENT_CATEGORIES)) {
+      if (!fs.existsSync(categoryInfo.folder)) {
+        results.push(`⚠️  Folder ${categoryInfo.folder} does not exist, skipping...`);
+        continue;
+      }
+      
+      const files = fs.readdirSync(categoryInfo.folder);
+      
+      for (const fileName of files) {
+        totalProcessed++;
+        const filePath = path.join(categoryInfo.folder, fileName);
+        const stat = fs.statSync(filePath);
+        
+        // Skip directories and hidden files
+        if (stat.isDirectory() || fileName.startsWith('.')) {
+          results.push(`⏭️  Skipped ${fileName} (directory or hidden file)`);
+          totalSkipped++;
+          continue;
+        }
+        
+        // Skip README files
+        if (fileName.toLowerCase().includes('readme')) {
+          results.push(`⏭️  Skipped ${fileName} (README file)`);
+          totalSkipped++;
+          continue;
+        }
+        
+        try {
+          // Check if document already exists
+          const existingDocs = await storage.getAllDocuments();
+          const existingDoc = existingDocs.find(doc => 
+            doc.fileName === fileName && doc.filePath === filePath
+          );
+          
+          if (existingDoc) {
+            results.push(`⏭️  Skipped ${fileName} (already exists in database)`);
+            totalSkipped++;
+            continue;
+          }
+          
+          // Create document entry
+          const documentData = {
+            title: generateTitle(fileName),
+            description: `${categoryInfo.description} - ${fileName}`,
+            fileName: fileName,
+            originalName: fileName,
+            filePath: filePath,
+            fileSize: stat.size,
+            mimeType: getMimeType(fileName),
+            category: determineCategory(fileName, categoryKey),
+            isActive: true,
+            uploadedBy: user.id,
+            uploadedByName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email
+          };
+          
+          const newDoc = await storage.createDocument(documentData);
+          results.push(`✅ Added: ${fileName} (ID: ${newDoc.id}, Category: ${documentData.category})`);
+          totalAdded++;
+          
+        } catch (error: any) {
+          results.push(`❌ Error processing ${fileName}: ${error.message}`);
+        }
+      }
+    }
+    
+    logger.info(`Document population completed by ${user.email}: ${totalAdded} added, ${totalSkipped} skipped`);
+    
+    res.json({
+      success: true,
+      message: `Document population completed successfully`,
+      summary: {
+        totalProcessed,
+        totalAdded,
+        totalSkipped
+      },
+      results
+    });
+    
+  } catch (error: any) {
+    logger.error('Error populating documents:', error);
+    res.status(500).json({ error: 'Failed to populate documents' });
+  }
+});
+
 // Apply error handling middleware
 storageRouter.use(errorHandler);
 
