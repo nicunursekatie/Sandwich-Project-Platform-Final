@@ -698,7 +698,7 @@ export default function Dashboard({
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30 min-w-0">
+          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30 min-w-0 pl-6">
             {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
               // Special full-height layout for inbox and chat
               <div className="h-full">{renderContent()}</div>
