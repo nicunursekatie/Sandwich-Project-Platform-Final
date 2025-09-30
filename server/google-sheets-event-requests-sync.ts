@@ -28,6 +28,7 @@ export class EventRequestsGoogleSheetsService {
   private auth!: JWT;
   private sheets: any;
   private spreadsheetId: string;
+  private worksheetName: string = 'Sheet1';
 
   constructor(private storage: IStorage) {
     this.spreadsheetId = process.env.EVENT_REQUESTS_SHEET_ID!;
@@ -269,8 +270,8 @@ export class EventRequestsGoogleSheetsService {
 
       // Read current sheet to find the row
       const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: (this as any).config.spreadsheetId,
-        range: `${(this as any).config.worksheetName}!A2:K1000`,
+        spreadsheetId: this.spreadsheetId,
+        range: `${this.worksheetName}!A2:K1000`,
       });
 
       const rows = response.data.values || [];
@@ -296,8 +297,8 @@ export class EventRequestsGoogleSheetsService {
       // Update the status in column K (index 10)
       const actualRowNumber = rowIndex + 2; // +2 because: +1 for header row, +1 for 1-based indexing
       await this.sheets.spreadsheets.values.update({
-        spreadsheetId: (this as any).config.spreadsheetId,
-        range: `${(this as any).config.worksheetName}!K${actualRowNumber}`,
+        spreadsheetId: this.spreadsheetId,
+        range: `${this.worksheetName}!K${actualRowNumber}`,
         valueInputOption: 'USER_ENTERED',
         resource: { values: [[newStatus]] },
       });
@@ -808,8 +809,8 @@ export class EventRequestsGoogleSheetsService {
     let existingData: any[][] = [];
     try {
       const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: (this as any).config.spreadsheetId,
-        range: `${(this as any).config.worksheetName}!A:Z`,
+        spreadsheetId: this.spreadsheetId,
+        range: `${this.worksheetName}!A:Z`,
       });
       existingData = response.data.values || [];
     } catch (error) {
@@ -845,8 +846,8 @@ export class EventRequestsGoogleSheetsService {
 
     // Update the sheet with merged data
     await this.sheets.spreadsheets.values.update({
-      spreadsheetId: (this as any).config.spreadsheetId,
-      range: `${(this as any).config.worksheetName}!A1`,
+      spreadsheetId: this.spreadsheetId,
+      range: `${this.worksheetName}!A1`,
       valueInputOption: 'USER_ENTERED',
       resource: { values: mergedData },
     });
@@ -948,8 +949,8 @@ export class EventRequestsGoogleSheetsService {
 
     // First, read the header row to build dynamic column mapping
     const headerResponse = await this.sheets.spreadsheets.values.get({
-      spreadsheetId: (this as any).config.spreadsheetId,
-      range: `${(this as any).config.worksheetName}!A1:Z1`,
+      spreadsheetId: this.spreadsheetId,
+      range: `${this.worksheetName}!A1:Z1`,
     });
 
     const headers = headerResponse.data.values?.[0] || [];
@@ -1024,8 +1025,8 @@ export class EventRequestsGoogleSheetsService {
 
     // Read data rows
     const response = await this.sheets.spreadsheets.values.get({
-      spreadsheetId: (this as any).config.spreadsheetId,
-      range: `${(this as any).config.worksheetName}!A2:Z1000`,
+      spreadsheetId: this.spreadsheetId,
+      range: `${this.worksheetName}!A2:Z1000`,
     });
 
     const rows = response.data.values || [];
@@ -1181,15 +1182,15 @@ export class EventRequestsGoogleSheetsService {
       await this.ensureInitialized();
 
       const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: (this as any).config.spreadsheetId,
-        range: `${(this as any).config.worksheetName}!A1:Z1`,
+        spreadsheetId: this.spreadsheetId,
+        range: `${this.worksheetName}!A1:Z1`,
       });
 
       const headers = response.data.values?.[0] || [];
 
       const dataResponse = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: (this as any).config.spreadsheetId,
-        range: `${(this as any).config.worksheetName}!A2:Z1000`,
+        spreadsheetId: this.spreadsheetId,
+        range: `${this.worksheetName}!A2:Z1000`,
       });
 
       const rowCount = dataResponse.data.values?.length || 0;
