@@ -553,16 +553,6 @@ export default function GrantMetrics() {
                 <div className="text-xs text-gray-500">since inception</div>
               </div>
             </div>
-
-            <div className="mt-6 p-4 bg-white/60 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Star className="w-5 h-5 text-[#FBAD3F] flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-gray-700">
-                  <strong>Strategic Wisdom:</strong> In 2023, we deliberately decreased production from 464K to 426K
-                  to find sustainable levels, then stabilized at ~450K annually. We chose long-term sustainability over ego-driven growth.
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
