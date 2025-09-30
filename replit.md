@@ -17,6 +17,7 @@ Desktop Chat UX: Desktop users require proper scrolling behavior without nested 
 ### Core Technologies
 - **Frontend**: React 18 (TypeScript), Vite, TanStack Query, Tailwind CSS (with shadcn/ui), React Hook Form (with Zod).
 - **Backend**: Express.js (TypeScript), Drizzle ORM, PostgreSQL (Neon serverless), Session-based authentication (connect-pg-simple), Replit Auth.
+- **Database**: Dev/Production separation with `DATABASE_URL` (development workspace) and `PRODUCTION_DATABASE_URL` (deployed app). `server/db.ts` automatically uses production database when `PRODUCTION_DATABASE_URL` is set, ensuring development changes don't affect live users.
 - **Logging**: Winston-based structured logging with service-specific loggers, log rotation, and environment-based configuration.
 - **Security**: Centralized CORS configuration with environment-aware origin validation.
 
