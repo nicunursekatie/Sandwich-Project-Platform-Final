@@ -229,7 +229,7 @@ export default function HostsManagement() {
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
           <DialogTrigger asChild>
             <Button
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-brand-primary hover:bg-brand-primary-dark"
               disabled={!canEdit}
             >
               <Plus className="w-4 h-4 mr-2" />

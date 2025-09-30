@@ -421,7 +421,7 @@ export default function ProjectsPage({
                           e.stopPropagation();
                           handleEdit(project);
                         }}
-                        className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                        className="p-1 text-gray-500 hover:text-brand-primary transition-colors"
                         title="Edit project"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -466,7 +466,7 @@ export default function ProjectsPage({
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-brand-primary h-2 rounded-full transition-all duration-300"
                         style={{ width: `${project.progressPercentage || 0}%` }}
                       ></div>
                     </div>
@@ -514,7 +514,7 @@ export default function ProjectsPage({
                       <Badge variant="outline">available</Badge>
                       <button
                         onClick={() => handleEdit(project)}
-                        className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                        className="p-1 text-gray-500 hover:text-brand-primary transition-colors"
                         title="Edit project"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -574,7 +574,7 @@ export default function ProjectsPage({
                       <Badge variant="outline">waiting</Badge>
                       <button
                         onClick={() => handleEdit(project)}
-                        className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                        className="p-1 text-gray-500 hover:text-brand-primary transition-colors"
                         title="Edit project"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -645,7 +645,7 @@ export default function ProjectsPage({
                         )}
                       <button
                         onClick={() => handleEdit(project)}
-                        className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                        className="p-1 text-gray-500 hover:text-brand-primary transition-colors"
                         title="Edit project"
                       >
                         <Edit2 className="w-4 h-4" />

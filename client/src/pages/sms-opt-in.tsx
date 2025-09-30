@@ -140,7 +140,7 @@ export default function SMSOptInPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-b-2 border-[#1f7b7b] mx-auto"></div>
+          <div className="animate-spin h-8 w-8 border-b-2 border-brand-teal mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -186,7 +186,7 @@ export default function SMSOptInPage() {
         <Card>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="bg-[#1f7b7b] p-3 rounded-full">
+              <div className="bg-brand-teal p-3 rounded-full">
                 <MessageSquare className="h-8 w-8 text-white" />
               </div>
             </div>
@@ -312,7 +312,7 @@ export default function SMSOptInPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-[#1f7b7b] hover:bg-[#165a5a]"
+                  className="w-full bg-brand-teal hover:bg-brand-teal-dark"
                   disabled={
                     optInMutation.isPending || !consent || !phoneNumber.trim()
                   }
