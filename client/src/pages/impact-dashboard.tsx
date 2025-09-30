@@ -654,7 +654,7 @@ export default function ImpactDashboard() {
                       <TrendingUp className="w-5 h-5 flex-shrink-0" />
                       <span className="font-semibold whitespace-nowrap">Historical Growth</span>
                     </div>
-                    <span className="text-xs text-left opacity-80 whitespace-normal break-words w-full">
+                    <span className="text-left opacity-80 whitespace-normal break-words w-full text-[16px]">
                       All-time monthly totals - track long-term growth
                     </span>
                   </Button>
