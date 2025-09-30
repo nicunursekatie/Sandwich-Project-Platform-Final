@@ -620,8 +620,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {/* Key Information - Prominently Displayed */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* Event Date - Most Important */}
-              <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="bg-gradient-to-br from-[#236383] to-[#1a4d65] text-white rounded-lg p-4 shadow-md text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
                   <Calendar className="w-5 h-5" />
                   <span className="font-semibold text-sm uppercase tracking-wide">
                     Event Date
@@ -653,7 +653,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 group">
+                  <div className="flex items-center justify-center gap-2 group">
                     <span className="text-lg font-bold">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </span>
@@ -678,8 +678,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {/* Event Address - Google Maps Link */}
               {request.eventAddress && (
-                <div className="bg-[#47B3CB] text-white rounded-lg p-4 shadow-md">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="bg-gradient-to-br from-[#47B3CB] to-[#2d9bb0] text-white rounded-lg p-4 shadow-md text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
                     <MapPin className="w-5 h-5" />
                     <span className="font-semibold text-sm uppercase tracking-wide">
                       Location
@@ -689,7 +689,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-base font-medium hover:underline block break-words"
+                    className="text-base font-medium hover:underline block break-words text-center"
                     title={request.eventAddress}
                   >
                     {request.eventAddress}
