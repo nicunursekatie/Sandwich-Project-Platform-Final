@@ -833,7 +833,7 @@ export default function MonthlyComparisonAnalytics() {
                 </div>
 
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="text-sm text-green-600 mb-1">Individual Collections</div>
+                  <div className="mb-1 text-[#47B3CB] font-bold text-[15px]">Individual Collections</div>
                   <div className="text-2xl font-bold text-green-900">
                     {selectedMonthAnalysis.selectedMonthData.individualCount.toLocaleString()}
                   </div>
