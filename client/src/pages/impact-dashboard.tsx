@@ -536,7 +536,12 @@ export default function ImpactDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-[#FBAD3F] to-[#e89a2d] text-white">
+          <Card 
+            className="text-white"
+            style={{
+              background: 'linear-gradient(to right, #FBAD3F, #e89a2d)'
+            }}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <TrendingUp className="w-5 h-5 mr-2" />
