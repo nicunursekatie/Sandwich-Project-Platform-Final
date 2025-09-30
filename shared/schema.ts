@@ -1709,6 +1709,14 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
         z.null(),
       ])
       .optional(),
+    // Allow scheduledEventDate to be either a Date object or a string that can be converted to a Date
+    scheduledEventDate: z
+      .union([
+        z.date(),
+        z.string().transform((str) => (str ? new Date(str) : null)),
+        z.null(),
+      ])
+      .optional(),
     // Make all the new event planning fields optional and nullable
     eventStartTime: z.string().nullable().optional(),
     eventEndTime: z.string().nullable().optional(),
