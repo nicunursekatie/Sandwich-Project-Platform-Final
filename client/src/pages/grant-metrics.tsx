@@ -47,7 +47,7 @@ import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-u
 export default function GrantMetrics() {
   // Fetch collections data
   const { data: collectionsData } = useQuery({
-    queryKey: ['/api/sandwich-collections'],
+    queryKey: ['/api/sandwich-collections', Date.now()], // Force fresh fetch with timestamp
     queryFn: async () => {
       const response = await fetch('/api/sandwich-collections?page=1&limit=5000', {
         credentials: 'include',
@@ -56,14 +56,16 @@ export default function GrantMetrics() {
       return response.json();
     },
     staleTime: 0, // Always fetch fresh data for grant metrics
+    cacheTime: 0, // Don't cache at all
   });
 
   const collections = collectionsData?.collections || [];
 
   // Fetch stats
   const { data: stats } = useQuery({
-    queryKey: ['/api/sandwich-collections/stats'],
+    queryKey: ['/api/sandwich-collections/stats', Date.now()],
     staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache at all
   });
 
   // Hardcoded host count (actual database has 34 active hosts)
