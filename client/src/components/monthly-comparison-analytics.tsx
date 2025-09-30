@@ -600,7 +600,7 @@ export default function MonthlyComparisonAnalytics() {
             <div className="text-3xl font-bold text-brand-primary">
               {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Sandwiches distributed</p>
+            <p className="text-gray-500 mt-1 text-[14px]">Sandwiches collected</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-blue-200 border-l-4">
@@ -608,7 +608,7 @@ export default function MonthlyComparisonAnalytics() {
             <div className="text-3xl font-bold text-brand-primary">
               {selectedMonthAnalysis.selectedMonthData.totalCollections}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Zero missed pickups</p>
+            <p className="text-gray-500 mt-1 text-[14px]">Zero missed pickups</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4">
@@ -616,7 +616,7 @@ export default function MonthlyComparisonAnalytics() {
             <div className="text-3xl font-bold text-brand-primary">
               {selectedMonthAnalysis.selectedMonthData.uniqueHosts}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Community partners engaged</p>
+            <p className="text-gray-500 mt-1 text-[14px]">Community partners engaged</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4">
@@ -624,7 +624,7 @@ export default function MonthlyComparisonAnalytics() {
             <div className="text-3xl font-bold text-brand-primary">
               {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Efficiency metric</p>
+            <p className="text-gray-500 mt-1 text-[14px]">Efficiency metric</p>
           </div>
 
           {selectedMonthAnalysis.rolling3MonthAvg && (
@@ -673,7 +673,6 @@ export default function MonthlyComparisonAnalytics() {
           </div>
         </div>
       </div>
-
       {/* Analytics Tabs */}
       <Tabs
         value={selectedTab}
