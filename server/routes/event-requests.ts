@@ -683,6 +683,10 @@ router.post(
   requirePermission('EVENT_REQUESTS_ADD'),
   async (req, res) => {
     try {
+      console.log('🚀 POST /api/event-requests - Creating new event request');
+      console.log('📋 Request body:', JSON.stringify(req.body, null, 2));
+      console.log('👤 User:', req.user?.email);
+
       const user = req.user;
 
       // Generate externalId for manual entries if not provided
@@ -692,8 +696,10 @@ router.post(
         const randomSuffix = Math.random().toString(36).substring(2, 8);
         requestData.externalId = `manual-${timestamp}-${randomSuffix}`;
       }
-      
+
+      console.log('🔍 Validating data with Zod schema...');
       const validatedData = insertEventRequestSchema.parse(requestData);
+      console.log('✅ Data validated successfully');
 
       // Check for organization duplicates
       const duplicateCheck = { exists: false, matches: [] as any[] };

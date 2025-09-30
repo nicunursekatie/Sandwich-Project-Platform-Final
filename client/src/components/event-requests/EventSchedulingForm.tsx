@@ -50,7 +50,7 @@ interface EventSchedulingFormProps {
   onScheduled?: () => void;
   onEventScheduled?: () => void;
   onDelete?: (eventRequestId: number) => void;
-  mode?: 'schedule' | 'edit';
+  mode?: 'schedule' | 'edit' | 'create';
 }
 
 const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
@@ -64,7 +64,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   mode = 'schedule',
 }) => {
   const dialogOpen = isVisible || isOpen || false;
-  const onSuccess = onScheduled || onEventScheduled || (() => {});
+  const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
   const [formData, setFormData] = useState({
     eventDate: '',
     eventStartTime: '',
@@ -197,7 +197,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: isEditMode ? 'The event details have been updated.' : 'The event has been moved to scheduled status with all details.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      onSuccess();
+      onSuccessCallback();
       onClose();
     },
     onError: () => {
@@ -212,18 +212,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const createEventRequestMutation = useMutation({
     mutationFn: (data: any) => {
+      console.log('🚀 CREATE MUTATION: Sending data:', data);
       return apiRequest('POST', '/api/event-requests', data);
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      console.log('✅ CREATE MUTATION SUCCESS: Response:', response);
       toast({
         title: 'Event created successfully',
         description: 'The new event request has been created.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      onSuccess();
+      onSuccessCallback();
       onClose();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('❌ CREATE MUTATION ERROR:', error);
       toast({
         title: 'Error',
         description: 'Failed to create event.',
@@ -240,7 +243,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: 'The event request has been deleted.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      onSuccess();
+      onSuccessCallback();
       onClose();
     },
     onError: () => {
@@ -310,13 +313,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
     }
 
+    console.log('📋 FORM SUBMIT DEBUG:');
+    console.log('  - eventRequest exists?', !!eventRequest);
+    console.log('  - mode:', mode);
+    console.log('  - isCreateMode:', isCreateMode);
+    console.log('  - eventData being sent:', eventData);
+
     if (eventRequest) {
+      console.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
       // Update existing event request
       updateEventRequestMutation.mutate({
         id: eventRequest.id,
         data: eventData,
       });
     } else {
+      console.log('➕ Calling CREATE mutation for new event');
       // Create new event request
       createEventRequestMutation.mutate(eventData);
     }
