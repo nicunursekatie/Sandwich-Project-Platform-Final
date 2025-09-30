@@ -820,25 +820,6 @@ export default function MonthlyComparisonAnalytics() {
                   </div>
                 </div>
               </div>
-
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Average per Collection</span>
-                    <span className="font-bold text-brand-primary">
-                      {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Active Hosts</span>
-                    <span className="font-bold text-brand-primary">
-                      {selectedMonthAnalysis.selectedMonthData.uniqueHosts}
-                    </span>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -948,19 +929,11 @@ export default function MonthlyComparisonAnalytics() {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="text-center p-3 bg-gray-50 rounded">
-                        <div className="text-lg font-bold text-brand-primary">
-                          {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
-                        </div>
-                        <p className="text-xs text-gray-600">Avg per Event</p>
+                    <div className="text-center p-3 bg-gray-50 rounded">
+                      <div className="text-lg font-bold text-brand-primary">
+                        {((selectedMonthAnalysis.selectedMonthData.groupEventCount / selectedMonthAnalysis.selectedMonthData.totalCollections) * 100).toFixed(1)}%
                       </div>
-                      <div className="text-center p-3 bg-gray-50 rounded">
-                        <div className="text-lg font-bold text-brand-primary">
-                          {((selectedMonthAnalysis.selectedMonthData.groupEventCount / selectedMonthAnalysis.selectedMonthData.totalCollections) * 100).toFixed(1)}%
-                        </div>
-                        <p className="text-xs text-gray-600">Events w/ Groups</p>
-                      </div>
+                      <p className="text-xs text-gray-600">Events w/ Groups</p>
                     </div>
                   </div>
                 </div>
