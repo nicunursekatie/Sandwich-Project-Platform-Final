@@ -255,9 +255,9 @@ const ActionTracking = () => {
 
   const filteredEvents = events.filter(
     (event) =>
-      event.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.organizationName.toLowerCase().includes(searchTerm.toLowerCase())
+      (event.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (event.lastName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (event.organizationName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Separate active events from completed events
