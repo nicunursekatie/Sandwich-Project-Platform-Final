@@ -79,6 +79,11 @@ export default function MonthlyComparisonAnalytics() {
   >('overview');
   const [compareYear, setCompareYear] = useState<number>(2025);
 
+  // Default to current month and year
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth()); // 0-11
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+
   // Fetch all collections data
   const { data: collectionsData, isLoading } = useQuery<{
     collections: SandwichCollection[];
@@ -180,30 +185,32 @@ export default function MonthlyComparisonAnalytics() {
     return monthlyStats;
   }, [collections]);
 
-  // August 2025 analysis
-  const augustAnalysis = useMemo(() => {
+  // Selected month analysis
+  const selectedMonthAnalysis = useMemo(() => {
     if (!monthlyAnalytics) return null;
 
-    const august2025 = monthlyAnalytics['2025-08'];
-    if (!august2025) return null;
+    const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
+    const selectedMonthData = monthlyAnalytics[monthKey];
+    if (!selectedMonthData) return null;
 
-    // Use previous year's August and recent 6-month average for comparison
-    const august2024 = monthlyAnalytics['2024-08'];
+    // Use previous year's same month for comparison
+    const prevYearMonthKey = `${selectedYear - 1}-${String(selectedMonth + 1).padStart(2, '0')}`;
+    const prevYearMonth = monthlyAnalytics[prevYearMonthKey];
     
-    // Calculate average of last 6 months before August 2025 for reasonable comparison
+    // Calculate average of last 6 months before selected month for comparison
     const recentMonths = Object.entries(monthlyAnalytics)
       .filter(([key, m]) => {
         const [year, month] = key.split('-').map(Number);
         const monthDate = new Date(year, month - 1);
-        const august2025Date = new Date(2025, 7); // August 2025
-        const sixMonthsBefore = new Date(2025, 1); // February 2025
-        return monthDate >= sixMonthsBefore && monthDate < august2025Date;
+        const selectedDate = new Date(selectedYear, selectedMonth);
+        const sixMonthsBefore = new Date(selectedYear, selectedMonth - 6);
+        return monthDate >= sixMonthsBefore && monthDate < selectedDate;
       })
       .map(([_, m]) => m);
 
     const avgRecentMonth = recentMonths.length > 0
       ? recentMonths.reduce((sum, m) => sum + m.totalSandwiches, 0) / recentMonths.length
-      : august2024?.totalSandwiches || 0;
+      : prevYearMonth?.totalSandwiches || 0;
 
     // Calculate top months for 2024-2025
     const topMonths = Object.entries(monthlyAnalytics)
@@ -218,30 +225,30 @@ export default function MonthlyComparisonAnalytics() {
       .sort((a, b) => b.totalSandwiches - a.totalSandwiches);
 
     return {
-      august2025,
-      august2024,
+      selectedMonthData,
+      prevYearMonth,
       recentMonths,
       avgRecentMonth,
       topMonths,
-      shortfall: avgRecentMonth - august2025.totalSandwiches,
+      shortfall: avgRecentMonth - selectedMonthData.totalSandwiches,
       shortfallPercent:
-        ((avgRecentMonth - august2025.totalSandwiches) / avgRecentMonth) * 100,
-      yearOverYearChange: august2024
-        ? august2025.totalSandwiches - august2024.totalSandwiches
+        ((avgRecentMonth - selectedMonthData.totalSandwiches) / avgRecentMonth) * 100,
+      yearOverYearChange: prevYearMonth
+        ? selectedMonthData.totalSandwiches - prevYearMonth.totalSandwiches
         : null,
-      yearOverYearPercent: august2024
-        ? ((august2025.totalSandwiches - august2024.totalSandwiches) /
-            august2024.totalSandwiches) *
+      yearOverYearPercent: prevYearMonth
+        ? ((selectedMonthData.totalSandwiches - prevYearMonth.totalSandwiches) /
+            prevYearMonth.totalSandwiches) *
           100
         : null,
     };
-  }, [monthlyAnalytics]);
+  }, [monthlyAnalytics, selectedMonth, selectedYear]);
 
   // Host comparison analysis
   const hostComparison = useMemo((): HostComparison[] => {
-    if (!monthlyAnalytics || !augustAnalysis?.august2025) return [];
+    if (!monthlyAnalytics || !selectedMonthAnalysis?.selectedMonthData) return [];
 
-    const augustStats = augustAnalysis.august2025;
+    const selectedStats = selectedMonthAnalysis.selectedMonthData;
     const allHosts = new Set<string>();
 
     // Collect all unique hosts
@@ -256,11 +263,11 @@ export default function MonthlyComparisonAnalytics() {
     allHosts.forEach((hostName) => {
       if (hostName === 'Unknown') return;
 
-      const augustTotal = augustStats.hostParticipation[hostName] || 0;
+      const selectedMonthTotal = selectedStats.hostParticipation[hostName] || 0;
 
-      // Calculate average for this host across all months (excluding August 2025)
+      // Calculate average for this host across all months (excluding selected month)
       const otherMonths = Object.values(monthlyAnalytics).filter(
-        (m) => !(m.year === 2025 && m.month.includes('August'))
+        (m) => !(m.year === selectedYear && m.month === selectedStats.month)
       );
 
       const monthlyTotals = otherMonths
@@ -272,12 +279,12 @@ export default function MonthlyComparisonAnalytics() {
       const avgMonthlyTotal =
         monthlyTotals.reduce((sum, total) => sum + total, 0) /
         monthlyTotals.length;
-      const difference = augustTotal - avgMonthlyTotal;
+      const difference = selectedMonthTotal - avgMonthlyTotal;
       const percentChange =
         avgMonthlyTotal > 0 ? (difference / avgMonthlyTotal) * 100 : 0;
 
-      // Count collections
-      const augustCollections = collections.filter(
+      // Count collections for selected month
+      const selectedMonthCollections = collections.filter(
         (c) => {
           if (c.hostName !== hostName || !c.collectionDate) {
             return false;
@@ -287,7 +294,7 @@ export default function MonthlyComparisonAnalytics() {
           if (Number.isNaN(date.getTime())) {
             return false;
           }
-          return date.getFullYear() === 2025 && date.getMonth() === 7; // August is month 7 (0-indexed)
+          return date.getFullYear() === selectedYear && date.getMonth() === selectedMonth;
       }
       ).length;
 
@@ -310,11 +317,11 @@ export default function MonthlyComparisonAnalytics() {
 
       comparisons.push({
         hostName,
-        augustTotal,
+        augustTotal: selectedMonthTotal,
         avgMonthlyTotal: Math.round(avgMonthlyTotal),
         difference: Math.round(difference),
         percentChange: Math.round(percentChange),
-        augustCollections,
+        augustCollections: selectedMonthCollections,
         avgMonthlyCollections: Math.round(avgMonthlyCollections),
       });
     });
@@ -322,7 +329,7 @@ export default function MonthlyComparisonAnalytics() {
     return comparisons
       .filter((c) => c.avgMonthlyTotal > 100) // Focus on significant hosts
       .sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
-  }, [monthlyAnalytics, augustAnalysis, collections]);
+  }, [monthlyAnalytics, selectedMonthAnalysis, collections, selectedMonth, selectedYear]);
 
   // Monthly trends chart data
   const monthlyTrends = useMemo(() => {
@@ -357,19 +364,21 @@ export default function MonthlyComparisonAnalytics() {
     );
   }
 
-  if (!augustAnalysis) {
+  if (!selectedMonthAnalysis) {
     return (
       <div className="text-center py-16">
         <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-brand-primary mb-2">
-          No August 2025 Data
+          No Data for Selected Month
         </h3>
         <p className="text-[#646464]">
-          Unable to find August 2025 collection data for analysis.
+          Unable to find collection data for {new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.
         </p>
       </div>
     );
   }
+
+  const selectedMonthName = new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   const colors = [
     '#236383',
@@ -380,75 +389,110 @@ export default function MonthlyComparisonAnalytics() {
     '#EF4444',
   ];
 
+  // Generate month/year options
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const availableYears = Array.from(new Set(Object.keys(monthlyAnalytics || {}).map(key => parseInt(key.split('-')[0])))).sort((a, b) => b - a);
+
   return (
     <div className="space-y-6">
       {/* Header with Key Metrics */}
       <div className="bg-gradient-to-r from-brand-primary/10 to-brand-orange/10 p-6 rounded-lg border border-brand-primary/20">
         <div className="flex items-center justify-between mb-4">
-          <div>
+          <div className="flex-1">
             <h2 className="text-3xl font-bold text-brand-primary mb-2">
-              August 2025 Performance Analysis
+              {selectedMonthName} Performance Analysis
             </h2>
             <p className="text-[#646464]">
-              Comprehensive analysis of August's lower collection performance
+              Monthly collection performance and comparison analysis
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <TrendingDown className="h-8 w-8 text-red-500" />
-            <Badge variant="destructive" className="text-lg px-3 py-1">
-              {augustAnalysis.shortfall?.toLocaleString()} Short
-            </Badge>
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="px-3 py-2 border border-brand-primary/30 rounded-lg bg-white text-brand-primary font-medium"
+            >
+              {months.map((month, index) => (
+                <option key={index} value={index}>{month}</option>
+              ))}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="px-3 py-2 border border-brand-primary/30 rounded-lg bg-white text-brand-primary font-medium"
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-2">
+              {selectedMonthAnalysis.shortfall > 0 ? (
+                <>
+                  <TrendingDown className="h-8 w-8 text-red-500" />
+                  <Badge variant="destructive" className="text-lg px-3 py-1">
+                    {selectedMonthAnalysis.shortfall?.toLocaleString()} Short
+                  </Badge>
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="h-8 w-8 text-green-500" />
+                  <Badge className="bg-green-100 text-green-700 text-lg px-3 py-1">
+                    {Math.abs(selectedMonthAnalysis.shortfall)?.toLocaleString()} Above Avg
+                  </Badge>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
             <div className="text-2xl font-bold text-brand-primary">
-              {augustAnalysis.august2025.totalSandwiches.toLocaleString()}
+              {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
             </div>
-            <p className="text-sm text-[#646464]">August 2025 Total</p>
-            <div className="text-sm text-red-600 mt-1">
-              -{augustAnalysis.shortfallPercent?.toFixed(1)}% vs recent average
+            <p className="text-sm text-[#646464]">{selectedMonthName} Total</p>
+            <div className={`text-sm mt-1 ${selectedMonthAnalysis.shortfall > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              {selectedMonthAnalysis.shortfall > 0 ? '-' : '+'}{Math.abs(selectedMonthAnalysis.shortfallPercent)?.toFixed(1)}% vs recent average
             </div>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
             <div className="text-2xl font-bold text-brand-primary">
-              {Math.round(augustAnalysis.avgRecentMonth).toLocaleString()}
+              {Math.round(selectedMonthAnalysis.avgRecentMonth).toLocaleString()}
             </div>
             <p className="text-sm text-[#646464]">Recent 6-Month Average</p>
-            <div className="text-sm text-green-600 mt-1">Realistic benchmark</div>
+            <div className="text-sm text-green-600 mt-1">Benchmark</div>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
             <div className="text-2xl font-bold text-brand-primary">
-              {augustAnalysis.august2025.totalCollections}
+              {selectedMonthAnalysis.selectedMonthData.totalCollections}
             </div>
             <p className="text-sm text-[#646464]">Collections Count</p>
             <div className="text-sm text-[#646464] mt-1">
-              {augustAnalysis.august2025.uniqueHosts} hosts active
+              {selectedMonthAnalysis.selectedMonthData.uniqueHosts} hosts active
             </div>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
             <div className="text-2xl font-bold text-brand-primary">
-              {augustAnalysis.yearOverYearChange !== null
-                ? (augustAnalysis.yearOverYearChange > 0 ? '+' : '') +
-                  augustAnalysis.yearOverYearChange?.toLocaleString()
+              {selectedMonthAnalysis.yearOverYearChange !== null
+                ? (selectedMonthAnalysis.yearOverYearChange > 0 ? '+' : '') +
+                  selectedMonthAnalysis.yearOverYearChange?.toLocaleString()
                 : 'N/A'}
             </div>
-            <p className="text-sm text-[#646464]">vs August 2024</p>
+            <p className="text-sm text-[#646464]">vs {months[selectedMonth]} {selectedYear - 1}</p>
             <div
               className={`text-sm mt-1 ${
-                augustAnalysis.yearOverYearPercent &&
-                augustAnalysis.yearOverYearPercent > 0
+                selectedMonthAnalysis.yearOverYearPercent &&
+                selectedMonthAnalysis.yearOverYearPercent > 0
                   ? 'text-green-600'
                   : 'text-red-600'
               }`}
             >
-              {augustAnalysis.yearOverYearPercent !== null
-                ? (augustAnalysis.yearOverYearPercent > 0 ? '+' : '') +
-                  augustAnalysis.yearOverYearPercent?.toFixed(1) +
+              {selectedMonthAnalysis.yearOverYearPercent !== null
+                ? (selectedMonthAnalysis.yearOverYearPercent > 0 ? '+' : '') +
+                  selectedMonthAnalysis.yearOverYearPercent?.toFixed(1) +
                   '%'
                 : 'First year'}
             </div>
@@ -490,7 +534,7 @@ export default function MonthlyComparisonAnalytics() {
                 Monthly Performance Trends (2024-2025)
               </CardTitle>
               <CardDescription>
-                August 2025 performance compared to recent months
+                {selectedMonthName} performance compared to recent months
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -574,7 +618,7 @@ export default function MonthlyComparisonAnalytics() {
                     Top 5 Months (2024-2025)
                   </h4>
                   <div className="space-y-2">
-                    {(augustAnalysis?.topMonths || [])
+                    {(selectedMonthAnalysis?.topMonths || [])
                       .slice(0, 5)
                       .map((month, index) => (
                         <div
@@ -600,31 +644,31 @@ export default function MonthlyComparisonAnalytics() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Individual Collections</span>
                       <span className="font-medium">
-                        {augustAnalysis.august2025.individualCount.toLocaleString()}
+                        {selectedMonthAnalysis.selectedMonthData.individualCount.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Group Events</span>
                       <span className="font-medium">
-                        {augustAnalysis.august2025.groupEventCount} events
+                        {selectedMonthAnalysis.selectedMonthData.groupEventCount} events
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Sandwiches from Groups</span>
                       <span className="font-medium">
-                        {augustAnalysis.august2025.groupCount.toLocaleString()}
+                        {selectedMonthAnalysis.selectedMonthData.groupCount.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Average per Collection</span>
                       <span className="font-medium">
-                        {augustAnalysis.august2025.avgPerCollection}
+                        {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Active Hosts</span>
                       <span className="font-medium">
-                        {augustAnalysis.august2025.uniqueHosts}
+                        {selectedMonthAnalysis.selectedMonthData.uniqueHosts}
                       </span>
                     </div>
                   </div>
@@ -643,7 +687,7 @@ export default function MonthlyComparisonAnalytics() {
                 Monthly Performance Trends
               </CardTitle>
               <CardDescription>
-                August 2025 vs 6-month rolling average with trend analysis
+                {selectedMonthName} vs 6-month rolling average with trend analysis
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -702,21 +746,21 @@ export default function MonthlyComparisonAnalytics() {
                         <span className="font-medium text-red-800">Trend Alert</span>
                       </div>
                       <p className="text-sm text-red-700">
-                        August 2025 shows a {augustAnalysis.shortfallPercent?.toFixed(1)}% decline from recent 6-month average.
-                        This represents {augustAnalysis.shortfall?.toLocaleString()} fewer sandwiches than expected.
+                        {selectedMonthName} shows a {selectedMonthAnalysis.shortfallPercent?.toFixed(1)}% decline from recent 6-month average.
+                        This represents {selectedMonthAnalysis.shortfall?.toLocaleString()} fewer sandwiches than expected.
                       </p>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3">
                       <div className="text-center p-3 bg-gray-50 rounded">
                         <div className="text-lg font-bold text-brand-primary">
-                          {augustAnalysis.august2025.avgPerCollection}
+                          {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
                         </div>
                         <p className="text-xs text-gray-600">Avg per Event</p>
                       </div>
                       <div className="text-center p-3 bg-gray-50 rounded">
                         <div className="text-lg font-bold text-brand-primary">
-                          {((augustAnalysis.august2025.groupEventCount / augustAnalysis.august2025.totalCollections) * 100).toFixed(1)}%
+                          {((selectedMonthAnalysis.selectedMonthData.groupEventCount / selectedMonthAnalysis.selectedMonthData.totalCollections) * 100).toFixed(1)}%
                         </div>
                         <p className="text-xs text-gray-600">Events w/ Groups</p>
                       </div>
@@ -732,7 +776,7 @@ export default function MonthlyComparisonAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Holiday Impact Analysis - August 2025
+                Holiday Impact Analysis - {selectedMonthName}
               </CardTitle>
               <CardDescription>
                 Analysis of how holidays and special events affected collection patterns
@@ -750,7 +794,7 @@ export default function MonthlyComparisonAnalytics() {
                         <div>
                           <span className="font-medium text-amber-800">No Major Federal Holidays</span>
                           <p className="text-sm text-amber-700 mt-1">
-                            August 2025 had no major federal holidays that typically impact collection schedules.
+                            {selectedMonthName} had no major federal holidays that typically impact collection schedules.
                           </p>
                         </div>
                         <Badge variant="outline" className="border-amber-300 text-amber-700">
@@ -803,8 +847,8 @@ export default function MonthlyComparisonAnalytics() {
                     
                     <div className="text-center p-3 bg-gray-50 rounded">
                       <div className="text-2xl font-bold text-brand-primary">
-                        {augustAnalysis.august2025.weeklyDistribution.reduce((min, current, index) => 
-                          augustAnalysis.august2025.weeklyDistribution[min] > current ? index : min, 0) + 1}
+                        {selectedMonthAnalysis.selectedMonthData.weeklyDistribution.reduce((min, current, index) => 
+                          selectedMonthAnalysis.selectedMonthData.weeklyDistribution[min] > current ? index : min, 0) + 1}
                       </div>
                       <p className="text-sm text-gray-600">Lowest performing week</p>
                     </div>
@@ -828,7 +872,7 @@ export default function MonthlyComparisonAnalytics() {
                 Group vs Individual Collections Analysis
               </CardTitle>
               <CardDescription>
-                Breakdown of group events vs individual collections for August 2025
+                Breakdown of group events vs individual collections for {selectedMonthName}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -844,12 +888,12 @@ export default function MonthlyComparisonAnalytics() {
                           data={[
                             {
                               name: 'Group Events',
-                              value: augustAnalysis.august2025.groupCount,
+                              value: selectedMonthAnalysis.selectedMonthData.groupCount,
                               color: '#236383'
                             },
                             {
                               name: 'Individual Collections',
-                              value: augustAnalysis.august2025.individualCount,
+                              value: selectedMonthAnalysis.selectedMonthData.individualCount,
                               color: '#FBAD3F'
                             }
                           ]}
@@ -861,8 +905,8 @@ export default function MonthlyComparisonAnalytics() {
                           label={({name, percent}) => `${name}: ${(percent * 100).toFixed(1)}%`}
                         >
                           {[
-                            { name: 'Group Events', value: augustAnalysis.august2025.groupCount, color: '#236383' },
-                            { name: 'Individual Collections', value: augustAnalysis.august2025.individualCount, color: '#FBAD3F' }
+                            { name: 'Group Events', value: selectedMonthAnalysis.selectedMonthData.groupCount, color: '#236383' },
+                            { name: 'Individual Collections', value: selectedMonthAnalysis.selectedMonthData.individualCount, color: '#FBAD3F' }
                           ].map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -888,13 +932,13 @@ export default function MonthlyComparisonAnalytics() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="text-center p-3 bg-brand-primary/10 rounded">
                         <div className="text-xl font-bold text-brand-primary">
-                          {augustAnalysis.august2025.groupEventCount}
+                          {selectedMonthAnalysis.selectedMonthData.groupEventCount}
                         </div>
                         <p className="text-sm text-brand-primary">Group Events</p>
                       </div>
                       <div className="text-center p-3 bg-brand-orange/10 rounded">
                         <div className="text-xl font-bold text-brand-orange">
-                          {augustAnalysis.august2025.groupCount.toLocaleString()}
+                          {selectedMonthAnalysis.selectedMonthData.groupCount.toLocaleString()}
                         </div>
                         <p className="text-sm text-brand-orange">Sandwiches from Groups</p>
                       </div>
@@ -903,14 +947,14 @@ export default function MonthlyComparisonAnalytics() {
                     <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                       <h5 className="font-medium text-green-800 mb-2">Key Findings</h5>
                       <ul className="text-sm text-green-700 space-y-1">
-                        <li>• Group events average {augustAnalysis.august2025.groupEventCount > 0 ? Math.round(augustAnalysis.august2025.groupCount / augustAnalysis.august2025.groupEventCount) : 0} sandwiches per event</li>
-                        <li>• Individual events average {augustAnalysis.august2025.individualCount > 0 ? Math.round(augustAnalysis.august2025.individualCount / collections.filter(c => {
+                        <li>• Group events average {selectedMonthAnalysis.selectedMonthData.groupEventCount > 0 ? Math.round(selectedMonthAnalysis.selectedMonthData.groupCount / selectedMonthAnalysis.selectedMonthData.groupEventCount) : 0} sandwiches per event</li>
+                        <li>• Individual events average {selectedMonthAnalysis.selectedMonthData.individualCount > 0 ? Math.round(selectedMonthAnalysis.selectedMonthData.individualCount / collections.filter(c => {
                           if (!c.collectionDate) return false;
                           const date = parseCollectionDate(c.collectionDate);
                           if (Number.isNaN(date.getTime())) return false;
                           return date.getFullYear() === 2025 && date.getMonth() === 7 && (c.individualSandwiches || 0) > 0;
                         }).length) : 0} sandwiches per event</li>
-                        <li>• Group events represent {((augustAnalysis.august2025.groupEventCount / augustAnalysis.august2025.totalCollections) * 100).toFixed(1)}% of all events, but {((augustAnalysis.august2025.groupCount / augustAnalysis.august2025.totalSandwiches) * 100).toFixed(1)}% of sandwich volume</li>
+                        <li>• Group events represent {((selectedMonthAnalysis.selectedMonthData.groupEventCount / selectedMonthAnalysis.selectedMonthData.totalCollections) * 100).toFixed(1)}% of all events, but {((selectedMonthAnalysis.selectedMonthData.groupCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)}% of sandwich volume</li>
                       </ul>
                     </div>
                   </div>
@@ -927,7 +971,7 @@ export default function MonthlyComparisonAnalytics() {
                 Actionable Insights & Recommendations
               </CardTitle>
               <CardDescription>
-                Strategic recommendations based on August 2025 performance patterns
+                Strategic recommendations based on {selectedMonthName} performance patterns
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -940,7 +984,7 @@ export default function MonthlyComparisonAnalytics() {
                     <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                       <h5 className="font-medium text-red-800 mb-1">Immediate (September)</h5>
                       <p className="text-sm text-red-700">
-                        Launch back-to-school campaign targeting families and student organizations. August's {augustAnalysis.shortfall?.toLocaleString()} sandwich gap needs urgent attention.
+                        Launch back-to-school campaign targeting families and student organizations. August's {selectedMonthAnalysis.shortfall?.toLocaleString()} sandwich gap needs urgent attention.
                       </p>
                     </div>
                     
@@ -983,7 +1027,7 @@ export default function MonthlyComparisonAnalytics() {
                     <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                       <h5 className="font-medium text-purple-800 mb-2">💡 Success Strategy</h5>
                       <p className="text-sm text-purple-700">
-                        Based on trends, targeting group organizations in September with compelling back-to-school messaging could recover {Math.round(augustAnalysis.shortfall * 0.6)?.toLocaleString()}+ sandwiches by October.
+                        Based on trends, targeting group organizations in September with compelling back-to-school messaging could recover {Math.round(selectedMonthAnalysis.shortfall * 0.6)?.toLocaleString()}+ sandwiches by October.
                       </p>
                     </div>
                   </div>
@@ -999,7 +1043,7 @@ export default function MonthlyComparisonAnalytics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  Weekly Distribution (August 2025)
+                  Weekly Distribution ({selectedMonthName})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1010,22 +1054,22 @@ export default function MonthlyComparisonAnalytics() {
                         {
                           week: 'Week 1',
                           sandwiches:
-                            augustAnalysis.august2025.weeklyDistribution[0],
+                            selectedMonthAnalysis.selectedMonthData.weeklyDistribution[0],
                         },
                         {
                           week: 'Week 2',
                           sandwiches:
-                            augustAnalysis.august2025.weeklyDistribution[1],
+                            selectedMonthAnalysis.selectedMonthData.weeklyDistribution[1],
                         },
                         {
                           week: 'Week 3',
                           sandwiches:
-                            augustAnalysis.august2025.weeklyDistribution[2],
+                            selectedMonthAnalysis.selectedMonthData.weeklyDistribution[2],
                         },
                         {
                           week: 'Week 4+',
                           sandwiches:
-                            augustAnalysis.august2025.weeklyDistribution[3],
+                            selectedMonthAnalysis.selectedMonthData.weeklyDistribution[3],
                         },
                       ]}
                     >
@@ -1073,12 +1117,12 @@ export default function MonthlyComparisonAnalytics() {
                         data={[
                           {
                             name: 'Individual',
-                            value: augustAnalysis.august2025.individualCount,
+                            value: selectedMonthAnalysis.selectedMonthData.individualCount,
                             color: '#236383',
                           },
                           {
                             name: 'Group',
-                            value: augustAnalysis.august2025.groupCount,
+                            value: selectedMonthAnalysis.selectedMonthData.groupCount,
                             color: '#FBAD3F',
                           },
                         ]}
@@ -1095,12 +1139,12 @@ export default function MonthlyComparisonAnalytics() {
                         {[
                           {
                             name: 'Individual',
-                            value: augustAnalysis.august2025.individualCount,
+                            value: selectedMonthAnalysis.selectedMonthData.individualCount,
                             color: '#236383',
                           },
                           {
                             name: 'Group',
-                            value: augustAnalysis.august2025.groupCount,
+                            value: selectedMonthAnalysis.selectedMonthData.groupCount,
                             color: '#FBAD3F',
                           },
                         ].map((entry, index) => (
@@ -1133,19 +1177,19 @@ export default function MonthlyComparisonAnalytics() {
                     Year-over-Year Performance
                   </h4>
                   <p className="text-sm text-red-700">
-                    {augustAnalysis.yearOverYearChange !== null ? (
-                      augustAnalysis.yearOverYearChange < 0 ? (
+                    {selectedMonthAnalysis.yearOverYearChange !== null ? (
+                      selectedMonthAnalysis.yearOverYearChange < 0 ? (
                         <>
-                          August 2025 collected{' '}
-                          {Math.abs(augustAnalysis.yearOverYearChange).toLocaleString()} fewer
-                          sandwiches ({Math.abs(augustAnalysis.yearOverYearPercent?.toFixed(1) || 0)}%
+                          {selectedMonthName} collected{' '}
+                          {Math.abs(selectedMonthAnalysis.yearOverYearChange).toLocaleString()} fewer
+                          sandwiches ({Math.abs(selectedMonthAnalysis.yearOverYearPercent?.toFixed(1) || 0)}%
                           decrease) compared to August 2024.
                         </>
                       ) : (
                         <>
-                          August 2025 collected{' '}
-                          {augustAnalysis.yearOverYearChange.toLocaleString()} more
-                          sandwiches ({augustAnalysis.yearOverYearPercent?.toFixed(1)}%
+                          {selectedMonthName} collected{' '}
+                          {selectedMonthAnalysis.yearOverYearChange.toLocaleString()} more
+                          sandwiches ({selectedMonthAnalysis.yearOverYearPercent?.toFixed(1)}%
                           increase) compared to August 2024.
                         </>
                       )
