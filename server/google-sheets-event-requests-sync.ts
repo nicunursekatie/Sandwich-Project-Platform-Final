@@ -43,15 +43,56 @@ export class EventRequestsGoogleSheetsService {
 
   private async initializeAuth() {
     // Use JWT authentication (same as other Google Sheets integrations)
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    if (!privateKey || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+    const rawPrivateKey = process.env.GOOGLE_PRIVATE_KEY;
+    if (!rawPrivateKey || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
       throw new Error('Google Sheets credentials not configured');
+    }
+
+    // **NODE.JS v20 COMPATIBILITY FIX** - Handle all newline format issues
+    let cleanPrivateKey = rawPrivateKey;
+
+    // Handle escaped newlines
+    if (cleanPrivateKey.includes('\\n')) {
+      cleanPrivateKey = cleanPrivateKey.replace(/\\n/g, '\n');
+    }
+
+    // Additional newline handling
+    cleanPrivateKey = cleanPrivateKey
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\r/g, '\n')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
+
+    // **CRITICAL NODE.JS v20 FIX** - Handle single-line key format
+    if (
+      !cleanPrivateKey.includes('\n') &&
+      cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')
+    ) {
+      const beginMarker = '-----BEGIN PRIVATE KEY-----';
+      const endMarker = '-----END PRIVATE KEY-----';
+      const beginIndex = cleanPrivateKey.indexOf(beginMarker);
+      const endIndex = cleanPrivateKey.indexOf(endMarker);
+
+      if (beginIndex !== -1 && endIndex !== -1) {
+        const keyContent = cleanPrivateKey
+          .substring(beginIndex + beginMarker.length, endIndex)
+          .trim();
+
+        // Rebuild key with proper line breaks every 64 characters
+        const lines = [beginMarker];
+        for (let i = 0; i < keyContent.length; i += 64) {
+          lines.push(keyContent.substring(i, i + 64));
+        }
+        lines.push(endMarker);
+
+        cleanPrivateKey = lines.join('\n');
+      }
     }
 
     this.auth = new google.auth.JWT(
       process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       undefined,
-      privateKey,
+      cleanPrivateKey,
       [
         'https://www.googleapis.com/auth/spreadsheets',
         'https://www.googleapis.com/auth/drive',
