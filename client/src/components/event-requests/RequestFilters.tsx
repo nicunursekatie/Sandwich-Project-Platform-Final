@@ -13,6 +13,12 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  CheckCircle,
+  Calendar,
+  XCircle,
+  UserCheck,
+  Star,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -80,168 +86,324 @@ export default function RequestFilters({
 }: RequestFiltersProps) {
   const isMobile = useIsMobile();
 
+  // Tab configuration with icons and labels
+  const tabConfig = [
+    {
+      value: 'new',
+      label: 'New',
+      shortLabel: 'New',
+      icon: Star,
+      count: statusCounts.new,
+      hasNotification: statusCounts.new > 0,
+    },
+    {
+      value: 'in_process',
+      label: 'In Process',
+      shortLabel: 'Process',
+      icon: Clock,
+      count: statusCounts.in_process,
+    },
+    {
+      value: 'scheduled',
+      label: 'Scheduled',
+      shortLabel: 'Scheduled',
+      icon: Calendar,
+      count: statusCounts.scheduled,
+    },
+    {
+      value: 'completed',
+      label: 'Completed',
+      shortLabel: 'Done',
+      icon: CheckCircle,
+      count: statusCounts.completed,
+    },
+    {
+      value: 'declined',
+      label: 'Declined',
+      shortLabel: 'Declined',
+      icon: XCircle,
+      count: statusCounts.declined,
+    },
+    {
+      value: 'my_assignments',
+      label: 'My Assignments',
+      shortLabel: 'Mine',
+      icon: UserCheck,
+      count: statusCounts.my_assignments,
+    },
+  ];
+
+  // Get current tab info for mobile selector
+  const currentTab = tabConfig.find(tab => tab.value === activeTab);
+
   return (
     <div className="space-y-6">
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
-        <TabsList className={`w-full ${isMobile ? 'flex flex-wrap gap-1 p-1' : 'grid grid-cols-6'}`}>
-          <TabsTrigger 
-            value="new" 
-            className={`relative ${isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}`}
-          >
-            <span className={isMobile ? 'truncate' : ''}>
-              {isMobile ? 'New' : 'New'} ({statusCounts.new})
-            </span>
-            {statusCounts.new > 0 && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-            )}
-          </TabsTrigger>
-          <TabsTrigger 
-            value="in_process"
-            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
-          >
-            <span className={isMobile ? 'truncate' : ''}>
-              {isMobile ? 'Process' : 'In Process'} ({statusCounts.in_process})
-            </span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="scheduled"
-            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
-          >
-            <span className={isMobile ? 'truncate' : ''}>
-              {isMobile ? 'Scheduled' : 'Scheduled'} ({statusCounts.scheduled})
-            </span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="completed"
-            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
-          >
-            <span className={isMobile ? 'truncate' : ''}>
-              {isMobile ? 'Done' : 'Completed'} ({statusCounts.completed})
-            </span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="declined"
-            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
-          >
-            <span className={isMobile ? 'truncate' : ''}>
-              {isMobile ? 'Declined' : 'Declined'} ({statusCounts.declined})
-            </span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="my_assignments" 
-            data-testid="tab-my-assignments"
-            className={isMobile ? 'flex-1 min-w-0 text-xs px-2 py-1' : ''}
-          >
-            <span className={isMobile ? 'truncate' : ''}>
-              {isMobile ? 'Mine' : 'My Assignments'} ({statusCounts.my_assignments})
-            </span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Status-based tabs */}
-        {['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].map(
-          (status) => (
-            <TabsContent key={status} value={status} className="space-y-4">
-              {/* Search and Filters for this specific status */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
-                  <Input
-                    placeholder={isMobile ? "Search requests..." : "Search by organization, name, email, date, or location..."}
-                    value={searchQuery}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-search-requests"
-                  />
+      {/* Mobile: Dropdown Selector */}
+      {isMobile ? (
+        <div className="space-y-4">
+          {/* Mobile Tab Selector */}
+          <div className="mobile-tab-selector">
+            <Select value={activeTab} onValueChange={onActiveTabChange}>
+              <SelectTrigger className="mobile-select-trigger">
+                <div className="flex items-center space-x-2">
+                  {currentTab && (
+                    <>
+                      <currentTab.icon className="w-4 h-4 text-[#007E8C]" />
+                      <SelectValue>
+                        {currentTab.label} ({currentTab.count})
+                      </SelectValue>
+                    </>
+                  )}
+                  {currentTab?.hasNotification && (
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  )}
                 </div>
+              </SelectTrigger>
+              <SelectContent className="mobile-select-content">
+                {tabConfig.map((tab) => (
+                  <SelectItem key={tab.value} value={tab.value} className="mobile-select-item">
+                    <div className="flex items-center space-x-2">
+                      <tab.icon className="w-4 h-4 text-[#007E8C]" />
+                      <span>{tab.label}</span>
+                      <span className="text-gray-500">({tab.count})</span>
+                      {tab.hasNotification && (
+                        <div className="w-2 h-2 bg-red-500 rounded-full" />
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Mobile Content */}
+          <div className="space-y-4">
+            {children[activeTab as keyof typeof children]}
+          </div>
+        </div>
+      ) : (
+        /* Desktop: Traditional Tabs */
+        <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
+          <TabsList className="w-full grid grid-cols-6">
+            {tabConfig.map((tab) => (
+              <TabsTrigger 
+                key={tab.value}
+                value={tab.value} 
+                className="relative"
+                data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
+              >
+                <div className="flex items-center space-x-1">
+                  <tab.icon className="w-3 h-3" />
+                  <span>{tab.label}</span>
+                  <span className="text-xs opacity-70">({tab.count})</span>
+                </div>
+                {tab.hasNotification && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {/* Desktop Tab Content */}
+          {['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].map(
+            (status) => (
+              <TabsContent key={status} value={status} className="space-y-4">
+                {/* Search and Filters for this specific status */}
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
+                    <Input
+                      placeholder="Search by organization, name, email, date, or location..."
+                      value={searchQuery}
+                      onChange={(e) => onSearchChange(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search-requests"
+                    />
+                  </div>
+                  <Select
+                    value={sortBy}
+                    onValueChange={(value: any) => onSortByChange(value)}
+                  >
+                    <SelectTrigger className="w-48" data-testid="sort-select-trigger">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]" position="popper" sideOffset={5}>
+                      <SelectItem value="created_date_desc">
+                        Submission Date (Most Recent First)
+                      </SelectItem>
+                      <SelectItem value="created_date_asc">
+                        Submission Date (Oldest First)
+                      </SelectItem>
+                      <SelectItem value="event_date_asc">
+                        Event Date (Soonest First)
+                      </SelectItem>
+                      <SelectItem value="event_date_desc">
+                        Event Date (Latest First)
+                      </SelectItem>
+                      <SelectItem value="organization_asc">
+                        Organization A-Z
+                      </SelectItem>
+                      <SelectItem value="organization_desc">
+                        Organization Z-A
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Tab Content */}
+                <div className="space-y-4">
+                  {children[status as keyof typeof children]}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">Items per page:</span>
+                      <Select
+                        value={itemsPerPage.toString()}
+                        onValueChange={(value) => onItemsPerPageChange(parseInt(value))}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">
+                        Page {currentPage} of {totalPages} ({totalItems} total)
+                      </span>
+                      <div className="flex space-x-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onCurrentPageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          data-testid="button-previous-page"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onCurrentPageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          data-testid="button-next-page"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+            )
+          )}
+        </Tabs>
+      )}
+
+      {/* Mobile Search and Filters - Only shown on mobile */}
+      {isMobile && (
+        <div className="space-y-4">
+          {/* Search and Filters */}
+          <div className="flex flex-col gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
+              <Input
+                placeholder="Search requests..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="pl-10 mobile-input mobile-search-input"
+                data-testid="input-search-requests"
+              />
+            </div>
+            <Select
+              value={sortBy}
+              onValueChange={(value: any) => onSortByChange(value)}
+            >
+              <SelectTrigger className="w-full mobile-select" data-testid="sort-select-trigger">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[100]" position="popper" sideOffset={5}>
+                <SelectItem value="created_date_desc">
+                  Newest First
+                </SelectItem>
+                <SelectItem value="created_date_asc">
+                  Oldest First
+                </SelectItem>
+                <SelectItem value="event_date_asc">
+                  Soonest Event
+                </SelectItem>
+                <SelectItem value="event_date_desc">
+                  Latest Event
+                </SelectItem>
+                <SelectItem value="organization_asc">
+                  Org A-Z
+                </SelectItem>
+                <SelectItem value="organization_desc">
+                  Org Z-A
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Mobile Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col items-center justify-between gap-4 pt-4 border-t">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Items per page:</span>
                 <Select
-                  value={sortBy}
-                  onValueChange={(value: any) => onSortByChange(value)}
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => onItemsPerPageChange(parseInt(value))}
                 >
-                  <SelectTrigger className={`${isMobile ? 'w-full' : 'w-48'}`} data-testid="sort-select-trigger">
+                  <SelectTrigger className="w-20">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-                    <SelectItem value="created_date_desc">
-                      {isMobile ? 'Newest First' : 'Submission Date (Most Recent First)'}
-                    </SelectItem>
-                    <SelectItem value="created_date_asc">
-                      {isMobile ? 'Oldest First' : 'Submission Date (Oldest First)'}
-                    </SelectItem>
-                    <SelectItem value="event_date_asc">
-                      {isMobile ? 'Soonest Event' : 'Event Date (Soonest First)'}
-                    </SelectItem>
-                    <SelectItem value="event_date_desc">
-                      {isMobile ? 'Latest Event' : 'Event Date (Latest First)'}
-                    </SelectItem>
-                    <SelectItem value="organization_asc">
-                      {isMobile ? 'Org A-Z' : 'Organization A-Z'}
-                    </SelectItem>
-                    <SelectItem value="organization_desc">
-                      {isMobile ? 'Org Z-A' : 'Organization Z-A'}
-                    </SelectItem>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Tab Content */}
-              <div className="space-y-4">
-                {children[status as keyof typeof children]}
-              </div>
-
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">Items per page:</span>
-                    <Select
-                      value={itemsPerPage.toString()}
-                      onValueChange={(value) => onItemsPerPageChange(parseInt(value))}
-                    >
-                      <SelectTrigger className="w-20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5</SelectItem>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">
-                      Page {currentPage} of {totalPages} ({totalItems} total)
-                    </span>
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onCurrentPageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        data-testid="button-previous-page"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onCurrentPageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        data-testid="button-next-page"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages} ({totalItems} total)
+                </span>
+                <div className="flex space-x-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onCurrentPageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    data-testid="button-previous-page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onCurrentPageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    data-testid="button-next-page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
-              )}
-            </TabsContent>
-          )
-        )}
-      </Tabs>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
