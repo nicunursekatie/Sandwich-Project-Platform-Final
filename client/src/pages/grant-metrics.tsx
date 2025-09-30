@@ -20,6 +20,13 @@ import {
   Zap,
   Star,
   BarChart3,
+  Building2,
+  Shield,
+  DollarSign,
+  UserCheck,
+  Rocket,
+  AlertTriangle,
+  Mail,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -64,19 +71,23 @@ export default function GrantMetrics() {
         totalSandwiches: 0,
         totalCollections: 0,
         uniqueHosts: 0,
-        yearTotals: { 2023: 0, 2024: 0, 2025: 0 },
+        yearTotals: {} as Record<number, number>,
         peakYear: { year: 2024, total: 0 },
         peakMonth: { month: '', total: 0, year: 0 },
         longestStreak: 0,
         avgPerCollection: 0,
         topHost: { name: '', total: 0 },
         growthRate: 0,
+        weeklyAverage: 0,
+        overallGrowthMultiplier: 0,
+        monthlyData: {} as Record<string, number>,
       };
     }
 
     const hostData: Record<string, number> = {};
     const monthlyData: Record<string, number> = {};
-    const yearTotals = { 2023: 0, 2024: 0, 2025: 0 };
+    const yearTotals: Record<number, number> = {};
+    const weeklyData: Record<string, number> = {};
     const uniqueHostsSet = new Set<string>();
 
     collections.forEach((collection: any) => {
@@ -92,11 +103,21 @@ export default function GrantMetrics() {
           const year = date.getFullYear();
           const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-          monthlyData[monthKey] = (monthlyData[monthKey] || 0) + total;
+          // Calculate week key (week starting Monday)
+          const monday = new Date(date);
+          const day = monday.getDay();
+          const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
+          monday.setDate(diff);
+          monday.setHours(0, 0, 0, 0);
+          const weekKey = monday.toISOString().split('T')[0];
 
-          if (yearTotals[year] !== undefined) {
-            yearTotals[year] += total;
+          monthlyData[monthKey] = (monthlyData[monthKey] || 0) + total;
+          weeklyData[weekKey] = (weeklyData[weekKey] || 0) + total;
+
+          if (!yearTotals[year]) {
+            yearTotals[year] = 0;
           }
+          yearTotals[year] += total;
         }
       }
     });
@@ -117,13 +138,36 @@ export default function GrantMetrics() {
       year: parseInt(peakYear2) || 0,
     };
 
-    // Find top host
+    // Find top host (exclude "Groups" and "Unknown" as they're data collection artifacts)
     const topHostEntry = Object.entries(hostData)
+      .filter(([name]) => name !== 'Groups' && name !== 'Unknown')
       .reduce((max, [name, total]) => total > max.total ? { name, total } : max, { name: '', total: 0 });
 
     // Calculate growth rate (2023 to 2024)
     const growthRate = yearTotals[2023] > 0
       ? ((yearTotals[2024] - yearTotals[2023]) / yearTotals[2023]) * 100
+      : 0;
+
+    // Calculate weekly average from last 12 weeks
+    const now = new Date();
+    const twelveWeeksAgo = new Date(now);
+    twelveWeeksAgo.setDate(now.getDate() - (12 * 7));
+
+    const recentWeeks = Object.entries(weeklyData)
+      .filter(([weekKey]) => new Date(weekKey) >= twelveWeeksAgo)
+      .map(([, total]) => total);
+
+    const weeklyAverage = recentWeeks.length > 0
+      ? Math.round(recentWeeks.reduce((sum, total) => sum + total, 0) / recentWeeks.length)
+      : 0;
+
+    // Calculate overall growth multiplier (from earliest year to most recent)
+    const years = Object.keys(yearTotals).map(y => parseInt(y)).sort();
+    const earliestYear = years[0];
+    const latestYear = years[years.length - 1];
+
+    const overallGrowthMultiplier = yearTotals[earliestYear] > 0
+      ? Math.round((yearTotals[latestYear] / yearTotals[earliestYear]) * 10) / 10
       : 0;
 
     const totalSandwiches = (stats as any)?.completeTotalSandwiches || 0;
@@ -139,6 +183,8 @@ export default function GrantMetrics() {
       avgPerCollection,
       topHost: topHostEntry,
       growthRate,
+      weeklyAverage,
+      overallGrowthMultiplier,
       monthlyData,
     };
   };
@@ -147,9 +193,9 @@ export default function GrantMetrics() {
 
   // Prepare year-over-year chart data
   const yearChartData = [
-    { year: '2023', sandwiches: metrics.yearTotals[2023] },
-    { year: '2024', sandwiches: metrics.yearTotals[2024] },
-    { year: '2025 YTD', sandwiches: metrics.yearTotals[2025] },
+    { year: '2023', sandwiches: metrics.yearTotals[2023] || 0 },
+    { year: '2024', sandwiches: metrics.yearTotals[2024] || 0 },
+    { year: '2025 YTD', sandwiches: metrics.yearTotals[2025] || 0 },
   ];
 
   return (
@@ -350,45 +396,278 @@ export default function GrantMetrics() {
           </CardContent>
         </Card>
 
+        {/* Strategic Milestones & Infrastructure */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Crisis Response Capability */}
+          <Card className="border-2 border-[#A31C41] shadow-lg">
+            <CardHeader className="bg-[#FCE4E6]">
+              <CardTitle className="flex items-center text-[#A31C41]">
+                <Shield className="w-5 h-5 mr-2" />
+                Crisis Response
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-3xl font-black text-[#A31C41] mb-1">
+                    14,023
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Sandwiches mobilized during Hurricane Helene (October 2024)
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="text-2xl font-bold text-[#007E8C] mb-1">
+                    2-3x surge
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Capacity increase within one week when needed
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 italic">
+                    Proven disaster infrastructure, not just routine food distribution
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Distributed Network */}
+          <Card className="border-2 border-[#007E8C] shadow-lg">
+            <CardHeader className="bg-[#E0F2F1]">
+              <CardTitle className="flex items-center text-[#007E8C]">
+                <Building2 className="w-5 h-5 mr-2" />
+                Distributed Network
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-3xl font-black text-[#007E8C] mb-1">
+                    35 sites
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Collection locations across Metro Atlanta
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="text-2xl font-bold text-[#236383] mb-1">
+                    70+ partners
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Organizations receiving deliveries weekly
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 italic">
+                    Built-in redundancy: if one area struggles, others compensate
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Volunteer Power */}
+          <Card className="border-2 border-[#FBAD3F] shadow-lg">
+            <CardHeader className="bg-[#FEF4E0]">
+              <CardTitle className="flex items-center text-[#FBAD3F]">
+                <UserCheck className="w-5 h-5 mr-2" />
+                Volunteer Network
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-3xl font-black text-[#FBAD3F] mb-1">
+                    4,000+
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Active members in private volunteer community
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="text-2xl font-bold text-[#47B3CB] mb-1">
+                    5,350+
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Newsletter recipients staying informed
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 italic">
+                    Volunteers consistently engaged for 3+ years
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Remarkable Growth Story */}
+        <Card className="mb-8 bg-gradient-to-r from-[#47B3CB]/10 to-[#236383]/10 border-2 border-[#47B3CB]">
+          <CardContent className="p-8">
+            <div className="flex items-start gap-4 mb-6">
+              <Rocket className="w-10 h-10 text-[#236383] flex-shrink-0 mt-1" />
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Exponential Growth with Strategic Sustainability
+                </h2>
+                <p className="text-gray-600">
+                  From pandemic response to community infrastructure in 5 years
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-white p-4 rounded-lg border border-[#236383]/20">
+                <div className="text-sm text-gray-600 mb-1">April 2020 (Start)</div>
+                <div className="text-3xl font-black text-[#236383]">317</div>
+                <div className="text-xs text-gray-500">sandwiches</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-[#A31C41]/20">
+                <div className="text-sm text-gray-600 mb-1">Peak Week (Nov 2023)</div>
+                <div className="text-3xl font-black text-[#A31C41]">38,828</div>
+                <div className="text-xs text-gray-500">sandwiches</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-[#007E8C]/20">
+                <div className="text-sm text-gray-600 mb-1">Weekly Avg (12 weeks)</div>
+                <div className="text-3xl font-black text-[#007E8C]">
+                  {metrics.weeklyAverage > 0 ? metrics.weeklyAverage.toLocaleString() : '8-10K'}
+                </div>
+                <div className="text-xs text-gray-500">sandwiches</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-[#FBAD3F]/20">
+                <div className="text-sm text-gray-600 mb-1">Overall Growth</div>
+                <div className="text-3xl font-black text-[#FBAD3F]">
+                  {metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : '107x'}
+                </div>
+                <div className="text-xs text-gray-500">since inception</div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-white/60 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Star className="w-5 h-5 text-[#FBAD3F] flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-700">
+                  <strong>Strategic Wisdom:</strong> In 2023, we deliberately decreased production from 464K to 426K
+                  to find sustainable levels, then stabilized at ~450K annually. We chose long-term sustainability over ego-driven growth.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Financial & Economic Impact */}
+        <Card className="mb-8 border-2 border-[#007E8C] shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-[#007E8C] to-[#236383] text-white">
+            <CardTitle className="flex items-center text-xl">
+              <DollarSign className="w-6 h-6 mr-2" />
+              Economic & Financial Impact
+            </CardTitle>
+            <CardDescription className="text-white/90">
+              The hidden value behind the sandwiches
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
+                <div className="text-4xl font-black text-[#007E8C] mb-2">
+                  $1.2-2M
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Annual food value delivered to community
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  At $1.40-$1.48 per sandwich
+                </p>
+              </div>
+
+              <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
+                <div className="text-4xl font-black text-[#236383] mb-2">
+                  $500-2K
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Corporate team building investment per event
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Companies make 2,000-5,000 sandwiches
+                </p>
+              </div>
+
+              <div className="text-center p-4 bg-[#FEF4E0] rounded-lg">
+                <div className="text-4xl font-black text-[#FBAD3F] mb-2">
+                  ServSafe
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Certified team members ensuring safety
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Professional food safety standards
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Impact Statement */}
         <Card className="bg-gradient-to-br from-[#236383] to-[#007E8C] text-white shadow-xl border-0">
           <CardContent className="p-8">
             <h2 className="text-3xl font-bold mb-4 flex items-center">
               <Heart className="w-8 h-8 mr-3" />
-              Our Proven Impact Model
+              Community Infrastructure Disguised as Sandwiches
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
               <div>
                 <div className="text-4xl font-black mb-2">
                   {metrics.totalCollections.toLocaleString()}
                 </div>
                 <p className="text-white/90 font-medium">
-                  Total collection events organized and executed
+                  Collection events organized
                 </p>
               </div>
               <div>
                 <div className="text-4xl font-black mb-2">
-                  {metrics.uniqueHosts}
+                  35
                 </div>
                 <p className="text-white/90 font-medium">
-                  Community partners actively engaged in our mission
+                  Host locations across Metro Atlanta
                 </p>
               </div>
               <div>
                 <div className="text-4xl font-black mb-2">
-                  {metrics.avgPerCollection}
+                  70+
                 </div>
                 <p className="text-white/90 font-medium">
-                  Average sandwiches per event - consistent quality delivery
+                  Partner organizations served weekly
+                </p>
+              </div>
+              <div>
+                <div className="text-4xl font-black mb-2">
+                  4,000+
+                </div>
+                <p className="text-white/90 font-medium">
+                  Active volunteer community members
                 </p>
               </div>
             </div>
-            <div className="mt-8 p-6 bg-white/10 rounded-lg backdrop-blur-sm">
+            <div className="mt-8 p-6 bg-white/10 rounded-lg backdrop-blur-sm space-y-4">
               <p className="text-lg leading-relaxed">
-                The Sandwich Project has demonstrated sustained, measurable impact in addressing food insecurity
-                through our innovative community partnership model. With <strong>{metrics.totalSandwiches.toLocaleString()}
-                sandwiches delivered</strong> and a proven track record of growth, we provide a scalable solution
-                that engages volunteers, supports community partnerships, and directly serves those in need.
+                The Sandwich Project has evolved from pandemic response to <strong>proven community infrastructure</strong>.
+                Starting with just 317 sandwiches in April 2020, we've delivered <strong>{metrics.totalSandwiches.toLocaleString()}
+                sandwiches</strong> and grown <strong>{metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : '107x'} since inception</strong>.
+              </p>
+              <p className="text-lg leading-relaxed">
+                We don't just feed people - we've built <strong>disaster response capability</strong> (14,023 sandwiches during Hurricane Helene),
+                <strong> distributed logistics infrastructure</strong> across 35 sites, and a <strong>volunteer network</strong> that could
+                pivot tomorrow to housing crisis response, voter mobilization, or climate disaster coordination.
+              </p>
+              <p className="text-lg leading-relaxed font-semibold">
+                This is not charity. This is community infrastructure that happens to use sandwiches as its medium.
+                And we're just getting started.
               </p>
             </div>
           </CardContent>
