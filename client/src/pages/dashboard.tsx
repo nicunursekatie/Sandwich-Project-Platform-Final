@@ -46,7 +46,6 @@ import DocumentManagement from '@/components/document-management';
 import ImportantDocuments from '@/pages/important-documents';
 
 import BulkDataManager from '@/components/bulk-data-manager';
-import AnalyticsDashboard from '@/components/analytics-dashboard';
 import HostAnalytics from '@/components/host-analytics';
 import EnhancedMeetingDashboard from '@/components/enhanced-meeting-dashboard';
 import RoleDemo from '@/pages/role-demo';
@@ -342,44 +341,37 @@ export default function Dashboard({
           <div className="p-6">
             <div className="mb-6">
               <h1 className="text-2xl font-main-heading text-primary">
-                Analytics Dashboard
+                Impact & Analytics Dashboard
               </h1>
               <p className="font-body text-muted-foreground">
-                Data insights and impact visualization
+                Track community impact, collection trends, and host performance
               </p>
             </div>
-            <Tabs defaultValue="data" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
+            <Tabs defaultValue="impact" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
                 <TabsTrigger
-                  value="data"
+                  value="impact"
                   className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
                 >
-                  Data Analytics
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Impact Dashboard
                 </TabsTrigger>
                 <TabsTrigger
                   value="hosts"
                   className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
                 >
+                  <Users className="w-4 h-4 mr-2" />
                   Host Analytics
                 </TabsTrigger>
-                <TabsTrigger
-                  value="impact"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
-                >
-                  Impact Dashboard
-                </TabsTrigger>
               </TabsList>
-              <TabsContent value="data" className="mt-6">
-                <AnalyticsDashboard />
+              <TabsContent value="impact" className="mt-6">
+                <ImpactDashboard />
               </TabsContent>
               <TabsContent value="hosts" className="mt-6">
                 <HostAnalytics
                   selectedHost={selectedHost}
                   onHostChange={setSelectedHost}
                 />
-              </TabsContent>
-              <TabsContent value="impact" className="mt-6">
-                <ImpactDashboard />
               </TabsContent>
             </Tabs>
           </div>
