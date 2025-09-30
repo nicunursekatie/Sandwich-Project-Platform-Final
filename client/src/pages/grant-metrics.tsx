@@ -64,6 +64,9 @@ export default function GrantMetrics() {
     queryKey: ['/api/sandwich-collections/stats'],
   });
 
+  // Hardcoded host count (actual database has 34 active hosts)
+  const totalHosts = 34;
+
   // Calculate impressive metrics
   const calculateGrantMetrics = () => {
     if (!Array.isArray(collections) || collections.length === 0) {
@@ -250,16 +253,16 @@ export default function GrantMetrics() {
           <Card className="bg-gradient-to-br from-[#FBAD3F] to-[#e89a2c] text-white border-0 shadow-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-xl font-bold flex items-center">
-                <Users className="w-6 h-6 mr-3" />
-                Community Partners
+                <Building2 className="w-6 h-6 mr-3" />
+                Host Locations
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-5xl font-black mb-2">
-                {metrics.uniqueHosts}
+                {totalHosts}
               </div>
               <p className="text-white/90 text-base font-medium">
-                Active host locations supporting our mission
+                Active collection sites across Metro Atlanta
               </p>
             </CardContent>
           </Card>
@@ -330,7 +333,7 @@ export default function GrantMetrics() {
               <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
                 <Building2 className="w-12 h-12 mx-auto mb-3 opacity-90" />
                 <h2 className="text-3xl font-black mb-2">
-                  {metrics.uniqueHosts} Active Hosts
+                  {totalHosts} Active Hosts
                 </h2>
                 <div className="text-4xl font-black mb-2">
                   {metrics.avgPerCollection}
