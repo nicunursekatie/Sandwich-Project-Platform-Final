@@ -10,7 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Database connection
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
+const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+const pool = new Pool({ connectionString: databaseUrl });
 const db = drizzle(pool);
 
 async function importEvents() {

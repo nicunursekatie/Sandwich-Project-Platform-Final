@@ -11,9 +11,11 @@ import { createCorsMiddleware, logCorsConfig } from './config/cors';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use database-backed session store for deployment persistence
+  // Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
+  const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
   const PgSession = connectPg(session);
   const sessionStore = new PgSession({
-    conString: process.env.DATABASE_URL,
+    conString: databaseUrl,
     createTableIfMissing: true,
     ttl: 30 * 24 * 60 * 60, // 30 days in seconds (matches cookie maxAge)
     tableName: 'sessions',
