@@ -687,21 +687,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </div>
               )}
 
-              {/* Sandwich Count - Prominent Display */}
-              <div className="bg-[#FBAD3F] text-white rounded-lg p-4 shadow-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <Package className="w-5 h-5" />
-                  <span className="font-semibold text-sm uppercase tracking-wide">
-                    Sandwiches
-                  </span>
-                </div>
-                <div className="text-lg font-bold">
-                  {formatSandwichTypesDisplay(
-                    request.sandwichTypes,
-                    request.estimatedSandwichCount ?? undefined
-                  )}
-                </div>
-              </div>
+              {/* Sandwich Count Badge */}
+              <Badge className="bg-[#FBAD3F] text-white hover:bg-[#FBAD3F]/90 text-base px-3 py-2 flex items-center gap-2 w-fit">
+                <Package className="w-4 h-4" />
+                {formatSandwichTypesDisplay(
+                  request.sandwichTypes,
+                  request.estimatedSandwichCount ?? undefined
+                )}
+              </Badge>
             </div>
           </div>
 
