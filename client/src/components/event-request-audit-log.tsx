@@ -506,8 +506,9 @@ export function EventRequestAuditLog({
         // If we have structured changes, render them properly
         if (metadataChanges.length > 0) {
           return (
-            <div className="mt-3 space-y-2">
+            <div className="mt-3">
               <div className="text-sm font-medium text-gray-700 mb-2">What Changed:</div>
+              <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
               {metadataChanges.map((change: any, index: number) => {
                 // Get human-readable field name
                 const fieldName = change.fieldDisplayName || getHumanReadableFieldName(change.field || change.fieldName || 'Unknown Field');
@@ -545,6 +546,7 @@ export function EventRequestAuditLog({
                   </div>
                 );
               })}
+              </div>
             </div>
           );
         }
