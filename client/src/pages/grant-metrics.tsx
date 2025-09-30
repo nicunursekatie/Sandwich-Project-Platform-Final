@@ -62,6 +62,10 @@ export default function GrantMetrics() {
 
   const collections = collectionsData?.collections || [];
 
+  if (typeof window !== "undefined") {
+    (window as any).__collections = collections;
+  }
+
   // Fetch stats
   const { data: stats } = useQuery({
     queryKey: ['/api/sandwich-collections/stats'],
