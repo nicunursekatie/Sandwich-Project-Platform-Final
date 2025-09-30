@@ -14,6 +14,17 @@ import { insertSandwichCollectionSchema } from '@shared/schema';
 
 const collectionsRouter = Router();
 
+// Clear all caches - use after direct database changes
+collectionsRouter.post('/clear-cache', async (req, res) => {
+  try {
+    QueryOptimizer.invalidateCache('sandwich-collections');
+    QueryOptimizer.invalidateCache('sandwich-collections-stats');
+    res.json({ message: 'All sandwich collection caches cleared successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to clear cache' });
+  }
+});
+
 // Sandwich Collections Stats - Complete totals including individual + group collections (Optimized)
 collectionsRouter.get('/stats', async (req, res) => {
   try {

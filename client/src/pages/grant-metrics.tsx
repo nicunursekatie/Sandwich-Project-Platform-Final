@@ -55,6 +55,7 @@ export default function GrantMetrics() {
       if (!response.ok) throw new Error('Failed to fetch collections');
       return response.json();
     },
+    staleTime: 0, // Always fetch fresh data for grant metrics
   });
 
   const collections = collectionsData?.collections || [];
@@ -62,6 +63,7 @@ export default function GrantMetrics() {
   // Fetch stats
   const { data: stats } = useQuery({
     queryKey: ['/api/sandwich-collections/stats'],
+    staleTime: 0, // Always fetch fresh data
   });
 
   // Hardcoded host count (actual database has 34 active hosts)
@@ -335,7 +337,7 @@ export default function GrantMetrics() {
                 <h2 className="font-black mb-2 text-[23px]">
                   {totalHosts} Active Hosts
                 </h2>
-                <div className="text-4xl font-black mb-2">
+                <div className="font-black mb-2 text-[30px] text-left">
                   {metrics.avgPerCollection}
                 </div>
                 <p className="text-white/90 text-lg">
