@@ -677,7 +677,6 @@ export function EventRequestAuditLog({
           Complete tracking of all changes made to event requests - who did what and when
         </CardDescription>
       </CardHeader>
-
       <CardContent className="space-y-6">
         {showFilters && (
           <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
@@ -819,7 +818,7 @@ export function EventRequestAuditLog({
                       {/* Action Badge */}
                       <div className={`inline-flex items-center px-3 py-2 rounded-lg border ${getActionStyle(log.action)} flex-shrink-0`}>
                         {getActionIcon(log.action)}
-                        <span className="ml-2 text-sm font-medium">
+                        <span className="ml-2 font-medium text-[12px]">
                           {getHumanReadableActionName(log.action)}
                         </span>
                       </div>
