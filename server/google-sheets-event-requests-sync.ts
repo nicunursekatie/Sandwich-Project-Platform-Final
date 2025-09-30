@@ -966,8 +966,8 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       firstName: getColumnIndex(['first name', 'fname', 'first']), // Legacy support
       lastName: getColumnIndex(['last name', 'lname', 'last']), // Legacy support
       email: getColumnIndex(['your email', 'email', 'email address', 'e-mail', 'contact email']),
-      organizationName: getColumnIndex(['grouporganization', 'group/organization name', 'organization', 'group', 'organization name', 'company', 'org name']),
-      department: getColumnIndex(['department/team if applicable', 'department', 'team', 'dept', 'division', 'department/team']),
+      organizationName: getColumnIndex(['grouporganization name', 'grouporganization', 'group/organization name', 'organization', 'group', 'organization name', 'company', 'org name']),
+      department: getColumnIndex(['departmentteam', 'department/team if applicable', 'department', 'team', 'dept', 'division', 'department/team']),
       phone: getColumnIndex(['phone number', 'phone', 'contact phone', 'telephone', 'mobile', 'cell phone']),
       desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date']),
       previouslyHosted: getColumnIndex(['has your organization done an event with us before?', 'previously hosted', 'previous event', 'hosted before', 'past event']),
