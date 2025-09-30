@@ -201,9 +201,9 @@ export const ScheduledTab: React.FC = () => {
           No scheduled events
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6 max-w-7xl mx-auto px-4">
           {scheduledRequests.map((request) => (
-            <div key={request.id}>
+            <div key={request.id} className="w-full">
               <ScheduledCard
                 request={request}
                 editingField={editingField}
