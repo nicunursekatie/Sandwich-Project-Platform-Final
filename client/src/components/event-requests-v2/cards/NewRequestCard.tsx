@@ -245,7 +245,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-[16px]">
+            <span className="font-medium text-[18px]">
               {request.firstName} {request.lastName}
             </span>
           </div>
