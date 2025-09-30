@@ -332,7 +332,7 @@ export default function GrantMetrics() {
             <CardContent className="space-y-6 pt-6">
               <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
                 <Building2 className="w-12 h-12 mx-auto mb-3 opacity-90" />
-                <h2 className="text-3xl font-black mb-2">
+                <h2 className="font-black mb-2 text-[23px]">
                   {totalHosts} Active Hosts
                 </h2>
                 <div className="text-4xl font-black mb-2">
