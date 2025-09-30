@@ -26,6 +26,7 @@ import {
   Calculator,
   Truck,
   UserCog,
+  Trophy,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -201,6 +202,14 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Analytics',
     icon: BarChart3,
     href: 'analytics',
+    permission: PERMISSIONS.ANALYTICS_VIEW,
+    group: 'planning',
+  },
+  {
+    id: 'grant-metrics',
+    label: 'Grant Metrics',
+    icon: Trophy,
+    href: 'grant-metrics',
     permission: PERMISSIONS.ANALYTICS_VIEW,
     group: 'planning',
   },

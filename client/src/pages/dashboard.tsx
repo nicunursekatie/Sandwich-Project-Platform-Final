@@ -55,6 +55,7 @@ import Analytics from '@/pages/analytics';
 import ImpactDashboard from '@/pages/impact-dashboard';
 import DataManagement from '@/pages/data-management';
 import PerformanceDashboard from '@/pages/performance-dashboard';
+import GrantMetrics from '@/pages/grant-metrics';
 
 import UserManagementRedesigned from '@/components/user-management-redesigned';
 import UserProfile from '@/components/user-profile';
@@ -376,6 +377,8 @@ export default function Dashboard({
             </Tabs>
           </div>
         );
+      case 'grant-metrics':
+        return <GrantMetrics />;
       case 'role-demo':
         return <RoleDemo />;
       case 'work-log':
