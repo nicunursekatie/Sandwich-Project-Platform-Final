@@ -577,6 +577,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {getStatusLabel(request.status)}
               </Badge>
+              
+              {/* Sandwich Count Badge */}
+              <Badge className="bg-[#FBAD3F] text-white px-2 py-1 text-xs shadow-sm">
+                <Package className="w-3 h-3 mr-1" />
+                {formatSandwichTypesDisplay(
+                  request.sandwichTypes,
+                  request.estimatedSandwichCount ?? undefined
+                )}
+              </Badge>
+              
               {staffingComplete ? (
                 <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
                   <Check className="w-3 h-3 mr-1" />
@@ -686,15 +696,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </a>
                 </div>
               )}
-
-              {/* Sandwich Count Badge */}
-              <Badge className="bg-[#FBAD3F] text-white px-2 py-1 text-xs shadow-sm">
-                <Package className="w-3 h-3 mr-1" />
-                {formatSandwichTypesDisplay(
-                  request.sandwichTypes,
-                  request.estimatedSandwichCount ?? undefined
-                )}
-              </Badge>
             </div>
           </div>
 
