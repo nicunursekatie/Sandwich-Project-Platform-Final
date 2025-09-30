@@ -592,7 +592,7 @@ export default function MonthlyComparisonAnalytics() {
         </div>
 
         {/* Primary Impact Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
           <div className="bg-white p-4 rounded-lg border border-green-200 border-l-4">
             <div className="text-sm text-gray-600 mb-1">✓ People Fed</div>
             <div className="text-3xl font-bold text-brand-primary">
@@ -624,6 +624,16 @@ export default function MonthlyComparisonAnalytics() {
             </div>
             <p className="text-xs text-gray-500 mt-1">Efficiency metric</p>
           </div>
+
+          {selectedMonthAnalysis.rolling3MonthAvg && (
+            <div className="bg-white p-4 rounded-lg border border-indigo-200 border-l-4">
+              <div className="text-sm text-gray-600 mb-1">3-Month Trend</div>
+              <div className="text-3xl font-bold text-brand-primary">
+                {selectedMonthAnalysis.rolling3MonthAvg.toLocaleString()}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Rolling average</p>
+            </div>
+          )}
         </div>
 
         {/* Context Card */}
@@ -880,28 +890,20 @@ export default function MonthlyComparisonAnalytics() {
                   <div className="space-y-4">
                     {/* Primary comparison */}
                     {selectedMonthAnalysis.comparisonPercent !== null ? (
-                      <div className={`p-4 border rounded-lg ${
-                        selectedMonthAnalysis.comparisonChange! >= 0
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-red-50 border-red-200'
-                      }`}>
+                      <div className="p-4 border rounded-lg bg-gray-50 border-gray-200">
                         <div className="flex items-center gap-2 mb-2">
                           {selectedMonthAnalysis.comparisonChange! >= 0 ? (
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <TrendingUp className="h-4 w-4 text-gray-600" />
                           ) : (
-                            <TrendingDown className="h-4 w-4 text-red-600" />
+                            <TrendingDown className="h-4 w-4 text-gray-600" />
                           )}
-                          <span className={`font-medium ${
-                            selectedMonthAnalysis.comparisonChange! >= 0 ? 'text-green-800' : 'text-red-800'
-                          }`}>
+                          <span className="font-medium text-gray-800">
                             {selectedMonthAnalysis.comparisonType === 'month-over-month' ? 'Month-over-Month' : 'Year-over-Year'} Trend
                           </span>
                         </div>
-                        <p className={`text-sm ${
-                          selectedMonthAnalysis.comparisonChange! >= 0 ? 'text-green-700' : 'text-red-700'
-                        }`}>
+                        <p className="text-sm text-gray-700">
                           {selectedMonthName} shows a {Math.abs(selectedMonthAnalysis.comparisonPercent).toFixed(1)}%
-                          {selectedMonthAnalysis.comparisonChange! >= 0 ? ' increase' : ' decline'} compared to {selectedMonthAnalysis.comparisonLabel}.
+                          {selectedMonthAnalysis.comparisonChange! >= 0 ? ' increase' : ' change'} compared to {selectedMonthAnalysis.comparisonLabel}.
                           This represents {Math.abs(selectedMonthAnalysis.comparisonChange!).toLocaleString()}
                           {selectedMonthAnalysis.comparisonChange! >= 0 ? ' more' : ' fewer'} sandwiches.
                         </p>
@@ -986,15 +988,15 @@ export default function MonthlyComparisonAnalytics() {
                       const holidays = getHolidaysForMonth(selectedMonth, selectedYear);
                       if (holidays.length === 0) {
                         return (
-                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                             <div className="flex items-center justify-between">
                               <div>
-                                <span className="font-medium text-green-800">No Major Holidays</span>
-                                <p className="text-sm text-green-700 mt-1">
+                                <span className="font-medium text-gray-800">No Major Holidays</span>
+                                <p className="text-sm text-gray-700 mt-1">
                                   {selectedMonthName} had no major holidays that typically impact collection schedules.
                                 </p>
                               </div>
-                              <Badge variant="outline" className="border-green-300 text-green-700">
+                              <Badge variant="outline" className="border-gray-300 text-gray-700">
                                 Clear
                               </Badge>
                             </div>
@@ -1062,8 +1064,8 @@ export default function MonthlyComparisonAnalytics() {
                           </div>
 
                           {highImpactCount > 0 && (
-                            <div className="p-2 bg-red-50 border border-red-200 rounded text-center">
-                              <p className="text-xs text-red-700">
+                            <div className="p-2 bg-amber-50 border border-amber-200 rounded text-center">
+                              <p className="text-xs text-amber-700">
                                 ⚠️ {highImpactCount} high-impact holiday{highImpactCount > 1 ? 's' : ''} this month
                               </p>
                             </div>
@@ -1157,9 +1159,9 @@ export default function MonthlyComparisonAnalytics() {
                       </div>
                     </div>
                     
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <h5 className="font-medium text-green-800 mb-2">Key Findings</h5>
-                      <ul className="text-sm text-green-700 space-y-1">
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h5 className="font-medium text-blue-800 mb-2">Key Findings</h5>
+                      <ul className="text-sm text-blue-700 space-y-1">
                         <li>• Group events average {selectedMonthAnalysis.selectedMonthData.groupEventCount > 0 ? Math.round(selectedMonthAnalysis.selectedMonthData.groupCount / selectedMonthAnalysis.selectedMonthData.groupEventCount) : 0} sandwiches per event</li>
                         <li>• Individual events average {selectedMonthAnalysis.selectedMonthData.individualCount > 0 ? Math.round(selectedMonthAnalysis.selectedMonthData.individualCount / collections.filter(c => {
                           if (!c.collectionDate) return false;
@@ -1194,24 +1196,24 @@ export default function MonthlyComparisonAnalytics() {
                     🎯 Priority Actions
                   </h4>
                   <div className="space-y-3">
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <h5 className="font-medium text-red-800 mb-1">Immediate (September)</h5>
-                      <p className="text-sm text-red-700">
-                        Launch back-to-school campaign targeting families and student organizations. August's {selectedMonthAnalysis.shortfall?.toLocaleString()} sandwich gap needs urgent attention.
+                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <h5 className="font-medium text-orange-800 mb-1">Immediate (This Month)</h5>
+                      <p className="text-sm text-orange-700">
+                        Focus on maintaining momentum with current hosts. Consider targeted outreach to hosts who haven't scheduled recently.
                       </p>
                     </div>
-                    
+
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <h5 className="font-medium text-amber-800 mb-1">Medium-term (October-November)</h5>
+                      <h5 className="font-medium text-amber-800 mb-1">Medium-term (Next 2-3 Months)</h5>
                       <p className="text-sm text-amber-700">
                         Focus on group event recruitment. Group events showed stronger per-event performance than individual collections.
                       </p>
                     </div>
-                    
+
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h5 className="font-medium text-blue-800 mb-1">Long-term (2026 Planning)</h5>
+                      <h5 className="font-medium text-blue-800 mb-1">Long-term (Annual Planning)</h5>
                       <p className="text-sm text-blue-700">
-                        Develop August-specific strategies to counter seasonal volunteer fatigue and vacation impacts.
+                        Develop month-specific strategies to account for seasonal patterns and volunteer availability trends.
                       </p>
                     </div>
                   </div>
@@ -1229,12 +1231,12 @@ export default function MonthlyComparisonAnalytics() {
                     
                     <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                       <span className="text-sm font-medium">Group Event Efficiency</span>
-                      <Badge className="bg-green-100 text-green-700">Strong</Badge>
+                      <Badge className="bg-blue-100 text-blue-700">Strong</Badge>
                     </div>
-                    
+
                     <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                       <span className="text-sm font-medium">Recovery Potential</span>
-                      <Badge className="bg-blue-100 text-blue-700">Good</Badge>
+                      <Badge className="bg-indigo-100 text-indigo-700">Good</Badge>
                     </div>
                     
                     <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
@@ -1413,23 +1415,11 @@ export default function MonthlyComparisonAnalytics() {
                   </p>
                 </div>
 
-                <div className={`p-3 rounded ${
-                  hostComparison.filter((h) => h.percentChange < -20).length > 5
-                    ? 'bg-amber-50'
-                    : 'bg-green-50'
-                }`}>
-                  <h4 className={`font-semibold mb-1 ${
-                    hostComparison.filter((h) => h.percentChange < -20).length > 5
-                      ? 'text-amber-800'
-                      : 'text-green-800'
-                  }`}>
+                <div className="p-3 rounded bg-gray-50 border border-gray-200">
+                  <h4 className="font-semibold mb-1 text-gray-800">
                     Host Participation
                   </h4>
-                  <p className={`text-sm ${
-                    hostComparison.filter((h) => h.percentChange < -20).length > 5
-                      ? 'text-amber-700'
-                      : 'text-green-700'
-                  }`}>
+                  <p className="text-sm text-gray-700">
                     {hostComparison.filter((h) => h.percentChange < -20).length} hosts with significant declines (&gt;20%),
                     {' '}{hostComparison.filter((h) => h.percentChange > 20).length} hosts with strong growth (&gt;20%).
                   </p>
@@ -1478,11 +1468,11 @@ export default function MonthlyComparisonAnalytics() {
                 )}
 
                 {hostComparison.filter((h) => h.percentChange > 20).length > 0 && (
-                  <div className="p-3 bg-green-50 rounded">
-                    <h4 className="font-semibold text-green-800 mb-1">
+                  <div className="p-3 bg-blue-50 rounded border border-blue-200">
+                    <h4 className="font-semibold text-blue-800 mb-1">
                       Amplify Success Stories
                     </h4>
-                    <p className="text-sm text-green-700">
+                    <p className="text-sm text-blue-700">
                       {hostComparison.filter((h) => h.percentChange > 20).length} hosts showed exceptional growth.
                       Share their strategies with other hosts to drive broader impact.
                     </p>
@@ -1505,7 +1495,7 @@ export default function MonthlyComparisonAnalytics() {
           {/* High Performers */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-700">
+              <CardTitle className="flex items-center gap-2 text-brand-primary">
                 <TrendingUp className="h-5 w-5" />
                 Top Performing Hosts in {selectedMonthName}
               </CardTitle>
@@ -1521,10 +1511,10 @@ export default function MonthlyComparisonAnalytics() {
                   .map((host, index) => (
                     <div
                       key={host.hostName}
-                      className="p-4 bg-green-50 rounded-lg border border-green-200"
+                      className="p-4 bg-blue-50 rounded-lg border border-blue-200"
                     >
                       <h4
-                        className="font-semibold text-green-800 mb-2"
+                        className="font-semibold text-blue-800 mb-2"
                         data-testid={`success-host-${index}`}
                       >
                         {host.hostName.length > 20
@@ -1532,13 +1522,13 @@ export default function MonthlyComparisonAnalytics() {
                           : host.hostName}
                       </h4>
                       <div
-                        className="text-2xl font-bold text-green-700"
+                        className="text-2xl font-bold text-blue-700"
                         data-testid={`success-total-${index}`}
                       >
                         {host.augustTotal.toLocaleString()}
                       </div>
                       <div
-                        className="text-sm text-green-600"
+                        className="text-sm text-blue-600"
                         data-testid={`success-change-${index}`}
                       >
                         +{host.percentChange}% vs their average
