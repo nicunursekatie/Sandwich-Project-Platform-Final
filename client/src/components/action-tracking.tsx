@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
 import {
   Search,
   Calendar,
@@ -20,6 +21,9 @@ import {
   Mic,
   UserCheck,
   Bell,
+  Copy,
+  ExternalLink,
+  AlertCircle,
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 
@@ -58,6 +62,8 @@ interface EventRequest {
   id: number;
   firstName: string;
   lastName: string;
+  email: string;
+  phone?: string;
   organizationName: string;
   status: string;
   assignedTo?: string;
@@ -161,6 +167,32 @@ const ActionTracking = () => {
       event.organizationName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Sort events so follow-up needed items appear first
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    if (a.followUpNeeded && !b.followUpNeeded) return -1;
+    if (!a.followUpNeeded && b.followUpNeeded) return 1;
+    return 0;
+  });
+
+  // Get events that need follow-up for the notification banner
+  const followUpEvents = sortedEvents.filter(event => event.followUpNeeded);
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: 'Copied!',
+        description: `${label} copied to clipboard`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Failed to copy',
+        description: 'Please try again',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-shrink-0 space-y-4 pb-4">
@@ -201,7 +233,12 @@ const ActionTracking = () => {
           </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            Events ({filteredEvents.length})
+            Events ({sortedEvents.length})
+            {followUpEvents.length > 0 && (
+              <Badge className="ml-1 bg-yellow-500 text-white">
+                {followUpEvents.length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
         <div className="flex-1 overflow-y-auto space-y-4">
@@ -353,7 +390,7 @@ const ActionTracking = () => {
           </TabsContent>
 
           <TabsContent value="events" className="space-y-4 m-0">
-            {filteredEvents.length === 0 ? (
+            {sortedEvents.length === 0 ? (
               <Card>
                 <CardContent className="flex items-center justify-center py-12 text-gray-500">
                   <div className="text-center">
@@ -370,7 +407,91 @@ const ActionTracking = () => {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {filteredEvents.map((event) => (
+                {/* Follow-up Notification Banner */}
+                {followUpEvents.length > 0 && (
+                  <Card className="border-2 border-yellow-400 bg-yellow-50">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <CardTitle className="text-lg font-bold text-yellow-900">
+                            {followUpEvents.length} Event{followUpEvents.length > 1 ? 's' : ''} Need{followUpEvents.length === 1 ? 's' : ''} Follow-up
+                          </CardTitle>
+                          <p className="text-sm text-yellow-800 mt-1">
+                            These event requests require immediate attention
+                          </p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {followUpEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          className="bg-white p-4 rounded-lg border border-yellow-200 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Bell className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+                                <h4 className="font-semibold text-gray-900 truncate">
+                                  {event.firstName} {event.lastName}
+                                </h4>
+                                <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                                  {event.organizationName}
+                                </Badge>
+                              </div>
+                              {event.followUpReason && (
+                                <p className="text-sm text-gray-700 mb-3">
+                                  {event.followUpReason}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="bg-brand-primary hover:bg-brand-primary/90"
+                                  onClick={() => window.location.href = `mailto:${event.email}?subject=The Sandwich Project - Follow up regarding ${event.organizationName}`}
+                                >
+                                  <Mail className="w-3 h-3 mr-1" />
+                                  Contact via Email
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => copyToClipboard(event.email, 'Email address')}
+                                >
+                                  <Copy className="w-3 h-3 mr-1" />
+                                  Copy Email
+                                </Button>
+                                {event.phone && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => copyToClipboard(event.phone!, 'Phone number')}
+                                  >
+                                    <Phone className="w-3 h-3 mr-1" />
+                                    Copy Phone
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => window.open(`/dashboard?tab=event-requests`, '_blank')}
+                                >
+                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  View Details
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* All Events List */}
+                {sortedEvents.map((event) => (
                   <Card
                     key={event.id}
                     className="hover:shadow-md transition-shadow"
@@ -456,32 +577,6 @@ const ActionTracking = () => {
                             <span>Created {formatDate(event.createdAt)}</span>
                           </div>
                         </div>
-                        {event.followUpNeeded && (
-                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Bell className="w-4 h-4 text-yellow-600" />
-                                <span className="text-sm font-medium text-yellow-800">
-                                  {event.followUpReason}
-                                </span>
-                              </div>
-                              <Button
-                                size="sm"
-                                className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                                onClick={() =>
-                                  handleFollowUpComplete(
-                                    event.id,
-                                    event.followUpReason?.includes('1-day')
-                                      ? 'one_day'
-                                      : 'one_month'
-                                  )
-                                }
-                              >
-                                Mark Complete
-                              </Button>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </CardContent>
                   </Card>
