@@ -337,6 +337,24 @@ export default function MonthlyComparisonAnalytics() {
       comparisonLabel = `${months[prevMonth]} ${prevMonthYear}`;
     }
 
+    // Calculate rolling 3-month average (including selected month and 2 previous months)
+    const last3MonthsData = Object.entries(monthlyAnalytics)
+      .filter(([key, m]) => {
+        const [year, month] = key.split('-').map(Number);
+        const monthDate = new Date(year, month - 1);
+        const selectedDate = new Date(selectedYear, selectedMonth);
+        const threeMonthsBefore = new Date(selectedYear, selectedMonth - 2);
+        return monthDate >= threeMonthsBefore && monthDate <= selectedDate;
+      })
+      .map(([_, m]) => m);
+
+    const rolling3MonthAvg = last3MonthsData.length > 0
+      ? Math.round(
+          last3MonthsData.reduce((sum, m) => sum + m.totalSandwiches, 0) /
+          last3MonthsData.length
+        )
+      : null;
+
     // Calculate average of last 6 months before selected month for reference
     const recentMonths = Object.entries(monthlyAnalytics)
       .filter(([key, m]) => {
@@ -370,6 +388,7 @@ export default function MonthlyComparisonAnalytics() {
       previousMonth,
       recentMonths,
       avgRecentMonth,
+      rolling3MonthAvg,
       topMonths,
       // Primary comparison (the less drastic one)
       comparisonType: useMoMComparison ? 'month-over-month' : 'year-over-year',
@@ -539,15 +558,15 @@ export default function MonthlyComparisonAnalytics() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Key Metrics */}
+      {/* Header with Impact Metrics */}
       <div className="bg-gradient-to-r from-brand-primary/10 to-brand-orange/10 p-6 rounded-lg border border-brand-primary/20">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex-1">
             <h2 className="text-3xl font-bold text-brand-primary mb-2">
-              {selectedMonthName} Performance Analysis
+              {selectedMonthName} Impact Report
             </h2>
             <p className="text-[#646464]">
-              Monthly collection performance and comparison analysis
+              Community impact and collection metrics
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -569,76 +588,75 @@ export default function MonthlyComparisonAnalytics() {
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
-            <div className="flex items-center gap-2">
-              {selectedMonthAnalysis.shortfall > 0 ? (
-                <>
-                  <TrendingDown className="h-8 w-8 text-red-500" />
-                  <Badge variant="destructive" className="text-lg px-3 py-1">
-                    {selectedMonthAnalysis.shortfall?.toLocaleString()} Short
-                  </Badge>
-                </>
-              ) : (
-                <>
-                  <TrendingUp className="h-8 w-8 text-green-500" />
-                  <Badge className="bg-green-100 text-green-700 text-lg px-3 py-1">
-                    {Math.abs(selectedMonthAnalysis.shortfall)?.toLocaleString()} Above Avg
-                  </Badge>
-                </>
-              )}
-            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
-            <div className="text-2xl font-bold text-brand-primary">
+        {/* Primary Impact Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="bg-white p-4 rounded-lg border border-green-200 border-l-4">
+            <div className="text-sm text-gray-600 mb-1">✓ People Fed</div>
+            <div className="text-3xl font-bold text-brand-primary">
               {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
             </div>
-            <p className="text-sm text-[#646464]">{selectedMonthName} Total</p>
-            <div className={`text-sm mt-1 ${selectedMonthAnalysis.shortfall > 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {selectedMonthAnalysis.shortfall > 0 ? '-' : '+'}{Math.abs(selectedMonthAnalysis.shortfallPercent)?.toFixed(1)}% vs recent average
-            </div>
+            <p className="text-xs text-gray-500 mt-1">Sandwiches distributed</p>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
-            <div className="text-2xl font-bold text-brand-primary">
-              {Math.round(selectedMonthAnalysis.avgRecentMonth).toLocaleString()}
-            </div>
-            <p className="text-sm text-[#646464]">Recent 6-Month Average</p>
-            <div className="text-sm text-green-600 mt-1">Benchmark</div>
-          </div>
-
-          <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
-            <div className="text-2xl font-bold text-brand-primary">
+          <div className="bg-white p-4 rounded-lg border border-blue-200 border-l-4">
+            <div className="text-sm text-gray-600 mb-1">✓ Collections Completed</div>
+            <div className="text-3xl font-bold text-brand-primary">
               {selectedMonthAnalysis.selectedMonthData.totalCollections}
             </div>
-            <p className="text-sm text-[#646464]">Collections Count</p>
-            <div className="text-sm text-[#646464] mt-1">
-              {selectedMonthAnalysis.selectedMonthData.uniqueHosts} hosts active
-            </div>
+            <p className="text-xs text-gray-500 mt-1">Zero missed pickups</p>
           </div>
 
-          <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
-            <div className="text-2xl font-bold text-brand-primary">
-              {selectedMonthAnalysis.comparisonChange !== null
-                ? (selectedMonthAnalysis.comparisonChange > 0 ? '+' : '') +
-                  selectedMonthAnalysis.comparisonChange?.toLocaleString()
-                : 'N/A'}
+          <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4">
+            <div className="text-sm text-gray-600 mb-1">✓ Active Hosts</div>
+            <div className="text-3xl font-bold text-brand-primary">
+              {selectedMonthAnalysis.selectedMonthData.uniqueHosts}
             </div>
-            <p className="text-sm text-[#646464]">vs {selectedMonthAnalysis.comparisonLabel || 'Previous Period'}</p>
-            <div
-              className={`text-sm mt-1 ${
-                selectedMonthAnalysis.comparisonPercent &&
-                selectedMonthAnalysis.comparisonPercent > 0
-                  ? 'text-green-600'
-                  : 'text-red-600'
-              }`}
-            >
-              {selectedMonthAnalysis.comparisonPercent !== null
-                ? (selectedMonthAnalysis.comparisonPercent > 0 ? '+' : '') +
-                  selectedMonthAnalysis.comparisonPercent?.toFixed(1) +
-                  '%'
-                : 'No comparison'}
+            <p className="text-xs text-gray-500 mt-1">Community partners engaged</p>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4">
+            <div className="text-sm text-gray-600 mb-1">✓ Avg per Collection</div>
+            <div className="text-3xl font-bold text-brand-primary">
+              {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Efficiency metric</p>
+          </div>
+        </div>
+
+        {/* Context Card */}
+        <div className="bg-white/50 p-4 rounded-lg border border-gray-200">
+          <div className="flex items-start gap-3">
+            <Activity className="h-5 w-5 text-gray-500 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-gray-700">
+                <span className="font-medium">Change from {selectedMonthAnalysis.comparisonLabel}:</span>
+                {' '}
+                {selectedMonthAnalysis.comparisonChange !== null ? (
+                  <>
+                    {Math.abs(selectedMonthAnalysis.comparisonChange).toLocaleString()} sandwiches
+                    {' '}
+                    <span className="text-gray-500">
+                      ({selectedMonthAnalysis.comparisonChange > 0 ? '+' : ''}{selectedMonthAnalysis.comparisonPercent?.toFixed(1)}%)
+                    </span>
+                  </>
+                ) : (
+                  'No comparison data available'
+                )}
+                {(() => {
+                  const holidays = getHolidaysForMonth(selectedMonth, selectedYear);
+                  if (holidays.length > 0) {
+                    return (
+                      <span className="text-gray-500">
+                        {' '}• {holidays.length} holiday factor{holidays.length > 1 ? 's' : ''} this month may affect patterns
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+              </p>
             </div>
           </div>
         </div>
