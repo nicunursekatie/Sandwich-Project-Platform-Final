@@ -50,7 +50,7 @@ export default function ImpactDashboard() {
     'monthly'
   );
   const [dateRange, setDateRange] = useState<'3months' | '6months' | '1year' | 'all'>('1year');
-  const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
+  const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical' | 'weekly'>('recent');
 
   // Fetch sandwich collections data
   const { data: collectionsData } = useQuery({
@@ -604,7 +604,7 @@ export default function ImpactDashboard() {
                 <CardDescription>Choose the right view for your analysis</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <Button
                     variant={trendsView === 'recent' ? 'default' : 'outline'}
                     className="h-auto min-h-[100px] w-full py-4 px-4 flex flex-col items-start justify-start"
@@ -658,6 +658,24 @@ export default function ImpactDashboard() {
                       All-time monthly totals - track long-term growth
                     </span>
                   </Button>
+
+                  <Button
+                    variant={trendsView === 'weekly' ? 'default' : 'outline'}
+                    className="h-auto min-h-[100px] w-full py-4 px-4 flex flex-col items-start justify-start"
+                    onClick={() => {
+                      setTrendsView('weekly');
+                      setDateRange('all');
+                      setChartView('weekly');
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+                      <Calendar className="w-5 h-5 flex-shrink-0" />
+                      <span className="font-semibold whitespace-nowrap">Weekly Trends</span>
+                    </div>
+                    <span className="text-left opacity-80 whitespace-normal break-words w-full text-[16px]">
+                      All-time weekly data - detailed planning and historical analysis
+                    </span>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -672,11 +690,13 @@ export default function ImpactDashboard() {
                         {trendsView === 'recent' && 'Recent Collection Trends'}
                         {trendsView === 'seasonal' && 'Seasonal Collection Patterns'}
                         {trendsView === 'historical' && 'Historical Collection Growth'}
+                        {trendsView === 'weekly' && 'Weekly Collection Trends'}
                       </CardTitle>
                       <CardDescription>
                         {trendsView === 'recent' && 'Weekly collections over the last 3 months'}
                         {trendsView === 'seasonal' && 'Monthly collections showing seasonal patterns'}
                         {trendsView === 'historical' && 'All-time monthly collection totals'}
+                        {trendsView === 'weekly' && 'All-time weekly data for detailed planning and historical analysis'}
                       </CardDescription>
                     </div>
 
