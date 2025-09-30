@@ -264,12 +264,11 @@ ${userEmail}`;
     // Skip if no content exists yet
     if (!content) return;
     
-    // Attempt smart regeneration when options change
-    const wasRegenerated = smartRegenerateEmailContent(includeSchedulingLink, requestPhoneCall);
+    // Always regenerate when checkboxes change (force=true to bypass manual edits check)
+    regenerateEmailContent(includeSchedulingLink, requestPhoneCall);
+    setHasManualEdits(false);
     
-    // If content wasn't regenerated due to manual edits, we could optionally show a notification
-    // For now, we silently preserve user content
-  }, [includeSchedulingLink, requestPhoneCall, isOpen]);
+  }, [includeSchedulingLink, requestPhoneCall]);
 
   // Initialize with comprehensive template when component opens
   useEffect(() => {
