@@ -145,18 +145,20 @@ export class GoogleSheetsMeetingExporter {
 
     // Headers row
     data.push([
-      'Section', // A
-      'Item', // B
-      'Description', // C
-      'Owner', // D - For project creator / presenter
-      'Support People', // E - For assignees / support
-      'Priority', // F
-      'Time Estimate', // G
-      'Status', // H
-      'Notes', // I
-      'Action Items', // J
-      'Follow Up', // K
-      'Decision', // L
+      'Task',
+      'Priority',
+      'Status',
+      'Owner',
+      'Support people',
+      'Sub-Tasks | Owners',
+      'Start date',
+      'End date',
+      'Category',
+      'Milestone',
+      'Deliverable',
+      'Notes',
+      'Last Discussed',
+      'Date',
     ]);
 
     // Process each agenda section with proper column mapping
@@ -164,18 +166,20 @@ export class GoogleSheetsMeetingExporter {
       if (section.items && section.items.length > 0) {
         section.items.forEach((item: any, index: number) => {
           data.push([
-            index === 0 ? section.title : '', // A - Section name only on first item
-            item.title, // B - Item title
-            item.description || '', // C - Description
-            item.submittedBy || '', // D - Owner (presenter/creator)
-            this.getSupportPeople(item), // E - Support people (for projects)
-            this.getPriority(item), // F - Priority
-            item.estimatedTime || '5 min', // G - Time estimate
-            this.formatStatus(item.status, item.type), // H - Status (properly formatted)
-            '', // I - Notes (empty for user input)
-            '', // J - Action items (empty for user input)
-            '', // K - Follow up (empty for user input)
-            '', // L - Decision (empty for user input)
+            item.title, // A - Task
+            this.getPriority(item), // B - Priority
+            this.formatStatus(item.status, item.type), // C - Status
+            item.submittedBy || item.owner || '', // D - Owner
+            this.getSupportPeople(item), // E - Support people
+            '', // F - Sub-Tasks | Owners (manual)
+            item.startDate || 'm/d/yyyy', // G - Start date
+            item.endDate || 'm/d/yyyy', // H - End date
+            item.category || 'general', // I - Category
+            item.milestone || '', // J - Milestone
+            '', // K - Deliverable
+            '', // L - Notes (manual)
+            item.lastDiscussed || 'm/d/yyyy', // M - Last Discussed
+            new Date().toLocaleDateString(), // N - Date
           ]);
         });
       } else {
