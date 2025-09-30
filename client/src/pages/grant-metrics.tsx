@@ -55,6 +55,7 @@ export default function GrantMetrics() {
       if (!response.ok) throw new Error('Failed to fetch collections');
       return response.json();
     },
+    staleTime: 0, // Always fetch fresh data for grant metrics
   });
 
   const collections = collectionsData?.collections || [];
@@ -62,6 +63,7 @@ export default function GrantMetrics() {
   // Fetch stats
   const { data: stats } = useQuery({
     queryKey: ['/api/sandwich-collections/stats'],
+    staleTime: 0, // Always fetch fresh data
   });
 
   // Hardcoded host count (actual database has 34 active hosts)
