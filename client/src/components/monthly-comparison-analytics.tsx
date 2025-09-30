@@ -820,7 +820,7 @@ export default function MonthlyComparisonAnalytics() {
                   <div className="text-2xl font-bold text-blue-900">
                     {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
                   </div>
-                  <div className="text-xs text-blue-600 mt-1">
+                  <div className="text-blue-600 mt-1 text-[16px]">
                     From {selectedMonthAnalysis.selectedMonthData.totalCollections} collections
                   </div>
                 </div>
