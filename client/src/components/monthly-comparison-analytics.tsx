@@ -107,6 +107,98 @@ export default function MonthlyComparisonAnalytics() {
 
   const collections = collectionsData?.collections || [];
 
+  // Helper function to identify holidays in a given month/year
+  const getHolidaysForMonth = (month: number, year: number) => {
+    const holidays: Array<{
+      name: string;
+      type: 'federal' | 'jewish' | 'seasonal';
+      description: string;
+      impact: 'high' | 'medium' | 'low';
+      color: string;
+    }> = [];
+
+    // Federal holidays by month (0-indexed)
+    const federalHolidays: Record<number, Array<{name: string; description: string}>> = {
+      0: [{ name: 'New Year\'s Day', description: 'Federal holiday affecting volunteering schedules' }],
+      1: [{ name: 'Presidents\' Day', description: 'Federal holiday, potential impact on collections' }],
+      4: [{ name: 'Memorial Day', description: 'Federal holiday marking start of summer season' }],
+      6: [{ name: 'Independence Day', description: 'Major federal holiday with significant impact' }],
+      8: [{ name: 'Labor Day', description: 'Federal holiday marking end of summer' }],
+      10: [{ name: 'Thanksgiving', description: 'Major federal holiday with high impact on volunteering' }],
+      11: [{ name: 'Christmas', description: 'Major federal holiday with extended impact period' }],
+    };
+
+    // Jewish holidays - approximate by year (these shift based on Hebrew calendar)
+    // For accuracy, would need a proper Hebrew calendar library, but providing common patterns
+    const jewishHolidays2024: Record<number, Array<{name: string; description: string}>> = {
+      8: [
+        { name: 'Rosh Hashanah', description: 'Jewish New Year - two-day observance, high community impact' },
+        { name: 'Yom Kippur', description: 'Day of Atonement - most solemn Jewish holiday, highest impact' }
+      ],
+      9: [{ name: 'Sukkot', description: 'Feast of Tabernacles - week-long holiday period' }],
+      11: [{ name: 'Hanukkah', description: 'Eight-day Festival of Lights' }],
+    };
+
+    const jewishHolidays2025: Record<number, Array<{name: string; description: string}>> = {
+      8: [
+        { name: 'Rosh Hashanah', description: 'Jewish New Year - two-day observance, high community impact' },
+        { name: 'Yom Kippur', description: 'Day of Atonement - most solemn Jewish holiday, highest impact' }
+      ],
+      9: [{ name: 'Sukkot', description: 'Feast of Tabernacles - week-long holiday period' }],
+      3: [{ name: 'Passover', description: 'Eight-day festival with significant community observance' }],
+      11: [{ name: 'Hanukkah', description: 'Eight-day Festival of Lights' }],
+    };
+
+    // Add federal holidays
+    if (federalHolidays[month]) {
+      federalHolidays[month].forEach(holiday => {
+        holidays.push({
+          name: holiday.name,
+          type: 'federal',
+          description: holiday.description,
+          impact: [10, 11].includes(month) ? 'high' : 'medium',
+          color: 'amber',
+        });
+      });
+    }
+
+    // Add Jewish holidays
+    const jewishHolidaysByYear = year === 2024 ? jewishHolidays2024 : jewishHolidays2025;
+    if (jewishHolidaysByYear[month]) {
+      jewishHolidaysByYear[month].forEach(holiday => {
+        holidays.push({
+          name: holiday.name,
+          type: 'jewish',
+          description: holiday.description,
+          impact: holiday.name.includes('Yom Kippur') || holiday.name.includes('Rosh Hashanah') ? 'high' : 'medium',
+          color: 'purple',
+        });
+      });
+    }
+
+    // Seasonal factors
+    if ([5, 6, 7].includes(month)) {
+      holidays.push({
+        name: 'Summer Vacation Period',
+        type: 'seasonal',
+        description: 'Reduced volunteering due to summer vacations and travel',
+        impact: 'medium',
+        color: 'blue',
+      });
+    }
+    if (month === 7) {
+      holidays.push({
+        name: 'Back-to-School Prep',
+        type: 'seasonal',
+        description: 'Late summer sees reduced volunteering as families prepare for school year',
+        impact: 'low',
+        color: 'indigo',
+      });
+    }
+
+    return holidays;
+  };
+
   // Process data for analytics
   const monthlyAnalytics = useMemo(() => {
     if (!collections?.length) return null;
@@ -684,73 +776,83 @@ export default function MonthlyComparisonAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Monthly Performance Trends
+                Year-Over-Year Performance
               </CardTitle>
               <CardDescription>
-                {selectedMonthName} vs 6-month rolling average with trend analysis
+                {selectedMonthName} vs {months[selectedMonth]} {selectedYear - 1}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-semibold text-brand-primary mb-3">
-                    Recent 6-Month Trend
+                    Year-Over-Year Comparison
                   </h4>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={monthlyTrends.slice(-6)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#236383" opacity={0.2} />
-                        <XAxis 
-                          dataKey="month" 
-                          stroke="#236383" 
-                          fontSize={12}
-                        />
-                        <YAxis 
-                          stroke="#236383" 
-                          fontSize={12}
-                          tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-                        />
-                        <Tooltip
-                          formatter={(value) => [value.toLocaleString(), 'Sandwiches']}
-                          labelFormatter={(label, payload) => {
-                            const item = payload?.[0]?.payload;
-                            return item ? `${label} ${item.year}` : label;
-                          }}
-                          contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #236383',
-                            borderRadius: '8px',
-                          }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="sandwiches"
-                          stroke="#236383"
-                          fill="#236383"
-                          fillOpacity={0.3}
-                          strokeWidth={2}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                      <div className="text-6xl font-bold text-brand-primary">
+                        {selectedMonthAnalysis.yearOverYearPercent !== null
+                          ? (selectedMonthAnalysis.yearOverYearPercent > 0 ? '+' : '') +
+                            selectedMonthAnalysis.yearOverYearPercent.toFixed(1) + '%'
+                          : 'N/A'}
+                      </div>
+                      <div className="text-lg text-gray-600">
+                        {selectedMonthAnalysis.yearOverYearChange !== null
+                          ? (selectedMonthAnalysis.yearOverYearChange > 0 ? '+' : '') +
+                            selectedMonthAnalysis.yearOverYearChange.toLocaleString() + ' sandwiches'
+                          : 'No prior year data'}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        vs {months[selectedMonth]} {selectedYear - 1}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h4 className="font-semibold text-brand-primary mb-3">
                     Performance Analysis
                   </h4>
                   <div className="space-y-4">
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingDown className="h-4 w-4 text-red-600" />
-                        <span className="font-medium text-red-800">Trend Alert</span>
+                    {selectedMonthAnalysis.yearOverYearPercent !== null ? (
+                      <div className={`p-4 border rounded-lg ${
+                        selectedMonthAnalysis.yearOverYearChange! >= 0
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {selectedMonthAnalysis.yearOverYearChange! >= 0 ? (
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <TrendingDown className="h-4 w-4 text-red-600" />
+                          )}
+                          <span className={`font-medium ${
+                            selectedMonthAnalysis.yearOverYearChange! >= 0 ? 'text-green-800' : 'text-red-800'
+                          }`}>
+                            Year-Over-Year Trend
+                          </span>
+                        </div>
+                        <p className={`text-sm ${
+                          selectedMonthAnalysis.yearOverYearChange! >= 0 ? 'text-green-700' : 'text-red-700'
+                        }`}>
+                          {selectedMonthName} shows a {Math.abs(selectedMonthAnalysis.yearOverYearPercent).toFixed(1)}%
+                          {selectedMonthAnalysis.yearOverYearChange! >= 0 ? ' increase' : ' decline'} compared to {months[selectedMonth]} {selectedYear - 1}.
+                          This represents {Math.abs(selectedMonthAnalysis.yearOverYearChange!).toLocaleString()}
+                          {selectedMonthAnalysis.yearOverYearChange! >= 0 ? ' more' : ' fewer'} sandwiches than last year.
+                        </p>
                       </div>
-                      <p className="text-sm text-red-700">
-                        {selectedMonthName} shows a {selectedMonthAnalysis.shortfallPercent?.toFixed(1)}% decline from recent 6-month average.
-                        This represents {selectedMonthAnalysis.shortfall?.toLocaleString()} fewer sandwiches than expected.
-                      </p>
-                    </div>
-                    
+                    ) : (
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Activity className="h-4 w-4 text-gray-600" />
+                          <span className="font-medium text-gray-800">No Prior Year Data</span>
+                        </div>
+                        <p className="text-sm text-gray-700">
+                          No data available for {months[selectedMonth]} {selectedYear - 1} to compare against.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3">
                       <div className="text-center p-3 bg-gray-50 rounded">
                         <div className="text-lg font-bold text-brand-primary">
@@ -789,47 +891,44 @@ export default function MonthlyComparisonAnalytics() {
                     Identified Holidays & Events
                   </h4>
                   <div className="space-y-3">
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-medium text-amber-800">No Major Federal Holidays</span>
-                          <p className="text-sm text-amber-700 mt-1">
-                            {selectedMonthName} had no major federal holidays that typically impact collection schedules.
-                          </p>
+                    {(() => {
+                      const holidays = getHolidaysForMonth(selectedMonth, selectedYear);
+                      if (holidays.length === 0) {
+                        return (
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-medium text-green-800">No Major Holidays</span>
+                                <p className="text-sm text-green-700 mt-1">
+                                  {selectedMonthName} had no major holidays that typically impact collection schedules.
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="border-green-300 text-green-700">
+                                Clear
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return holidays.map((holiday, index) => (
+                        <div
+                          key={index}
+                          className={`p-3 bg-${holiday.color}-50 border border-${holiday.color}-200 rounded-lg`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className={`font-medium text-${holiday.color}-800`}>{holiday.name}</span>
+                              <p className={`text-sm text-${holiday.color}-700 mt-1`}>
+                                {holiday.description}
+                              </p>
+                            </div>
+                            <Badge variant="outline" className={`border-${holiday.color}-300 text-${holiday.color}-700`}>
+                              {holiday.type === 'federal' ? 'Federal' : holiday.type === 'jewish' ? 'Jewish' : 'Seasonal'}
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge variant="outline" className="border-amber-300 text-amber-700">
-                          Normal
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-medium text-blue-800">Summer Vacation Period</span>
-                          <p className="text-sm text-blue-700 mt-1">
-                            August is typically a slower month due to summer vacations and reduced group activities.
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="border-blue-300 text-blue-700">
-                          Seasonal
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-medium text-purple-800">Back-to-School Prep</span>
-                          <p className="text-sm text-purple-700 mt-1">
-                            Late August often sees reduced volunteering as families prepare for school year.
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="border-purple-300 text-purple-700">
-                          Transition
-                        </Badge>
-                      </div>
-                    </div>
+                      ));
+                    })()}
                   </div>
                 </div>
                 
@@ -838,26 +937,49 @@ export default function MonthlyComparisonAnalytics() {
                     Impact Assessment
                   </h4>
                   <div className="space-y-3">
-                    <div className="text-center p-3 bg-gray-50 rounded">
-                      <div className="text-2xl font-bold text-brand-primary">
-                        -15%
-                      </div>
-                      <p className="text-sm text-gray-600">Estimated holiday impact</p>
-                    </div>
-                    
-                    <div className="text-center p-3 bg-gray-50 rounded">
-                      <div className="text-2xl font-bold text-brand-primary">
-                        {selectedMonthAnalysis.selectedMonthData.weeklyDistribution.reduce((min, current, index) => 
-                          selectedMonthAnalysis.selectedMonthData.weeklyDistribution[min] > current ? index : min, 0) + 1}
-                      </div>
-                      <p className="text-sm text-gray-600">Lowest performing week</p>
-                    </div>
-                    
-                    <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-center">
-                      <p className="text-xs text-yellow-700">
-                        📅 Consider scheduling major events in September for better turnout
-                      </p>
-                    </div>
+                    {(() => {
+                      const holidays = getHolidaysForMonth(selectedMonth, selectedYear);
+                      const highImpactCount = holidays.filter(h => h.impact === 'high').length;
+                      const mediumImpactCount = holidays.filter(h => h.impact === 'medium').length;
+                      const jewishHolidayCount = holidays.filter(h => h.type === 'jewish').length;
+
+                      return (
+                        <>
+                          <div className="text-center p-3 bg-gray-50 rounded">
+                            <div className="text-2xl font-bold text-brand-primary">
+                              {highImpactCount + mediumImpactCount}
+                            </div>
+                            <p className="text-sm text-gray-600">Holiday factors identified</p>
+                          </div>
+
+                          {jewishHolidayCount > 0 && (
+                            <div className="text-center p-3 bg-purple-50 border border-purple-200 rounded">
+                              <div className="text-lg font-bold text-purple-700">
+                                {jewishHolidayCount}
+                              </div>
+                              <p className="text-sm text-purple-600">Jewish holidays</p>
+                              <p className="text-xs text-purple-500 mt-1">Significant community impact</p>
+                            </div>
+                          )}
+
+                          <div className="text-center p-3 bg-gray-50 rounded">
+                            <div className="text-2xl font-bold text-brand-primary">
+                              {selectedMonthAnalysis.selectedMonthData.weeklyDistribution.reduce((min, current, index) =>
+                                selectedMonthAnalysis.selectedMonthData.weeklyDistribution[min] > current ? index : min, 0) + 1}
+                            </div>
+                            <p className="text-sm text-gray-600">Lowest performing week</p>
+                          </div>
+
+                          {highImpactCount > 0 && (
+                            <div className="p-2 bg-red-50 border border-red-200 rounded text-center">
+                              <p className="text-xs text-red-700">
+                                ⚠️ {highImpactCount} high-impact holiday{highImpactCount > 1 ? 's' : ''} this month
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
