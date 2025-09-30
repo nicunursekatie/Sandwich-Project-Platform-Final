@@ -210,7 +210,8 @@ export default function GrantMetrics() {
   );
 
   console.log('November 2023 Collections Count:', november2023Collections.length);
-  console.log('November 2023 Sample Collections:', november2023Collections.slice(0, 5).map((c: any) => ({
+  console.log('ALL November 2023 Collections:', november2023Collections.map((c: any) => ({
+    id: c.id,
     date: c.collectionDate,
     individual: c.individualSandwiches,
     group1: c.group1Count,
@@ -224,6 +225,11 @@ export default function GrantMetrics() {
     sum + calculateTotalSandwiches(c), 0
   );
   console.log('November 2023 Manually Calculated Total:', november2023Total);
+
+  // Check for duplicate IDs
+  const novemberIds = november2023Collections.map((c: any) => c.id);
+  const duplicateIds = novemberIds.filter((id: any, index: number) => novemberIds.indexOf(id) !== index);
+  console.log('Duplicate IDs in November 2023:', duplicateIds.length > 0 ? duplicateIds : 'None');
   console.log('=======================');
 
   // Prepare year-over-year chart data
