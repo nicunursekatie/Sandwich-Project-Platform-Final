@@ -80,7 +80,7 @@ import GmailStyleInbox from '@/components/gmail-style-inbox';
 import { ToolkitTabs } from '@/components/toolkit-tabs';
 import { KudosInbox } from '@/components/kudos-inbox';
 import { KudosLoginNotifier } from '@/components/kudos-login-notifier';
-import SocketChatHub from '@/components/socket-chat-hub';
+import StreamMessaging from '@/components/stream-messaging';
 import EventsViewer from '@/components/events-viewer';
 import SignUpGeniusViewer from '@/components/signup-genius-viewer';
 import DonationTracking from '@/components/donation-tracking';
@@ -273,7 +273,7 @@ export default function Dashboard({
               </div>
             </div>
             <div className="flex-1 min-h-0">
-              <SocketChatHub />
+              <StreamMessaging />
             </div>
           </div>
         );

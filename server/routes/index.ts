@@ -28,6 +28,7 @@ import { smsAnnouncementRoutes } from './sms-announcement';
 import monitoringRouter from './monitoring';
 import enhancedActivityRouter from './enhanced-user-activity';
 import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
+import { streamRoutes } from './stream';
 
 // Import centralized middleware
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
@@ -305,6 +306,15 @@ export function createMainRoutes(deps: RouterDependencies) {
 
   // Enhanced user activity tracking (stub) - enabled to prevent 404 errors
   router.use('/api/enhanced-user-activity', enhancedActivityRouter);
+
+  // Stream Chat routes - real-time messaging with Stream API
+  router.use(
+    '/api/stream',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    streamRoutes
+  );
+  router.use('/api/stream', createErrorHandler('stream'));
 
   return router;
 }
