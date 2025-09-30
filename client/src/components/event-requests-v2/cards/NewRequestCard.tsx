@@ -254,7 +254,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               <Mail className="w-4 h-4 text-gray-400" />
               <a
                 href={`mailto:${request.email}`}
-                className="text-blue-600 hover:text-blue-800 text-[16px]"
+                className="text-blue-600 hover:text-blue-800 text-[18px]"
               >
                 {request.email}
               </a>
