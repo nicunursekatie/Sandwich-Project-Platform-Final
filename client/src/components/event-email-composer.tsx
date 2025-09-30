@@ -359,6 +359,9 @@ ${userEmail}`;
       const defaultAttachments = documents
         .filter(doc => {
           const searchText = `${doc.title} ${doc.fileName}`.toLowerCase();
+          // Exclude recipients document - only for hosts and volunteers
+          if (searchText.includes('recipient')) return false;
+          
           return searchText.includes('food safety') || 
                  searchText.includes('deli') || 
                  searchText.includes('pbj') || 

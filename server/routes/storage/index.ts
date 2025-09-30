@@ -334,6 +334,11 @@ storageRouter.get('/documents', async (req: AuthenticatedRequest, res: Response)
     // Filter to only active documents
     const activeDocuments = documents.filter(doc => doc.isActive !== false);
     
+    // Disable caching to ensure fresh data
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     res.json(activeDocuments);
   } catch (error: any) {
     logger.error('Error fetching documents:', error);

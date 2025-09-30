@@ -1689,6 +1689,13 @@ class StorageWrapper implements IStorage {
   }
 
   // Document Management Methods
+  async getAllDocuments() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllDocuments(),
+      () => this.fallbackStorage.getAllDocuments()
+    );
+  }
+
   async getDocument(id: number) {
     return this.executeWithFallback(
       () => this.primaryStorage.getDocument(id),
