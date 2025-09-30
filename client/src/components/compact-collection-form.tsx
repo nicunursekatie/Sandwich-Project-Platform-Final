@@ -64,6 +64,9 @@ export default function CompactCollectionForm({
       queryClient.invalidateQueries({
         queryKey: ['/api/sandwich-collections'],
       });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/sandwich-collections/stats'],
+      });
       onSuccess?.();
       // Reset form
       setIndividualCount(0);
