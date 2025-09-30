@@ -175,49 +175,37 @@ export default function StreamChatRooms() {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <ChannelList
-              filters={{
-                type: 'team',
-                id: { $in: userRooms.map(r => r.id) },
-              }}
-              sort={{ last_message_at: -1 }}
-              options={{ limit: 20 }}
-              setActiveChannel={setActiveChannel}
-              Preview={(props) => {
-                const room = CHAT_ROOMS.find(r => r.id === props.channel.id);
-                const Icon = room?.icon || Hash;
-                const unreadCount = props.channel.countUnread();
-
-                return (
-                  <div
-                    className={`p-3 border-b cursor-pointer hover:bg-gray-100 ${
-                      props.channel === activeChannel ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                    }`}
-                    onClick={() => props.setActiveChannel?.(props.channel)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200">
-                        <Icon className="w-4 h-4 text-gray-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm font-medium truncate ${
-                            unreadCount > 0 ? 'text-gray-900 font-bold' : 'text-gray-700'
-                          }`}>
-                            {room?.name || props.channel.data?.name}
-                          </span>
-                          {unreadCount > 0 && (
-                            <span className="ml-2 px-2 py-0.5 text-xs font-bold text-white bg-blue-500 rounded-full">
-                              {unreadCount}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+            {userRooms.map((room) => {
+              const Icon = room.icon;
+              return (
+                <div
+                  key={room.id}
+                  className={`p-3 border-b cursor-pointer hover:bg-gray-100 ${
+                    activeChannel?.id === room.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                  }`}
+                  onClick={async () => {
+                    try {
+                      const channel = client.channel('team', room.id);
+                      await channel.watch();
+                      setActiveChannel(channel);
+                    } catch (error) {
+                      console.error(`Failed to switch to channel ${room.id}:`, error);
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200">
+                      <Icon className="w-4 h-4 text-gray-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium truncate text-gray-700">
+                        {room.name}
+                      </span>
                     </div>
                   </div>
-                );
-              }}
-            />
+                </div>
+              );
+            })}
           </div>
         </div>
 
