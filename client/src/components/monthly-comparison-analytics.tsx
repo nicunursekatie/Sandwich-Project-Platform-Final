@@ -680,19 +680,19 @@ export default function MonthlyComparisonAnalytics() {
         className="space-y-6"
       >
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
+          <TabsTrigger value="overview" className="flex items-center gap-2 text-[16px]">
             <BarChart3 className="h-4 w-4" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="hosts" className="flex items-center gap-2">
+          <TabsTrigger value="hosts" className="flex items-center gap-2 text-[16px]">
             <Target className="h-4 w-4" />
             Monthly Insights
           </TabsTrigger>
-          <TabsTrigger value="patterns" className="flex items-center gap-2">
+          <TabsTrigger value="patterns" className="flex items-center gap-2 text-[16px]">
             <Activity className="h-4 w-4" />
             Patterns
           </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-2">
+          <TabsTrigger value="insights" className="flex items-center gap-2 text-[16px]">
             <Lightbulb className="h-4 w-4" />
             Insights
           </TabsTrigger>
