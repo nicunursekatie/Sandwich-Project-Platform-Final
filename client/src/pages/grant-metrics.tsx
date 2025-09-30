@@ -153,7 +153,7 @@ export default function GrantMetrics() {
   ];
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-lg">
+    <div className="bg-gradient-to-br from-[#E8F4F8] to-[#F0F9FB] p-6 rounded-lg">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -167,7 +167,7 @@ export default function GrantMetrics() {
 
         {/* Hero Stats - The Big Numbers */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0 shadow-xl">
+          <Card className="bg-gradient-to-br from-[#236383] to-[#1a4d63] text-white border-0 shadow-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-xl font-bold flex items-center">
                 <Trophy className="w-6 h-6 mr-3" />
@@ -178,13 +178,13 @@ export default function GrantMetrics() {
               <div className="text-5xl font-black mb-2">
                 {metrics.totalSandwiches.toLocaleString()}
               </div>
-              <p className="text-blue-100 text-base font-medium">
+              <p className="text-white/90 text-base font-medium">
                 Sandwiches distributed to community members in need
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-teal-600 to-teal-700 text-white border-0 shadow-xl">
+          <Card className="bg-gradient-to-br from-[#007E8C] to-[#006170] text-white border-0 shadow-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-xl font-bold flex items-center">
                 <Award className="w-6 h-6 mr-3" />
@@ -195,13 +195,13 @@ export default function GrantMetrics() {
               <div className="text-5xl font-black mb-2">
                 {metrics.peakYear.total.toLocaleString()}
               </div>
-              <p className="text-teal-100 text-base font-medium">
+              <p className="text-white/90 text-base font-medium">
                 Sandwiches in {metrics.peakYear.year} - our best year yet
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-xl">
+          <Card className="bg-gradient-to-br from-[#FBAD3F] to-[#e89a2c] text-white border-0 shadow-xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-xl font-bold flex items-center">
                 <Users className="w-6 h-6 mr-3" />
@@ -212,7 +212,7 @@ export default function GrantMetrics() {
               <div className="text-5xl font-black mb-2">
                 {metrics.uniqueHosts}
               </div>
-              <p className="text-orange-100 text-base font-medium">
+              <p className="text-white/90 text-base font-medium">
                 Active host locations supporting our mission
               </p>
             </CardContent>
@@ -221,19 +221,19 @@ export default function GrantMetrics() {
 
         {/* Achievement Highlights */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <Card className="border-2 border-yellow-400 shadow-lg">
-            <CardHeader className="bg-yellow-50">
-              <CardTitle className="flex items-center text-yellow-900">
-                <Star className="w-5 h-5 mr-2 text-yellow-600" />
+          <Card className="border-2 border-[#FBAD3F] shadow-lg">
+            <CardHeader className="bg-[#FEF4E0]">
+              <CardTitle className="flex items-center text-[#A31C41]">
+                <Star className="w-5 h-5 mr-2 text-[#FBAD3F]" />
                 Record-Breaking Achievements
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
-              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-blue-500">
-                <Calendar className="w-8 h-8 text-blue-600 flex-shrink-0 mt-1" />
+              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#236383]">
+                <Calendar className="w-8 h-8 text-[#236383] flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="font-bold text-lg text-gray-900">Peak Month</h3>
-                  <p className="text-2xl font-black text-blue-600 my-1">
+                  <p className="text-2xl font-black text-[#236383] my-1">
                     {metrics.peakMonth.total.toLocaleString()} sandwiches
                   </p>
                   <p className="text-sm text-gray-600">
@@ -242,11 +242,11 @@ export default function GrantMetrics() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-purple-500">
-                <Target className="w-8 h-8 text-purple-600 flex-shrink-0 mt-1" />
+              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#47B3CB]">
+                <Target className="w-8 h-8 text-[#47B3CB] flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="font-bold text-lg text-gray-900">Average Per Collection</h3>
-                  <p className="text-2xl font-black text-purple-600 my-1">
+                  <p className="text-2xl font-black text-[#47B3CB] my-1">
                     {metrics.avgPerCollection} sandwiches
                   </p>
                   <p className="text-sm text-gray-600">
@@ -256,11 +256,11 @@ export default function GrantMetrics() {
               </div>
 
               {metrics.growthRate > 0 && (
-                <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-green-500">
-                  <TrendingUp className="w-8 h-8 text-green-600 flex-shrink-0 mt-1" />
+                <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#007E8C]">
+                  <TrendingUp className="w-8 h-8 text-[#007E8C] flex-shrink-0 mt-1" />
                   <div>
                     <h3 className="font-bold text-lg text-gray-900">Year-Over-Year Growth</h3>
-                    <p className="text-2xl font-black text-green-600 my-1">
+                    <p className="text-2xl font-black text-[#007E8C] my-1">
                       +{metrics.growthRate.toFixed(1)}%
                     </p>
                     <p className="text-sm text-gray-600">
@@ -273,15 +273,15 @@ export default function GrantMetrics() {
           </Card>
 
           {/* Top Performer */}
-          <Card className="border-2 border-indigo-400 shadow-lg">
-            <CardHeader className="bg-indigo-50">
-              <CardTitle className="flex items-center text-indigo-900">
-                <Trophy className="w-5 h-5 mr-2 text-indigo-600" />
+          <Card className="border-2 border-[#A31C41] shadow-lg">
+            <CardHeader className="bg-[#FCE4E6]">
+              <CardTitle className="flex items-center text-[#A31C41]">
+                <Trophy className="w-5 h-5 mr-2 text-[#A31C41]" />
                 Top Performing Partner
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
-              <div className="text-center p-6 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl text-white">
+              <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
                 <MapPin className="w-12 h-12 mx-auto mb-3 opacity-90" />
                 <h2 className="text-3xl font-black mb-2">
                   {metrics.topHost.name}
@@ -289,24 +289,24 @@ export default function GrantMetrics() {
                 <div className="text-4xl font-black mb-2">
                   {metrics.topHost.total.toLocaleString()}
                 </div>
-                <p className="text-indigo-100 text-lg">
+                <p className="text-white/90 text-lg">
                   Total sandwiches contributed - our #1 partner
                 </p>
               </div>
 
-              <div className="bg-white p-4 rounded-lg border border-indigo-200">
+              <div className="bg-white p-4 rounded-lg border border-[#A31C41]/30">
                 <h3 className="font-semibold text-gray-900 mb-3">Why This Matters</h3>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                    <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
                     <span>Strong partnership model driving consistent results</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                    <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
                     <span>Proven scalability through successful host relationships</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                    <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
                     <span>Community engagement model with measurable outcomes</span>
                   </li>
                 </ul>
@@ -351,7 +351,7 @@ export default function GrantMetrics() {
         </Card>
 
         {/* Impact Statement */}
-        <Card className="bg-gradient-to-br from-brand-primary to-[#007E8C] text-white shadow-xl border-0">
+        <Card className="bg-gradient-to-br from-[#236383] to-[#007E8C] text-white shadow-xl border-0">
           <CardContent className="p-8">
             <h2 className="text-3xl font-bold mb-4 flex items-center">
               <Heart className="w-8 h-8 mr-3" />
