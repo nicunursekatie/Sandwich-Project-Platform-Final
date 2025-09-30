@@ -560,7 +560,7 @@ export default function ImpactDashboard() {
           <Card 
             className="text-white"
             style={{
-              background: 'linear-gradient(to right, #FBAD3F, #e89a2d)'
+              background: 'linear-gradient(135deg, #FBAD3F 0%, #f59e0b 50%, #d97706 100%)'
             }}
           >
             <CardHeader className="pb-2">
