@@ -387,6 +387,13 @@ export default function ImpactDashboard() {
     const totalCollections = collections?.length || 0;
     const uniqueHosts = 34; // Override to show correct active hosts count
 
+    // Calculate current month totals
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    let currentMonthTotal = 0;
+    let currentMonthCollections = 0;
+
     // Calculate year totals from actual collections data
     const yearTotals = {
       2023: 0,
@@ -402,47 +409,57 @@ export default function ImpactDashboard() {
             return;
           }
           const year = date.getFullYear();
+          const month = date.getMonth();
 
-          if (yearTotals[year] !== undefined) {
-            // Calculate total sandwiches for this collection
-            const individualSandwiches = collection.individualSandwiches || 0;
-            let groupSandwiches = 0;
+          // Calculate total sandwiches for this collection
+          const individualSandwiches = collection.individualSandwiches || 0;
+          let groupSandwiches = 0;
 
-            // Handle groupCollections properly
-            if (
-              collection.groupCollections &&
-              Array.isArray(collection.groupCollections) &&
-              collection.groupCollections.length > 0
-            ) {
-              groupSandwiches = collection.groupCollections.reduce(
-                (sum, group) => {
-                  const count = group.count || group.sandwichCount || 0;
-                  return sum + count;
-                },
-                0
-              );
-            } else if (
-              collection.groupCollections &&
-              typeof collection.groupCollections === 'string' &&
-              collection.groupCollections !== '' &&
-              collection.groupCollections !== '[]'
-            ) {
-              try {
-                const groupData = JSON.parse(collection.groupCollections);
-                if (Array.isArray(groupData)) {
-                  groupSandwiches = groupData.reduce(
-                    (sum, group) =>
-                      sum + (group.count || group.sandwichCount || 0),
-                    0
-                  );
-                }
-              } catch (e) {
-                console.log('Error parsing groupCollections JSON:', e);
-                groupSandwiches = 0;
+          // Handle groupCollections properly
+          if (
+            collection.groupCollections &&
+            Array.isArray(collection.groupCollections) &&
+            collection.groupCollections.length > 0
+          ) {
+            groupSandwiches = collection.groupCollections.reduce(
+              (sum, group) => {
+                const count = group.count || group.sandwichCount || 0;
+                return sum + count;
+              },
+              0
+            );
+          } else if (
+            collection.groupCollections &&
+            typeof collection.groupCollections === 'string' &&
+            collection.groupCollections !== '' &&
+            collection.groupCollections !== '[]'
+          ) {
+            try {
+              const groupData = JSON.parse(collection.groupCollections);
+              if (Array.isArray(groupData)) {
+                groupSandwiches = groupData.reduce(
+                  (sum, group) =>
+                    sum + (group.count || group.sandwichCount || 0),
+                  0
+                );
               }
+            } catch (e) {
+              console.log('Error parsing groupCollections JSON:', e);
+              groupSandwiches = 0;
             }
+          }
 
-            yearTotals[year] += individualSandwiches + groupSandwiches;
+          const collectionTotal = individualSandwiches + groupSandwiches;
+
+          // Add to year totals
+          if (yearTotals[year] !== undefined) {
+            yearTotals[year] += collectionTotal;
+          }
+
+          // Add to current month totals
+          if (year === currentYear && month === currentMonth) {
+            currentMonthTotal += collectionTotal;
+            currentMonthCollections += 1;
           }
         }
       });
@@ -455,6 +472,8 @@ export default function ImpactDashboard() {
       year2025YTD: yearTotals[2025],
       totalCollections,
       uniqueHosts,
+      currentMonthTotal,
+      currentMonthCollections,
     };
   };
 
@@ -525,14 +544,16 @@ export default function ImpactDashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <Calendar className="w-5 h-5 mr-2" />
-                2024 Peak Year
+                This Month
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {impactMetrics.year2024Total?.toLocaleString()}
+                {impactMetrics.currentMonthTotal?.toLocaleString() || '0'}
               </div>
-              <p className="text-teal-100 text-sm">2024 collections total</p>
+              <p className="text-teal-100 text-sm">
+                {impactMetrics.currentMonthCollections || 0} collection{impactMetrics.currentMonthCollections !== 1 ? 's' : ''} so far
+              </p>
             </CardContent>
           </Card>
 
@@ -586,54 +607,54 @@ export default function ImpactDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Button
                     variant={trendsView === 'recent' ? 'default' : 'outline'}
-                    className="h-auto py-4 px-4 flex flex-col items-start"
+                    className="h-auto min-h-[100px] w-full py-4 px-4 flex flex-col items-start justify-start"
                     onClick={() => {
                       setTrendsView('recent');
                       setDateRange('3months');
                       setChartView('weekly');
                     }}
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Clock className="w-5 h-5" />
-                      <span className="font-semibold">Recent Trends</span>
+                    <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+                      <Clock className="w-5 h-5 flex-shrink-0" />
+                      <span className="font-semibold whitespace-nowrap">Recent Trends</span>
                     </div>
-                    <span className="text-xs text-left opacity-80">
+                    <span className="text-xs text-left opacity-80 whitespace-normal break-words w-full">
                       3 months of weekly data - see recent performance patterns
                     </span>
                   </Button>
 
                   <Button
                     variant={trendsView === 'seasonal' ? 'default' : 'outline'}
-                    className="h-auto py-4 px-4 flex flex-col items-start"
+                    className="h-auto min-h-[100px] w-full py-4 px-4 flex flex-col items-start justify-start"
                     onClick={() => {
                       setTrendsView('seasonal');
                       setDateRange('1year');
                       setChartView('monthly');
                     }}
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Activity className="w-5 h-5" />
-                      <span className="font-semibold">Seasonal Patterns</span>
+                    <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+                      <Activity className="w-5 h-5 flex-shrink-0" />
+                      <span className="font-semibold whitespace-nowrap">Seasonal Patterns</span>
                     </div>
-                    <span className="text-xs text-left opacity-80">
+                    <span className="text-xs text-left opacity-80 whitespace-normal break-words w-full">
                       1 year of monthly data - identify seasonal trends
                     </span>
                   </Button>
 
                   <Button
                     variant={trendsView === 'historical' ? 'default' : 'outline'}
-                    className="h-auto py-4 px-4 flex flex-col items-start"
+                    className="h-auto min-h-[100px] w-full py-4 px-4 flex flex-col items-start justify-start"
                     onClick={() => {
                       setTrendsView('historical');
                       setDateRange('all');
                       setChartView('monthly');
                     }}
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-5 h-5" />
-                      <span className="font-semibold">Historical Growth</span>
+                    <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+                      <TrendingUp className="w-5 h-5 flex-shrink-0" />
+                      <span className="font-semibold whitespace-nowrap">Historical Growth</span>
                     </div>
-                    <span className="text-xs text-left opacity-80">
+                    <span className="text-xs text-left opacity-80 whitespace-normal break-words w-full">
                       All-time monthly totals - track long-term growth
                     </span>
                   </Button>
