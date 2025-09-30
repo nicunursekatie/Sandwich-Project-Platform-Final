@@ -196,7 +196,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
-                  <span data-testid="text-date-label" className="text-[16px]">
+                  <span data-testid="text-date-label" className="text-[19px]">
                     {dateLabel}: {' '}
                     <strong className="text-[16px]" data-testid="text-date-value">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
