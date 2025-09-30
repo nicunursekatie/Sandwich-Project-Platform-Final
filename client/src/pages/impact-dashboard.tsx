@@ -489,7 +489,7 @@ export default function ImpactDashboard() {
 
         {/* Key Impact Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+          <Card className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <Heart className="w-5 h-5 mr-2" />
@@ -500,7 +500,7 @@ export default function ImpactDashboard() {
               <div className="text-3xl font-bold">
                 {impactMetrics.totalSandwiches?.toLocaleString()}
               </div>
-              <p className="text-blue-100 text-sm">
+              <p className="text-white/90 text-sm">
                 From collections log database
               </p>
             </CardContent>
@@ -536,7 +536,7 @@ export default function ImpactDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+          <Card className="bg-gradient-to-r from-[#FBAD3F] to-[#e89a2d] text-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <TrendingUp className="w-5 h-5 mr-2" />
@@ -547,7 +547,7 @@ export default function ImpactDashboard() {
               <div className="text-3xl font-bold">
                 {impactMetrics.year2025YTD?.toLocaleString()}
               </div>
-              <p className="text-orange-100 text-sm">Year-to-date total</p>
+              <p className="text-white/90 text-sm">Year-to-date total</p>
             </CardContent>
           </Card>
         </div>
