@@ -285,11 +285,59 @@ export default function MonthlyComparisonAnalytics() {
     const selectedMonthData = monthlyAnalytics[monthKey];
     if (!selectedMonthData) return null;
 
-    // Use previous year's same month for comparison
+    // Year-over-year comparison (same month last year)
     const prevYearMonthKey = `${selectedYear - 1}-${String(selectedMonth + 1).padStart(2, '0')}`;
     const prevYearMonth = monthlyAnalytics[prevYearMonthKey];
-    
-    // Calculate average of last 6 months before selected month for comparison
+
+    // Month-over-month comparison (previous month)
+    const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+    const prevMonthYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+    const prevMonthKey = `${prevMonthYear}-${String(prevMonth + 1).padStart(2, '0')}`;
+    const previousMonth = monthlyAnalytics[prevMonthKey];
+
+    // Calculate both percent changes
+    const yearOverYearChange = prevYearMonth
+      ? selectedMonthData.totalSandwiches - prevYearMonth.totalSandwiches
+      : null;
+    const yearOverYearPercent = prevYearMonth
+      ? ((selectedMonthData.totalSandwiches - prevYearMonth.totalSandwiches) /
+          prevYearMonth.totalSandwiches) * 100
+      : null;
+
+    const monthOverMonthChange = previousMonth
+      ? selectedMonthData.totalSandwiches - previousMonth.totalSandwiches
+      : null;
+    const monthOverMonthPercent = previousMonth
+      ? ((selectedMonthData.totalSandwiches - previousMonth.totalSandwiches) /
+          previousMonth.totalSandwiches) * 100
+      : null;
+
+    // Choose the less drastic comparison (smaller absolute percent change)
+    let useMoMComparison = false;
+    let comparisonChange = yearOverYearChange;
+    let comparisonPercent = yearOverYearPercent;
+    let comparisonBase = prevYearMonth;
+    let comparisonLabel = prevYearMonth ? `${months[selectedMonth]} ${selectedYear - 1}` : null;
+
+    if (yearOverYearPercent !== null && monthOverMonthPercent !== null) {
+      // Both comparisons available - pick less drastic
+      if (Math.abs(monthOverMonthPercent) < Math.abs(yearOverYearPercent)) {
+        useMoMComparison = true;
+        comparisonChange = monthOverMonthChange;
+        comparisonPercent = monthOverMonthPercent;
+        comparisonBase = previousMonth;
+        comparisonLabel = `${months[prevMonth]} ${prevMonthYear}`;
+      }
+    } else if (monthOverMonthPercent !== null && yearOverYearPercent === null) {
+      // Only month-over-month available
+      useMoMComparison = true;
+      comparisonChange = monthOverMonthChange;
+      comparisonPercent = monthOverMonthPercent;
+      comparisonBase = previousMonth;
+      comparisonLabel = `${months[prevMonth]} ${prevMonthYear}`;
+    }
+
+    // Calculate average of last 6 months before selected month for reference
     const recentMonths = Object.entries(monthlyAnalytics)
       .filter(([key, m]) => {
         const [year, month] = key.split('-').map(Number);
@@ -302,7 +350,7 @@ export default function MonthlyComparisonAnalytics() {
 
     const avgRecentMonth = recentMonths.length > 0
       ? recentMonths.reduce((sum, m) => sum + m.totalSandwiches, 0) / recentMonths.length
-      : prevYearMonth?.totalSandwiches || 0;
+      : comparisonBase?.totalSandwiches || 0;
 
     // Calculate top months for 2024-2025
     const topMonths = Object.entries(monthlyAnalytics)
@@ -319,20 +367,24 @@ export default function MonthlyComparisonAnalytics() {
     return {
       selectedMonthData,
       prevYearMonth,
+      previousMonth,
       recentMonths,
       avgRecentMonth,
       topMonths,
+      // Primary comparison (the less drastic one)
+      comparisonType: useMoMComparison ? 'month-over-month' : 'year-over-year',
+      comparisonLabel,
+      comparisonChange,
+      comparisonPercent,
+      comparisonBase,
+      // Also keep individual comparisons for reference
+      yearOverYearChange,
+      yearOverYearPercent,
+      monthOverMonthChange,
+      monthOverMonthPercent,
       shortfall: avgRecentMonth - selectedMonthData.totalSandwiches,
       shortfallPercent:
         ((avgRecentMonth - selectedMonthData.totalSandwiches) / avgRecentMonth) * 100,
-      yearOverYearChange: prevYearMonth
-        ? selectedMonthData.totalSandwiches - prevYearMonth.totalSandwiches
-        : null,
-      yearOverYearPercent: prevYearMonth
-        ? ((selectedMonthData.totalSandwiches - prevYearMonth.totalSandwiches) /
-            prevYearMonth.totalSandwiches) *
-          100
-        : null,
     };
   }, [monthlyAnalytics, selectedMonth, selectedYear]);
 
@@ -568,25 +620,25 @@ export default function MonthlyComparisonAnalytics() {
 
           <div className="bg-white p-4 rounded-lg border border-brand-primary/20">
             <div className="text-2xl font-bold text-brand-primary">
-              {selectedMonthAnalysis.yearOverYearChange !== null
-                ? (selectedMonthAnalysis.yearOverYearChange > 0 ? '+' : '') +
-                  selectedMonthAnalysis.yearOverYearChange?.toLocaleString()
+              {selectedMonthAnalysis.comparisonChange !== null
+                ? (selectedMonthAnalysis.comparisonChange > 0 ? '+' : '') +
+                  selectedMonthAnalysis.comparisonChange?.toLocaleString()
                 : 'N/A'}
             </div>
-            <p className="text-sm text-[#646464]">vs {months[selectedMonth]} {selectedYear - 1}</p>
+            <p className="text-sm text-[#646464]">vs {selectedMonthAnalysis.comparisonLabel || 'Previous Period'}</p>
             <div
               className={`text-sm mt-1 ${
-                selectedMonthAnalysis.yearOverYearPercent &&
-                selectedMonthAnalysis.yearOverYearPercent > 0
+                selectedMonthAnalysis.comparisonPercent &&
+                selectedMonthAnalysis.comparisonPercent > 0
                   ? 'text-green-600'
                   : 'text-red-600'
               }`}
             >
-              {selectedMonthAnalysis.yearOverYearPercent !== null
-                ? (selectedMonthAnalysis.yearOverYearPercent > 0 ? '+' : '') +
-                  selectedMonthAnalysis.yearOverYearPercent?.toFixed(1) +
+              {selectedMonthAnalysis.comparisonPercent !== null
+                ? (selectedMonthAnalysis.comparisonPercent > 0 ? '+' : '') +
+                  selectedMonthAnalysis.comparisonPercent?.toFixed(1) +
                   '%'
-                : 'First year'}
+                : 'No comparison'}
             </div>
           </div>
         </div>
@@ -776,34 +828,37 @@ export default function MonthlyComparisonAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Year-Over-Year Performance
+                Smart Comparison Analysis
               </CardTitle>
               <CardDescription>
-                {selectedMonthName} vs {months[selectedMonth]} {selectedYear - 1}
+                Showing the most relevant comparison (less drastic change)
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-semibold text-brand-primary mb-3">
-                    Year-Over-Year Comparison
+                    Primary Comparison
+                    <Badge className="ml-2 text-xs">
+                      {selectedMonthAnalysis.comparisonType === 'month-over-month' ? 'Month-over-Month' : 'Year-over-Year'}
+                    </Badge>
                   </h4>
                   <div className="h-64 flex items-center justify-center">
                     <div className="text-center space-y-4">
                       <div className="text-6xl font-bold text-brand-primary">
-                        {selectedMonthAnalysis.yearOverYearPercent !== null
-                          ? (selectedMonthAnalysis.yearOverYearPercent > 0 ? '+' : '') +
-                            selectedMonthAnalysis.yearOverYearPercent.toFixed(1) + '%'
+                        {selectedMonthAnalysis.comparisonPercent !== null
+                          ? (selectedMonthAnalysis.comparisonPercent > 0 ? '+' : '') +
+                            selectedMonthAnalysis.comparisonPercent.toFixed(1) + '%'
                           : 'N/A'}
                       </div>
                       <div className="text-lg text-gray-600">
-                        {selectedMonthAnalysis.yearOverYearChange !== null
-                          ? (selectedMonthAnalysis.yearOverYearChange > 0 ? '+' : '') +
-                            selectedMonthAnalysis.yearOverYearChange.toLocaleString() + ' sandwiches'
-                          : 'No prior year data'}
+                        {selectedMonthAnalysis.comparisonChange !== null
+                          ? (selectedMonthAnalysis.comparisonChange > 0 ? '+' : '') +
+                            selectedMonthAnalysis.comparisonChange.toLocaleString() + ' sandwiches'
+                          : 'No comparison data'}
                       </div>
                       <div className="text-sm text-gray-500">
-                        vs {months[selectedMonth]} {selectedYear - 1}
+                        vs {selectedMonthAnalysis.comparisonLabel}
                       </div>
                     </div>
                   </div>
@@ -814,41 +869,68 @@ export default function MonthlyComparisonAnalytics() {
                     Performance Analysis
                   </h4>
                   <div className="space-y-4">
-                    {selectedMonthAnalysis.yearOverYearPercent !== null ? (
+                    {/* Primary comparison */}
+                    {selectedMonthAnalysis.comparisonPercent !== null ? (
                       <div className={`p-4 border rounded-lg ${
-                        selectedMonthAnalysis.yearOverYearChange! >= 0
+                        selectedMonthAnalysis.comparisonChange! >= 0
                           ? 'bg-green-50 border-green-200'
                           : 'bg-red-50 border-red-200'
                       }`}>
                         <div className="flex items-center gap-2 mb-2">
-                          {selectedMonthAnalysis.yearOverYearChange! >= 0 ? (
+                          {selectedMonthAnalysis.comparisonChange! >= 0 ? (
                             <TrendingUp className="h-4 w-4 text-green-600" />
                           ) : (
                             <TrendingDown className="h-4 w-4 text-red-600" />
                           )}
                           <span className={`font-medium ${
-                            selectedMonthAnalysis.yearOverYearChange! >= 0 ? 'text-green-800' : 'text-red-800'
+                            selectedMonthAnalysis.comparisonChange! >= 0 ? 'text-green-800' : 'text-red-800'
                           }`}>
-                            Year-Over-Year Trend
+                            {selectedMonthAnalysis.comparisonType === 'month-over-month' ? 'Month-over-Month' : 'Year-over-Year'} Trend
                           </span>
                         </div>
                         <p className={`text-sm ${
-                          selectedMonthAnalysis.yearOverYearChange! >= 0 ? 'text-green-700' : 'text-red-700'
+                          selectedMonthAnalysis.comparisonChange! >= 0 ? 'text-green-700' : 'text-red-700'
                         }`}>
-                          {selectedMonthName} shows a {Math.abs(selectedMonthAnalysis.yearOverYearPercent).toFixed(1)}%
-                          {selectedMonthAnalysis.yearOverYearChange! >= 0 ? ' increase' : ' decline'} compared to {months[selectedMonth]} {selectedYear - 1}.
-                          This represents {Math.abs(selectedMonthAnalysis.yearOverYearChange!).toLocaleString()}
-                          {selectedMonthAnalysis.yearOverYearChange! >= 0 ? ' more' : ' fewer'} sandwiches than last year.
+                          {selectedMonthName} shows a {Math.abs(selectedMonthAnalysis.comparisonPercent).toFixed(1)}%
+                          {selectedMonthAnalysis.comparisonChange! >= 0 ? ' increase' : ' decline'} compared to {selectedMonthAnalysis.comparisonLabel}.
+                          This represents {Math.abs(selectedMonthAnalysis.comparisonChange!).toLocaleString()}
+                          {selectedMonthAnalysis.comparisonChange! >= 0 ? ' more' : ' fewer'} sandwiches.
                         </p>
                       </div>
                     ) : (
                       <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
                           <Activity className="h-4 w-4 text-gray-600" />
-                          <span className="font-medium text-gray-800">No Prior Year Data</span>
+                          <span className="font-medium text-gray-800">No Comparison Data</span>
                         </div>
                         <p className="text-sm text-gray-700">
-                          No data available for {months[selectedMonth]} {selectedYear - 1} to compare against.
+                          No comparison data available for this month.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Alternative comparison info */}
+                    {selectedMonthAnalysis.comparisonType === 'month-over-month' && selectedMonthAnalysis.yearOverYearPercent !== null && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Activity className="h-3 w-3 text-blue-600" />
+                          <span className="text-xs font-medium text-blue-800">Alternative: Year-over-Year</span>
+                        </div>
+                        <p className="text-xs text-blue-700">
+                          vs {months[selectedMonth]} {selectedYear - 1}: {selectedMonthAnalysis.yearOverYearPercent > 0 ? '+' : ''}{selectedMonthAnalysis.yearOverYearPercent.toFixed(1)}%
+                          ({Math.abs(selectedMonthAnalysis.yearOverYearChange!).toLocaleString()} sandwiches)
+                        </p>
+                      </div>
+                    )}
+                    {selectedMonthAnalysis.comparisonType === 'year-over-year' && selectedMonthAnalysis.monthOverMonthPercent !== null && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Activity className="h-3 w-3 text-blue-600" />
+                          <span className="text-xs font-medium text-blue-800">Alternative: Month-over-Month</span>
+                        </div>
+                        <p className="text-xs text-blue-700">
+                          vs {selectedMonthAnalysis.comparisonLabel}: {selectedMonthAnalysis.monthOverMonthPercent > 0 ? '+' : ''}{selectedMonthAnalysis.monthOverMonthPercent.toFixed(1)}%
+                          ({Math.abs(selectedMonthAnalysis.monthOverMonthChange!).toLocaleString()} sandwiches)
                         </p>
                       </div>
                     )}
