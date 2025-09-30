@@ -747,74 +747,65 @@ export default function MonthlyComparisonAnalytics() {
             </CardContent>
           </Card>
 
-          {/* Top vs August Comparison */}
+          {/* Month Performance Breakdown */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5" />
-                August vs Top Performing Months
+                {selectedMonthName} Performance Breakdown
               </CardTitle>
+              <CardDescription>
+                Collection types and participation metrics
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-brand-primary mb-3">
-                    Top 5 Months (2024-2025)
-                  </h4>
-                  <div className="space-y-2">
-                    {(selectedMonthAnalysis?.topMonths || [])
-                      .slice(0, 5)
-                      .map((month, index) => (
-                        <div
-                          key={month.month}
-                          className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                        >
-                          <span className="text-sm font-medium">
-                            {month.month}
-                          </span>
-                          <span className="text-sm font-bold text-brand-primary">
-                            {month.totalSandwiches.toLocaleString()}
-                          </span>
-                        </div>
-                      ))}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-sm text-blue-600 mb-1">Total Sandwiches</div>
+                  <div className="text-2xl font-bold text-blue-900">
+                    {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    From {selectedMonthAnalysis.selectedMonthData.totalCollections} collections
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="font-semibold text-brand-primary mb-3">
-                    Performance Breakdown
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Individual Collections</span>
-                      <span className="font-medium">
-                        {selectedMonthAnalysis.selectedMonthData.individualCount.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Group Events</span>
-                      <span className="font-medium">
-                        {selectedMonthAnalysis.selectedMonthData.groupEventCount} events
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Sandwiches from Groups</span>
-                      <span className="font-medium">
-                        {selectedMonthAnalysis.selectedMonthData.groupCount.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Average per Collection</span>
-                      <span className="font-medium">
-                        {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Active Hosts</span>
-                      <span className="font-medium">
-                        {selectedMonthAnalysis.selectedMonthData.uniqueHosts}
-                      </span>
-                    </div>
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-sm text-green-600 mb-1">Individual Collections</div>
+                  <div className="text-2xl font-bold text-green-900">
+                    {selectedMonthAnalysis.selectedMonthData.individualCount.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-green-600 mt-1">
+                    {((selectedMonthAnalysis.selectedMonthData.individualCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)}% of total
+                  </div>
+                </div>
+
+                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="text-sm text-purple-600 mb-1">Group Events</div>
+                  <div className="text-2xl font-bold text-purple-900">
+                    {selectedMonthAnalysis.selectedMonthData.groupCount.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-purple-600 mt-1">
+                    {selectedMonthAnalysis.selectedMonthData.groupEventCount} events ({((selectedMonthAnalysis.selectedMonthData.groupCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)}% of total)
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Average per Collection</span>
+                    <span className="font-bold text-brand-primary">
+                      {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Active Hosts</span>
+                    <span className="font-bold text-brand-primary">
+                      {selectedMonthAnalysis.selectedMonthData.uniqueHosts}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1368,115 +1359,141 @@ export default function MonthlyComparisonAnalytics() {
 
         <TabsContent value="insights" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-l-4 border-l-red-500">
+            {/* Performance Overview */}
+            <Card className="border-l-4 border-l-blue-500">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-red-700">
-                  <AlertTriangle className="h-5 w-5" />
-                  Key Issues Identified
+                <CardTitle className="flex items-center gap-2 text-blue-700">
+                  <Activity className="h-5 w-5" />
+                  Performance Overview
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="p-3 bg-red-50 rounded">
-                  <h4 className="font-semibold text-red-800 mb-1">
-                    Year-over-Year Performance
+                <div className="p-3 bg-blue-50 rounded">
+                  <h4 className="font-semibold text-blue-800 mb-1">
+                    Comparison Analysis
                   </h4>
-                  <p className="text-sm text-red-700">
-                    {selectedMonthAnalysis.yearOverYearChange !== null ? (
-                      selectedMonthAnalysis.yearOverYearChange < 0 ? (
+                  <p className="text-sm text-blue-700">
+                    {selectedMonthAnalysis.comparisonChange !== null ? (
+                      selectedMonthAnalysis.comparisonChange < 0 ? (
                         <>
                           {selectedMonthName} collected{' '}
-                          {Math.abs(selectedMonthAnalysis.yearOverYearChange).toLocaleString()} fewer
-                          sandwiches ({Math.abs(selectedMonthAnalysis.yearOverYearPercent?.toFixed(1) || 0)}%
-                          decrease) compared to August 2024.
+                          {Math.abs(selectedMonthAnalysis.comparisonChange).toLocaleString()} fewer
+                          sandwiches ({Math.abs(selectedMonthAnalysis.comparisonPercent?.toFixed(1) || 0)}%
+                          decrease) compared to {selectedMonthAnalysis.comparisonLabel}.
                         </>
                       ) : (
                         <>
                           {selectedMonthName} collected{' '}
-                          {selectedMonthAnalysis.yearOverYearChange.toLocaleString()} more
-                          sandwiches ({selectedMonthAnalysis.yearOverYearPercent?.toFixed(1)}%
-                          increase) compared to August 2024.
+                          {selectedMonthAnalysis.comparisonChange.toLocaleString()} more
+                          sandwiches ({selectedMonthAnalysis.comparisonPercent?.toFixed(1)}%
+                          increase) compared to {selectedMonthAnalysis.comparisonLabel}.
                         </>
                       )
                     ) : (
-                      'No August 2024 data available for comparison.'
+                      'No comparison data available.'
                     )}
                   </p>
                 </div>
 
-                <div className="p-3 bg-amber-50 rounded">
-                  <h4 className="font-semibold text-amber-800 mb-1">
+                <div className={`p-3 rounded ${
+                  hostComparison.filter((h) => h.percentChange < -20).length > 5
+                    ? 'bg-amber-50'
+                    : 'bg-green-50'
+                }`}>
+                  <h4 className={`font-semibold mb-1 ${
+                    hostComparison.filter((h) => h.percentChange < -20).length > 5
+                      ? 'text-amber-800'
+                      : 'text-green-800'
+                  }`}>
                     Host Participation
                   </h4>
-                  <p className="text-sm text-amber-700">
-                    {hostComparison.filter((h) => h.percentChange < -20).length}{' '}
-                    hosts performed significantly below their monthly average
-                    (&gt;20% decrease).
+                  <p className={`text-sm ${
+                    hostComparison.filter((h) => h.percentChange < -20).length > 5
+                      ? 'text-amber-700'
+                      : 'text-green-700'
+                  }`}>
+                    {hostComparison.filter((h) => h.percentChange < -20).length} hosts with significant declines (&gt;20%),
+                    {' '}{hostComparison.filter((h) => h.percentChange > 20).length} hosts with strong growth (&gt;20%).
                   </p>
                 </div>
 
-                <div className="p-3 bg-blue-50 rounded">
-                  <h4 className="font-semibold text-blue-800 mb-1">
-                    Seasonal Pattern
-                  </h4>
-                  <p className="text-sm text-blue-700">
-                    August consistently shows lower performance, suggesting
-                    seasonal factors (summer vacation, school schedules) impact
-                    collections.
-                  </p>
-                </div>
+                {(() => {
+                  const holidays = getHolidaysForMonth(selectedMonth, selectedYear);
+                  if (holidays.length > 0) {
+                    return (
+                      <div className="p-3 bg-purple-50 rounded">
+                        <h4 className="font-semibold text-purple-800 mb-1">
+                          Holiday Impact
+                        </h4>
+                        <p className="text-sm text-purple-700">
+                          {holidays.length} holiday factor{holidays.length > 1 ? 's' : ''} this month
+                          {holidays.some(h => h.impact === 'high') ? ' including high-impact events' : ''}.
+                          Consider scheduling adjustments for future planning.
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </CardContent>
             </Card>
 
+            {/* Actionable Recommendations */}
             <Card className="border-l-4 border-l-green-500">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-700">
                   <Lightbulb className="h-5 w-5" />
-                  Recommended Actions
+                  Actionable Next Steps
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="p-3 bg-green-50 rounded">
-                  <h4 className="font-semibold text-green-800 mb-1">
-                    August Planning
-                  </h4>
-                  <p className="text-sm text-green-700">
-                    Implement August-specific campaigns and host engagement
-                    programs to offset seasonal decline by June planning.
-                  </p>
-                </div>
+                {hostComparison.filter((h) => h.percentChange < -20).length > 0 && (
+                  <div className="p-3 bg-orange-50 rounded">
+                    <h4 className="font-semibold text-orange-800 mb-1">
+                      Re-engage Underperforming Hosts
+                    </h4>
+                    <p className="text-sm text-orange-700">
+                      Reach out to {hostComparison.filter((h) => h.percentChange < -20).length} hosts with significant declines.
+                      Schedule check-ins to understand barriers and provide support.
+                    </p>
+                  </div>
+                )}
 
-                <div className="p-3 bg-purple-50 rounded">
-                  <h4 className="font-semibold text-purple-800 mb-1">
-                    Host Support
-                  </h4>
-                  <p className="text-sm text-purple-700">
-                    Focus on supporting hosts who showed significant declines.
-                    Consider summer vacation scheduling and backup host
-                    arrangements.
-                  </p>
-                </div>
+                {hostComparison.filter((h) => h.percentChange > 20).length > 0 && (
+                  <div className="p-3 bg-green-50 rounded">
+                    <h4 className="font-semibold text-green-800 mb-1">
+                      Amplify Success Stories
+                    </h4>
+                    <p className="text-sm text-green-700">
+                      {hostComparison.filter((h) => h.percentChange > 20).length} hosts showed exceptional growth.
+                      Share their strategies with other hosts to drive broader impact.
+                    </p>
+                  </div>
+                )}
 
-                <div className="p-3 bg-indigo-50 rounded">
-                  <h4 className="font-semibold text-indigo-800 mb-1">
-                    Target Setting
+                <div className="p-3 bg-blue-50 rounded">
+                  <h4 className="font-semibold text-blue-800 mb-1">
+                    Plan Ahead for Next Month
                   </h4>
-                  <p className="text-sm text-indigo-700">
-                    Set realistic August targets based on historical data while
-                    implementing specific strategies to minimize seasonal
-                    impact.
+                  <p className="text-sm text-blue-700">
+                    Review {months[(selectedMonth + 1) % 12]} {selectedMonth === 11 ? selectedYear + 1 : selectedYear} patterns from previous years.
+                    Identify potential challenges and opportunities early.
                   </p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Success Stories */}
+          {/* High Performers */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-700">
                 <TrendingUp className="h-5 w-5" />
-                Success Stories - Hosts Who Excelled in August
+                Top Performing Hosts in {selectedMonthName}
               </CardTitle>
+              <CardDescription>
+                Hosts who exceeded their average by 20%+ - learn from their success
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1506,10 +1523,15 @@ export default function MonthlyComparisonAnalytics() {
                         className="text-sm text-green-600"
                         data-testid={`success-change-${index}`}
                       >
-                        +{host.percentChange}% vs average
+                        +{host.percentChange}% vs their average
                       </div>
                     </div>
                   ))}
+                {hostComparison.filter((h) => h.percentChange > 20).length === 0 && (
+                  <div className="col-span-3 text-center py-8 text-gray-500">
+                    No hosts exceeded their average by 20%+ this month.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
