@@ -837,7 +837,7 @@ export default function MonthlyComparisonAnalytics() {
                   <div className="text-2xl font-bold text-green-900">
                     {selectedMonthAnalysis.selectedMonthData.individualCount.toLocaleString()}
                   </div>
-                  <div className="text-xs text-green-600 mt-1">
+                  <div className="text-green-600 mt-1 text-[16px]">
                     {((selectedMonthAnalysis.selectedMonthData.individualCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)}% of total
                   </div>
                 </div>
