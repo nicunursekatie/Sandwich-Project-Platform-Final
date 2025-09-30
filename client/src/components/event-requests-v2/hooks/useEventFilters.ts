@@ -27,7 +27,12 @@ export const useEventFilters = () => {
     if (!user?.id) return false;
 
     // Check TSP Contact assignment
-    if (request.tspContactUserId === user.id) {
+    if (request.tspContactAssigned === user.id) {
+      return true;
+    }
+    
+    // Also check additional TSP contacts
+    if (request.additionalContact1 === user.id || request.additionalContact2 === user.id) {
       return true;
     }
 
