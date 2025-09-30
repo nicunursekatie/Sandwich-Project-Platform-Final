@@ -113,8 +113,9 @@ export function EventEmailComposer({
   const { user } = useAuth();
 
   // Fetch available documents
-  const { data: documents = [] } = useQuery<Document[]>({
+  const { data: documents = [], isLoading: isDocumentsLoading } = useQuery<Document[]>({
     queryKey: ['/api/storage/documents'],
+    enabled: isOpen, // Only fetch when dialog is open
   });
 
   // Fetch available drafts for this event request
