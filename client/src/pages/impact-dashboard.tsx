@@ -488,7 +488,7 @@ export default function ImpactDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#236383] text-white">
+          <Card className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <Users className="w-5 h-5 mr-2" />
@@ -499,7 +499,7 @@ export default function ImpactDashboard() {
               <div className="text-3xl font-bold">
                 {impactMetrics.uniqueHosts}
               </div>
-              <p className="text-white/80 text-sm">Collection locations</p>
+              <p className="text-white/90 text-sm">Collection locations</p>
             </CardContent>
           </Card>
 
