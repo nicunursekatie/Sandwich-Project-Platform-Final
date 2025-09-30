@@ -337,7 +337,7 @@ export default function GrantMetrics() {
                 <h2 className="font-black mb-2 text-[23px]">
                   {totalHosts} Active Hosts
                 </h2>
-                <div className="text-4xl font-black mb-2">
+                <div className="font-black mb-2 text-[30px] text-left">
                   {metrics.avgPerCollection}
                 </div>
                 <p className="text-white/90 text-lg">
