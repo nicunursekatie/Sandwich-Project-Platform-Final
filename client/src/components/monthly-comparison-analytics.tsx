@@ -626,7 +626,7 @@ export default function MonthlyComparisonAnalytics() {
             <div className="text-3xl font-bold text-brand-primary">
               {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Sandwiches distributed</p>
+            <p className="text-gray-500 mt-1 text-[14px]">Sandwiches collected</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-blue-200 border-l-4">
@@ -634,7 +634,7 @@ export default function MonthlyComparisonAnalytics() {
             <div className="text-lg font-bold text-brand-primary">
               {selectedMonthAnalysis.wedThuSandwiches.toLocaleString()} Wed/Thu | {selectedMonthAnalysis.otherDaysSandwiches.toLocaleString()} Other days
             </div>
-            <p className="text-xs text-gray-500 mt-1">Collection day distribution</p>
+            <p className="text-gray-500 mt-1 text-[14px]">Collection day distribution</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4">
@@ -642,7 +642,7 @@ export default function MonthlyComparisonAnalytics() {
             <div className="text-3xl font-bold text-brand-primary">
               {selectedMonthAnalysis.selectedMonthData.uniqueHosts}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Community partners engaged</p>
+            <p className="text-gray-500 mt-1 text-[14px]">Community partners engaged</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4">
@@ -650,7 +650,7 @@ export default function MonthlyComparisonAnalytics() {
             <div className="text-3xl font-bold text-brand-primary">
               {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Efficiency metric</p>
+            <p className="text-gray-500 mt-1 text-[14px]">Efficiency metric</p>
           </div>
 
           {selectedMonthAnalysis.rolling3MonthAvg && (
@@ -659,7 +659,7 @@ export default function MonthlyComparisonAnalytics() {
               <div className="text-3xl font-bold text-brand-primary">
                 {selectedMonthAnalysis.rolling3MonthAvg.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Rolling average</p>
+              <p className="text-gray-500 mt-1 text-[14px]">Rolling average</p>
             </div>
           )}
         </div>
@@ -669,8 +669,8 @@ export default function MonthlyComparisonAnalytics() {
           <div className="flex items-start gap-3">
             <Activity className="h-5 w-5 text-gray-500 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm text-gray-700">
-                <span className="font-medium">Change from {selectedMonthAnalysis.comparisonLabel}:</span>
+              <p className="text-gray-700 text-[16px]">
+                <span className="font-medium text-[16px]">Change from {selectedMonthAnalysis.comparisonLabel}:</span>
                 {' '}
                 {selectedMonthAnalysis.comparisonChange !== null ? (
                   <>
@@ -699,7 +699,6 @@ export default function MonthlyComparisonAnalytics() {
           </div>
         </div>
       </div>
-
       {/* Analytics Tabs */}
       <Tabs
         value={selectedTab}
@@ -707,19 +706,19 @@ export default function MonthlyComparisonAnalytics() {
         className="space-y-6"
       >
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
+          <TabsTrigger value="overview" className="flex items-center gap-2 text-[16px]">
             <BarChart3 className="h-4 w-4" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="hosts" className="flex items-center gap-2">
+          <TabsTrigger value="hosts" className="flex items-center gap-2 text-[16px]">
             <Target className="h-4 w-4" />
             Monthly Insights
           </TabsTrigger>
-          <TabsTrigger value="patterns" className="flex items-center gap-2">
+          <TabsTrigger value="patterns" className="flex items-center gap-2 text-[16px]">
             <Activity className="h-4 w-4" />
             Patterns
           </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-2">
+          <TabsTrigger value="insights" className="flex items-center gap-2 text-[16px]">
             <Lightbulb className="h-4 w-4" />
             Insights
           </TabsTrigger>
