@@ -488,14 +488,14 @@ export default function ImpactDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <CardHeader className="flex flex-col space-y-1.5 p-6 pb-2 bg-[#236383]">
+          <Card className="rounded-lg border shadow-sm from-green-500 to-green-600 text-white bg-[#236383]">
+            <CardHeader className="flex flex-col space-y-1.5 p-6 pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <Users className="w-5 h-5 mr-2" />
                 Active Hosts
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6 pt-0">
               <div className="text-3xl font-bold">
                 {impactMetrics.uniqueHosts}
               </div>
