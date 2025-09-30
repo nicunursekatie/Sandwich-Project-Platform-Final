@@ -688,8 +688,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
 
               {/* Sandwich Count Badge */}
-              <Badge className="bg-[#FBAD3F] text-white hover:bg-[#FBAD3F]/90 text-base px-3 py-2 flex items-center gap-2 w-fit">
-                <Package className="w-4 h-4" />
+              <Badge className="bg-[#FBAD3F] text-white px-2 py-1 text-xs shadow-sm">
+                <Package className="w-3 h-3 mr-1" />
                 {formatSandwichTypesDisplay(
                   request.sandwichTypes,
                   request.estimatedSandwichCount ?? undefined
