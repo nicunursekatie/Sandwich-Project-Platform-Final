@@ -358,7 +358,7 @@ export class GoogleSheetsMeetingExporter {
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: 'A:L',
+        range: 'A:N',
       });
       existingData = response.data.values || [];
     } catch (error) {
@@ -374,7 +374,7 @@ export class GoogleSheetsMeetingExporter {
     // Clear existing content
     await this.sheets.spreadsheets.values.clear({
       spreadsheetId: sheetId,
-      range: 'A:L',
+      range: 'A:N',
     });
 
     // Write merged data
@@ -408,21 +408,20 @@ export class GoogleSheetsMeetingExporter {
 
       // Create merged row: app data (A-H) + preserved manual data (I-L)
       const mergedRow = [
-        // App-managed columns (A-H): Section, Item, Description, Owner, Support, Priority, Time, Status
-        newRow[0] || '', // A - Section
-        newRow[1] || '', // B - Item
-        newRow[2] || '', // C - Description
+        newRow[0] || '', // A - Task
+        newRow[1] || '', // B - Priority
+        newRow[2] || '', // C - Status
         newRow[3] || '', // D - Owner
         newRow[4] || '', // E - Support People
-        newRow[5] || '', // F - Priority
-        newRow[6] || '', // G - Time Estimate
-        newRow[7] || '', // H - Status
-
-        // Manual columns (I-L): preserve existing user input
-        existingRow[8] || newRow[8] || '', // I - Notes (preserve existing)
-        existingRow[9] || newRow[9] || '', // J - Action Items (preserve existing)
-        existingRow[10] || newRow[10] || '', // K - Follow Up (preserve existing)
-        existingRow[11] || newRow[11] || '', // L - Decision (preserve existing)
+        existingRow[5] || newRow[5] || '', // F - Sub-Tasks | Owners (preserve manual)
+        newRow[6] || '', // G - Start date
+        newRow[7] || '', // H - End date
+        newRow[8] || '', // I - Category
+        newRow[9] || '', // J - Milestone
+        newRow[10] || '', // K - Deliverable
+        existingRow[11] || newRow[11] || '', // L - Notes (preserve manual)
+        newRow[12] || '', // M - Last Discussed
+        newRow[13] || '', // N - Date
       ];
 
       merged[i] = mergedRow;
@@ -457,7 +456,7 @@ export class GoogleSheetsMeetingExporter {
             startRowIndex: 0,
             endRowIndex: 4,
             startColumnIndex: 0,
-            endColumnIndex: 12,
+            endColumnIndex: 14,
           },
           cell: {
             userEnteredFormat: {
@@ -478,7 +477,7 @@ export class GoogleSheetsMeetingExporter {
             startRowIndex: 5,
             endRowIndex: 6,
             startColumnIndex: 0,
-            endColumnIndex: 12,
+            endColumnIndex: 14,
           },
           cell: {
             userEnteredFormat: {
