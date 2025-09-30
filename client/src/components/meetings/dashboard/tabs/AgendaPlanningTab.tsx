@@ -291,11 +291,20 @@ export function AgendaPlanningTab({
       const tabledProjects = allProjects.filter(p => projectAgendaStatus[p.id] === 'tabled');
 
       for (const project of tabledProjects) {
+        const discussionPoints = getTextValue(project.id, 'discussionPoints', project.meetingDiscussionPoints || '');
+        const decisionItems = getTextValue(project.id, 'decisionItems', project.meetingDecisionItems || '');
+
         const noteContent = {
           projectTitle: project.title,
           category: project.category || 'general',
+          priority: project.priority || 'medium',
           status: 'tabled',
           reason: 'Tabled for next meeting',
+          discussionPoints: discussionPoints?.trim() || null,
+          decisionItems: decisionItems?.trim() || null,
+          assignee: project.assigneeName || null,
+          supportPeople: project.supportPeople || null,
+          reviewInNextMeeting: project.reviewInNextMeeting || false,
         };
 
         try {
