@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { userService } from '../../services/users';
 import { requirePermission, createErrorHandler } from '../../middleware';
+import { applyPermissionDependencies } from '@shared/auth-utils';
 
 const usersRouter = Router();
 
@@ -78,9 +79,12 @@ usersRouter.patch(
       const { id } = req.params;
       const { role, permissions, metadata } = req.body;
 
+      // Apply permission dependencies (e.g., NAV_EVENT_PLANNING automatically grants EVENT_REQUESTS_VIEW)
+      const finalPermissions = permissions ? applyPermissionDependencies(permissions) : permissions;
+
       const updatedUser = await userService.updateUser(id, {
         role,
-        permissions,
+        permissions: finalPermissions,
         metadata,
       });
 
