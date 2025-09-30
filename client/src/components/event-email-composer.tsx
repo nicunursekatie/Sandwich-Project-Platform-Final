@@ -114,7 +114,7 @@ export function EventEmailComposer({
 
   // Fetch available documents
   const { data: documents = [] } = useQuery<Document[]>({
-    queryKey: ['/api/documents'],
+    queryKey: ['/api/storage/documents'],
   });
 
   // Fetch available drafts for this event request

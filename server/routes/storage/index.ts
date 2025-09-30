@@ -318,6 +318,29 @@ storageRouter.delete('/confidential/:id', async (req: AuthenticatedRequest, res:
   }
 });
 
+// GET /api/storage/documents - List all documents for email attachments
+storageRouter.get('/documents', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    logger.info(`User ${user.email} accessing documents list for email attachments`);
+
+    const documents = await storage.getAllDocuments();
+    
+    // Filter to only active documents
+    const activeDocuments = documents.filter(doc => doc.isActive !== false);
+    
+    res.json(activeDocuments);
+  } catch (error: any) {
+    logger.error('Error fetching documents:', error);
+    res.status(500).json({ error: 'Failed to fetch documents' });
+  }
+});
+
 // Apply error handling middleware
 storageRouter.use(errorHandler);
 
