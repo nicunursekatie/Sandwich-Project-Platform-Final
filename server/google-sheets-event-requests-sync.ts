@@ -641,18 +641,20 @@ export class EventRequestsGoogleSheetsService extends GoogleSheetsService {
       for (const row of sheetRows) {
         // UPDATED: External ID is now optional - generate one if missing
         if (!row.externalId || !row.externalId.trim()) {
-          // Generate a unique identifier based on email + timestamp + organization
+          // Generate a STABLE identifier based on email + submittedOn + organization
+          // NOTE: No timestamp - must be deterministic so the same row always gets the same ID
           const uniqueParts = [
             row.email || 'no-email',
-            row.submittedOn || new Date().toISOString(),
-            row.organizationName || 'no-org'
+            row.submittedOn || 'no-date',
+            row.organizationName || 'no-org',
+            row.contactName || 'no-name'
           ].join('|');
           
-          // Create a simple hash-like identifier
-          const hash = Buffer.from(uniqueParts).toString('base64').substring(0, 16).replace(/[^a-zA-Z0-9]/g, '');
-          row.externalId = `auto-${hash}-${Date.now()}`;
+          // Create a stable hash-like identifier (no timestamp!)
+          const hash = Buffer.from(uniqueParts).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '');
+          row.externalId = `auto-${hash}`;
           
-          console.log(`📝 Generated external_id for row: ${row.externalId} - ${row.organizationName || 'Unknown Org'} - ${row.contactName || 'Unknown Contact'}`);
+          console.log(`📝 Generated STABLE external_id for row: ${row.externalId} - ${row.organizationName || 'Unknown Org'} - ${row.contactName || 'Unknown Contact'}`);
         }
 
         // CRITICAL: Check permanent blacklist BEFORE attempting any insertion
