@@ -263,12 +263,15 @@ export class EmailService {
           const contentHtml = data.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           const signatureHtml = signature.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
           
+          // Import SendGrid compliance footer
+          const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
+          
           await sendGridEmail({
             to: data.recipientEmail,
             from: 'katielong2316@gmail.com', // Your verified sender
             replyTo: replyToEmail, // Use preferred email for Reply-To
             subject: `New message: ${data.subject}`,
-            text: `You have a new message from ${data.senderName}.\n\nSubject: ${data.subject}\n\n${contentWithSignature}\n\nPlease log in to your account to view and respond to this message.`,
+            text: `You have a new message from ${data.senderName}.\n\nSubject: ${data.subject}\n\n${contentWithSignature}\n\nPlease log in to your account to view and respond to this message.${EMAIL_FOOTER_TEXT}`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #236383;">New Message</h2>
@@ -281,6 +284,7 @@ export class EmailService {
                   </div>
                 </div>
                 <p>Please log in to your account to view and respond to this message.</p>
+                ${EMAIL_FOOTER_HTML}
               </div>
             `,
           });

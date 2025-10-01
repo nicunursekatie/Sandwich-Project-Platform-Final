@@ -335,12 +335,15 @@ View full dashboard: {{dashboardLink}}
       const htmlContent = this.processTemplate(template.htmlContent, variables);
       const textContent = this.processTemplate(template.textContent, variables);
 
+      // Import SendGrid compliance footer
+      const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
+
       const emailData = {
         to: recipients,
         from: process.env.FROM_EMAIL || 'noreply@sandwichproject.org',
         subject,
-        html: htmlContent,
-        text: textContent,
+        html: htmlContent + EMAIL_FOOTER_HTML,
+        text: textContent + EMAIL_FOOTER_TEXT,
         attachments: notification.attachments,
         priority: notification.priority || 'normal',
       };

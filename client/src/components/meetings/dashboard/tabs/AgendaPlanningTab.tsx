@@ -1581,7 +1581,7 @@ export function AgendaPlanningTab({
                         }
                       );
                       queryClient.invalidateQueries({
-                        queryKey: [`/api/projects/${editingProject}/tasks`],
+                        queryKey: ['/api/projects', editingProject, 'tasks'],
                       });
                       toast({
                         title: 'Success',
