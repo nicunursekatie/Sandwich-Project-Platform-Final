@@ -152,6 +152,7 @@ export class EmailNotificationService {
                 <div class="footer">
                   <p>This notification was sent because you were mentioned in a chat message.</p>
                   <p>The Sandwich Project - Building community through food assistance</p>
+                  <p style="font-size: 11px; color: #888;">To unsubscribe from these emails, please contact us at <a href="mailto:katie@thesandwichproject.org" style="color: #236383;">katie@thesandwichproject.org</a> or reply STOP.</p>
                 </div>
               </div>
             </div>
@@ -171,6 +172,8 @@ Join the conversation: ${this.getChatUrl(notification.channel)}
 
 ---
 The Sandwich Project - Building community through food assistance
+
+To unsubscribe from these emails, please contact us at katie@thesandwichproject.org or reply STOP.
         `.trim(),
       };
 

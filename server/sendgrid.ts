@@ -57,6 +57,9 @@ export async function sendSuggestionNotification(suggestion: {
   submittedBy: string;
   submittedAt: Date;
 }): Promise<boolean> {
+  // Import SendGrid compliance footer
+  const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('./utils/email-footer');
+  
   const emailContent = `
 New Suggestion Submitted to The Sandwich Project
 
@@ -70,7 +73,7 @@ Description:
 ${suggestion.description}
 
 ---
-This is an automated notification from The Sandwich Project suggestions portal.
+This is an automated notification from The Sandwich Project suggestions portal.${EMAIL_FOOTER_TEXT}
   `.trim();
 
   const htmlContent = `
@@ -95,6 +98,7 @@ This is an automated notification from The Sandwich Project suggestions portal.
       
       <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
       <p style="color: #666; font-size: 12px;">This is an automated notification from The Sandwich Project suggestions portal.</p>
+      ${EMAIL_FOOTER_HTML}
     </div>
   `;
 
