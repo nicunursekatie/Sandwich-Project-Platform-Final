@@ -93,6 +93,8 @@ export const sandwichCollections = pgTable("sandwich_collections", {
 	group2Count: integer("group2_count"),
 	submissionMethod: text("submission_method").default('standard'),
 	groupCollections: jsonb("group_collections").default([]).notNull(),
+	individualDeli: integer("individual_deli"),
+	individualPbj: integer("individual_pbj"),
 });
 
 export const hostedFiles = pgTable("hosted_files", {
