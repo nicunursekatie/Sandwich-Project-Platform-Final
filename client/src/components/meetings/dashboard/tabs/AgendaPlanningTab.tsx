@@ -50,6 +50,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import type { UseMutationResult, QueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import type { ToastActionElement } from '@/components/ui/toast';
 
 // Import types from hooks instead of re-declaring them
@@ -234,6 +235,28 @@ export function AgendaPlanningTab({
 }: AgendaPlanningTabProps) {
   // Add notes functionality
   const { createNoteMutation } = useNotes();
+
+  // Delete project mutation
+  const deleteProjectMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest('DELETE', `/api/projects/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      toast({
+        title: 'Project deleted successfully!',
+        description: 'The project has been removed.',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Delete project error:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to delete project.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Function to save all agenda content to organized notes
   const handleSaveToNotes = async () => {
@@ -895,6 +918,20 @@ export function AgendaPlanningTab({
                               </div>
 
                               <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    if (window.confirm(`Are you sure you want to delete "${project.title}"? This action cannot be undone.`)) {
+                                      deleteProjectMutation.mutate(project.id);
+                                    }
+                                  }}
+                                  disabled={deleteProjectMutation.isPending}
+                                  data-testid={`button-delete-project-${project.id}`}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
