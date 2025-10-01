@@ -51,6 +51,10 @@ export default function ImpactDashboard() {
   );
   const [dateRange, setDateRange] = useState<'3months' | '6months' | '1year' | 'all'>('1year');
   const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
+  
+  // Weekly Planning Chart Controls
+  const [weeklyRange, setWeeklyRange] = useState<'8weeks' | '16weeks' | '24weeks' | '52weeks'>('16weeks');
+  const [showCollections, setShowCollections] = useState(false);
 
   // Fetch sandwich collections data
   const { data: collectionsData } = useQuery({
@@ -579,8 +583,12 @@ export default function ImpactDashboard() {
         </div>
 
         {/* Charts and Visualizations */}
-        <Tabs defaultValue="trends" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="weekly" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="weekly" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Weekly Planning
+            </TabsTrigger>
             <TabsTrigger value="trends" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               Collection Trends
@@ -594,6 +602,244 @@ export default function ImpactDashboard() {
               Team Impact
             </TabsTrigger>
           </TabsList>
+
+          {/* Weekly Planning Tab - NEW! */}
+          <TabsContent value="weekly">
+            <div className="space-y-6">
+              {/* Weekly Chart Controls */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5" />
+                        Weekly Collection Planning
+                      </CardTitle>
+                      <CardDescription>
+                        Interactive weekly breakdown for operational planning and capacity management
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {/* Date Range Selector */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">Show:</span>
+                        <select
+                          value={weeklyRange}
+                          onChange={(e) => setWeeklyRange(e.target.value as any)}
+                          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="8weeks">Last 8 weeks</option>
+                          <option value="16weeks">Last 16 weeks</option>
+                          <option value="24weeks">Last 24 weeks</option>
+                          <option value="52weeks">Last 52 weeks</option>
+                        </select>
+                      </div>
+                      
+                      {/* Toggle Collections Count */}
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={showCollections}
+                          onChange={(e) => setShowCollections(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        Show collection counts
+                      </label>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart
+                      data={(() => {
+                        // Calculate weekly data based on selected range
+                        const weeksToShow = parseInt(weeklyRange.replace('weeks', ''));
+                        const weeklyData: Record<string, { sandwiches: number; collections: number }> = {};
+                        const now = new Date();
+                        const startDate = new Date(now);
+                        startDate.setDate(now.getDate() - (weeksToShow * 7));
+
+                        collections.forEach((collection: any) => {
+                          if (!collection.collectionDate) return;
+
+                          const date = parseCollectionDate(collection.collectionDate);
+                          if (Number.isNaN(date.getTime()) || date < startDate) return;
+
+                          // Calculate week starting Monday
+                          const monday = new Date(date);
+                          const day = monday.getDay();
+                          const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
+                          monday.setDate(diff);
+                          monday.setHours(0, 0, 0, 0);
+                          const weekKey = monday.toISOString().split('T')[0];
+
+                          if (!weeklyData[weekKey]) {
+                            weeklyData[weekKey] = { sandwiches: 0, collections: 0 };
+                          }
+
+                          weeklyData[weekKey].sandwiches += calculateTotalSandwiches(collection);
+                          weeklyData[weekKey].collections += 1;
+                        });
+
+                        return Object.entries(weeklyData)
+                          .map(([week, data]) => ({
+                            week: new Date(week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                            sandwiches: data.sandwiches,
+                            collections: data.collections,
+                            weekStart: week,
+                          }))
+                          .sort((a, b) => new Date(a.weekStart).getTime() - new Date(b.weekStart).getTime());
+                      })()}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                      <XAxis
+                        dataKey="week"
+                        tick={{ fontSize: 11 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        label={{ value: 'Sandwiches', angle: -90, position: 'insideLeft' }}
+                      />
+                      <Tooltip
+                        formatter={(value: number, name: string, props: any) => {
+                          if (name === 'sandwiches') return [value.toLocaleString(), 'Sandwiches'];
+                          if (name === 'collections') return [value, 'Collections'];
+                          return [value, name];
+                        }}
+                        labelFormatter={(label, payload) => {
+                          if (payload && payload[0]) {
+                            const weekStart = payload[0].payload.weekStart;
+                            const weekEnd = new Date(weekStart);
+                            weekEnd.setDate(weekEnd.getDate() + 6);
+                            return `Week of ${weekStart} - ${weekEnd.toISOString().split('T')[0]}`;
+                          }
+                          return label;
+                        }}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          border: '1px solid #ccc',
+                          borderRadius: '8px',
+                          padding: '12px',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="sandwiches" 
+                        fill="#236383" 
+                        radius={[4, 4, 0, 0]}
+                        name="Sandwiches"
+                      />
+                      {showCollections && (
+                        <Bar 
+                          dataKey="collections" 
+                          fill="#FBAD3F" 
+                          radius={[4, 4, 0, 0]}
+                          name="Collections"
+                        />
+                      )}
+                    </BarChart>
+                  </ResponsiveContainer>
+                  
+                  <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+                    <p>Showing last {weeklyRange.replace('weeks', '')} weeks of collection activity • Week starting Monday</p>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-[#236383] rounded"></div>
+                        <span>Sandwiches</span>
+                      </div>
+                      {showCollections && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-[#FBAD3F] rounded"></div>
+                          <span>Collections</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Weekly Insights */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-[#236383]">
+                        {(() => {
+                          const weeksToShow = parseInt(weeklyRange.replace('weeks', ''));
+                          const recentData = collections
+                            .filter((c: any) => {
+                              const date = parseCollectionDate(c.collectionDate);
+                              const cutoff = new Date();
+                              cutoff.setDate(cutoff.getDate() - (weeksToShow * 7));
+                              return date >= cutoff;
+                            });
+                          const total = recentData.reduce((sum: number, c: any) => sum + calculateTotalSandwiches(c), 0);
+                          return Math.round(total / weeksToShow).toLocaleString();
+                        })()}
+                      </div>
+                      <p className="text-sm text-gray-600">Avg per week ({weeklyRange.replace('weeks', '')} weeks)</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-[#FBAD3F]">
+                        {(() => {
+                          const weeksToShow = parseInt(weeklyRange.replace('weeks', ''));
+                          const weeklyData: Record<string, number> = {};
+                          const cutoff = new Date();
+                          cutoff.setDate(cutoff.getDate() - (weeksToShow * 7));
+                          
+                          collections.forEach((c: any) => {
+                            const date = parseCollectionDate(c.collectionDate);
+                            if (date >= cutoff) {
+                              const monday = new Date(date);
+                              const day = monday.getDay();
+                              const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
+                              monday.setDate(diff);
+                              const weekKey = monday.toISOString().split('T')[0];
+                              weeklyData[weekKey] = (weeklyData[weekKey] || 0) + calculateTotalSandwiches(c);
+                            }
+                          });
+                          
+                          const values = Object.values(weeklyData);
+                          return values.length > 0 ? Math.max(...values).toLocaleString() : '0';
+                        })()}
+                      </div>
+                      <p className="text-sm text-gray-600">Peak week ({weeklyRange.replace('weeks', '')} weeks)</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {(() => {
+                          const weeksToShow = parseInt(weeklyRange.replace('weeks', ''));
+                          const recentData = collections
+                            .filter((c: any) => {
+                              const date = parseCollectionDate(c.collectionDate);
+                              const cutoff = new Date();
+                              cutoff.setDate(cutoff.getDate() - (weeksToShow * 7));
+                              return date >= cutoff;
+                            });
+                          return recentData.length;
+                        })()}
+                      </div>
+                      <p className="text-sm text-gray-600">Total collections ({weeklyRange.replace('weeks', '')} weeks)</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
 
           {/* Trends Tab */}
           <TabsContent value="trends">
