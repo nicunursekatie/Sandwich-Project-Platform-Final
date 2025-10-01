@@ -9,7 +9,7 @@ export interface GoogleSheetsConfig {
 }
 
 export interface SheetRow {
-  task: string;
+  project: string;
   reviewStatus: string; // P1, P2, P3, etc. (Column B)
   priority: string;
   owner: string;
@@ -371,7 +371,7 @@ export class GoogleSheetsService {
       // Skip header row and parse data - accounting for NEW sheet structure with Category
       const dataRows = rows.slice(1);
       return dataRows.map((row: any[], index: number) => ({
-        task: row[0] || '', // Column A: Task
+        project: row[0] || '', // Column A: Project
         reviewStatus: row[1] || '', // Column B: Review Status (P1, P2, etc.)
         priority: row[2] || '', // Column C: Priority
         owner: row[3] || '', // Column D: Owner
@@ -402,8 +402,8 @@ export class GoogleSheetsService {
       const existingRows = await this.readSheet();
       const existingRowMap = new Map();
       existingRows.forEach((row) => {
-        if (row.task && row.rowIndex) {
-          existingRowMap.set(row.task.toLowerCase().trim(), row.rowIndex);
+        if (row.project && row.rowIndex) {
+          existingRowMap.set(row.project.toLowerCase().trim(), row.rowIndex);
         }
       });
 
@@ -412,7 +412,7 @@ export class GoogleSheetsService {
 
       for (const row of rows) {
         const rowData = [
-          row.task, // Column A - Task/Project Title
+          row.project, // Column A - Project Title
           row.reviewStatus, // Column B - Review Status (P1, P2, P3)
           row.priority, // Column C - Priority
           row.owner, // Column D - Owner
@@ -428,11 +428,11 @@ export class GoogleSheetsService {
           row.lastDiscussedDate, // Column N - Last Discussed Date (shifted from M)
         ];
 
-        // Column mapping: A=task, B=reviewStatus, C=priority, D=owner, E=supportPeople, F=status
+        // Column mapping: A=project, B=reviewStatus, C=priority, D=owner, E=supportPeople, F=status
 
         // Check if this project already exists in the sheet
         const existingRowIndex = existingRowMap.get(
-          row.task.toLowerCase().trim()
+          row.project.toLowerCase().trim()
         );
 
         if (existingRowIndex) {
@@ -442,12 +442,12 @@ export class GoogleSheetsService {
             values: [rowData],
           });
           console.log(
-            `🔄 Updating existing row ${existingRowIndex} for: "${row.task}"`
+            `🔄 Updating existing row ${existingRowIndex} for: "${row.project}"`
           );
         } else {
           // New row to append
           newRows.push(rowData);
-          console.log(`➕ Adding new row for: "${row.task}"`);
+          console.log(`➕ Adding new row for: "${row.project}"`);
         }
       }
 

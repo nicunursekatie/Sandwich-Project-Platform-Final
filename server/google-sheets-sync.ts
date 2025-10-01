@@ -103,14 +103,14 @@ export class GoogleSheetsSyncService {
       let createdCount = 0;
 
       for (const row of sheetRows) {
-        if (!row.task) continue; // Skip empty rows
+        if (!row.project) continue; // Skip empty rows
 
         // Try to find existing project by title or sheet row ID
         const existingProjects = await this.storage.getAllProjects();
         const existingProject = existingProjects.find(
           (p) =>
             p.googleSheetRowId === row.rowIndex?.toString() ||
-            p.title.toLowerCase().trim() === row.task.toLowerCase().trim()
+            p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
         );
 
         const projectData = this.sheetRowToProject(row);
@@ -232,12 +232,12 @@ export class GoogleSheetsSyncService {
       
       // Process each sheet row
       for (const sheetRow of sheetRows) {
-        if (!sheetRow.task) continue; // Skip empty rows
+        if (!sheetRow.project) continue; // Skip empty rows
         
         // Find corresponding database project
         const dbProject = dbProjects.find(
           (p) => p.googleSheetRowId === sheetRow.rowIndex?.toString() ||
-                 p.title.toLowerCase().trim() === sheetRow.task.toLowerCase().trim()
+                 p.title.toLowerCase().trim() === sheetRow.project.toLowerCase().trim()
         );
 
         if (dbProject) {
@@ -323,7 +323,7 @@ export class GoogleSheetsSyncService {
           }
         } else {
           // New project from sheet - create in database
-          console.log(`➕ Creating new project from sheet: "${sheetRow.task}"`);
+          console.log(`➕ Creating new project from sheet: "${sheetRow.project}"`);
           const projectData = this.sheetRowToProject(sheetRow);
           const newProject = await this.storage.createProject({
             title: projectData.title || 'Untitled Project',
@@ -607,9 +607,9 @@ export class GoogleSheetsSyncService {
     const supportPeopleOnly = project.supportPeople || '';
 
     // Reordered to match Google Sheet columns:
-    // Task, Priority, Status, Owner, Support people, Sub-Tasks | Owners, Start date, End date, Category, Milestone, Deliverable, Notes, Last Discussed Date
+    // Project, Priority, Status, Owner, Support people, Sub-Tasks | Owners, Start date, End date, Category, Milestone, Deliverable, Notes, Last Discussed Date
     const sheetRow = {
-      task: project.title,
+      project: project.title,
       reviewStatus: this.mapReviewStatus(project.reviewInNextMeeting || false),
       priority: this.mapPriority(project.priority),
       status: this.mapStatus(project.status),
@@ -633,7 +633,7 @@ export class GoogleSheetsSyncService {
    */
   private sheetRowToProject(row: SheetRow): Partial<Project> {
     const projectData = {
-      title: row.task,
+      title: row.project,
       description: row.notes || undefined,
       status: this.mapStatusFromSheet(row.status, row.reviewStatus),
       priority: this.mapPriorityFromSheet(row.priority),
