@@ -29,7 +29,9 @@ export function ProjectTasksView({ projectId }: ProjectTasksViewProps) {
   const queryClient = useQueryClient();
   
   const { data: tasks = [], isLoading } = useQuery<ProjectTask[]>({
-    queryKey: [`/api/projects/${projectId}/tasks`],
+    queryKey: ['/api/projects', projectId, 'tasks'],
+    enabled: !!projectId,
+    staleTime: 0,
   });
 
   // Mutation for marking tasks as complete
@@ -40,7 +42,7 @@ export function ProjectTasksView({ projectId }: ProjectTasksViewProps) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/tasks`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tasks'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       toast({
         title: 'Task Completed',
