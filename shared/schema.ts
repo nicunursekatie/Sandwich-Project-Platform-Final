@@ -1840,11 +1840,13 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
       .optional(),
     speakersNeeded: z
       .union([
-        z.boolean(),
-        z.number().transform((num) => num > 0),
-        z.string().transform((str) => str === 'true' || str === '1'),
+        z.number(),
+        z.string().transform((str) => {
+          const num = parseInt(str, 10);
+          return isNaN(num) ? 0 : num;
+        }),
+        z.null(),
       ])
-      .nullable()
       .optional(),
   });
 
