@@ -422,6 +422,9 @@ export default function SandwichCollectionForm({
     borderRadius: '8px',
     border: '1px solid #e2e8f0',
     overflow: 'hidden',
+    maxWidth: '100%',
+    width: '100%',
+    boxSizing: 'border-box' as const,
   };
 
   const accentBarStyle = {
@@ -494,6 +497,9 @@ export default function SandwichCollectionForm({
   const formContainerStyle = {
     padding: '0', // Zero padding for mobile
     background: 'white',
+    maxWidth: '100%',
+    width: '100%',
+    boxSizing: 'border-box' as const,
   };
 
   const formSectionStyle = {
@@ -504,6 +510,8 @@ export default function SandwichCollectionForm({
     marginLeft: '8px', // Small side margins to prevent edge touching
     marginRight: '8px',
     border: '1px solid #e2e8f0',
+    maxWidth: 'calc(100% - 16px)', // Account for left and right margins
+    boxSizing: 'border-box' as const,
   };
 
   const sectionTitleStyle = {
@@ -561,12 +569,13 @@ export default function SandwichCollectionForm({
 
   const individualInputStyle = {
     ...inputStyle,
-    width: '120px', // Wider for mobile
+    width: '100px', // Reduced for better mobile fit
     fontWeight: '600',
     color: '#236383',
     fontSize: '22px', // Larger for mobile
     textAlign: 'center' as const,
-    minWidth: '120px',
+    minWidth: '100px',
+    flexShrink: 0,
   };
 
   const selectStyle = {
@@ -790,6 +799,9 @@ export default function SandwichCollectionForm({
     display: 'inline-flex',
     alignItems: 'center',
     gap: '4px',
+    flexShrink: 1,
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden' as const,
   };
   // Event handlers
   const handleInputFocus = (
@@ -900,8 +912,10 @@ export default function SandwichCollectionForm({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
+                gap: '8px',
                 justifyContent: 'center',
+                maxWidth: '100%',
+                overflow: 'hidden',
               }}
             >
               <input
