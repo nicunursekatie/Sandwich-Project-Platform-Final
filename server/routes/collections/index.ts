@@ -398,7 +398,15 @@ collectionsRouter.delete('/bulk', async (req, res) => {
 // DELETE individual collection
 collectionsRouter.delete(
   '/:id',
-  requirePermission('COLLECTIONS_DELETE'),
+  requireOwnershipPermission(
+    'COLLECTIONS_DELETE_OWN',
+    'COLLECTIONS_DELETE_ALL',
+    async (req) => {
+      const id = parseInt(req.params.id);
+      const collection = await storage.getSandwichCollectionById(id);
+      return collection?.createdBy || collection?.userId || null;
+    }
+  ),
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
