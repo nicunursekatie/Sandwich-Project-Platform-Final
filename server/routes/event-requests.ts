@@ -1074,6 +1074,15 @@ router.patch(
       console.log('📅 Processing pickup time fields for event-details update');
       const processedUpdates = processPickupTimeFields(updates, originalEvent);
 
+      // Automatically assign the current user as TSP contact if toolkit is being marked as sent
+      if ((processedUpdates.toolkitSent === true || processedUpdates.toolkitStatus === 'sent') &&
+          !originalEvent.tspContact &&
+          req.user?.id) {
+        processedUpdates.tspContact = req.user.id;
+        processedUpdates.tspContactAssignedDate = new Date();
+        console.log('Auto-assigning TSP contact (event-details):', req.user.id, '(', req.user.email, ')');
+      }
+
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
@@ -1262,6 +1271,15 @@ router.patch(
         console.log(
           `🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`
         );
+      }
+
+      // Automatically assign the current user as TSP contact if toolkit is being marked as sent
+      if ((processedUpdates.toolkitSent === true || processedUpdates.toolkitStatus === 'sent') &&
+          !originalEvent.tspContact &&
+          req.user?.id) {
+        processedUpdates.tspContact = req.user.id;
+        processedUpdates.tspContactAssignedDate = new Date();
+        console.log('Auto-assigning TSP contact (general PATCH):', req.user.id, '(', req.user.email, ')');
       }
 
       // Always update the updatedAt timestamp
@@ -2343,7 +2361,7 @@ router.patch(
       // Parse the toolkit sent date
       const sentDate = toolkitSentDate ? new Date(toolkitSentDate) : new Date();
 
-      const updates = {
+      const updates: any = {
         toolkitSent: true,
         toolkitSentDate: sentDate,
         toolkitStatus: 'sent',
@@ -2351,6 +2369,13 @@ router.patch(
         status: 'in_process', // Move to in_process when toolkit is sent
         updatedAt: new Date(),
       };
+
+      // Automatically assign the current user as TSP contact if not already assigned
+      if (!originalEvent.tspContact && req.user?.id) {
+        updates.tspContact = req.user.id;
+        updates.tspContactAssignedDate = new Date();
+        console.log('Auto-assigning TSP contact:', req.user.id, '(', req.user.email, ')');
+      }
 
       const updatedEventRequest = await storage.updateEventRequest(id, updates);
 
