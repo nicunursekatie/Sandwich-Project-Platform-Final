@@ -491,6 +491,11 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
 
+  // Extract deliveryDestination as string to avoid 'unknown' type error
+  const deliveryDestination = request.deliveryDestination
+    ? String(request.deliveryDestination)
+    : null;
+
   return (
     <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-gradient-to-br from-[#e6f7f5] via-[#007E8C]/10 to-[#007E8C]/20 border border-[#007E8C]/30">
       <CardContent className="p-6">
@@ -520,18 +525,18 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             </div>
 
             {/* Delivery Destination */}
-            {request.deliveryDestination && (
+            {typeof deliveryDestination === 'string' && deliveryDestination.trim() !== '' ? (
               <div className="bg-blue-50 rounded-lg p-3 mt-2">
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-blue-600" />
                   <span className="font-medium">Delivery Destination:</span>
-                  <span>{request.deliveryDestination as string}</span>
+                  <span>{deliveryDestination}</span>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Sandwich Info */}
-            {(request.actualSandwichCount || request.estimatedSandwichCount || request.sandwichTypes) && (
+            {(request.actualSandwichCount || request.estimatedSandwichCount || request.sandwichTypes) ? (
               <div className="bg-teal-50 rounded-lg p-3">
                 <div className="flex items-center gap-2 text-sm">
                   <Package className="w-4 h-4 text-teal-600" />
@@ -543,7 +548,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   </span>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Follow-up Status */}
             <div className="flex gap-2">
