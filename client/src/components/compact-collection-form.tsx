@@ -255,72 +255,100 @@ export default function CompactCollectionForm({
                 </TooltipContent>
               </Tooltip>
             </div>
-            <div className="flex gap-2 items-center">
-              <Input
-                type="number"
-                value={individualCount}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value) || 0;
-                  setIndividualCount(value);
-                }}
-                className="h-12 md:h-10 text-lg md:text-base flex-1"
-                placeholder="0"
-              />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-10 md:h-8 px-3 md:px-2"
-                  >
-                    <Calculator className="h-4 w-4 md:h-3 md:w-3" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Need help counting? Use this calculator</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <p className="text-base md:text-sm text-gray-600 mt-1">
-              Don't include group totals
-            </p>
+            {!showIndividualBreakdown ? (
+              // Simple total count input when not using breakdown
+              <>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    value={individualCount}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setIndividualCount(value);
+                    }}
+                    className="h-12 md:h-10 text-lg md:text-base flex-1"
+                    placeholder="0"
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-10 md:h-8 px-3 md:px-2"
+                        onClick={() => window.open('https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html', '_blank')}
+                      >
+                        <Calculator className="h-4 w-4 md:h-3 md:w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Need help counting? Use this calculator</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className="text-base md:text-sm text-gray-600 mt-1">
+                  Don't include group totals
+                </p>
+              </>
+            ) : (
+              // Breakdown inputs when specifying sandwich types
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Deli</label>
+                  <Input
+                    type="number"
+                    value={individualDeli || ''}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setIndividualDeli(value);
+                      // Auto-calculate total
+                      setIndividualCount(value + individualPbj);
+                    }}
+                    className="h-12 md:h-10 text-lg md:text-base"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">PBJ</label>
+                  <Input
+                    type="number"
+                    value={individualPbj || ''}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setIndividualPbj(value);
+                      // Auto-calculate total
+                      setIndividualCount(individualDeli + value);
+                    }}
+                    className="h-12 md:h-10 text-lg md:text-base"
+                    placeholder="0"
+                  />
+                </div>
+                {(individualDeli > 0 || individualPbj > 0) && (
+                  <div className="col-span-2 text-center text-sm text-gray-600 bg-gray-100 rounded p-2">
+                    Total: <span className="font-bold text-brand-orange">{individualDeli + individualPbj}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* Optional sandwich type breakdown */}
+            {/* Toggle for sandwich type breakdown */}
             <div className="mt-3">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowIndividualBreakdown(!showIndividualBreakdown)}
+                onClick={() => {
+                  setShowIndividualBreakdown(!showIndividualBreakdown);
+                  // Reset breakdown when hiding
+                  if (showIndividualBreakdown) {
+                    setIndividualDeli(0);
+                    setIndividualPbj(0);
+                  }
+                }}
                 className="text-brand-primary text-sm"
               >
-                {showIndividualBreakdown ? '- Hide' : '+ Specify'} sandwich types (optional)
+                {showIndividualBreakdown ? '- Use total count instead' : '+ Specify sandwich types (Deli/PBJ)'}
               </Button>
-
-              {showIndividualBreakdown && (
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <div>
-                    <label className="text-xs text-gray-600">Deli</label>
-                    <Input
-                      type="number"
-                      value={individualDeli || ''}
-                      onChange={(e) => setIndividualDeli(parseInt(e.target.value) || 0)}
-                      className="h-10 text-base"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-600">PBJ</label>
-                    <Input
-                      type="number"
-                      value={individualPbj || ''}
-                      onChange={(e) => setIndividualPbj(parseInt(e.target.value) || 0)}
-                      className="h-10 text-base"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -353,53 +381,80 @@ export default function CompactCollectionForm({
                 onChange={(e) => setNewGroupName(e.target.value)}
                 className="h-12 md:h-10 text-lg md:text-base"
               />
-              <Input
-                type="number"
-                placeholder="Enter count (e.g. 25)"
-                value={newGroupCount || ''}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value) || 0;
-                  setNewGroupCount(value);
-                }}
-                className="h-12 md:h-10 text-lg md:text-base"
-              />
 
-              {/* Optional sandwich type breakdown for groups */}
-              <div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowGroupBreakdown(!showGroupBreakdown)}
-                  className="text-brand-primary text-xs"
-                >
-                  {showGroupBreakdown ? '- Hide' : '+ Specify'} sandwich types (optional)
-                </Button>
-
-                {showGroupBreakdown && (
-                  <div className="grid grid-cols-2 gap-2 mt-1">
+              {!showGroupBreakdown ? (
+                // Simple total count input when not using breakdown
+                <Input
+                  type="number"
+                  placeholder="Enter count (e.g. 25)"
+                  value={newGroupCount || ''}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 0;
+                    setNewGroupCount(value);
+                  }}
+                  className="h-12 md:h-10 text-lg md:text-base"
+                />
+              ) : (
+                // Breakdown inputs when specifying sandwich types
+                <>
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs text-gray-600">Deli</label>
+                      <label className="text-xs font-medium text-gray-700">Deli</label>
                       <Input
                         type="number"
                         value={newGroupDeli || ''}
-                        onChange={(e) => setNewGroupDeli(parseInt(e.target.value) || 0)}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          setNewGroupDeli(value);
+                          // Auto-calculate total
+                          setNewGroupCount(value + newGroupPbj);
+                        }}
                         className="h-10 text-base"
                         placeholder="0"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600">PBJ</label>
+                      <label className="text-xs font-medium text-gray-700">PBJ</label>
                       <Input
                         type="number"
                         value={newGroupPbj || ''}
-                        onChange={(e) => setNewGroupPbj(parseInt(e.target.value) || 0)}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          setNewGroupPbj(value);
+                          // Auto-calculate total
+                          setNewGroupCount(newGroupDeli + value);
+                        }}
                         className="h-10 text-base"
                         placeholder="0"
                       />
                     </div>
                   </div>
-                )}
+                  {(newGroupDeli > 0 || newGroupPbj > 0) && (
+                    <div className="text-center text-xs text-gray-600 bg-gray-100 rounded p-2">
+                      Total: <span className="font-bold text-brand-orange">{newGroupDeli + newGroupPbj}</span>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Toggle for sandwich type breakdown for groups */}
+              <div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowGroupBreakdown(!showGroupBreakdown);
+                    // Reset breakdown when hiding
+                    if (showGroupBreakdown) {
+                      setNewGroupDeli(0);
+                      setNewGroupPbj(0);
+                    }
+                  }}
+                  className="text-brand-primary text-xs"
+                >
+                  {showGroupBreakdown ? '- Use total count instead' : '+ Specify sandwich types (Deli/PBJ)'}
+                </Button>
               </div>
 
               <div className="flex gap-2">
