@@ -178,8 +178,8 @@ export default function CompactCollectionForm({
 
         {/* Compact form sections */}
         <div className="p-3 space-y-3">
-          {/* Date and Location in same row */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* Date and Location - stacked on mobile, side-by-side on larger screens */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
             <div>
               <div className="flex items-center gap-1 mb-1">
                 <label className="text-base md:text-sm font-medium text-brand-primary">
