@@ -28,10 +28,16 @@ export const getStatusBadgeProps = (status: string) => {
         className: 'text-black border-2',
         style: { backgroundColor: '#FBAD3F', borderColor: '#FBAD3F' },
       };
+    case 'waiting':
     case 'pending':
       return {
         variant: 'secondary' as const,
         className: 'bg-gray-100 text-gray-800 border-gray-200',
+      };
+    case 'tabled':
+      return {
+        variant: 'outline' as const,
+        className: 'bg-purple-50 text-purple-700 border-purple-200',
       };
     case 'on_hold':
       return {
