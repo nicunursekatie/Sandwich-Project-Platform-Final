@@ -362,29 +362,30 @@ export class GoogleSheetsService {
 
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.worksheetName}!A:N`, // A through N columns (includes Category and Last Discussed Date)
+        range: `${this.config.worksheetName}!A:M`, // A through M columns
       });
 
       const rows = response.data.values || [];
       if (rows.length === 0) return [];
 
-      // Skip header row and parse data - accounting for NEW sheet structure with Category
+      // Skip header row and parse data
+      // Headers: project, priority, status, owner, support people, sub-tasks | owners, start date, end date, category, milestone, deliverable, notes, last discussed date
       const dataRows = rows.slice(1);
       return dataRows.map((row: any[], index: number) => ({
         project: row[0] || '', // Column A: Project
-        reviewStatus: row[1] || '', // Column B: Review Status (P1, P2, etc.)
-        priority: row[2] || '', // Column C: Priority
+        priority: row[1] || '', // Column B: Priority
+        status: row[2] || '', // Column C: Status
         owner: row[3] || '', // Column D: Owner
         supportPeople: row[4] || '', // Column E: Support people
-        status: row[5] || '', // Column F: Status (actual project status)
-        startDate: row[6] || '', // Column G: Start
+        subTasksOwners: row[5] || '', // Column F: Sub-Tasks | Owners
+        startDate: row[6] || '', // Column G: Start date
         endDate: row[7] || '', // Column H: End date
-        category: row[8] || '', // Column I: Category (NEW - added after end date)
-        milestone: row[9] || '', // Column J: Milestone (shifted from I)
-        subTasksOwners: row[10] || '', // Column K: Sub-Tasks | Owners (shifted from J)
-        deliverable: row[11] || '', // Column L: Deliverable (shifted from K)
-        notes: row[12] || '', // Column M: Notes (shifted from L)
-        lastDiscussedDate: row[13] || '', // Column N: Last Discussed Date (shifted from M)
+        category: row[8] || '', // Column I: Category
+        milestone: row[9] || '', // Column J: Milestone
+        deliverable: row[10] || '', // Column K: Deliverable
+        notes: row[11] || '', // Column L: Notes
+        lastDiscussedDate: row[12] || '', // Column M: Last Discussed Date
+        reviewStatus: '', // No longer in sheet
         rowIndex: index + 2, // +2 because sheets are 1-indexed and we skip header
       }));
     } catch (error) {
@@ -412,23 +413,22 @@ export class GoogleSheetsService {
 
       for (const row of rows) {
         const rowData = [
-          row.project, // Column A - Project Title
-          row.reviewStatus, // Column B - Review Status (P1, P2, P3)
-          row.priority, // Column C - Priority
+          row.project, // Column A - Project
+          row.priority, // Column B - Priority
+          row.status, // Column C - Status
           row.owner, // Column D - Owner
           row.supportPeople, // Column E - Support People
-          row.status, // Column F - Status (In progress, Completed, etc.)
+          row.subTasksOwners, // Column F - Sub-Tasks | Owners
           row.startDate, // Column G - Start Date
           row.endDate, // Column H - End Date
-          row.category, // Column I - Category (NEW - added after end date)
-          row.milestone, // Column J - Milestone (shifted from I)
-          row.subTasksOwners, // Column K - Sub-Tasks | Owners (shifted from J)
-          row.deliverable, // Column L - Deliverable (shifted from K)
-          row.notes, // Column M - Notes (shifted from L)
-          row.lastDiscussedDate, // Column N - Last Discussed Date (shifted from M)
+          row.category, // Column I - Category
+          row.milestone, // Column J - Milestone
+          row.deliverable, // Column K - Deliverable
+          row.notes, // Column L - Notes
+          row.lastDiscussedDate, // Column M - Last Discussed Date
         ];
 
-        // Column mapping: A=project, B=reviewStatus, C=priority, D=owner, E=supportPeople, F=status
+        // Column mapping: A=project, B=priority, C=status, D=owner, E=supportPeople, F=subTasksOwners, G=startDate, H=endDate, I=category, J=milestone, K=deliverable, L=notes, M=lastDiscussedDate
 
         // Check if this project already exists in the sheet
         const existingRowIndex = existingRowMap.get(
@@ -438,7 +438,7 @@ export class GoogleSheetsService {
         if (existingRowIndex) {
           // Update existing row - FORCE full row update to fix column mapping
           updates.push({
-            range: `${this.config.worksheetName}!A${existingRowIndex}:N${existingRowIndex}`,
+            range: `${this.config.worksheetName}!A${existingRowIndex}:M${existingRowIndex}`,
             values: [rowData],
           });
           console.log(
