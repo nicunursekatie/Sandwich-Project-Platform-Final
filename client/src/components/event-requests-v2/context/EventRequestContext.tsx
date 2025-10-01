@@ -279,8 +279,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const isUserAssignedToEvent = React.useCallback((request: EventRequest): boolean => {
     if (!user?.id) return false;
 
-    // Check TSP Contact assignment
-    if (request.tspContactUserId === user.id) {
+    // Check TSP Contact assignment (check all possible column names)
+    if (request.tspContactUserId === user.id || request.tspContactAssigned === user.id || request.tspContact === user.id) {
       return true;
     }
 
