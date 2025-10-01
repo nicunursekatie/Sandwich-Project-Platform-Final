@@ -565,6 +565,12 @@ router.get(
   requirePermission('EVENT_REQUESTS_VIEW'),
   async (req, res) => {
     try {
+      res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
       await logActivity(
         req,
         res,
