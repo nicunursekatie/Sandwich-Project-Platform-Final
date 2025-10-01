@@ -569,26 +569,25 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {/* Header with Organization and Status */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
-            <div
-              className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'} mb-4`}
+            <h3
+              className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-[#236383] flex items-center gap-2 mb-3`}
             >
-              <h3
-                className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-[#236383] flex items-center gap-2`}
-              >
-                {request.organizationName}
-                {request.department && (
-                  <span className="text-lg font-normal text-[#646464]">
-                    &bull; {request.department}
-                  </span>
-                )}
-              </h3>
-              <Badge className="bg-[#FBAD3F] text-white px-3 py-1 text-sm font-medium shadow-sm">
+              {request.organizationName}
+              {request.department && (
+                <span className="text-lg font-normal text-[#646464]">
+                  &bull; {request.department}
+                </span>
+              )}
+            </h3>
+            
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <Badge className="bg-[#FBAD3F] text-white px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center">
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {getStatusLabel(request.status)}
               </Badge>
 
               {/* Sandwich Count Badge */}
-              <Badge className="bg-[#FBAD3F] text-white px-2 py-1 text-xs shadow-sm">
+              <Badge className="bg-[#FBAD3F] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
                 <Package className="w-3 h-3 mr-1" />
                 {formatSandwichTypesDisplay(
                   request.sandwichTypes,
@@ -597,34 +596,32 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </Badge>
 
               {staffingComplete ? (
-                <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm">
+                <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
                   <Check className="w-3 h-3 mr-1" />
                   Fully Staffed
                 </Badge>
               ) : (
-                <div
-                  className={`${isMobile ? 'flex flex-wrap gap-1' : 'flex gap-1'}`}
-                >
+                <>
                   {driverNeeded > driverAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
                       {driverNeeded - driverAssigned} driver
                       {driverNeeded - driverAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {speakerNeeded > speakerAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
                       {speakerNeeded - speakerAssigned} speaker
                       {speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {volunteerNeeded > volunteerAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm">
+                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
                       {volunteerNeeded - volunteerAssigned} volunteer
                       {volunteerNeeded - volunteerAssigned > 1 ? 's' : ''}{' '}
                       needed
                     </Badge>
                   )}
-                </div>
+                </>
               )}
             </div>
 
