@@ -1726,7 +1726,13 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     eventStartTime: z.string().nullable().optional(),
     eventEndTime: z.string().nullable().optional(),
     pickupTime: z.string().nullable().optional(),
-    pickupDateTime: z.string().datetime().nullable().optional(),
+    pickupDateTime: z
+      .union([
+        z.date(),
+        z.string().transform((str) => (str ? new Date(str) : null)),
+        z.null(),
+      ])
+      .optional(),
     customTspContact: z.string().nullable().optional(),
     additionalContact1: z.string().nullable().optional(),
     additionalContact2: z.string().nullable().optional(),
