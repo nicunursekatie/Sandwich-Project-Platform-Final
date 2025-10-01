@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 import { EventEmailComposer } from '@/components/event-email-composer';
+import { ScheduledEventEmailComposer } from '@/components/ScheduledEventEmailComposer';
 import RequestCard from '@/components/event-requests/RequestCard';
 import {
   Collapsible,
@@ -543,6 +544,10 @@ export default function EventRequestsManagement({
   const [showContactOrganizerDialog, setShowContactOrganizerDialog] = useState(false);
   const [contactEventRequest, setContactEventRequest] = useState<EventRequest | null>(null);
 
+  // Send email dialog states (for scheduled events)
+  const [showSendEmailDialog, setShowSendEmailDialog] = useState(false);
+  const [sendEmailEventRequest, setSendEmailEventRequest] = useState<EventRequest | null>(null);
+
   // 1. Add state for inline editing of completed event fields:
   const [editingCompletedId, setEditingCompletedId] = useState<number | null>(
     null
@@ -951,6 +956,10 @@ export default function EventRequestsManagement({
             onContact={(request) => {
               setContactEventRequest(request);
               setShowContactOrganizerDialog(true);
+            }}
+            onSendEmail={(request) => {
+              setSendEmailEventRequest(request);
+              setShowSendEmailDialog(true);
             }}
             onStatusChange={handleStatusChange}
             startEditing={startEditing}
@@ -2574,6 +2583,21 @@ export default function EventRequestsManagement({
           }}
           eventRequest={contactEventRequest}
         />
+
+        {/* Send Email Dialog for Scheduled Events */}
+        {sendEmailEventRequest && (
+          <ScheduledEventEmailComposer
+            isOpen={showSendEmailDialog}
+            onClose={() => {
+              setShowSendEmailDialog(false);
+              setSendEmailEventRequest(null);
+            }}
+            eventRequest={sendEmailEventRequest}
+            onEmailSent={() => {
+              queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+            }}
+          />
+        )}
 
       </div>
     </TooltipProvider>

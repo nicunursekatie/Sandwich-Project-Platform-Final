@@ -84,6 +84,7 @@ interface RequestCardProps {
   onFollowUp1Month: (request: EventRequest) => void;
   onReschedule: (id: number) => void;
   onContact: (request: EventRequest) => void;
+  onSendEmail: (request: EventRequest) => void;
   onStatusChange: (id: number, status: string) => void;
   
   // Editing functions
@@ -135,6 +136,7 @@ export default function RequestCard({
   onFollowUp1Month,
   onReschedule,
   onContact,
+  onSendEmail,
   onStatusChange,
   startEditing,
   saveEdit,
@@ -1859,6 +1861,22 @@ export default function RequestCard({
               {/* Action Buttons for Scheduled Status */}
               {request.status === 'scheduled' && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
                 <div className={`mt-4 ${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-[#007E8C]/20`}>
+                  {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSendEmail(request);
+                      }}
+                      className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB] hover:text-white"
+                      data-testid={`button-send-email-${request.id}`}
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Email
+                    </Button>
+                  )}
+                  
                   <Button
                     size="sm"
                     variant="outline"

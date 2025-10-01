@@ -3144,4 +3144,115 @@ router.patch('/:id/recipients', isAuthenticated, async (req, res) => {
   }
 });
 
+// Send email to event organizer with toolkit documents
+router.post('/:id/send-email', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+    const { recipientEmail, subject, content, attachments = [] } = req.body;
+
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+
+    // Check permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT)) {
+      return res.status(403).json({ error: 'Insufficient permissions to send emails' });
+    }
+
+    // Validate required fields
+    if (!recipientEmail || !subject || !content) {
+      return res.status(400).json({ error: 'Recipient email, subject, and content are required' });
+    }
+
+    // Get event details
+    const eventRequest = await storage.getEventRequestById(eventId);
+    if (!eventRequest) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Import SendGrid service and email footer
+    const { sendEmail } = await import('../sendgrid');
+    const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
+
+    // Build email body with attachments as links
+    let emailBodyText = content;
+    let emailBodyHtml = content.replace(/\n/g, '<br>');
+
+    if (attachments.length > 0) {
+      emailBodyText += '\n\n---\n\nAttached Documents:\n';
+      emailBodyHtml += '<br><br><hr style="margin: 20px 0;"><br><strong>Attached Documents:</strong><br><ul style="margin: 10px 0;">';
+      
+      attachments.forEach((filePath: string) => {
+        const fileName = filePath.split('/').pop() || filePath;
+        const documentUrl = `${req.protocol}://${req.get('host')}${filePath}`;
+        emailBodyText += `\n• ${fileName}: ${documentUrl}`;
+        emailBodyHtml += `<li><a href="${documentUrl}" style="color: #236383;">${fileName}</a></li>`;
+      });
+      
+      emailBodyHtml += '</ul>';
+    }
+
+    // Add compliance footer
+    emailBodyText += EMAIL_FOOTER_TEXT;
+    emailBodyHtml += EMAIL_FOOTER_HTML;
+
+    // Determine from and reply-to addresses
+    const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'katielong2316@gmail.com';
+    const replyToEmail = req.user?.preferredEmail || req.user?.email || fromEmail;
+
+    console.log('📧 Sending email to event organizer:', {
+      eventId,
+      recipientEmail,
+      subject,
+      fromEmail,
+      replyToEmail,
+      attachmentsCount: attachments.length,
+    });
+
+    // Send email via SendGrid
+    const emailSent = await sendEmail({
+      to: recipientEmail,
+      from: fromEmail,
+      replyTo: replyToEmail,
+      subject,
+      text: emailBodyText,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="margin-bottom: 20px;">
+            ${emailBodyHtml}
+          </div>
+        </div>
+      `,
+    });
+
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Failed to send email via SendGrid' });
+    }
+
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_SEND_TOOLKIT',
+      `Sent email to event organizer for event request: ${eventId}`,
+      { 
+        recipientEmail, 
+        subject, 
+        attachmentsCount: attachments.length 
+      }
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Email sent successfully' 
+    });
+  } catch (error: any) {
+    console.error('❌ Error sending email:', error);
+    res.status(500).json({ 
+      error: 'Failed to send email', 
+      message: error?.message || 'Unknown error occurred' 
+    });
+  }
+});
+
 export default router;
