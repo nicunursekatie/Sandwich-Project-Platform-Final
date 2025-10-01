@@ -25,13 +25,13 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
   const getAvailabilityColor = () => {
     switch (driver.availability) {
       case "available":
-        return "bg-green-100 text-green-800""
+        return "bg-green-100 text-green-800"
       case "busy":
         return "bg-yellow-100 text-yellow-800"
       case "off-duty":
         return "bg-gray-100 text-gray-800"
       default:
-        return "bg-gray-100 text-gray-800
+        return "bg-gray-100 text-gray-800"
     }
   };
 
@@ -68,14 +68,14 @@ export function DriverCard({ driver, onEdit, onDelete }: DriverCardProps) {
       </CardHeader>
       
       <CardContent className="pt-0 space-y-3">
-        <div className="flex items-center gap-2 text-sm text-gray-600"
+        <div className="flex items-center gap-2 text-sm text-gray-600">
           <Phone className="h-4 w-4" />
           <a href={`tel:${driver.phone}`} className="hover:text-brand-primary">
             {driver.phone}
           </a>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-gray-600"
+        <div className="flex items-center gap-2 text-sm text-gray-600">
           <Mail className="h-4 w-4" />
           <a href={`mailto:${driver.email}`} className="hover:text-brand-primary truncate">
             {driver.email}

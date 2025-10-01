@@ -457,7 +457,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           'Volunteers',
           request.volunteersNeeded,
           request.assignedVolunteerIds,
-          request.volunteerDetails
+          undefined
         )}
       </div>
 
