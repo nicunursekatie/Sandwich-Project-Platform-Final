@@ -90,9 +90,18 @@ export const useEventMutations = () => {
   });
 
   const createEventRequestMutation = useMutation({
-    mutationFn: (data: any) =>
-      apiRequest('POST', '/api/event-requests', data),
-    onSuccess: async () => {
+    mutationFn: async (data: any) => {
+      console.log('=== CREATE EVENT MUTATION STARTED ===');
+      console.log('Data being sent:', JSON.stringify(data, null, 2));
+      const result = await apiRequest('POST', '/api/event-requests', data);
+      console.log('=== CREATE EVENT API RESPONSE ===');
+      console.log('Response:', result);
+      return result;
+    },
+    onSuccess: async (data) => {
+      console.log('=== CREATE EVENT SUCCESS HANDLER ===');
+      console.log('Created event:', data);
+      
       toast({
         title: 'Event request created',
         description: 'The new event request has been successfully created.',
