@@ -35,11 +35,20 @@ export default function CompactCollectionForm({
   const [location, setLocation] = useState('');
   const [individualCount, setIndividualCount] = useState(0);
   const [groupCollections, setGroupCollections] = useState<
-    Array<{ name: string; count: number }>
+    Array<{ name: string; count: number; deli?: number; pbj?: number }>
   >([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupCount, setNewGroupCount] = useState(0);
-  const { toast } = useToast();
+
+  // Optional sandwich type breakdown
+  const [showIndividualBreakdown, setShowIndividualBreakdown] = useState(false);
+  const [individualDeli, setIndividualDeli] = useState(0);
+  const [individualPbj, setIndividualPbj] = useState(0);
+  const [showGroupBreakdown, setShowGroupBreakdown] = useState(false);
+  const [newGroupDeli, setNewGroupDeli] = useState(0);
+  const [newGroupPbj, setNewGroupPbj] = useState(0);
+
+  const { toast} = useToast();
   const queryClient = useQueryClient();
 
   const { data: allHosts = [] } = useQuery<any[]>({
@@ -70,6 +79,9 @@ export default function CompactCollectionForm({
       onSuccess?.();
       // Reset form
       setIndividualCount(0);
+      setIndividualDeli(0);
+      setIndividualPbj(0);
+      setShowIndividualBreakdown(false);
       setGroupCollections([]);
       setLocation('');
     },
@@ -92,12 +104,23 @@ export default function CompactCollectionForm({
 
   const addGroup = () => {
     if (newGroupName && newGroupCount > 0) {
-      setGroupCollections([
-        ...groupCollections,
-        { name: newGroupName, count: Number(newGroupCount) }, // Ensure it's a number
-      ]);
+      const newGroup: { name: string; count: number; deli?: number; pbj?: number } = {
+        name: newGroupName,
+        count: Number(newGroupCount),
+      };
+
+      // Only include breakdown if provided
+      if (showGroupBreakdown && (newGroupDeli > 0 || newGroupPbj > 0)) {
+        newGroup.deli = newGroupDeli;
+        newGroup.pbj = newGroupPbj;
+      }
+
+      setGroupCollections([...groupCollections, newGroup]);
       setNewGroupName('');
       setNewGroupCount(0);
+      setNewGroupDeli(0);
+      setNewGroupPbj(0);
+      setShowGroupBreakdown(false);
     }
   };
 
@@ -125,6 +148,12 @@ export default function CompactCollectionForm({
       individualSandwiches: individualCount,
       submissionMethod: 'standard', // Track that this was submitted via standard form
     };
+
+    // Include individual sandwich type breakdown if provided
+    if (showIndividualBreakdown && (individualDeli > 0 || individualPbj > 0)) {
+      submissionData.individualDeli = individualDeli;
+      submissionData.individualPbj = individualPbj;
+    }
 
     // Include ALL groups in the submission (unlimited groups)
     if (groupCollections.length > 0) {
@@ -255,6 +284,44 @@ export default function CompactCollectionForm({
             <p className="text-base md:text-sm text-gray-600 mt-1">
               Don't include group totals
             </p>
+
+            {/* Optional sandwich type breakdown */}
+            <div className="mt-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowIndividualBreakdown(!showIndividualBreakdown)}
+                className="text-brand-primary text-sm"
+              >
+                {showIndividualBreakdown ? '- Hide' : '+ Specify'} sandwich types (optional)
+              </Button>
+
+              {showIndividualBreakdown && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                    <label className="text-xs text-gray-600">Deli</label>
+                    <Input
+                      type="number"
+                      value={individualDeli || ''}
+                      onChange={(e) => setIndividualDeli(parseInt(e.target.value) || 0)}
+                      className="h-10 text-base"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600">PBJ</label>
+                    <Input
+                      type="number"
+                      value={individualPbj || ''}
+                      onChange={(e) => setIndividualPbj(parseInt(e.target.value) || 0)}
+                      className="h-10 text-base"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Group collections - redesigned with better flow */}
@@ -296,6 +363,45 @@ export default function CompactCollectionForm({
                 }}
                 className="h-12 md:h-10 text-lg md:text-base"
               />
+
+              {/* Optional sandwich type breakdown for groups */}
+              <div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowGroupBreakdown(!showGroupBreakdown)}
+                  className="text-brand-primary text-xs"
+                >
+                  {showGroupBreakdown ? '- Hide' : '+ Specify'} sandwich types (optional)
+                </Button>
+
+                {showGroupBreakdown && (
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <div>
+                      <label className="text-xs text-gray-600">Deli</label>
+                      <Input
+                        type="number"
+                        value={newGroupDeli || ''}
+                        onChange={(e) => setNewGroupDeli(parseInt(e.target.value) || 0)}
+                        className="h-10 text-base"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600">PBJ</label>
+                      <Input
+                        type="number"
+                        value={newGroupPbj || ''}
+                        onChange={(e) => setNewGroupPbj(parseInt(e.target.value) || 0)}
+                        className="h-10 text-base"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   onClick={addGroup}
@@ -357,6 +463,11 @@ export default function CompactCollectionForm({
                     <div className="text-3xl md:text-2xl font-bold text-gray-800">
                       {group.count}
                     </div>
+                    {(group.deli || group.pbj) && (
+                      <div className="text-xs text-gray-600 mt-1">
+                        {group.deli ? `Deli: ${group.deli}` : ''} {group.deli && group.pbj ? '• ' : ''} {group.pbj ? `PBJ: ${group.pbj}` : ''}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
