@@ -279,8 +279,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const isUserAssignedToEvent = React.useCallback((request: EventRequest): boolean => {
     if (!user?.id) return false;
 
-    // Check TSP Contact assignment
-    if (request.tspContactUserId === user.id) {
+    // Check TSP Contact assignment (check both tspContactAssigned and tspContact columns)
+    if (request.tspContactAssigned === user.id || request.tspContact === user.id) {
       return true;
     }
 
@@ -291,12 +291,33 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
           ? JSON.parse(request.driverDetails) 
           : request.driverDetails;
         
-        // Check various possible structures in driverDetails
-        if (driverDetails?.userId === user.id || 
-            driverDetails?.driverId === user.id ||
-            driverDetails?.assignedUserId === user.id ||
-            (Array.isArray(driverDetails) && driverDetails.some(d => d.userId === user.id || d.driverId === user.id))) {
-          return true;
+        // Driver assignments are stored as keys in the driverDetails object
+        // Example: {"351": {"name": "Gary Munder", "assignedBy": "admin_..."}}
+        // The user.id should match one of the keys (351, not the assignedBy)
+        if (driverDetails && typeof driverDetails === 'object' && !Array.isArray(driverDetails)) {
+          const driverKeys = Object.keys(driverDetails);
+          if (driverKeys.some(key => key === user.id || key === user.id.toString())) {
+            return true;
+          }
+        }
+      } catch (e) {
+        // If parsing fails, continue with other checks
+      }
+    }
+
+    // Check speaker assignment in speakerDetails JSONB field
+    if (request.speakerDetails) {
+      try {
+        const speakerDetails = typeof request.speakerDetails === 'string' 
+          ? JSON.parse(request.speakerDetails) 
+          : request.speakerDetails;
+        
+        // Speaker assignments are stored as keys in the speakerDetails object
+        if (speakerDetails && typeof speakerDetails === 'object' && !Array.isArray(speakerDetails)) {
+          const speakerKeys = Object.keys(speakerDetails);
+          if (speakerKeys.some(key => key === user.id || key === user.id.toString())) {
+            return true;
+          }
         }
       } catch (e) {
         // If parsing fails, continue with other checks

@@ -26,8 +26,8 @@ export const useEventFilters = () => {
   const isUserAssignedToEvent = (request: EventRequest): boolean => {
     if (!user?.id) return false;
 
-    // Check TSP Contact assignment
-    if (request.tspContactAssigned === user.id) {
+    // Check TSP Contact assignment (both old and new column names)
+    if (request.tspContactAssigned === user.id || request.tspContact === user.id) {
       return true;
     }
     
