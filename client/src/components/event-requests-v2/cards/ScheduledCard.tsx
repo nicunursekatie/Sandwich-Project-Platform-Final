@@ -565,15 +565,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     <Card
       className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg`}
     >
-      <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+      <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
         {/* Header with Organization and Status */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div
-              className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'} mb-4`}
+              className={`${isMobile ? 'flex flex-col space-y-1' : 'flex items-center gap-2'} mb-3`}
             >
               <h3
-                className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-[#236383] flex items-center gap-2`}
+                className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-[#236383] flex items-center gap-2`}
               >
                 {request.organizationName}
                 {request.department && (
@@ -629,9 +629,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Key Information - Prominently Displayed */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
               {/* Event Date - Most Important */}
-              <div className="bg-gradient-to-br from-[#236383] to-[#1a4d65] text-white rounded-lg p-3 shadow-md text-center">
+              <div className="bg-gradient-to-br from-[#236383] to-[#1a4d65] text-white rounded-lg p-2 shadow-md text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Calendar className="w-4 h-4" />
                   <span className="font-semibold text-xs uppercase tracking-wide">
@@ -689,7 +689,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {/* Event Address - Google Maps Link */}
               {request.eventAddress && (
-                <div className="bg-gradient-to-br from-[#47B3CB] to-[#2d9bb0] text-white rounded-lg p-3 shadow-md text-center">
+                <div className="bg-gradient-to-br from-[#47B3CB] to-[#2d9bb0] text-white rounded-lg p-2 shadow-md text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <MapPin className="w-4 h-4" />
                     <span className="font-semibold text-xs uppercase tracking-wide">
@@ -744,15 +744,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Main Content */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {/* Event Times */}
-            <div className="bg-[#007E8C] text-white rounded-lg p-4 shadow-md">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-[#007E8C] text-white rounded-lg p-3 shadow-md">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  <span className="font-semibold text-lg">Event Times</span>
+                  <span className="font-semibold text-base">Event Times</span>
                 </div>
                 {canEdit && (
                   <Dialog>
@@ -942,20 +942,20 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Sandwich Information */}
-            <div className="bg-[#FBAD3F] text-white rounded-lg p-4 shadow-md">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="bg-[#FBAD3F] text-white rounded-lg p-3 shadow-md">
+              <div className="flex items-center gap-2 mb-2">
                 <Package className="w-4 h-4" />
-                <span className="font-semibold text-lg">Sandwich Details</span>
+                <span className="font-semibold text-base">Sandwich Details</span>
               </div>
               <div className="space-y-2">{renderSandwichEdit()}</div>
             </div>
 
             {/* Delivery Logistics */}
-            <div className="bg-[#47B3CB] text-white rounded-lg p-4 shadow-md">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-[#47B3CB] text-white rounded-lg p-3 shadow-md">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
-                  <span className="font-semibold text-lg">
+                  <span className="font-semibold text-base">
                     Delivery Logistics
                   </span>
                 </div>
@@ -1092,12 +1092,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
           {/* Two-column grid for Contact Information and Team Assignments */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Contact Information */}
-            <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="w-5 h-5" />
-                <span className="font-semibold text-lg">
+            <div className="bg-[#236383] text-white rounded-lg p-3 shadow-md">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-4 h-4" />
+                <span className="font-semibold text-base">
                   Contact Information
                 </span>
               </div>
@@ -1133,9 +1133,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Team Assignments */}
-            <div className="bg-[#A31C41] text-white rounded-lg p-4 shadow-md">
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-semibold text-lg">Team Assignments</span>
+            <div className="bg-[#A31C41] text-white rounded-lg p-3 shadow-md">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-base">Team Assignments</span>
                 <span
                   className={`text-base font-bold px-2 py-1 rounded-full ${
                     staffingComplete
@@ -1147,17 +1147,17 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </span>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {/* Drivers */}
                 {driverNeeded > 0 && (
                   <div
-                    className={`rounded-lg p-3 border ${
+                    className={`rounded-lg p-2 border ${
                       driverAssigned >= driverNeeded
                         ? 'bg-white/20 border-white/30'
                         : 'bg-white/20 border-white/30'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <Car className="w-4 h-4" />
                         <span className="font-medium">Drivers</span>
@@ -1450,14 +1450,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             request.duplicateNotes ||
             request.unresponsiveNotes ||
             request.socialMediaPostNotes) && (
-            <div className="bg-[#47B3CB] text-white rounded-lg p-4 mb-4 shadow-md">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="bg-[#47B3CB] text-white rounded-lg p-3 mb-3 shadow-md">
+              <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-4 h-4" />
-                <span className="font-medium text-lg">
+                <span className="font-medium text-base">
                   Notes & Requirements
                 </span>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {request.message && (
                   <div>
                     <p className="text-sm font-medium mb-1">
@@ -1620,7 +1620,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
           {/* Action Buttons */}
           <div
-            className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-3 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
+            className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-2 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
           >
             <Button
               size="sm"

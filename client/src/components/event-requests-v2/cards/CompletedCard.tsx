@@ -490,7 +490,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   canDelete = true,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
-  
+
   return (
     <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-gradient-to-br from-[#e6f7f5] via-[#007E8C]/10 to-[#007E8C]/20 border border-[#007E8C]/30">
       <CardContent className="p-6">
@@ -525,7 +525,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-blue-600" />
                   <span className="font-medium">Delivery Destination:</span>
-                  <span>{request.deliveryDestination}</span>
+                  <span>{request.deliveryDestination as string}</span>
                 </div>
               </div>
             )}
