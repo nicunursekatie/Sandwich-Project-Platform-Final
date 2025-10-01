@@ -35,6 +35,11 @@ export async function apiRequest(
   body?: any,
   timeoutMs: number = 30000 // 30 second default timeout
 ): Promise<any> {
+  console.log(`🔵 [apiRequest] ${method} ${url}`);
+  if (body) {
+    console.log('📦 [apiRequest] Body:', JSON.stringify(body).substring(0, 200));
+  }
+  
   const isFormData = body instanceof FormData;
   
   // Create an AbortController for timeout handling
@@ -42,6 +47,7 @@ export async function apiRequest(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    console.log('🚀 [apiRequest] Sending fetch request...');
     const res = await fetch(url, {
       method,
       headers: isFormData
@@ -54,6 +60,8 @@ export async function apiRequest(
       signal: controller.signal,
     });
 
+    console.log(`✅ [apiRequest] Response received: ${res.status} ${res.statusText}`);
+    
     // Clear the timeout since the request completed
     clearTimeout(timeoutId);
     
@@ -64,6 +72,7 @@ export async function apiRequest(
     if (contentType && contentType.includes('application/json')) {
       try {
         const jsonData = await res.json();
+        console.log(`📥 [apiRequest] JSON response:`, jsonData);
         // Ensure we return a valid object, not null/undefined
         return jsonData ?? {};
       } catch (parseError) {
@@ -72,10 +81,12 @@ export async function apiRequest(
       }
     }
 
+    console.log('📭 [apiRequest] No JSON content, returning empty object');
     // For empty responses (like 204), return empty object instead of null
     // This prevents "null is not an object" errors when accessing properties
     return {};
   } catch (error: any) {
+    console.error(`❌ [apiRequest] Error:`, error);
     // Clear timeout on error
     clearTimeout(timeoutId);
     
