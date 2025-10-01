@@ -184,17 +184,18 @@ export default function RequestFilters({
       ) : (
         /* Desktop: Traditional Tabs */
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
-          <TabsList className="w-full grid grid-cols-6">
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
             {tabConfig.map((tab) => (
               <TabsTrigger 
                 key={tab.value}
                 value={tab.value} 
-                className="relative"
+                className="relative text-xs sm:text-sm"
                 data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
               >
                 <div className="flex items-center space-x-1">
                   <tab.icon className="w-3 h-3" />
-                  <span>{tab.label}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.shortLabel}</span>
                   <span className="text-xs opacity-70">({tab.count})</span>
                 </div>
                 {tab.hasNotification && (
