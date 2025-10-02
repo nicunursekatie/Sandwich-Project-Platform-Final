@@ -667,21 +667,40 @@ export default function MonthlyComparisonAnalytics() {
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-blue-200 border-l-4">
-            <div className="text-sm text-gray-600 mb-1">✓ Wed/Thu vs Off-Day Split</div>
-            <div className="text-3xl font-bold text-brand-primary mb-3">
-              {(selectedMonthAnalysis.wedThuSandwiches + selectedMonthAnalysis.otherDaysSandwiches).toLocaleString()}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="text-lg font-semibold text-gray-700">{selectedMonthAnalysis.wedThuSandwiches.toLocaleString()}</div>
-                <div className="text-xs text-gray-500 mt-1">Wed/Thu</div>
+            <div className="text-sm text-gray-600 mb-3">✓ Wed/Thu vs Off-Day Split</div>
+            
+            <div className="space-y-3">
+              {/* Wed/Thu Row */}
+              <div className="flex items-center justify-between bg-blue-50 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-gray-700">Wed/Thu</span>
+                </div>
+                <div className="text-xl font-bold text-brand-primary">
+                  {selectedMonthAnalysis.wedThuSandwiches.toLocaleString()}
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-lg font-semibold text-gray-700">{selectedMonthAnalysis.otherDaysSandwiches.toLocaleString()}</div>
-                <div className="text-xs text-gray-500 mt-1">Other days</div>
+              
+              {/* Other Days Row */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-gray-700">Other days</span>
+                </div>
+                <div className="text-xl font-bold text-brand-primary">
+                  {selectedMonthAnalysis.otherDaysSandwiches.toLocaleString()}
+                </div>
               </div>
             </div>
-            <p className="text-gray-500 mt-2 text-[12px]">Collection day distribution</p>
+            
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-gray-800">
+                  {(selectedMonthAnalysis.wedThuSandwiches + selectedMonthAnalysis.otherDaysSandwiches).toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500">Total Collection Day Distribution</div>
+              </div>
+            </div>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4">
