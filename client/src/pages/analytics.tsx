@@ -25,7 +25,10 @@ export default function AnalyticsPage() {
       <div className="flex flex-1">
         {/* Sidebar */}
         <div className="w-64 bg-white border-r border-slate-200 flex flex-col">
-          <SimpleNav onSectionChange={() => {}} />
+          <SimpleNav
+            navigationItems={[]}
+            onSectionChange={() => {}}
+          />
         </div>
 
         {/* Main Content */}

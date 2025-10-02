@@ -3,7 +3,12 @@ import multer from 'multer';
 import path from 'path';
 import { promises as fs } from 'fs';
 import type { IStorage } from '../storage';
-import { logger } from '../middleware/logger';
+import {
+  isAuthenticated,
+  getUser,
+  type AuthenticatedRequest,
+} from '../temp-auth';
+import { logger } from '../utils/logger';
 
 const documentsRouter = Router();
 

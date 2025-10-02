@@ -66,12 +66,25 @@ streamRoutes.post('/credentials', async (req, res) => {
     const streamUserId = `user_${user.id}`;
 
     try {
+      // Map user roles to valid Stream Chat roles
+      const userRole = user.role;
+      let streamRole = 'user'; // default
+      
+      // Map app roles to Stream Chat roles
+      if (userRole === 'admin' || userRole === 'admin_coordinator' || userRole === 'super_admin') {
+        streamRole = 'admin';
+      } else if (userRole === 'volunteer' || userRole === 'viewer') {
+        streamRole = 'user';
+      }
+
+      console.log(`🔧 Stream Chat role mapping: ${userRole} -> ${streamRole} for user ${user.email}`);
+
       // Create or update user in Stream
       await streamServerClient.upsertUser({
         id: streamUserId,
         name: `${user.firstName} ${user.lastName}` || user.email,
         email: user.email,
-        role: user.role || 'user',
+        role: streamRole,
       });
 
       // Also create test users for multi-user conversations
