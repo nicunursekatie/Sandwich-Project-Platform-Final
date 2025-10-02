@@ -578,6 +578,19 @@ router.get(
         'Retrieved all event requests'
       );
       const eventRequests = await storage.getAllEventRequests();
+      
+      // Debug log to verify van driver data is being returned
+      const buckheadEvent = eventRequests.find((e: any) => e.id === 62);
+      if (buckheadEvent) {
+        console.log('🔍 Buckhead Rotary event data check:', {
+          id: buckheadEvent.id,
+          organizationName: buckheadEvent.organizationName,
+          assignedVanDriverId: buckheadEvent.assignedVanDriverId,
+          assignedDriverIds: buckheadEvent.assignedDriverIds,
+          driversNeeded: buckheadEvent.driversNeeded
+        });
+      }
+      
       res.json(eventRequests);
     } catch (error) {
       console.error('Error fetching event requests:', error);
