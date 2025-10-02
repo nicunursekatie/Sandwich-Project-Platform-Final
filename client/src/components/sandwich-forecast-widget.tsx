@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -186,10 +186,10 @@ export default function SandwichForecastWidget() {
   };
 
   // Add state for current week index, starting at current/next week
-  const [currentWeekIndex, setCurrentWeekIndex] = useState(() => getCurrentWeekIndex());
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
 
-  // Update index when forecast data changes
-  useMemo(() => {
+  // Update index when forecast data changes (using useEffect instead of useMemo)
+  useEffect(() => {
     if (weeklySandwichForecast.length > 0) {
       setCurrentWeekIndex(getCurrentWeekIndex());
     }
