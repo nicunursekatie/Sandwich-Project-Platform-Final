@@ -331,20 +331,35 @@ storageRouter.get('/documents', async (req: AuthenticatedRequest, res: Response)
 
     const documents = await storage.getAllDocuments();
     
-    // Filter to only active, non-confidential documents
+    // Filter to ONLY toolkit documents (matching event-email-composer logic)
+    // Include: food safety (except for hosts), deli, pbj/pb&j, sandwich making
     // Exclude: confidential category, Food Safety Guide for Hosts
-    const activeDocuments = documents.filter(doc => 
-      doc.isActive !== false && 
-      doc.category !== 'confidential' &&
-      doc.title !== 'Food Safety Guide for Hosts'
-    );
+    const toolkitDocuments = documents.filter(doc => {
+      if (doc.isActive === false || doc.category === 'confidential') {
+        return false;
+      }
+      
+      const searchText = `${doc.title} ${doc.fileName}`.toLowerCase();
+      
+      // Exclude Food Safety Guide for Hosts specifically
+      if (doc.title === 'Food Safety Guide for Hosts') {
+        return false;
+      }
+      
+      // Only include toolkit documents
+      return searchText.includes('food safety') || 
+             searchText.includes('deli') || 
+             searchText.includes('pbj') || 
+             searchText.includes('pb&j') ||
+             searchText.includes('sandwich making');
+    });
     
     // Disable caching to ensure fresh data
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     
-    res.json(activeDocuments);
+    res.json(toolkitDocuments);
   } catch (error: any) {
     logger.error('Error fetching documents:', error);
     res.status(500).json({ error: 'Failed to fetch documents' });

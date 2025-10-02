@@ -62,7 +62,7 @@ The application uses The Sandwich Project's official color palette (Teal Primary
   4. **Null-Safe Handling**: Proper handling for speakerDetails objects and empty string checks for van driver IDs.
   5. **Applied Across All Endpoints**: Validation and auto-adjustment logic implemented in PATCH /:id, PUT /:id, and PATCH /:id/drivers endpoints.
   6. This prevents display bugs like "1/0 assigned" and ensures data consistency. One-time SQL migration executed to fix 3 existing events with mismatched assignment counts.
-- **Toolkit Attachment Filtering**: Event toolkit email composer (`/api/storage/documents` endpoint in `server/routes/storage/index.ts`) automatically excludes confidential documents (category: 'confidential') and "Food Safety Guide for Hosts" from available attachment options. This ensures sensitive internal documents and host-specific safety guides are not accidentally sent to external contacts. The filter preserves "Food Safety Guide for Volunteers" and all other public-facing training materials.
+- **Toolkit Attachment Filtering**: Event toolkit email composer (`/api/storage/documents` endpoint in `server/routes/storage/index.ts`) returns ONLY essential toolkit documents for event communications. Filter criteria matches frontend logic: includes documents containing "food safety" (except for hosts), "deli", "pbj"/"pb&j", or "sandwich making" in title/filename. Currently returns 5 documents: Food Safety Guide for Volunteers, PBJ Sandwich Making 101, Deli Sandwich Making 101, PBJ Sandwich Labels, and Deli Sandwich Labels. Excludes all confidential documents and Food Safety Guide for Hosts to prevent accidental exposure of internal materials.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
