@@ -3,8 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { promises as fs } from 'fs';
 import type { IStorage } from '../storage';
-import { isAuthenticated, getUser, type AuthenticatedRequest } from '../auth';
-import { logger } from '../logger';
+import { logger } from '../middleware/logger';
 
 const documentsRouter = Router();
 
@@ -53,11 +52,39 @@ const upload = multer({
   },
 });
 
+// Type for authenticated request
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+    permissions?: string[];
+    fullName?: string;
+  };
+  session?: {
+    user?: {
+      id: string;
+      email: string;
+      firstName?: string;
+      lastName?: string;
+      role?: string;
+      permissions?: string[];
+      fullName?: string;
+    };
+  };
+}
+
+// Helper to get user from request
+const getUser = (req: AuthenticatedRequest) => {
+  return req.user || req.session?.user;
+};
+
 export function createDocumentsRouter(storage: IStorage): Router {
   // GET all documents (filtered by user permissions)
   documentsRouter.get(
     '/',
-    isAuthenticated,
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const user = getUser(req);
@@ -77,7 +104,6 @@ export function createDocumentsRouter(storage: IStorage): Router {
   // GET single document
   documentsRouter.get(
     '/:id',
-    isAuthenticated,
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const user = getUser(req);
@@ -126,7 +152,6 @@ export function createDocumentsRouter(storage: IStorage): Router {
   // POST upload new document
   documentsRouter.post(
     '/',
-    isAuthenticated,
     upload.single('file'),
     async (req: AuthenticatedRequest, res: Response) => {
       try {
@@ -190,7 +215,6 @@ export function createDocumentsRouter(storage: IStorage): Router {
   // PUT update document
   documentsRouter.put(
     '/:id',
-    isAuthenticated,
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const user = getUser(req);
@@ -237,7 +261,6 @@ export function createDocumentsRouter(storage: IStorage): Router {
   // DELETE document
   documentsRouter.delete(
     '/:id',
-    isAuthenticated,
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const user = getUser(req);
@@ -276,7 +299,6 @@ export function createDocumentsRouter(storage: IStorage): Router {
   // GET document permissions
   documentsRouter.get(
     '/:id/permissions',
-    isAuthenticated,
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const user = getUser(req);
@@ -313,7 +335,6 @@ export function createDocumentsRouter(storage: IStorage): Router {
   // POST grant permission
   documentsRouter.post(
     '/:id/permissions',
-    isAuthenticated,
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const user = getUser(req);
@@ -366,7 +387,6 @@ export function createDocumentsRouter(storage: IStorage): Router {
   // DELETE revoke permission
   documentsRouter.delete(
     '/:id/permissions/:permissionId',
-    isAuthenticated,
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const user = getUser(req);
@@ -410,7 +430,6 @@ export function createDocumentsRouter(storage: IStorage): Router {
   // GET access logs
   documentsRouter.get(
     '/:id/access-logs',
-    isAuthenticated,
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const user = getUser(req);
