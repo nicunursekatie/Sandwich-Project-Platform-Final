@@ -11,12 +11,7 @@ import type { EventRequest } from '@shared/schema';
 
 export default function SandwichForecastWidget() {
   const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
-    queryKey: ['/api/event-requests/all'],
-    queryFn: async () => {
-      const response = await fetch('/api/event-requests?all=true');
-      if (!response.ok) throw new Error('Failed to fetch event requests');
-      return response.json();
-    },
+    queryKey: ['/api/event-requests?all=true'],
   });
 
   // Weekly sandwich prediction calculator
