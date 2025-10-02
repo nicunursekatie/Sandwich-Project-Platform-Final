@@ -144,7 +144,11 @@ export const MyAssignmentsTab: React.FC = () => {
               setSchedulingEventRequest(request);
               setShowSchedulingDialog(true);
             }}
-            onToolkit={() => {
+            onScheduleCall={() => {
+              setSelectedEventRequest(request);
+              setShowScheduleCallDialog(true);
+            }}
+            onResendToolkit={() => {
               setSelectedEventRequest(request);
               setToolkitEventRequest(request);
               setShowToolkitSentDialog(true);
