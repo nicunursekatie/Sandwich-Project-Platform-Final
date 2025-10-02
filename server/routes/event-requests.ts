@@ -1288,6 +1288,44 @@ router.patch(
         console.log('Auto-assigning TSP contact (general PATCH):', req.user.id, '(', req.user.email, ')');
       }
 
+      // Auto-adjust "needed" fields based on assignments
+      // If someone is assigned to a position but the event doesn't show it's needed, auto-populate the need
+      if (processedUpdates.assignedDriverIds !== undefined) {
+        const assignedDriverCount = Array.isArray(processedUpdates.assignedDriverIds) 
+          ? processedUpdates.assignedDriverIds.length 
+          : 0;
+        const currentDriversNeeded = originalEvent.driversNeeded || 0;
+        
+        if (assignedDriverCount > currentDriversNeeded) {
+          processedUpdates.driversNeeded = assignedDriverCount;
+          console.log(`🔧 Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${assignedDriverCount} based on assignments`);
+        }
+      }
+
+      if (processedUpdates.speakerDetails !== undefined) {
+        const assignedSpeakerCount = (typeof processedUpdates.speakerDetails === 'object' && processedUpdates.speakerDetails !== null)
+          ? Object.keys(processedUpdates.speakerDetails).length 
+          : 0;
+        const currentSpeakersNeeded = originalEvent.speakersNeeded || 0;
+        
+        if (assignedSpeakerCount > currentSpeakersNeeded) {
+          processedUpdates.speakersNeeded = assignedSpeakerCount;
+          console.log(`🔧 Auto-adjusted speakersNeeded from ${currentSpeakersNeeded} to ${assignedSpeakerCount} based on assignments`);
+        }
+      }
+
+      if (processedUpdates.assignedVolunteerIds !== undefined) {
+        const assignedVolunteerCount = Array.isArray(processedUpdates.assignedVolunteerIds) 
+          ? processedUpdates.assignedVolunteerIds.length 
+          : 0;
+        const currentVolunteersNeeded = originalEvent.volunteersNeeded || 0;
+        
+        if (assignedVolunteerCount > currentVolunteersNeeded) {
+          processedUpdates.volunteersNeeded = assignedVolunteerCount;
+          console.log(`🔧 Auto-adjusted volunteersNeeded from ${currentVolunteersNeeded} to ${assignedVolunteerCount} based on assignments`);
+        }
+      }
+
       // Always update the updatedAt timestamp
       console.log('🔍 About to call storage.updateEventRequest. Checking all Date-like fields:');
       Object.keys(processedUpdates).forEach(key => {
@@ -1621,6 +1659,43 @@ router.put(
         console.log(
           `🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`
         );
+      }
+
+      // Auto-adjust "needed" fields based on assignments (PUT endpoint)
+      if (processedUpdates.assignedDriverIds !== undefined) {
+        const assignedDriverCount = Array.isArray(processedUpdates.assignedDriverIds) 
+          ? processedUpdates.assignedDriverIds.length 
+          : 0;
+        const currentDriversNeeded = originalEvent.driversNeeded || 0;
+        
+        if (assignedDriverCount > currentDriversNeeded) {
+          processedUpdates.driversNeeded = assignedDriverCount;
+          console.log(`🔧 PUT Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${assignedDriverCount} based on assignments`);
+        }
+      }
+
+      if (processedUpdates.speakerDetails !== undefined) {
+        const assignedSpeakerCount = (typeof processedUpdates.speakerDetails === 'object' && processedUpdates.speakerDetails !== null)
+          ? Object.keys(processedUpdates.speakerDetails).length 
+          : 0;
+        const currentSpeakersNeeded = originalEvent.speakersNeeded || 0;
+        
+        if (assignedSpeakerCount > currentSpeakersNeeded) {
+          processedUpdates.speakersNeeded = assignedSpeakerCount;
+          console.log(`🔧 PUT Auto-adjusted speakersNeeded from ${currentSpeakersNeeded} to ${assignedSpeakerCount} based on assignments`);
+        }
+      }
+
+      if (processedUpdates.assignedVolunteerIds !== undefined) {
+        const assignedVolunteerCount = Array.isArray(processedUpdates.assignedVolunteerIds) 
+          ? processedUpdates.assignedVolunteerIds.length 
+          : 0;
+        const currentVolunteersNeeded = originalEvent.volunteersNeeded || 0;
+        
+        if (assignedVolunteerCount > currentVolunteersNeeded) {
+          processedUpdates.volunteersNeeded = assignedVolunteerCount;
+          console.log(`🔧 PUT Auto-adjusted volunteersNeeded from ${currentVolunteersNeeded} to ${assignedVolunteerCount} based on assignments`);
+        }
       }
 
       // Always update the updatedAt timestamp
@@ -2198,6 +2273,15 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
       updateData.customVanDriverName = customVanDriverName;
     if (vanDriverNotes !== undefined)
       updateData.vanDriverNotes = vanDriverNotes;
+
+    // Auto-adjust driversNeeded if assignments exceed current need
+    const assignedDriverCount = Array.isArray(assignedDriverIds) ? assignedDriverIds.length : 0;
+    const currentDriversNeeded = existingEvent.driversNeeded || 0;
+    
+    if (assignedDriverCount > currentDriversNeeded) {
+      updateData.driversNeeded = assignedDriverCount;
+      console.log(`🔧 Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${assignedDriverCount} based on driver assignments`);
+    }
 
     const updatedEvent = await storage.updateEventRequest(eventId, updateData);
 
