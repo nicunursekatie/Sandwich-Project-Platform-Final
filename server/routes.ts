@@ -53,6 +53,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add activity logging middleware after authentication setup
   app.use(createActivityLogger({ storage }));
 
+  // Disable caching for all API routes to prevent development issues
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+  });
+
   // === CORE MODULAR ROUTES SYSTEM ===
   // Main modular routes (handles users, projects, tasks, collections, messaging, etc.)
   const mainRoutes = createMainRoutes({
