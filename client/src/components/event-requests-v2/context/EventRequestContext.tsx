@@ -9,6 +9,8 @@ interface EventRequestContextType {
   isLoading: boolean;
 
   // View state
+  viewMode: 'list' | 'calendar';
+  setViewMode: (mode: 'list' | 'calendar') => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   searchQuery: string;
@@ -180,6 +182,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   });
 
   // View state
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [activeTab, setActiveTab] = useState(initialTab || 'new');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -410,6 +413,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     statusCounts,
 
     // View state
+    viewMode,
+    setViewMode,
     activeTab,
     setActiveTab,
     searchQuery,

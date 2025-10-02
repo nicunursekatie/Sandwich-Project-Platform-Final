@@ -11,7 +11,8 @@ import { DeclinedTab } from './tabs/DeclinedTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Package, HelpCircle } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List } from 'lucide-react';
+import { EventCalendarView } from '@/components/event-calendar-view';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,8 @@ const EventRequestsManagementContent: React.FC = () => {
   const {
     eventRequests,
     isLoading,
+    viewMode,
+    setViewMode,
     activeTab,
     setActiveTab,
     searchQuery,
@@ -161,11 +164,34 @@ const EventRequestsManagementContent: React.FC = () => {
       <div className="space-y-4">
         {/* Header */}
         <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
-          <div>
-            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
-            <p className="text-[#236383]">
-              {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
-            </p>
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
+              <p className="text-[#236383]">
+                {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
+              </p>
+            </div>
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 border rounded-lg p-1">
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="gap-2"
+              >
+                <List className="w-4 h-4" />
+                {!isMobile && 'List'}
+              </Button>
+              <Button
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('calendar')}
+                className="gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                {!isMobile && 'Calendar'}
+              </Button>
+            </div>
           </div>
           <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
             <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
@@ -216,32 +242,43 @@ const EventRequestsManagementContent: React.FC = () => {
           </div>
         </div>
 
-        {/* Filters and Tabs */}
-        <RequestFilters
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          sortBy={sortBy}
-          onSortByChange={setSortBy}
-          activeTab={activeTab}
-          onActiveTabChange={setActiveTab}
-          currentPage={currentPage}
-          onCurrentPageChange={setCurrentPage}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={setItemsPerPage}
-          statusCounts={statusCounts}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          children={{
-            new: <NewRequestsTab />,
-            in_process: <InProcessTab />,
-            scheduled: <ScheduledTab />,
-            completed: <CompletedTab />,
-            declined: <DeclinedTab />,
-            my_assignments: <MyAssignmentsTab />,
-          }}
-        />
+        {/* View Content: Calendar or List */}
+        {viewMode === 'calendar' ? (
+          <EventCalendarView
+            onEventClick={(event) => {
+              setSelectedEventRequest(event);
+              setShowEventDetails(true);
+              setIsEditing(false);
+            }}
+          />
+        ) : (
+          /* Filters and Tabs */
+          <RequestFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
+            activeTab={activeTab}
+            onActiveTabChange={setActiveTab}
+            currentPage={currentPage}
+            onCurrentPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            onItemsPerPageChange={setItemsPerPage}
+            statusCounts={statusCounts}
+            totalItems={totalItems}
+            totalPages={totalPages}
+            children={{
+              new: <NewRequestsTab />,
+              in_process: <InProcessTab />,
+              scheduled: <ScheduledTab />,
+              completed: <CompletedTab />,
+              declined: <DeclinedTab />,
+              my_assignments: <MyAssignmentsTab />,
+            }}
+          />
+        )}
 
         {/* Event Details Edit Modal */}
         {showEventDetails && (selectedEventRequest || isEditing) && (
