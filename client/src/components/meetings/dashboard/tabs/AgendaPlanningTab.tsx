@@ -570,7 +570,7 @@ export function AgendaPlanningTab({
             <div className="flex items-center gap-4">
               <span className="text-teal-600 font-medium">
                 {agendaSummary.agendaCount + agendaSummary.tabledCount} of{' '}
-                {allProjects.filter((p) => p.status !== 'completed').length}{' '}
+                {allProjects.filter((p) => p.status !== 'completed' && p.status !== 'archived').length}{' '}
                 reviewed
               </span>
               <div className="w-32 bg-gray-200 rounded-full h-2">
@@ -581,7 +581,7 @@ export function AgendaPlanningTab({
                       100,
                       ((agendaSummary.agendaCount +
                         agendaSummary.tabledCount) /
-                        allProjects.filter((p) => p.status !== 'completed')
+                        allProjects.filter((p) => p.status !== 'completed' && p.status !== 'archived')
                           .length) *
                         100
                     )}%`,
@@ -601,7 +601,7 @@ export function AgendaPlanningTab({
             Google Sheets Projects (
             {
               allProjects.filter(
-                (project: any) => project.status !== 'completed'
+                (project: any) => project.status !== 'completed' && project.status !== 'archived'
               ).length
             }
             )
@@ -624,12 +624,12 @@ export function AgendaPlanningTab({
             ) : (
               <div className="space-y-4">
                 {allProjects
-                  .filter((project: any) => project.status !== 'completed')
+                  .filter((project: any) => project.status !== 'completed' && project.status !== 'archived')
                   .map((project: any, index: number) => {
                     // Add section headers to break up the list
                     let sectionHeader = null;
                     const filteredProjects = allProjects.filter(
-                      (p: any) => p.status !== 'completed'
+                      (p: any) => p.status !== 'completed' && p.status !== 'archived'
                     );
 
                     if (index === 0) {
