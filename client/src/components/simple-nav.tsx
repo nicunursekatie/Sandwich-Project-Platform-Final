@@ -157,9 +157,11 @@ export default function SimpleNav({
               ${
                 active
                   ? 'bg-brand-primary hover:bg-brand-primary-dark text-white shadow-sm border-l-4 border-l-brand-orange'
-                  : item.isSubItem
-                    ? 'hover:bg-slate-50 text-slate-600 ml-4 mr-1 rounded-md'
-                    : 'hover:bg-slate-100 text-slate-700'
+                  : item.highlighted
+                    ? 'hover:bg-orange-50 text-brand-orange font-semibold'
+                    : item.isSubItem
+                      ? 'hover:bg-slate-50 text-slate-600 ml-4 mr-1 rounded-md'
+                      : 'hover:bg-slate-100 text-slate-700'
               }
             `}
               onClick={(e) => {
@@ -176,13 +178,13 @@ export default function SimpleNav({
                   alt={item.label}
                   className={`h-4 w-4 flex-shrink-0 ${
                     isCollapsed ? '' : 'mr-2 sm:mr-3'
-                  }`}
+                  } ${item.highlighted && !active ? 'opacity-90' : ''}`}
                 />
               ) : (
                 <item.icon
                   className={`h-4 w-4 flex-shrink-0 ${
                     isCollapsed ? '' : 'mr-2 sm:mr-3'
-                  }`}
+                  } ${item.highlighted && !active ? 'text-brand-orange' : ''}`}
 
                 />
               )}

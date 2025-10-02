@@ -60,6 +60,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'collections',
     permission: PERMISSIONS.NAV_COLLECTIONS_LOG,
     group: 'collections',
+    highlighted: true,
   },
 
   // Move these back to their original groups without creating "core"
@@ -164,6 +165,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'event-requests',
     permission: PERMISSIONS.NAV_EVENT_PLANNING,
     group: 'planning',
+    highlighted: true,
   },
   {
     id: 'events',
@@ -196,6 +198,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'meetings',
     permission: PERMISSIONS.MEETINGS_VIEW,
     group: 'planning',
+    highlighted: true,
   },
   {
     id: 'event-reminders',
@@ -237,6 +240,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FileText,
     href: 'important-documents',
     group: 'documentation',
+    highlighted: true,
   },
   {
     id: 'important-links',

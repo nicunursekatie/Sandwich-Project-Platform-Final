@@ -12,6 +12,7 @@ export interface NavItem {
   featureFlag?: string;
   parentId?: string; // ID of parent nav item for nested structure
   isSubItem?: boolean; // Flag to indicate this is a sub-item
+  highlighted?: boolean; // Flag to highlight important menu items with special color
 }
 
 export interface NavigationGroup {
