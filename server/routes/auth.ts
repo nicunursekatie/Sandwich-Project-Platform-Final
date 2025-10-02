@@ -221,6 +221,103 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
     }
   });
 
+  // Get user profile with additional contact info
+  router.get('/profile', async (req: any, res) => {
+    try {
+      const user = req.session?.user || req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'No user in session' });
+      }
+
+      let dbUser;
+      if (req.session?.user) {
+        dbUser = await storage.getUserByEmail(req.session.user.email);
+      } else {
+        const userId = req.user.claims?.sub || req.user.id;
+        dbUser = await storage.getUser(userId);
+      }
+
+      if (!dbUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        id: dbUser.id,
+        email: dbUser.email,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        displayName: `${dbUser.firstName} ${dbUser.lastName}`,
+        preferredEmail: dbUser.preferredEmail,
+        phoneNumber: dbUser.phoneNumber,
+        profileImageUrl: dbUser.profileImageUrl,
+        role: dbUser.role,
+        isActive: dbUser.isActive,
+      });
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      res.status(500).json({ message: 'Failed to fetch user profile' });
+    }
+  });
+
+  // Update own profile (self-service)
+  router.put('/profile', async (req: any, res) => {
+    try {
+      const user = req.session?.user || req.user;
+      if (!user) {
+        return res.status(401).json({ message: 'No user in session' });
+      }
+
+      // Get user ID from session
+      let userId;
+      if (req.session?.user) {
+        const dbUser = await storage.getUserByEmail(req.session.user.email);
+        if (!dbUser) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        userId = dbUser.id;
+      } else {
+        userId = req.user.claims?.sub || req.user.id;
+      }
+
+      const { firstName, lastName, displayName, email, preferredEmail, phoneNumber } = req.body;
+
+      // Update user profile
+      const updatedUser = await storage.updateUser(userId, {
+        firstName,
+        lastName,
+        email,
+        preferredEmail,
+        phoneNumber,
+      });
+
+      // Update session if using temp auth
+      if (req.session?.user) {
+        req.session.user = {
+          ...req.session.user,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          email: updatedUser.email,
+        };
+      }
+
+      res.json({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        displayName: `${updatedUser.firstName} ${updatedUser.lastName}`,
+        preferredEmail: updatedUser.preferredEmail,
+        phoneNumber: updatedUser.phoneNumber,
+        profileImageUrl: updatedUser.profileImageUrl,
+        role: updatedUser.role,
+        isActive: updatedUser.isActive,
+      });
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      res.status(500).json({ message: 'Failed to update user profile' });
+    }
+  });
+
   return router;
 }
 
