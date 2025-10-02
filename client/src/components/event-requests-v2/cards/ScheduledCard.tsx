@@ -1464,7 +1464,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Original Request Message:
                     </p>
-                    <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded border-l-3 border-blue-200">
+                    <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded border-l-3 border-blue-200 whitespace-pre-wrap">
                       {request.message}
                     </p>
                   </div>
@@ -1474,7 +1474,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Special Requirements:
                     </p>
-                    <p className="text-sm text-gray-700 bg-amber-50 p-3 rounded border-l-3 border-amber-200">
+                    <p className="text-sm text-gray-700 bg-amber-50 p-3 rounded border-l-3 border-amber-200 whitespace-pre-wrap">
                       {request.additionalRequirements}
                     </p>
                   </div>
@@ -1525,7 +1525,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-700 bg-white p-3 rounded border">
+                      <p className="text-sm text-gray-700 bg-white p-3 rounded border whitespace-pre-wrap">
                         {request.planningNotes}
                       </p>
                     )}
@@ -1533,18 +1533,60 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.schedulingNotes && (
                   <div>
-                    <p className="text-sm font-medium mb-1">
-                      Scheduling Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-green-50 p-3 rounded border-l-3 border-green-200">
-                      {request.schedulingNotes}
-                    </p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium">Scheduling Notes:</p>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            startEditing(
+                              'schedulingNotes',
+                              request.schedulingNotes || ''
+                            )
+                          }
+                          className="h-6 px-2 text-xs hover:bg-white/20"
+                        >
+                          <Edit2 className="w-3 h-3 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                    {isEditingThisCard && editingField === 'schedulingNotes' ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="w-full p-2 border border-gray-300 rounded text-base min-h-[80px] text-gray-900 bg-white"
+                          placeholder="Add scheduling notes..."
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit}>
+                            <Save className="w-3 h-3 mr-1" />
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEdit}
+                          >
+                            <X className="w-3 h-3 mr-1" />
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-700 bg-green-50 p-3 rounded border-l-3 border-green-200 whitespace-pre-wrap">
+                        {request.schedulingNotes}
+                      </p>
+                    )}
                   </div>
                 )}
                 {request.volunteerNotes && (
                   <div>
                     <p className="text-sm font-medium mb-1">Volunteer Notes:</p>
-                    <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded border-l-3 border-purple-200">
+                    <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded border-l-3 border-purple-200 whitespace-pre-wrap">
                       {request.volunteerNotes}
                     </p>
                   </div>
@@ -1552,7 +1594,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {request.driverNotes && (
                   <div>
                     <p className="text-sm font-medium mb-1">Driver Notes:</p>
-                    <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded border-l-3 border-orange-200">
+                    <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded border-l-3 border-orange-200 whitespace-pre-wrap">
                       {request.driverNotes}
                     </p>
                   </div>
@@ -1562,7 +1604,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Van Driver Notes:
                     </p>
-                    <p className="text-sm text-gray-700 bg-red-50 p-3 rounded border-l-3 border-red-200">
+                    <p className="text-sm text-gray-700 bg-red-50 p-3 rounded border-l-3 border-red-200 whitespace-pre-wrap">
                       {request.vanDriverNotes}
                     </p>
                   </div>
@@ -1570,7 +1612,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {request.followUpNotes && (
                   <div>
                     <p className="text-sm font-medium mb-1">Follow-up Notes:</p>
-                    <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded border-l-3 border-yellow-200">
+                    <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded border-l-3 border-yellow-200 whitespace-pre-wrap">
                       {request.followUpNotes}
                     </p>
                   </div>
@@ -1580,7 +1622,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Distribution Notes:
                     </p>
-                    <p className="text-sm text-gray-700 bg-teal-50 p-3 rounded border-l-3 border-teal-200">
+                    <p className="text-sm text-gray-700 bg-teal-50 p-3 rounded border-l-3 border-teal-200 whitespace-pre-wrap">
                       {request.distributionNotes}
                     </p>
                   </div>
