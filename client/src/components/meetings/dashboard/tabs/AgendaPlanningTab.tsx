@@ -45,6 +45,7 @@ import {
   UserPlus,
   Edit3,
   Trash2,
+  Archive,
   ArrowRight,
   ChevronDown,
   ChevronUp,
@@ -253,6 +254,28 @@ export function AgendaPlanningTab({
       toast({
         title: 'Error',
         description: error?.message || 'Failed to delete project.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Archive project mutation
+  const archiveProjectMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest('POST', `/api/projects/${id}/archive`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      toast({
+        title: 'Project archived successfully!',
+        description: 'The project has been moved to the archive.',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Archive project error:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to archive project.',
         variant: 'destructive',
       });
     },
@@ -925,6 +948,21 @@ export function AgendaPlanningTab({
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => {
+                                    if (window.confirm(`Are you sure you want to archive "${project.title}"? You can view archived projects later.`)) {
+                                      archiveProjectMutation.mutate(project.id);
+                                    }
+                                  }}
+                                  disabled={archiveProjectMutation.isPending}
+                                  data-testid={`button-archive-project-${project.id}`}
+                                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                  title="Archive project"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
                                     if (window.confirm(`Are you sure you want to delete "${project.title}"? This action cannot be undone.`)) {
                                       deleteProjectMutation.mutate(project.id);
                                     }
@@ -932,6 +970,7 @@ export function AgendaPlanningTab({
                                   disabled={deleteProjectMutation.isPending}
                                   data-testid={`button-delete-project-${project.id}`}
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title="Delete project permanently"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
