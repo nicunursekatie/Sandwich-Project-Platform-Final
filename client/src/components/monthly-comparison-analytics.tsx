@@ -82,7 +82,7 @@ export default function MonthlyComparisonAnalytics() {
   >('overview');
   const [compareYear, setCompareYear] = useState<number>(2025);
 
-  // Default to current month and year
+  // Default to current month and year - will be updated when data loads
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth()); // 0-11
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
@@ -279,6 +279,27 @@ export default function MonthlyComparisonAnalytics() {
 
     return monthlyStats;
   }, [collections]);
+
+  // Auto-select the most recent month with data when analytics load
+  useMemo(() => {
+    if (monthlyAnalytics && Object.keys(monthlyAnalytics).length > 0) {
+      const availableMonths = Object.keys(monthlyAnalytics).sort();
+      const mostRecentMonth = availableMonths[availableMonths.length - 1];
+      
+      if (mostRecentMonth) {
+        const [year, month] = mostRecentMonth.split('-');
+        const monthIndex = parseInt(month) - 1; // Convert to 0-based index
+        const yearNum = parseInt(year);
+        
+        // Only update if current selection has no data
+        const currentMonthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`;
+        if (!monthlyAnalytics[currentMonthKey]) {
+          setSelectedYear(yearNum);
+          setSelectedMonth(monthIndex);
+        }
+      }
+    }
+  }, [monthlyAnalytics, selectedYear, selectedMonth]);
 
   // Selected month analysis
   const selectedMonthAnalysis = useMemo(() => {
@@ -557,14 +578,30 @@ export default function MonthlyComparisonAnalytics() {
   }
 
   if (!selectedMonthAnalysis) {
+    const availableMonths = monthlyAnalytics ? Object.keys(monthlyAnalytics).sort() : [];
+    const mostRecentMonth = availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : null;
+    
     return (
       <div className="text-center py-16">
         <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-brand-primary mb-2">
           No Data for Selected Month
         </h3>
-        <p className="text-[#646464]">
+        <p className="text-[#646464] mb-4">
           Unable to find collection data for {new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.
+        </p>
+        {mostRecentMonth && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+            <p className="text-sm text-blue-800 mb-2">
+              <strong>Available data:</strong> We have collection data available for other months.
+            </p>
+            <p className="text-xs text-blue-600">
+              Most recent data: {new Date(parseInt(mostRecentMonth.split('-')[0]), parseInt(mostRecentMonth.split('-')[1]) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+        )}
+        <p className="text-sm text-gray-500 mt-4">
+          Use the month/year selectors above to choose a month with available data.
         </p>
       </div>
     );
