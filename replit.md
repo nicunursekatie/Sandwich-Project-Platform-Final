@@ -62,6 +62,7 @@ The application uses The Sandwich Project's official color palette (Teal Primary
   4. **Null-Safe Handling**: Proper handling for speakerDetails objects and empty string checks for van driver IDs.
   5. **Applied Across All Endpoints**: Validation and auto-adjustment logic implemented in PATCH /:id, PUT /:id, and PATCH /:id/drivers endpoints.
   6. This prevents display bugs like "1/0 assigned" and ensures data consistency. One-time SQL migration executed to fix 3 existing events with mismatched assignment counts.
+- **Toolkit Attachment Filtering**: Event toolkit email composer (`/api/storage/documents` endpoint in `server/routes/storage/index.ts`) automatically excludes confidential documents (category: 'confidential') and "Food Safety Guide for Hosts" from available attachment options. This ensures sensitive internal documents and host-specific safety guides are not accidentally sent to external contacts. The filter preserves "Food Safety Guide for Volunteers" and all other public-facing training materials.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`

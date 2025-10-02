@@ -331,8 +331,13 @@ storageRouter.get('/documents', async (req: AuthenticatedRequest, res: Response)
 
     const documents = await storage.getAllDocuments();
     
-    // Filter to only active documents
-    const activeDocuments = documents.filter(doc => doc.isActive !== false);
+    // Filter to only active, non-confidential documents
+    // Exclude: confidential category, Food Safety Guide for Hosts
+    const activeDocuments = documents.filter(doc => 
+      doc.isActive !== false && 
+      doc.category !== 'confidential' &&
+      doc.title !== 'Food Safety Guide for Hosts'
+    );
     
     // Disable caching to ensure fresh data
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
