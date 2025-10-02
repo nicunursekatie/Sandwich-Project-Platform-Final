@@ -578,19 +578,6 @@ router.get(
         'Retrieved all event requests'
       );
       const eventRequests = await storage.getAllEventRequests();
-      
-      // Debug log to verify van driver data is being returned
-      const buckheadEvent = eventRequests.find((e: any) => e.id === 62);
-      if (buckheadEvent) {
-        console.log('🔍 Buckhead Rotary event data check:', {
-          id: buckheadEvent.id,
-          organizationName: buckheadEvent.organizationName,
-          assignedVanDriverId: buckheadEvent.assignedVanDriverId,
-          assignedDriverIds: buckheadEvent.assignedDriverIds,
-          driversNeeded: buckheadEvent.driversNeeded
-        });
-      }
-      
       res.json(eventRequests);
     } catch (error) {
       console.error('Error fetching event requests:', error);
@@ -1301,24 +1288,32 @@ router.patch(
         console.log('Auto-assigning TSP contact (general PATCH):', req.user.id, '(', req.user.email, ')');
       }
 
-      // Auto-adjust "needed" fields based on assignments
-      // If someone is assigned to a position but the event doesn't show it's needed, auto-populate the need
+      // Validate and auto-adjust "needed" fields to prevent impossible states
+      // Count currently assigned drivers (regular + van)
+      const assignedRegularDrivers = processedUpdates.assignedDriverIds !== undefined
+        ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
+        : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
+      
+      const hasAssignedVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
+        || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
+      
+      const totalAssignedDrivers = assignedRegularDrivers + (hasAssignedVanDriver ? 1 : 0);
+      
+      // If driversNeeded is being manually updated, ensure it's not less than assigned drivers
+      if (processedUpdates.driversNeeded !== undefined) {
+        if (processedUpdates.driversNeeded < totalAssignedDrivers) {
+          processedUpdates.driversNeeded = totalAssignedDrivers;
+          console.log(`⚠️ Prevented invalid state: driversNeeded cannot be ${processedUpdates.driversNeeded} when ${totalAssignedDrivers} drivers are assigned. Auto-corrected to ${totalAssignedDrivers}.`);
+        }
+      }
+      
+      // Auto-adjust driversNeeded when assignments change (if assignments exceed current need)
       if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined) {
-        // Count regular drivers
-        const regularDriverCount = processedUpdates.assignedDriverIds !== undefined
-          ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
-          : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
+        const currentDriversNeeded = processedUpdates.driversNeeded !== undefined ? processedUpdates.driversNeeded : (originalEvent.driversNeeded || 0);
         
-        // Check if van driver is assigned (either in update or already exists)
-        const hasVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null)
-          || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null);
-        
-        const totalDriverCount = regularDriverCount + (hasVanDriver ? 1 : 0);
-        const currentDriversNeeded = originalEvent.driversNeeded || 0;
-        
-        if (totalDriverCount > currentDriversNeeded) {
-          processedUpdates.driversNeeded = totalDriverCount;
-          console.log(`🔧 Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${totalDriverCount} based on assignments (regular: ${regularDriverCount}, van: ${hasVanDriver ? 1 : 0})`);
+        if (totalAssignedDrivers > currentDriversNeeded) {
+          processedUpdates.driversNeeded = totalAssignedDrivers;
+          console.log(`🔧 Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${totalAssignedDrivers} based on assignments (regular: ${assignedRegularDrivers}, van: ${hasAssignedVanDriver ? 1 : 0})`);
         }
       }
 
@@ -1681,23 +1676,32 @@ router.put(
         );
       }
 
-      // Auto-adjust "needed" fields based on assignments (PUT endpoint)
+      // Validate and auto-adjust "needed" fields to prevent impossible states (PUT endpoint)
+      // Count currently assigned drivers (regular + van)
+      const putAssignedRegularDrivers = processedUpdates.assignedDriverIds !== undefined
+        ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
+        : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
+      
+      const putHasAssignedVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
+        || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
+      
+      const putTotalAssignedDrivers = putAssignedRegularDrivers + (putHasAssignedVanDriver ? 1 : 0);
+      
+      // If driversNeeded is being manually updated, ensure it's not less than assigned drivers
+      if (processedUpdates.driversNeeded !== undefined) {
+        if (processedUpdates.driversNeeded < putTotalAssignedDrivers) {
+          processedUpdates.driversNeeded = putTotalAssignedDrivers;
+          console.log(`⚠️ PUT Prevented invalid state: driversNeeded cannot be ${processedUpdates.driversNeeded} when ${putTotalAssignedDrivers} drivers are assigned. Auto-corrected to ${putTotalAssignedDrivers}.`);
+        }
+      }
+      
+      // Auto-adjust driversNeeded when assignments change (if assignments exceed current need)
       if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined) {
-        // Count regular drivers
-        const regularDriverCount = processedUpdates.assignedDriverIds !== undefined
-          ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
-          : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
+        const currentDriversNeeded = processedUpdates.driversNeeded !== undefined ? processedUpdates.driversNeeded : (originalEvent.driversNeeded || 0);
         
-        // Check if van driver is assigned (either in update or already exists)
-        const hasVanDriver = (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null)
-          || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null);
-        
-        const totalDriverCount = regularDriverCount + (hasVanDriver ? 1 : 0);
-        const currentDriversNeeded = originalEvent.driversNeeded || 0;
-        
-        if (totalDriverCount > currentDriversNeeded) {
-          processedUpdates.driversNeeded = totalDriverCount;
-          console.log(`🔧 PUT Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${totalDriverCount} based on assignments (regular: ${regularDriverCount}, van: ${hasVanDriver ? 1 : 0})`);
+        if (putTotalAssignedDrivers > currentDriversNeeded) {
+          processedUpdates.driversNeeded = putTotalAssignedDrivers;
+          console.log(`🔧 PUT Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${putTotalAssignedDrivers} based on assignments (regular: ${putAssignedRegularDrivers}, van: ${putHasAssignedVanDriver ? 1 : 0})`);
         }
       }
 
@@ -2301,16 +2305,17 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     if (vanDriverNotes !== undefined)
       updateData.vanDriverNotes = vanDriverNotes;
 
-    // Auto-adjust driversNeeded if assignments exceed current need
+    // Validate and auto-adjust driversNeeded based on assignments
     const regularDriverCount = Array.isArray(assignedDriverIds) ? assignedDriverIds.length : 0;
     
     // Check if van driver is assigned (either being set now or already exists)
-    const hasVanDriver = (assignedVanDriverId !== undefined && assignedVanDriverId !== null)
-      || (assignedVanDriverId === undefined && existingEvent.assignedVanDriverId !== null);
+    const hasVanDriver = (assignedVanDriverId !== undefined && assignedVanDriverId !== null && assignedVanDriverId !== '')
+      || (assignedVanDriverId === undefined && existingEvent.assignedVanDriverId !== null && existingEvent.assignedVanDriverId !== '');
     
     const totalDriverCount = regularDriverCount + (hasVanDriver ? 1 : 0);
     const currentDriversNeeded = existingEvent.driversNeeded || 0;
     
+    // Ensure driversNeeded is at least equal to total assigned drivers (prevent impossible states)
     if (totalDriverCount > currentDriversNeeded) {
       updateData.driversNeeded = totalDriverCount;
       console.log(`🔧 Auto-adjusted driversNeeded from ${currentDriversNeeded} to ${totalDriverCount} based on driver assignments (regular: ${regularDriverCount}, van: ${hasVanDriver ? 1 : 0})`);
