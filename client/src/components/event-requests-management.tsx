@@ -2232,34 +2232,11 @@ export default function EventRequestsManagement({
       <div className="w-full flex flex-col space-y-4">
         {/* Header */}
         <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'} w-full`}>
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
-              <p className="text-[#236383]">
-                {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
-              </p>
-            </div>
-            {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 border rounded-lg p-1">
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="gap-2"
-              >
-                <List className="w-4 h-4" />
-                {!isMobile && 'List'}
-              </Button>
-              <Button
-                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('calendar')}
-                className="gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                {!isMobile && 'Calendar'}
-              </Button>
-            </div>
+          <div>
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
+            <p className="text-[#236383]">
+              {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
+            </p>
           </div>
           <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
             <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
@@ -2314,6 +2291,30 @@ export default function EventRequestsManagement({
             >
               {eventRequests.length} Total Requests
             </Badge>
+          </div>
+        </div>
+
+        {/* View Mode Toggle - Separate Row */}
+        <div className="flex items-center justify-center">
+          <div className="flex items-center gap-1 border rounded-lg p-1 bg-white shadow-sm">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="gap-2"
+            >
+              <List className="w-4 h-4" />
+              {!isMobile && 'List View'}
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('calendar')}
+              className="gap-2"
+            >
+              <Calendar className="w-4 h-4" />
+              {!isMobile && 'Calendar View'}
+            </Button>
           </div>
         </div>
 
