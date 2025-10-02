@@ -55,11 +55,15 @@ export default function SandwichForecastWidget() {
       return d;
     };
 
-    // Get current date for filtering future events
+    // Get current date for filtering events
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Process events with dates and estimated sandwich counts (future events only)
+    // Calculate date range: 4 weeks ago to 12 weeks forward
+    const fourWeeksAgo = new Date(today);
+    fourWeeksAgo.setDate(today.getDate() - 28);
+
+    // Process events with dates and estimated sandwich counts (past and future)
     const relevantEvents = eventRequests.filter((request) => {
       if (
         !request.desiredEventDate ||
@@ -82,8 +86,8 @@ export default function SandwichForecastWidget() {
         const eventDate = new Date(request.desiredEventDate);
         if (isNaN(eventDate.getTime())) return false;
 
-        // Only future events
-        return eventDate >= today;
+        // Include events from 4 weeks ago onwards
+        return eventDate >= fourWeeksAgo;
       } catch (error) {
         return false;
       }
@@ -142,8 +146,7 @@ export default function SandwichForecastWidget() {
         weekKey,
         ...data,
       }))
-      .sort((a, b) => a.weekKey.localeCompare(b.weekKey))
-      .slice(0, 8); // Show next 8 weeks
+      .sort((a, b) => a.weekKey.localeCompare(b.weekKey)); // Show all weeks in range
   }, [eventRequests]);
 
   // Calculate totals
@@ -166,8 +169,31 @@ export default function SandwichForecastWidget() {
     );
   }, [weeklySandwichForecast]);
 
-  // Add state for current week index
-  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+  // Find the current or next week index
+  const getCurrentWeekIndex = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Find the first week that hasn't passed yet (Thursday >= today)
+    const currentIndex = weeklySandwichForecast.findIndex(week => {
+      const weekDate = new Date(week.weekKey);
+      return weekDate >= today;
+    });
+    
+    // If all weeks are in the past, show the last week
+    // If all weeks are in the future, show the first week
+    return currentIndex === -1 ? Math.max(0, weeklySandwichForecast.length - 1) : currentIndex;
+  };
+
+  // Add state for current week index, starting at current/next week
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(() => getCurrentWeekIndex());
+
+  // Update index when forecast data changes
+  useMemo(() => {
+    if (weeklySandwichForecast.length > 0) {
+      setCurrentWeekIndex(getCurrentWeekIndex());
+    }
+  }, [weeklySandwichForecast]);
 
   // Only show one week at a time
   const currentWeek = weeklySandwichForecast[currentWeekIndex] || null;
