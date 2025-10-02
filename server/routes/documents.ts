@@ -83,23 +83,20 @@ const getUser = (req: AuthenticatedRequest) => {
 
 export function createDocumentsRouter(storage: IStorage): Router {
   // GET all documents (filtered by user permissions)
-  documentsRouter.get(
-    '/',
-    async (req: AuthenticatedRequest, res: Response) => {
-      try {
-        const user = getUser(req);
-        if (!user) {
-          return res.status(401).json({ message: 'Unauthorized' });
-        }
-
-        const documents = await storage.getDocumentsForUser(user.id);
-        res.json(documents);
-      } catch (error) {
-        logger.error('Failed to fetch documents', error);
-        res.status(500).json({ message: 'Failed to fetch documents' });
+  documentsRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = getUser(req);
+      if (!user) {
+        return res.status(401).json({ message: 'Unauthorized' });
       }
+
+      const documents = await storage.getDocumentsForUser(user.id);
+      res.json(documents);
+    } catch (error) {
+      logger.error('Failed to fetch documents', error);
+      res.status(500).json({ message: 'Failed to fetch documents' });
     }
-  );
+  });
 
   // GET single document
   documentsRouter.get(
