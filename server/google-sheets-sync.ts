@@ -101,12 +101,25 @@ export class GoogleSheetsSyncService {
 
       let updatedCount = 0;
       let createdCount = 0;
+      let archivedCount = 0;
+
+      // Get all projects once to track which ones should be archived
+      const existingProjects = await this.storage.getAllProjects();
+      const sheetProjectTitles = new Set(
+        sheetRows
+          .filter(row => row.project)
+          .map(row => row.project.toLowerCase().trim())
+      );
+      const sheetRowIds = new Set(
+        sheetRows
+          .filter(row => row.rowIndex)
+          .map(row => row.rowIndex?.toString())
+      );
 
       for (const row of sheetRows) {
         if (!row.project) continue; // Skip empty rows
 
         // Try to find existing project by title or sheet row ID
-        const existingProjects = await this.storage.getAllProjects();
         const existingProject = existingProjects.find(
           (p) =>
             p.googleSheetRowId === row.rowIndex?.toString() ||
@@ -168,15 +181,37 @@ export class GoogleSheetsSyncService {
         }
       }
 
+      // Archive projects that exist in the app but not in the sheet anymore
+      // Only archive projects that have a googleSheetRowId (were synced from sheets)
+      for (const project of existingProjects) {
+        if (!project.googleSheetRowId) continue; // Skip non-synced projects
+
+        const titleMatch = sheetProjectTitles.has(project.title.toLowerCase().trim());
+        const rowIdMatch = sheetRowIds.has(project.googleSheetRowId);
+
+        // If project was synced from sheets but is no longer there, archive it
+        if (!titleMatch && !rowIdMatch && project.status !== 'archived') {
+          console.log(`📦 Archiving project "${project.title}" - no longer in Google Sheets`);
+          const user = {
+            id: 'google-sheets-sync',
+            fullName: 'Google Sheets Sync',
+            role: 'admin' as const,
+          };
+          await this.storage.archiveProject(project.id, user);
+          archivedCount++;
+        }
+      }
+
       // Clear sync lock
       (global as any).syncFromSheetsInProgress = false;
       console.log('✅ Sync FROM Google Sheets complete - sync lock released');
 
       return {
         success: true,
-        message: `Sync complete: ${createdCount} created, ${updatedCount} updated`,
+        message: `Sync complete: ${createdCount} created, ${updatedCount} updated, ${archivedCount} archived`,
         updated: updatedCount,
         created: createdCount,
+        archived: archivedCount,
       };
     } catch (error) {
       // Clear sync lock on error too
