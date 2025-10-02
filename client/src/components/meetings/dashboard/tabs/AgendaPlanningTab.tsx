@@ -1093,11 +1093,6 @@ export function AgendaPlanningTab({
                                   </Button>
                                 )}
                               </div>
-
-                              {/* Project Tasks View */}
-                              <ProjectTasksView
-                                projectId={project.id}
-                              />
                             </div>
 
                             {/* File Attachments */}
