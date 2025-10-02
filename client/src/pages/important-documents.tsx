@@ -105,6 +105,15 @@ const adminDocuments: AdminDocument[] = [
     type: 'pdf',
     importance: 'high',
   },
+  {
+    id: 'sandwich-signin-form',
+    name: 'Sandwich Sign-In Form',
+    description: 'Simple sign-in form for tracking sandwich collection participants without requiring email addresses',
+    category: 'Forms',
+    path: '/attached_assets/SandwichSigninNoEmail_1759447137962.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
   
   // Safety Guidelines
   {
