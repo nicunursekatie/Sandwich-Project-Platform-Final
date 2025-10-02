@@ -138,6 +138,7 @@ export const MyAssignmentsTab: React.FC = () => {
         return (
           <InProcessCard
             {...commonProps}
+            resolveUserName={resolveUserName}
             onSchedule={() => {
               setSelectedEventRequest(request);
               setSchedulingEventRequest(request);
