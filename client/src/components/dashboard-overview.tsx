@@ -324,7 +324,7 @@ export default function DashboardOverview({
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
       </div>
-      <div className="space-y-4 sm:space-y-6 sm:space-y-8 pb-8">
+      <div className="space-y-4 sm:space-y-6 pb-8">
         {/* Header */}
         <div className="bg-white rounded-xl mx-4 mt-8 p-6 sm:p-8 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
           <div className="relative">
@@ -585,7 +585,7 @@ export default function DashboardOverview({
           </div>
 
           {/* Quick Actions Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div
               className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
               onClick={() => onSectionChange?.('collections')}

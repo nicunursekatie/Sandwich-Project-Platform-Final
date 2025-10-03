@@ -1,7 +1,7 @@
 export default function SMSVerificationDocs() {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 sm:space-y-8">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">

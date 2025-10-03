@@ -344,7 +344,7 @@ export default function AnalyticsDashboard() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 sm:space-y-8">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="text-center">
         <h1 className="text-4xl font-bold text-brand-primary mb-2">
@@ -487,7 +487,7 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Charts Section - Vertical Layout */}
-      <div className="space-y-4 sm:space-y-6 sm:space-y-8">
+      <div className="space-y-4 sm:space-y-6">
         {/* Monthly Trends - Full Width */}
         <Card className="border-2 border-brand-primary/20">
           <div className="p-6 border-b">

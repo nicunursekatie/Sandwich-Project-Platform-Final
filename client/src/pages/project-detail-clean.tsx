@@ -699,7 +699,7 @@ export default function ProjectDetailClean({
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-4 sm:space-y-6 sm:space-y-8 min-h-screen overflow-y-auto">
+    <div className="max-w-7xl mx-auto p-6 space-y-4 sm:space-y-6 min-h-screen overflow-y-auto">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 sm:gap-4">

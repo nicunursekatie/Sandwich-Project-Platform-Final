@@ -439,7 +439,7 @@ export default function RoleDemo() {
         onValueChange={(value) => setSelectedRole(value)}
         className="space-y-4 sm:space-y-6"
       >
-        <TabsList className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-7 w-full">
           {Object.values(USER_ROLES).map((role) => {
             const Icon = roleIcons[role];
             return (

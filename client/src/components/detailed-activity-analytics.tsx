@@ -366,7 +366,7 @@ export function DetailedActivityAnalytics() {
 
       {/* Detailed Analysis Tabs */}
       <Tabs defaultValue="recent" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 sm:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4">
           <TabsTrigger value="recent">Recent Activity</TabsTrigger>
           <TabsTrigger value="actions">Top Actions</TabsTrigger>
           <TabsTrigger value="sections">Top Sections</TabsTrigger>

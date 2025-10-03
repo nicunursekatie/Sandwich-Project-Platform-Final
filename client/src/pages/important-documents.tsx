@@ -658,7 +658,7 @@ export default function ImportantDocuments() {
             </div>
           </TabsContent>
 
-          <TabsContent value="logos" className="space-y-4 sm:space-y-6 sm:space-y-8">
+          <TabsContent value="logos" className="space-y-4 sm:space-y-6">
             {/* Logo Grid - Professional design */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {logoFiles.map((logo) => (
@@ -682,7 +682,7 @@ export default function ImportantDocuments() {
                       {logo.type}
                     </Badge>
                   </CardHeader>
-                  <CardContent className="space-y-4 sm:space-y-6 sm:space-y-8 p-8">
+                  <CardContent className="space-y-4 sm:space-y-6 p-8">
                     {/* Logo Preview */}
                     <div
                       className="w-full h-40 rounded-lg border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] flex items-center justify-center overflow-hidden group-hover:shadow-[inset_0_4px_8px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out"
@@ -808,7 +808,7 @@ export default function ImportantDocuments() {
           </TabsContent>
 
           {hasConfidentialAccess && (
-            <TabsContent value="confidential" className="space-y-4 sm:space-y-6 sm:space-y-8">
+            <TabsContent value="confidential" className="space-y-4 sm:space-y-6">
               <ConfidentialDocuments />
             </TabsContent>
           )}

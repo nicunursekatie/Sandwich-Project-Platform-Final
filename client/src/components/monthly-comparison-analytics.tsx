@@ -771,7 +771,7 @@ export default function MonthlyComparisonAnalytics() {
         onValueChange={(value) => setSelectedTab(value as any)}
         className="space-y-4 sm:space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 sm:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-2 text-[16px]">
             <BarChart3 className="h-4 w-4" />
             Overview

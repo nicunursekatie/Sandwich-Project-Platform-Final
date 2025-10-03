@@ -890,7 +890,7 @@ function PhoneDirectoryFixed() {
      ========================= */
 
   return (
-    <div className="space-y-4 sm:space-y-6 sm:space-y-8 p-6 font-['Roboto',sans-serif]">
+    <div className="space-y-4 sm:space-y-6 p-6 font-['Roboto',sans-serif]">
       {/* Header */}
       <div className="flex flex-col space-y-4 sm:space-y-6">
         <div>

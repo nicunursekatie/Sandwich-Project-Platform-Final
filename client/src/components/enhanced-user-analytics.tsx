@@ -264,7 +264,7 @@ export default function EnhancedUserAnalytics() {
 
       {/* Overview Stats Cards - Compact design with better spacing */}
       {systemStats && (
-        <div className="space-y-4 sm:space-y-6 sm:space-y-8">
+        <div className="space-y-4 sm:space-y-6">
           <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
             <div className="bg-white  p-3 sm:p-4 rounded-lg border border-brand-primary/20 hover:border-brand-primary/40 transition-colors">
               <div className="flex items-center justify-between mb-1">

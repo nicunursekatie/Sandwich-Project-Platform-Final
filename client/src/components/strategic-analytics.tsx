@@ -332,7 +332,7 @@ export default function StrategicAnalytics() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 sm:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4">
           <TabsTrigger value="highlights">Achievements</TabsTrigger>
           <TabsTrigger value="trends">Growth Trends</TabsTrigger>
           <TabsTrigger value="insights">Seasonal Insights</TabsTrigger>
