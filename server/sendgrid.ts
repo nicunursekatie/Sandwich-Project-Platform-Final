@@ -9,6 +9,11 @@ if (!process.env.SENDGRID_API_KEY) {
 const mailService = new MailService();
 mailService.setApiKey(process.env.SENDGRID_API_KEY);
 
+interface EmailAttachment {
+  filePath: string;
+  originalName?: string;
+}
+
 interface EmailParams {
   to: string;
   from: string;
@@ -16,7 +21,7 @@ interface EmailParams {
   subject: string;
   text?: string;
   html?: string;
-  attachments?: string[];
+  attachments?: (string | EmailAttachment)[];
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
@@ -41,8 +46,12 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     if (params.attachments && params.attachments.length > 0) {
       const processedAttachments = [];
       
-      for (const filePath of params.attachments) {
+      for (const attachment of params.attachments) {
         try {
+          // Handle both string paths and attachment objects
+          const filePath = typeof attachment === 'string' ? attachment : attachment.filePath;
+          const originalName = typeof attachment === 'string' ? undefined : attachment.originalName;
+          
           // Check if file exists
           if (!fs.existsSync(filePath)) {
             console.warn(`Attachment file not found: ${filePath}`);
@@ -53,8 +62,8 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
           const fileContent = fs.readFileSync(filePath);
           const base64Content = fileContent.toString('base64');
           
-          // Extract filename from path
-          const filename = path.basename(filePath);
+          // Use original name if provided, otherwise extract from path
+          const filename = originalName || path.basename(filePath);
           
           // Determine content type based on file extension
           const ext = path.extname(filename).toLowerCase();
