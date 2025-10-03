@@ -105,6 +105,15 @@ const adminDocuments: AdminDocument[] = [
     type: 'pdf',
     importance: 'high',
   },
+  {
+    id: 'sandwich-signin-form',
+    name: 'Sandwich Sign-In Form',
+    description: 'Simple sign-in form for tracking sandwich collection participants without requiring email addresses',
+    category: 'Forms',
+    path: '/attached_assets/SandwichSigninNoEmail_1759447137962.pdf',
+    type: 'pdf',
+    importance: 'high',
+  },
   
   // Safety Guidelines
   {
@@ -178,7 +187,7 @@ const adminDocuments: AdminDocument[] = [
     id: 'deli-sandwich-guide',
     name: 'Deli Sandwich Making 101',
     description: 'Complete guide to preparing deli sandwiches according to TSP standards',
-    category: 'Tools',
+    category: 'Sandwich Making',
     path: '/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf',
     type: 'pdf',
     importance: 'high',
@@ -187,7 +196,7 @@ const adminDocuments: AdminDocument[] = [
     id: 'pbj-sandwich-guide',
     name: 'PBJ Sandwich Making 101',
     description: 'Step-by-step instructions for making peanut butter and jelly sandwiches',
-    category: 'Tools',
+    category: 'Sandwich Making',
     path: '/attached_assets/20250622-TSP-PBJ Sandwich Making 101_1749341916236.pdf',
     type: 'pdf',
     importance: 'high',

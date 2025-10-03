@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import {
   Card,
   CardContent,
@@ -597,14 +598,17 @@ export function EventRequestAuditLog({
     return null;
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     trackClick(
       'Refresh Audit Log',
       'Audit',
       'Event Requests',
       'Manual refresh of audit log data'
     );
-    refetch();
+    // Invalidate the query to force a fresh network call
+    await queryClient.invalidateQueries({
+      queryKey: ['/api/event-requests/audit-logs']
+    });
   };
 
   const handleFilterChange = (type: string, value: string) => {

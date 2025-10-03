@@ -138,6 +138,7 @@ function DocumentUploadDialog({ onSuccess }: { onSuccess: () => void }) {
       const response = await fetch('/api/documents', {
         method: 'POST',
         body: data,
+        credentials: 'include',
       });
       if (!response.ok) {
         throw new Error('Failed to upload document');
