@@ -48,7 +48,7 @@ function canLogWork(req: any) {
 }
 
 // Get work logs - Check permissions first
-router.get('/work-logs', isAuthenticated, async (req, res) => {
+router.get('/', isAuthenticated, async (req, res) => {
   try {
     const userId = req.user?.id;
     const userEmail = req.user?.email;
@@ -107,7 +107,7 @@ router.get('/work-logs', isAuthenticated, async (req, res) => {
 
 // Create a new work log
 router.post(
-  '/work-logs',
+  '/',
   requirePermission('WORK_LOGS_ADD'),
   async (req, res) => {
     const result = insertWorkLogSchema.safeParse(req.body);
@@ -134,7 +134,7 @@ router.post(
 
 // Update a work log (own or any if super admin)
 router.put(
-  '/work-logs/:id',
+  '/:id',
   requireOwnershipPermission(
     'WORK_LOGS_EDIT_OWN',
     'WORK_LOGS_EDIT_ALL',
@@ -173,7 +173,7 @@ router.put(
 
 // Delete a work log (own or any if super admin)
 router.delete(
-  '/work-logs/:id',
+  '/:id',
   requireOwnershipPermission(
     'WORK_LOGS_DELETE_OWN',
     'WORK_LOGS_DELETE_ALL',
