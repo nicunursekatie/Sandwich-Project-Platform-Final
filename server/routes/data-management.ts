@@ -11,7 +11,7 @@ const router = Router();
 // Export data endpoints
 router.get(
   '/export/collections',
-  requirePermission(PERMISSIONS.MANAGE_DATA),
+  requirePermission(PERMISSIONS.DATA_EXPORT),
   async (req, res) => {
     try {
       const { format = 'csv', startDate, endDate } = req.query;
@@ -48,7 +48,7 @@ router.get(
 
 router.get(
   '/export/hosts',
-  requirePermission(PERMISSIONS.MANAGE_DATA),
+  requirePermission(PERMISSIONS.DATA_EXPORT),
   async (req, res) => {
     try {
       const { format = 'csv', includeInactive = 'false' } = req.query;
@@ -103,7 +103,7 @@ router.get('/summary', async (req, res) => {
 // Bulk operations endpoints
 router.post(
   '/bulk/deduplicate-hosts',
-  requirePermission(PERMISSIONS.MANAGE_DATA),
+  requirePermission(PERMISSIONS.ADMIN_ACCESS),
   async (req: any, res) => {
     try {
       const context = {
@@ -124,7 +124,7 @@ router.post(
 
 router.delete(
   '/bulk/collections',
-  requirePermission(PERMISSIONS.MANAGE_DATA),
+  requirePermission(PERMISSIONS.ADMIN_ACCESS),
   async (req: any, res) => {
     try {
       const schema = z.object({
