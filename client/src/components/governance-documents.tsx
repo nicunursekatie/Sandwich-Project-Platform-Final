@@ -64,13 +64,13 @@ const getFileIcon = (type: string) => {
 const getCategoryColor = (category: string) => {
   switch (category) {
     case 'Legal Foundation':
-      return 'bg-teal-100 text-teal-800';
+      return 'bg-brand-teal/10 text-brand-teal-dark border-brand-teal/40';
     case 'Legal Reference':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-brand-primary/10 text-brand-primary border-brand-primary/30';
     case 'Tax Status':
-      return 'bg-amber-100 text-amber-800';
+      return 'bg-brand-orange/10 text-brand-orange border-brand-orange/30';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-muted text-muted-foreground border-border';
   }
 };
 
@@ -123,10 +123,13 @@ export function GovernanceDocuments() {
           <Button
             key={category}
             variant={selectedCategory === category ? 'default' : 'outline'}
-            className={selectedCategory === category ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border-brand-primary' : 'text-brand-primary border-brand-primary hover:bg-[#f0f9ff]'}
+            className={`${
+              selectedCategory === category
+                ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border-brand-primary'
+                : 'text-brand-primary border-brand-primary hover:bg-brand-primary/10'
+            } text-sm`}
             size="sm"
             onClick={() => setSelectedCategory(category)}
-            className="text-sm"
           >
             {category}
           </Button>
@@ -179,7 +182,7 @@ export function GovernanceDocuments() {
                   size="sm"
                   variant="outline"
                   onClick={() => handlePreview(document)}
-                  className="w-full h-9 text-sm font-medium text-brand-primary border-brand-primary hover:bg-[#f0f9ff]"
+                  className="w-full h-9 text-sm font-medium text-brand-primary border-brand-primary hover:bg-brand-primary/10"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Preview
