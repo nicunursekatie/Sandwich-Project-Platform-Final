@@ -85,7 +85,7 @@ export const CreateProjectDialog: React.FC = () => {
           </div>
 
           {/* Meeting Project Toggle */}
-          <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
+          <div className="flex items-center space-x-2 p-3 bg-brand-primary-lighter rounded-lg">
             <Checkbox
               id="isMeetingProject"
               checked={newProject.isMeetingProject || false}

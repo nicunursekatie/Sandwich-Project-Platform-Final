@@ -254,7 +254,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               <Mail className="w-4 h-4 text-gray-400" />
               <a
                 href={`mailto:${request.email}`}
-                className="text-blue-600 hover:text-blue-800 text-[18px]"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-[18px]"
               >
                 {request.email}
               </a>
@@ -265,7 +265,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               <Phone className="w-4 h-4 text-gray-400" />
               <a
                 href={`tel:${request.phone}`}
-                className="text-blue-600 hover:text-blue-800 text-[18px]"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-[18px]"
               >
                 {request.phone}
               </a>
@@ -394,7 +394,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
         {/* Event Details */}
         <div className="space-y-3 mb-4">
-          <div className="bg-blue-50 rounded-lg p-3">
+          <div className="bg-brand-primary-lighter rounded-lg p-3">
             <p className="text-gray-500 mb-1 text-[16px] font-bold">
               Submitted
             </p>

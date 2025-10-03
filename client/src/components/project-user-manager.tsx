@@ -339,7 +339,7 @@ export default function ProjectUserManager({
                                 className="flex items-center justify-between p-3 border rounded-lg"
                               >
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <div className="w-8 h-8 bg-brand-primary-light rounded-full flex items-center justify-center">
                                     <span className="text-sm font-medium text-brand-primary">
                                       {assignedUser.firstName?.[0]}
                                       {assignedUser.lastName?.[0]}
@@ -436,7 +436,7 @@ export default function ProjectUserManager({
                   className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-brand-primary-light rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-brand-primary">
                         {assignedUser.firstName?.[0]}
                         {assignedUser.lastName?.[0]}

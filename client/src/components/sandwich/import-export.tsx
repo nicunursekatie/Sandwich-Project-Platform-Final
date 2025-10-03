@@ -176,14 +176,14 @@ export function ImportExportDialog({
                   </label>
                 </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="bg-brand-primary-lighter p-4 rounded-lg">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 text-brand-primary mt-0.5 flex-shrink-0" />
                     <div className="text-sm">
-                      <div className="font-medium text-blue-800 mb-1">
+                      <div className="font-medium text-brand-primary-dark mb-1">
                         CSV Format Requirements
                       </div>
-                      <ul className="text-blue-700 space-y-1">
+                      <ul className="text-brand-primary space-y-1">
                         <li>• First row should contain headers</li>
                         <li>• Date format: YYYY-MM-DD</li>
                         <li>• Individual sandwiches: number</li>

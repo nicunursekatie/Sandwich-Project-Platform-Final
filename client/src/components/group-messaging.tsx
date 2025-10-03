@@ -657,7 +657,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                         <div className="flex items-center gap-1 mt-1">
                           <Users className="h-3 w-3 text-gray-400" />
                           <button 
-                            className="text-xs text-brand-primary hover:text-blue-800 hover:underline"
+                            className="text-xs text-brand-primary hover:text-brand-primary-dark hover:underline"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedGroup(group);
@@ -696,7 +696,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                   )}
                   <div className="flex items-center gap-2 mt-1">
                     <button 
-                      className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded"
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-brand-primary-light hover:bg-brand-primary-soft text-brand-primary rounded"
                       onClick={() => setShowMemberDialog(true)}
                     >
                       <Users className="h-3 w-3" />

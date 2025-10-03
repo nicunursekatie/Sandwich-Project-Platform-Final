@@ -295,7 +295,7 @@ export default function EventRemindersManagement() {
         );
       case 'tomorrow':
         return (
-          <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+          <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border">
             Tomorrow
           </Badge>
         );

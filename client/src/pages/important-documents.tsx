@@ -467,7 +467,7 @@ export default function ImportantDocuments() {
         return (
           <Badge
             variant="secondary"
-            className="text-xs bg-blue-100 text-blue-800"
+            className="text-xs bg-brand-primary-light text-brand-primary-dark"
           >
             Important
           </Badge>

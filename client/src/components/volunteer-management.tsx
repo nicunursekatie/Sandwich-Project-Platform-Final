@@ -371,7 +371,7 @@ export default function VolunteerManagement() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-primary-light">
           <Users className="w-6 h-6 text-brand-primary" />
         </div>
         <div className="flex-1">
@@ -693,8 +693,8 @@ export default function VolunteerManagement() {
                     </div>
 
                     {!showHostDesignation ? (
-                      <div className="bg-blue-50 rounded-lg p-4">
-                        <p className="text-sm text-blue-800 mb-3">
+                      <div className="bg-brand-primary-lighter rounded-lg p-4">
+                        <p className="text-sm text-brand-primary-dark mb-3">
                           Promote this volunteer to be a host contact at a
                           specific location. They will appear in the host
                           management section.
@@ -704,7 +704,7 @@ export default function VolunteerManagement() {
                             type="button"
                             variant="outline"
                             onClick={() => setShowHostDesignation(true)}
-                            className="text-brand-primary border-blue-200 hover:bg-blue-100"
+                            className="text-brand-primary border-brand-primary-border hover:bg-brand-primary-light"
                           >
                             <Building2 className="w-4 h-4 mr-2" />
                             Designate as Host

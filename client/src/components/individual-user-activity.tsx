@@ -68,7 +68,7 @@ const getActionIcon = (action: string) => {
 const getActionColor = (action: string) => {
   switch (action) {
     case 'View':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-brand-primary-light text-brand-primary-dark';
     case 'Click':
       return 'bg-green-100 text-green-800';
     case 'Submit':

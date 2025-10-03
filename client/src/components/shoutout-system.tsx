@@ -328,7 +328,7 @@ export default function ShoutoutSystem() {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'reminder':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border';
       case 'encouragement':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'announcement':

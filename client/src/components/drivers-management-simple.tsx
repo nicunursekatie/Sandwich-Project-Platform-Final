@@ -836,7 +836,7 @@ export default function DriversManagement() {
                           {driver.vanApproved && (
                             <Badge
                               variant="default"
-                              className="bg-blue-100 text-blue-800 border-blue-200 mt-1"
+                              className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border mt-1"
                             >
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Van Approved

@@ -88,7 +88,7 @@ const getPriorityBadgeColor = (priority: string) => {
   switch (priority) {
     case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
     case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'medium': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'medium': return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border';
     case 'low': return 'bg-green-100 text-green-800 border-green-200';
     default: return 'bg-gray-100 text-gray-800 border-gray-200';
   }
@@ -289,7 +289,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                       key={notification.id}
                       className={cn(
                         "group flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors",
-                        !notification.isRead && "bg-blue-50/50"
+                        !notification.isRead && "bg-brand-primary-lighter/50"
                       )}
                       onClick={() => handleNotificationClick(notification)}
                       data-testid={`notification-${notification.id}`}

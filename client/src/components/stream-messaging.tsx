@@ -73,7 +73,7 @@ const EmailPreview = ({ channel, setActiveChannel }: ChannelPreviewProps) => {
           {isUnread && (
             <Badge
               variant="secondary"
-              className="text-xs bg-blue-100 text-blue-700"
+              className="text-xs bg-brand-primary-light text-brand-primary"
             >
               {unreadCount}
             </Badge>

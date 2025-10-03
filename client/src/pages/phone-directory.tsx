@@ -76,7 +76,7 @@ export default function PhoneDirectoryPage() {
                     href={item.path}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
                       isActive
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        ? 'bg-brand-primary-lighter text-brand-primary border border-brand-primary-border'
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >

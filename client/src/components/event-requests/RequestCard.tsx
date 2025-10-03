@@ -690,9 +690,9 @@ export default function RequestCard({
 
               {/* TSP Contact Editing Dialog/Interface */}
               {isEditingTspContact && canEditTspContacts && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
-                  <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center">
-                    <UserCheck className="w-4 h-4 mr-2 text-blue-600" />
+                <div className="bg-brand-primary-lighter p-4 rounded-lg border border-brand-primary-border mt-4">
+                  <h4 className="text-sm font-semibold text-brand-primary-dark mb-3 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-brand-primary-muted" />
                     {request.tspContact ? 'Edit TSP Contact Assignment' : 'Assign TSP Contact'}
                   </h4>
                   <div className="space-y-3">
@@ -749,7 +749,7 @@ export default function RequestCard({
                       </Button>
                     </div>
                     {request.tspContact && (
-                      <div className="text-sm text-blue-600">
+                      <div className="text-sm text-brand-primary-muted">
                         Current assignment: {resolveUserName(request.tspContact)}
                         {request.tspContactAssignedDate && (
                           <span className="ml-2">
@@ -777,21 +777,21 @@ export default function RequestCard({
 
               {/* Legacy TSP Contact Information (for existing additional contacts) */}
               {(request.tspContactAssigned || request.additionalContact1 || request.additionalContact2 || request.customTspContact) && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
-                  <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center">
-                    <UserCheck className="w-4 h-4 mr-2 text-blue-600" />
+                <div className="bg-brand-primary-lighter p-4 rounded-lg border border-brand-primary-border mt-4">
+                  <h4 className="text-sm font-semibold text-brand-primary-dark mb-3 flex items-center">
+                    <UserCheck className="w-4 h-4 mr-2 text-brand-primary-muted" />
                     Additional TSP Contacts
                   </h4>
                   <div className="space-y-3">
                     {/* Legacy TSP Contact Assigned */}
                     {request.tspContactAssigned && (
                       <div className="flex items-center space-x-3">
-                        <UserCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <UserCheck className="w-4 h-4 text-brand-primary-muted flex-shrink-0" />
                         <div>
                           <p className="text-base font-medium text-[#1A2332]">
                             {resolveUserName(request.tspContactAssigned)}
                           </p>
-                          <p className="text-sm text-blue-600">Legacy Assigned TSP Team Member</p>
+                          <p className="text-sm text-brand-primary-muted">Legacy Assigned TSP Team Member</p>
                         </div>
                       </div>
                     )}
@@ -799,12 +799,12 @@ export default function RequestCard({
                     {/* Additional Contact 1 */}
                     {request.additionalContact1 && (
                       <div className="flex items-center space-x-3">
-                        <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <User className="w-4 h-4 text-brand-primary-muted flex-shrink-0" />
                         <div>
                           <p className="text-base font-medium text-[#1A2332]">
                             {resolveUserName(request.additionalContact1)}
                           </p>
-                          <p className="text-sm text-blue-600">Additional TSP Contact</p>
+                          <p className="text-sm text-brand-primary-muted">Additional TSP Contact</p>
                         </div>
                       </div>
                     )}
@@ -812,12 +812,12 @@ export default function RequestCard({
                     {/* Additional Contact 2 */}
                     {request.additionalContact2 && (
                       <div className="flex items-center space-x-3">
-                        <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <User className="w-4 h-4 text-brand-primary-muted flex-shrink-0" />
                         <div>
                           <p className="text-base font-medium text-[#1A2332]">
                             {resolveUserName(request.additionalContact2)}
                           </p>
-                          <p className="text-sm text-blue-600">Additional TSP Contact</p>
+                          <p className="text-sm text-brand-primary-muted">Additional TSP Contact</p>
                         </div>
                       </div>
                     )}
@@ -825,12 +825,12 @@ export default function RequestCard({
                     {/* Custom TSP Contact */}
                     {request.customTspContact && (
                       <div className="flex items-center space-x-3">
-                        <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <User className="w-4 h-4 text-brand-primary-muted flex-shrink-0" />
                         <div>
                           <p className="text-base font-medium text-[#1A2332]">
                             {request.customTspContact}
                           </p>
-                          <p className="text-sm text-blue-600">Custom TSP Contact</p>
+                          <p className="text-sm text-brand-primary-muted">Custom TSP Contact</p>
                         </div>
                       </div>
                     )}

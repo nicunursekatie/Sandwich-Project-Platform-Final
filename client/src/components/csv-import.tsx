@@ -141,11 +141,11 @@ export default function CSVImport() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-brand-primary-lighter rounded-lg">
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-brand-primary" />
                   <div>
-                    <p className="font-medium text-blue-900">
+                    <p className="font-medium text-brand-primary-darker">
                       {selectedFile.name}
                     </p>
                     <p className="text-sm text-brand-primary">

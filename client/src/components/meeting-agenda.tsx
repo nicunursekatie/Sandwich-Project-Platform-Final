@@ -293,7 +293,7 @@ export default function MeetingAgenda() {
   const getMeetingTypeColor = (type: string) => {
     switch (type) {
       case 'weekly':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-brand-primary-light text-brand-primary-dark';
       case 'marketing_committee':
         return 'bg-purple-100 text-purple-800';
       case 'grant_committee':
@@ -580,7 +580,7 @@ export default function MeetingAgenda() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEditItem(item)}
-                                className="text-brand-primary hover:text-blue-700"
+                                className="text-brand-primary hover:text-brand-primary"
                                 title="Edit item"
                               >
                                 <Edit className="w-3 h-3" />

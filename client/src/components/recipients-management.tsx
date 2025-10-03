@@ -1453,7 +1453,7 @@ export default function RecipientsManagement() {
                       {(recipient as any).focusArea && (
                         <Badge
                           variant="outline"
-                          className="bg-blue-50 text-blue-700 border-blue-200"
+                          className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border"
                         >
                           {(recipient as any).focusArea}
                         </Badge>

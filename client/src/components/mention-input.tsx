@@ -87,7 +87,7 @@ export function MentionInput({
       parts.push(
         <span
           key={match.index}
-          className="bg-blue-100 text-blue-800 px-1 rounded font-medium"
+          className="bg-brand-primary-light text-brand-primary-dark px-1 rounded font-medium"
         >
           @{mentionText}
         </span>
@@ -268,7 +268,7 @@ export function MentionInput({
                   key={suggestion.id}
                   className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
                     index === selectedSuggestion
-                      ? 'bg-blue-50 border-l-2 border-blue-500'
+                      ? 'bg-brand-primary-lighter border-l-2 border-blue-500'
                       : ''
                   }`}
                   onClick={() => handleSuggestionClick(suggestion)}
@@ -321,7 +321,7 @@ export function MessageWithMentions({ content }: { content: string }) {
     parts.push(
       <span
         key={match.index}
-        className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1 rounded font-medium"
+        className="bg-brand-primary-light text-brand-primary-dark dark:bg-brand-primary-darker dark:text-brand-primary-muted px-1 rounded font-medium"
       >
         @{mentionText}
       </span>

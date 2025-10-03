@@ -136,7 +136,7 @@ export default function MeetingMinutes() {
           <Button
             variant="ghost"
             size="sm"
-            className="text-brand-primary hover:text-blue-700"
+            className="text-brand-primary hover:text-brand-primary"
             onClick={() => setShowAddMeeting(true)}
           >
             <Plus className="mr-1 w-4 h-4" />
@@ -169,7 +169,7 @@ export default function MeetingMinutes() {
                     ? `${minute.summary.substring(0, 150)}...`
                     : minute.summary}
                 </p>
-                <div className="mt-2 text-xs text-brand-primary hover:text-blue-800">
+                <div className="mt-2 text-xs text-brand-primary hover:text-brand-primary-dark">
                   Click to view full meeting minutes →
                 </div>
               </div>

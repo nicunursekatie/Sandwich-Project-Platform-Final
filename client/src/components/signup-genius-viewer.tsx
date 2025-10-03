@@ -29,7 +29,7 @@ export default function SignUpGeniusViewer() {
         <CardHeader className="pb-4 px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-brand-primary-light rounded-lg flex items-center justify-center">
                 <Users className="h-5 w-5 text-brand-primary" />
               </div>
               SignUp Genius
@@ -41,7 +41,7 @@ export default function SignUpGeniusViewer() {
           {/* Always show fallback since SignUp Genius blocks embedding */}
           {
             <div className="flex flex-col items-center justify-center h-full bg-white rounded-lg border-2 border-dashed border-gray-300 p-8">
-              <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-brand-primary-light rounded-lg flex items-center justify-center mb-4">
                 <Users className="h-8 w-8 text-brand-primary" />
               </div>
 

@@ -814,7 +814,7 @@ export function AgendaPlanningTab({
                                 : needsDiscussion
                                   ? 'border-teal-400 bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-100 shadow-teal-200'
                                   : index % 2 === 0
-                                    ? 'border-blue-300 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 shadow-blue-200'
+                                    ? 'border-brand-primary-border-strong bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 shadow-blue-200'
                                     : 'border-purple-300 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 shadow-purple-200'
                           }`}
                         >

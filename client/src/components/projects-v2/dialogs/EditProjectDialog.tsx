@@ -124,7 +124,7 @@ export const EditProjectDialog: React.FC = () => {
 
           {/* Meeting Project Indicator (read-only) */}
           {editingProject.googleSheetRowId && (
-            <div className="p-3 bg-blue-50 rounded-lg">
+            <div className="p-3 bg-brand-primary-lighter rounded-lg">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-roboto">📊 Meeting Project</span>
                 <span className="text-xs text-gray-500">

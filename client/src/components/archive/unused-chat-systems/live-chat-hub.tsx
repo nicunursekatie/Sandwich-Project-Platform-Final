@@ -282,7 +282,7 @@ export default function LiveChatHub({
                 isSelected
                   ? isCorteTeam
                     ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200'
-                    : 'bg-blue-50 border-blue-200'
+                    : 'bg-brand-primary-lighter border-brand-primary-border'
                   : 'bg-white border-gray-200 hover:bg-gray-50'
               }`}
               onClick={() => handleChannelClick(channel.id)}
@@ -306,7 +306,7 @@ export default function LiveChatHub({
                         isSelected
                           ? isCorteTeam
                             ? 'text-amber-900'
-                            : 'text-blue-900'
+                            : 'text-brand-primary-darker'
                           : 'text-gray-900'
                       }`}
                     >

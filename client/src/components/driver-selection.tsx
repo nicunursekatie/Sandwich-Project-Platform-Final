@@ -247,8 +247,8 @@ export function DriverSelection({
 
         {/* Selected Drivers Summary */}
         {selectedDrivers.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">
+          <div className="bg-brand-primary-lighter border border-brand-primary-border rounded-lg p-4">
+            <h4 className="font-medium text-brand-primary-darker mb-2">
               Selected Drivers ({selectedDrivers.length})
             </h4>
             <div className="space-y-2">
@@ -303,7 +303,7 @@ export function DriverSelection({
                     className={cn(
                       'border rounded-lg p-4 cursor-pointer transition-colors',
                       isSelected
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-blue-500 bg-brand-primary-lighter'
                         : 'border-gray-200 hover:border-gray-300'
                     )}
                     onClick={() => toggleDriverSelection(driver.id)}

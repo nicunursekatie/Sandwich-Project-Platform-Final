@@ -811,7 +811,7 @@ export default function HostsManagementConsolidated() {
                       {contactsToShow.map((contact) => (
                         <div
                           key={contact.id}
-                          className="space-y-1 border-l-2 border-blue-200 pl-2"
+                          className="space-y-1 border-l-2 border-brand-primary-border pl-2"
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-slate-700">
@@ -846,7 +846,7 @@ export default function HostsManagementConsolidated() {
                       {sortedContacts.length > 2 && (
                         <button
                           onClick={() => toggleContactExpansion(host.id)}
-                          className="text-xs text-brand-primary hover:text-blue-800 hover:underline cursor-pointer"
+                          className="text-xs text-brand-primary hover:text-brand-primary-dark hover:underline cursor-pointer"
                         >
                           {isExpanded
                             ? 'Show less'
@@ -1357,7 +1357,7 @@ export default function HostsManagementConsolidated() {
                                 contact.role === 'lead'
                                   ? 'bg-purple-100 text-purple-800 border-purple-200'
                                   : contact.isPrimary
-                                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                    ? 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border'
                                     : contact.role === 'primary'
                                       ? 'bg-green-100 text-green-800 border-green-200'
                                       : 'bg-gray-100 text-gray-800 border-gray-200'
@@ -1366,7 +1366,7 @@ export default function HostsManagementConsolidated() {
                               {contact.role}
                             </Badge>
                             {contact.isPrimary && (
-                              <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                              <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border text-xs">
                                 <Star className="w-3 h-3 mr-1" />
                                 Primary
                               </Badge>

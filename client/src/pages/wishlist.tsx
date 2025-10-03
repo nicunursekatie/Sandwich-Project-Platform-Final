@@ -769,7 +769,7 @@ export default function WishlistPage() {
                     key={index}
                     className={`flex items-center justify-between p-3 rounded-lg ${
                       item.type === 'suggestion'
-                        ? 'bg-blue-50'
+                        ? 'bg-brand-primary-lighter'
                         : item.status === 'approved'
                           ? 'bg-green-50'
                           : 'bg-orange-50'

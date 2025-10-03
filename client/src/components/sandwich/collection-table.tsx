@@ -241,7 +241,7 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
                     )}
                   </td>
                   <td className="p-3">
-                    <Badge className="bg-blue-100 text-blue-800">
+                    <Badge className="bg-brand-primary-light text-brand-primary-dark">
                       {total}
                     </Badge>
                   </td>

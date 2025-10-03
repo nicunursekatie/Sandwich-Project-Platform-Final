@@ -353,7 +353,7 @@ export default function ProjectsClean() {
             {project.googleSheetRowId ? (
               <Badge
                 variant="outline"
-                className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
+                className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border text-xs"
               >
                 📊 Meeting
               </Badge>
@@ -670,7 +670,7 @@ export default function ProjectsClean() {
             className={`transition-all ${
               projectTypeFilter === 'meeting'
                 ? 'bg-brand-primary text-white hover:bg-brand-primary'
-                : 'text-brand-primary hover:text-blue-700 hover:bg-blue-50'
+                : 'text-brand-primary hover:text-brand-primary hover:bg-brand-primary-lighter'
             }`}
           >
             📊 Meeting Projects (
@@ -857,7 +857,7 @@ export default function ProjectsClean() {
                     onChange={() =>
                       setNewProject({ ...newProject, isMeetingProject: true })
                     }
-                    className="w-4 h-4 text-brand-primary border-gray-300 focus:ring-blue-500"
+                    className="w-4 h-4 text-brand-primary border-gray-300 focus:ring-brand-primary-muted"
                   />
                   <span className="text-sm font-roboto">
                     📊 Meeting Project

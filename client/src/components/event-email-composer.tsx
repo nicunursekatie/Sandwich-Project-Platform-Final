@@ -1046,15 +1046,15 @@ ${userEmail}`;
 
           {/* Load Draft Section */}
           {isDraftsLoading && (
-            <Card className="bg-blue-50 border border-blue-200">
+            <Card className="bg-brand-primary-lighter border border-brand-primary-border">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                  <Loader2 className="w-5 h-5 text-brand-primary-muted animate-spin" />
                   <div>
-                    <p className="font-medium text-blue-900">
+                    <p className="font-medium text-brand-primary-darker">
                       Loading drafts...
                     </p>
-                    <p className="text-sm text-blue-600">
+                    <p className="text-sm text-brand-primary-muted">
                       Checking for previously saved drafts for this event.
                     </p>
                   </div>
@@ -1188,7 +1188,7 @@ ${userEmail}`;
           {/* Content */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Message Format</Label>
-            
+
             <RadioGroup
               value={emailFormat}
               onValueChange={(value: 'html' | 'plaintext') => {
@@ -1199,19 +1199,33 @@ ${userEmail}`;
               className="flex gap-4"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="html" id="format-html" data-testid="radio-html" />
-                <Label htmlFor="format-html" className="cursor-pointer font-normal">
+                <RadioGroupItem
+                  value="html"
+                  id="format-html"
+                  data-testid="radio-html"
+                />
+                <Label
+                  htmlFor="format-html"
+                  className="cursor-pointer font-normal"
+                >
                   Use prebuilt HTML template
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="plaintext" id="format-plaintext" data-testid="radio-plaintext" />
-                <Label htmlFor="format-plaintext" className="cursor-pointer font-normal">
+                <RadioGroupItem
+                  value="plaintext"
+                  id="format-plaintext"
+                  data-testid="radio-plaintext"
+                />
+                <Label
+                  htmlFor="format-plaintext"
+                  className="cursor-pointer font-normal"
+                >
                   Write plain text email
                 </Label>
               </div>
             </RadioGroup>
-            
+
             <div className="mt-4">
               {emailFormat === 'plaintext' && hasManualEdits && (
                 <div className="flex items-center justify-between mb-2">
@@ -1223,7 +1237,7 @@ ${userEmail}`;
                     variant="outline"
                     size="sm"
                     onClick={resetToTemplate}
-                    className="text-xs h-7 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                    className="text-xs h-7 bg-brand-primary-lighter border-brand-primary-border-strong text-brand-primary hover:bg-brand-primary-light"
                     data-testid="button-reset-template"
                   >
                     <RefreshCw className="w-3 h-3 mr-1" />
@@ -1231,7 +1245,7 @@ ${userEmail}`;
                   </Button>
                 </div>
               )}
-              
+
               {emailFormat === 'plaintext' && (
                 <div className="text-xs text-gray-500 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
                   💡 <strong>Quick Links:</strong> Inventory Calculator:
@@ -1239,13 +1253,13 @@ ${userEmail}`;
                   | Schedule Call: https://thesandwichproject.as.me/
                 </div>
               )}
-              
+
               {emailFormat === 'html' ? (
                 <div className="border rounded-lg overflow-hidden bg-white">
                   <div className="bg-gray-100 px-3 py-2 text-xs text-gray-600 border-b">
                     Email Preview (this is how the recipient will see it)
                   </div>
-                  <div 
+                  <div
                     className="p-4 max-h-[400px] overflow-y-auto"
                     dangerouslySetInnerHTML={{ __html: content }}
                     data-testid="email-preview"
@@ -1262,6 +1276,18 @@ ${userEmail}`;
                 />
               )}
             </div>
+            <div className="text-xs text-gray-500 mb-2 p-2 bg-brand-primary-lighter rounded border border-brand-primary-border">
+              💡 <strong>Quick Links:</strong> Inventory Calculator:
+              https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+              | Schedule Call: https://thesandwichproject.as.me/
+            </div>
+            <Textarea
+              id="content"
+              value={content}
+              onChange={(e) => handleContentChange(e.target.value)}
+              placeholder="Write your message here..."
+              className="min-h-[300px] w-full resize-none"
+            />
           </div>
 
           {/* Next Step Options */}
@@ -1319,7 +1345,7 @@ ${userEmail}`;
             )}
 
             {hasManualEdits && (includeSchedulingLink || requestPhoneCall) && (
-              <p className="text-xs text-blue-600 italic bg-blue-50 p-2 rounded border border-blue-200">
+              <p className="text-xs text-brand-primary-muted italic bg-brand-primary-lighter p-2 rounded border border-brand-primary-border">
                 💡 Your custom content is preserved. Use "Reset to Template"
                 above to apply these new options.
               </p>
