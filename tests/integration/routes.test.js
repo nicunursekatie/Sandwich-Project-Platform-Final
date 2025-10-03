@@ -420,6 +420,11 @@ describe('Route Integration Tests', () => {
         'POST /api/volunteers',
         'GET /api/hosts',
         'POST /api/hosts',
+        'GET /api/wishlist-suggestions',
+        'POST /api/wishlist-suggestions',
+        'PATCH /api/wishlist-suggestions/1',
+        'GET /api/wishlist-activity',
+        'DELETE /api/wishlist-suggestions/1',
       ];
 
       for (const endpoint of endpoints) {
