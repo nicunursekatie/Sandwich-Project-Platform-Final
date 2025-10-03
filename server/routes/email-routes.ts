@@ -523,7 +523,7 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
     
     await sendGridEmail({
       to: recipientEmail,
-      from: 'katielong2316@gmail.com',
+      from: 'katie@thesandwichproject.org',
       replyTo: replyToEmail,
       subject,
       text: `${content}${EMAIL_FOOTER_TEXT}`,
