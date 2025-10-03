@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -103,6 +104,7 @@ export function EventEmailComposer({
   const [includeSchedulingLink, setIncludeSchedulingLink] = useState(false);
   const [requestPhoneCall, setRequestPhoneCall] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [useHtmlTemplate, setUseHtmlTemplate] = useState(true); // NEW: Toggle between HTML template and plain text
 
   // Smart regeneration state management
   const [hasManualEdits, setHasManualEdits] = useState(false);
@@ -1149,37 +1151,64 @@ ${userEmail}`;
               <Label htmlFor="content" className="text-sm font-medium">
                 Message
               </Label>
-              {hasManualEdits && (
+              <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                    <AlertTriangle className="w-3 h-3" />
-                    Custom content - template won't auto-update
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={resetToTemplate}
-                    className="text-xs h-7 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
-                    data-testid="button-reset-template"
-                  >
-                    <RefreshCw className="w-3 h-3 mr-1" />
-                    Reset to Template
-                  </Button>
+                  <Label htmlFor="template-toggle" className="text-sm text-gray-600">
+                    {useHtmlTemplate ? 'Using Template' : 'Custom Message'}
+                  </Label>
+                  <Switch
+                    id="template-toggle"
+                    checked={useHtmlTemplate}
+                    onCheckedChange={setUseHtmlTemplate}
+                    data-testid="switch-template-toggle"
+                  />
                 </div>
-              )}
+                {hasManualEdits && !useHtmlTemplate && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetToTemplate}
+                      className="text-xs h-7 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                      data-testid="button-reset-template"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      Reset to Template
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="text-xs text-gray-500 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
-              💡 <strong>Quick Links:</strong> Inventory Calculator:
-              https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
-              | Schedule Call: https://thesandwichproject.as.me/
-            </div>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Write your message here..."
-              className="min-h-[300px] w-full resize-none"
-            />
+            
+            {!useHtmlTemplate && (
+              <div className="text-xs text-gray-500 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
+                💡 <strong>Quick Links:</strong> Inventory Calculator:
+                https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+                | Schedule Call: https://thesandwichproject.as.me/
+              </div>
+            )}
+            
+            {useHtmlTemplate ? (
+              <div className="border rounded-lg overflow-hidden bg-white">
+                <div className="bg-gray-100 px-3 py-2 text-xs text-gray-600 border-b">
+                  Email Preview (this is how the recipient will see it)
+                </div>
+                <div 
+                  className="p-4 max-h-[400px] overflow-y-auto"
+                  dangerouslySetInnerHTML={{ __html: content }}
+                  data-testid="email-preview"
+                />
+              </div>
+            ) : (
+              <Textarea
+                id="content"
+                value={content}
+                onChange={(e) => handleContentChange(e.target.value)}
+                placeholder="Write your message here..."
+                className="min-h-[300px] w-full resize-none"
+                data-testid="textarea-email-content"
+              />
+            )}
           </div>
 
           {/* Next Step Options */}
