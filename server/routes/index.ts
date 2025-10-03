@@ -31,8 +31,16 @@ import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
 
 // Import centralized middleware
-import { createStandardMiddleware, createErrorHandler } from '../middleware';
+import {
+  createStandardMiddleware,
+  createErrorHandler,
+  createPublicMiddleware,
+} from '../middleware';
 import type { IStorage } from '../storage';
+import dataManagementRouter from './data-management';
+import { createErrorLogsRoutes } from './error-logs';
+import workLogsRouter from './work-logs';
+import shoutoutsRouter from './shoutouts';
 
 interface RouterDependencies {
   isAuthenticated: any;
@@ -315,6 +323,42 @@ export function createMainRoutes(deps: RouterDependencies) {
     streamRoutes
   );
   router.use('/api/stream', createErrorHandler('stream'));
+
+  // Data management routes for exports, integrity checks, and bulk actions
+  router.use(
+    '/api/data-management',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    dataManagementRouter
+  );
+  router.use('/api/data-management', createErrorHandler('data-management'));
+
+  // Client error logging endpoint (no auth required so we can capture pre-login issues)
+  const errorLogsRouter = createErrorLogsRoutes(deps.storage);
+  router.use(
+    '/api/error-logs',
+    ...createPublicMiddleware(),
+    errorLogsRouter
+  );
+  router.use('/api/error-logs', createErrorHandler('error-logs'));
+
+  // Work log time tracking endpoints
+  router.use(
+    '/api/work-logs',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    workLogsRouter
+  );
+  router.use('/api/work-logs', createErrorHandler('work-logs'));
+
+  // Volunteer shoutouts and recognition tools
+  router.use(
+    '/api/shoutouts',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    shoutoutsRouter
+  );
+  router.use('/api/shoutouts', createErrorHandler('shoutouts'));
 
   return router;
 }
