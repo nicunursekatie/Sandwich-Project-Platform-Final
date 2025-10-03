@@ -3377,4 +3377,66 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
   }
 });
 
+// Schedule a follow-up call
+router.patch('/:id/schedule-call', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { scheduledCallDate } = req.body;
+
+    console.log('📞 Scheduling call for event request:', id);
+    console.log('Scheduled call date:', scheduledCallDate);
+
+    // Validate the date
+    if (!scheduledCallDate) {
+      return res.status(400).json({ message: 'Scheduled call date is required' });
+    }
+
+    // Get original data for audit logging
+    const originalEvent = await storage.getEventRequestById(id);
+    if (!originalEvent) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Update the event request with the scheduled call date
+    const updatedEventRequest = await storage.updateEventRequest(id, {
+      scheduledCallDate: new Date(scheduledCallDate),
+      callScheduledAt: new Date(),
+      scheduledBy: req.user?.id,
+    });
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Log the change
+    await AuditLogger.logEventRequestChange(
+      id.toString(),
+      originalEvent,
+      updatedEventRequest,
+      {
+        userId: req.user?.id,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.session?.id || req.sessionID,
+      }
+    );
+
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_SCHEDULE_CALL',
+      `Scheduled call for event request: ${id}`,
+      { scheduledCallDate }
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    console.error('Error scheduling call:', error);
+    res.status(500).json({ 
+      message: 'Failed to schedule call',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
