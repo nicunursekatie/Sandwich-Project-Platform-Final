@@ -9,6 +9,8 @@ import {
   type AuthenticatedRequest,
 } from '../temp-auth';
 import { logger } from '../middleware/logger';
+import { createStandardMiddleware, createErrorHandler } from '../middleware';
+import { storage } from '../storage-wrapper';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
