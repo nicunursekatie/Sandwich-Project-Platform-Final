@@ -112,7 +112,7 @@ export default function SuggestionsPortal() {
 
   // Fetch suggestions
   const { data: suggestions = [], isLoading } = useQuery({
-    queryKey: ['/api/suggestions'],
+    queryKey: ['/api/wishlist-suggestions'],
     enabled: hasPermission(currentUser, 'view_suggestions'),
     staleTime: 0
   });
@@ -129,17 +129,17 @@ export default function SuggestionsPortal() {
 
   // Fetch responses for selected suggestion
   const { data: responses = [] } = useQuery({
-    queryKey: ['/api/suggestions', selectedSuggestion?.id, 'responses'],
+    queryKey: ['/api/wishlist-suggestions', selectedSuggestion?.id, 'responses'],
     enabled: !!selectedSuggestion?.id
   });
 
   // Submit suggestion mutation
   const submitSuggestionMutation = useMutation({
     mutationFn: (data: SuggestionFormData) => {
-      return apiRequest('POST', '/api/suggestions', data);
+      return apiRequest('POST', '/api/wishlist-suggestions', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions'] });
       setShowSubmissionForm(false);
       suggestionForm.reset();
       toast({
@@ -158,9 +158,9 @@ export default function SuggestionsPortal() {
 
   // Upvote suggestion mutation
   const upvoteMutation = useMutation({
-    mutationFn: (suggestionId: number) => apiRequest('POST', `/api/suggestions/${suggestionId}/upvote`),
+    mutationFn: (suggestionId: number) => apiRequest('POST', `/api/wishlist-suggestions/${suggestionId}/upvote`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions'] });
       toast({
         title: "Success",
         description: "Suggestion upvoted!"
@@ -171,9 +171,9 @@ export default function SuggestionsPortal() {
   // Submit response mutation
   const submitResponseMutation = useMutation({
     mutationFn: ({ suggestionId, data }: { suggestionId: number; data: ResponseFormData }) => 
-      apiRequest('POST', `/api/suggestions/${suggestionId}/responses`, data),
+      apiRequest('POST', `/api/wishlist-suggestions/${suggestionId}/responses`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions', selectedSuggestion?.id, 'responses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions', selectedSuggestion?.id, 'responses'] });
       toast({
         title: "Success",
         description: "Response submitted successfully!"
@@ -183,9 +183,9 @@ export default function SuggestionsPortal() {
 
   // Delete suggestion mutation (admin only)
   const deleteSuggestionMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/suggestions/${id}`),
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/wishlist-suggestions/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions'], staleTime: 0 });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions'], staleTime: 0 });
       setSelectedSuggestion(null);
       toast({
         title: "Suggestion deleted",
@@ -204,13 +204,13 @@ export default function SuggestionsPortal() {
   // Update suggestion mutation (admin only)
   const updateSuggestionMutation = useMutation({
     mutationFn: ({ id, updates }: { id: number; updates: Partial<Suggestion> }) => 
-      apiRequest('PATCH', `/api/suggestions/${id}`, updates),
+      apiRequest('PATCH', `/api/wishlist-suggestions/${id}`, updates),
     onSuccess: (updatedSuggestion) => {
       if (selectedSuggestion && updatedSuggestion) {
         setSelectedSuggestion({ ...selectedSuggestion, ...updatedSuggestion });
       }
-      queryClient.invalidateQueries({ queryKey: ['/api/suggestions'] });
-      queryClient.refetchQueries({ queryKey: ['/api/suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-suggestions'] });
+      queryClient.refetchQueries({ queryKey: ['/api/wishlist-suggestions'] });
       toast({
         title: "Success",
         description: "Suggestion updated successfully!"
