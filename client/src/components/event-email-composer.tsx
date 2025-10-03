@@ -352,6 +352,9 @@ export function EventEmailComposer({
                     <li>Sandwiches must be made indoors.</li>
                     <li>We provide food to vulnerable populations, so please read and follow all safety rules.</li>
                 </ul>
+                <p style="margin-top: 15px; padding: 15px; background: #fff7e6; border-left: 3px solid #FBAD3F; border-radius: 4px; font-size: 15px; color: #333;">
+                    <strong>📝 Labeling Tip:</strong> Labels go on the <strong>outside of each bag</strong> containing a loaf of sandwiches—not on individual sandwiches.
+                </p>
             </div>
             
             <div class="highlight-box">
@@ -571,6 +574,9 @@ export function EventEmailComposer({
                     <li>Sandwiches must be made indoors.</li>
                     <li>We provide food to vulnerable populations, so please read and follow all safety rules.</li>
                 </ul>
+                <p style="margin-top: 15px; padding: 15px; background: #fff7e6; border-left: 3px solid #FBAD3F; border-radius: 4px; font-size: 15px; color: #333;">
+                    <strong>📝 Labeling Tip:</strong> Labels go on the <strong>outside of each bag</strong> containing a loaf of sandwiches—not on individual sandwiches.
+                </p>
             </div>
             
             <div class="highlight-box">
