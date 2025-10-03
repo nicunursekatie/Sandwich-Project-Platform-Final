@@ -3,77 +3,76 @@ import { DataExporter } from '../data-export';
 import { BulkOperationsManager } from '../bulk-operations';
 import { AuditLogger } from '../audit-logger';
 import { z } from 'zod';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
-
-// Authentication middleware
-const isAuthenticated = (req: any, res: any, next: any) => {
-  const user = req.user || req.session?.user;
-  if (!user) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  req.user = user;
-  next();
-};
+import { PERMISSIONS } from '@shared/auth-utils';
+import { requirePermission } from '../middleware/auth';
 
 const router = Router();
 
 // Export data endpoints
-router.get('/export/collections', isAuthenticated, async (req, res) => {
-  try {
-    const { format = 'csv', startDate, endDate } = req.query;
+router.get(
+  '/export/collections',
+  requirePermission(PERMISSIONS.MANAGE_DATA),
+  async (req, res) => {
+    try {
+      const { format = 'csv', startDate, endDate } = req.query;
 
-    const options = {
-      format: format as 'csv' | 'json',
-      dateRange:
-        startDate && endDate
-          ? {
-              start: startDate as string,
-              end: endDate as string,
-            }
-          : undefined,
-    };
+      const options = {
+        format: format as 'csv' | 'json',
+        dateRange:
+          startDate && endDate
+            ? {
+                start: startDate as string,
+                end: endDate as string,
+              }
+            : undefined,
+      };
 
-    const result = await DataExporter.exportSandwichCollections(options);
+      const result = await DataExporter.exportSandwichCollections(options);
 
-    if (options.format === 'csv') {
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader(
-        'Content-Disposition',
-        'attachment; filename="sandwich_collections.csv"'
-      );
-      res.send(result.data);
-    } else {
-      res.json(result);
+      if (options.format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader(
+          'Content-Disposition',
+          'attachment; filename="sandwich_collections.csv"'
+        );
+        res.send(result.data);
+      } else {
+        res.json(result);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      res.status(500).json({ error: 'Export failed' });
     }
-  } catch (error) {
-    console.error('Export failed:', error);
-    res.status(500).json({ error: 'Export failed' });
   }
-});
+);
 
-router.get('/export/hosts', isAuthenticated, async (req, res) => {
-  try {
-    const { format = 'csv', includeInactive = 'false' } = req.query;
+router.get(
+  '/export/hosts',
+  requirePermission(PERMISSIONS.MANAGE_DATA),
+  async (req, res) => {
+    try {
+      const { format = 'csv', includeInactive = 'false' } = req.query;
 
-    const options = {
-      format: format as 'csv' | 'json',
-      includeInactive: includeInactive === 'true',
-    };
+      const options = {
+        format: format as 'csv' | 'json',
+        includeInactive: includeInactive === 'true',
+      };
 
-    const result = await DataExporter.exportHosts(options);
+      const result = await DataExporter.exportHosts(options);
 
-    if (options.format === 'csv') {
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="hosts.csv"');
-      res.send(result.data);
-    } else {
-      res.json(result);
+      if (options.format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="hosts.csv"');
+        res.send(result.data);
+      } else {
+        res.json(result);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      res.status(500).json({ error: 'Export failed' });
     }
-  } catch (error) {
-    console.error('Export failed:', error);
-    res.status(500).json({ error: 'Export failed' });
   }
-});
+);
 
 router.get('/export/full-dataset', async (req, res) => {
   try {
@@ -104,14 +103,8 @@ router.get('/summary', async (req, res) => {
 // Bulk operations endpoints
 router.post(
   '/bulk/deduplicate-hosts',
-  isAuthenticated,
+  requirePermission(PERMISSIONS.MANAGE_DATA),
   async (req: any, res) => {
-    // Check if user has permission for data management
-    if (!hasPermission(req.user, PERMISSIONS.MANAGE_DATA)) {
-      return res.status(403).json({
-        error: 'Insufficient permissions for data management operations',
-      });
-    }
     try {
       const context = {
         userId: req.user?.claims?.sub,
@@ -129,37 +122,35 @@ router.post(
   }
 );
 
-router.delete('/bulk/collections', isAuthenticated, async (req: any, res) => {
-  // Check if user has permission for data management
-  if (!hasPermission(req.user, PERMISSIONS.MANAGE_DATA)) {
-    return res
-      .status(403)
-      .json({ error: 'Insufficient permissions for bulk deletion operations' });
+router.delete(
+  '/bulk/collections',
+  requirePermission(PERMISSIONS.MANAGE_DATA),
+  async (req: any, res) => {
+    try {
+      const schema = z.object({
+        ids: z.array(z.number()),
+      });
+
+      const { ids } = schema.parse(req.body);
+
+      const context = {
+        userId: req.user?.claims?.sub,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.sessionID,
+      };
+
+      const result = await BulkOperationsManager.bulkDeleteCollections(
+        ids,
+        context
+      );
+      res.json(result);
+    } catch (error) {
+      console.error('Bulk deletion failed:', error);
+      res.status(500).json({ error: 'Bulk deletion failed' });
+    }
   }
-  try {
-    const schema = z.object({
-      ids: z.array(z.number()),
-    });
-
-    const { ids } = schema.parse(req.body);
-
-    const context = {
-      userId: req.user?.claims?.sub,
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent'),
-      sessionId: req.sessionID,
-    };
-
-    const result = await BulkOperationsManager.bulkDeleteCollections(
-      ids,
-      context
-    );
-    res.json(result);
-  } catch (error) {
-    console.error('Bulk deletion failed:', error);
-    res.status(500).json({ error: 'Bulk deletion failed' });
-  }
-});
+);
 
 // Data integrity endpoints
 router.get('/integrity/check', async (req, res) => {

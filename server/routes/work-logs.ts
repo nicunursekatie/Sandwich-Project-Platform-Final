@@ -1,17 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { sql, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { workLogs } from '@shared/schema';
 import { db } from '../db';
-// Import the actual authentication middleware being used in the app
-const isAuthenticated = (req: any, res: any, next: any) => {
-  const user = req.user || req.session?.user;
-  if (!user) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  req.user = user; // Ensure req.user is set
-  next();
-};
+import { PERMISSIONS } from '@shared/auth-utils';
+import {
+  requirePermission,
+  requireOwnershipPermission,
+} from '../middleware/auth';
 
 const router = Router();
 
@@ -30,62 +26,42 @@ function isSuperAdmin(req: any) {
   return req.user?.role === 'super_admin' || req.user?.role === 'admin';
 }
 
-// Import permission utilities
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
-import {
-  requirePermission,
-  requireOwnershipPermission,
-} from '../middleware/auth';
-
-// Middleware to check if user can log work
-function canLogWork(req: any) {
-  // Check for CREATE_WORK_LOGS permission or admin roles for backwards compatibility
-  return (
-    hasPermission(req.user, PERMISSIONS.WORK_LOGS_ADD) ||
-    req.user?.role === 'admin' ||
-    req.user?.role === 'super_admin'
-  );
-}
-
 // Get work logs - Check permissions first
-router.get('/work-logs', isAuthenticated, async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    const userEmail = req.user?.email;
-    const userRole = req.user?.role;
+router.get(
+  '/work-logs',
+  requirePermission(PERMISSIONS.WORK_LOGS_VIEW),
+  async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const userEmail = req.user?.email;
+      const userRole = req.user?.role;
 
-    console.log(
-      `[WORK LOGS] User: ${userId}, Email: ${userEmail}, Role: ${userRole}`
-    );
-
-    // Check if user has any work log permissions
-    const canCreate = hasPermission(req.user, PERMISSIONS.WORK_LOGS_ADD);
-    const canViewAll = hasPermission(req.user, PERMISSIONS.WORK_LOGS_VIEW_ALL);
-    const isAdmin = isSuperAdmin(req) || userEmail === 'mdlouza@gmail.com';
-
-    console.log(
-      `[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewAll: ${canViewAll}, isAdmin: ${isAdmin}`
-    );
-
-    // User must have at least WORK_LOGS_VIEW permission to access work logs
-    if (!canCreate && !canViewAll && !isAdmin) {
-      return res
-        .status(403)
-        .json({ error: 'Insufficient permissions to view work logs' });
-    }
-
-    // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
-    // Being admin does NOT automatically grant access to personal work logs
-    if (canViewAll) {
-      console.log(`[WORK LOGS] ViewAll permission - fetching ALL logs`);
-      const logs = await db.select().from(workLogs);
       console.log(
-        `[WORK LOGS] Found ${logs.length} total logs:`,
-        logs.map((l) => `${l.id}: ${l.userId}`)
+        `[WORK LOGS] User: ${userId}, Email: ${userEmail}, Role: ${userRole}`
       );
-      return res.json(logs);
-    } else {
-      // Regular users with WORK_LOGS_ADD can only see their own logs
+
+      const canViewAll =
+        req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_VIEW_ALL) ||
+        isSuperAdmin(req) ||
+        userEmail === 'mdlouza@gmail.com';
+
+      console.log(`[WORK LOGS] Permissions - canViewAll: ${canViewAll}`);
+
+      // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
+      if (canViewAll) {
+        console.log(`[WORK LOGS] ViewAll permission - fetching ALL logs`);
+        const logs = await db.select().from(workLogs);
+        console.log(
+          `[WORK LOGS] Found ${logs.length} total logs:`,
+          logs.map((l) => `${l.id}: ${l.userId}`)
+        );
+        return res.json(logs);
+      }
+
+      if (!userId) {
+        return res.status(400).json({ error: 'User context missing' });
+      }
+
       console.log(
         `[WORK LOGS] Regular user access - fetching logs for ${userId}`
       );
@@ -98,17 +74,17 @@ router.get('/work-logs', isAuthenticated, async (req, res) => {
         logs.map((l) => `${l.id}: ${l.description.substring(0, 30)}`)
       );
       return res.json(logs);
+    } catch (error) {
+      console.error('Error fetching work logs:', error);
+      res.status(500).json({ error: 'Failed to fetch work logs' });
     }
-  } catch (error) {
-    console.error('Error fetching work logs:', error);
-    res.status(500).json({ error: 'Failed to fetch work logs' });
   }
-});
+);
 
 // Create a new work log
 router.post(
   '/work-logs',
-  requirePermission('WORK_LOGS_ADD'),
+  requirePermission(PERMISSIONS.WORK_LOGS_ADD),
   async (req, res) => {
     const result = insertWorkLogSchema.safeParse(req.body);
     if (!result.success)
@@ -136,8 +112,8 @@ router.post(
 router.put(
   '/work-logs/:id',
   requireOwnershipPermission(
-    'WORK_LOGS_EDIT_OWN',
-    'WORK_LOGS_EDIT_ALL',
+    PERMISSIONS.WORK_LOGS_EDIT_OWN,
+    PERMISSIONS.WORK_LOGS_EDIT_ALL,
     async (req) => {
       const logId = parseInt(req.params.id);
       const log = await db
@@ -175,8 +151,8 @@ router.put(
 router.delete(
   '/work-logs/:id',
   requireOwnershipPermission(
-    'WORK_LOGS_DELETE_OWN',
-    'WORK_LOGS_DELETE_ALL',
+    PERMISSIONS.WORK_LOGS_DELETE_OWN,
+    PERMISSIONS.WORK_LOGS_DELETE_ALL,
     async (req) => {
       const logId = parseInt(req.params.id);
       const log = await db
