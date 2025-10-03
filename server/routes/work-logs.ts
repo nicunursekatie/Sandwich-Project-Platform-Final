@@ -27,22 +27,30 @@ function isSuperAdmin(req: any) {
 }
 
 // Get work logs - Check permissions first
-router.get(
-  '/work-logs',
-  async (req, res) => {
-    // Check if user is authenticated
-    if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-    
-    // Check if user has permission to view work logs (either VIEW or ADD permission)
-    const canView = req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_VIEW) ||
-                   req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_ADD) ||
-                   isSuperAdmin(req) ||
-                   req.user?.email === 'mdlouza@gmail.com';
-    
-    if (!canView) {
-      return res.status(403).json({ error: 'Insufficient permissions to view work logs' });
+router.get('/', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const userEmail = req.user?.email;
+    const userRole = req.user?.role;
+
+    console.log(
+      `[WORK LOGS] User: ${userId}, Email: ${userEmail}, Role: ${userRole}`
+    );
+
+    // Check if user has any work log permissions
+    const canCreate = hasPermission(req.user, PERMISSIONS.WORK_LOGS_ADD);
+    const canViewAll = hasPermission(req.user, PERMISSIONS.WORK_LOGS_VIEW_ALL);
+    const isAdmin = isSuperAdmin(req) || userEmail === 'mdlouza@gmail.com';
+
+    console.log(
+      `[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewAll: ${canViewAll}, isAdmin: ${isAdmin}`
+    );
+
+    // User must have at least WORK_LOGS_VIEW permission to access work logs
+    if (!canCreate && !canViewAll && !isAdmin) {
+      return res
+        .status(403)
+        .json({ error: 'Insufficient permissions to view work logs' });
     }
     try {
       const userId = req.user?.id;
@@ -96,6 +104,8 @@ router.get(
 
 // Create a new work log
 router.post(
+  '/',
+  requirePermission('WORK_LOGS_ADD'),
   '/work-logs',
   requirePermission(PERMISSIONS.WORK_LOGS_ADD),
   async (req, res) => {
@@ -128,7 +138,7 @@ router.post(
 
 // Update a work log (own or any if super admin)
 router.put(
-  '/work-logs/:id',
+  '/:id',
   requireOwnershipPermission(
     PERMISSIONS.WORK_LOGS_EDIT_OWN,
     PERMISSIONS.WORK_LOGS_EDIT_ALL,
@@ -167,7 +177,7 @@ router.put(
 
 // Delete a work log (own or any if super admin)
 router.delete(
-  '/work-logs/:id',
+  '/:id',
   requireOwnershipPermission(
     PERMISSIONS.WORK_LOGS_DELETE_OWN,
     PERMISSIONS.WORK_LOGS_DELETE_ALL,
