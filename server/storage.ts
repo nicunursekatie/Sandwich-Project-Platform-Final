@@ -831,6 +831,8 @@ export class MemStorage implements IStorage {
       profileImageUrl: userData.profileImageUrl || null,
       role: userData.role || 'volunteer',
       permissions: userData.permissions || {},
+      permissionsModifiedAt: userData.permissionsModifiedAt || null,
+      permissionsModifiedBy: userData.permissionsModifiedBy || null,
       metadata: userData.metadata || {},
       isActive: userData.isActive ?? true,
       createdAt: new Date(),
@@ -859,6 +861,8 @@ export class MemStorage implements IStorage {
         profileImageUrl: userData.profileImageUrl || null,
         role: userData.role || 'volunteer',
         permissions: userData.permissions || {},
+        permissionsModifiedAt: userData.permissionsModifiedAt || null,
+        permissionsModifiedBy: userData.permissionsModifiedBy || null,
         isActive: userData.isActive ?? true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -878,6 +882,11 @@ export class MemStorage implements IStorage {
   ): Promise<User | undefined> {
     const user = await this.getUser(id);
     if (!user) return undefined;
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'permissions')) {
+      updates.permissionsModifiedAt = updates.permissionsModifiedAt ?? new Date();
+      updates.permissionsModifiedBy = updates.permissionsModifiedBy ?? 'system';
+    }
 
     const updated: User = { ...user, ...updates, updatedAt: new Date() };
     this.users.set(id, updated);

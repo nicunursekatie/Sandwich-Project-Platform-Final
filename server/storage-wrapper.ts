@@ -143,9 +143,18 @@ class StorageWrapper implements IStorage {
   }
 
   async updateUser(id: string, updates: any) {
+    const updatePayload = { ...updates };
+
+    if (Object.prototype.hasOwnProperty.call(updatePayload, 'permissions')) {
+      updatePayload.permissionsModifiedAt =
+        updatePayload.permissionsModifiedAt ?? new Date();
+      updatePayload.permissionsModifiedBy =
+        updatePayload.permissionsModifiedBy ?? 'system';
+    }
+
     return this.executeWithFallback(
-      () => this.primaryStorage.updateUser(id, updates),
-      () => this.fallbackStorage.updateUser(id, updates)
+      () => this.primaryStorage.updateUser(id, updatePayload),
+      () => this.fallbackStorage.updateUser(id, updatePayload)
     );
   }
 

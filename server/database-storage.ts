@@ -199,9 +199,18 @@ export class DatabaseStorage implements IStorage {
     id: string,
     updates: Partial<User>
   ): Promise<User | undefined> {
+    const updatePayload: Partial<User> = { ...updates };
+
+    if (Object.prototype.hasOwnProperty.call(updatePayload, 'permissions')) {
+      updatePayload.permissionsModifiedAt =
+        updatePayload.permissionsModifiedAt ?? new Date();
+      updatePayload.permissionsModifiedBy =
+        updatePayload.permissionsModifiedBy ?? 'system';
+    }
+
     const [user] = await db
       .update(users)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...updatePayload, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user || undefined;
