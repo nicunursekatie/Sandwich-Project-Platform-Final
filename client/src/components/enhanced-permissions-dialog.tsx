@@ -653,6 +653,7 @@ const PERMISSION_MIGRATION_MAP: Record<string, string> = {
   view_all_work_logs: 'WORK_LOGS_VIEW_ALL',
   edit_all_work_logs: 'WORK_LOGS_EDIT_ALL',
   delete_all_work_logs: 'WORK_LOGS_DELETE_ALL',
+  log_work: 'WORK_LOGS_ADD', // Legacy permission mapping
 
   // Chat permissions
   access_chat: 'CHAT_GENERAL',

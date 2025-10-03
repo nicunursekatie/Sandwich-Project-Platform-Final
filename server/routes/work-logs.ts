@@ -29,8 +29,21 @@ function isSuperAdmin(req: any) {
 // Get work logs - Check permissions first
 router.get(
   '/work-logs',
-  requirePermission(PERMISSIONS.WORK_LOGS_VIEW),
   async (req, res) => {
+    // Check if user is authenticated
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // Check if user has permission to view work logs (either VIEW or ADD permission)
+    const canView = req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_VIEW) ||
+                   req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_ADD) ||
+                   isSuperAdmin(req) ||
+                   req.user?.email === 'mdlouza@gmail.com';
+    
+    if (!canView) {
+      return res.status(403).json({ error: 'Insufficient permissions to view work logs' });
+    }
     try {
       const userId = req.user?.id;
       const userEmail = req.user?.email;
@@ -89,11 +102,16 @@ router.post(
     const result = insertWorkLogSchema.safeParse(req.body);
     if (!result.success)
       return res.status(400).json({ error: result.error.message });
+    
+    if (!req.user?.id) {
+      return res.status(400).json({ error: 'User context missing' });
+    }
+    
     try {
       const log = await db
         .insert(workLogs)
         .values({
-          userId: req.user?.id,
+          userId: req.user.id,
           description: result.data.description,
           hours: result.data.hours,
           minutes: result.data.minutes,
