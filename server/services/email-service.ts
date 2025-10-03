@@ -259,9 +259,13 @@ export class EmailService {
           const signature = createSignature();
           const contentWithSignature = `${data.content}\n\n---\n${signature}`;
           
-          // Convert markdown-style bold **text** to HTML <strong>text</strong>
-          const contentHtml = data.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-          const signatureHtml = signature.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          // Convert markdown-style bold **text** to HTML <strong>text</strong> and \n to <br>
+          const contentHtml = data.content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+          const signatureHtml = signature
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
           
           // Import SendGrid compliance footer
           const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
@@ -287,6 +291,7 @@ export class EmailService {
                 ${EMAIL_FOOTER_HTML}
               </div>
             `,
+            attachments: data.attachments,
           });
           console.log(
             `[Email Service] SendGrid notification sent successfully to ${data.recipientEmail}`

@@ -1,4 +1,6 @@
 import { MailService } from '@sendgrid/mail';
+import * as fs from 'fs';
+import * as path from 'path';
 
 if (!process.env.SENDGRID_API_KEY) {
   throw new Error('SENDGRID_API_KEY environment variable must be set');
@@ -14,6 +16,7 @@ interface EmailParams {
   subject: string;
   text?: string;
   html?: string;
+  attachments?: string[];
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
@@ -32,6 +35,62 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     // Add Reply-To header if provided
     if (params.replyTo) {
       emailData.replyTo = params.replyTo;
+    }
+    
+    // Process attachments if provided
+    if (params.attachments && params.attachments.length > 0) {
+      const processedAttachments = [];
+      
+      for (const filePath of params.attachments) {
+        try {
+          // Check if file exists
+          if (!fs.existsSync(filePath)) {
+            console.warn(`Attachment file not found: ${filePath}`);
+            continue;
+          }
+          
+          // Read file from disk
+          const fileContent = fs.readFileSync(filePath);
+          const base64Content = fileContent.toString('base64');
+          
+          // Extract filename from path
+          const filename = path.basename(filePath);
+          
+          // Determine content type based on file extension
+          const ext = path.extname(filename).toLowerCase();
+          const contentTypeMap: Record<string, string> = {
+            '.pdf': 'application/pdf',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xls': 'application/vnd.ms-excel',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.txt': 'text/plain',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+          };
+          
+          const contentType = contentTypeMap[ext] || 'application/octet-stream';
+          
+          processedAttachments.push({
+            content: base64Content,
+            filename: filename,
+            type: contentType,
+            disposition: 'attachment',
+          });
+          
+          console.log(`Processed attachment: ${filename} (${contentType})`);
+        } catch (attachmentError) {
+          console.error(`Failed to process attachment ${filePath}:`, attachmentError);
+          // Continue processing other attachments even if one fails
+        }
+      }
+      
+      if (processedAttachments.length > 0) {
+        emailData.attachments = processedAttachments;
+        console.log(`Added ${processedAttachments.length} attachment(s) to email`);
+      }
     }
     
     await mailService.send(emailData);

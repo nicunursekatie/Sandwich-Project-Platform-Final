@@ -8,7 +8,7 @@ import {
   getUser,
   type AuthenticatedRequest,
 } from '../temp-auth';
-import { logger } from '../utils/logger';
+import { logger } from '../middleware/logger';
 
 const documentsRouter = Router();
 
