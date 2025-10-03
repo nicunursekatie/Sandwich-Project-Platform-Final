@@ -255,7 +255,7 @@ export default function WorkLogPage() {
                           : new Date(log.createdAt).toLocaleDateString()}
                       </span>
                       {log?.userId !== (user as any)?.id && (
-                        <span className="text-brand-primary text-xs px-2 py-1 bg-blue-50 rounded-full">
+                        <span className="text-brand-primary text-xs px-2 py-1 bg-brand-primary-lighter rounded-full">
                           Other user
                         </span>
                       )}

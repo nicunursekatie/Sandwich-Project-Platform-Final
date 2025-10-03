@@ -236,7 +236,7 @@ export default function WeeklyImpactReport() {
         );
       case 'steady_contributor':
         return (
-          <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+          <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border">
             Steady Contributor
           </Badge>
         );
@@ -354,7 +354,7 @@ export default function WeeklyImpactReport() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-center p-4 bg-brand-primary-lighter rounded-lg">
                   <div className="text-2xl md:text-3xl font-bold text-brand-primary">
                     {formatNumber(reportData.summary.total_sandwiches)}
                   </div>
@@ -796,7 +796,7 @@ export default function WeeklyImpactReport() {
                           .map((location, index) => (
                             <div
                               key={index}
-                              className="flex items-center justify-between p-3 bg-blue-50 rounded border"
+                              className="flex items-center justify-between p-3 bg-brand-primary-lighter rounded border"
                             >
                               <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <MapPin className="h-3 w-3 text-brand-light-blue flex-shrink-0" />
@@ -1034,7 +1034,7 @@ export default function WeeklyImpactReport() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-brand-primary">
+                      <div className="p-4 bg-brand-primary-lighter rounded-lg border-l-4 border-brand-primary">
                         <div className="font-semibold text-brand-primary mb-2">
                           {
                             reportData.celebrating_success.volunteer_spotlight

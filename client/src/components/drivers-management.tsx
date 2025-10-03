@@ -1140,7 +1140,7 @@ export default function DriversManagement() {
                               className={`cursor-pointer transition-all duration-200 hover:shadow-sm flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold
                                 ${
                                   hasSignedAgreement(driver)
-                                    ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                    ? "bg-brand-primary-lighter text-brand-primary border-brand-primary-border hover:bg-brand-primary-light"
                                     : "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
                                 }
                                 ${!canEdit ? "cursor-not-allowed opacity-50" : ""}`}
@@ -1333,7 +1333,7 @@ export default function DriversManagement() {
                               className={`cursor-pointer transition-all duration-200 hover:shadow-sm flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold
                                 ${
                                   hasSignedAgreement(driver)
-                                    ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                    ? "bg-brand-primary-lighter text-brand-primary border-brand-primary-border hover:bg-brand-primary-light"
                                     : "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
                                 }
                                 ${!canEdit ? "cursor-not-allowed opacity-50" : ""}`}

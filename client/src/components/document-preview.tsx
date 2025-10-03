@@ -250,7 +250,7 @@ export function DocumentPreview({
             <h2 className="text-lg font-semibold text-gray-900 truncate">
               {documentName}
             </h2>
-            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+            <span className="px-2 py-1 text-xs font-medium bg-brand-primary-light text-brand-primary-dark rounded-full">
               {documentType?.toUpperCase() || 'FILE'}
             </span>
           </div>

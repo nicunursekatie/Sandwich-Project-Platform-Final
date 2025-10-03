@@ -338,7 +338,7 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
         </h2>
         <div className="ml-auto flex items-center gap-1 sm:gap-3">
           {userName && (
-            <div className="hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs sm:text-sm">
+            <div className="hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 bg-brand-primary-lighter text-brand-primary rounded-full text-xs sm:text-sm">
               <User className="w-3 sm:w-4 h-3 sm:h-4" />
               <span className="hidden md:inline">{userName}</span>
             </div>
@@ -641,7 +641,7 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
                               : 'Message #team-chat'
                           }
                           {...field}
-                          className="pr-10 resize-none border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          className="pr-10 resize-none border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-brand-primary-muted"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();

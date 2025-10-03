@@ -234,7 +234,7 @@ export default function AnnouncementManager() {
       case 'high':
         return 'bg-orange-100 text-orange-800';
       case 'medium':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-brand-primary-light text-brand-primary-dark';
       case 'low':
         return 'bg-gray-100 text-gray-800';
       default:

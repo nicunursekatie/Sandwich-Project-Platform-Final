@@ -377,7 +377,7 @@ export default function HostsManagement() {
                     {host.contacts.slice(0, 2).map((contact) => (
                       <div
                         key={contact.id}
-                        className="space-y-1 border-l-2 border-blue-200 pl-2"
+                        className="space-y-1 border-l-2 border-brand-primary-border pl-2"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-slate-700">

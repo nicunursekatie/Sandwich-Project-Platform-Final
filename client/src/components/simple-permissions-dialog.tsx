@@ -784,7 +784,7 @@ const PERMISSION_GROUPS = [
 function getCardColorForType(type: string) {
   switch (type) {
     case 'content':
-      return 'border-blue-200 bg-blue-50/50';
+      return 'border-brand-primary-border bg-brand-primary-lighter/50';
     case 'directory':
       return 'border-green-200 bg-green-50/50';
     case 'communication':

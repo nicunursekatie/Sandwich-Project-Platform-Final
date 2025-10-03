@@ -192,7 +192,7 @@ export default function MeaningfulUserAnalytics() {
       return {
         level: 'High Impact',
         color: 'bg-brand-primary',
-        textColor: 'text-blue-700',
+        textColor: 'text-brand-primary',
       };
     if (score >= 50)
       return {
@@ -414,13 +414,13 @@ export default function MeaningfulUserAnalytics() {
       </Card>
 
       {/* What This Means */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-brand-primary-lighter border-brand-primary-border">
         <CardHeader>
-          <CardTitle className="text-blue-900">
+          <CardTitle className="text-brand-primary-darker">
             Understanding Your Analytics
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-blue-800">
+        <CardContent className="text-brand-primary-dark">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <h4 className="font-semibold mb-2">Sandwich Data Recorded</h4>

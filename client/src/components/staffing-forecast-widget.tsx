@@ -388,7 +388,7 @@ export default function StaffingForecastWidget() {
                             </Badge>
                           )}
                           {volunteersNeeded > 0 && (
-                            <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">
+                            <Badge variant="outline" className="border-brand-primary-border-strong text-brand-primary bg-brand-primary-lighter">
                               <UserCheck className="w-3 h-3 mr-1" />
                               {volunteersNeeded} Volunteer{volunteersNeeded > 1 ? 's' : ''} needed
                             </Badge>

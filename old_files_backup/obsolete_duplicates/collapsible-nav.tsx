@@ -277,7 +277,7 @@ export function CollapsibleNav({
                                 }}
                                 className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
                                   isSubActive
-                                    ? 'bg-blue-50 text-blue-700'
+                                    ? 'bg-brand-primary-lighter text-brand-primary'
                                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                                 }`}
                               >
@@ -302,7 +302,7 @@ export function CollapsibleNav({
                     }}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
                       isActive
-                        ? 'bg-blue-50 text-blue-700'
+                        ? 'bg-brand-primary-lighter text-brand-primary'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >

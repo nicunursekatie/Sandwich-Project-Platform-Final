@@ -34,7 +34,7 @@ const characterEmojis = {
 
 const toneStyles = {
   encouraging: 'border-l-4 border-l-green-400 bg-green-50',
-  informative: 'border-l-4 border-l-blue-400 bg-blue-50',
+  informative: 'border-l-4 border-l-blue-400 bg-brand-primary-lighter',
   supportive: 'border-l-4 border-l-purple-400 bg-purple-50',
   celebratory: 'border-l-4 border-l-yellow-400 bg-yellow-50',
 };

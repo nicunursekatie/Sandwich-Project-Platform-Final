@@ -71,7 +71,7 @@ const stepTypeIcons = {
 
 const stepTypeStyles = {
   tip: 'bg-yellow-50 border-yellow-200 text-yellow-900',
-  feature: 'bg-blue-50 border-blue-200 text-blue-900',
+  feature: 'bg-brand-primary-lighter border-brand-primary-border text-brand-primary-darker',
   warning: 'bg-orange-50 border-orange-200 text-orange-900',
   success: 'bg-green-50 border-green-200 text-green-900',
   onboarding: 'bg-purple-50 border-purple-200 text-purple-900',
@@ -417,7 +417,7 @@ export function SmartTooltipGuide({
                                   sequence.category === 'onboarding'
                                     ? 'border-purple-200 text-purple-700'
                                     : sequence.category === 'feature-discovery'
-                                      ? 'border-blue-200 text-blue-700'
+                                      ? 'border-brand-primary-border text-brand-primary'
                                       : sequence.category === 'productivity'
                                         ? 'border-green-200 text-green-700'
                                         : 'border-orange-200 text-orange-700'

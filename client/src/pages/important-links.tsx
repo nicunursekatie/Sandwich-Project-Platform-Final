@@ -367,13 +367,13 @@ export default function ImportantLinks() {
               </div>
 
               {/* Direct Link Section */}
-              <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="mb-4 p-3 bg-brand-primary-lighter rounded-lg border border-brand-primary-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-900">
+                    <p className="text-sm font-medium text-brand-primary-darker">
                       Direct Link Access
                     </p>
-                    <p className="text-xs text-blue-700 truncate max-w-md">
+                    <p className="text-xs text-brand-primary truncate max-w-md">
                       {userSheetUrl}
                     </p>
                   </div>

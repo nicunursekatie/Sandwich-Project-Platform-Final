@@ -207,7 +207,7 @@ export function EventRequestAuditLog({
       case 'CREATE':
         return 'bg-green-50 text-green-700 border-green-200';
       case 'PRIMARY_CONTACT_COMPLETED':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-brand-primary-lighter text-brand-primary border-brand-primary-border';
       case 'EVENT_DETAILS_UPDATED':
       case 'UPDATE':
         return 'bg-orange-50 text-orange-700 border-orange-200';
@@ -583,7 +583,7 @@ export function EventRequestAuditLog({
                 {log.details.updatedFields.map((fieldName: string, index: number) => (
                   <span 
                     key={index}
-                    className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded border border-blue-200 font-medium"
+                    className="inline-flex items-center px-2 py-1 text-xs bg-brand-primary-light text-brand-primary rounded border border-brand-primary-border font-medium"
                   >
                     {getHumanReadableFieldName(fieldName)}
                   </span>
@@ -875,11 +875,11 @@ export function EventRequestAuditLog({
                           
                           if (hasFollowUpData) {
                             return (
-                              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                              <div className="mt-4 p-3 bg-brand-primary-lighter rounded-lg">
                                 <div className="text-sm font-medium text-gray-700 mb-2">Additional Context:</div>
                                 <div className="space-y-2">
                                   {log.statusChange && (
-                                    <div className="flex items-center text-sm text-blue-700">
+                                    <div className="flex items-center text-sm text-brand-primary">
                                       <RefreshCw className="h-4 w-4 mr-2" />
                                       Status: {log.statusChange}
                                     </div>
@@ -891,7 +891,7 @@ export function EventRequestAuditLog({
                                     </div>
                                   )}
                                   {followUpContext.followUpAction && (
-                                    <div className="flex items-center text-sm text-blue-700">
+                                    <div className="flex items-center text-sm text-brand-primary">
                                       <UserCheck className="h-4 w-4 mr-2" />
                                       Action: {followUpContext.followUpAction}
                                     </div>

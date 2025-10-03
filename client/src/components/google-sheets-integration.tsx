@@ -144,7 +144,7 @@ export function GoogleSheetsIntegration() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-brand-primary-lighter rounded-lg">
             <div>
               <div className="font-medium">Target Spreadsheet</div>
               <div className="text-sm text-gray-600">

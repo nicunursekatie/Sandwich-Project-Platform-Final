@@ -758,12 +758,12 @@ export default function UserProfile() {
             ) : (
               // Not opted in - show sign-up form
               <form onSubmit={handleSMSSubmit} className="space-y-6">
-                <div className="bg-blue-50 dark:bg-blue-950/50 p-4 rounded-lg">
-                  <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                <div className="bg-brand-primary-lighter dark:bg-blue-950/50 p-4 rounded-lg">
+                  <h3 className="font-medium text-brand-primary-darker dark:text-brand-primary-light mb-2 flex items-center gap-2">
                     <Smartphone className="h-4 w-4" />
                     How SMS Reminders Work
                   </h3>
-                  <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                  <ul className="text-sm text-brand-primary-dark dark:text-brand-primary-muted space-y-1">
                     <li>• Get text reminders when weekly sandwich counts are missing</li>
                     <li>• Includes direct links to the app for easy submission</li>
                     <li>• Only used for sandwich collection reminders</li>

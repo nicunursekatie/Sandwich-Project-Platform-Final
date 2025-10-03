@@ -795,7 +795,7 @@ const PERMISSION_CATEGORIES = {
 
 // Permission level styling
 const PERMISSION_LEVELS = {
-  view: { color: 'bg-blue-100 text-blue-800', icon: Eye },
+  view: { color: 'bg-brand-primary-light text-brand-primary-dark', icon: Eye },
   edit: { color: 'bg-green-100 text-green-800', icon: Edit },
   create: { color: 'bg-purple-100 text-purple-800', icon: Plus },
   admin: { color: 'bg-red-100 text-red-800', icon: Crown },

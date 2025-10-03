@@ -55,7 +55,7 @@ const getRoomIcon = (roomId: string) => {
 const getRoomColor = (roomId: string) => {
   switch (roomId) {
     case 'general':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-brand-primary-light text-brand-primary-dark';
     case 'core-team':
       return 'bg-red-100 text-red-800';
     case 'grants-committee':

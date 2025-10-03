@@ -2395,8 +2395,8 @@ function PhoneDirectoryFixed() {
                               </div>
                             )}
                             {driver.availabilityNotes && (
-                              <div className="p-3 bg-blue-50 rounded-md">
-                                <p className="text-sm text-blue-700">
+                              <div className="p-3 bg-brand-primary-lighter rounded-md">
+                                <p className="text-sm text-brand-primary">
                                   <span className="font-medium">
                                     Availability:
                                   </span>{' '}

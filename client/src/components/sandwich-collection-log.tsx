@@ -1708,7 +1708,7 @@ export default function SandwichCollectionLog() {
                   globalSearch: e.target.value,
                 }))
               }
-              className="pl-10 pr-4 py-3 w-full border-2 border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-base"
+              className="pl-10 pr-4 py-3 w-full border-2 border-slate-300 focus:border-blue-500 focus:ring-brand-primary-muted rounded-lg text-base"
             />
             {searchFilters.globalSearch && (
               <button
@@ -1734,8 +1734,8 @@ export default function SandwichCollectionLog() {
           <div className="space-y-4">
             {/* Filter Status and Context */}
             {hasActiveFilters && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-                <div className="flex items-center text-blue-800">
+              <div className="bg-brand-primary-lighter border border-brand-primary-border rounded-lg p-3 text-sm">
+                <div className="flex items-center text-brand-primary-dark">
                   <Filter className="w-4 h-4 mr-2" />
                   <span className="font-medium">
                     {currentStats.hostName
@@ -1761,7 +1761,7 @@ export default function SandwichCollectionLog() {
                   {hasActiveFilters ? ' filtered' : ''} entries
                 </p>
                 {hasActiveFilters && !currentStats.hostName && (
-                  <span className="text-xs text-brand-primary bg-blue-100 px-2 py-1 rounded-full">
+                  <span className="text-xs text-brand-primary bg-brand-primary-light px-2 py-1 rounded-full">
                     Multiple Hosts
                   </span>
                 )}
@@ -1780,14 +1780,14 @@ export default function SandwichCollectionLog() {
             <div
               className={`flex justify-center gap-8 rounded-xl py-4 px-6 border shadow-sm ${
                 hasActiveFilters
-                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-brand-primary-border'
                   : 'bg-gradient-to-r from-teal-50 to-amber-50 border-amber-200'
               }`}
             >
               <div className="text-center">
                 <div
                   className={`text-lg sm:text-xl font-bold drop-shadow-sm ${
-                    hasActiveFilters ? 'text-blue-700' : 'text-teal-700'
+                    hasActiveFilters ? 'text-brand-primary' : 'text-teal-700'
                   }`}
                 >
                   {currentStats.individualSandwiches.toLocaleString()}
@@ -2175,7 +2175,7 @@ export default function SandwichCollectionLog() {
                 key={collection.id}
                 className={`border rounded-lg p-3 sm:p-4 ${
                   isSelected
-                    ? 'bg-blue-50 border-blue-200'
+                    ? 'bg-brand-primary-lighter border-brand-primary-border'
                     : isInactiveHost
                       ? 'bg-gray-100 border-gray-400 opacity-70'
                       : 'border-slate-200'

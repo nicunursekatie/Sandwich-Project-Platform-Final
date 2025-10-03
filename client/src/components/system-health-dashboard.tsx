@@ -245,8 +245,8 @@ export function SystemHealthDashboard() {
           </div>
 
           {isRunning && currentTest && (
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-blue-800">{currentTest}</p>
+            <div className="mb-4 p-3 bg-brand-primary-lighter rounded-lg">
+              <p className="text-brand-primary-dark">{currentTest}</p>
               <Progress value={30} className="mt-2" />
             </div>
           )}
@@ -284,7 +284,7 @@ export function SystemHealthDashboard() {
                       : suite.status === 'failed'
                         ? 'bg-red-100 text-red-800'
                         : suite.status === 'running'
-                          ? 'bg-blue-100 text-blue-800'
+                          ? 'bg-brand-primary-light text-brand-primary-dark'
                           : 'bg-gray-100 text-gray-800'
                   }
                 >

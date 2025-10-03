@@ -1004,15 +1004,15 @@ ${userEmail}`;
 
           {/* Load Draft Section */}
           {isDraftsLoading && (
-            <Card className="bg-blue-50 border border-blue-200">
+            <Card className="bg-brand-primary-lighter border border-brand-primary-border">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                  <Loader2 className="w-5 h-5 text-brand-primary-muted animate-spin" />
                   <div>
-                    <p className="font-medium text-blue-900">
+                    <p className="font-medium text-brand-primary-darker">
                       Loading drafts...
                     </p>
-                    <p className="text-sm text-blue-600">
+                    <p className="text-sm text-brand-primary-muted">
                       Checking for previously saved drafts for this event.
                     </p>
                   </div>
@@ -1159,7 +1159,7 @@ ${userEmail}`;
                     variant="outline"
                     size="sm"
                     onClick={resetToTemplate}
-                    className="text-xs h-7 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                    className="text-xs h-7 bg-brand-primary-lighter border-brand-primary-border-strong text-brand-primary hover:bg-brand-primary-light"
                     data-testid="button-reset-template"
                   >
                     <RefreshCw className="w-3 h-3 mr-1" />
@@ -1168,7 +1168,7 @@ ${userEmail}`;
                 </div>
               )}
             </div>
-            <div className="text-xs text-gray-500 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
+            <div className="text-xs text-gray-500 mb-2 p-2 bg-brand-primary-lighter rounded border border-brand-primary-border">
               💡 <strong>Quick Links:</strong> Inventory Calculator:
               https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
               | Schedule Call: https://thesandwichproject.as.me/
@@ -1237,7 +1237,7 @@ ${userEmail}`;
             )}
 
             {hasManualEdits && (includeSchedulingLink || requestPhoneCall) && (
-              <p className="text-xs text-blue-600 italic bg-blue-50 p-2 rounded border border-blue-200">
+              <p className="text-xs text-brand-primary-muted italic bg-brand-primary-lighter p-2 rounded border border-brand-primary-border">
                 💡 Your custom content is preserved. Use "Reset to Template"
                 above to apply these new options.
               </p>

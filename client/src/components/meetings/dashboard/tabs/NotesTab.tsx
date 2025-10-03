@@ -315,7 +315,7 @@ export function NotesTab({
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'discussion':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong';
       case 'meeting':
         return 'bg-green-100 text-green-800 border-green-300';
       default:
@@ -358,11 +358,11 @@ export function NotesTab({
 
             {/* Main Content - Discussion Points and Decision Items */}
             {parsed.discussionPoints && (
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+              <div className="bg-brand-primary-lighter border-l-4 border-blue-400 p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
-                  <MessageSquare className="w-4 h-4 text-blue-600 mt-1 flex-shrink-0" />
+                  <MessageSquare className="w-4 h-4 text-brand-primary-muted mt-1 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-blue-800 mb-1">Discussion Points/Questions</p>
+                    <p className="text-sm font-medium text-brand-primary-dark mb-1">Discussion Points/Questions</p>
                     <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.discussionPoints}</p>
                   </div>
                 </div>
@@ -579,8 +579,8 @@ export function NotesTab({
 
       {/* Bulk Actions */}
       {selectedNoteIds.length > 0 && (
-        <div className="flex items-center gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <span className="text-sm font-medium text-blue-800">
+        <div className="flex items-center gap-2 p-4 bg-brand-primary-lighter border border-brand-primary-border rounded-lg">
+          <span className="text-sm font-medium text-brand-primary-dark">
             {selectedNoteIds.length} note(s) selected
           </span>
           <Button

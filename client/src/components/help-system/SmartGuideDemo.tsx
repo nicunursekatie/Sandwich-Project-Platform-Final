@@ -73,7 +73,7 @@ export function SmartGuideDemo() {
               placement="top"
             >
               <div
-                className="p-4 border-2 border-dashed border-blue-200 hover:border-blue-400 rounded-lg cursor-pointer transition-all hover:bg-blue-50"
+                className="p-4 border-2 border-dashed border-brand-primary-border hover:border-blue-400 rounded-lg cursor-pointer transition-all hover:bg-brand-primary-lighter"
                 data-guide="user-management"
               >
                 <Users className="w-6 h-6 text-brand-primary mb-2" />
@@ -207,7 +207,7 @@ export function SmartGuideDemo() {
               >
                 <Button
                   variant="outline"
-                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  className="border-brand-primary-border text-brand-primary hover:bg-brand-primary-lighter"
                 >
                   <BarChart3 className="w-4 h-4 mr-2" />
                   Generate Report

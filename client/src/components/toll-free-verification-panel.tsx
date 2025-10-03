@@ -219,9 +219,9 @@ export function TollFreeVerificationPanel() {
         )}
 
         {/* Information */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="font-medium text-blue-900 mb-2">Important Information</h4>
-          <ul className="text-sm text-blue-800 space-y-1">
+        <div className="bg-brand-primary-lighter border border-brand-primary-border rounded-lg p-4">
+          <h4 className="font-medium text-brand-primary-darker mb-2">Important Information</h4>
+          <ul className="text-sm text-brand-primary-dark space-y-1">
             <li>• Toll-free verifications typically take 7-15 business days</li>
             <li>• Approved verifications enable SMS delivery to US/Canadian numbers</li>
             <li>• You can only have one verification per toll-free number</li>

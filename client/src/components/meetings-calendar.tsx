@@ -56,7 +56,7 @@ const meetingTypes = [
   {
     value: 'weekly',
     label: 'Weekly Team Meeting',
-    color: 'bg-blue-100 text-blue-800',
+    color: 'bg-brand-primary-light text-brand-primary-dark',
   },
   {
     value: 'marketing_committee',
@@ -578,7 +578,7 @@ export default function MeetingsCalendar() {
                     key={index}
                     className={`min-h-[120px] border-r border-b border-slate-200 last:border-r-0 ${
                       !isCurrentMonthDay ? 'bg-slate-50' : ''
-                    } ${isTodayDay ? 'bg-blue-50' : ''}`}
+                    } ${isTodayDay ? 'bg-brand-primary-lighter' : ''}`}
                   >
                     <div className="p-2">
                       <div
@@ -714,7 +714,7 @@ export default function MeetingsCalendar() {
                                     href={meeting.location}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-brand-primary hover:text-blue-800 underline"
+                                    className="text-brand-primary hover:text-brand-primary-dark underline"
                                   >
                                     Join Google Meet
                                   </a>

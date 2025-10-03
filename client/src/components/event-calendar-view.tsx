@@ -38,7 +38,7 @@ const MONTH_NAMES = [
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'new':
-      return 'bg-blue-100 text-blue-800 border-blue-300';
+      return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong';
     case 'in_process':
       return 'bg-yellow-100 text-yellow-800 border-yellow-300';
     case 'scheduled':
@@ -210,7 +210,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                     'text-sm font-medium mb-1',
                     isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
                     isTodayDay &&
-                      'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center'
+                      'bg-brand-primary-lighter0 text-white rounded-full w-6 h-6 flex items-center justify-center'
                   )}
                 >
                   {date.getDate()}
@@ -252,7 +252,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
         {/* Legend */}
         <div className="mt-6 pt-4 border-t flex flex-wrap gap-3 items-center">
           <span className="text-sm font-medium text-gray-700">Status:</span>
-          <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+          <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong">
             New
           </Badge>
           <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">

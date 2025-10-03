@@ -1138,7 +1138,7 @@ export default function GmailStyleInbox() {
                             : selectedMessage?.id === message.id
                             ? 'bg-amber-100 border-r-4 border-amber-500 shadow-sm'
                             : !message.isRead
-                            ? 'bg-blue-50 font-bold border-l-4 border-blue-500'
+                            ? 'bg-brand-primary-lighter font-bold border-l-4 border-blue-500'
                             : 'bg-white font-normal'
                         } hover:bg-amber-50 border-gray-100
                         ${isKudos && !message.isRead ? 'animate-pulse' : ''}
@@ -1152,7 +1152,7 @@ export default function GmailStyleInbox() {
                             e.stopPropagation();
                             handleToggleSelect(message.id);
                           }}
-                          className="mt-1 h-4 w-4 text-brand-primary bg-white border-gray-300 rounded focus:ring-blue-500"
+                          className="mt-1 h-4 w-4 text-brand-primary bg-white border-gray-300 rounded focus:ring-brand-primary-muted"
                         />
                         
                         {/* Kudos trophy icon or regular star */}
@@ -1351,7 +1351,7 @@ export default function GmailStyleInbox() {
                             textarea?.focus();
                           }, 300);
                         }}
-                        className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 px-3 py-2 font-medium"
+                        className="bg-brand-primary-lighter border-brand-primary-border text-brand-primary hover:bg-brand-primary-light hover:border-brand-primary-border-strong px-3 py-2 font-medium"
                       >
                         <Reply className="h-4 w-4 mr-2" />
                         Reply to Message
@@ -1511,7 +1511,7 @@ export default function GmailStyleInbox() {
                         }
                       }}
                       rows={6}
-                      className="w-full bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 resize-none"
+                      className="w-full bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary-muted focus:border-blue-500 text-gray-900 resize-none"
                       style={{
                         minHeight: '150px',
                         fontSize: '14px',

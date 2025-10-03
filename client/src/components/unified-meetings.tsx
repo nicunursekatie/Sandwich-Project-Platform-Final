@@ -14,7 +14,7 @@ export default function UnifiedMeetings() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
+        <div className="flex items-center justify-center w-12 h-12 bg-brand-primary-light rounded-xl">
           <ClipboardList className="w-6 h-6 text-brand-primary" />
         </div>
         <div>

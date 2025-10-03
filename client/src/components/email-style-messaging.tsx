@@ -577,9 +577,9 @@ export default function EmailStyleMessaging() {
                         key={message.id}
                         className={`px-3 py-4 cursor-pointer transition-colors border-b border-gray-100 ${
                           selectedMessage?.id === message.id
-                            ? 'bg-blue-50 border-l-4 border-l-blue-500'
+                            ? 'bg-brand-primary-lighter border-l-4 border-l-blue-500'
                             : !message.read
-                              ? 'bg-blue-25 hover:bg-blue-50'
+                              ? 'bg-blue-25 hover:bg-brand-primary-lighter'
                               : 'bg-white hover:bg-gray-50'
                         } ${
                           selectedMessages.includes(message.id)
@@ -594,7 +594,7 @@ export default function EmailStyleMessaging() {
                             checked={selectedMessages.includes(message.id)}
                             onChange={() => toggleMessageSelection(message.id)}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-4 h-4 text-brand-primary bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mt-1"
+                            className="w-4 h-4 text-brand-primary bg-gray-100 border-gray-300 rounded focus:ring-brand-primary-muted mt-1"
                           />
 
                           <Avatar className="h-8 w-8 flex-shrink-0">
@@ -674,7 +674,7 @@ export default function EmailStyleMessaging() {
                               {!message.read && (
                                 <Badge
                                   variant="secondary"
-                                  className="text-xs px-2 py-1 bg-blue-100 text-blue-700 font-medium"
+                                  className="text-xs px-2 py-1 bg-brand-primary-light text-brand-primary font-medium"
                                 >
                                   New
                                 </Badge>
