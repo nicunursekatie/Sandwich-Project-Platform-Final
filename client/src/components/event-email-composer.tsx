@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -103,6 +104,7 @@ export function EventEmailComposer({
   const [includeSchedulingLink, setIncludeSchedulingLink] = useState(false);
   const [requestPhoneCall, setRequestPhoneCall] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [emailFormat, setEmailFormat] = useState<'html' | 'plaintext'>('html'); // User's choice: HTML template or plain text
 
   // Smart regeneration state management
   const [hasManualEdits, setHasManualEdits] = useState(false);
@@ -175,6 +177,46 @@ export function EventEmailComposer({
     const userPhone = user?.phoneNumber || '';
     const userEmail =
       user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
+
+    // Generate plain text email if user selected plaintext format
+    if (emailFormat === 'plaintext') {
+      let plainTextContent = `Hi ${eventRequest.firstName},
+
+Thank you for your interest in hosting a sandwich-making event with The Sandwich Project!
+
+`;
+
+      if (includeScheduling) {
+        plainTextContent += `To get started, please use this link to schedule a call with me:
+https://thesandwichproject.as.me/
+
+`;
+      } else if (requestPhone) {
+        plainTextContent += `I'd love to discuss your event further. Please let me know a good time for a phone call, and I'll give you a ring.
+
+`;
+      } else {
+        plainTextContent += `I'd love to discuss your event and answer any questions you may have.
+
+`;
+      }
+
+      plainTextContent += `In the meantime, here are some helpful resources:
+
+- Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+- We typically serve groups of 50-200 people
+- Events usually last 1-2 hours
+
+Looking forward to working with you!
+
+Warmly,
+${userName}
+${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
+
+      setContent(plainTextContent);
+      lastGeneratedContentRef.current = plainTextContent;
+      return;
+    }
 
     // Use styled HTML template when includeScheduling is true
     if (includeScheduling) {
@@ -1144,16 +1186,52 @@ ${userEmail}`;
           </div>
 
           {/* Content */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="content" className="text-sm font-medium">
-                Message
-              </Label>
-              {hasManualEdits && (
-                <div className="flex items-center gap-2">
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Message Format</Label>
+
+            <RadioGroup
+              value={emailFormat}
+              onValueChange={(value: 'html' | 'plaintext') => {
+                setEmailFormat(value);
+                // Regenerate content in the new format
+                regenerateEmailContent(includeSchedulingLink, requestPhoneCall);
+              }}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem
+                  value="html"
+                  id="format-html"
+                  data-testid="radio-html"
+                />
+                <Label
+                  htmlFor="format-html"
+                  className="cursor-pointer font-normal"
+                >
+                  Use prebuilt HTML template
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem
+                  value="plaintext"
+                  id="format-plaintext"
+                  data-testid="radio-plaintext"
+                />
+                <Label
+                  htmlFor="format-plaintext"
+                  className="cursor-pointer font-normal"
+                >
+                  Write plain text email
+                </Label>
+              </div>
+            </RadioGroup>
+
+            <div className="mt-4">
+              {emailFormat === 'plaintext' && hasManualEdits && (
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
                     <AlertTriangle className="w-3 h-3" />
-                    Custom content - template won't auto-update
+                    Custom content
                   </div>
                   <Button
                     variant="outline"
@@ -1166,6 +1244,36 @@ ${userEmail}`;
                     Reset to Template
                   </Button>
                 </div>
+              )}
+
+              {emailFormat === 'plaintext' && (
+                <div className="text-xs text-gray-500 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
+                  💡 <strong>Quick Links:</strong> Inventory Calculator:
+                  https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+                  | Schedule Call: https://thesandwichproject.as.me/
+                </div>
+              )}
+
+              {emailFormat === 'html' ? (
+                <div className="border rounded-lg overflow-hidden bg-white">
+                  <div className="bg-gray-100 px-3 py-2 text-xs text-gray-600 border-b">
+                    Email Preview (this is how the recipient will see it)
+                  </div>
+                  <div
+                    className="p-4 max-h-[400px] overflow-y-auto"
+                    dangerouslySetInnerHTML={{ __html: content }}
+                    data-testid="email-preview"
+                  />
+                </div>
+              ) : (
+                <Textarea
+                  id="content"
+                  value={content}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  placeholder="Write your message here..."
+                  className="min-h-[300px] w-full resize-none"
+                  data-testid="textarea-email-content"
+                />
               )}
             </div>
             <div className="text-xs text-gray-500 mb-2 p-2 bg-brand-primary-lighter rounded border border-brand-primary-border">
