@@ -540,22 +540,32 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
     // Send clean professional email via SendGrid
     const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
     
-    await sendGridEmail({
-      to: recipientEmail,
-      from: 'katie@thesandwichproject.org',
-      replyTo: replyToEmail,
-      subject,
-      text: `${textContent}\n\n${EMAIL_FOOTER_TEXT}`,
-      html: isFullHtml 
-        ? `${htmlContent}${EMAIL_FOOTER_HTML}` 
-        : `
+    // For full HTML documents, inject footer before closing tags
+    let finalHtml;
+    if (isFullHtml) {
+      // Insert footer before </body></html>
+      finalHtml = htmlContent.replace(
+        /<\/body>\s*<\/html>/i,
+        `${EMAIL_FOOTER_HTML}</body></html>`
+      );
+    } else {
+      finalHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="white-space: pre-wrap; line-height: 1.6;">
             ${htmlContent}
           </div>
           ${EMAIL_FOOTER_HTML}
         </div>
-      `,
+      `;
+    }
+    
+    await sendGridEmail({
+      to: recipientEmail,
+      from: 'katie@thesandwichproject.org',
+      replyTo: replyToEmail,
+      subject,
+      text: `${textContent}\n\n${EMAIL_FOOTER_TEXT}`,
+      html: finalHtml,
       attachments: processedAttachments,
     });
 
