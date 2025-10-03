@@ -388,6 +388,7 @@ export function EventEmailComposer({
             <p><span class="accent-dot"></span></p>
             <p><strong>${userName}</strong></p>
             <p><a href="mailto:${userEmail}">${userEmail}</a></p>
+            ${userPhone ? `<p>${userPhone}</p>` : ''}
         </div>
     </div>
 </body>
@@ -606,6 +607,7 @@ export function EventEmailComposer({
             <p><span class="accent-dot"></span></p>
             <p><strong>${userName}</strong></p>
             <p><a href="mailto:${userEmail}">${userEmail}</a></p>
+            ${userPhone ? `<p>${userPhone}</p>` : ''}
         </div>
     </div>
 </body>
