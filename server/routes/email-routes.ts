@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { emailService } from '../services/email-service';
 import { isAuthenticated } from '../temp-auth';
 import { db } from '../db';
-import { kudosTracking, users } from '@shared/schema';
+import { kudosTracking, users, emailMessages } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { storage } from '../storage-wrapper';
 
@@ -451,43 +451,121 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
     );
     console.log(`[Event Email API] Attachments: ${attachments.join(', ')}`);
 
-    // Enhanced content with attachment list
-    let enhancedContent = content;
-    if (attachments.length > 0 && !isDraft) {
-      enhancedContent += `\n\n📎 Attachments:\n${attachments
-        .map((att) => `• ${att}`)
-        .join('\n')}`;
+    // Get user's complete profile data
+    const fullUserData = await storage.getUser(user.id);
+    const senderName = `${fullUserData?.firstName} ${fullUserData?.lastName}`.trim() || user.email;
+    const replyToEmail = fullUserData?.preferredEmail || user.email;
+
+    // For drafts, save to internal email system
+    if (isDraft) {
+      const newEmail = await emailService.sendEmail({
+        senderId: user.id,
+        senderName,
+        senderEmail: user.email,
+        senderPreferredEmail: fullUserData?.preferredEmail,
+        senderPhoneNumber: fullUserData?.phoneNumber,
+        recipientId: 'external',
+        recipientName: recipientName || 'Event Contact',
+        recipientEmail: recipientEmail || user.email,
+        subject,
+        content,
+        isDraft: true,
+        contextType: contextType || 'event_request',
+        contextId: contextId || eventRequestId?.toString(),
+        contextTitle: contextTitle || `Event Communication`,
+        attachments,
+      });
+
+      console.log('[Event Email API] Draft saved successfully');
+      return res.json({
+        success: true,
+        message: 'Draft saved successfully',
+        emailId: newEmail.id,
+      });
     }
 
-    // Get user's complete profile data including preferred email and phone number
-    const fullUserData = await storage.getUser(user.id);
+    // For actual emails, send directly via SendGrid without wrapper
+    const { sendEmail: sendGridEmail } = await import('../sendgrid');
+    const { documents } = await import('@shared/schema');
+    const { inArray } = await import('drizzle-orm');
+
+    // Convert content line breaks and markdown
+    const htmlContent = content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+
+    // Process attachments - fetch document metadata if attachments are document IDs
+    let processedAttachments = [];
+    if (attachments && attachments.length > 0) {
+      const docIds = attachments
+        .map(a => typeof a === 'string' ? parseInt(a) : a)
+        .filter(id => !isNaN(id));
+      
+      if (docIds.length > 0) {
+        const docs = await db
+          .select({
+            id: documents.id,
+            filePath: documents.filePath,
+            originalName: documents.originalName,
+          })
+          .from(documents)
+          .where(inArray(documents.id, docIds));
+        
+        processedAttachments = docs.map(doc => ({
+          filePath: doc.filePath,
+          originalName: doc.originalName || undefined,
+        }));
+      }
+    }
+
+    // Send clean professional email via SendGrid
+    const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
     
-    const newEmail = await emailService.sendEmail({
+    await sendGridEmail({
+      to: recipientEmail,
+      from: 'katielong2316@gmail.com',
+      replyTo: replyToEmail,
+      subject,
+      text: `${content}${EMAIL_FOOTER_TEXT}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="white-space: pre-wrap; line-height: 1.6;">
+            ${htmlContent}
+          </div>
+          ${EMAIL_FOOTER_HTML}
+        </div>
+      `,
+      attachments: processedAttachments,
+    });
+
+    // Save a record in internal email system (without sending duplicate)
+    const newEmail = await db.insert(emailMessages).values({
       senderId: user.id,
-      senderName: `${fullUserData?.firstName} ${fullUserData?.lastName}`.trim() || user.email,
+      senderName,
       senderEmail: user.email,
-      senderPreferredEmail: fullUserData?.preferredEmail,
-      senderPhoneNumber: fullUserData?.phoneNumber,
       recipientId: 'external',
       recipientName: recipientName || 'Event Contact',
-      recipientEmail: recipientEmail,
+      recipientEmail,
       subject,
-      content: enhancedContent,
-      isDraft,
+      content,
       contextType: contextType || 'event_request',
       contextId: contextId || eventRequestId?.toString(),
       contextTitle: contextTitle || `Event Communication`,
-    });
+      attachments,
+      isDraft: false,
+      isRead: true,
+      isStarred: false,
+      isArchived: false,
+      isTrashed: false,
+      includeSchedulingLink: false,
+      requestPhoneCall: false,
+    }).returning();
 
-    console.log(
-      `[Event Email API] Email ${
-        isDraft ? 'saved as draft' : 'sent'
-      } successfully`
-    );
+    console.log('[Event Email API] Email sent successfully');
     res.json({
       success: true,
-      message: isDraft ? 'Draft saved successfully' : 'Email sent successfully',
-      emailId: newEmail.id,
+      message: 'Email sent successfully',
+      emailId: newEmail[0].id,
     });
   } catch (error) {
     console.error('[Event Email API] Error:', error);
