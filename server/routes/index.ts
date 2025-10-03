@@ -17,10 +17,10 @@ import notificationsRouter from './notifications';
 import reportsRouter from './reports';
 import searchRouter from './search';
 import storageRouter from './storage';
+import documentsRouter from './documents';
 import versioningRouter from './versioning';
 import coreRouter from './core';
 import meRouter from './me';
-import { createDocumentsRouter } from './documents';
 import createAgendaItemsRouter from '../routes/agenda-items';
 import { createActivityLogRoutes } from './activity-log';
 import { smsUserRoutes } from './sms-users';
@@ -220,8 +220,6 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/storage', createErrorHandler('storage'));
 
-  // Documents router with standardized middleware
-  const documentsRouter = createDocumentsRouter(deps.storage);
   router.use(
     '/api/documents',
     deps.isAuthenticated,
