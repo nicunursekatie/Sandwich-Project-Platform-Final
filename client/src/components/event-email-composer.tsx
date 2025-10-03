@@ -209,8 +209,12 @@ export function EventEmailComposer({
         }
         
         .greeting {
-            font-size: 16px;
+            font-size: 18px;
             margin-bottom: 20px;
+        }
+        
+        .greeting p {
+            font-size: 18px;
         }
         
         .section {
@@ -224,7 +228,7 @@ export function EventEmailComposer({
         .section h2 {
             margin: 0 0 15px 0;
             color: #236383;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
         }
         
@@ -236,6 +240,7 @@ export function EventEmailComposer({
         .section li {
             margin: 10px 0;
             color: #444;
+            font-size: 16px;
         }
         
         .highlight-box {
@@ -249,19 +254,20 @@ export function EventEmailComposer({
         
         .highlight-box p {
             margin: 5px 0;
-            font-size: 15px;
+            font-size: 17px;
         }
         
         .cta-button {
             display: inline-block;
             background: #FBAD3F;
-            color: #333;
+            color: #333 !important;
             padding: 14px 30px;
-            text-decoration: none;
+            text-decoration: none !important;
             border-radius: 6px;
             font-weight: 600;
             margin: 20px 10px;
             transition: transform 0.2s;
+            font-size: 16px;
         }
         
         .cta-button:hover {
@@ -271,7 +277,7 @@ export function EventEmailComposer({
         
         .cta-button.secondary {
             background: #47B3CB;
-            color: white;
+            color: white !important;
         }
         
         .cta-button.secondary:hover {
@@ -422,8 +428,12 @@ export function EventEmailComposer({
         }
         
         .greeting {
-            font-size: 16px;
+            font-size: 18px;
             margin-bottom: 20px;
+        }
+        
+        .greeting p {
+            font-size: 18px;
         }
         
         .section {
@@ -437,7 +447,7 @@ export function EventEmailComposer({
         .section h2 {
             margin: 0 0 15px 0;
             color: #236383;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
         }
         
@@ -449,6 +459,7 @@ export function EventEmailComposer({
         .section li {
             margin: 10px 0;
             color: #444;
+            font-size: 16px;
         }
         
         .highlight-box {
@@ -462,19 +473,20 @@ export function EventEmailComposer({
         
         .highlight-box p {
             margin: 5px 0;
-            font-size: 15px;
+            font-size: 17px;
         }
         
         .cta-button {
             display: inline-block;
             background: #FBAD3F;
-            color: #333;
+            color: #333 !important;
             padding: 14px 30px;
-            text-decoration: none;
+            text-decoration: none !important;
             border-radius: 6px;
             font-weight: 600;
             margin: 20px 10px;
             transition: transform 0.2s;
+            font-size: 16px;
         }
         
         .cta-button:hover {
@@ -484,7 +496,7 @@ export function EventEmailComposer({
         
         .cta-button.secondary {
             background: #47B3CB;
-            color: white;
+            color: white !important;
         }
         
         .cta-button.secondary:hover {
