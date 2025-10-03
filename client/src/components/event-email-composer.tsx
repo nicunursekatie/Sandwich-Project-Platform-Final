@@ -103,7 +103,7 @@ export function EventEmailComposer({
   const [includeSchedulingLink, setIncludeSchedulingLink] = useState(false);
   const [requestPhoneCall, setRequestPhoneCall] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
-  
+
   // Smart regeneration state management
   const [hasManualEdits, setHasManualEdits] = useState(false);
   const [isResettingToTemplate, setIsResettingToTemplate] = useState(false);
@@ -113,7 +113,9 @@ export function EventEmailComposer({
   const { user } = useAuth();
 
   // Fetch available documents
-  const { data: documents = [], isLoading: isDocumentsLoading } = useQuery<Document[]>({
+  const { data: documents = [], isLoading: isDocumentsLoading } = useQuery<
+    Document[]
+  >({
     queryKey: ['/api/storage/documents'],
     enabled: isOpen, // Only fetch when dialog is open
   });
@@ -121,7 +123,8 @@ export function EventEmailComposer({
   // Fetch available drafts for this event request
   const { data: availableDrafts = [], isLoading: isDraftsLoading } = useQuery({
     queryKey: ['/api/emails/event', eventRequest.id, 'drafts'],
-    queryFn: () => apiRequest('GET', `/api/emails/event/${eventRequest.id}/drafts`),
+    queryFn: () =>
+      apiRequest('GET', `/api/emails/event/${eventRequest.id}/drafts`),
     enabled: isOpen, // Only fetch when dialog is open
   });
 
@@ -129,21 +132,27 @@ export function EventEmailComposer({
   const isContentManuallyEdited = () => {
     // If we don't have a last generated content, assume it's manual
     if (!lastGeneratedContentRef.current) return true;
-    
+
     // Compare current content with last generated template (ignore whitespace differences)
     const currentContentNormalized = content.trim().replace(/\s+/g, ' ');
-    const lastGeneratedNormalized = lastGeneratedContentRef.current.trim().replace(/\s+/g, ' ');
-    
+    const lastGeneratedNormalized = lastGeneratedContentRef.current
+      .trim()
+      .replace(/\s+/g, ' ');
+
     return currentContentNormalized !== lastGeneratedNormalized;
   };
 
   // Smart regenerate - only regenerate if content hasn't been manually edited
-  const smartRegenerateEmailContent = (includeScheduling: boolean, requestPhone: boolean, force: boolean = false) => {
+  const smartRegenerateEmailContent = (
+    includeScheduling: boolean,
+    requestPhone: boolean,
+    force: boolean = false
+  ) => {
     // If hasManualEdits is true, never regenerate (unless forced)
     if (hasManualEdits && !force) {
       return false; // Content was not regenerated
     }
-    
+
     // If forced (Reset to Template) or content hasn't been manually edited, regenerate
     if (force || !isContentManuallyEdited()) {
       regenerateEmailContent(includeScheduling, requestPhone);
@@ -154,14 +163,19 @@ export function EventEmailComposer({
   };
 
   // Regenerate email content based on selected options
-  const regenerateEmailContent = (includeScheduling: boolean, requestPhone: boolean) => {
-    const userName = user?.firstName && user?.lastName 
-      ? `${user.firstName} ${user.lastName}`
-      : user?.email || 'The Sandwich Project Team';
-    
+  const regenerateEmailContent = (
+    includeScheduling: boolean,
+    requestPhone: boolean
+  ) => {
+    const userName =
+      user?.firstName && user?.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user?.email || 'The Sandwich Project Team';
+
     const userPhone = user?.phoneNumber || '';
-    const userEmail = user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
-    
+    const userEmail =
+      user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
+
     // Use styled HTML template when includeScheduling is true
     if (includeScheduling) {
       const htmlTemplate = `<!DOCTYPE html>
@@ -353,7 +367,7 @@ export function EventEmailComposer({
                     <li>We provide food to vulnerable populations, so please read and follow all safety rules.</li>
                 </ul>
                 <p style="margin-top: 15px; padding: 15px; background: #fff7e6; border-left: 3px solid #FBAD3F; border-radius: 4px; font-size: 15px; color: #333;">
-                    <strong>📝 Labeling Tip:</strong> Labels go on the <strong>outside of each bag</strong> containing a loaf of sandwiches—not on individual sandwiches.
+                    <strong>📝 Labeling Tip:</strong> The attached PDF for labels are intended to go on the <strong>outside of each bag</strong> containing a loaf of sandwiches.
                 </p>
             </div>
             
@@ -378,12 +392,12 @@ export function EventEmailComposer({
     </div>
 </body>
 </html>`;
-      
+
       setContent(htmlTemplate);
       lastGeneratedContentRef.current = htmlTemplate;
       return;
     }
-    
+
     // Use styled HTML template for non-scheduling version (unless requesting phone)
     if (!requestPhone) {
       const htmlTemplate = `<!DOCTYPE html>
@@ -596,15 +610,15 @@ export function EventEmailComposer({
     </div>
 </body>
 </html>`;
-      
+
       setContent(htmlTemplate);
       lastGeneratedContentRef.current = htmlTemplate;
       return;
     }
-    
+
     // Plain text template only for requestPhone option
     const schedulingCallText = `Once you have reviewed everything, we would love to connect! Please reply to this email with your phone number and best times to call you. We'll reach out within 1-2 business days.`;
-    
+
     const template = `Hi ${eventRequest.firstName},
 
 Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with an inventory calculator and food safety tips.
@@ -699,17 +713,16 @@ ${userEmail}`;
   useEffect(() => {
     // Skip on initial load or when resetting to template
     if (isInitialLoad.current || isResettingToTemplate) return;
-    
+
     // Skip if dialog is not open
     if (!isOpen) return;
-    
+
     // Skip if no content exists yet
     if (!content) return;
-    
+
     // Always regenerate when checkboxes change (force=true to bypass manual edits check)
     regenerateEmailContent(includeSchedulingLink, requestPhoneCall);
     setHasManualEdits(false);
-    
   }, [includeSchedulingLink, requestPhoneCall]);
 
   // Initialize with comprehensive template when component opens
@@ -717,18 +730,23 @@ ${userEmail}`;
     if (isOpen && !content) {
       // Just call regenerateEmailContent to avoid duplicating template logic
       regenerateEmailContent(includeSchedulingLink, requestPhoneCall);
-      
+
       // Mark as not having manual edits initially
       setHasManualEdits(false);
-      
-      setSubject(
-        `Thanks for reaching out to The Sandwich Project!`
-      );
-      
+
+      setSubject(`Thanks for reaching out to The Sandwich Project!`);
+
       // Clear initial load flag after first template generation
       isInitialLoad.current = false;
     }
-  }, [isOpen, eventRequest, formatEventDetails, includeSchedulingLink, requestPhoneCall, user]);
+  }, [
+    isOpen,
+    eventRequest,
+    formatEventDetails,
+    includeSchedulingLink,
+    requestPhoneCall,
+    user,
+  ]);
 
   // Separate effect to handle default attachment selection after documents load
   useEffect(() => {
@@ -737,19 +755,21 @@ ${userEmail}`;
     if (isOpen && documents.length > 0 && selectedAttachments.length === 0) {
       // Pre-select standard toolkit documents based on available documents
       const defaultAttachments = documents
-        .filter(doc => {
+        .filter((doc) => {
           const searchText = `${doc.title} ${doc.fileName}`.toLowerCase();
           // Exclude recipients document - only for hosts and volunteers
           if (searchText.includes('recipient')) return false;
-          
-          return searchText.includes('food safety') || 
-                 searchText.includes('deli') || 
-                 searchText.includes('pbj') || 
-                 searchText.includes('pb&j') ||
-                 searchText.includes('sandwich making');
+
+          return (
+            searchText.includes('food safety') ||
+            searchText.includes('deli') ||
+            searchText.includes('pbj') ||
+            searchText.includes('pb&j') ||
+            searchText.includes('sandwich making')
+          );
         })
-        .map(doc => doc.filePath);
-      
+        .map((doc) => doc.filePath);
+
       if (defaultAttachments.length > 0) {
         setSelectedAttachments(defaultAttachments);
       }
@@ -796,7 +816,7 @@ ${userEmail}`;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/emails'] });
-      
+
       if (isDraft) {
         // For drafts: Keep dialog open, show clear feedback
         toast({
@@ -860,11 +880,14 @@ ${userEmail}`;
   // Handle content changes to track manual edits
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
-    
+
     // Don't mark as manual edit if we're resetting to template or on initial load
     if (!isResettingToTemplate && !isInitialLoad.current) {
       // Only mark as manual edit if the content differs from last generated
-      if (lastGeneratedContentRef.current && newContent.trim() !== lastGeneratedContentRef.current.trim()) {
+      if (
+        lastGeneratedContentRef.current &&
+        newContent.trim() !== lastGeneratedContentRef.current.trim()
+      ) {
         setHasManualEdits(true);
       }
     }
@@ -875,10 +898,11 @@ ${userEmail}`;
     setIsResettingToTemplate(true);
     smartRegenerateEmailContent(includeSchedulingLink, requestPhoneCall, true);
     setIsResettingToTemplate(false);
-    
+
     toast({
       title: '✨ Template Refreshed',
-      description: 'Email content has been reset to the current template with your selected options.',
+      description:
+        'Email content has been reset to the current template with your selected options.',
       duration: 3000,
     });
   };
@@ -888,33 +912,34 @@ ${userEmail}`;
     // Hydrate all state from the selected draft
     setSubject(draft.subject || '');
     setContent(draft.content || '');
-    
+
     // Parse attachments if they exist (they might be stored as JSON)
     if (draft.attachments) {
       try {
-        const attachments = typeof draft.attachments === 'string' 
-          ? JSON.parse(draft.attachments) 
-          : draft.attachments;
+        const attachments =
+          typeof draft.attachments === 'string'
+            ? JSON.parse(draft.attachments)
+            : draft.attachments;
         setSelectedAttachments(attachments || []);
       } catch {
         setSelectedAttachments([]);
       }
     }
-    
+
     // Load explicit boolean preferences from the draft data
     setIncludeSchedulingLink(draft.includeSchedulingLink || false);
     setRequestPhoneCall(draft.requestPhoneCall || false);
-    
+
     // Clear the subject suggestion since we're loading a custom draft
     setSelectedSubjectSuggestion('custom');
-    
+
     // Clear draft saved state since we're now editing
     setDraftSaved(false);
-    
+
     // Mark as manual edits since we're loading custom draft content
     setHasManualEdits(true);
     lastGeneratedContentRef.current = draft.content || '';
-    
+
     // Show success toast
     toast({
       title: '📝 Draft Loaded',
@@ -925,9 +950,11 @@ ${userEmail}`;
 
   const getDocumentIcon = (document: Document) => {
     const searchText = `${document.title} ${document.fileName}`.toLowerCase();
-    if (searchText.includes('inventory') || searchText.includes('calculator')) return Calculator;
+    if (searchText.includes('inventory') || searchText.includes('calculator'))
+      return Calculator;
     if (searchText.includes('safety')) return Shield;
-    if (searchText.includes('making') || searchText.includes('sandwich')) return Users;
+    if (searchText.includes('making') || searchText.includes('sandwich'))
+      return Users;
     return FileText;
   };
 
@@ -939,8 +966,8 @@ ${userEmail}`;
             <Mail className="w-5 h-5 text-teal-600" />
             Send Email to Event Contact
             {draftSaved && (
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className="ml-2 bg-amber-50 text-amber-700 border-amber-300"
               >
                 📝 Draft Saved
@@ -980,7 +1007,9 @@ ${userEmail}`;
                 <div className="flex items-center gap-3">
                   <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
                   <div>
-                    <p className="font-medium text-blue-900">Loading drafts...</p>
+                    <p className="font-medium text-blue-900">
+                      Loading drafts...
+                    </p>
                     <p className="text-sm text-blue-600">
                       Checking for previously saved drafts for this event.
                     </p>
@@ -1001,7 +1030,8 @@ ${userEmail}`;
                     </Label>
                   </div>
                   <p className="text-sm text-amber-700">
-                    You have saved drafts for this event. Load one to continue where you left off.
+                    You have saved drafts for this event. Load one to continue
+                    where you left off.
                   </p>
                   <div className="space-y-2">
                     {availableDrafts.map((draft: any) => (
@@ -1015,11 +1045,15 @@ ${userEmail}`;
                           </p>
                           <div className="flex items-center gap-4 text-sm text-gray-600">
                             <span>
-                              Saved: {new Date(draft.updatedAt).toLocaleDateString()} at {new Date(draft.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              Saved:{' '}
+                              {new Date(draft.updatedAt).toLocaleDateString()}{' '}
+                              at{' '}
+                              {new Date(draft.updatedAt).toLocaleTimeString(
+                                [],
+                                { hour: '2-digit', minute: '2-digit' }
+                              )}
                             </span>
-                            <span>
-                              To: {draft.recipientName}
-                            </span>
+                            <span>To: {draft.recipientName}</span>
                           </div>
                           {draft.content && (
                             <p className="text-sm text-gray-500 mt-1 truncate">
@@ -1145,13 +1179,13 @@ ${userEmail}`;
               className="min-h-[300px] w-full resize-none"
             />
           </div>
-          
+
           {/* Next Step Options */}
           <div className="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <Label className="text-sm font-medium text-gray-700">
               Next Steps for Event Scheduling (select at least one):
             </Label>
-            
+
             {/* Scheduling Link Option */}
             <div className="flex items-center space-x-3">
               <Checkbox
@@ -1164,15 +1198,15 @@ ${userEmail}`;
                   }
                 }}
               />
-              <Label 
-                htmlFor="include-scheduling" 
+              <Label
+                htmlFor="include-scheduling"
                 className="flex items-center gap-2 cursor-pointer text-sm"
               >
                 <Calendar className="w-4 h-4 text-teal-600" />
                 Include self-service scheduling link
               </Label>
             </div>
-            
+
             {/* Phone Call Request Option */}
             <div className="flex items-center space-x-3">
               <Checkbox
@@ -1185,24 +1219,25 @@ ${userEmail}`;
                   }
                 }}
               />
-              <Label 
-                htmlFor="request-phone" 
+              <Label
+                htmlFor="request-phone"
                 className="flex items-center gap-2 cursor-pointer text-sm"
               >
                 <Users className="w-4 h-4 text-orange-600" />
                 Request they reply with phone number for follow-up call
               </Label>
             </div>
-            
+
             {!includeSchedulingLink && !requestPhoneCall && (
               <p className="text-xs text-amber-600 italic">
                 ⚠️ At least one follow-up method should be selected
               </p>
             )}
-            
+
             {hasManualEdits && (includeSchedulingLink || requestPhoneCall) && (
               <p className="text-xs text-blue-600 italic bg-blue-50 p-2 rounded border border-blue-200">
-                💡 Your custom content is preserved. Use "Reset to Template" above to apply these new options.
+                💡 Your custom content is preserved. Use "Reset to Template"
+                above to apply these new options.
               </p>
             )}
           </div>
@@ -1291,7 +1326,9 @@ ${userEmail}`;
                 className="flex items-center gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
               >
                 <Clock className="w-4 h-4" />
-                {sendEmailMutation.isPending && isDraft ? 'Saving Draft...' : 'Save as Draft'}
+                {sendEmailMutation.isPending && isDraft
+                  ? 'Saving Draft...'
+                  : 'Save as Draft'}
               </Button>
 
               <Button
@@ -1304,7 +1341,9 @@ ${userEmail}`;
                 className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800"
               >
                 <Send className="w-4 h-4" />
-                {sendEmailMutation.isPending && !isDraft ? 'Sending Email...' : 'Send Email Now'}
+                {sendEmailMutation.isPending && !isDraft
+                  ? 'Sending Email...'
+                  : 'Send Email Now'}
               </Button>
             </div>
           </div>
