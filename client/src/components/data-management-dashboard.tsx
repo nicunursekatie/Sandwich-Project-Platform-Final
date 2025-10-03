@@ -44,12 +44,12 @@ export function DataManagementDashboard() {
 
   // Fetch data summary
   const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ['/api/data/summary'],
+    queryKey: ['/api/data-management/summary'],
   });
 
   // Fetch data integrity status
   const { data: integrityData, isLoading: integrityLoading } = useQuery({
-    queryKey: ['/api/data/integrity/check'],
+    queryKey: ['/api/data-management/integrity/check'],
   });
 
   // Search functionality
@@ -66,7 +66,7 @@ export function DataManagementDashboard() {
   const exportCollectionsMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `/api/data/export/collections?format=${exportFormat}`
+        `/api/data-management/export/collections?format=${exportFormat}`
       );
       if (!response.ok) throw new Error('Export failed');
 
@@ -109,7 +109,7 @@ export function DataManagementDashboard() {
   const exportHostsMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `/api/data/export/hosts?format=${exportFormat}`
+        `/api/data-management/export/hosts?format=${exportFormat}`
       );
       if (!response.ok) throw new Error('Export failed');
 
@@ -145,15 +145,17 @@ export function DataManagementDashboard() {
   // Bulk operations
   const deduplicateHostsMutation = useMutation({
     mutationFn: () =>
-      apiRequest('/api/data/bulk/deduplicate-hosts', { method: 'POST' }),
+      apiRequest('POST', '/api/data-management/bulk/deduplicate-hosts'),
     onSuccess: (data: any) => {
       toast({
         title: 'Deduplication Complete',
         description: `Removed ${data.deleted || 0} duplicate hosts`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/data/summary'] });
       queryClient.invalidateQueries({
-        queryKey: ['/api/data/integrity/check'],
+        queryKey: ['/api/data-management/summary'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/data-management/integrity/check'],
       });
     },
     onError: () => {
@@ -168,13 +170,15 @@ export function DataManagementDashboard() {
   // Import 2023 events mutation
   const import2023EventsMutation = useMutation({
     mutationFn: () =>
-      apiRequest('/api/import-events/import-2023-events', { method: 'POST' }),
+      apiRequest('POST', '/api/import-events/import-2023-events'),
     onSuccess: (data: any) => {
       toast({
         title: 'Import Complete',
         description: `Successfully imported ${data.imported || 0} events from 2023 (skipped ${data.duplicates || 0} duplicates)`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/data/summary'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/data-management/summary'],
+      });
     },
     onError: (error: any) => {
       toast({
@@ -569,7 +573,7 @@ export function DataManagementDashboard() {
                   onClick={async () => {
                     try {
                       const response = await fetch(
-                        '/api/data/export/full-dataset'
+                        '/api/data-management/export/full-dataset'
                       );
                       if (!response.ok) throw new Error('Export failed');
 
