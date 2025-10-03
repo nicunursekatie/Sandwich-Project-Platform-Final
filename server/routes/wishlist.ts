@@ -8,7 +8,6 @@ import {
   type WishlistSuggestion,
   type InsertWishlistSuggestion 
 } from '../../shared/schema';
-import { createStandardMiddleware } from '../middleware';
 import { logger } from '../middleware/logger';
 
 // Type definitions for authenticated requests
@@ -37,11 +36,8 @@ const updateSuggestionSchema = z.object({
   estimatedCost: z.number().positive().optional(),
 });
 
-// Create suggestions router
+// Create suggestions router (standard middleware is applied by the parent router)
 export const wishlistSuggestionsRouter = Router();
-
-// Apply standard middleware (authentication, logging, etc.)
-wishlistSuggestionsRouter.use(createStandardMiddleware());
 
 // GET /api/wishlist-suggestions - Return all wishlist suggestions from database
 wishlistSuggestionsRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
@@ -257,11 +253,8 @@ wishlistSuggestionsRouter.delete('/:id', async (req: AuthenticatedRequest, res: 
   }
 });
 
-// Create activity router
+// Create activity router (standard middleware is applied by the parent router)
 export const wishlistActivityRouter = Router();
-
-// Apply standard middleware (authentication, logging, etc.)
-wishlistActivityRouter.use(createStandardMiddleware());
 
 // GET /api/wishlist-activity - Return recent wishlist activity/history
 wishlistActivityRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
