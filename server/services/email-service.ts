@@ -236,6 +236,7 @@ export class EmailService {
       if (!data.isDraft) {
         try {
           const { sendEmail: sendGridEmail } = await import('../sendgrid');
+          const { documents } = await import('@shared/schema');
           
           // Use preferred email for Reply-To, fallback to sender email
           const replyToEmail = data.senderPreferredEmail || data.senderEmail;
@@ -267,6 +268,33 @@ export class EmailService {
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\n/g, '<br>');
           
+          // Process attachments - fetch document metadata if attachments are document IDs
+          let processedAttachments = data.attachments || [];
+          if (data.attachments && data.attachments.length > 0) {
+            // Check if attachments are numeric IDs (documents) or file paths
+            const docIds = data.attachments
+              .map(a => typeof a === 'string' ? parseInt(a) : a)
+              .filter(id => !isNaN(id));
+            
+            if (docIds.length > 0) {
+              // Fetch document metadata from database
+              const docs = await db
+                .select({
+                  id: documents.id,
+                  filePath: documents.filePath,
+                  originalName: documents.originalName,
+                })
+                .from(documents)
+                .where(inArray(documents.id, docIds));
+              
+              // Transform to attachment metadata format
+              processedAttachments = docs.map(doc => ({
+                filePath: doc.filePath,
+                originalName: doc.originalName || undefined,
+              }));
+            }
+          }
+          
           // Import SendGrid compliance footer
           const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
           
@@ -291,7 +319,7 @@ export class EmailService {
                 ${EMAIL_FOOTER_HTML}
               </div>
             `,
-            attachments: data.attachments,
+            attachments: processedAttachments,
           });
           console.log(
             `[Email Service] SendGrid notification sent successfully to ${data.recipientEmail}`
