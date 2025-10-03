@@ -137,7 +137,7 @@ export default function RequestFilters({
   const currentTab = tabConfig.find(tab => tab.value === activeTab);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Mobile: Dropdown Selector */}
       {isMobile ? (
         <div className="space-y-4">
@@ -184,7 +184,7 @@ export default function RequestFilters({
       ) : (
         /* Desktop: Traditional Tabs */
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
-          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+          <TabsList className="w-full grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
             {tabConfig.map((tab) => (
               <TabsTrigger 
                 key={tab.value}
@@ -210,7 +210,7 @@ export default function RequestFilters({
             (status) => (
               <TabsContent key={status} value={status} className="space-y-4">
                 {/* Search and Filters for this specific status */}
-                <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
                     <Input
@@ -258,7 +258,7 @@ export default function RequestFilters({
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-4 border-t">
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-600">Items per page:</span>
                       <Select
@@ -314,7 +314,7 @@ export default function RequestFilters({
       {isMobile && (
         <div className="space-y-4">
           {/* Search and Filters */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
               <Input
@@ -357,7 +357,7 @@ export default function RequestFilters({
 
           {/* Mobile Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex flex-col items-center justify-between gap-4 pt-4 border-t">
+            <div className="flex flex-col items-center justify-between gap-3 sm:gap-4 pt-4 border-t">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">Items per page:</span>
                 <Select

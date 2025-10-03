@@ -283,7 +283,7 @@ export default function SandwichForecastWidget() {
           📅 Individual makers prep Wednesdays • Group distributions Thursdays
         </p>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         {/* Week Navigation */}
         <div className="flex items-center justify-between mb-4">
           <Button
@@ -307,7 +307,7 @@ export default function SandwichForecastWidget() {
           </Button>
         </div>
         {/* Totals Section - separated visually */}
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="flex flex-col md:flex-row gap-3 sm:gap-4 mb-4">
           <div className="flex-1 flex items-center gap-2 p-3 rounded-lg border border-[#007E8C] bg-[#F0FBFC]">
             <span style={{ color: '#236383', fontWeight: 700, fontSize: '1.1em' }}>
               Thursday Distribution Total:
@@ -347,7 +347,7 @@ export default function SandwichForecastWidget() {
         </div>
         {/* Unfulfilled needs summary row - only show if there are unfulfilled positions */}
         {(unfulfilledDrivers > 0 || unfulfilledSpeakers > 0) && (
-          <div className="flex gap-4 items-center mb-2">
+          <div className="flex gap-3 sm:gap-4 items-center mb-2">
             {unfulfilledDrivers > 0 && (
               <span style={{ color: '#007E8C', fontWeight: 600 }}>
                 🚗 {unfulfilledDrivers} Driver{unfulfilledDrivers > 1 ? 's' : ''} Still Needed

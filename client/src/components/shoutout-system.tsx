@@ -341,11 +341,11 @@ export default function ShoutoutSystem() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-200 bg-gradient-to-r from-brand-orange/5 via-white to-brand-primary/5">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-[#e89b2e] rounded-xl flex items-center justify-center shadow-lg">
               <Megaphone className="h-6 w-6 text-white" />
             </div>

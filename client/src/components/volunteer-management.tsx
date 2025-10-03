@@ -368,9 +368,9 @@ export default function VolunteerManagement() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-3 sm:gap-4 mb-6">
         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-primary-light">
           <Users className="w-6 h-6 text-brand-primary" />
         </div>
@@ -405,7 +405,7 @@ export default function VolunteerManagement() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -597,7 +597,7 @@ export default function VolunteerManagement() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -713,7 +713,7 @@ export default function VolunteerManagement() {
                       </div>
                     ) : (
                       <div className="bg-amber-50 rounded-lg p-4 space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="hostLocation">Host Location</Label>
                             <Select

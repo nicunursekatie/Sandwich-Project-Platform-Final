@@ -65,7 +65,7 @@ export default function PhoneDirectoryPage() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-4 text-sm sm:text-base">
           <ul className="space-y-2">
             {sidebarItems.map((item) => {
               const Icon = item.icon;

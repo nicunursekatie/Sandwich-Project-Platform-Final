@@ -1,7 +1,7 @@
 export default function SMSVerificationDocs() {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
@@ -100,7 +100,7 @@ export default function SMSVerificationDocs() {
               User Interface Elements
             </h2>
           </div>
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-4 sm:space-y-6">
             {/* Dashboard Prompt */}
             <div className="space-y-3">
               <h3 className="font-semibold">1. Dashboard SMS Prompt</h3>

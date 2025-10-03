@@ -344,9 +344,9 @@ export default function EventRemindersManagement() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Clock className="h-6 w-6 text-brand-primary" />
@@ -529,7 +529,7 @@ export default function EventRemindersManagement() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -623,7 +623,7 @@ export default function EventRemindersManagement() {
 
       {/* Reminders Tabs */}
       <Tabs defaultValue="pending" className="space-y-4">
-        <TabsList className="w-full h-auto p-1 grid grid-cols-2 gap-1">
+        <TabsList className="w-full h-auto p-1 grid grid-cols-1 sm:grid-cols-2 gap-1">
           <TabsTrigger 
             value="pending" 
             className="flex-1 px-3 py-3 text-sm sm:text-base min-h-[44px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -697,7 +697,7 @@ export default function EventRemindersManagement() {
                           </p>
                         )}
 
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
                             {getDueDateBadge(reminder.dueDate)}
@@ -781,7 +781,7 @@ export default function EventRemindersManagement() {
                           </div>
                         )}
 
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
                             <span>

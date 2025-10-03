@@ -160,7 +160,7 @@ export function MeetingOverviewTab({
       )}
 
       {/* View Toggle & New Meeting Button */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
           <button
             onClick={() => setViewMode('grid')}
@@ -233,7 +233,7 @@ export function MeetingOverviewTab({
                       <CardTitle className="text-base md:text-lg text-teal-900 mb-2">
                         {meeting.title}
                       </CardTitle>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 sm:gap-4 text-sm">
                         <div className="flex items-center gap-1">
                           <CalendarDays className="w-4 h-4 text-teal-600" />
                           <span className="text-teal-800 font-medium">
@@ -334,7 +334,7 @@ export function MeetingOverviewTab({
                       <CardTitle className="text-lg text-gray-700">
                         {meeting.title}
                       </CardTitle>
-                      <div className="flex items-center gap-4 mt-2 text-sm">
+                      <div className="flex items-center gap-3 sm:gap-4 mt-2 text-sm">
                         <div className="flex items-center gap-1">
                           <CalendarDays className="w-4 h-4 text-gray-500" />
                           <span className="text-gray-600 font-medium">

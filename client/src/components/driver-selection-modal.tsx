@@ -311,7 +311,7 @@ export function DriverSelectionModal({
                           )}
                         </div>
 
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                        <div className="flex items-center gap-3 sm:gap-4 mt-1 text-sm text-gray-500">
                           {driver.email && (
                             <div className="flex items-center gap-1">
                               <Mail className="w-3 h-3" />

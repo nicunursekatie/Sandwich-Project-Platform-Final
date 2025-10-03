@@ -282,7 +282,7 @@ function ComprehensivePersonSelector({ selectedPeople, onSelectionChange, assign
       {/* Available People by Category */}
       <div className="flex-1">
         <ScrollArea className="h-96">
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {Object.entries(groupedPeople).map(([section, people]) => (
               <div key={section}>
                 <h3 className="text-sm font-medium text-gray-700 mb-3">
@@ -2486,7 +2486,7 @@ export default function EventRequestsManagement({
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-6 mt-6">
+            <div className="space-y-4 sm:space-y-6 mt-6">
               <SandwichForecastWidget />
               
               {/* Planning Tips */}
@@ -2530,7 +2530,7 @@ export default function EventRequestsManagement({
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-6 mt-6">
+            <div className="space-y-4 sm:space-y-6 mt-6">
               <StaffingForecastWidget />
               
               {/* Staffing Tips */}

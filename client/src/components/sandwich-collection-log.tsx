@@ -684,7 +684,7 @@ export default function SandwichCollectionLog() {
     const visiblePages = getVisiblePages();
 
     return (
-      <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-white border-t border-slate-200 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-white border-t border-slate-200 gap-3 sm:gap-4">
         {/* Left side - Per page selector only */}
         <div className="flex items-center gap-2 text-sm">
           <span className="text-slate-600">Per page:</span>
@@ -1657,7 +1657,7 @@ export default function SandwichCollectionLog() {
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
       <div className="px-3 sm:px-6 py-4 border-b border-slate-200">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="min-w-0">
             <h2 className="text-base sm:text-lg font-semibold text-slate-900 flex items-center">
               <img
@@ -1753,7 +1753,7 @@ export default function SandwichCollectionLog() {
             )}
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <p className="text-sm text-slate-500 font-medium">
                   {hasActiveFilters
                     ? `${currentStats.totalEntries}`
@@ -2069,7 +2069,7 @@ export default function SandwichCollectionLog() {
               />
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 gap-3 sm:gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <div className="text-sm text-slate-600">
                 Showing {(currentPage - 1) * itemsPerPage + 1}-
@@ -2408,7 +2408,7 @@ export default function SandwichCollectionLog() {
           </DialogHeader>
           {duplicateAnalysis && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-slate-900">
                     {duplicateAnalysis.totalCollections}

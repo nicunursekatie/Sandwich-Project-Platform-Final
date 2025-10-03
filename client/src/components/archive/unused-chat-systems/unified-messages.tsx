@@ -250,8 +250,8 @@ export default function UnifiedMessagesPage() {
 
   if (selectedMessage) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Button
             variant="outline"
             onClick={() => setSelectedMessage(null)}
@@ -270,7 +270,7 @@ export default function UnifiedMessagesPage() {
                 <CardTitle className="text-lg">
                   {selectedMessage.subject}
                 </CardTitle>
-                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-3 sm:gap-4 mt-2 text-sm text-muted-foreground">
                   <span>From: {selectedMessage.senderName}</span>
                   <span>To: {selectedMessage.recipientName}</span>
                   <span>
@@ -292,7 +292,7 @@ export default function UnifiedMessagesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <MessageCircle className="h-6 w-6" />

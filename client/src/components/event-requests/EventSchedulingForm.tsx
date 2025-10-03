@@ -380,7 +380,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Contact Information Section - Collapsible */}
           <div className="border rounded-lg">
             <Button

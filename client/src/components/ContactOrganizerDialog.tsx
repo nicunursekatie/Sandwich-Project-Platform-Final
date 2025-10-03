@@ -129,7 +129,7 @@ export default function ContactOrganizerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Contact Information Card */}
           <div className="bg-gradient-to-r from-[#e6f2f5] to-[#f0f7f9] border border-[#007E8C]/20 rounded-lg p-4">
             <div className="space-y-3">

@@ -211,7 +211,7 @@ export function SystemHealthDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -224,7 +224,7 @@ export function SystemHealthDashboard() {
           </p>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-6">
+          <div className="flex gap-3 sm:gap-4 mb-6">
             <Button
               onClick={runAllTests}
               disabled={isRunning}

@@ -144,11 +144,11 @@ export function IndividualUserActivity({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Button variant="outline" size="sm" onClick={onBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Users
@@ -171,7 +171,7 @@ export function IndividualUserActivity({
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Time Period:</span>
               <Select value={timeFilter} onValueChange={setTimeFilter}>

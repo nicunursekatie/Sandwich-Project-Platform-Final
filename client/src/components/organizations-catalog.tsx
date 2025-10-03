@@ -511,8 +511,8 @@ export default function GroupCatalog({
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="space-y-4 sm:space-y-6 p-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-6">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-100 to-cyan-200 shadow-sm">
             <Building className="w-6 h-6 text-teal-700" />
           </div>
@@ -535,7 +535,7 @@ export default function GroupCatalog({
 
   if (error) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 sm:space-y-6 p-6">
         <div className="text-center py-12">
           <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600">Failed to load organizations catalog</p>
@@ -548,9 +548,9 @@ export default function GroupCatalog({
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-3 sm:gap-4 mb-6">
         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
           <Building className="w-6 h-6 text-teal-600" />
         </div>
@@ -659,7 +659,7 @@ export default function GroupCatalog({
           </p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-6 sm:space-y-8">
           {/* Active Organizations Section */}
           {totalActiveItems > 0 && (
             <div>
@@ -675,7 +675,7 @@ export default function GroupCatalog({
                 </Badge>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {paginatedActiveGroups.map((group, groupIndex) => (
                   <div
                     key={`${group.groupName}-${groupIndex}`}
@@ -817,7 +817,7 @@ export default function GroupCatalog({
                                   </div>
 
                                   {/* Enhanced Analytics Display */}
-                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                                     <div className="flex items-center space-x-1">
                                       <span>🥪</span>
                                       <span className="font-semibold text-orange-700">
@@ -1030,7 +1030,7 @@ export default function GroupCatalog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {loadingOrganizationDetails ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
@@ -1039,9 +1039,9 @@ export default function GroupCatalog({
                 </span>
               </div>
             ) : organizationDetails ? (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Summary Statistics */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <Card>
                     <CardContent className="p-4 text-center">
                       <div className="text-2xl font-bold text-brand-primary dark:text-blue-400">

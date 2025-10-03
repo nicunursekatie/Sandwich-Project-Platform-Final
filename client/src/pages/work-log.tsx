@@ -88,7 +88,7 @@ export default function WorkLogPage() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto py-6 space-y-6">
+    <div className="max-w-4xl mx-auto py-6 space-y-4 sm:space-y-6">
       {/* Debug info - minimized and subtle */}
       <div className="text-xs text-gray-400 px-2">
         Debug: {safelogs.length} logs loaded • User:{' '}
@@ -245,7 +245,7 @@ export default function WorkLogPage() {
 
                   {/* Metadata row - secondary information */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-600">
                       <span className="font-medium text-brand-orange">
                         {log.hours}h {log.minutes}m
                       </span>

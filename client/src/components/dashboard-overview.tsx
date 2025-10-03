@@ -324,7 +324,7 @@ export default function DashboardOverview({
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
       </div>
-      <div className="space-y-8 pb-8">
+      <div className="space-y-4 sm:space-y-6 sm:space-y-8 pb-8">
         {/* Header */}
         <div className="bg-white rounded-xl mx-4 mt-8 p-6 sm:p-8 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
           <div className="relative">
@@ -487,7 +487,7 @@ export default function DashboardOverview({
             <h2 className="text-base sm:text-lg font-semibold text-[#646464] mb-4 sm:mb-6">
               Operational Capacity
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {/* Peak Week - Burgundy accent */}
               <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy hover:shadow-md transition-shadow">
                 <div className="text-lg sm:text-2xl font-bold text-brand-burgundy mb-1">
@@ -585,7 +585,7 @@ export default function DashboardOverview({
           </div>
 
           {/* Quick Actions Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-4">
             <div
               className="action-card bg-white rounded-xl p-4 group cursor-pointer shadow-md hover:shadow-lg transition-all duration-200 border-2 hover:border-brand-primary/20"
               onClick={() => onSectionChange?.('collections')}

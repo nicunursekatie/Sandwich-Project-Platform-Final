@@ -290,7 +290,7 @@ export default function StreamMessaging() {
           </div>
 
           <div className="p-2">
-            <nav className="space-y-1">
+            <nav className="space-y-1 text-sm sm:text-base">
               <Button
                 variant={activeFolder === 'inbox' ? 'default' : 'ghost'}
                 className="w-full justify-start"

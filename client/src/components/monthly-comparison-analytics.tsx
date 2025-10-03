@@ -622,7 +622,7 @@ export default function MonthlyComparisonAnalytics() {
   const availableYears = Array.from(new Set(Object.keys(monthlyAnalytics || {}).map(key => parseInt(key.split('-')[0])))).sort((a, b) => b - a);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header with Impact Metrics */}
       <div className="bg-gradient-to-r from-brand-primary/10 to-brand-orange/10 p-6 rounded-lg border border-brand-primary/20">
         <div className="flex items-center justify-between mb-6">
@@ -769,9 +769,9 @@ export default function MonthlyComparisonAnalytics() {
       <Tabs
         value={selectedTab}
         onValueChange={(value) => setSelectedTab(value as any)}
-        className="space-y-6"
+        className="space-y-4 sm:space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-2 text-[16px]">
             <BarChart3 className="h-4 w-4" />
             Overview
@@ -790,7 +790,7 @@ export default function MonthlyComparisonAnalytics() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
           {/* Monthly Trends Chart */}
           <Card>
             <CardHeader>
@@ -854,7 +854,7 @@ export default function MonthlyComparisonAnalytics() {
                 </ResponsiveContainer>
               </div>
               <div className="mt-4 text-sm text-[#646464]">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-brand-primary rounded"></div>
                     <span>Total Sandwiches</span>
@@ -915,7 +915,7 @@ export default function MonthlyComparisonAnalytics() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="hosts" className="space-y-6">
+        <TabsContent value="hosts" className="space-y-4 sm:space-y-6">
           {/* Monthly Trends Analysis */}
           <Card>
             <CardHeader>
@@ -1210,7 +1210,7 @@ export default function MonthlyComparisonAnalytics() {
                     Group Event Insights
                   </h4>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="text-center p-3 bg-brand-primary/10 rounded">
                         <div className="text-xl font-bold text-brand-primary">
                           {selectedMonthAnalysis.selectedMonthData.groupEventCount}
@@ -1318,7 +1318,7 @@ export default function MonthlyComparisonAnalytics() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="patterns" className="space-y-6">
+        <TabsContent value="patterns" className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -1443,7 +1443,7 @@ export default function MonthlyComparisonAnalytics() {
           </div>
         </TabsContent>
 
-        <TabsContent value="insights" className="space-y-6">
+        <TabsContent value="insights" className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Performance Overview */}
             <Card className="border-l-4 border-l-blue-500">

@@ -569,7 +569,7 @@ export default function WeeklyMonitoringDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto p-2 sm:p-4 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-brand-primary flex-shrink-0" />
@@ -703,7 +703,7 @@ export default function WeeklyMonitoringDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">Week:</label>
               <Select
@@ -1004,7 +1004,7 @@ export default function WeeklyMonitoringDashboard() {
 
       {/* Main Content - Tabs for different views */}
       <Tabs defaultValue="weekly" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
           <TabsTrigger value="weekly" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
             Weekly Status
@@ -1157,7 +1157,7 @@ export default function WeeklyMonitoringDashboard() {
 
         <TabsContent value="report" className="mt-6">
           {/* Multi-Week Report */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1166,7 +1166,7 @@ export default function WeeklyMonitoringDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium">
                       Number of weeks to analyze:
@@ -1314,7 +1314,7 @@ export default function WeeklyMonitoringDashboard() {
                               <h4 className="font-medium mb-3">
                                 {week.weekLabel}
                               </h4>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                                 {week.submissionStatus &&
                                 week.submissionStatus.map ? (
                                   week.submissionStatus.map((status: any) => (
@@ -1385,7 +1385,7 @@ export default function WeeklyMonitoringDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
               {[
                 'East Cobb/Roswell',
                 'Dunwoody/PTC',

@@ -367,7 +367,7 @@ export function UserPermissionsDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Role Selection */}
             <div className="space-y-2">
               <Label htmlFor="role" className="text-base font-semibold">

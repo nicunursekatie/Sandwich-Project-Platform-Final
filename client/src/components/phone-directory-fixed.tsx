@@ -890,9 +890,9 @@ function PhoneDirectoryFixed() {
      ========================= */
 
   return (
-    <div className="space-y-8 p-6 font-['Roboto',sans-serif]">
+    <div className="space-y-4 sm:space-y-6 sm:space-y-8 p-6 font-['Roboto',sans-serif]">
       {/* Header */}
-      <div className="flex flex-col space-y-6">
+      <div className="flex flex-col space-y-4 sm:space-y-6">
         <div>
           <h1 className="text-4xl font-bold text-primary font-['Roboto',sans-serif]">
             Phone Directory
@@ -954,7 +954,7 @@ function PhoneDirectoryFixed() {
 
         {/* Hosts */}
         {canViewHosts && (
-          <TabsContent value="hosts" className="space-y-6 mt-6">
+          <TabsContent value="hosts" className="space-y-4 sm:space-y-6 mt-6">
             <Card className="border-2 shadow-sm border-border">
               <CardHeader className="pb-4 bg-muted">
                 <div className="flex justify-between items-start">
@@ -983,7 +983,7 @@ function PhoneDirectoryFixed() {
                       : 'No hosts found.'}
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {filteredHosts.map((host) => (
                       <div
                         key={host.id}
@@ -1176,7 +1176,7 @@ function PhoneDirectoryFixed() {
 
         {/* Recipients */}
         {canViewRecipients && (
-          <TabsContent value="recipients" className="space-y-6 mt-6">
+          <TabsContent value="recipients" className="space-y-4 sm:space-y-6 mt-6">
             <Card className="border-2 shadow-sm border-border">
               <CardHeader className="pb-4 bg-muted">
                 <div className="flex justify-between items-start">
@@ -1205,7 +1205,7 @@ function PhoneDirectoryFixed() {
                           <DialogTitle>Add New Recipient</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="new-recipient-name">Name *</Label>
                               <Input
@@ -1237,7 +1237,7 @@ function PhoneDirectoryFixed() {
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="new-recipient-phone">
                                 Phone *
@@ -1287,7 +1287,7 @@ function PhoneDirectoryFixed() {
                               rows={2}
                             />
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="new-recipient-region">
                                 Region
@@ -1432,7 +1432,7 @@ function PhoneDirectoryFixed() {
                                   </DialogHeader>
                                   {editingRecipient && (
                                     <div className="space-y-4">
-                                      <div className="grid grid-cols-2 gap-4">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                           <Label htmlFor="edit-recipient-name">
                                             Name *
@@ -1468,7 +1468,7 @@ function PhoneDirectoryFixed() {
                                           />
                                         </div>
                                       </div>
-                                      <div className="grid grid-cols-2 gap-4">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                           <Label htmlFor="edit-recipient-phone">
                                             Phone *
@@ -1520,7 +1520,7 @@ function PhoneDirectoryFixed() {
                                           rows={2}
                                         />
                                       </div>
-                                      <div className="grid grid-cols-2 gap-4">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                           <Label htmlFor="edit-recipient-region">
                                             Region
@@ -1671,7 +1671,7 @@ function PhoneDirectoryFixed() {
 
         {/* Volunteers (ONLY this one, the fuller section) */}
         {canViewVolunteers && (
-          <TabsContent value="volunteers" className="space-y-6 mt-6">
+          <TabsContent value="volunteers" className="space-y-4 sm:space-y-6 mt-6">
             <Card className="border-2 shadow-sm border-border">
               <CardHeader className="pb-4 bg-muted">
                 <div className="flex justify-between items-start">
@@ -1700,7 +1700,7 @@ function PhoneDirectoryFixed() {
                           <DialogTitle>Add New Volunteer</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="new-volunteer-name">Name *</Label>
                               <Input
@@ -1732,7 +1732,7 @@ function PhoneDirectoryFixed() {
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="new-volunteer-email">Email</Label>
                               <Input
@@ -1949,7 +1949,7 @@ function PhoneDirectoryFixed() {
 
         {/* Drivers */}
         {canViewDrivers && (
-          <TabsContent value="drivers" className="space-y-6 mt-6">
+          <TabsContent value="drivers" className="space-y-4 sm:space-y-6 mt-6">
             <Card className="border-2 shadow-sm border-border">
               <CardHeader className="pb-4 bg-muted">
                 <div className="flex justify-between items-start">
@@ -1978,7 +1978,7 @@ function PhoneDirectoryFixed() {
                           <DialogTitle>Add New Driver</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="new-driver-name">Name *</Label>
                               <Input
@@ -2008,7 +2008,7 @@ function PhoneDirectoryFixed() {
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="new-driver-email">Email</Label>
                               <Input
@@ -2160,7 +2160,7 @@ function PhoneDirectoryFixed() {
                                   </DialogHeader>
                                   {editingDriver && (
                                     <div className="space-y-4">
-                                      <div className="grid grid-cols-2 gap-4">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                           <Label htmlFor="edit-driver-name">
                                             Name *
@@ -2194,7 +2194,7 @@ function PhoneDirectoryFixed() {
                                           />
                                         </div>
                                       </div>
-                                      <div className="grid grid-cols-2 gap-4">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                           <Label htmlFor="edit-driver-email">
                                             Email
@@ -2267,7 +2267,7 @@ function PhoneDirectoryFixed() {
                                       </div>
 
                                       {/* Status and Checkboxes */}
-                                      <div className="grid grid-cols-3 gap-4">
+                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div className="flex items-center space-x-2">
                                           <Checkbox
                                             id="edit-driver-active"
@@ -2433,7 +2433,7 @@ function PhoneDirectoryFixed() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Current Status */}
               <div className="p-4 bg-muted/30 rounded-lg border">
                 <div className="flex items-center gap-2 mb-2">
@@ -2457,7 +2457,7 @@ function PhoneDirectoryFixed() {
               </div>
 
               {/* Basic Contact Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-name">Name *</Label>
                   <Input
@@ -2642,7 +2642,7 @@ function PhoneDirectoryFixed() {
 
                   {/* Volunteer Assignment */}
                   {editingContact.newRoleType === 'volunteers' && (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label>Volunteer Type</Label>
                         <Select
@@ -2686,7 +2686,7 @@ function PhoneDirectoryFixed() {
                   {/* Driver Specific */}
                   {editingContact.newRoleType === 'drivers' && (
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label>Zone</Label>
                           <Input
@@ -2714,7 +2714,7 @@ function PhoneDirectoryFixed() {
                           <Label htmlFor="van-approved">Van Approved</Label>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="flex items-center space-x-2">
                           <Checkbox
                             id="email-agreement-sent"

@@ -255,7 +255,7 @@ export default function AnnouncementManager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">
@@ -277,7 +277,7 @@ export default function AnnouncementManager() {
               <DialogTitle>Create New Announcement</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <Label htmlFor="title">Title *</Label>
                   <Input
@@ -555,7 +555,7 @@ export default function AnnouncementManager() {
           </DialogHeader>
           {editingAnnouncement && (
             <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <Label htmlFor="edit-title">Title *</Label>
                   <Input

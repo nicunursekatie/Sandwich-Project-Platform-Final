@@ -926,7 +926,7 @@ export function SimplePermissionsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto space-y-6">
+        <div className="flex-1 overflow-auto space-y-4 sm:space-y-6">
           {/* Role Selection */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -975,7 +975,7 @@ export function SimplePermissionsDialog({
           </div>
 
           {/* Permission Categories */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {PERMISSION_GROUPS.map((category) => (
               <Card
                 key={category.id}

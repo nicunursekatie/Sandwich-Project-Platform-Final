@@ -96,7 +96,7 @@ export default function LogosPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-4 sm:space-y-6">
       <div className="border-b border-brand-primary/20 pb-4">
         <h1 className="text-3xl font-bold text-brand-primary flex items-center gap-3">
           <FileImage className="h-8 w-8" />
@@ -203,7 +203,7 @@ export default function LogosPage() {
                           className="max-w-full max-h-full object-contain p-4"
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <div>
                           <strong className="text-brand-primary">File Type:</strong>{' '}
                           {logo.type}
@@ -254,7 +254,7 @@ export default function LogosPage() {
             Need all logos? Download each one individually using the buttons
             above, or contact your administrator for a complete package.
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-[#646464]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm text-[#646464]">
             <div>✓ Print-ready CMYK version</div>
             <div>✓ Web-optimized PNG files</div>
             <div>✓ Transparent backgrounds</div>

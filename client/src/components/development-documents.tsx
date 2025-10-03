@@ -255,7 +255,7 @@ export function DevelopmentDocuments() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Category Filter */}
       <div className="flex flex-wrap gap-2">
         {categories.map((category) => (

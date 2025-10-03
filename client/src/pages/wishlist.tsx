@@ -227,7 +227,7 @@ export default function WishlistPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">

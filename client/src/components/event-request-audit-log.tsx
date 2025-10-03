@@ -683,7 +683,7 @@ export function EventRequestAuditLog({
           Complete tracking of all changes made to event requests - who did what and when
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         {showFilters && (
           <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
             <CollapsibleTrigger asChild>

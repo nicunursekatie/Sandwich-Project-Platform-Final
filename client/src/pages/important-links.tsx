@@ -132,7 +132,7 @@ export default function ImportantLinks() {
       </div>
 
       <Tabs defaultValue="calculator" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
           <TabsTrigger value="calculator" className="flex items-center gap-2">
             <Calculator className="h-4 w-4" />
             Inventory Calculator

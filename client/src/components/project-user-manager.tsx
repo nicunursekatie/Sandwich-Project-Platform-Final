@@ -244,7 +244,7 @@ export default function ProjectUserManager({
                   <DialogTitle>Manage Project Team</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Add New User Section */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">Add Team Member</h3>

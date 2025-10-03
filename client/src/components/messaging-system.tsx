@@ -181,7 +181,7 @@ export default function MessagingSystem({
           } bg-gray-50 border-r transition-all duration-200 flex flex-col`}
         >
           <div className="p-4">
-            <nav className="space-y-2">
+            <nav className="space-y-2 text-sm sm:text-base">
               {[
                 {
                   id: 'all',

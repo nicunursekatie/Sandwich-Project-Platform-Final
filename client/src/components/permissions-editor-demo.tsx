@@ -52,7 +52,7 @@ export default function PermissionsEditorDemo() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-4 sm:space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           🎨 Modern Permissions Editor

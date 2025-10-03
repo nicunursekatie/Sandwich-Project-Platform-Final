@@ -136,7 +136,7 @@ export function TollFreeVerificationPanel() {
           Submit and check toll-free verification requests for SMS delivery compliance.
         </p>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         {/* Submit Verification */}
         <div className="space-y-3">
           <h3 className="text-lg font-medium">Submit New Verification</h3>

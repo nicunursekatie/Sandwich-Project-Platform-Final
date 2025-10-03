@@ -436,7 +436,7 @@ export function NotesTab({
   if (notesLoading) {
     return (
       <div className="space-y-4">
-        <div className="flex gap-4">
+        <div className="flex gap-3 sm:gap-4">
           <Skeleton className="h-10 w-full max-w-sm" />
           <Skeleton className="h-10 w-32" />
           <Skeleton className="h-10 w-32" />
@@ -464,9 +464,9 @@ export function NotesTab({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header with Search and Filters */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex-1 max-w-md">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -493,7 +493,7 @@ export function NotesTab({
       </div>
 
       {/* Filters Row */}
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-3 sm:gap-4">
         <div className="flex items-center gap-2">
           <Label htmlFor="project-filter" className="text-sm font-medium">
             Project:
@@ -650,7 +650,7 @@ export function NotesTab({
             {filteredNotes.map((note) => (
               <Card key={note.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3 sm:gap-4">
                     <div className="flex items-start gap-3 flex-1">
                       <Checkbox
                         checked={selectedNoteIds.includes(note.id)}
@@ -717,7 +717,7 @@ export function NotesTab({
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-500">
                       {note.createdByName && (
                         <div className="flex items-center gap-1">
                           <User className="w-3 h-3" />

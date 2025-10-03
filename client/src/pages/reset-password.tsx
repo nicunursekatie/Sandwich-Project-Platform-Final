@@ -230,7 +230,7 @@ export default function ResetPassword() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleResetPassword} className="space-y-6">
+          <form onSubmit={handleResetPassword} className="space-y-4 sm:space-y-6">
             {message && (
               <Alert variant={isSuccess ? 'default' : 'destructive'}>
                 <AlertDescription>{message}</AlertDescription>

@@ -204,7 +204,7 @@ export function DriverSelection({
           Driver Assignment
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         {/* Drivers Arranged Toggle */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">

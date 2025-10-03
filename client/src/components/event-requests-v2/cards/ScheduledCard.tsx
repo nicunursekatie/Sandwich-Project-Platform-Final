@@ -1100,7 +1100,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   Contact Information
                 </span>
               </div>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 sm:gap-6">
                 <div className="flex flex-col gap-1">
                   <span className="font-medium text-base">
                     {request.firstName} {request.lastName}

@@ -429,7 +429,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   return (
     <div className="pt-4">
       {/* Assignments Section */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Drivers Column */}
         {renderAssignmentColumn(
           'driver',
@@ -504,7 +504,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         {/* Event Summary */}
         <div className="space-y-3 mb-4">
           <div className="bg-white rounded-lg p-3 space-y-2">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Event Time</p>
                 <p className="font-medium">

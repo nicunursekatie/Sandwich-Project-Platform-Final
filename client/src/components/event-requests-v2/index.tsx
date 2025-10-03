@@ -619,7 +619,7 @@ const EventRequestsManagementContent: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6 mt-6">
+            <div className="space-y-4 sm:space-y-6 mt-6">
               <SandwichForecastWidget />
 
               <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-4">
@@ -675,7 +675,7 @@ const EventRequestsManagementContent: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-6 mt-6">
+            <div className="space-y-4 sm:space-y-6 mt-6">
               <StaffingForecastWidget />
 
               <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-4">

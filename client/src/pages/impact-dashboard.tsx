@@ -583,8 +583,8 @@ export default function ImpactDashboard() {
         </div>
 
         {/* Charts and Visualizations */}
-        <Tabs defaultValue="weekly" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="weekly" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="weekly" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Weekly Planning
@@ -605,7 +605,7 @@ export default function ImpactDashboard() {
 
           {/* Weekly Planning Tab - NEW! */}
           <TabsContent value="weekly">
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Weekly Chart Controls */}
               <Card>
                 <CardHeader>
@@ -746,7 +746,7 @@ export default function ImpactDashboard() {
                   
                   <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
                     <p>Showing last {weeklyRange.replace('weeks', '')} weeks of collection activity • Week starting Monday</p>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-[#236383] rounded"></div>
                         <span>Sandwiches</span>
@@ -911,7 +911,7 @@ export default function ImpactDashboard() {
             <div className="grid grid-cols-1 gap-6">
               <Card>
                 <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                     <div className="flex-1">
                       <CardTitle className="flex items-center mb-2">
                         <BarChart3 className="w-5 h-5 mr-2" />
@@ -1046,7 +1046,7 @@ export default function ImpactDashboard() {
                 <CardContent className="space-y-4">
                   {chartData && chartData.length > 0 ? (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="bg-brand-primary-lighter p-4 rounded-lg">
                           <div className="text-2xl font-bold text-brand-primary">
                             {chartData.reduce((sum, item) => sum + item.sandwiches, 0).toLocaleString()}
@@ -1199,7 +1199,7 @@ export default function ImpactDashboard() {
                     Weekly performance and external benchmarks
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 sm:space-y-6">
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-gray-600">

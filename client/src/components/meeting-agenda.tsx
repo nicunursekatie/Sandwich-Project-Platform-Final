@@ -312,7 +312,7 @@ export default function MeetingAgenda() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
         <div className="px-6 py-4 border-b border-slate-200">
@@ -431,7 +431,7 @@ export default function MeetingAgenda() {
                       {selectedMeeting.type.replace('_', ' ')}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-slate-600 mt-1">
+                  <div className="flex items-center gap-3 sm:gap-4 text-sm text-slate-600 mt-1">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
                       {new Date(selectedMeeting.date).toLocaleDateString()}

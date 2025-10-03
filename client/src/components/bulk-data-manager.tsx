@@ -161,7 +161,7 @@ export default function BulkDataManager({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-900">
           Data Management Center
@@ -172,7 +172,7 @@ export default function BulkDataManager({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="mapping">Host Mapping</TabsTrigger>
           <TabsTrigger value="actions">Bulk Actions</TabsTrigger>

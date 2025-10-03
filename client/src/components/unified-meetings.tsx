@@ -11,9 +11,9 @@ export default function UnifiedMeetings() {
   const [activeTab, setActiveTab] = useState('minutes');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-3 sm:gap-4 mb-6">
         <div className="flex items-center justify-center w-12 h-12 bg-brand-primary-light rounded-xl">
           <ClipboardList className="w-6 h-6 text-brand-primary" />
         </div>
@@ -27,7 +27,7 @@ export default function UnifiedMeetings() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
           <MeetingHelpWrapper type="minutes">
             <TabsTrigger value="minutes" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />

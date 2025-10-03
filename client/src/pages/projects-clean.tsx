@@ -694,7 +694,7 @@ export default function ProjectsClean() {
 
       {/* Clean Status Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-1 mb-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1">
           <Button
             variant="ghost"
             onClick={() => setActiveTab('tabled')}
@@ -833,7 +833,7 @@ export default function ProjectsClean() {
             {/* Project Type Selection */}
             <div className="space-y-2">
               <Label className="font-roboto">Project Type</Label>
-              <div className="flex gap-4">
+              <div className="flex gap-3 sm:gap-4">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="radio"
@@ -869,7 +869,7 @@ export default function ProjectsClean() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="priority" className="font-roboto">
                   Priority

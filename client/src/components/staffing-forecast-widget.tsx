@@ -242,7 +242,7 @@ export default function StaffingForecastWidget() {
             👥 Focus on scheduled events that need volunteers
           </p>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6">
           {/* Week Navigation */}
           <div className="flex items-center justify-between mb-4">
             <Button

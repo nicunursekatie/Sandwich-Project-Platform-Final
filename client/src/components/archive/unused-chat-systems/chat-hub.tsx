@@ -100,7 +100,7 @@ export default function ChatHub() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold mb-2">Team Chat</h1>
         <p className="text-gray-600">

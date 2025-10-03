@@ -254,9 +254,9 @@ export default function WeeklyImpactReport() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header and Controls */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-brand-primary">
             Weekly Impact Report
@@ -280,7 +280,7 @@ export default function WeeklyImpactReport() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-end">
             <div className="flex-1">
               <Label htmlFor="weekEnding">Week Ending Date</Label>
               <Input
@@ -336,7 +336,7 @@ export default function WeeklyImpactReport() {
 
       {/* Report Display */}
       {reportData && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Executive Summary */}
           <Card>
             <CardHeader>
@@ -406,7 +406,7 @@ export default function WeeklyImpactReport() {
 
           {/* Detailed Tabs */}
           <Tabs defaultValue="metrics" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto">
               <TabsTrigger value="metrics" className="text-xs md:text-sm">
                 Key Metrics
               </TabsTrigger>
@@ -630,7 +630,7 @@ export default function WeeklyImpactReport() {
                             <h4 className="font-semibold text-sm mb-2 capitalize">
                               {key.replace(/_/g, ' ')}
                             </h4>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                               <div>
                                 <span className="text-gray-600">
                                   This Week:
@@ -899,7 +899,7 @@ export default function WeeklyImpactReport() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                       <div className="text-2xl md:text-3xl font-bold text-brand-primary text-center sm:text-left">
                         {reportData.next_week_prep.host_confirmations.confirmed}
                         /{reportData.next_week_prep.host_confirmations.total}

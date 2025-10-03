@@ -250,11 +250,11 @@ export default function DriversManagement() {
   const inactiveDrivers = filteredDrivers.filter((driver) => !driver.isActive);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
         <div className="px-4 sm:px-6 py-4 border-b border-slate-200">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
               <Car className="text-blue-500 mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" />
               <span className="hidden sm:inline">Drivers Management</span>
@@ -735,7 +735,7 @@ export default function DriversManagement() {
 
       {/* Drivers List */}
       <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
           <TabsTrigger value="active">
             Active Drivers ({activeDrivers.length})
           </TabsTrigger>
@@ -809,7 +809,7 @@ export default function DriversManagement() {
                                 </Badge>
                               )}
                           </div>
-                          <div className="flex items-center gap-4 mt-1">
+                          <div className="flex items-center gap-3 sm:gap-4 mt-1">
                             {driver.phone && (
                               <div className="flex items-center text-xs text-gray-500">
                                 <Phone className="w-3 h-3 mr-1" />
@@ -932,7 +932,7 @@ export default function DriversManagement() {
                                 </Badge>
                               )}
                           </div>
-                          <div className="flex items-center gap-4 mt-1">
+                          <div className="flex items-center gap-3 sm:gap-4 mt-1">
                             {driver.phone && (
                               <div className="flex items-center text-xs text-gray-400">
                                 <Phone className="w-3 h-3 mr-1" />

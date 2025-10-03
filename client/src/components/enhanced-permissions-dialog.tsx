@@ -858,7 +858,7 @@ export default function EnhancedPermissionsDialog({
                   </CardHeader>
 
                   <CardContent className="pt-0">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {resource.actions.map((action) => (
                         <div
                           key={action.key}

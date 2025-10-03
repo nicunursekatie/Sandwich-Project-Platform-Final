@@ -282,7 +282,7 @@ export default function HostAnalytics({
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -297,9 +297,9 @@ export default function HostAnalytics({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center">
             <BarChart3 className="w-6 h-6 mr-3 text-teal-600" />
@@ -482,7 +482,7 @@ export default function HostAnalytics({
           {hostData.dateRange && (
             <Card>
               <CardContent className="pt-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="flex items-center text-sm text-gray-600">
                     <Calendar className="w-4 h-4 mr-2" />
                     <span>
@@ -548,7 +548,7 @@ export default function HostAnalytics({
                           </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4 text-sm">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 text-sm">
                           <div className="text-center">
                             <div className="font-bold text-lg text-orange-600">
                               {month.totalSandwiches.toLocaleString()}

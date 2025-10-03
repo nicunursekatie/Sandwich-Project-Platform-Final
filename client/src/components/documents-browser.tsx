@@ -126,8 +126,8 @@ export function DocumentsBrowser() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Document Library</h2>
           <p className="text-muted-foreground">

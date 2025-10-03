@@ -197,7 +197,7 @@ export default function SMSOptInPage() {
             </p>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6">
             {isAlreadyOptedIn ? (
               // Already opted in - show status and opt-out option
               <div className="text-center space-y-4">
@@ -240,7 +240,7 @@ export default function SMSOptInPage() {
               </div>
             ) : (
               // Not opted in - show sign-up form
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                 <div className="bg-brand-primary/10 p-4 rounded-lg">
                   <h3 className="font-medium text-brand-primary-dark mb-2 flex items-center gap-2">
                     <Smartphone className="h-4 w-4" />

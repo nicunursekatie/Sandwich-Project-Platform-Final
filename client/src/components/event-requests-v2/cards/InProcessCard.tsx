@@ -379,7 +379,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-[16px] font-semibold text-[#236383]">
                 Preferred Time

@@ -61,7 +61,7 @@ export default function Landing() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-100 p-4">
       <div className="max-w-6xl mx-auto space-y-12 py-8">
         {/* Hero Section */}
-        <div className="text-center space-y-6">
+        <div className="text-center space-y-4 sm:space-y-6">
           <div className="flex justify-center">
             <img
               src={tspLogo}
@@ -75,7 +75,7 @@ export default function Landing() {
             Connecting volunteers, hosts, and nonprofit partners to make a
             lasting impact one sandwich at a time.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
             <Button
               onClick={handleLogin}
               size="lg"

@@ -134,7 +134,7 @@ export const EditProjectDialog: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Status */}
             <div className="space-y-2">
               <Label htmlFor="status" className="font-roboto">
@@ -247,7 +247,7 @@ export const EditProjectDialog: React.FC = () => {
           </div>
 
           {/* Dates and Hours */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="dueDate" className="font-roboto">
                 Due Date

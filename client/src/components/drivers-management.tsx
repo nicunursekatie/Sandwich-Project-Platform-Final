@@ -466,11 +466,11 @@ export default function DriversManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
         <div className="px-4 sm:px-6 py-4 border-b border-slate-200">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center">
               <Car className="text-blue-500 mr-2 sm:mr-3 w-5 h-5 sm:w-6 sm:h-6" />
               <span className="hidden sm:inline">Drivers Management</span>
@@ -731,7 +731,7 @@ export default function DriversManagement() {
                 <div className="flex-1 overflow-y-auto pr-2">
                   <div className="space-y-4">
                     {/* Basic Information */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="name">Driver Name *</Label>
                         <Input
@@ -770,7 +770,7 @@ export default function DriversManagement() {
                     </div>
 
                     {/* Status and Permissions */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="status">Status</Label>
                         <Select
@@ -852,7 +852,7 @@ export default function DriversManagement() {
                     </div>
 
                     {/* Vehicle and Route Information */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="vehicle-type">Vehicle Type</Label>
                         <Select
@@ -979,7 +979,7 @@ export default function DriversManagement() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 mb-6">
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-600" />
             <span className="text-sm font-medium text-slate-700">Filters:</span>
@@ -1078,7 +1078,7 @@ export default function DriversManagement() {
 
       {/* Drivers Tabs */}
       <Tabs defaultValue="active" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
           <TabsTrigger value="active" className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />
             Active Drivers ({activeDrivers.length})
@@ -1498,7 +1498,7 @@ export default function DriversManagement() {
             </DialogHeader>
             <div className="space-y-4">
               {/* Basic Information */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-name">Driver Name *</Label>
                   <Input
@@ -1561,7 +1561,7 @@ export default function DriversManagement() {
               </div>
 
               {/* Zone and Area */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-zone">Zone</Label>
                   <Input
@@ -1593,7 +1593,7 @@ export default function DriversManagement() {
               </div>
 
               {/* Status and Permissions */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-status">Status</Label>
                   <Select

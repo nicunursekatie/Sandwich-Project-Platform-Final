@@ -245,7 +245,7 @@ export default function ReportingDashboard({
   // Render content-only when embedded in dashboard
   const renderReportingContent = () => (
     <div className="max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             Reporting Dashboard
@@ -268,8 +268,8 @@ export default function ReportingDashboard({
         </div>
       </div>
 
-      <Tabs defaultValue="generate" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+      <Tabs defaultValue="generate" className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-4 h-auto">
           <TabsTrigger value="generate" className="text-xs md:text-sm">
             Generate Report
           </TabsTrigger>
@@ -287,7 +287,7 @@ export default function ReportingDashboard({
         <TabsContent value="generate">
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             {/* Report Configuration */}
-            <div className="xl:col-span-2 space-y-6">
+            <div className="xl:col-span-2 space-y-4 sm:space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Report Configuration</CardTitle>
@@ -295,7 +295,7 @@ export default function ReportingDashboard({
                     Configure your report parameters and data selection
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 sm:space-y-6">
                   {/* Report Type */}
                   <div>
                     <Label htmlFor="reportType">Report Type</Label>
@@ -326,7 +326,7 @@ export default function ReportingDashboard({
                   {/* Date Range */}
                   <div className="space-y-4">
                     <Label>Date Range</Label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="startDate" className="text-sm">
                           From
@@ -408,7 +408,7 @@ export default function ReportingDashboard({
                   </div>
 
                   {/* Format & Options */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="format">Output Format</Label>
                       <Select
@@ -481,7 +481,7 @@ export default function ReportingDashboard({
                     Set up automated report generation and email delivery
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 sm:space-y-6">
                   {/* Frequency */}
                   <div>
                     <Label htmlFor="frequency">Frequency</Label>
@@ -562,7 +562,7 @@ export default function ReportingDashboard({
             </div>
 
             {/* Preview & Actions */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Report Preview</CardTitle>
@@ -747,7 +747,7 @@ export default function ReportingDashboard({
                               'MMM dd, yyyy HH:mm'
                             )}
                           </p>
-                          <div className="flex items-center gap-4 mt-2">
+                          <div className="flex items-center gap-3 sm:gap-4 mt-2">
                             <span className="text-xs text-gray-500">
                               {report.schedule.recipients.length} recipient(s)
                             </span>
@@ -821,7 +821,7 @@ export default function ReportingDashboard({
                               }
                             })()}
                           </p>
-                          <div className="flex items-center gap-4 mt-2">
+                          <div className="flex items-center gap-3 sm:gap-4 mt-2">
                             <span className="text-xs text-gray-500">
                               {report.format.toUpperCase()} • {report.size}
                             </span>

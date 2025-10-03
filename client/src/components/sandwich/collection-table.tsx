@@ -81,7 +81,7 @@ function EditCollectionDialog({ collection, isOpen, onClose, onSave, isUpdating 
           <div>
             <Label>Group Collections</Label>
             <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Input
                   placeholder="Group 1 name"
                   value={formData.group1Name}
@@ -95,7 +95,7 @@ function EditCollectionDialog({ collection, isOpen, onClose, onSave, isUpdating 
                   onChange={(e) => setFormData({ ...formData, group1Count: parseInt(e.target.value) || 0 })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Input
                   placeholder="Group 2 name"
                   value={formData.group2Name}

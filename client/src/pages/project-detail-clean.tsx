@@ -699,10 +699,10 @@ export default function ProjectDetailClean({
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8 min-h-screen overflow-y-auto">
+    <div className="max-w-7xl mx-auto p-6 space-y-4 sm:space-y-6 sm:space-y-8 min-h-screen overflow-y-auto">
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="sm"
@@ -1031,7 +1031,7 @@ export default function ProjectDetailClean({
       </div>
 
       {/* Tasks Section */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-brand-primary font-roboto">
             Tasks
@@ -1088,7 +1088,7 @@ export default function ProjectDetailClean({
                   placeholder="Enter task description"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="task-priority">Priority</Label>
                   <select
@@ -1275,7 +1275,7 @@ export default function ProjectDetailClean({
                 </div>
                 <div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-600">
                       {(task.assigneeNames?.length > 0 ||
                         task.assigneeName) && (
                         <div className="flex items-center gap-1">

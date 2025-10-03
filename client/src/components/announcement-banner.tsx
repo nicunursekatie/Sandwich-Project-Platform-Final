@@ -113,7 +113,7 @@ export default function AnnouncementBanner() {
       {/* Subtle animation for emphasis */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse opacity-30"></div>
 
-      <div className="max-w-7xl mx-auto flex items-start justify-between gap-4 relative z-10">
+      <div className="max-w-7xl mx-auto flex items-start justify-between gap-3 sm:gap-4 relative z-10">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="flex-shrink-0 mt-0.5 p-1 rounded-full bg-white/20">
             {getIcon(currentAnnouncement.type)}

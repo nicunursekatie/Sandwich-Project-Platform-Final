@@ -106,14 +106,14 @@ export default function UserActivityAnalytics() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
             User Activity Analytics
           </CardTitle>
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-3 sm:gap-4 items-center">
             <div className="flex gap-2">
               <Button
                 variant={viewMode === 'summary' ? 'default' : 'outline'}
@@ -206,7 +206,7 @@ export default function UserActivityAnalytics() {
                           </div>
 
                           <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3 sm:gap-4">
                               <Badge
                                 className={getSectionBadgeColor(
                                   user.topSection || 'none'
@@ -255,7 +255,7 @@ export default function UserActivityAnalytics() {
           )}
 
           {viewMode === 'details' && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {!selectedUser ? (
                 <div className="text-center py-8">
                   <div className="text-gray-500 mb-4">

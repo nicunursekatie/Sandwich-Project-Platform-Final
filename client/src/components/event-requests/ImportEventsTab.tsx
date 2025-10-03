@@ -100,7 +100,7 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Import 2023 Events</h2>
@@ -125,7 +125,7 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
             This will add past events to the system for tracking and analysis.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6">
           {/* File Upload Section */}
           <div className="space-y-4">
             <div className="border-2 border-dashed border-[#236383]/30 rounded-lg p-6 text-center">
@@ -230,7 +230,7 @@ const ImportEventsTab: React.FC<ImportEventsTabProps> = () => {
                     <CheckCircle className="w-5 h-5" />
                     <span className="font-medium">Import Successful!</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-green-600">
                         <strong>Events Imported:</strong>{' '}

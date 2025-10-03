@@ -487,7 +487,7 @@ export default function ImportantDocuments() {
     <div className="min-h-screen bg-white p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-16">
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-3 sm:gap-4 mb-6">
             <div className="p-3 bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-xl shadow-[0_4px_12px_rgba(35,99,131,0.15),0_2px_4px_rgba(35,99,131,0.1)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.2),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-300 ease-in-out">
               <FileText className="h-8 w-8 text-white" />
             </div>
@@ -512,7 +512,7 @@ export default function ImportantDocuments() {
         </div>
 
         <Tabs defaultValue="documents" className="w-full">
-          <TabsList className={`grid w-full ${hasConfidentialAccess ? 'grid-cols-3' : 'grid-cols-2'} h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white`}>
+          <TabsList className={`grid w-full ${hasConfidentialAccess ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'} h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white`}>
             <TabsTrigger
               value="documents"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
@@ -539,13 +539,13 @@ export default function ImportantDocuments() {
             )}
           </TabsList>
 
-          <TabsContent value="documents" className="space-y-6">
+          <TabsContent value="documents" className="space-y-4 sm:space-y-6">
             {/* Category Filter */}
             <div className="mb-12">
               <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">
                 Filter by Category
               </h3>
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-3 sm:gap-4">
                 {categories.map((category) => (
                   <Button
                     key={category}
@@ -658,7 +658,7 @@ export default function ImportantDocuments() {
             </div>
           </TabsContent>
 
-          <TabsContent value="logos" className="space-y-8">
+          <TabsContent value="logos" className="space-y-4 sm:space-y-6 sm:space-y-8">
             {/* Logo Grid - Professional design */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {logoFiles.map((logo) => (
@@ -668,7 +668,7 @@ export default function ImportantDocuments() {
                 >
                   <CardHeader className="pb-8 bg-gradient-to-r from-gray-50 to-white">
                     <div className="flex items-center justify-between mb-3">
-                      <CardTitle className="text-brand-primary text-xl font-bold flex items-center gap-4 group-hover:text-brand-primary-dark transition-colors duration-200">
+                      <CardTitle className="text-brand-primary text-xl font-bold flex items-center gap-3 sm:gap-4 group-hover:text-brand-primary-dark transition-colors duration-200">
                         <div className="p-2 bg-gradient-to-br from-brand-primary/10 to-brand-primary/5 rounded-lg shadow-inner">
                           {logo.icon}
                         </div>
@@ -682,7 +682,7 @@ export default function ImportantDocuments() {
                       {logo.type}
                     </Badge>
                   </CardHeader>
-                  <CardContent className="space-y-8 p-8">
+                  <CardContent className="space-y-4 sm:space-y-6 sm:space-y-8 p-8">
                     {/* Logo Preview */}
                     <div
                       className="w-full h-40 rounded-lg border-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] flex items-center justify-center overflow-hidden group-hover:shadow-[inset_0_4px_8px_rgba(0,0,0,0.08)] transition-all duration-300 ease-in-out"
@@ -738,7 +738,7 @@ export default function ImportantDocuments() {
                                 className="max-w-full max-h-full object-contain p-4"
                               />
                             </div>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                               <div>
                                 <strong className="text-brand-primary">
                                   File Type:
@@ -808,7 +808,7 @@ export default function ImportantDocuments() {
           </TabsContent>
 
           {hasConfidentialAccess && (
-            <TabsContent value="confidential" className="space-y-8">
+            <TabsContent value="confidential" className="space-y-4 sm:space-y-6 sm:space-y-8">
               <ConfidentialDocuments />
             </TabsContent>
           )}

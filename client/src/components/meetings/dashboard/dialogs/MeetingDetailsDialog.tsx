@@ -103,9 +103,9 @@ export function MeetingDetailsDialog({
 
         {isPast ? (
           // Past Meeting - Show PDF preview and download
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="font-medium text-teal-900">Date:</span>
                   <span className="ml-2 text-teal-800">
@@ -168,10 +168,10 @@ export function MeetingDetailsDialog({
           </div>
         ) : compiledAgenda ? (
           // Upcoming Meeting - Show compiled agenda with export options
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Agenda Header */}
             <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="font-medium text-teal-900">Date:</span>
                   <span className="ml-2 text-teal-800">
@@ -234,7 +234,7 @@ export function MeetingDetailsDialog({
                                     {item.description}
                                   </p>
                                 )}
-                                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                <div className="flex items-center gap-3 sm:gap-4 mt-2 text-xs text-gray-500">
                                   <span>Presenter: {item.submittedBy}</span>
                                   <span>Time: {item.estimatedTime || '5 min'}</span>
                                   <Badge variant="outline" className="text-xs">

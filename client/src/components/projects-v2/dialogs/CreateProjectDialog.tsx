@@ -99,7 +99,7 @@ export const CreateProjectDialog: React.FC = () => {
             </label>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Priority */}
             <div className="space-y-2">
               <Label htmlFor="priority" className="font-roboto">
@@ -191,7 +191,7 @@ export const CreateProjectDialog: React.FC = () => {
           </div>
 
           {/* Dates and Hours */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="dueDate" className="font-roboto">
                 Due Date

@@ -263,7 +263,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
         <Separator />
 
         <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 m-2 mb-0">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 m-2 mb-0">
             <TabsTrigger value="all" className="text-xs" data-testid="tab-all">
               All
             </TabsTrigger>

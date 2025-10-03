@@ -64,7 +64,7 @@ export default function MeetingMinutesModal({
           </div>
         ) : (
           <ScrollArea className="flex-1 pr-4">
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {minutes.map((minute) => (
                 <div
                   key={minute.id}

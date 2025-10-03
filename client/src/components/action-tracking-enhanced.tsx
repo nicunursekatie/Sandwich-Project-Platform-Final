@@ -318,7 +318,7 @@ const ActionTracking = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="projects" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Projects ({filteredProjects.length})
@@ -394,7 +394,7 @@ const ActionTracking = () => {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <FileText className="w-4 h-4" />
                             <span>{project.category}</span>
@@ -473,7 +473,7 @@ const ActionTracking = () => {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-600">
                           {task.project && (
                             <div className="flex items-center gap-1">
                               <FileText className="w-4 h-4" />
@@ -582,7 +582,7 @@ const ActionTracking = () => {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-600">
                           {event.desiredEventDate && (
                             <div className="flex items-center gap-1">
                               <Calendar className="w-4 h-4" />
@@ -719,7 +719,7 @@ const ActionTracking = () => {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-500">
                           {event.desiredEventDate && (
                             <div className="flex items-center gap-1">
                               <Calendar className="w-4 h-4" />

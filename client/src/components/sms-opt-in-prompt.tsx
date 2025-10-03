@@ -90,7 +90,7 @@ export default function SMSOptInPrompt({ onDismiss }: SMSOptInPromptProps) {
   return (
     <Card className="mb-6 border-l-4 border-l-[#1f7b7b] bg-gradient-to-r from-teal-50 to-blue-50 dark:from-teal-950/30 dark:to-blue-950/30" data-testid="card-sms-opt-in-prompt">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-3 sm:gap-4">
           <div className="flex items-start gap-3 flex-1">
             <div className="bg-[#1f7b7b] p-2 rounded-full shrink-0">
               <MessageSquare className="h-4 w-4 text-white" />

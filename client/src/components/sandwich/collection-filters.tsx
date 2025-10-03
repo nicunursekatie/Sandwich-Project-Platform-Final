@@ -65,7 +65,7 @@ export function CollectionFilters({
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+    <div className="flex items-center gap-3 sm:gap-4 p-4 bg-gray-50 rounded-lg">
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm">

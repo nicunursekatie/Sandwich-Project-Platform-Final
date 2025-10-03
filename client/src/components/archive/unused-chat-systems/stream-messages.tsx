@@ -735,7 +735,7 @@ export default function StreamMessagesPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-4 p-6 border-b">
+      <div className="flex items-center gap-3 sm:gap-4 p-6 border-b">
         <div className="flex items-center justify-center w-10 h-10 bg-brand-primary-light rounded-lg">
           <MessageCircle className="w-5 h-5 text-brand-primary"/"
         </div>
@@ -907,7 +907,7 @@ export default function StreamMessagesPage() {
             /* Message detail view when a channel is selected */
             <div className="flex flex-col h-full">
               {/* Message thread header */}
-              <div className="border-b p-4 flex items-center gap-4">
+              <div className="border-b p-4 flex items-center gap-3 sm:gap-4">
                 <Button 
                   variant="ghost" 
                   size="sm"

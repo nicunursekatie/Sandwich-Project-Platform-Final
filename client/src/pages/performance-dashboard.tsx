@@ -352,14 +352,14 @@ export default function PerformanceDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 sm:grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="database">Database</TabsTrigger>
               <TabsTrigger value="cache">Cache</TabsTrigger>
               <TabsTrigger value="optimization">Optimization</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="overview" className="space-y-4 sm:space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <Card>
                   <CardHeader>
@@ -449,7 +449,7 @@ export default function PerformanceDashboard() {
               </div>
             </TabsContent>
 
-            <TabsContent value="database" className="space-y-6">
+            <TabsContent value="database" className="space-y-4 sm:space-y-6">
               <div className="grid gap-6">
                 <Card>
                   <CardHeader>
@@ -461,7 +461,7 @@ export default function PerformanceDashboard() {
                   <CardContent>
                     {metrics?.database.connectionPool && (
                       <div className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4 text-center">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                           <div>
                             <div className="text-2xl font-bold">
                               {
@@ -537,7 +537,7 @@ export default function PerformanceDashboard() {
               </div>
             </TabsContent>
 
-            <TabsContent value="cache" className="space-y-6">
+            <TabsContent value="cache" className="space-y-4 sm:space-y-6">
               <div className="grid gap-6">
                 <Card>
                   <CardHeader>
@@ -570,7 +570,7 @@ export default function PerformanceDashboard() {
                                 {(stats.hitRate * 100).toFixed(1)}% hit rate
                               </Badge>
                             </div>
-                            <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                               <div>
                                 <div className="font-medium">{stats.size}</div>
                                 <div className="text-muted-foreground">
@@ -644,7 +644,7 @@ export default function PerformanceDashboard() {
               </div>
             </TabsContent>
 
-            <TabsContent value="optimization" className="space-y-6">
+            <TabsContent value="optimization" className="space-y-4 sm:space-y-6">
               <div className="grid gap-6">
                 {metrics?.database.optimizationSuggestions &&
                 metrics.database.optimizationSuggestions.length > 0 ? (

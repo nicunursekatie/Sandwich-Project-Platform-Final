@@ -122,7 +122,7 @@ export default function SimpleNav({
     };
 
     return (
-      <nav className="flex flex-col gap-1 p-2">
+      <nav className="flex flex-col gap-1 p-2 text-sm sm:text-base">
         {groupedItems.map((groupItem, index) => {
           if (groupItem.type === 'separator') {
             return !isCollapsed ? (

@@ -231,7 +231,7 @@ export function DetailedActivityAnalytics() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header with Filters */}
       <Card>
         <CardHeader>
@@ -247,7 +247,7 @@ export function DetailedActivityAnalytics() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3 sm:gap-4">
             <Select
               value={selectedUserId}
               onValueChange={(value) => handleFilterChange('user', value)}
@@ -366,7 +366,7 @@ export function DetailedActivityAnalytics() {
 
       {/* Detailed Analysis Tabs */}
       <Tabs defaultValue="recent" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="recent">Recent Activity</TabsTrigger>
           <TabsTrigger value="actions">Top Actions</TabsTrigger>
           <TabsTrigger value="sections">Top Sections</TabsTrigger>

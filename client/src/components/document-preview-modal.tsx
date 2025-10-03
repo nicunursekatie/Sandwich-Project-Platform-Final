@@ -61,7 +61,7 @@ export function DocumentPreviewModal({
                 button to save the file to your device.
               </p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <Button
                 onClick={handleDownload}
                 className="flex items-center gap-2"
@@ -91,7 +91,7 @@ export function DocumentPreviewModal({
                 to save the file to your device.
               </p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <Button
                 onClick={handleDownload}
                 className="flex items-center gap-2"

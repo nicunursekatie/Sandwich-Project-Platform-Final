@@ -303,7 +303,7 @@ export default function DonationTracking() {
   ).size;
 
   return (
-    <div className="max-w-7xl mx-auto p-4 space-y-6">
+    <div className="max-w-7xl mx-auto p-4 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -534,7 +534,7 @@ export default function DonationTracking() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 sm:gap-4">
                           <Badge
                             variant="outline"
                             className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border"
@@ -557,7 +557,7 @@ export default function DonationTracking() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 sm:gap-4">
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-brand-primary" />
                             <span className="font-bold text-lg text-brand-primary">

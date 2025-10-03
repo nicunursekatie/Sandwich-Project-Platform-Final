@@ -280,7 +280,7 @@ export default function MeetingsCalendar() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -313,7 +313,7 @@ export default function MeetingsCalendar() {
               marked with * are required.
             </p>
             <form onSubmit={handleCreateMeeting} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="meeting-title"
@@ -358,7 +358,7 @@ export default function MeetingsCalendar() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label
                     htmlFor="meeting-date"
@@ -461,7 +461,7 @@ export default function MeetingsCalendar() {
 
       {/* View Controls */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-500" />
             <span className="text-sm font-medium text-slate-700">
@@ -483,7 +483,7 @@ export default function MeetingsCalendar() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <div className="text-sm text-slate-600">
             {filteredMeetings.length} meeting
             {filteredMeetings.length !== 1 ? 's' : ''} found

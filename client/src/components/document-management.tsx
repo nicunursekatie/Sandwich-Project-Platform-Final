@@ -381,7 +381,7 @@ function DocumentPermissionsDialog({
         </DialogHeader>
 
         <Tabs defaultValue="permissions" className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
             <TabsTrigger value="permissions">Permissions</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
@@ -562,7 +562,7 @@ function DocumentPermissionsDialog({
                 <CardTitle>Document Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">
                       Title
@@ -677,7 +677,7 @@ export default function DocumentManagement() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Document Management</h1>
@@ -690,7 +690,7 @@ export default function DocumentManagement() {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
             <div className="flex-1">
               <Input
                 placeholder="Search documents..."

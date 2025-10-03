@@ -978,7 +978,7 @@ ${userEmail}`;
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Recipient Info */}
           <Card className="bg-gradient-to-r from-teal-50 to-cyan-100 border border-teal-200">
             <CardContent className="p-4">
@@ -1045,7 +1045,7 @@ ${userEmail}`;
                           <p className="font-medium text-gray-900 truncate">
                             {draft.subject || 'Untitled Draft'}
                           </p>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-600">
                             <span>
                               Saved:{' '}
                               {new Date(draft.updatedAt).toLocaleDateString()}{' '}

@@ -88,7 +88,7 @@ export function DocumentPreview({
                       new tab.
                     </p>
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-3 sm:gap-4">
                     <Button
                       onClick={handleDownload}
                       className="flex items-center gap-2"
@@ -158,7 +158,7 @@ export function DocumentPreview({
                 button to save the file to your device.
               </p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <Button
                 onClick={handleDownload}
                 className="flex items-center gap-2"
@@ -189,7 +189,7 @@ export function DocumentPreview({
                 to save the file to your device.
               </p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <Button
                 onClick={handleDownload}
                 className="flex items-center gap-2"
@@ -219,7 +219,7 @@ export function DocumentPreview({
                 new tab to view.
               </p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <Button
                 onClick={handleDownload}
                 className="flex items-center gap-2"

@@ -216,8 +216,8 @@ export default function Dashboard({
         return <DonationTracking />;
       case 'weekly-monitoring':
         return (
-          <div className="space-y-6 p-6">
-            <div className="flex items-center gap-4 mb-6">
+          <div className="space-y-4 sm:space-y-6 p-6">
+            <div className="flex items-center gap-3 sm:gap-4 mb-6">
               <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
                 <Clock className="w-6 h-6 text-primary" />
               </div>
@@ -260,7 +260,7 @@ export default function Dashboard({
       case 'chat':
         return (
           <div className="h-full flex flex-col">
-            <div className="flex-shrink-0 flex items-center gap-4 p-6 pb-2 border-b border-gray-200">
+            <div className="flex-shrink-0 flex items-center gap-3 sm:gap-4 p-6 pb-2 border-b border-gray-200">
               <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
                 <MessageCircle className="w-6 h-6 text-primary" />
               </div>
@@ -279,8 +279,8 @@ export default function Dashboard({
         );
       case 'kudos':
         return (
-          <div className="space-y-6 p-6">
-            <div className="flex items-center gap-4 mb-6">
+          <div className="space-y-4 sm:space-y-6 p-6">
+            <div className="flex items-center gap-3 sm:gap-4 mb-6">
               <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-yellow-100">
                 <Trophy className="w-6 h-6 text-yellow-600" />
               </div>
@@ -349,7 +349,7 @@ export default function Dashboard({
               </p>
             </div>
             <Tabs defaultValue="impact" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
+              <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
                 <TabsTrigger
                   value="impact"
                   className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
@@ -390,8 +390,8 @@ export default function Dashboard({
       case 'committee':
       case 'committee-chat':
         return (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 mb-6">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="flex items-center gap-3 sm:gap-4 mb-6">
               <div
                 className="flex items-center justify-center w-12 h-12 rounded-xl"
                 style={{ backgroundColor: 'var(--color-brand-teal-light)' }}

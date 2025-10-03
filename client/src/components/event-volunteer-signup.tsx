@@ -208,7 +208,7 @@ export default function EventVolunteerSignup({
           Volunteer Signup - {eventTitle}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         {/* Drivers Section */}
         {driversNeeded > 0 && (
           <div>
@@ -253,7 +253,7 @@ export default function EventVolunteerSignup({
               ))}
 
               {availableDriverSpots > 0 && (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Dialog
                     open={showSignupDialog && signupRole === 'driver'}
                     onOpenChange={(open) => {
@@ -433,7 +433,7 @@ export default function EventVolunteerSignup({
               ))}
 
               {availableSpeakerSpots > 0 && (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Dialog
                     open={showSignupDialog && signupRole === 'speaker'}
                     onOpenChange={(open) => {

@@ -352,7 +352,7 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-2xl font-main-heading text-primary">
           Account Settings
@@ -416,7 +416,7 @@ export default function UserProfile() {
             <Form {...profileForm}>
               <form
                 onSubmit={profileForm.handleSubmit(onSubmitProfile)}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -564,7 +564,7 @@ export default function UserProfile() {
             <Form {...passwordForm}>
               <form
                 onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
-                className="space-y-6"
+                className="space-y-4 sm:space-y-6"
               >
                 <FormField
                   control={passwordForm.control}
@@ -650,7 +650,7 @@ export default function UserProfile() {
               Manage your SMS reminder preferences for weekly sandwich collection submissions
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6">
             {isAlreadyOptedIn ? (
               // Already confirmed SMS opt-in - show status and opt-out option
               <div className="space-y-4">
@@ -757,7 +757,7 @@ export default function UserProfile() {
               </div>
             ) : (
               // Not opted in - show sign-up form
-              <form onSubmit={handleSMSSubmit} className="space-y-6">
+              <form onSubmit={handleSMSSubmit} className="space-y-4 sm:space-y-6">
                 <div className="bg-brand-primary-lighter dark:bg-blue-950/50 p-4 rounded-lg">
                   <h3 className="font-medium text-brand-primary-darker dark:text-brand-primary-light mb-2 flex items-center gap-2">
                     <Smartphone className="h-4 w-4" />
@@ -840,7 +840,7 @@ export default function UserProfile() {
 
       {/* Toll-Free Verification Panel - Admin Only */}
       {activeTab === 'notifications' && user && typeof user.permissions === 'number' && user.permissions >= 80 && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <Separator />
           <TollFreeVerificationPanel />
         </div>

@@ -323,7 +323,7 @@ export default function StrategicAnalytics() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-2">Strategic Impact Dashboard</h2>
         <p className="text-lg text-muted-foreground">
@@ -332,14 +332,14 @@ export default function StrategicAnalytics() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="highlights">Achievements</TabsTrigger>
           <TabsTrigger value="trends">Growth Trends</TabsTrigger>
           <TabsTrigger value="insights">Seasonal Insights</TabsTrigger>
           <TabsTrigger value="opportunities">Strategic Ideas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="highlights" className="space-y-6">
+        <TabsContent value="highlights" className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {analyticsData.achievements.map((achievement, index) => (
               <Card
@@ -375,7 +375,7 @@ export default function StrategicAnalytics() {
           </div>
         </TabsContent>
 
-        <TabsContent value="trends" className="space-y-6">
+        <TabsContent value="trends" className="space-y-4 sm:space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -436,7 +436,7 @@ export default function StrategicAnalytics() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="insights" className="space-y-6">
+        <TabsContent value="insights" className="space-y-4 sm:space-y-6">
           <div className="grid gap-4">
             {analyticsData.seasonalInsights.map((insight, index) => (
               <Card key={index}>
@@ -477,12 +477,12 @@ export default function StrategicAnalytics() {
           </div>
         </TabsContent>
 
-        <TabsContent value="opportunities" className="space-y-6">
+        <TabsContent value="opportunities" className="space-y-4 sm:space-y-6">
           <div className="grid gap-4">
             {analyticsData.strategicOpportunities.map((opportunity, index) => (
               <Card key={index}>
                 <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3 sm:gap-4">
                     <div className="text-primary mt-1">
                       <Lightbulb className="w-6 h-6" />
                     </div>

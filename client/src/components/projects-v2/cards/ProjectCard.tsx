@@ -312,7 +312,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       <CardContent>
         <div className="space-y-3">
           {/* Category and Dates */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 font-roboto">
+          <div className="flex items-center gap-3 sm:gap-4 text-sm text-gray-600 font-roboto">
             <div className="flex items-center gap-1">
               {getCategoryIcon(project.category || 'technology')}
               <span className="capitalize text-[15px]">{project.category || 'technology'}</span>

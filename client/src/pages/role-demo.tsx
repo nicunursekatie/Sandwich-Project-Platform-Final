@@ -165,7 +165,7 @@ function RoleView({ user }: { user: any }) {
   const colorClass = roleColors[user.role as keyof typeof roleColors];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* User Info */}
       <Card>
         <CardHeader>
@@ -193,7 +193,7 @@ function RoleView({ user }: { user: any }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {/* Phone Directory */}
             <div
               className={`p-4 rounded-lg border ${
@@ -437,9 +437,9 @@ export default function RoleDemo() {
       <Tabs
         value={selectedRole}
         onValueChange={(value) => setSelectedRole(value)}
-        className="space-y-6"
+        className="space-y-4 sm:space-y-6"
       >
-        <TabsList className="grid grid-cols-4 lg:grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 w-full">
           {Object.values(USER_ROLES).map((role) => {
             const Icon = roleIcons[role];
             return (

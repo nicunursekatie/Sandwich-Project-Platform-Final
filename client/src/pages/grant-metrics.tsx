@@ -326,7 +326,7 @@ export default function GrantMetrics() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
-              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#236383]">
+              <div className="flex items-start gap-3 sm:gap-4 p-4 bg-white rounded-lg border-l-4 border-[#236383]">
                 <Calendar className="w-8 h-8 text-[#236383] flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="font-bold text-lg text-gray-900">Peak Month</h3>
@@ -339,7 +339,7 @@ export default function GrantMetrics() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#47B3CB]">
+              <div className="flex items-start gap-3 sm:gap-4 p-4 bg-white rounded-lg border-l-4 border-[#47B3CB]">
                 <Target className="w-8 h-8 text-[#47B3CB] flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="font-bold text-lg text-gray-900">Average Per Collection</h3>
@@ -353,7 +353,7 @@ export default function GrantMetrics() {
               </div>
 
               {metrics.growthRate > 0 && (
-                <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#007E8C]">
+                <div className="flex items-start gap-3 sm:gap-4 p-4 bg-white rounded-lg border-l-4 border-[#007E8C]">
                   <TrendingUp className="w-8 h-8 text-[#007E8C] flex-shrink-0 mt-1" />
                   <div>
                     <h3 className="font-bold text-lg text-gray-900">Year-Over-Year Growth</h3>
@@ -377,7 +377,7 @@ export default function GrantMetrics() {
                 Collective Host Network
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+            <CardContent className="space-y-4 sm:space-y-6 pt-6">
               <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
                 <Building2 className="w-12 h-12 mx-auto mb-3 opacity-90" />
                 <h2 className="font-black mb-2 text-[23px]">
@@ -558,7 +558,7 @@ export default function GrantMetrics() {
         {/* Remarkable Growth Story */}
         <Card className="mb-8 bg-gradient-to-r from-[#47B3CB]/10 to-[#236383]/10 border-2 border-[#47B3CB]">
           <CardContent className="p-8">
-            <div className="flex items-start gap-4 mb-6">
+            <div className="flex items-start gap-3 sm:gap-4 mb-6">
               <Rocket className="w-10 h-10 text-[#236383] flex-shrink-0 mt-1" />
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">

@@ -65,7 +65,7 @@ export function ActivityTrackingExample() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Button onClick={handleButtonClick} className="w-full">
             Track Button Click
           </Button>

@@ -200,7 +200,7 @@ export function DataManagementDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Data Management</h1>
@@ -214,7 +214,7 @@ export function DataManagementDashboard() {
         </Badge>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="search">Search</TabsTrigger>
@@ -223,7 +223,7 @@ export function DataManagementDashboard() {
           <TabsTrigger value="integrity">Data Integrity</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
@@ -341,7 +341,7 @@ export function DataManagementDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="search" className="space-y-6">
+        <TabsContent value="search" className="space-y-4 sm:space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -353,7 +353,7 @@ export function DataManagementDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4 mb-4">
+              <div className="flex gap-3 sm:gap-4 mb-4">
                 <Input
                   placeholder="Search collections, hosts, projects..."
                   value={searchQuery}
@@ -449,7 +449,7 @@ export function DataManagementDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="import" className="space-y-6">
+        <TabsContent value="import" className="space-y-4 sm:space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -495,7 +495,7 @@ export function DataManagementDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="export" className="space-y-6">
+        <TabsContent value="export" className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -607,7 +607,7 @@ export function DataManagementDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="integrity" className="space-y-6">
+        <TabsContent value="integrity" className="space-y-4 sm:space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

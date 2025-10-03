@@ -438,7 +438,7 @@ export default function MeetingMinutes({
 
   if (meetingsLoading || minutesLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/3"></div>
           <div className="h-32 bg-gray-200 rounded"></div>
@@ -450,7 +450,7 @@ export default function MeetingMinutes({
   // Show create meeting form
   if (isCreatingMeeting) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
           <Button variant="outline" onClick={() => setIsCreatingMeeting(false)}>
             ← Back to Meetings
@@ -465,7 +465,7 @@ export default function MeetingMinutes({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleCreateMeeting} className="space-y-6">
+            <form onSubmit={handleCreateMeeting} className="space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Meeting Title *
@@ -600,7 +600,7 @@ export default function MeetingMinutes({
   // Show edit meeting form
   if (isEditingMeeting) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
           <Button variant="outline" onClick={() => setIsEditingMeeting(false)}>
             ← Back to Meetings
@@ -633,7 +633,7 @@ export default function MeetingMinutes({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Date</label>
                   <Input
@@ -762,7 +762,7 @@ export default function MeetingMinutes({
       !extractionFailed;
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
           <Button variant="outline" onClick={() => setViewingMinutes(null)}>
             ← Back to Meetings
@@ -806,7 +806,7 @@ export default function MeetingMinutes({
               )}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6">
             {/* Document Content */}
             <div>
               <h4 className="font-semibold text-base mb-4 text-gray-900">
@@ -941,7 +941,7 @@ export default function MeetingMinutes({
     );
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
@@ -963,13 +963,13 @@ export default function MeetingMinutes({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               {/* Upload Type Selection */}
               <div>
                 <label className="block text-sm font-medium mb-3">
                   Upload Type
                 </label>
-                <div className="flex gap-4">
+                <div className="flex gap-3 sm:gap-4">
                   <label className="flex items-center">
                     <input
                       type="radio"
@@ -1059,7 +1059,7 @@ export default function MeetingMinutes({
 
   // Show main meetings list
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Navigation Header - only show when not embedded */}
       {!isEmbedded && (
         <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
@@ -1083,7 +1083,7 @@ export default function MeetingMinutes({
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">
             Meeting Minutes
@@ -1115,7 +1115,7 @@ export default function MeetingMinutes({
                       <Calendar className="w-5 h-5" />
                       {meeting.title}
                     </CardTitle>
-                    <CardDescription className="flex items-center gap-4 mt-2">
+                    <CardDescription className="flex items-center gap-3 sm:gap-4 mt-2">
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         {formatMeetingDateTime(meeting)}

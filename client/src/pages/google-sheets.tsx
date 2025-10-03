@@ -22,7 +22,7 @@ export default function GoogleSheetsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="border-b border-gray-200 pb-4">
         <h1 className="text-2xl font-bold text-gray-900">
           Sandwich Totals Data Sheet

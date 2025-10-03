@@ -309,7 +309,7 @@ export function ConfidentialDocuments() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-16">
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-3 sm:gap-4 mb-6">
             <div className="p-3 bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-xl shadow-[0_4px_12px_rgba(35,99,131,0.15),0_2px_4px_rgba(35,99,131,0.1)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.2),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-300 ease-in-out">
               <Lock className="h-8 w-8 text-white" />
             </div>
@@ -353,7 +353,7 @@ export function ConfidentialDocuments() {
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* File Upload Area */}
                   <div>
                     <Label htmlFor="file-upload">Document File</Label>
@@ -475,7 +475,7 @@ export function ConfidentialDocuments() {
         </div>
 
         {/* Documents List */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {isLoadingDocuments ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex items-center gap-3">

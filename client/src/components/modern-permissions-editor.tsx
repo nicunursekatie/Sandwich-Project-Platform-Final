@@ -1026,7 +1026,7 @@ export default function ModernPermissionsEditor({
 
         {/* Global actions */}
         <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg mb-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -1099,7 +1099,7 @@ export default function ModernPermissionsEditor({
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
             <TabsTrigger value="templates">Role Templates</TabsTrigger>
             <TabsTrigger value="permissions">Custom Permissions</TabsTrigger>
           </TabsList>
@@ -1156,7 +1156,7 @@ export default function ModernPermissionsEditor({
 
           <TabsContent value="permissions" className="flex-1 flex flex-col">
             <div className="space-y-4 flex-1">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -1181,7 +1181,7 @@ export default function ModernPermissionsEditor({
               </div>
 
               <ScrollArea className="flex-1">
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {Object.entries(filteredCategories).map(([categoryName, category]) => {
                     const CategoryIcon = category.icon;
                     const categoryPermissions = category.permissions.filter(p => 

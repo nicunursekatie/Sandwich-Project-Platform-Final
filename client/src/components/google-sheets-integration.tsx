@@ -130,7 +130,7 @@ export function GoogleSheetsIntegration() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Connection Status */}
       <Card>
         <CardHeader>
@@ -161,7 +161,7 @@ export function GoogleSheetsIntegration() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <div>
               <Label htmlFor="sheet-name">Sheet Name</Label>
               <Input
@@ -298,7 +298,7 @@ export function GoogleSheetsIntegration() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {importResult.preview && (
                 <div className="text-center">
                   <div className="text-2xl font-bold text-brand-primary">

@@ -138,7 +138,7 @@ export function ScheduledEventEmailComposer({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Recipient Info */}
           <Card className="bg-brand-primary-lighter border-brand-primary-border">
             <CardContent className="p-4">

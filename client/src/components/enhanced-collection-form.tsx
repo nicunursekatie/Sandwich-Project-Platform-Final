@@ -157,7 +157,7 @@ export function EnhancedCollectionForm({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-6"
+            className="space-y-4 sm:space-y-6"
           >
             <FormField
               control={form.control}
@@ -240,7 +240,7 @@ export function EnhancedCollectionForm({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="group1Name"
@@ -333,7 +333,7 @@ export function EnhancedCollectionForm({
               )}
             />
 
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <Button
                 type="submit"
                 className="flex-1"

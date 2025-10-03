@@ -201,7 +201,7 @@ export default function EnhancedUserAnalytics() {
 
   if (isLoadingStats || isLoadingUsers) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse">
@@ -221,9 +221,9 @@ export default function EnhancedUserAnalytics() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Controls */}
-      <div className="flex flex-wrap gap-4 items-center">
+      <div className="flex flex-wrap gap-3 sm:gap-4 items-center">
         <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select timeframe" />
@@ -264,8 +264,8 @@ export default function EnhancedUserAnalytics() {
 
       {/* Overview Stats Cards - Compact design with better spacing */}
       {systemStats && (
-        <div className="space-y-8">
-          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
+        <div className="space-y-4 sm:space-y-6 sm:space-y-8">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
             <div className="bg-white  p-3 sm:p-4 rounded-lg border border-brand-primary/20 hover:border-brand-primary/40 transition-colors">
               <div className="flex items-center justify-between mb-1">
                 <Users className="h-4 w-4 text-brand-primary" />
@@ -397,7 +397,7 @@ export default function EnhancedUserAnalytics() {
           <TabsTrigger value="behavior">Behavior Analysis</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold">
@@ -466,7 +466,7 @@ export default function EnhancedUserAnalytics() {
 
                   <CardContent className="space-y-4">
                     {/* Key Metrics */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="text-center p-3 bg-muted/50 rounded-lg">
                         <p className="text-xs text-muted-foreground">
                           Sessions
@@ -963,7 +963,7 @@ export default function EnhancedUserAnalytics() {
                         if (!user) return <p>User not found</p>;
                         return (
                           <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <p className="text-sm text-muted-foreground">
                                   Total Actions

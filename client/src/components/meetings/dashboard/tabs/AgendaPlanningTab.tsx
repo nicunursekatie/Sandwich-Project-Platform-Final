@@ -447,7 +447,7 @@ export function AgendaPlanningTab({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <div>
@@ -552,7 +552,7 @@ export function AgendaPlanningTab({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-primary">Agenda Status</h3>
-                <div className="flex items-center gap-4 mt-1">
+                <div className="flex items-center gap-3 sm:gap-4 mt-1">
                   <span className="text-sm text-teal-700">
                     📅 {agendaSummary.agendaCount} for agenda
                   </span>
@@ -590,7 +590,7 @@ export function AgendaPlanningTab({
             <span className="font-medium text-gray-700">
               Reviewing projects for meeting
             </span>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <span className="text-teal-600 font-medium">
                 {agendaSummary.agendaCount + agendaSummary.tabledCount} of{' '}
                 {allProjects.filter((p) => p.status !== 'completed' && p.status !== 'archived').length}{' '}
@@ -750,7 +750,7 @@ export function AgendaPlanningTab({
                                           : 'Not Scheduled'}
                                     </Badge>
                                   </div>
-                                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                  <div className="flex items-center gap-3 sm:gap-4 mt-2 text-sm text-gray-600">
                                     <span>
                                       <strong>Owner:</strong>{' '}
                                       {project.assigneeName || 'Unassigned'}

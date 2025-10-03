@@ -70,7 +70,7 @@ export function DuplicateAnalysisDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Summary Stats */}
           <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-gray-50 rounded-lg">

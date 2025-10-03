@@ -227,9 +227,9 @@ export default function BulkPermissionsManager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header and Controls */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+      <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start lg:items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Bulk Permissions Manager</h2>
           <p className="text-gray-600">Manage permissions for multiple users at once</p>

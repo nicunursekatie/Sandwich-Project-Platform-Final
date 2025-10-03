@@ -612,7 +612,7 @@ export default function UserManagementRedesigned() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -645,7 +645,7 @@ export default function UserManagementRedesigned() {
       <Tabs
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as any)}
-        className="space-y-6"
+        className="space-y-4 sm:space-y-6"
       >
         <TabsList className="grid grid-cols-9 w-full max-w-6xl">
           <TabsTrigger value="overview" className="flex items-center gap-2">
@@ -696,7 +696,7 @@ export default function UserManagementRedesigned() {
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -861,16 +861,16 @@ export default function UserManagementRedesigned() {
         </TabsContent>
 
         {/* Permissions Tab */}
-        <TabsContent value="permissions" className="space-y-6">
+        <TabsContent value="permissions" className="space-y-4 sm:space-y-6">
           <BulkPermissionsManager />
         </TabsContent>
 
         {/* Users Tab */}
-        <TabsContent value="users" className="space-y-6">
+        <TabsContent value="users" className="space-y-4 sm:space-y-6">
           {/* Search and Filters */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
@@ -1168,7 +1168,7 @@ export default function UserManagementRedesigned() {
                 placeholder="user@example.com"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="firstName">First Name</Label>
                 <Input
@@ -1320,7 +1320,7 @@ export default function UserManagementRedesigned() {
               manage their own preferences in their profile.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
+          <div className="space-y-4 sm:space-y-6 py-4">
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <Phone className="h-5 w-5 text-brand-primary" />
@@ -1423,7 +1423,7 @@ export default function UserManagementRedesigned() {
                   placeholder="user@example.com"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="editFirstName">First Name *</Label>
                   <Input
@@ -1447,7 +1447,7 @@ export default function UserManagementRedesigned() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="editPhoneNumber">Phone Number</Label>
                   <Input

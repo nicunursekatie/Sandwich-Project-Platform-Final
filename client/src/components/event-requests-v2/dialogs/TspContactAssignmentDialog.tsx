@@ -197,7 +197,7 @@ export const TspContactAssignmentDialog: React.FC<TspContactAssignmentDialogProp
 
         <div className="space-y-4">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'user' | 'custom')}>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
               <TabsTrigger value="user" className="flex items-center gap-2" data-testid="tab-user-selection">
                 <Users className="w-4 h-4" />
                 Select User

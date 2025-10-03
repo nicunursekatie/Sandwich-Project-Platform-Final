@@ -94,7 +94,7 @@ export default function CSVImport() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-slate-900">
           Import CSV Data
@@ -193,7 +193,7 @@ export default function CSVImport() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-slate-900">
                   {importResult.totalRecords}

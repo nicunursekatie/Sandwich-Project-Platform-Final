@@ -289,7 +289,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
   }
 
   return (
-    <div className="space-y-6" data-testid="dashboard-action-tracker">
+    <div className="space-y-4 sm:space-y-6" data-testid="dashboard-action-tracker">
       <div className="text-center">
         <h2 className="font-bold mb-2 text-[20px] text-[#236383]">My Action Tracker</h2>
         <p className="text-gray-600">Stay on top of your assigned work and communications</p>
@@ -449,7 +449,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       </div>
       {/* Quick Action Buttons */}
       {!isLoading && dashboardData && (
-        <div className="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-200">
+        <div className="flex flex-wrap justify-center gap-3 sm:gap-4 pt-4 border-t border-gray-200">
           <Button 
             variant="outline" 
             className="text-[16px]"

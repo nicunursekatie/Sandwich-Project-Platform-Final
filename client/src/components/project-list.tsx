@@ -390,7 +390,7 @@ export default function ProjectList() {
   const otherProjects = projects.filter((p) => !isUnassignedStatus(p.status));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Unassigned Projects Section */}
       {unassignedProjects.length > 0 && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-200 shadow-sm">
@@ -430,7 +430,7 @@ export default function ProjectList() {
                           {project.description}
                         </p>
                       )}
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-500">
                         {project.category &&
                           project.category !== project.milestone && (
                             <span className="bg-slate-100 px-2 py-1 rounded">
@@ -929,7 +929,7 @@ export default function ProjectList() {
                         {project.description}
                       </p>
                     )}
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-500">
                       {project.category &&
                         project.category !== project.milestone && (
                           <span className="bg-slate-100 px-2 py-1 rounded">
@@ -1327,7 +1327,7 @@ export default function ProjectList() {
                         {project.description}
                       </p>
                     )}
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-500">
                       {project.category &&
                         project.category !== project.milestone && (
                           <span className="bg-slate-100 px-2 py-1 rounded">

@@ -1014,7 +1014,7 @@ export default function HostsManagementConsolidated() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 flex items-center">
@@ -1035,7 +1035,7 @@ export default function HostsManagementConsolidated() {
             }
             className="w-auto"
           >
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
               <TabsTrigger
                 value="locations"
                 className="flex items-center gap-2"
@@ -1455,7 +1455,7 @@ export default function HostsManagementConsolidated() {
       ) : (
         /* Original Location-based View */
         <Tabs defaultValue="active" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
             <TabsTrigger value="active" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
               Active Locations ({activeHosts.length})
@@ -1957,7 +1957,7 @@ export default function HostsManagementConsolidated() {
               </TabsContent>
 
               <TabsContent value="details" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-slate-700">
                       Host Name

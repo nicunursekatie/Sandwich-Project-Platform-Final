@@ -473,7 +473,7 @@ export default function RecipientsManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
@@ -760,7 +760,7 @@ export default function RecipientsManagement() {
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-3">
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                               <Label htmlFor="contactPersonName">
                                 Contact Name
@@ -853,7 +853,7 @@ export default function RecipientsManagement() {
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-3">
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                               <Label htmlFor="secondContactPersonName">
                                 Contact Name
@@ -946,7 +946,7 @@ export default function RecipientsManagement() {
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-3">
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                               <Label htmlFor="reportingGroup">
                                 Reporting Group
@@ -1581,7 +1581,7 @@ export default function RecipientsManagement() {
                     <div className="text-sm font-medium text-slate-700 mb-2">
                       Operational Details
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {recipient.reportingGroup && (
                         <div className="text-sm text-slate-600">
                           <span className="font-medium">Reporting Group:</span>{' '}
@@ -1972,7 +1972,7 @@ export default function RecipientsManagement() {
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="edit-contactPersonName">
                           Contact Name
@@ -2065,7 +2065,7 @@ export default function RecipientsManagement() {
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="edit-secondContactPersonName">
                           Contact Name
@@ -2170,7 +2170,7 @@ export default function RecipientsManagement() {
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="edit-reportingGroup">
                           Reporting Group
