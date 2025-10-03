@@ -489,10 +489,29 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
     const { documents } = await import('@shared/schema');
     const { inArray } = await import('drizzle-orm');
 
-    // Convert content line breaks and markdown
-    const htmlContent = content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br>');
+    // Check if content is already full HTML (starts with <!DOCTYPE html>)
+    const isFullHtml = content.trim().startsWith('<!DOCTYPE html>');
+    
+    // Convert content line breaks and markdown only if not already HTML
+    let htmlContent;
+    let textContent;
+    
+    if (isFullHtml) {
+      // Content is already formatted HTML - use as-is
+      htmlContent = content;
+      // Extract text from HTML for plain text version (simple extraction)
+      textContent = content
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    } else {
+      // Convert markdown-style content to HTML
+      htmlContent = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+      textContent = content;
+    }
 
     // Process attachments - fetch document metadata if attachments are document IDs
     let processedAttachments = [];
@@ -526,8 +545,10 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
       from: 'katie@thesandwichproject.org',
       replyTo: replyToEmail,
       subject,
-      text: `${content}${EMAIL_FOOTER_TEXT}`,
-      html: `
+      text: `${textContent}\n\n${EMAIL_FOOTER_TEXT}`,
+      html: isFullHtml 
+        ? `${htmlContent}${EMAIL_FOOTER_HTML}` 
+        : `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="white-space: pre-wrap; line-height: 1.6;">
             ${htmlContent}
