@@ -341,6 +341,74 @@ describe('Route Integration Tests', () => {
     });
   });
 
+  describe('Wishlist Suggestions API', () => {
+    let suggestionId;
+
+    test('GET /api/wishlist-suggestions - should return suggestions array', async () => {
+      const response = await request(app)
+        .get('/api/wishlist-suggestions')
+        .set('Cookie', authCookie);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    test('POST /api/wishlist-suggestions - should create new suggestion', async () => {
+      const suggestionData = {
+        item: 'Integration Test Item',
+        reason: 'Ensuring wishlist suggestions route works',
+        priority: 'high',
+      };
+
+      const response = await request(app)
+        .post('/api/wishlist-suggestions')
+        .set('Cookie', authCookie)
+        .send(suggestionData);
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.item).toBe(suggestionData.item);
+      expect(response.body.priority).toBe(suggestionData.priority);
+      expect(response.body.status).toBe('pending');
+
+      suggestionId = response.body.id;
+    });
+
+    test('PATCH /api/wishlist-suggestions/:id - should update suggestion status', async () => {
+      const updates = {
+        status: 'approved',
+        adminNotes: 'Approved during integration test',
+      };
+
+      const response = await request(app)
+        .patch(`/api/wishlist-suggestions/${suggestionId}`)
+        .set('Cookie', authCookie)
+        .send(updates);
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe(updates.status);
+      expect(response.body.adminNotes).toBe(updates.adminNotes);
+      expect(response.body.reviewedAt).toBeTruthy();
+    });
+
+    test('GET /api/wishlist-activity - should return wishlist activity', async () => {
+      const response = await request(app)
+        .get('/api/wishlist-activity')
+        .set('Cookie', authCookie);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    test('DELETE /api/wishlist-suggestions/:id - should delete suggestion', async () => {
+      const response = await request(app)
+        .delete(`/api/wishlist-suggestions/${suggestionId}`)
+        .set('Cookie', authCookie);
+
+      expect(response.status).toBe(204);
+    });
+  });
+
   describe('Authentication Protection', () => {
     test('Endpoints should require authentication', async () => {
       const endpoints = [
