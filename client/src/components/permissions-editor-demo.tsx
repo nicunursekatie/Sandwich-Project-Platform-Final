@@ -85,7 +85,7 @@ export default function PermissionsEditorDemo() {
                     {user.permissions.slice(0, 3).map(perm => (
                       <span 
                         key={perm}
-                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-primary-light text-brand-primary-dark"
                       >
                         {perm.replace('_', ' ')}
                       </span>
@@ -112,9 +112,9 @@ export default function PermissionsEditorDemo() {
         ))}
       </div>
 
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-brand-primary-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-900">
+          <CardTitle className="flex items-center gap-2 text-brand-primary-darker">
             <Shield className="h-5 w-5" />
             Features Showcase
           </CardTitle>
@@ -122,8 +122,8 @@ export default function PermissionsEditorDemo() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <h4 className="font-semibold text-blue-900 mb-2">✨ Key Features:</h4>
-              <ul className="space-y-1 text-blue-800">
+              <h4 className="font-semibold text-brand-primary-darker mb-2">✨ Key Features:</h4>
+              <ul className="space-y-1 text-brand-primary-dark">
                 <li>• Role-based templates for quick setup</li>
                 <li>• Categorized permissions with descriptions</li>
                 <li>• Visual permission level indicators</li>
@@ -132,8 +132,8 @@ export default function PermissionsEditorDemo() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-blue-900 mb-2">🎯 Permission Categories:</h4>
-              <ul className="space-y-1 text-blue-800">
+              <h4 className="font-semibold text-brand-primary-darker mb-2">🎯 Permission Categories:</h4>
+              <ul className="space-y-1 text-brand-primary-dark">
                 <li>• Core Access & Data Management</li>
                 <li>• Event & Project Management</li>
                 <li>• Communication & Chat Rooms</li>

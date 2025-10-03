@@ -177,7 +177,7 @@ export default function MeetingCalendar({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-brand-primary-light text-brand-primary-dark';
       case 'in_progress':
         return 'bg-green-100 text-green-800';
       case 'completed':
@@ -255,7 +255,7 @@ export default function MeetingCalendar({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
+          <div className="flex items-center justify-center w-12 h-12 bg-brand-primary-light rounded-xl">
             <Calendar className="w-6 h-6 text-brand-primary" />
           </div>
           <div>

@@ -168,7 +168,7 @@ const getCategoryColor = (category: string) => {
     case 'Legal':
       return 'bg-purple-100 text-purple-800';
     case 'Governance':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-brand-primary-light text-brand-primary-dark';
     case 'Financial':
       return 'bg-green-100 text-green-800';
     case 'Safety Guidelines':
@@ -178,7 +178,7 @@ const getCategoryColor = (category: string) => {
     case 'Sandwich Making':
       return 'bg-teal-100 text-teal-800';
     case 'Tools':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-brand-primary-light text-brand-primary-dark';
     default:
       return 'bg-gray-100 text-gray-800';
   }
@@ -275,7 +275,7 @@ export function DevelopmentDocuments() {
         {filteredDocs.map((doc, index) => (
           <Card
             key={index}
-            className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-blue-200"
+            className="hover:shadow-lg transition-shadow duration-200 h-full flex flex-col border-2 hover:border-brand-primary-border"
           >
             <CardHeader className="pb-4 flex-shrink-0">
               <div className="flex items-start justify-between mb-3">

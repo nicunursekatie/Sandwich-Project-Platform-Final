@@ -175,7 +175,7 @@ export default function GroupCatalog({
       case 'contacted':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'in_process':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border';
       case 'scheduled':
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'completed':
@@ -464,7 +464,7 @@ export default function GroupCatalog({
         );
       case 'in_process':
         return (
-          <Badge className="bg-gradient-to-r from-blue-100 to-indigo-200 text-blue-800 border border-blue-300 shadow-sm">
+          <Badge className="bg-gradient-to-r from-blue-100 to-indigo-200 text-brand-primary-dark border border-brand-primary-border-strong shadow-sm">
             In Process
           </Badge>
         );
@@ -829,7 +829,7 @@ export default function GroupCatalog({
                                     </div>
                                     <div className="flex items-center space-x-1">
                                       <span>🎯</span>
-                                      <span className="font-semibold text-blue-700">
+                                      <span className="font-semibold text-brand-primary">
                                         {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} events
                                       </span>
                                     </div>
@@ -1147,7 +1147,7 @@ export default function GroupCatalog({
                         (event: any, index: number) => (
                           <div
                             key={index}
-                            className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-brand-primary transition-colors"
+                            className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-brand-primary-border-strong dark:hover:border-brand-primary transition-colors"
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -1159,7 +1159,7 @@ export default function GroupCatalog({
                                     className={
                                       event.type === 'sandwich_collection'
                                         ? 'bg-green-100 text-green-800 border-green-200'
-                                        : 'bg-blue-100 text-blue-800 border-blue-200'
+                                        : 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border'
                                     }
                                   >
                                     {event.type === 'sandwich_collection'

@@ -357,8 +357,8 @@ export function UserPermissionsDialog({
             </span>{' '}
             ({user.email})
           </DialogDescription>
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-3">
-            <p className="text-sm text-blue-800">
+          <div className="p-3 bg-brand-primary-lighter border border-brand-primary-border rounded-lg mt-3">
+            <p className="text-sm text-brand-primary-dark">
               <strong>Note:</strong> Users automatically own content they create
               or are assigned to. These permissions control what they can do
               with <em>other people's</em> content and system access.

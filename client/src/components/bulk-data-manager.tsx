@@ -420,7 +420,7 @@ export default function BulkDataManager({
                   <Button
                     onClick={() => fixDataMutation.mutate()}
                     disabled={fixDataMutation.isPending}
-                    className="w-full flex items-center space-x-2 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                    className="w-full flex items-center space-x-2 bg-brand-primary-lighter border-brand-primary-border-strong text-brand-primary hover:bg-brand-primary-light"
                     variant="outline"
                   >
                     {fixDataMutation.isPending ? (
@@ -461,14 +461,14 @@ export default function BulkDataManager({
                 </div>
               </div>
 
-              <div className="border rounded-lg p-4 bg-blue-50">
+              <div className="border rounded-lg p-4 bg-brand-primary-lighter">
                 <div className="flex items-start space-x-3">
                   <Database className="w-5 h-5 text-brand-primary mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-blue-900">
+                    <h4 className="font-medium text-brand-primary-darker">
                       Data Import Status
                     </h4>
-                    <p className="text-sm text-blue-700 mt-1">
+                    <p className="text-sm text-brand-primary mt-1">
                       Your CSV data import is running in the background. The
                       system automatically maps new records as they're imported.
                       You can manually trigger mapping above if needed.

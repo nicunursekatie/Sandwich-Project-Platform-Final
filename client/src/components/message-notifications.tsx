@@ -282,7 +282,7 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
                   </div>
                   <Badge
                     variant="secondary"
-                    className="ml-2 bg-blue-100 text-blue-800"
+                    className="ml-2 bg-brand-primary-light text-brand-primary-dark"
                   >
                     {count}
                   </Badge>

@@ -535,8 +535,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
           {/* Delivery Destinations */}
           <div className="space-y-4">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700 mb-2 font-medium">
+            <div className="p-3 bg-brand-primary-lighter border border-brand-primary-border rounded-lg">
+              <p className="text-sm text-brand-primary mb-2 font-medium">
                 📍 Delivery Options: You can specify either a direct delivery destination, or an overnight holding location with a final destination.
               </p>
             </div>
@@ -905,7 +905,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-200 text-sm text-gray-700">
+                  <div className="bg-brand-primary-lighter p-3 rounded border-l-4 border-brand-primary-border text-sm text-gray-700">
                     {formData.message || 'No initial message recorded'}
                   </div>
                 )}

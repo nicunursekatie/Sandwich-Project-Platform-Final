@@ -736,7 +736,7 @@ export default function StreamMessagesPage() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-4 p-6 border-b">
-        <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
+        <div className="flex items-center justify-center w-10 h-10 bg-brand-primary-light rounded-lg">
           <MessageCircle className="w-5 h-5 text-brand-primary"/"
         </div>
         <div>
@@ -778,7 +778,7 @@ export default function StreamMessagesPage() {
                       {selectedRecipients.map(recipientId => {
                         const user = availableUsers.find(u => u.id === recipientId);
                         return user ? (
-                          <span key={user.id} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm">
+                          <span key={user.id} className="inline-flex items-center gap-1 bg-brand-primary-light text-brand-primary-dark px-2 py-1 rounded-md text-sm">
                             {user.displayName}
                             <X 
                               className="w-3 h-3 cursor-pointer hover:text-brand-primary" 
@@ -831,7 +831,7 @@ export default function StreamMessagesPage() {
                 <div className="mb-4">
                   <Label className="block text-sm font-medium mb-1">Message:</Label>
                   <textarea
-                    className="w-full px-3 py-2 border rounded-md h-48 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border rounded-md h-48 resize-none focus:outline-none focus:ring-2 focus:ring-brand-primary-muted"
                     placeholder="Write your message..."
                     value={messageBody}
                     onChange={(e) => setMessageBody(e.target.value)}
@@ -868,7 +868,7 @@ export default function StreamMessagesPage() {
             <div 
               className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer text-sm font-medium ${
                 activeFolder === 'inbox' 
-                  ? 'bg-blue-50 text-blue-700
+                  ? 'bg-brand-primary-lighter text-brand-primary
                   : 'hover:bg-gray-100 text-gray-600'
               }`}
               onClick={() => setActiveFolder('inbox')}
@@ -879,7 +879,7 @@ export default function StreamMessagesPage() {
             <div 
               className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer text-sm ${
                 activeFolder === 'sent' 
-                  ? 'bg-blue-50 text-blue-700 font-medium'
+                  ? 'bg-brand-primary-lighter text-brand-primary font-medium'
                   : 'hover:bg-gray-100 text-gray-600'
               }`}
               onClick={() => setActiveFolder('sent')}
@@ -890,7 +890,7 @@ export default function StreamMessagesPage() {
             <div 
               className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer text-sm ${
                 activeFolder === 'conversations' 
-                  ? 'bg-blue-50 text-blue-700 font-medium'
+                  ? 'bg-brand-primary-lighter text-brand-primary font-medium'
                   : 'hover:bg-gray-100 text-gray-600'
               }`}
               onClick={() => setActiveFolder('conversations')}
@@ -931,7 +931,7 @@ export default function StreamMessagesPage() {
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {selectedChannel.state?.messages?.map((message: any) => (
                   <div key={message.id} className="flex gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium">
+                    <div className="w-8 h-8 bg-brand-primary-light rounded-full flex items-center justify-center text-sm font-medium">
                       {message.user?.name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div className="flex-1">
@@ -995,7 +995,7 @@ export default function StreamMessagesPage() {
                     {getFilteredMessages().map((msg) => (
                       <div 
                         key={msg.id} 
-                        className="p-4 hover:bg-gray-50 cursor-pointer border-l-4 border-transparent hover:border-blue-300"
+                        className="p-4 hover:bg-gray-50 cursor-pointer border-l-4 border-transparent hover:border-brand-primary-border-strong"
                         onClick={() => setSelectedChannel(msg.channel)}
                       >
                         <div className="flex items-start justify-between mb-1">

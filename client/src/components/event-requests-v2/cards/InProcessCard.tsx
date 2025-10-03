@@ -368,9 +368,9 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
           {/* Scheduled Call Info */}
           {request.scheduledCallDate && (
-            <div className="bg-blue-50 rounded-lg p-3">
+            <div className="bg-brand-primary-lighter rounded-lg p-3">
               <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-blue-600" />
+                <Phone className="w-4 h-4 text-brand-primary-muted" />
                 <span className="text-sm font-medium">Call scheduled:</span>
                 <span className="text-sm">
                   {new Date(request.scheduledCallDate).toLocaleString()}
@@ -424,7 +424,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     <p className="text-sm font-medium text-gray-600 mb-1">
                       Initial Request Message:
                     </p>
-                    <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded border-l-3 border-blue-200">
+                    <p className="text-sm text-gray-700 bg-brand-primary-lighter p-2 rounded border-l-3 border-brand-primary-border">
                       {request.message}
                     </p>
                   </div>

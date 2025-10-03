@@ -39,7 +39,7 @@ const characters: Record<string, Character> = {
     name: 'Helper',
     avatar: '🤝',
     personality: 'supportive and practical',
-    color: 'bg-blue-50 border-blue-200 text-blue-800',
+    color: 'bg-brand-primary-lighter border-brand-primary-border text-brand-primary-dark',
   },
   guide: {
     name: 'Guide',

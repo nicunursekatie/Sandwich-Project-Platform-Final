@@ -310,7 +310,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           : isFullyStaffed && !isOverStaffed
             ? 'bg-teal-50 border-teal-200'
             : isOverStaffed
-              ? 'bg-blue-50 border-blue-200'
+              ? 'bg-brand-primary-lighter border-brand-primary-border'
               : 'bg-white/60 border-white/80'
       }`}>
         {/* Header with clear status - Completed Event Summary */}
@@ -327,7 +327,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
                   : isFullyStaffed && !isOverStaffed
                     ? 'bg-teal-100 text-teal-700 border border-teal-200'
                     : isOverStaffed
-                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      ? 'bg-brand-primary-light text-brand-primary border border-brand-primary-border'
                       : 'bg-gray-100 text-gray-600'
               }`}>
                 {isUnderStaffed && <AlertTriangle className="w-3 h-3" />}
@@ -526,9 +526,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
             {/* Delivery Destination */}
             {typeof deliveryDestination === 'string' && deliveryDestination.trim() !== '' ? (
-              <div className="bg-blue-50 rounded-lg p-3 mt-2">
+              <div className="bg-brand-primary-lighter rounded-lg p-3 mt-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-blue-600" />
+                  <MapPin className="w-4 h-4 text-brand-primary-muted" />
                   <span className="font-medium">Delivery Destination:</span>
                   <span>{deliveryDestination}</span>
                 </div>
@@ -605,7 +605,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               size="sm"
               variant="outline"
               onClick={onFollowUp1Day}
-              className="bg-blue-50 hover:bg-blue-100"
+              className="bg-brand-primary-lighter hover:bg-brand-primary-light"
             >
               <MessageCircle className="w-4 h-4 mr-1" />
               1-Day Follow-up

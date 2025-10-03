@@ -182,7 +182,7 @@ function ComprehensivePersonSelector({
               Add Custom Entry (Person Not in List)
             </Button>
           ) : (
-            <div className="flex gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex gap-2 p-3 bg-brand-primary-lighter rounded-lg border border-brand-primary-border">
               <Input
                 placeholder="Enter name for custom assignment..."
                 value={customEntryText}
@@ -233,7 +233,7 @@ function ComprehensivePersonSelector({
                 <Badge
                   key={personId}
                   variant="secondary"
-                  className={isCustom ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-green-50 text-green-700 border-green-200"}
+                  className={isCustom ? "bg-brand-primary-lighter text-brand-primary border-brand-primary-border" : "bg-green-50 text-green-700 border-green-200"}
                 >
                   {getPersonDisplayName(personId)}
                   {isCustom && <span className="ml-1 text-xs">(custom)</span>}

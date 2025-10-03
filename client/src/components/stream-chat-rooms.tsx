@@ -181,7 +181,7 @@ export default function StreamChatRooms() {
                 <div
                   key={room.id}
                   className={`p-3 border-b cursor-pointer hover:bg-gray-100 ${
-                    activeChannel?.id === room.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                    activeChannel?.id === room.id ? 'bg-brand-primary-lighter border-l-4 border-l-blue-500' : ''
                   }`}
                   onClick={async () => {
                     try {

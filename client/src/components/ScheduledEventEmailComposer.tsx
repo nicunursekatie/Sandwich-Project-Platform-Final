@@ -140,23 +140,23 @@ export function ScheduledEventEmailComposer({
 
         <div className="space-y-6">
           {/* Recipient Info */}
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="bg-brand-primary-lighter border-brand-primary-border">
             <CardContent className="p-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <User className="w-4 h-4 text-blue-600" />
+                  <User className="w-4 h-4 text-brand-primary-muted" />
                   <span className="font-medium">Recipient:</span>
                   <span>
                     {eventRequest.firstName} {eventRequest.lastName}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4 text-blue-600" />
+                  <Mail className="w-4 h-4 text-brand-primary-muted" />
                   <span className="font-medium">Email:</span>
                   <span>{eventRequest.email}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Building className="w-4 h-4 text-blue-600" />
+                  <Building className="w-4 h-4 text-brand-primary-muted" />
                   <span className="font-medium">Organization:</span>
                   <span>{eventRequest.organizationName}</span>
                 </div>

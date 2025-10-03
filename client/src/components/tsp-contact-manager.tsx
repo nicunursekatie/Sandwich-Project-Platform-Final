@@ -791,7 +791,7 @@ export default function TSPContactManager({
           tspContacts.map((contact) => (
             <Card
               key={contact.id}
-              className={contact.isPrimary ? 'border-blue-300 bg-blue-50' : ''}
+              className={contact.isPrimary ? 'border-brand-primary-border-strong bg-brand-primary-lighter' : ''}
             >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">

@@ -614,7 +614,7 @@ export default function ProjectDetailClean({
       case 'completed':
         return 'text-green-600 bg-green-50 border-green-200';
       case 'in_progress':
-        return 'text-brand-primary bg-blue-50 border-blue-200';
+        return 'text-brand-primary bg-brand-primary-lighter border-brand-primary-border';
       case 'tabled':
         return 'text-purple-600 bg-purple-50 border-purple-200';
       case 'waiting':
@@ -850,13 +850,13 @@ export default function ProjectDetailClean({
       {/* Milestone Section - Show if milestone exists or user can edit */}
       {(project.milestone && project.milestone.trim()) ||
       (user && canEditProject(user, project)) ? (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-brand-primary-border p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shrink-0">
                 <Target className="h-4 w-4 text-white" />
               </div>
-              <h2 className="text-lg font-semibold text-blue-900 font-roboto">
+              <h2 className="text-lg font-semibold text-brand-primary-darker font-roboto">
                 Project Milestone
               </h2>
             </div>
@@ -865,14 +865,14 @@ export default function ProjectDetailClean({
                 variant="outline"
                 size="sm"
                 onClick={handleEditMilestone}
-                className="flex items-center gap-2 border-blue-300 text-brand-primary hover:bg-brand-primary hover:text-white font-roboto"
+                className="flex items-center gap-2 border-brand-primary-border-strong text-brand-primary hover:bg-brand-primary hover:text-white font-roboto"
               >
                 <Edit2 className="h-3 w-3" />
                 Edit
               </Button>
             )}
           </div>
-          <div className="bg-white rounded-lg p-4 border border-blue-200">
+          <div className="bg-white rounded-lg p-4 border border-brand-primary-border">
             {isEditingMilestone ? (
               <div className="space-y-4 p-2 sm:p-4">
                 <Textarea
@@ -906,7 +906,7 @@ export default function ProjectDetailClean({
             ) : (
               <div>
                 {project.milestone && project.milestone.trim() ? (
-                  <p className="text-sm text-blue-900 font-roboto font-medium whitespace-pre-wrap">
+                  <p className="text-sm text-brand-primary-darker font-roboto font-medium whitespace-pre-wrap">
                     {project.milestone}
                   </p>
                 ) : (
@@ -1245,7 +1245,7 @@ export default function ProjectDetailClean({
                               onClick={() =>
                                 handleTaskStatusChange(task.id, 'in_progress')
                               }
-                              className="text-brand-primary hover:text-blue-800"
+                              className="text-brand-primary hover:text-brand-primary-dark"
                               title="Mark as in progress"
                             >
                               <Clock className="h-4 w-4" />

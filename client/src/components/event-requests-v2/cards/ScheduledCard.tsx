@@ -412,7 +412,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               href={`https://maps.google.com/maps?q=${encodeURIComponent(value)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 hover:underline"
+              className="text-brand-primary-muted hover:text-brand-primary-dark hover:underline"
             >
               {value}
             </a>
@@ -1464,7 +1464,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Original Request Message:
                     </p>
-                    <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded border-l-3 border-blue-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-brand-primary-lighter p-3 rounded border-l-3 border-brand-primary-border whitespace-pre-wrap">
                       {request.message}
                     </p>
                   </div>

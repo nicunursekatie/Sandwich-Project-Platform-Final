@@ -104,11 +104,11 @@ export function ActivityTrackingExample() {
           </ul>
         </div>
 
-        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <h4 className="font-semibold mb-2 text-blue-800 dark:text-blue-200">
+        <div className="mt-4 p-4 bg-brand-primary-lighter dark:bg-brand-primary-darker/20 rounded-lg">
+          <h4 className="font-semibold mb-2 text-brand-primary-dark dark:text-brand-primary-muted">
             Implementation Guide:
           </h4>
-          <div className="text-sm space-y-1 text-blue-700 dark:text-blue-300">
+          <div className="text-sm space-y-1 text-brand-primary dark:text-blue-300">
             <p>1. Import the useActivityTracker hook</p>
             <p>2. Call tracking functions on user interactions</p>
             <p>3. Provide meaningful context (section, feature, details)</p>

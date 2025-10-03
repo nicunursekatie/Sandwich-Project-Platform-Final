@@ -150,8 +150,8 @@ export function DriverSelectionModal({
 
         {/* Selected Drivers Summary - Regular Mode */}
         {mode === 'regular' && tempSelectedDriverIds.length > 0 && (
-          <div className="flex flex-wrap gap-2 p-3 bg-blue-50 rounded-lg">
-            <span className="text-sm font-medium text-blue-700">Selected:</span>
+          <div className="flex flex-wrap gap-2 p-3 bg-brand-primary-lighter rounded-lg">
+            <span className="text-sm font-medium text-brand-primary">Selected:</span>
             {tempSelectedDriverIds.map((driverId) => {
               const driver = drivers.find((d) => d.id.toString() === driverId);
               const driverName = driver?.name || driverId;
@@ -177,8 +177,8 @@ export function DriverSelectionModal({
           <div className="space-y-3">
             {/* Current Van Driver Selection */}
             {(tempVanDriverId || tempCustomVanDriverName) && (
-              <div className="flex flex-wrap gap-2 p-3 bg-blue-50 rounded-lg">
-                <span className="text-sm font-medium text-blue-700">
+              <div className="flex flex-wrap gap-2 p-3 bg-brand-primary-lighter rounded-lg">
+                <span className="text-sm font-medium text-brand-primary">
                   Selected Van Driver:
                 </span>
                 <Badge variant="secondary" className="flex items-center gap-1">
@@ -187,7 +187,7 @@ export function DriverSelectionModal({
                         ?.name || tempVanDriverId
                     : tempCustomVanDriverName}
                   {tempCustomVanDriverName && (
-                    <span className="ml-1 text-xs bg-blue-200 px-1 rounded">
+                    <span className="ml-1 text-xs bg-brand-primary-soft px-1 rounded">
                       Custom
                     </span>
                   )}
@@ -268,7 +268,7 @@ export function DriverSelectionModal({
                     key={driver.id}
                     className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
                       isSelected
-                        ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-200'
+                        ? 'bg-brand-primary-lighter border-brand-primary-border-strong ring-1 ring-blue-200'
                         : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`}
                     onClick={() => {

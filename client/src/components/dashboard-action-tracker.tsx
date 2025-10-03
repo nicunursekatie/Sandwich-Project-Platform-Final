@@ -92,7 +92,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       case 'completed':
         return 'bg-green-100 text-green-800';
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-brand-primary-light text-brand-primary-dark';
       case 'pending':
       case 'waiting':
         return 'bg-yellow-100 text-yellow-800';
@@ -299,7 +299,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
         <Card className="hover:shadow-md transition-shadow" data-testid="projects-card">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-blue-600" />
+              <FileText className="w-5 h-5 text-brand-primary-muted" />
               <span className="text-[#236383] text-[18px]">Projects</span>
             </CardTitle>
           </CardHeader>
@@ -321,7 +321,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="w-full mt-2 text-blue-600 hover:text-blue-800" 
+                    className="w-full mt-2 text-brand-primary-muted hover:text-brand-primary-dark" 
                     onClick={() => onNavigate('projects')}
                     data-testid="projects-view-all"
                   >

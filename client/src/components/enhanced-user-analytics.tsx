@@ -172,7 +172,7 @@ export default function EnhancedUserAnalytics() {
 
   const getSectionColor = (section: string) => {
     const colors: Record<string, string> = {
-      Dashboard: 'bg-blue-100 text-blue-800',
+      Dashboard: 'bg-brand-primary-light text-brand-primary-dark',
       Collections: 'bg-green-100 text-green-800',
       Communication: 'bg-purple-100 text-purple-800',
       Directory: 'bg-orange-100 text-orange-800',
@@ -337,7 +337,7 @@ export default function EnhancedUserAnalytics() {
           </div>
 
           {/* Actionable Insights Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50   p-4 sm:p-6 rounded-lg border border-blue-200 ">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50   p-4 sm:p-6 rounded-lg border border-brand-primary-border ">
             <h3 className="text-base font-semibold text-gray-900  mb-3 flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-brand-primary" />
               Action Items

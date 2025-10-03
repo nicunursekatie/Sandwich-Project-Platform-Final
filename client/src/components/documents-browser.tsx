@@ -83,7 +83,7 @@ const getFileIcon = (type: string) => {
 const getCategoryColor = (category: string) => {
   switch (category) {
     case 'Training':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-brand-primary-light text-brand-primary-dark';
     case 'Legal':
       return 'bg-purple-100 text-purple-800';
     case 'Resources':

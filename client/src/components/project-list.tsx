@@ -343,11 +343,11 @@ export default function ProjectList() {
       case 'in_progress':
         return 'px-2 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full';
       case 'planning':
-        return 'px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full';
+        return 'px-2 py-1 text-xs font-medium bg-brand-primary-light text-brand-primary-dark rounded-full';
       case 'completed':
         return 'px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full';
       default:
-        return 'px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full';
+        return 'px-2 py-1 text-xs font-medium bg-brand-primary-light text-brand-primary-dark rounded-full';
     }
   };
 
@@ -960,7 +960,7 @@ export default function ProjectList() {
                           variant="outline"
                           size="sm"
                           onClick={() => startClaimingProject(project.id)}
-                          className="text-brand-primary hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                          className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary-lighter border-brand-primary-border"
                         >
                           Claim
                         </Button>
@@ -1358,7 +1358,7 @@ export default function ProjectList() {
                           variant="outline"
                           size="sm"
                           onClick={() => startClaimingProject(project.id)}
-                          className="text-brand-primary hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                          className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary-lighter border-brand-primary-border"
                         >
                           Claim
                         </Button>

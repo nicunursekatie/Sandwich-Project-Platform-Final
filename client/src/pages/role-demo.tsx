@@ -115,7 +115,7 @@ const roleColors = {
   [USER_ROLES.ADMIN]: 'bg-red-100 text-red-800',
   [USER_ROLES.COMMITTEE_MEMBER]: 'bg-purple-100 text-purple-800',
   [USER_ROLES.CORE_TEAM]: 'bg-purple-100 text-purple-800',
-  [USER_ROLES.HOST]: 'bg-blue-100 text-blue-800',
+  [USER_ROLES.HOST]: 'bg-brand-primary-light text-brand-primary-dark',
   [USER_ROLES.DRIVER]: 'bg-green-100 text-green-800',
   [USER_ROLES.VOLUNTEER]: 'bg-orange-100 text-orange-800',
   [USER_ROLES.RECIPIENT]: 'bg-yellow-100 text-yellow-800',
@@ -340,7 +340,7 @@ function RoleView({ user }: { user: any }) {
                 key={chat.perm}
                 className={`p-3 rounded-lg border ${
                   hasPermission(user, chat.perm)
-                    ? 'bg-blue-50 border-blue-200'
+                    ? 'bg-brand-primary-lighter border-brand-primary-border'
                     : 'bg-gray-50 border-gray-200 opacity-50'
                 }`}
               >

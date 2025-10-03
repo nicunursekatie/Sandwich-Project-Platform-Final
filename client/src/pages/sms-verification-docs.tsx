@@ -40,11 +40,11 @@ export default function SMSVerificationDocs() {
               </ol>
             </div>
             
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-              <svg className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-brand-primary-lighter border border-brand-primary-border rounded-lg p-4 flex gap-3">
+              <svg className="h-5 w-5 text-brand-primary-muted flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-blue-800">
+              <p className="text-brand-primary-dark">
                 Users must be authenticated and logged in to opt into SMS notifications, 
                 ensuring identity verification and preventing unauthorized sign-ups.
               </p>
@@ -137,11 +137,11 @@ export default function SMSVerificationDocs() {
               <h3 className="font-semibold">2. Profile Notifications Tab</h3>
               <div className="bg-white p-6 rounded-lg border border-gray-200">
                 <div className="space-y-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">
+                  <div className="bg-brand-primary-lighter p-4 rounded-lg">
+                    <h4 className="font-medium text-brand-primary-darker mb-2">
                       How SMS Reminders Work
                     </h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
+                    <ul className="text-sm text-brand-primary-dark space-y-1">
                       <li>• Get text reminders when weekly sandwich counts are missing</li>
                       <li>• Includes direct links to the app for easy submission</li>
                       <li>• Only used for sandwich collection reminders</li>
@@ -312,7 +312,7 @@ export default function SMSVerificationDocs() {
             <div className="space-y-3">
               <a 
                 href="/privacy-policy" 
-                className="flex items-center gap-2 text-blue-600 hover:underline"
+                className="flex items-center gap-2 text-brand-primary-muted hover:underline"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -321,7 +321,7 @@ export default function SMSVerificationDocs() {
               </a>
               <a 
                 href="/terms-of-service" 
-                className="flex items-center gap-2 text-blue-600 hover:underline"
+                className="flex items-center gap-2 text-brand-primary-muted hover:underline"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -330,7 +330,7 @@ export default function SMSVerificationDocs() {
               </a>
               <a 
                 href="mailto:admin@sandwich.project" 
-                className="flex items-center gap-2 text-blue-600 hover:underline"
+                className="flex items-center gap-2 text-brand-primary-muted hover:underline"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

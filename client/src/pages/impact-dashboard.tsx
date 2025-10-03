@@ -626,7 +626,7 @@ export default function ImpactDashboard() {
                         <select
                           value={weeklyRange}
                           onChange={(e) => setWeeklyRange(e.target.value as any)}
-                          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary-muted"
                         >
                           <option value="8weeks">Last 8 weeks</option>
                           <option value="16weeks">Last 16 weeks</option>
@@ -641,7 +641,7 @@ export default function ImpactDashboard() {
                           type="checkbox"
                           checked={showCollections}
                           onChange={(e) => setShowCollections(e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-gray-300 text-brand-primary-muted focus:ring-brand-primary-muted"
                         />
                         Show collection counts
                       </label>
@@ -1047,7 +1047,7 @@ export default function ImpactDashboard() {
                   {chartData && chartData.length > 0 ? (
                     <>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="bg-brand-primary-lighter p-4 rounded-lg">
                           <div className="text-2xl font-bold text-brand-primary">
                             {chartData.reduce((sum, item) => sum + item.sandwiches, 0).toLocaleString()}
                           </div>
@@ -1280,13 +1280,13 @@ export default function ImpactDashboard() {
                       </div>
                     </div>
 
-                    <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-start space-x-3 p-3 bg-brand-primary-lighter rounded-lg">
                       <Users className="w-5 h-5 text-brand-primary mt-1" />
                       <div>
-                        <p className="font-medium text-blue-900">
+                        <p className="font-medium text-brand-primary-darker">
                           Community Engagement
                         </p>
-                        <p className="text-sm text-blue-700">
+                        <p className="text-sm text-brand-primary">
                           {impactMetrics.uniqueHosts} active host locations
                           contributing to the cause
                         </p>

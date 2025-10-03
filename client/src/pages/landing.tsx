@@ -175,7 +175,7 @@ export default function Landing() {
 
         {/* Volunteer Toolkit Section */}
         {showToolkit && (
-          <Card className="bg-blue-50 border-2 border-blue-500">
+          <Card className="bg-brand-primary-lighter border-2 border-blue-500">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl text-brand-primary">
                 🛠️ Group Toolkit
@@ -256,7 +256,7 @@ export default function Landing() {
         <div className="grid md:grid-cols-3 gap-6">
           <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] group">
             <CardHeader>
-              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors duration-300">
+              <div className="w-16 h-16 bg-brand-primary-light rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-primary-soft transition-colors duration-300">
                 <Users className="h-8 w-8 text-brand-primary" />
               </div>
               <CardTitle className="group-hover:text-brand-primary transition-colors duration-300">

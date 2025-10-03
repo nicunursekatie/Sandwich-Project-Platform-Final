@@ -540,7 +540,7 @@ export default function DirectMessaging() {
                                     <DropdownMenuContent align={isCurrentUser ? "end" : "start"} sideOffset={5}>
                                       <DropdownMenuItem
                                         onClick={() => handleEditMessage(msg)}
-                                        className="text-brand-primary hover:text-blue-700"
+                                        className="text-brand-primary hover:text-brand-primary"
                                       >
                                         <Edit className="w-3 h-3 mr-2" />
                                         Edit message

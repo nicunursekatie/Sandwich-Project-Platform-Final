@@ -402,7 +402,7 @@ export default function AnalyticsDashboard() {
         <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <TrendingUp className="h-8 w-8 text-brand-primary" />
-            <Badge className="bg-blue-100 text-blue-700 text-sm">
+            <Badge className="bg-brand-primary-light text-brand-primary text-sm">
               Weekly Avg
             </Badge>
           </div>
@@ -498,7 +498,7 @@ export default function AnalyticsDashboard() {
             <p className="text-[#646464] mt-1">
               Monthly collection performance - Timeline & August data corrected
             </p>
-            <p className="text-xs text-blue-600 mt-1">
+            <p className="text-xs text-brand-primary-muted mt-1">
               Debug: {debugKey} | Data points: {analyticsData?.trendData?.length || 0}
             </p>
           </div>
