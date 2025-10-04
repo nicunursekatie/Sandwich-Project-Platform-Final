@@ -15,6 +15,8 @@ Desktop Chat UX: Desktop users require proper scrolling behavior without nested 
 ## System Architecture
 The application uses a React 18 frontend with TypeScript, Vite, TanStack Query, and Tailwind CSS (with shadcn/ui). The backend is built with Express.js (TypeScript), Drizzle ORM, and PostgreSQL (Neon serverless), featuring session-based authentication. Database separation for development and production is handled via environment variables. Structured logging is implemented using Winston, and security includes centralized CORS configuration.
 
+**Authentication System**: The official authentication system is implemented in `server/temp-auth.ts` (note: despite the legacy filename, this is the production authentication system, not temporary). It handles login/registration, session management via express-session with PostgreSQL storage, role-based access control, password resets via SendGrid, and profile management. The `isAuthenticated` middleware validates sessions and refreshes user permissions from the database on each request.
+
 The backend employs a modular router architecture with a central router, middleware, and dedicated feature modules for users, collections, messaging, and more. A standardized middleware approach ensures consistent authentication, logging, and error handling.
 
 UI/UX design adheres to The Sandwich Project's official color palette and Roboto typography, prioritizing clarity, responsiveness, and visual hierarchy with card-based dashboards.

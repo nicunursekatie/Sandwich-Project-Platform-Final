@@ -85,7 +85,7 @@ declare global {
   }
 }
 
-// Temporary simple authentication for testing
+// Official authentication system for The Sandwich Project
 export function setupTempAuth(app: Express) {
   // GET route for login page with registration capability
   app.get('/api/login', (req, res) => {
@@ -1039,9 +1039,9 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   next();
 };
 
-// Initialize temporary auth system with default admin user and committees
+// Initialize authentication system with default admin user and committees
 export async function initializeTempAuth() {
-  console.log('Temporary authentication system initialized');
+  console.log('Authentication system initialized');
 
   // Create default admin user if it doesn't exist
   try {
