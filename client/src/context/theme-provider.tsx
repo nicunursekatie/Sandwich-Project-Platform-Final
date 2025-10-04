@@ -3,6 +3,7 @@ import React, {
   useContext,
   useEffect,
   useLayoutEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -85,6 +86,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return initialTheme;
   });
 
+  const isInitialRender = useRef(true);
+
   useIsomorphicLayoutEffect(() => {
     applyThemeVariables(theme);
   }, [theme]);
@@ -95,17 +98,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+
+    persistTheme(theme);
+  }, [theme]);
+
   const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    persistTheme(newTheme);
+    setThemeState((currentTheme) =>
+      currentTheme === newTheme ? currentTheme : newTheme,
+    );
   };
 
   const toggleTheme = () => {
-    setThemeState((currentTheme) => {
-      const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
-      persistTheme(nextTheme);
-      return nextTheme;
-    });
+    setThemeState((currentTheme) =>
+      currentTheme === 'light' ? 'dark' : 'light',
+    );
   };
 
   return (

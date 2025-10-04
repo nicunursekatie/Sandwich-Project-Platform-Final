@@ -1,9 +1,8 @@
-import { seedTestData } from '../__tests__/setup';
-
 const skipDbSetup = process.env.SKIP_DB_SETUP === 'true';
 
 beforeAll(async () => {
   if (skipDbSetup) return;
+  const { seedTestData } = await import('../__tests__/setup');
   await seedTestData();
 });
 
