@@ -245,7 +245,7 @@ export function ToolkitTabs() {
   if (previewDocument) {
     return (
       <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
-        <div className="flex flex-col gap-3 sm:gap-3 sm:gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4">
           <div className="flex items-start space-x-2 sm:space-x-3">
             {getFileIcon(previewDocument.type)}
             <div className="min-w-0 flex-1">

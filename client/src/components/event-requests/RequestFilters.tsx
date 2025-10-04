@@ -184,7 +184,7 @@ export default function RequestFilters({
       ) : (
         /* Desktop: Traditional Tabs */
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
-          <TabsList className="w-full grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+          <TabsList className="w-full grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-1">
             {tabConfig.map((tab) => (
               <TabsTrigger 
                 key={tab.value}

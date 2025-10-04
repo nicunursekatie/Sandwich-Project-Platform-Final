@@ -233,7 +233,7 @@ export function MeetingOverviewTab({
                       <CardTitle className="text-base md:text-lg text-teal-900 mb-2">
                         {meeting.title}
                       </CardTitle>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 sm:gap-4 text-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm">
                         <div className="flex items-center gap-1">
                           <CalendarDays className="w-4 h-4 text-teal-600" />
                           <span className="text-teal-800 font-medium">
