@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -38,19 +45,68 @@ const themes: Record<Theme, Record<string, string>> = {
   },
 };
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
+const THEME_STORAGE_KEY = 'theme';
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const vars = themes[theme];
-    Object.entries(vars).forEach(([key, value]) => {
-      root.style.setProperty(key, value);
-    });
+const applyThemeVariables = (theme: Theme) => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const root = document.documentElement;
+  const vars = themes[theme];
+  Object.entries(vars).forEach(([key, value]) => {
+    root.style.setProperty(key, value);
+  });
+};
+
+const resolveInitialTheme = (): Theme => {
+  if (typeof window === 'undefined') {
+    return 'light';
+  }
+
+  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+  if (storedTheme === 'light' || storedTheme === 'dark') {
+    return storedTheme;
+  }
+
+  if (typeof window.matchMedia === 'function') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  return 'light';
+};
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const initialTheme = resolveInitialTheme();
+    applyThemeVariables(initialTheme);
+    return initialTheme;
+  });
+
+  useIsomorphicLayoutEffect(() => {
+    applyThemeVariables(theme);
   }, [theme]);
 
-  const setTheme = (newTheme: Theme) => setThemeState(newTheme);
-  const toggleTheme = () => setThemeState((t) => (t === 'light' ? 'dark' : 'light'));
+  const persistTheme = (newTheme: Theme) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    }
+  };
+
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    persistTheme(newTheme);
+  };
+
+  const toggleTheme = () => {
+    setThemeState((currentTheme) => {
+      const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+      persistTheme(nextTheme);
+      return nextTheme;
+    });
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
