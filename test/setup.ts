@@ -1,3 +1,15 @@
+import { TextDecoder as NodeTextDecoder, TextEncoder as NodeTextEncoder } from 'node:util';
+
+if (typeof (global as any).TextEncoder === 'undefined') {
+  (global as any).TextEncoder = NodeTextEncoder;
+}
+
+if (typeof (global as any).TextDecoder === 'undefined') {
+  (global as any).TextDecoder = NodeTextDecoder;
+}
+
+(global as any).IS_REACT_ACT_ENVIRONMENT = true;
+
 import { seedTestData } from '../__tests__/setup';
 
 const skipDbSetup = process.env.SKIP_DB_SETUP === 'true';

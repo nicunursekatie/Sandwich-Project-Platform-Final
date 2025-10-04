@@ -10,6 +10,25 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+const STORAGE_KEY = 'theme';
+
+const isTheme = (value: unknown): value is Theme => value === 'light' || value === 'dark';
+
+const readStoredTheme = (): Theme | undefined => {
+  if (typeof window === 'undefined') return undefined;
+  const storedValue = window.localStorage.getItem(STORAGE_KEY);
+  return isTheme(storedValue) ? storedValue : undefined;
+};
+
+const persistTheme = (value: Theme) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    // Silently ignore storage errors (e.g., private mode)
+  }
+};
+
 // Theme definitions mapping CSS variables to values
 const themes: Record<Theme, Record<string, string>> = {
   light: {
@@ -39,9 +58,10 @@ const themes: Record<Theme, Record<string, string>> = {
 };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
+  const [theme, setThemeState] = useState<Theme>(() => readStoredTheme() ?? 'light');
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
     const root = document.documentElement;
     const vars = themes[theme];
     Object.entries(vars).forEach(([key, value]) => {
@@ -49,8 +69,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     });
   }, [theme]);
 
-  const setTheme = (newTheme: Theme) => setThemeState(newTheme);
-  const toggleTheme = () => setThemeState((t) => (t === 'light' ? 'dark' : 'light'));
+  const setTheme = (newTheme: Theme) => {
+    setThemeState((currentTheme) => {
+      if (currentTheme === newTheme) {
+        return currentTheme;
+      }
+      return newTheme;
+    });
+    if (theme !== newTheme) {
+      persistTheme(newTheme);
+    }
+  };
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
