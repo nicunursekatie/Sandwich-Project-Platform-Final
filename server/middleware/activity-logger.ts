@@ -84,6 +84,8 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
       '/api/messaging/unread',
       '/unread',
       '/api/user-activity', // Don't log activity API calls themselves
+      '/api/enhanced-user-activity', // Don't log enhanced analytics API calls
+      '/api/notifications/counts', // Skip notification polling
     ];
 
     const shouldSkip =
@@ -98,7 +100,7 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
     const originalEnd = res.end;
 
     // Override end method to log after response
-    res.end = function (chunk?: any, encoding?: any) {
+    (res as any).end = function (this: Response, chunk?: any, encoding?: any) {
       // Log the activity after response is sent
       setImmediate(async () => {
         try {
