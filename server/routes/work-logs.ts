@@ -9,7 +9,6 @@ import {
   requireOwnershipPermission,
 } from '../middleware/auth';
 import { hasPermission } from '@shared/auth-utils';
-import { isAuthenticated } from '../middleware/auth';
 
 const router = Router();
 
@@ -23,13 +22,9 @@ const insertWorkLogSchema = z.object({
   }),
 });
 
-// Middleware to check if user is super admin or admin
-function isSuperAdmin(req: any) {
-  return req.user?.role === 'super_admin' || req.user?.role === 'admin';
-}
 
 // Get work logs - Check permissions first
-router.get('/', isAuthenticated, async (req, res) => {
+router.get('/', requirePermission(PERMISSIONS.WORK_LOGS_VIEW), async (req, res) => {
   try {
     const userId = req.user?.id;
     const userEmail = req.user?.email;
@@ -42,21 +37,21 @@ router.get('/', isAuthenticated, async (req, res) => {
     // Check if user has any work log permissions
     const canCreate = hasPermission(req.user, PERMISSIONS.WORK_LOGS_ADD);
     const canViewAll = hasPermission(req.user, PERMISSIONS.WORK_LOGS_VIEW_ALL);
-    const isAdmin = isSuperAdmin(req) || userEmail === 'mdlouza@gmail.com';
+    const canViewOwn = hasPermission(req.user, PERMISSIONS.WORK_LOGS_VIEW);
 
     console.log(
-      `[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewAll: ${canViewAll}, isAdmin: ${isAdmin}`
+      `[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewAll: ${canViewAll}, canViewOwn: ${canViewOwn}`
     );
 
     // User must have at least WORK_LOGS_VIEW permission to access work logs
-    if (!canCreate && !canViewAll && !isAdmin) {
+    if (!canCreate && !canViewAll && !canViewOwn) {
       return res
         .status(403)
         .json({ error: 'Insufficient permissions to view work logs' });
     }
 
     // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
-    if (canViewAll || isAdmin) {
+    if (canViewAll) {
       console.log(`[WORK LOGS] ViewAll permission - fetching ALL logs`);
       const logs = await db.select().from(workLogs);
       console.log(
