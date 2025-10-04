@@ -31,6 +31,7 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Clock,
   CheckCircle,
   UserCheck,
@@ -104,6 +105,7 @@ export default function GroupCatalog({
   const [organizationDetails, setOrganizationDetails] = useState<any>(null);
   const [loadingOrganizationDetails, setLoadingOrganizationDetails] =
     useState(false);
+  const [showHistoricalOrganizations, setShowHistoricalOrganizations] = useState(false);
 
   // Fetch groups data
   const {
@@ -783,14 +785,31 @@ export default function GroupCatalog({
                                   </div>
                                 )}
                                 {/* TSP Contact Display */}
-                                {(org.assignedToName || org.tspContactAssigned || org.tspContact) && (
-                                  <div className="flex items-center space-x-2 text-sm mt-1">
-                                    <UserCheck className="w-4 h-4 text-purple-500" />
-                                    <span className="text-purple-700 font-medium">
-                                      TSP: {org.assignedToName || org.tspContactAssigned || org.tspContact}
-                                    </span>
-                                  </div>
-                                )}
+                                {(() => {
+                                  // Get the best available TSP contact name
+                                  let tspContactName = null;
+                                  
+                                  // Priority order: assignedToName (resolved user name) > tspContactAssigned > tspContact
+                                  // Only use assignedToName if it looks like a proper name (not email, not ID)
+                                  if (org.assignedToName && org.assignedToName.trim() && 
+                                      !org.assignedToName.includes('@') && 
+                                      !org.assignedToName.match(/^[a-f0-9-]{8,}$/i)) {
+                                    tspContactName = org.assignedToName;
+                                  } else if (org.tspContactAssigned && org.tspContactAssigned.trim()) {
+                                    tspContactName = org.tspContactAssigned;
+                                  } else if (org.tspContact && org.tspContact.trim()) {
+                                    tspContactName = org.tspContact;
+                                  }
+                                  
+                                  return tspContactName ? (
+                                    <div className="flex items-center space-x-2 text-sm mt-1">
+                                      <UserCheck className="w-4 h-4 text-purple-500" />
+                                      <span className="text-purple-700 font-medium">
+                                        TSP: {tspContactName}
+                                      </span>
+                                    </div>
+                                  ) : null;
+                                })()}
                               </div>
 
                               {/* Enhanced Key Metrics Bar with Analytics */}
@@ -894,10 +913,94 @@ export default function GroupCatalog({
             </div>
           )}
 
-          {/* Historical Organizations Section */}
+          {/* Pagination Controls - Only for Active Organizations */}
+          {totalActiveItems > 0 && totalActivePages > 1 && (
+            <div className="flex items-center justify-between bg-white rounded-lg border p-4 shadow-sm mt-6">
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalActivePages}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="h-8"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(totalActivePages, 5) }, (_, i) => {
+                    let pageNum;
+                    if (totalActivePages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalActivePages - 2) {
+                      pageNum = totalActivePages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalActivePages))}
+                  disabled={currentPage === totalActivePages}
+                  className="h-8"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Items per page:</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(parseInt(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-20 h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Historical Organizations Section - Collapsible */}
           {paginatedHistoricalGroups.length > 0 && (
             <div className="mt-12">
-              <div className="flex items-center space-x-3 mb-6">
+              <div 
+                className="flex items-center space-x-3 mb-6 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                onClick={() => setShowHistoricalOrganizations(!showHistoricalOrganizations)}
+              >
                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-gray-100 to-slate-200">
                   <Building className="w-5 h-5 text-gray-700" />
                 </div>
@@ -910,7 +1013,14 @@ export default function GroupCatalog({
                 <span className="text-sm text-gray-600">
                   (from sandwich collections only)
                 </span>
+                <ChevronDown 
+                  className={`w-5 h-5 text-gray-500 transition-transform ${
+                    showHistoricalOrganizations ? 'rotate-180' : ''
+                  }`} 
+                />
               </div>
+
+              {showHistoricalOrganizations && (
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {paginatedHistoricalGroups.map((group, groupIndex) => (
@@ -946,72 +1056,12 @@ export default function GroupCatalog({
                   </Card>
                 ))}
               </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Pagination Controls - Only for Active Organizations */}
-      {totalActiveItems > 0 && totalActivePages > 1 && (
-        <div className="flex items-center justify-between bg-white rounded-lg border p-4 shadow-sm mt-6">
-          <div className="text-sm text-gray-600">
-            Page {currentPage} of {totalActivePages}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="h-8"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
-            </Button>
-
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(totalActivePages, 5) }, (_, i) => {
-                let pageNum;
-                if (totalActivePages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalActivePages - 2) {
-                  pageNum = totalActivePages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNum)}
-                    className="h-8 w-8 p-0"
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalActivePages))
-              }
-              disabled={currentPage === totalActivePages}
-              className="h-8"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Organization History Dialog */}
       <Dialog
