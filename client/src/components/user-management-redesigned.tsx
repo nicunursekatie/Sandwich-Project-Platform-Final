@@ -691,57 +691,59 @@ export default function UserManagementRedesigned() {
         onValueChange={(value) => setActiveTab(value as any)}
         className="space-y-6"
       >
-        <TabsList className="grid grid-cols-10 w-full max-w-6xl">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            <span className="hidden sm:inline">Overview</span>
-          </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Users</span>
-          </TabsTrigger>
-          <TabsTrigger value="permissions" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Permissions</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="user-activity"
-            className="flex items-center gap-2"
-          >
-            <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Activity</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Analytics</span>
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:inline">Impact</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="announcements"
-            className="flex items-center gap-2"
-          >
-            <Megaphone className="h-4 w-4" />
-            <span className="hidden sm:inline">Announce</span>
-          </TabsTrigger>
-          <TabsTrigger value="shoutouts" className="flex items-center gap-2">
-            <Award className="h-4 w-4" />
-            <span className="hidden sm:inline">Shoutouts</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="system-health"
-            className="flex items-center gap-2"
-          >
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Tests</span>
-          </TabsTrigger>
-          <TabsTrigger value="debug" className="flex items-center gap-2">
-            <Bug className="h-4 w-4" />
-            <span className="hidden sm:inline">Debug</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto">
+          <TabsList className="inline-flex w-auto min-w-full justify-start">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              <span>Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span>Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              <span>Permissions</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="user-activity"
+              className="flex items-center gap-2"
+            >
+              <Clock className="h-4 w-4" />
+              <span>Activity</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <span>Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              <span>Impact</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="announcements"
+              className="flex items-center gap-2"
+            >
+              <Megaphone className="h-4 w-4" />
+              <span>Announce</span>
+            </TabsTrigger>
+            <TabsTrigger value="shoutouts" className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              <span>Shoutouts</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="system-health"
+              className="flex items-center gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              <span>Tests</span>
+            </TabsTrigger>
+            <TabsTrigger value="debug" className="flex items-center gap-2">
+              <Bug className="h-4 w-4" />
+              <span>Debug</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
