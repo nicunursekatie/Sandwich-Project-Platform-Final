@@ -86,7 +86,7 @@ router.get('/', isAuthenticated, async (req, res) => {
     console.error('Error fetching work logs:', error);
     res.status(500).json({ error: 'Failed to fetch work logs' });
   }
-);
+});
 
 // Create a new work log
 router.post(
