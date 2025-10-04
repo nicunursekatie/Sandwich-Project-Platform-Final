@@ -154,8 +154,20 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
 
           // Update TSP contact information from most recent request
-          dept.tspContact = request.tspContact || null;
-          dept.tspContactAssigned = request.tspContactAssigned || null;
+          // Resolve tspContact if it's a user ID
+          if (request.tspContact && userIdToName.has(request.tspContact)) {
+            dept.tspContact = userIdToName.get(request.tspContact);
+          } else {
+            dept.tspContact = request.tspContact || null;
+          }
+          
+          // Resolve tspContactAssigned if it's a user ID
+          if (request.tspContactAssigned && userIdToName.has(request.tspContactAssigned)) {
+            dept.tspContactAssigned = userIdToName.get(request.tspContactAssigned);
+          } else {
+            dept.tspContactAssigned = request.tspContactAssigned || null;
+          }
+          
           dept.assignedTo = request.assignedTo || null;
           // Resolve assignedTo user ID to name
           if (request.assignedTo && userIdToName.has(request.assignedTo)) {
