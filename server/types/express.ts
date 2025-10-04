@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { Session } from 'express-session';
 
-// User session data structure
+// User session data structure - must match temp-auth.ts SessionData.user
 export interface SessionUser {
   id: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
+  firstName: string;
+  lastName: string;
   displayName?: string;
-  profileImageUrl?: string;
+  profileImageUrl: string | null;
   role: string;
-  permissions?: string[];
+  permissions: string[];
   isActive: boolean;
 }
 
@@ -24,15 +24,10 @@ export interface ReplitUser {
   };
 }
 
-// Extended session interface
-export interface AppSession extends Session {
-  user?: SessionUser;
-}
-
 // Extended request interface with typed user and session
-export interface AuthenticatedRequest extends Request {
+// Use Omit to remove the globally augmented user property, then add it back with our union type
+export interface AuthenticatedRequest extends Omit<Request, 'user'> {
   user: SessionUser | ReplitUser;
-  session: AppSession;
   fileMetadata?: {
     fileName: string;
     filePath: string;
@@ -42,9 +37,8 @@ export interface AuthenticatedRequest extends Request {
 }
 
 // Optional auth request (may or may not have user)
-export interface MaybeAuthenticatedRequest extends Request {
+export interface MaybeAuthenticatedRequest extends Omit<Request, 'user'> {
   user?: SessionUser | ReplitUser;
-  session: AppSession;
 }
 
 // Typed middleware signatures
