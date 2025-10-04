@@ -7,8 +7,6 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import {
   requirePermission,
   requireOwnershipPermission,
-  isAuthenticated,
-  hasPermission,
 } from '../middleware/auth';
 
 const router = Router();
@@ -29,8 +27,13 @@ function isSuperAdmin(req: any) {
 }
 
 // Get work logs - Check permissions first
-router.get('/', isAuthenticated, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
     const userId = req.user?.id;
     const userEmail = req.user?.email;
     const userRole = req.user?.role;
@@ -40,8 +43,8 @@ router.get('/', isAuthenticated, async (req, res) => {
     );
 
     // Check if user has any work log permissions
-    const canCreate = hasPermission(req.user, PERMISSIONS.WORK_LOGS_ADD);
-    const canViewAll = hasPermission(req.user, PERMISSIONS.WORK_LOGS_VIEW_ALL);
+    const canCreate = req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_ADD);
+    const canViewAll = req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_VIEW_ALL);
     const isAdmin = isSuperAdmin(req) || userEmail === 'mdlouza@gmail.com';
 
     console.log(
