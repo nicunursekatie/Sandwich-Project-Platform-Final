@@ -69,9 +69,9 @@ export default function createAgendaItemsRouter(
   });
 
   // Update agenda item status
-  router.patch('/:id', isAuthenticated, async (req: any, res) => {
+  router.patch('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = req.user?.claims?.sub || req.user?.id;
+      const userId = getUserId(req);
       if (!userId) {
         return res.status(401).json({ message: 'User ID not found' });
       }
@@ -131,9 +131,9 @@ export default function createAgendaItemsRouter(
   });
 
   // Delete agenda item
-  router.delete('/:id', isAuthenticated, async (req: any, res) => {
+  router.delete('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = req.user?.claims?.sub || req.user?.id;
+      const userId = getUserId(req);
       if (!userId) {
         return res.status(401).json({ message: 'User ID not found' });
       }
