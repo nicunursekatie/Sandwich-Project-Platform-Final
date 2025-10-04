@@ -1,11 +1,10 @@
 import { Router } from 'express';
-import createAdminRoutes from './admin';
-import createAuthRoutes from './auth';
-import createGroupsCatalogRoutes from './groups-catalog';
-
-// Import organized feature routers
+// Import organized feature routers from feature-first folders
 import usersRouter from './users';
+import createAuthRoutes from './users/auth';
 import createProjectRoutes from './projects';
+import createAdminRoutes from './core/admin';
+import createGroupsCatalogRoutes from './collections/groups-catalog';
 import tasksRouter from './tasks';
 import collectionsRouter from './collections';
 import recipientsRouter from './recipients';

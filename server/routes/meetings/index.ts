@@ -1,8 +1,5 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import fs from 'fs/promises';
-import path from 'path';
-import { createReadStream } from 'fs';
 import { storage } from '../../storage-wrapper';
 import { logger } from '../../middleware/logger';
 import { meetingMinutesUpload } from '../../middleware/uploads';
@@ -12,76 +9,13 @@ import {
   insertMeetingSchema,
   insertMeetingNoteSchema,
 } from '@shared/schema';
+import {
+  MeetingsService,
+  meetingFileService,
+} from '../../services/meetings';
 
-type InsertMeetingPayload = z.infer<typeof insertMeetingSchema>;
-
-const MEETING_FIELDS: Array<keyof InsertMeetingPayload> = [
-  'title',
-  'type',
-  'date',
-  'time',
-  'location',
-  'description',
-  'finalAgenda',
-  'status',
-];
-
-interface MapMeetingOptions {
-  includeDefaults?: boolean;
-}
-
-function mapRequestToMeetingPayload(
-  body: any,
-  options: MapMeetingOptions = {}
-): Partial<InsertMeetingPayload> {
-  const source = body ?? {};
-  const mapped: Record<string, any> = { ...source };
-
-  if (mapped.meetingDate !== undefined && mapped.date === undefined) {
-    mapped.date = mapped.meetingDate;
-  }
-  if (mapped.startTime !== undefined && mapped.time === undefined) {
-    mapped.time = mapped.startTime;
-  }
-  if (mapped.meetingLink !== undefined && mapped.location === undefined) {
-    mapped.location = mapped.meetingLink;
-  }
-  if (mapped.agenda !== undefined && mapped.finalAgenda === undefined) {
-    mapped.finalAgenda = mapped.agenda;
-  }
-
-  const payload: Partial<InsertMeetingPayload> = {};
-  for (const field of MEETING_FIELDS) {
-    if (mapped[field] !== undefined) {
-      payload[field] = mapped[field];
-    }
-  }
-
-  if (options.includeDefaults) {
-    if (payload.type === undefined) {
-      payload.type = 'weekly' as InsertMeetingPayload['type'];
-    }
-    if (payload.status === undefined) {
-      payload.status = 'planning' as InsertMeetingPayload['status'];
-    }
-  }
-
-  return payload;
-}
-
-function mapMeetingToResponse(meeting: any) {
-  if (!meeting) {
-    return meeting;
-  }
-
-  return {
-    ...meeting,
-    meetingDate: meeting.date,
-    startTime: meeting.time,
-    meetingLink: meeting.location,
-    agenda: meeting.finalAgenda,
-  };
-}
+// Initialize meetings service
+const meetingsService = new MeetingsService(storage);
 
 const meetingsRouter = Router();
 
@@ -92,11 +26,6 @@ meetingsRouter.get('/minutes', async (req: any, res) => {
     if (!userId) {
       return res.status(401).json({ message: 'User ID not found' });
     }
-    const user = await storage.getUser(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
 
     const limit = req.query.limit
       ? parseInt(req.query.limit as string, 10)
@@ -106,32 +35,12 @@ meetingsRouter.get('/minutes', async (req: any, res) => {
       : await storage.getAllMeetingMinutes();
 
     // Filter meeting minutes based on user role and committee membership
-    if (
-      user.role === 'admin' ||
-      user.role === 'admin_coordinator' ||
-      user.role === 'admin_viewer'
-    ) {
-      // Admins see all meeting minutes
-      res.json(minutes);
-    } else if (user.role === 'committee_member') {
-      // Committee members only see minutes for their committees
-      const userCommittees = await storage.getUserCommittees(userId);
-      const committeeTypes = userCommittees.map(
-        (membership) => membership.membership.committeeId
-      );
+    const filteredMinutes = await meetingsService.filterMeetingMinutesByRole(
+      userId,
+      minutes
+    );
 
-      const filteredMinutes = minutes.filter(
-        (minute) =>
-          !minute.committeeType || committeeTypes.includes(Number(minute.committeeType)) // General meeting minutes (no committee assignment)
-      );
-      res.json(filteredMinutes);
-    } else {
-      // Other roles see general meeting minutes and their role-specific minutes
-      const filteredMinutes = minutes.filter(
-        (minute) => !minute.committeeType || minute.committeeType === user.role // General meeting minutes
-      );
-      res.json(filteredMinutes);
-    }
+    res.json(filteredMinutes);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch meeting minutes' });
   }
@@ -186,9 +95,9 @@ meetingsRouter.post(
       }
 
       let finalSummary = summary;
-      let documentContent = '';
+      let fileMetadata = null;
 
-      // Handle file upload and store file
+      // Handle file upload
       if (req.file) {
         logger.info('Meeting minutes file uploaded', {
           method: req.method,
@@ -197,60 +106,14 @@ meetingsRouter.post(
         });
 
         try {
-          // Create permanent storage path with consistent filename
-          const uploadsDir = path.join(
-            process.cwd(),
-            'uploads',
-            'meeting-minutes'
+          const uploadResult = await meetingFileService.processUploadedFile(
+            req.file
           );
-          await fs.mkdir(uploadsDir, { recursive: true });
-
-          // Generate a consistent filename using the multer-generated filename
-          const permanentFilename = req.file.filename;
-          const permanentPath = path.join(uploadsDir, permanentFilename);
-          await fs.copyFile(req.file.path, permanentPath);
-
-          // Determine file type
-          let fileType = 'unknown';
-          if (req.file.mimetype === 'application/pdf') {
-            fileType = 'pdf';
-            finalSummary = `PDF document: ${req.file.originalname}`;
-          } else if (
-            req.file.mimetype ===
-              'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-            req.file.originalname.toLowerCase().endsWith('.docx')
-          ) {
-            fileType = 'docx';
-            finalSummary = `DOCX document: ${req.file.originalname}`;
-          } else if (
-            req.file.mimetype === 'application/msword' ||
-            req.file.originalname.toLowerCase().endsWith('.doc')
-          ) {
-            fileType = 'doc';
-            finalSummary = `DOC document: ${req.file.originalname}`;
-          } else {
-            finalSummary = `Document: ${req.file.originalname}`;
-          }
-
-          // Store file metadata for later retrieval
-          req.fileMetadata = {
-            fileName: req.file.originalname,
-            filePath: permanentPath,
-            fileType: fileType,
-            mimeType: req.file.mimetype,
-          };
-
-          // Clean up temporary file
-          await fs.unlink(req.file.path);
+          fileMetadata = uploadResult.metadata;
+          finalSummary = uploadResult.summary;
         } catch (fileError) {
           logger.error('Failed to store document file', fileError);
           finalSummary = `Document uploaded: ${req.file.originalname} (storage failed)`;
-          // Clean up uploaded file even if storage failed
-          try {
-            await fs.unlink(req.file.path);
-          } catch (unlinkError) {
-            logger.error('Failed to clean up uploaded file', unlinkError);
-          }
         }
       }
 
@@ -270,12 +133,11 @@ meetingsRouter.post(
         title,
         date,
         summary: finalSummary,
-        fileName: req.fileMetadata?.fileName || null,
-        filePath: req.fileMetadata?.filePath || null,
+        fileName: fileMetadata?.fileName || null,
+        filePath: fileMetadata?.filePath || null,
         fileType:
-          req.fileMetadata?.fileType ||
-          (googleDocsUrl ? 'google_docs' : 'text'),
-        mimeType: req.fileMetadata?.mimeType || null,
+          fileMetadata?.fileType || (googleDocsUrl ? 'google_docs' : 'text'),
+        mimeType: fileMetadata?.mimeType || null,
       };
 
       const minutes = await storage.createMeetingMinutes(minutesData);
@@ -291,10 +153,13 @@ meetingsRouter.post(
         message: 'Meeting minutes uploaded successfully',
         minutes: minutes,
         filename: req.file?.originalname,
-        extractedContent: documentContent ? true : false,
+        extractedContent: false,
       });
     } catch (error) {
-      logger.error('Failed to upload meeting minutes', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Failed to upload meeting minutes',
+        error instanceof Error ? error : new Error(String(error))
+      );
       res.status(500).json({
         message: 'Failed to upload meeting minutes',
         error: error instanceof Error ? error.message : String(error),
@@ -324,78 +189,37 @@ meetingsRouter.get('/minutes/:id/file', async (req: any, res) => {
         .json({ message: 'No file associated with these meeting minutes' });
     }
 
-    // Debug logging
-    logger.info('Meeting minutes file debug', {
+    logger.info('Serving meeting minutes file', {
       method: req.method,
       url: req.url,
       ip: req.ip,
     });
 
-    // Handle both absolute and relative paths
-    const filePath = path.isAbsolute(minutes.filePath)
-      ? minutes.filePath
-      : path.join(process.cwd(), minutes.filePath);
-
-    // Check if file exists
     try {
-      await fs.access(filePath);
+      const fileData = await meetingFileService.serveFile(
+        minutes.filePath,
+        minutes.fileName
+      );
+
+      // Set appropriate headers
+      res.setHeader('Content-Type', fileData.contentType);
+      res.setHeader('Content-Length', fileData.stats.size);
+      res.setHeader('Content-Disposition', fileData.disposition);
+
+      // Stream the file
+      fileData.stream.pipe(res);
     } catch (error) {
-      logger.error('File access failed', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'File access failed',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return res.status(404).json({ message: 'File not found on disk' });
     }
-
-    // Get file info
-    const stats = await fs.stat(filePath);
-
-    // Detect actual file type by reading first few bytes
-    const buffer = Buffer.alloc(50);
-    const fd = await fs.open(filePath, 'r');
-    await fd.read(buffer, 0, 50, 0);
-    await fd.close();
-
-    let contentType = 'application/octet-stream';
-    const fileHeader = buffer.toString('utf8', 0, 20);
-
-    if (fileHeader.startsWith('%PDF')) {
-      contentType = 'application/pdf';
-    } else if (
-      fileHeader.includes('[Content_Types].xml') ||
-      fileHeader.startsWith('PK')
-    ) {
-      // This is a Microsoft Office document (DOCX, XLSX, etc.)
-      if (minutes.fileName && minutes.fileName.toLowerCase().endsWith('.docx')) {
-        contentType =
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      } else if (minutes.fileName && minutes.fileName.toLowerCase().endsWith('.xlsx')) {
-        contentType =
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      } else {
-        contentType =
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'; // Default to DOCX
-      }
-    }
-
-    logger.info('File type detected', {
-      method: req.method,
-      url: req.url,
-      ip: req.ip,
-    });
-
-    // Set appropriate headers
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Length', stats.size);
-    res.setHeader(
-      'Content-Disposition',
-      contentType === 'application/pdf'
-        ? `inline; filename="${minutes.fileName || 'document'}"`
-        : `attachment; filename="${minutes.fileName || 'document'}"`
-    );
-
-    // Stream the file
-    const fileStream = createReadStream(filePath);
-    fileStream.pipe(res);
   } catch (error) {
-    logger.error('Failed to serve meeting minutes file', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Failed to serve meeting minutes file',
+      error instanceof Error ? error : new Error(String(error))
+    );
     res.status(500).json({ message: 'Failed to serve file' });
   }
 });
@@ -404,59 +228,20 @@ meetingsRouter.get('/minutes/:id/file', async (req: any, res) => {
 meetingsRouter.get('/files/:filename', async (req, res) => {
   try {
     const filename = req.params.filename;
-    const filePath = path.join(
-      process.cwd(),
-      'uploads',
-      'meeting-minutes',
-      filename
-    );
 
-    // Check if file exists
-    try {
-      await fs.access(filePath);
-    } catch {
-      return res.status(404).json({ message: 'File not found' });
-    }
-
-    // Get file info
-    const stats = await fs.stat(filePath);
-    const fileBuffer = await fs.readFile(filePath);
-
-    // Check file signature to determine actual type (since filename may not have extension)
-    let contentType = 'application/octet-stream';
-    let displayName = filename;
-
-    // Check for PDF signature (%PDF)
-    if (
-      fileBuffer.length > 4 &&
-      fileBuffer.toString('ascii', 0, 4) === '%PDF'
-    ) {
-      contentType = 'application/pdf';
-      // Add .pdf extension to display name if not present
-      if (!filename.toLowerCase().endsWith('.pdf')) {
-        displayName = filename + '.pdf';
-      }
-    } else {
-      // Fallback to extension-based detection
-      const ext = path.extname(filename).toLowerCase();
-      if (ext === '.pdf') {
-        contentType = 'application/pdf';
-      } else if (ext === '.docx') {
-        contentType =
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      } else if (ext === '.doc') {
-        contentType = 'application/msword';
-      }
-    }
+    const fileData = await meetingFileService.serveFileByName(filename);
 
     // Set headers for inline display
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Length', stats.size);
-    res.setHeader('Content-Disposition', `inline; filename="${displayName}"`);
+    res.setHeader('Content-Type', fileData.contentType);
+    res.setHeader('Content-Length', fileData.stats.size);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${fileData.displayName}"`
+    );
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
-    res.send(fileBuffer);
+    res.send(fileData.buffer);
   } catch (error) {
     logger.error('Failed to serve file', error);
     res.status(500).json({ message: 'Failed to serve file' });
@@ -505,23 +290,19 @@ meetingsRouter.patch('/agenda-items/:id', async (req: any, res) => {
     if (!userId) {
       return res.status(401).json({ message: 'User ID not found' });
     }
-    const user = await storage.getUser(userId);
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Committee members cannot modify agenda item statuses
-    if (user.role === 'committee_member') {
+    // Check if user can modify agenda items
+    const canModify = await meetingsService.canModifyAgendaItem(userId);
+    if (!canModify) {
       return res.status(403).json({
-        message: 'Committee members cannot modify agenda item statuses',
+        message: 'You do not have permission to modify agenda item statuses',
       });
     }
 
     const id = parseInt(req.params.id, 10);
     const { status } = req.body;
 
-    if (!['pending', 'approved', 'rejected', 'postponed'].includes(status)) {
+    if (!meetingsService.isValidAgendaStatus(status)) {
       res.status(400).json({ message: 'Invalid status' });
       return;
     }
@@ -564,17 +345,13 @@ meetingsRouter.delete('/agenda-items/:id', async (req: any, res) => {
     if (!userId) {
       return res.status(401).json({ message: 'User ID not found' });
     }
-    const user = await storage.getUser(userId);
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Committee members cannot delete agenda items
-    if (user.role === 'committee_member') {
+    // Check if user can modify agenda items
+    const canModify = await meetingsService.canModifyAgendaItem(userId);
+    if (!canModify) {
       return res
         .status(403)
-        .json({ message: 'Committee members cannot delete agenda items' });
+        .json({ message: 'You do not have permission to delete agenda items' });
     }
 
     const id = parseInt(req.params.id, 10);
@@ -595,8 +372,7 @@ meetingsRouter.delete('/agenda-items/:id', async (req: any, res) => {
 meetingsRouter.get('/', async (req, res) => {
   try {
     const meetings = await storage.getAllMeetings();
-    const meetingsArray = Array.isArray(meetings) ? meetings : [];
-    const mappedMeetings = meetingsArray.map(mapMeetingToResponse);
+    const mappedMeetings = meetingsService.mapMeetingsToResponse(meetings);
     res.json(mappedMeetings);
   } catch (error) {
     logger.error('Failed to fetch meetings', error);
@@ -621,8 +397,7 @@ meetingsRouter.get('/type/:type', async (req, res) => {
   try {
     const { type } = req.params;
     const meetings = await storage.getMeetingsByType(type);
-    const meetingsArray = Array.isArray(meetings) ? meetings : [];
-    const mappedMeetings = meetingsArray.map(mapMeetingToResponse);
+    const mappedMeetings = meetingsService.mapMeetingsToResponse(meetings);
     res.json(mappedMeetings);
   } catch (error) {
     logger.error('Failed to fetch meetings by type', error);
@@ -638,16 +413,19 @@ meetingsRouter.post('/', async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const meetingPayload = mapRequestToMeetingPayload(req.body, {
-      includeDefaults: true,
-    });
+    const meetingPayload = meetingsService.mapRequestToMeetingPayload(
+      req.body,
+      { includeDefaults: true }
+    );
     const meetingData = insertMeetingSchema.parse(meetingPayload);
     const meeting = await storage.createMeeting(meetingData);
     res.status(201).json(meeting);
   } catch (error) {
     logger.error('Failed to create meeting', error);
     if (error instanceof z.ZodError) {
-      res.status(400).json({ message: 'Invalid meeting data', errors: error.errors });
+      res
+        .status(400)
+        .json({ message: 'Invalid meeting data', errors: error.errors });
     } else {
       res.status(500).json({ message: 'Failed to create meeting' });
     }
@@ -809,7 +587,7 @@ meetingsRouter.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Meeting not found' });
     }
 
-    res.json(mapMeetingToResponse(meeting));
+    res.json(meetingsService.mapMeetingToResponse(meeting));
   } catch (error) {
     logger.error('Failed to fetch meeting', error);
     res.status(500).json({ message: 'Failed to fetch meeting' });
@@ -829,7 +607,7 @@ meetingsRouter.patch('/:id', async (req, res) => {
       return res.status(400).json({ message: 'Invalid meeting ID' });
     }
 
-    const updates = mapRequestToMeetingPayload(req.body);
+    const updates = meetingsService.mapRequestToMeetingPayload(req.body);
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ message: 'No valid fields to update' });
