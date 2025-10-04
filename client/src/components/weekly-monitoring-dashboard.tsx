@@ -208,6 +208,9 @@ export default function WeeklyMonitoringDashboard() {
       <head>
         <title>Weekly Monitoring Report - ${weekLabel}</title>
         <style>
+          :root {
+            --report-header-background: linear-gradient(135deg, #236383 0%, #007E8C 100%);
+          }
           body {
             font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 800px;
@@ -220,7 +223,10 @@ export default function WeeklyMonitoringDashboard() {
             text-align: center;
             margin-bottom: 40px;
             padding: 30px;
-            background: linear-gradient(135deg, #236383 0%, #007E8C 100%);
+            background: var(
+              --report-header-background,
+              linear-gradient(135deg, #236383 0%, #007E8C 100%)
+            );
             color: white;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -353,8 +359,13 @@ export default function WeeklyMonitoringDashboard() {
             margin-bottom: 15px;
           }
           @media print {
-            body { background-color: white; padding: 20px; }
-            .header { background: #236383 !important; }
+            body {
+              background-color: white;
+              padding: 20px;
+            }
+            :root {
+              --report-header-background: #236383;
+            }
           }
         </style>
       </head>
