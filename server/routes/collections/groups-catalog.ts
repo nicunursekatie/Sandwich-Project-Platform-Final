@@ -1,9 +1,6 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
-
-interface GroupsCatalogDependencies {
-  isAuthenticated: any;
-}
+import { GroupsCatalogDependencies, AuthenticatedRequest } from '../../types';
 
 // Canonicalize organization names for robust matching
 function canonicalizeOrgName(orgName: string): string {

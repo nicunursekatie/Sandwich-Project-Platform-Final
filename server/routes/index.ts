@@ -36,18 +36,11 @@ import {
   createErrorHandler,
   createPublicMiddleware,
 } from '../middleware';
-import type { IStorage } from '../storage';
 import dataManagementRouter from './data-management';
 import { createErrorLogsRoutes } from './error-logs';
 import workLogsRouter from './work-logs';
 import shoutoutsRouter from './shoutouts';
-
-interface RouterDependencies {
-  isAuthenticated: any;
-  requirePermission: any;
-  sessionStore: any;
-  storage: IStorage;
-}
+import { RouterDependencies } from '../types';
 
 export function createMainRoutes(deps: RouterDependencies) {
   const router = Router();

@@ -1,15 +1,19 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { storage } from '../../storage-wrapper';
-
-interface AuthDependencies {
-  isAuthenticated?: any;
-}
+import {
+  AuthDependencies,
+  AuthenticatedRequest,
+  MaybeAuthenticatedRequest,
+  getUserId,
+  getSessionUser,
+  SessionUser,
+} from '../../types';
 
 export function createAuthRoutes(deps: AuthDependencies = {}) {
   const router = Router();
 
   // Login endpoint - moved from temp-auth.ts to proper auth router
-  router.post('/login', async (req: any, res) => {
+  router.post('/login', async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
 
@@ -77,13 +81,13 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   });
 
   // Development-only GET /login route for auto-login (fixes infinite auth loop)
-  router.get('/login', async (req: any, res) => {
+  router.get('/login', async (req: Request, res: Response) => {
     try {
       // Allow auto-login in Replit development environment
       // Don't check NODE_ENV as Replit may set it to production
-      const isLocalDev = process.env.REPL_ID || process.env.REPLIT_DB_URL || 
+      const isLocalDev = process.env.REPL_ID || process.env.REPLIT_DB_URL ||
                         req.hostname === 'localhost' || req.hostname === '127.0.0.1';
-      
+
       if (!isLocalDev) {
         return res.status(400).json({
           success: false,
@@ -94,7 +98,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       // Auto-login as admin in development
       const adminEmail = 'admin@sandwich.project';
       const user = await storage.getUserByEmail(adminEmail);
-      
+
       if (!user || !user.isActive) {
         return res.status(500).json({
           success: false,
@@ -103,7 +107,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       }
 
       // Create session user object
-      const sessionUser = {
+      const sessionUser: SessionUser = {
         id: user.id,
         email: user.email,
         firstName: user.firstName,
@@ -118,64 +122,64 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       await storage.updateUser(user.id, { lastLoginAt: new Date() });
 
       // Store user in session with explicit save
-      req.session.user = sessionUser;
-      req.user = sessionUser;
+      (req as MaybeAuthenticatedRequest).session.user = sessionUser;
+      (req as any).user = sessionUser;
 
       // Force session save to ensure persistence
       req.session.save((err: any) => {
         if (err) {
           console.error('Dev auto-login session save error:', err);
-          return res.status(500).json({ 
-            success: false, 
-            message: 'Session save failed' 
+          return res.status(500).json({
+            success: false,
+            message: 'Session save failed'
           });
         }
         console.log('🔧 DEV AUTO-LOGIN: Session created for', sessionUser.email);
         console.log('🔧 Session ID:', req.sessionID);
-        
+
         // Redirect to dashboard after successful login
         res.redirect('/');
       });
     } catch (error) {
       console.error('Dev auto-login error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Auto-login failed' 
+      res.status(500).json({
+        success: false,
+        message: 'Auto-login failed'
       });
     }
   });
 
   // Logout endpoint
-  router.post('/logout', async (req: any, res) => {
+  router.post('/logout', async (req: Request, res: Response) => {
     try {
       // Destroy the session
       req.session.destroy((err: any) => {
         if (err) {
           console.error('Session destroy error:', err);
-          return res.status(500).json({ 
-            success: false, 
-            message: 'Failed to logout' 
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to logout'
           });
         }
-        
+
         // Clear the session cookie (using actual session name from routes.ts)
         res.clearCookie('tsp.session');
-        res.json({ 
-          success: true, 
-          message: 'Logged out successfully' 
+        res.json({
+          success: true,
+          message: 'Logged out successfully'
         });
       });
     } catch (error) {
       console.error('Logout error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Logout failed' 
+      res.status(500).json({
+        success: false,
+        message: 'Logout failed'
       });
     }
   });
 
   // Get current authenticated user
-  router.get('/user', async (req: any, res) => {
+  router.get('/user', async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       // Get user from session (temp auth) or req.user (Replit auth)
       const user = req.session?.user || req.user;

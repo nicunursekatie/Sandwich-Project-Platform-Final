@@ -1,12 +1,7 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { requirePermission } from '../../middleware/auth';
-
-interface AdminDependencies {
-  isAuthenticated: any;
-  requirePermission: any;
-  sessionStore: any;
-}
+import { AdminDependencies, AuthenticatedRequest } from '../../types';
 
 export function createAdminRoutes(deps: AdminDependencies) {
   const router = Router();

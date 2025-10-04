@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import { storage } from '../../storage-wrapper';
 import { logger } from '../../middleware/logger';
@@ -13,6 +13,10 @@ import {
   MeetingsService,
   meetingFileService,
 } from '../../services/meetings';
+import {
+  AuthenticatedRequest,
+  getUserId,
+} from '../../types';
 
 // Initialize meetings service
 const meetingsService = new MeetingsService(storage);
@@ -20,9 +24,9 @@ const meetingsService = new MeetingsService(storage);
 const meetingsRouter = Router();
 
 // Meeting Minutes
-meetingsRouter.get('/minutes', async (req: any, res) => {
+meetingsRouter.get('/minutes', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.claims?.sub || req.user?.id;
+    const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ message: 'User ID not found' });
     }
@@ -169,7 +173,7 @@ meetingsRouter.post(
 );
 
 // File serving endpoint for meeting minutes documents by ID
-meetingsRouter.get('/minutes/:id/file', async (req: any, res) => {
+meetingsRouter.get('/minutes/:id/file', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const minutesId = parseInt(req.params.id, 10);
     if (isNaN(minutesId)) {
@@ -284,9 +288,9 @@ meetingsRouter.post('/agenda-items', async (req, res) => {
   }
 });
 
-meetingsRouter.patch('/agenda-items/:id', async (req: any, res) => {
+meetingsRouter.patch('/agenda-items/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.claims?.sub || req.user?.id;
+    const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ message: 'User ID not found' });
     }
@@ -339,9 +343,9 @@ meetingsRouter.put('/agenda-items/:id', async (req, res) => {
   }
 });
 
-meetingsRouter.delete('/agenda-items/:id', async (req: any, res) => {
+meetingsRouter.delete('/agenda-items/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.claims?.sub || req.user?.id;
+    const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ message: 'User ID not found' });
     }
@@ -473,33 +477,33 @@ meetingsRouter.get('/notes/:id', async (req, res) => {
   }
 });
 
-meetingsRouter.post('/notes', async (req: any, res) => {
+meetingsRouter.post('/notes', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.claims?.sub || req.user?.id;
+    const userId = getUserId(req);
     const user = userId ? await storage.getUser(userId) : null;
-    
+
     const noteData = insertMeetingNoteSchema.parse(req.body);
-    
+
     // Add creator information if available
     if (user) {
       noteData.createdBy = user.id;
       noteData.createdByName = user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
     }
-    
+
     const note = await storage.createMeetingNote(noteData);
-    
+
     logger.info('Meeting note created', {
       method: req.method,
       url: req.url,
       ip: req.ip,
     });
-    
+
     res.status(201).json(note);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ 
-        message: 'Invalid meeting note data', 
-        errors: error.errors 
+      res.status(400).json({
+        message: 'Invalid meeting note data',
+        errors: error.errors
       });
     } else {
       logger.error('Failed to create meeting note', error instanceof Error ? error : new Error(String(error)));

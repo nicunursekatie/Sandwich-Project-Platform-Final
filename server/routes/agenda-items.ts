@@ -1,26 +1,31 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import { insertAgendaItemSchema } from '@shared/schema';
+import { IStorage } from '../storage';
+import { AuthMiddleware, AuthenticatedRequest, getUserId } from '../types';
 
-export default function createAgendaItemsRouter(isAuthenticated: any, storage: any) {
+export default function createAgendaItemsRouter(
+  isAuthenticated: AuthMiddleware,
+  storage: IStorage
+) {
   const router = Router();
-  
+
   console.log('🔧 Agenda Items Router - Initializing with authentication middleware');
 
   // Get agenda items (optionally filtered by meetingId)
-  router.get('/', isAuthenticated, async (req, res) => {
+  router.get('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       console.log('🟢 Agenda Items API - GET request received:', req.url, req.query);
       const { meetingId } = req.query;
-      
+
       const items = await storage.getAllAgendaItems();
-      
+
       // Filter by meetingId if provided
-      const filteredItems = meetingId 
+      const filteredItems = meetingId
         ? items.filter((item: { meetingId: number }) => item.meetingId === parseInt(meetingId as string))
         : items;
-      
-      console.log('✅ Agenda Items API - Returning', filteredItems.length, 'items', 
+
+      console.log('✅ Agenda Items API - Returning', filteredItems.length, 'items',
         meetingId ? `for meeting ${meetingId}` : '(all meetings)');
       res.json(filteredItems);
     } catch (error) {
@@ -30,18 +35,18 @@ export default function createAgendaItemsRouter(isAuthenticated: any, storage: a
   });
 
   // Create new agenda item
-  router.post('/', isAuthenticated, async (req: any, res) => {
+  router.post('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       console.log('🟢 Agenda Items API - Creating agenda item:', req.body);
-      
+
       // Get user information from the authenticated request
-      const userId = req.user?.claims?.sub || req.user?.id;
+      const userId = getUserId(req);
       const userEmail = req.user?.email || req.body.submittedBy || 'unknown';
-      
+
       if (!userId) {
         return res.status(401).json({ message: 'User not authenticated' });
       }
-      
+
       // Parse and validate the request body
       const itemData = insertAgendaItemSchema.parse({
         ...req.body,
