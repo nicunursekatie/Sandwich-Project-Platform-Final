@@ -13,7 +13,7 @@ export default function createAgendaItemsRouter(
   console.log('🔧 Agenda Items Router - Initializing with authentication middleware');
 
   // Get agenda items (optionally filtered by meetingId)
-  router.get('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/', isAuthenticated, (async (req: AuthenticatedRequest, res: Response) => {
     try {
       console.log('🟢 Agenda Items API - GET request received:', req.url, req.query);
       const { meetingId } = req.query;
@@ -32,10 +32,10 @@ export default function createAgendaItemsRouter(
       console.error('❌ Agenda Items API - Error fetching items:', error);
       res.status(500).json({ message: 'Failed to fetch agenda items' });
     }
-  });
+  }) as any);
 
   // Create new agenda item
-  router.post('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/', isAuthenticated, (async (req: AuthenticatedRequest, res: Response) => {
     try {
       console.log('🟢 Agenda Items API - Creating agenda item:', req.body);
 
@@ -66,10 +66,10 @@ export default function createAgendaItemsRouter(
         res.status(500).json({ message: 'Failed to create agenda item' });
       }
     }
-  });
+  }) as any);
 
   // Update agenda item status
-  router.patch('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.patch('/:id', isAuthenticated, (async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = getUserId(req);
       if (!userId) {
@@ -106,7 +106,7 @@ export default function createAgendaItemsRouter(
     } catch (error) {
       res.status(500).json({ message: 'Failed to update agenda item' });
     }
-  });
+  }) as any);
 
   // Update agenda item content
   router.put('/:id', isAuthenticated, async (req, res) => {
@@ -131,7 +131,7 @@ export default function createAgendaItemsRouter(
   });
 
   // Delete agenda item
-  router.delete('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.delete('/:id', isAuthenticated, (async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = getUserId(req);
       if (!userId) {
@@ -162,7 +162,7 @@ export default function createAgendaItemsRouter(
     } catch (error) {
       res.status(500).json({ message: 'Failed to delete agenda item' });
     }
-  });
+  }) as any);
 
   return router;
 }

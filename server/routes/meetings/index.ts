@@ -24,7 +24,7 @@ const meetingsService = new MeetingsService(storage);
 const meetingsRouter = Router();
 
 // Meeting Minutes
-meetingsRouter.get('/minutes', async (req: AuthenticatedRequest, res: Response) => {
+meetingsRouter.get('/minutes', (async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = getUserId(req);
     if (!userId) {
@@ -48,7 +48,7 @@ meetingsRouter.get('/minutes', async (req: AuthenticatedRequest, res: Response) 
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch meeting minutes' });
   }
-});
+}) as any);
 
 meetingsRouter.post('/minutes', async (req, res) => {
   try {
@@ -173,7 +173,7 @@ meetingsRouter.post(
 );
 
 // File serving endpoint for meeting minutes documents by ID
-meetingsRouter.get('/minutes/:id/file', async (req: AuthenticatedRequest, res: Response) => {
+meetingsRouter.get('/minutes/:id/file', (async (req: AuthenticatedRequest, res: Response) => {
   try {
     const minutesId = parseInt(req.params.id, 10);
     if (isNaN(minutesId)) {
@@ -202,7 +202,7 @@ meetingsRouter.get('/minutes/:id/file', async (req: AuthenticatedRequest, res: R
     try {
       const fileData = await meetingFileService.serveFile(
         minutes.filePath,
-        minutes.fileName
+        minutes.fileName || undefined
       );
 
       // Set appropriate headers
@@ -226,7 +226,7 @@ meetingsRouter.get('/minutes/:id/file', async (req: AuthenticatedRequest, res: R
     );
     res.status(500).json({ message: 'Failed to serve file' });
   }
-});
+}) as any);
 
 // File serving endpoint for meeting minutes documents by filename (legacy)
 meetingsRouter.get('/files/:filename', async (req, res) => {
@@ -288,7 +288,7 @@ meetingsRouter.post('/agenda-items', async (req, res) => {
   }
 });
 
-meetingsRouter.patch('/agenda-items/:id', async (req: AuthenticatedRequest, res: Response) => {
+meetingsRouter.patch('/agenda-items/:id', (async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = getUserId(req);
     if (!userId) {
@@ -321,7 +321,7 @@ meetingsRouter.patch('/agenda-items/:id', async (req: AuthenticatedRequest, res:
   } catch (error) {
     res.status(500).json({ message: 'Failed to update agenda item' });
   }
-});
+}) as any);
 
 meetingsRouter.put('/agenda-items/:id', async (req, res) => {
   try {
@@ -343,7 +343,7 @@ meetingsRouter.put('/agenda-items/:id', async (req, res) => {
   }
 });
 
-meetingsRouter.delete('/agenda-items/:id', async (req: AuthenticatedRequest, res: Response) => {
+meetingsRouter.delete('/agenda-items/:id', (async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = getUserId(req);
     if (!userId) {
@@ -370,7 +370,7 @@ meetingsRouter.delete('/agenda-items/:id', async (req: AuthenticatedRequest, res
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete agenda item' });
   }
-});
+}) as any);
 
 // Meetings
 meetingsRouter.get('/', async (req, res) => {
@@ -411,8 +411,7 @@ meetingsRouter.get('/type/:type', async (req, res) => {
 
 meetingsRouter.post('/', async (req, res) => {
   try {
-    const user = req.user;
-    const userId = user?.claims?.sub || user?.id;
+    const userId = getUserId(req as any);
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
@@ -477,7 +476,7 @@ meetingsRouter.get('/notes/:id', async (req, res) => {
   }
 });
 
-meetingsRouter.post('/notes', async (req: AuthenticatedRequest, res: Response) => {
+meetingsRouter.post('/notes', (async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = getUserId(req);
     const user = userId ? await storage.getUser(userId) : null;
@@ -510,7 +509,7 @@ meetingsRouter.post('/notes', async (req: AuthenticatedRequest, res: Response) =
       res.status(500).json({ message: 'Failed to create meeting note' });
     }
   }
-});
+}) as any);
 
 meetingsRouter.patch('/notes/:id', async (req, res) => {
   try {
@@ -600,8 +599,7 @@ meetingsRouter.get('/:id', async (req, res) => {
 
 meetingsRouter.patch('/:id', async (req, res) => {
   try {
-    const user = req.user;
-    const userId = user?.claims?.sub || user?.id;
+    const userId = getUserId(req as any);
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
@@ -632,8 +630,7 @@ meetingsRouter.patch('/:id', async (req, res) => {
 
 meetingsRouter.patch('/:id/agenda', async (req, res) => {
   try {
-    const user = req.user;
-    const userId = user?.claims?.sub || user?.id;
+    const userId = getUserId(req as any);
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
@@ -659,8 +656,7 @@ meetingsRouter.patch('/:id/agenda', async (req, res) => {
 
 meetingsRouter.delete('/:id', async (req, res) => {
   try {
-    const user = req.user;
-    const userId = user?.claims?.sub || user?.id;
+    const userId = getUserId(req as any);
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
