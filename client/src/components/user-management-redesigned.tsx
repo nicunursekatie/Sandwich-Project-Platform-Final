@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Card,
@@ -108,6 +108,8 @@ interface User {
   preferredEmail?: string | null;
   role: string;
   permissions: string[];
+  permissionsModifiedAt?: string | null;
+  permissionsModifiedBy?: string | null;
   isActive: boolean;
   lastLoginAt: string | null;
   createdAt: string;
@@ -226,6 +228,47 @@ export default function UserManagementRedesigned() {
     queryKey: ['/api/users'],
     enabled: hasPermission(currentUser, PERMISSIONS.USERS_EDIT),
   });
+
+  const usersById = useMemo(() => {
+    const map = new Map<string, User>();
+    (users as User[]).forEach((userRecord) => {
+      map.set(userRecord.id, userRecord);
+    });
+    return map;
+  }, [users]);
+
+  const getPermissionsTooltip = (user: User) => {
+    const permissionCount = user.permissions?.length || 0;
+    const baseMessage = `Shows how many specific permissions this user has been granted. ${permissionCount} permission${
+      permissionCount === 1 ? '' : 's'
+    } assigned.`;
+    const menuHint = ' Click the menu to edit their permissions.';
+
+    if (!user.permissionsModifiedAt) {
+      return `${baseMessage} Permissions have not been updated since the user was created.${menuHint}`;
+    }
+
+    const modifiedDate = new Date(user.permissionsModifiedAt);
+    const formattedDate = modifiedDate.toLocaleString();
+
+    let modifierLabel = '';
+    if (user.permissionsModifiedBy) {
+      const modifier = usersById.get(user.permissionsModifiedBy);
+      if (modifier) {
+        const name = [modifier.firstName, modifier.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+        modifierLabel = name || modifier.email || modifier.id;
+      } else {
+        modifierLabel = user.permissionsModifiedBy;
+      }
+    }
+
+    return `${baseMessage} Last updated on ${formattedDate}${
+      modifierLabel ? ` by ${modifierLabel}` : ''
+    }.${menuHint}`;
+  };
 
   // User management mutations
   const updateUserMutation = useMutation({
@@ -1018,7 +1061,7 @@ export default function UserManagementRedesigned() {
                               {formatLastLogin(user.lastLoginAt)}
                             </TableCell>
                             <TableCell>
-                              <ButtonTooltip explanation="Shows how many specific permissions this user has been granted. Click the menu to edit their permissions.">
+                              <ButtonTooltip explanation={getPermissionsTooltip(user)}>
                                 <Badge variant="outline">
                                   {user.permissions?.length || 0} permissions
                                 </Badge>

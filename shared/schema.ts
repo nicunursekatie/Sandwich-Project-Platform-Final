@@ -42,6 +42,8 @@ export const users = pgTable('users', {
   preferredEmail: varchar('preferred_email'), // Preferred email for communications (defaults to login email)
   role: varchar('role').notNull().default('volunteer'), // 'admin', 'admin_coordinator', 'volunteer', 'viewer'
   permissions: jsonb('permissions').default('[]'), // Array of specific permissions
+  permissionsModifiedAt: timestamp('permissions_modified_at'),
+  permissionsModifiedBy: varchar('permissions_modified_by'),
   metadata: jsonb('metadata').default('{}'), // Additional user data (phone, address, availability, etc.)
   isActive: boolean('is_active').notNull().default(true),
   lastLoginAt: timestamp('last_login_at'), // Track when user last logged in

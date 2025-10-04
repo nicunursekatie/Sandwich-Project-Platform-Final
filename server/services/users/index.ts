@@ -7,7 +7,11 @@ export interface IUserService {
   getAllUsers(): Promise<any[]>;
   getUsersForAssignments(): Promise<any[]>;
   createUser(userData: CreateUserData): Promise<any>;
-  updateUser(id: string, updates: UserUpdateData): Promise<any>;
+  updateUser(
+    id: string,
+    updates: UserUpdateData,
+    requestUserId?: string
+  ): Promise<any>;
   updateUserStatus(id: string, isActive: boolean): Promise<any>;
   updateUserProfile(
     id: string,
@@ -37,6 +41,8 @@ export interface UserUpdateData {
   role?: string;
   permissions?: string[];
   metadata?: any;
+  permissionsModifiedAt?: Date;
+  permissionsModifiedBy?: string | null;
 }
 
 export interface UserProfileData {
@@ -126,7 +132,11 @@ export class UserService implements IUserService {
     }
   }
 
-  async updateUser(id: string, updates: UserUpdateData): Promise<any> {
+  async updateUser(
+    id: string,
+    updates: UserUpdateData,
+    requestUserId?: string
+  ): Promise<any> {
     try {
       // Deduplicate permissions to prevent database inconsistencies
       if (updates.permissions) {
@@ -136,8 +146,11 @@ export class UserService implements IUserService {
       // Build update object with only provided fields
       const updateData: any = {};
       if (updates.role !== undefined) updateData.role = updates.role;
-      if (updates.permissions !== undefined)
+      if (updates.permissions !== undefined) {
         updateData.permissions = updates.permissions;
+        updateData.permissionsModifiedAt = new Date();
+        updateData.permissionsModifiedBy = requestUserId || 'system';
+      }
       if (updates.metadata !== undefined)
         updateData.metadata = updates.metadata;
 
