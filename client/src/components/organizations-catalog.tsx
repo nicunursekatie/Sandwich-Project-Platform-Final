@@ -783,11 +783,11 @@ export default function GroupCatalog({
                                   </div>
                                 )}
                                 {/* TSP Contact Display */}
-                                {(org.tspContact || org.tspContactAssigned || org.assignedToName) && (
+                                {(org.assignedToName || org.tspContactAssigned || org.tspContact) && (
                                   <div className="flex items-center space-x-2 text-sm mt-1">
                                     <UserCheck className="w-4 h-4 text-purple-500" />
                                     <span className="text-purple-700 font-medium">
-                                      TSP: {org.tspContact || org.tspContactAssigned || org.assignedToName}
+                                      TSP: {org.assignedToName || org.tspContactAssigned || org.tspContact}
                                     </span>
                                   </div>
                                 )}
