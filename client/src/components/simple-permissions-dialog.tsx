@@ -191,7 +191,7 @@ const PERMISSION_GROUPS = [
           'Create work logs + automatically edit/delete own work logs',
       },
       {
-        key: PERMISSIONS.WORK_LOGS_VIEW,
+        key: PERMISSIONS.WORK_LOGS_VIEW_ALL,
         label: 'View All Work Logs',
         icon: Eye,
         description: "View everyone's work logs (admin/supervisor)",

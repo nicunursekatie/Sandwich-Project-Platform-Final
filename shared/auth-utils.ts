@@ -246,7 +246,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.ADMIN:
       return Object.values(PERMISSIONS).filter(
-        (p) => p !== PERMISSIONS.MESSAGES_MODERATE
+        (p) => p !== PERMISSIONS.MESSAGES_MODERATE && p !== PERMISSIONS.WORK_LOGS_VIEW_ALL
       );
 
     case USER_ROLES.COMMITTEE_MEMBER:
