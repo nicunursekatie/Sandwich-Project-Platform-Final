@@ -199,21 +199,9 @@ export class DatabaseStorage implements IStorage {
     id: string,
     updates: Partial<User>
   ): Promise<User | undefined> {
-    const updatePayload: Partial<User> = { ...updates };
-
-    // Only set audit fields if permissions are being updated AND they weren't already set by the service layer
-    if (Object.prototype.hasOwnProperty.call(updatePayload, 'permissions')) {
-      if (!Object.prototype.hasOwnProperty.call(updatePayload, 'permissionsModifiedAt')) {
-        updatePayload.permissionsModifiedAt = new Date();
-      }
-      if (!Object.prototype.hasOwnProperty.call(updatePayload, 'permissionsModifiedBy')) {
-        updatePayload.permissionsModifiedBy = 'system';
-      }
-    }
-
     const [user] = await db
       .update(users)
-      .set({ ...updatePayload, updatedAt: new Date() })
+      .set({ ...updates, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user || undefined;

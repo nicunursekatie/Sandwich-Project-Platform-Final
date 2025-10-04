@@ -883,16 +883,6 @@ export class MemStorage implements IStorage {
     const user = await this.getUser(id);
     if (!user) return undefined;
 
-    // Only set audit fields if permissions are being updated AND they weren't already set by the service layer
-    if (Object.prototype.hasOwnProperty.call(updates, 'permissions')) {
-      if (!Object.prototype.hasOwnProperty.call(updates, 'permissionsModifiedAt')) {
-        updates.permissionsModifiedAt = new Date();
-      }
-      if (!Object.prototype.hasOwnProperty.call(updates, 'permissionsModifiedBy')) {
-        updates.permissionsModifiedBy = 'system';
-      }
-    }
-
     const updated: User = { ...user, ...updates, updatedAt: new Date() };
     this.users.set(id, updated);
     return updated;

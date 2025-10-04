@@ -143,21 +143,9 @@ class StorageWrapper implements IStorage {
   }
 
   async updateUser(id: string, updates: any) {
-    const updatePayload = { ...updates };
-
-    // Only set audit fields if permissions are being updated AND they weren't already set by the service layer
-    if (Object.prototype.hasOwnProperty.call(updatePayload, 'permissions')) {
-      if (!Object.prototype.hasOwnProperty.call(updatePayload, 'permissionsModifiedAt')) {
-        updatePayload.permissionsModifiedAt = new Date();
-      }
-      if (!Object.prototype.hasOwnProperty.call(updatePayload, 'permissionsModifiedBy')) {
-        updatePayload.permissionsModifiedBy = 'system';
-      }
-    }
-
     return this.executeWithFallback(
-      () => this.primaryStorage.updateUser(id, updatePayload),
-      () => this.fallbackStorage.updateUser(id, updatePayload)
+      () => this.primaryStorage.updateUser(id, updates),
+      () => this.fallbackStorage.updateUser(id, updates)
     );
   }
 
