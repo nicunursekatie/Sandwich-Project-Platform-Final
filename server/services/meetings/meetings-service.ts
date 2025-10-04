@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { insertMeetingSchema } from '@shared/schema';
-import type { IStorage } from '../../storage';
+import type { IMeetingsStorage } from '../../routes/meetings/types';
 
 type InsertMeetingPayload = z.infer<typeof insertMeetingSchema>;
 
@@ -20,7 +20,7 @@ export interface MapMeetingOptions {
 }
 
 export class MeetingsService {
-  constructor(private storage: IStorage) {}
+  constructor(private storage: IMeetingsStorage) {}
 
   /**
    * Map request body to meeting payload
@@ -120,7 +120,7 @@ export class MeetingsService {
     if (user.role === 'committee_member') {
       const userCommittees = await this.storage.getUserCommittees(userId);
       const committeeTypes = userCommittees.map(
-        (membership) => membership.membership.committeeId
+        (membership: any) => membership.membership.committeeId
       );
 
       return minutes.filter(

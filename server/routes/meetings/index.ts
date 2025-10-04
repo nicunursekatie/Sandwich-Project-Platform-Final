@@ -18,7 +18,7 @@ import {
   getUserId,
 } from '../../types';
 
-// Initialize meetings service
+// Initialize meetings service with type-safe storage interface
 const meetingsService = new MeetingsService(storage);
 
 const meetingsRouter = Router();
