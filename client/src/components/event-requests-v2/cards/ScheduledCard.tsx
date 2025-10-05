@@ -1127,6 +1127,30 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       </a>
                     </div>
                   )}
+                  {/* TSP Contact - Display when assigned */}
+                  {(request.tspContact || request.customTspContact) && (
+                    <div className="mt-2 pt-2 border-t border-white/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <UserPlus className="w-4 h-4" />
+                          <span className="text-sm font-medium">TSP Contact:</span>
+                        </div>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={onEditTspContact}
+                            className="h-6 px-2 text-white hover:bg-white/20"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <span className="text-base font-medium">
+                        {request.customTspContact || resolveUserName(request.tspContact || '')}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
