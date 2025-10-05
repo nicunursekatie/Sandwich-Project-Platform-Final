@@ -374,22 +374,24 @@ export class ExcelImportService {
         if (normalized.eventDate) {
           try {
             await storage.createEventRequest({
+              // Required fields
+              firstName: normalized.contactName?.split(' ')[0] || 'Historical',
+              lastName: normalized.contactName?.split(' ').slice(1).join(' ') || 'Import',
               organizationName: normalized.organizationName,
+              previouslyHosted: 'yes', // Historical events have already been hosted
+              // Event details
               organizationId: organization.id,
-              eventDate: normalized.eventDate,
+              scheduledEventDate: normalized.eventDate, // Use scheduledEventDate for historical events
               eventType: normalized.eventType,
               status: normalized.status,
               sandwichesRequested: normalized.sandwichesProvided,
               sandwichesProvided: normalized.sandwichesProvided,
               contactName: normalized.contactName || organization.contactName,
-              contactEmail: normalized.contactEmail || organization.contactEmail,
-              contactPhone: normalized.contactPhone || organization.contactPhone,
+              email: normalized.contactEmail || organization.contactEmail,
+              phone: normalized.contactPhone || organization.contactPhone,
               location: normalized.location || organization.location,
               notes: normalized.notes,
               tspContact: normalized.tspContact,
-              isHistoricalRecord: true, // Flag for historical imports
-              importedBy: userId,
-              importedAt: new Date(),
             });
 
             totalSandwiches += normalized.sandwichesProvided;
