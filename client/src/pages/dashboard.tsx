@@ -94,6 +94,7 @@ import ActionTracking from '@/components/action-tracking-enhanced';
 import LogosPage from '@/pages/logos';
 import ImportantLinks from '@/pages/important-links';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import HistoricalImport from '@/pages/historical-import';
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -322,6 +323,8 @@ export default function Dashboard({
         />;
       case 'event-reminders':
         return <EventRemindersManagement />;
+      case 'historical-import':
+        return <HistoricalImport />;
       case 'groups-catalog':
         return (
           <GroupCatalog

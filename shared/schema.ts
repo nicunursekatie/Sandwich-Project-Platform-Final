@@ -736,6 +736,7 @@ export const hostContacts = pgTable('host_contacts', {
   role: text('role').notNull(), // 'Lead', 'host', 'alternate', 'volunteer', 'head of school'
   phone: text('phone').notNull(),
   email: text('email'),
+  address: text('address'), // Contact person's address
   isPrimary: boolean('is_primary').notNull().default(false),
   notes: text('notes'),
   hostLocation: text('host_location'), // Location name for grouping contacts

@@ -27,6 +27,7 @@ import {
   Truck,
   UserCog,
   Trophy,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -166,6 +167,14 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_EVENT_PLANNING,
     group: 'planning',
     highlighted: true,
+  },
+  {
+    id: 'historical-import',
+    label: 'Historical Import',
+    icon: FileSpreadsheet,
+    href: 'historical-import',
+    permission: PERMISSIONS.DATA_IMPORT,
+    group: 'planning',
   },
   {
     id: 'events',

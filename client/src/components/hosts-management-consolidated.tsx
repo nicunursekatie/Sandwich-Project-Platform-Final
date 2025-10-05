@@ -1615,6 +1615,21 @@ export default function HostsManagementConsolidated() {
                             placeholder="Enter email address"
                           />
                         </div>
+                        <div>
+                          <Label htmlFor="contact-address">Address</Label>
+                          <Input
+                            id="contact-address"
+                            value={newContact.address || ''}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setNewContact({
+                                ...newContact,
+                                address: e.target.value,
+                              });
+                            }}
+                            placeholder="Enter contact address"
+                          />
+                        </div>
                         <div className="flex items-center space-x-2">
                           <Switch
                             id="contact-primary"
@@ -1846,6 +1861,24 @@ export default function HostsManagementConsolidated() {
                                                 email: e.target.value,
                                               });
                                             }}
+                                          />
+                                        </div>
+
+                                        <div>
+                                          <Label htmlFor="edit-contact-address">
+                                            Address
+                                          </Label>
+                                          <Input
+                                            id="edit-contact-address"
+                                            value={editingContact.address || ''}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              setEditingContact({
+                                                ...editingContact,
+                                                address: e.target.value,
+                                              });
+                                            }}
+                                            placeholder="Enter contact address"
                                           />
                                         </div>
 

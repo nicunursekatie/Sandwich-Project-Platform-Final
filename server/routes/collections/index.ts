@@ -11,8 +11,12 @@ import { logger } from '../../middleware/logger';
 import { upload } from '../../middleware/uploads';
 import { QueryOptimizer } from '../../performance/query-optimizer';
 import { insertSandwichCollectionSchema } from '@shared/schema';
+import historicalImportRouter from './historical-import';
 
 const collectionsRouter = Router();
+
+// Mount historical import routes
+collectionsRouter.use('/historical-import', historicalImportRouter);
 
 // Clear all caches - use after direct database changes
 collectionsRouter.post('/clear-cache', async (req, res) => {
