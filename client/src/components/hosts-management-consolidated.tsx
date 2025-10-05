@@ -1406,6 +1406,13 @@ export default function HostsManagementConsolidated() {
                             </a>
                           </div>
                         )}
+
+                        {contact.address && (
+                          <div className="flex items-start gap-2 text-sm text-gray-600">
+                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-xs">{contact.address}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Location Address if available */}
@@ -1721,6 +1728,12 @@ export default function HostsManagementConsolidated() {
                                 <div className="flex items-center text-sm text-slate-600">
                                   <Mail className="w-4 h-4 mr-2" />
                                   {contact.email}
+                                </div>
+                              )}
+                              {contact.address && (
+                                <div className="flex items-start text-sm text-slate-600">
+                                  <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                                  <span>{contact.address}</span>
                                 </div>
                               )}
                               {contact.notes && (
