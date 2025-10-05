@@ -45,6 +45,7 @@ import {
   eventVolunteers,
   meetingNotes,
   importedExternalIds,
+  availabilitySlots,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -126,6 +127,8 @@ import {
   type InsertMeetingNote,
   type ImportedExternalId,
   type InsertImportedExternalId,
+  type AvailabilitySlot,
+  type InsertAvailabilitySlot,
 } from '@shared/schema';
 import { db } from './db';
 import {
@@ -4170,5 +4173,74 @@ export class DatabaseStorage implements IStorage {
       console.error('❌ Error during backfill process:', error);
       throw error;
     }
+  }
+
+  // Availability Slots Methods
+  async getAllAvailabilitySlots(): Promise<AvailabilitySlot[]> {
+    return await db
+      .select()
+      .from(availabilitySlots)
+      .orderBy(desc(availabilitySlots.startAt));
+  }
+
+  async getAvailabilitySlotById(id: number): Promise<AvailabilitySlot | undefined> {
+    const [slot] = await db
+      .select()
+      .from(availabilitySlots)
+      .where(eq(availabilitySlots.id, id))
+      .limit(1);
+    return slot;
+  }
+
+  async getAvailabilitySlotsByUserId(
+    userId: string
+  ): Promise<AvailabilitySlot[]> {
+    return await db
+      .select()
+      .from(availabilitySlots)
+      .where(eq(availabilitySlots.userId, userId))
+      .orderBy(desc(availabilitySlots.startAt));
+  }
+
+  async getAvailabilitySlotsByDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<AvailabilitySlot[]> {
+    return await db
+      .select()
+      .from(availabilitySlots)
+      .where(
+        and(
+          lte(availabilitySlots.startAt, endDate),
+          gte(availabilitySlots.endAt, startDate)
+        )
+      )
+      .orderBy(availabilitySlots.startAt);
+  }
+
+  async createAvailabilitySlot(
+    slot: InsertAvailabilitySlot
+  ): Promise<AvailabilitySlot> {
+    const [newSlot] = await db
+      .insert(availabilitySlots)
+      .values(slot)
+      .returning();
+    return newSlot;
+  }
+
+  async updateAvailabilitySlot(
+    id: number,
+    updates: Partial<InsertAvailabilitySlot>
+  ): Promise<AvailabilitySlot> {
+    const [updatedSlot] = await db
+      .update(availabilitySlots)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(availabilitySlots.id, id))
+      .returning();
+    return updatedSlot;
+  }
+
+  async deleteAvailabilitySlot(id: number): Promise<void> {
+    await db.delete(availabilitySlots).where(eq(availabilitySlots.id, id));
   }
 }

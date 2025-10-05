@@ -18,6 +18,8 @@ import Landing from '@/pages/landing';
 import SignupPage from '@/pages/signup';
 import ResetPassword from '@/pages/reset-password';
 import NotFound from '@/pages/not-found';
+import MyAvailability from '@/pages/my-availability';
+import TeamAvailability from '@/pages/team-availability';
 
 function Router() {
   const { isAuthenticated, isLoading, error } = useAuth();
@@ -222,6 +224,8 @@ function Router() {
       <Route path="/historical-import">
         {() => <Dashboard initialSection="historical-import" />}
       </Route>
+      <Route path="/my-availability" component={MyAvailability} />
+      <Route path="/team-availability" component={TeamAvailability} />
       <Route
         path="/sms-opt-in"
         component={lazy(() => import('./pages/sms-opt-in'))}

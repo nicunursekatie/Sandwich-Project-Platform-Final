@@ -20,6 +20,7 @@ import documentsRouter from './documents';
 import versioningRouter from './versioning';
 import coreRouter from './core';
 import meRouter from './me';
+import availabilityRouter from './availability';
 import createAgendaItemsRouter from '../routes/agenda-items';
 import { createActivityLogRoutes } from './activity-log';
 import { smsUserRoutes } from './sms-users';
@@ -113,6 +114,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     recipientsRouter
   );
   router.use('/api/recipients', createErrorHandler('recipients'));
+
+  router.use(
+    '/api/availability',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    availabilityRouter
+  );
+  router.use('/api/availability', createErrorHandler('availability'));
 
   router.use(
     '/api/import-collections',
