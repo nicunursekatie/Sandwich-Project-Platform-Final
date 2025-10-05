@@ -79,7 +79,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
         // Add contact if not already present
         const existingContact = dept.contacts.find(
-          (c) => c.name === contactName && c.email === contactEmail
+          (c: { name: string; email: string; phone?: string }) => c.name === contactName && c.email === contactEmail
         );
 
         if (!existingContact) {
@@ -303,7 +303,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
             // Update latest collection date and calculate latest activity date
             const latestCollectionDate = Math.max(
-              ...Array.from(orgData.eventDates).map((d) =>
+              ...(Array.from(orgData.eventDates) as string[]).map((d: string) =>
                 new Date(d).getTime()
               )
             );
@@ -324,7 +324,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         if (!foundExisting) {
           const departmentKey = `${canonicalOrgName}|`; // Empty department for historical entries
           const latestCollectionDate = Math.max(
-            ...Array.from(orgData.eventDates).map((d) => new Date(d).getTime())
+            ...(Array.from(orgData.eventDates) as string[]).map((d: string) => new Date(d).getTime())
           );
 
           departmentsMap.set(departmentKey, {
@@ -413,7 +413,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           canonicalName: org.canonicalName,
           nameVariations: Array.from(org.nameVariations),
           departments: org.departments.sort(
-            (a, b) =>
+            (a: { latestActivityDate: Date | string }, b: { latestActivityDate: Date | string }) =>
               new Date(b.latestActivityDate).getTime() -
               new Date(a.latestActivityDate).getTime()
           ),
@@ -423,10 +423,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       // Sort organizations by most recent activity across all departments
       organizations.sort((a, b) => {
         const aLatest = Math.max(
-          ...a.departments.map((d) => new Date(d.latestActivityDate).getTime())
+          ...a.departments.map((d: { latestActivityDate: Date | string }) => new Date(d.latestActivityDate).getTime())
         );
         const bLatest = Math.max(
-          ...b.departments.map((d) => new Date(d.latestActivityDate).getTime())
+          ...b.departments.map((d: { latestActivityDate: Date | string }) => new Date(d.latestActivityDate).getTime())
         );
         return bLatest - aLatest;
       });
@@ -500,7 +500,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           phone: request.phone,
           estimatedSandwiches: request.estimatedSandwichCount || 0,
           actualSandwiches: 0,
-          notes: request.description || '',
+          notes: request.message || '',
           createdAt: request.createdAt,
           lastUpdated: request.updatedAt || request.createdAt,
         }));
