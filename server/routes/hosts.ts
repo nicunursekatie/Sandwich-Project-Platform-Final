@@ -166,7 +166,20 @@ router.patch(
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
+
+      console.log('[PATCH /host-contacts/:id] Attempting to update contact:', {
+        id,
+        updates,
+        isValidId: !isNaN(id),
+      });
+
       const contact = await storage.updateHostContact(id, updates);
+
+      console.log('[PATCH /host-contacts/:id] Update result:', {
+        found: !!contact,
+        contactId: contact?.id,
+      });
+
       if (!contact) {
         return res.status(404).json({ error: 'Host contact not found' });
       }
