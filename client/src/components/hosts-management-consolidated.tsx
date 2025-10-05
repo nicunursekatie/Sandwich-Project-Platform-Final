@@ -144,6 +144,12 @@ export default function HostsManagementConsolidated() {
     queryKey: ['/api/hosts-with-contacts'],
     staleTime: 0, // Always fetch fresh data
     gcTime: 0, // Don't cache data
+    onSuccess: (data) => {
+      console.log('Hosts with contacts data:', data);
+      if (data.length > 0 && data[0].contacts && data[0].contacts.length > 0) {
+        console.log('First contact sample:', data[0].contacts[0]);
+      }
+    },
   });
 
   const { data: recipients = [] } = useQuery<Recipient[]>({
@@ -1407,10 +1413,10 @@ export default function HostsManagementConsolidated() {
                           </div>
                         )}
 
-                        {contact.address && (
+                        {(contact.address || contact.id === 7) && (
                           <div className="flex items-start gap-2 text-sm text-gray-600">
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                            <span className="text-xs">{contact.address}</span>
+                            <span className="text-xs">{contact.address || `DEBUG: Contact ${contact.id} has no address`}</span>
                           </div>
                         )}
                       </div>
@@ -1730,10 +1736,10 @@ export default function HostsManagementConsolidated() {
                                   {contact.email}
                                 </div>
                               )}
-                              {contact.address && (
+                              {(contact.address || contact.id === 7) && (
                                 <div className="flex items-start text-sm text-slate-600">
                                   <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                                  <span>{contact.address}</span>
+                                  <span>{contact.address || `DEBUG: Contact ${contact.id} has no address`}</span>
                                 </div>
                               )}
                               {contact.notes && (
