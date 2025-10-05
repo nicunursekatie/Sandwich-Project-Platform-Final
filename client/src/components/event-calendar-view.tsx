@@ -59,74 +59,80 @@ const getStatusColor = (status: string) => {
 // Helper function to get staffing indicators for an event
 const getStaffingIndicators = (event: EventRequest) => {
   const indicators = [];
-  
+
   if (event.driversNeeded && event.driversNeeded > 0) {
     indicators.push({
       icon: Car,
       count: event.driversNeeded,
       color: 'text-blue-600',
-      tooltip: `${event.driversNeeded} driver${event.driversNeeded > 1 ? 's' : ''} needed`
+      tooltip: `${event.driversNeeded} driver${event.driversNeeded > 1 ? 's' : ''} needed`,
     });
   }
-  
+
   if (event.speakersNeeded && event.speakersNeeded > 0) {
     indicators.push({
       icon: Mic,
       count: event.speakersNeeded,
       color: 'text-purple-600',
-      tooltip: `${event.speakersNeeded} speaker${event.speakersNeeded > 1 ? 's' : ''} needed`
+      tooltip: `${event.speakersNeeded} speaker${event.speakersNeeded > 1 ? 's' : ''} needed`,
     });
   }
-  
+
   if (event.volunteersNeeded && event.volunteersNeeded > 0) {
     indicators.push({
       icon: UserCheck,
       count: event.volunteersNeeded,
       color: 'text-green-600',
-      tooltip: `${event.volunteersNeeded} volunteer${event.volunteersNeeded > 1 ? 's' : ''} needed`
+      tooltip: `${event.volunteersNeeded} volunteer${event.volunteersNeeded > 1 ? 's' : ''} needed`,
     });
   }
-  
+
   return indicators;
 };
 
 // Helper function to get sandwich information for an event
 const getSandwichInfo = (event: EventRequest) => {
   const sandwichInfo = [];
-  
+
   // Check for estimated sandwich count
   if (event.estimatedSandwichCount && event.estimatedSandwichCount > 0) {
     sandwichInfo.push({
       icon: Sandwich,
       count: event.estimatedSandwichCount,
       color: 'text-[#fbad3f]',
-      tooltip: `${event.estimatedSandwichCount} sandwiches estimated`
+      tooltip: `${event.estimatedSandwichCount} sandwiches estimated`,
     });
   }
-  
+
   // Check for actual sandwich count (for completed events)
   if (event.actualSandwichCount && event.actualSandwichCount > 0) {
     sandwichInfo.push({
       icon: Sandwich,
       count: event.actualSandwichCount,
       color: 'text-[#fbad3f]',
-      tooltip: `${event.actualSandwichCount} sandwiches delivered`
+      tooltip: `${event.actualSandwichCount} sandwiches delivered`,
     });
   }
-  
+
   // Check for sandwich types (if available)
-  if (event.sandwichTypes && Array.isArray(event.sandwichTypes) && event.sandwichTypes.length > 0) {
-    const typesText = event.sandwichTypes.map(type => `${type.quantity} ${type.type}`).join(', ');
+  if (
+    event.sandwichTypes &&
+    Array.isArray(event.sandwichTypes) &&
+    event.sandwichTypes.length > 0
+  ) {
+    const typesText = event.sandwichTypes
+      .map((type) => `${type.quantity} ${type.type}`)
+      .join(', ');
     sandwichInfo.push({
       icon: Sandwich,
       count: null,
       color: 'text-[#fbad3f]',
       tooltip: `Types: ${typesText}`,
       showTypes: true,
-      types: event.sandwichTypes
+      types: event.sandwichTypes,
     });
   }
-  
+
   return sandwichInfo;
 };
 
@@ -181,7 +187,11 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
 
     events.forEach((event) => {
       // Filter out cancelled, declined, and postponed events
-      if (event.status === 'cancelled' || event.status === 'declined' || event.status === 'postponed') {
+      if (
+        event.status === 'cancelled' ||
+        event.status === 'declined' ||
+        event.status === 'postponed'
+      ) {
         return;
       }
 
@@ -304,7 +314,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                   {dayEvents.slice(0, 3).map((event) => {
                     const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
-                    
+
                     return (
                       <button
                         key={event.id}
@@ -318,7 +328,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                         <div className="font-medium truncate">
                           {event.organizationName}
                         </div>
-                        
+
                         {/* Staffing indicators row */}
                         {staffingIndicators.length > 0 && (
                           <div className="flex items-center gap-1 mt-0.5">
@@ -327,7 +337,10 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                               return (
                                 <div
                                   key={idx}
-                                  className={cn('flex items-center', indicator.color)}
+                                  className={cn(
+                                    'flex items-center',
+                                    indicator.color
+                                  )}
                                   title={indicator.tooltip}
                                 >
                                   <IconComponent className="w-2.5 h-2.5" />
@@ -341,7 +354,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                             })}
                           </div>
                         )}
-                        
+
                         {/* Sandwich information row */}
                         {sandwichInfo.length > 0 && (
                           <div className="flex items-center gap-1 mt-0.5">
@@ -350,7 +363,10 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                               return (
                                 <div
                                   key={idx}
-                                  className={cn('flex items-center', info.color)}
+                                  className={cn(
+                                    'flex items-center',
+                                    info.color
+                                  )}
                                   title={info.tooltip}
                                 >
                                   <IconComponent className="w-2.5 h-2.5" />
@@ -361,7 +377,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                   )}
                                   {info.showTypes && (
                                     <span className="text-[8px] ml-0.5 opacity-75 truncate max-w-[60px]">
-                                      {info.types.map(t => t.type).join(', ')}
+                                      {info.types.map((t) => t.type).join(', ')}
                                     </span>
                                   )}
                                 </div>
@@ -369,7 +385,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                             })}
                           </div>
                         )}
-                        
+
                         {event.eventStartTime && (
                           <div className="text-[10px] opacity-75 mt-0.5">
                             {event.eventStartTime}
@@ -410,10 +426,12 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
               Cancelled
             </Badge>
           </div>
-          
+
           {/* Staffing Indicators Legend */}
           <div className="flex flex-wrap gap-4 items-center">
-            <span className="text-sm font-medium text-gray-700">Staffing Needed:</span>
+            <span className="text-sm font-medium text-gray-700">
+              Staffing Needed:
+            </span>
             <div className="flex items-center gap-1">
               <Car className="w-3 h-3 text-blue-600" />
               <span className="text-xs text-gray-600">Drivers</span>
@@ -427,10 +445,12 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
               <span className="text-xs text-gray-600">Volunteers</span>
             </div>
           </div>
-          
+
           {/* Sandwich Information Legend */}
           <div className="flex flex-wrap gap-4 items-center">
-            <span className="text-sm font-medium text-gray-700">Sandwiches:</span>
+            <span className="text-sm font-medium text-gray-700">
+              Sandwiches:
+            </span>
             <div className="flex items-center gap-1">
               <Sandwich className="w-3 h-3 text-[#fbad3f]" />
               <span className="text-xs text-gray-600">Count & Types</span>
