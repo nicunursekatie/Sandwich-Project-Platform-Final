@@ -15,6 +15,8 @@ export default function EventsViewer() {
   const [zoomLevel, setZoomLevel] = useState(85); // Default zoom level (85%)
 
   // Use published Google Sheets URL (no authentication required)
+  // TODO: Update this URL with the current published Google Sheets URL
+  // To get the URL: Open the sheet → File → Share → Publish to web → Get the publish URL
   const embedUrl =
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2r5KMRKuKSrqn1yQxtw8T0e5Ooi_iBfd0HlgGVcIHtFat3o54FrqyTLB_uq-RxojjSFg1GTvpIZLZ/pubhtml?widget=true&headers=false';
   const fullViewUrl =
