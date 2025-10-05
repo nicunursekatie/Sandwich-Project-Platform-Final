@@ -3194,6 +3194,12 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
     console.log(
       `✅ Returning ${enrichedLogs.length} enriched audit log entries`
     );
+    
+    // Debug: Log unique users in the returned logs
+    const uniqueUserIds = new Set(enrichedLogs.map(log => log.userId));
+    const uniqueUserEmails = new Set(enrichedLogs.map(log => log.userEmail));
+    console.log(`👥 Unique user IDs in logs: ${Array.from(uniqueUserIds).join(', ')}`);
+    console.log(`📧 Unique user emails in logs: ${Array.from(uniqueUserEmails).join(', ')}`);
 
     res.json({
       logs: enrichedLogs,
