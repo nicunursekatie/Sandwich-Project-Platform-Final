@@ -50,6 +50,12 @@ interface CompletedCardProps {
   onEditTspContact: () => void;
   resolveUserName: (id: string) => string;
   canDelete?: boolean;
+  openAssignmentDialog?: (type: 'driver' | 'speaker' | 'volunteer') => void;
+  openEditAssignmentDialog?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
+  handleRemoveAssignment?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
+  handleSelfSignup?: (type: 'driver' | 'speaker' | 'volunteer') => void;
+  canSelfSignup?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
+  isUserSignedUp?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
 }
 
 // CardHeader component - copied from shared
@@ -488,8 +494,17 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   onEditTspContact,
   resolveUserName,
   canDelete = true,
+  openAssignmentDialog,
+  openEditAssignmentDialog,
+  handleRemoveAssignment,
+  handleSelfSignup,
+  canSelfSignup,
+  isUserSignedUp,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  
+  // Allow assignment editing when assignment functions are provided
+  const canEditAssignments = !!(openAssignmentDialog && handleRemoveAssignment);
 
   // Extract deliveryDestination as string to avoid 'unknown' type error
   const deliveryDestination = request.deliveryDestination
@@ -576,13 +591,19 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           </div>
 
           {/* Assignments Summary */}
-          {(request.assignedDriverIds || request.speakerDetails || request.assignedVolunteerIds) && (
+          {(request.assignedDriverIds || request.speakerDetails || request.assignedVolunteerIds || canEditAssignments) && (
             <div className="bg-white rounded-lg p-3">
-              <p className="text-sm font-medium mb-2">Event Team:</p>
+              <p className="text-sm font-medium mb-2">Event Team{canEditAssignments ? ' (Editable)' : ''}:</p>
               <CardAssignments
                 request={request}
                 resolveUserName={resolveUserName}
-                canEdit={false}
+                canEdit={canEditAssignments}
+                onAssign={openAssignmentDialog}
+                onEditAssignment={openEditAssignmentDialog}
+                onRemoveAssignment={handleRemoveAssignment}
+                onSelfSignup={handleSelfSignup}
+                canSelfSignup={canSelfSignup}
+                isUserSignedUp={isUserSignedUp}
               />
             </div>
           )}
