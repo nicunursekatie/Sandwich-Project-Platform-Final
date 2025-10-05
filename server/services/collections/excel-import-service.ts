@@ -60,7 +60,7 @@ export class ExcelImportService {
       ],
       sandwichesProvided: [
         'sandwichesprovided', 'sandwiches provided', 'sandwiches', 'final # sandwiches made',
-        'final sandwiches', '# sandwiches', 'number of sandwiches', 'sandwich count', 'count',
+        'final sandwiches', '# sandwiches', '# of sandwiches', 'number of sandwiches', 'sandwich count', 'count',
         'approx sandwiches', 'approx sandwiches -goal of', 'final # sandwiches made'
       ],
       eventType: [

@@ -13,6 +13,7 @@ import {
   Car,
   Mic,
   UserCheck,
+  Sandwich,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EventRequest } from '@shared/schema';
@@ -56,17 +57,8 @@ const getStatusColor = (status: string) => {
 };
 
 // Helper function to get staffing indicators for an event
-const getStaffingIndicators = (event: EventRequest, allEvents?: EventRequest[]) => {
+const getStaffingIndicators = (event: EventRequest) => {
   const indicators = [];
-  
-  console.log('Checking staffing for event:', event.organizationName, {
-    driversNeeded: event.driversNeeded,
-    speakersNeeded: event.speakersNeeded,
-    volunteersNeeded: event.volunteersNeeded,
-    driversNeededType: typeof event.driversNeeded,
-    speakersNeededType: typeof event.speakersNeeded,
-    volunteersNeededType: typeof event.volunteersNeeded,
-  });
   
   if (event.driversNeeded && event.driversNeeded > 0) {
     indicators.push({
@@ -95,23 +87,47 @@ const getStaffingIndicators = (event: EventRequest, allEvents?: EventRequest[]) 
     });
   }
   
-  console.log('Staffing indicators found:', indicators.length, 'for', event.organizationName);
+  return indicators;
+};
+
+// Helper function to get sandwich information for an event
+const getSandwichInfo = (event: EventRequest) => {
+  const sandwichInfo = [];
   
-  // TEMPORARY: Add test indicators for debugging
-  if (indicators.length === 0 && event.organizationName && allEvents) {
-    // Add a test driver indicator for the first few events to test the visual system
-    const eventIndex = allEvents.findIndex(e => e.id === event.id);
-    if (eventIndex >= 0 && eventIndex < 3) {
-      indicators.push({
-        icon: Car,
-        count: 1,
-        color: 'text-blue-600',
-        tooltip: 'Test driver indicator'
-      });
-    }
+  // Check for estimated sandwich count
+  if (event.estimatedSandwichCount && event.estimatedSandwichCount > 0) {
+    sandwichInfo.push({
+      icon: Sandwich,
+      count: event.estimatedSandwichCount,
+      color: 'text-orange-600',
+      tooltip: `${event.estimatedSandwichCount} sandwiches estimated`
+    });
   }
   
-  return indicators;
+  // Check for actual sandwich count (for completed events)
+  if (event.actualSandwichCount && event.actualSandwichCount > 0) {
+    sandwichInfo.push({
+      icon: Sandwich,
+      count: event.actualSandwichCount,
+      color: 'text-orange-700',
+      tooltip: `${event.actualSandwichCount} sandwiches delivered`
+    });
+  }
+  
+  // Check for sandwich types (if available)
+  if (event.sandwichTypes && Array.isArray(event.sandwichTypes) && event.sandwichTypes.length > 0) {
+    const typesText = event.sandwichTypes.map(type => `${type.quantity} ${type.type}`).join(', ');
+    sandwichInfo.push({
+      icon: Sandwich,
+      count: null,
+      color: 'text-orange-500',
+      tooltip: `Types: ${typesText}`,
+      showTypes: true,
+      types: event.sandwichTypes
+    });
+  }
+  
+  return sandwichInfo;
 };
 
 export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
@@ -120,17 +136,6 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
   // Fetch all event requests
   const { data: events = [] } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
-    onSuccess: (data) => {
-      console.log('Calendar events data:', data);
-      if (data.length > 0) {
-        console.log('First event sample:', data[0]);
-        console.log('Staffing fields in first event:', {
-          driversNeeded: data[0].driversNeeded,
-          speakersNeeded: data[0].speakersNeeded,
-          volunteersNeeded: data[0].volunteersNeeded,
-        });
-      }
-    },
   });
 
   // Get the first and last day of the current month
@@ -170,11 +175,16 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
     return days;
   }, [firstDayOfMonth, lastDayOfMonth, currentDate]);
 
-  // Group events by date
+  // Group events by date, filtering out cancelled/declined/postponed events
   const eventsByDate = useMemo(() => {
     const grouped = new Map<string, EventRequest[]>();
 
     events.forEach((event) => {
+      // Filter out cancelled, declined, and postponed events
+      if (event.status === 'cancelled' || event.status === 'declined' || event.status === 'postponed') {
+        return;
+      }
+
       // Use scheduledEventDate if available, otherwise use desiredEventDate
       const eventDate = event.scheduledEventDate || event.desiredEventDate;
       if (!eventDate) return;
@@ -292,7 +302,8 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                 {/* Events for this day */}
                 <div className="space-y-1">
                   {dayEvents.slice(0, 3).map((event) => {
-                    const staffingIndicators = getStaffingIndicators(event, events);
+                    const staffingIndicators = getStaffingIndicators(event);
+                    const sandwichInfo = getSandwichInfo(event);
                     
                     return (
                       <button
@@ -323,6 +334,34 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                   {indicator.count > 1 && (
                                     <span className="text-[9px] ml-0.5 font-medium">
                                       {indicator.count}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {/* Sandwich information row */}
+                        {sandwichInfo.length > 0 && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {sandwichInfo.map((info, idx) => {
+                              const IconComponent = info.icon;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={cn('flex items-center', info.color)}
+                                  title={info.tooltip}
+                                >
+                                  <IconComponent className="w-2.5 h-2.5" />
+                                  {info.count && (
+                                    <span className="text-[9px] ml-0.5 font-medium">
+                                      {info.count}
+                                    </span>
+                                  )}
+                                  {info.showTypes && (
+                                    <span className="text-[8px] ml-0.5 opacity-75 truncate max-w-[60px]">
+                                      {info.types.map(t => t.type).join(', ')}
                                     </span>
                                   )}
                                 </div>
@@ -386,6 +425,23 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
             <div className="flex items-center gap-1">
               <UserCheck className="w-3 h-3 text-green-600" />
               <span className="text-xs text-gray-600">Volunteers</span>
+            </div>
+          </div>
+          
+          {/* Sandwich Information Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-medium text-gray-700">Sandwiches:</span>
+            <div className="flex items-center gap-1">
+              <Sandwich className="w-3 h-3 text-orange-600" />
+              <span className="text-xs text-gray-600">Estimated Count</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Sandwich className="w-3 h-3 text-orange-700" />
+              <span className="text-xs text-gray-600">Delivered Count</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Sandwich className="w-3 h-3 text-orange-500" />
+              <span className="text-xs text-gray-600">Types</span>
             </div>
           </div>
         </div>
