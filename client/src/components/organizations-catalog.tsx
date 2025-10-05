@@ -98,6 +98,8 @@ export default function GroupCatalog({
   const [sortBy, setSortBy] = useState('groupName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFilterStart, setDateFilterStart] = useState<string>('');
+  const [dateFilterEnd, setDateFilterEnd] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [selectedOrganization, setSelectedOrganization] =
@@ -267,7 +269,11 @@ export default function GroupCatalog({
 
     const matchesStatus = statusFilter === 'all' || org.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    const activityDate = org.latestActivityDate ? new Date(org.latestActivityDate) : null;
+    const matchesDateStart = !dateFilterStart || !activityDate || activityDate >= new Date(dateFilterStart);
+    const matchesDateEnd = !dateFilterEnd || !activityDate || activityDate <= new Date(dateFilterEnd + 'T23:59:59');
+
+    return matchesSearch && matchesStatus && matchesDateStart && matchesDateEnd;
   });
 
   // Filter historical organizations (simpler filtering since they don't have emails/status)
@@ -436,7 +442,7 @@ export default function GroupCatalog({
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, sortBy, sortOrder]);
+  }, [searchTerm, statusFilter, dateFilterStart, dateFilterEnd, sortBy, sortOrder]);
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -577,9 +583,9 @@ export default function GroupCatalog({
 
       {/* Search and Filter Controls */}
       <div className="bg-white rounded-lg border p-4 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Search */}
-          <div className="md:col-span-2 relative">
+          <div className="md:col-span-3 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search organizations, contacts, emails..."
@@ -608,8 +614,33 @@ export default function GroupCatalog({
             </Select>
           </div>
 
+          {/* Date Range Filters */}
+          <div className="md:col-span-1">
+            <Input
+              type="date"
+              placeholder="From date"
+              value={dateFilterStart}
+              onChange={(e) => setDateFilterStart(e.target.value)}
+              className="w-full"
+              data-testid="date-filter-start"
+            />
+          </div>
+          <div className="md:col-span-1">
+            <Input
+              type="date"
+              placeholder="To date"
+              value={dateFilterEnd}
+              onChange={(e) => setDateFilterEnd(e.target.value)}
+              className="w-full"
+              data-testid="date-filter-end"
+            />
+          </div>
+        </div>
+
+        {/* Second Row: Sort and Clear Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mt-4">
           {/* Sort */}
-          <div className="flex gap-2">
+          <div className="md:col-span-2 flex gap-2">
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Sort by" />
@@ -630,6 +661,24 @@ export default function GroupCatalog({
               {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
+
+          {/* Clear Date Filters */}
+          {(dateFilterStart || dateFilterEnd) && (
+            <div className="md:col-span-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setDateFilterStart('');
+                  setDateFilterEnd('');
+                }}
+                className="w-full"
+                data-testid="clear-date-filters"
+              >
+                Clear Date Filters
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Results Summary */}
