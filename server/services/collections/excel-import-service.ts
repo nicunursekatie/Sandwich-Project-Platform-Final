@@ -48,38 +48,39 @@ export class ExcelImportService {
   private normalizeColumnNames(row: any): ExcelImportRow {
     const normalized: ExcelImportRow = {};
 
-    // Map each field from various possible column names
+    // Map each field from various possible column names (all lowercase for matching)
     const fieldMappings: Record<string, string[]> = {
       organizationName: [
-        'organizationName', 'organization name', 'organization', 'org name', 'org',
+        'organizationname', 'organization name', 'organization', 'org name', 'org',
         'groupe name', 'group name', 'group', 'name', 'recipient', 'destination/recipient',
-        'destination', 'organization/recipient'
+        'destination', 'organization/recipient', 'group', 'groupe'
       ],
       eventDate: [
-        'eventDate', 'event date', 'date', 'event_date', 'delivery date', 'delivery_date'
+        'eventdate', 'event date', 'date', 'event_date', 'delivery date', 'delivery_date'
       ],
       sandwichesProvided: [
-        'sandwichesProvided', 'sandwiches provided', 'sandwiches', 'final # sandwiches made',
-        'final sandwiches', '# sandwiches', 'number of sandwiches', 'sandwich count', 'count'
+        'sandwichesprovided', 'sandwiches provided', 'sandwiches', 'final # sandwiches made',
+        'final sandwiches', '# sandwiches', 'number of sandwiches', 'sandwich count', 'count',
+        'approx sandwiches', 'approx sandwiches -goal of', 'final # sandwiches made'
       ],
       eventType: [
-        'eventType', 'event type', 'type', 'type of sandwich', 'sandwich type', 'event_type'
+        'eventtype', 'event type', 'type', 'type of sandwich', 'sandwich type', 'event_type'
       ],
       contactName: [
-        'contactName', 'contact name', 'contact', 'contact_name', 'person', 'primary contact'
+        'contactname', 'contact name', 'contact', 'contact_name', 'person', 'primary contact'
       ],
       contactEmail: [
-        'contactEmail', 'contact email', 'email', 'email address', 'contact_email', 'e-mail'
+        'contactemail', 'contact email', 'email', 'email address', 'contact_email', 'e-mail'
       ],
       contactPhone: [
-        'contactPhone', 'contact phone', 'phone', 'contact cell number', 'cell', 'cell number',
+        'contactphone', 'contact phone', 'phone', 'contact cell number', 'cell', 'cell number',
         'phone number', 'contact_phone', 'telephone'
       ],
       location: [
         'location', 'address', 'delivery location', 'delivery address', 'site', 'venue'
       ],
       tspContact: [
-        'tspContact', 'tsp contact', 'tsp', 'staff', 'staff contact', 'coordinator', 'tsp_contact'
+        'tspcontact', 'tsp contact', 'tsp', 'staff', 'staff contact', 'coordinator', 'tsp_contact'
       ],
       notes: [
         'notes', 'note', 'comments', 'remarks', 'driver', 'special instructions', 'details'
@@ -96,8 +97,9 @@ export class ExcelImportService {
     const notesParts: string[] = []; // Collect multiple notes fields
 
     for (const [originalKey, value] of Object.entries(row)) {
-      if (value === null || value === undefined || value === '') {
-        continue; // Skip empty values
+      // Skip null/undefined but allow empty strings (we'll handle validation later)
+      if (value === null || value === undefined) {
+        continue;
       }
 
       const normalizedKey = originalKey.toLowerCase().trim();
@@ -105,12 +107,17 @@ export class ExcelImportService {
       // Find which standard field this column maps to
       let mapped = false;
       for (const [standardField, variations] of Object.entries(fieldMappings)) {
-        if (variations.some(v => v.toLowerCase() === normalizedKey)) {
+        if (variations.includes(normalizedKey)) {
           // Special handling for notes - combine multiple sources
           if (standardField === 'notes') {
-            notesParts.push(`${originalKey}: ${value}`);
+            if (value && String(value).trim()) {
+              notesParts.push(`${originalKey}: ${value}`);
+            }
           } else {
-            normalized[standardField] = value;
+            // Only set if value is not empty
+            if (value !== '') {
+              normalized[standardField] = value;
+            }
           }
           mapped = true;
           break;
@@ -118,7 +125,7 @@ export class ExcelImportService {
       }
 
       // If not mapped, keep original (in case of custom fields)
-      if (!mapped) {
+      if (!mapped && value !== '') {
         normalized[originalKey] = value;
       }
     }
@@ -126,6 +133,15 @@ export class ExcelImportService {
     // Combine all notes parts
     if (notesParts.length > 0) {
       normalized.notes = notesParts.join('; ');
+    }
+
+    // Debug log for troubleshooting
+    if (!normalized.organizationName) {
+      logger.warn('No organization name found after normalization', {
+        originalKeys: Object.keys(row),
+        normalizedKeys: Object.keys(normalized),
+        sampleValue: row['Group Name'] || row['Groupe Name'] || row['group name']
+      });
     }
 
     return normalized;
