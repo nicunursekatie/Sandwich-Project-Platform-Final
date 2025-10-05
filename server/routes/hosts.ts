@@ -4,209 +4,222 @@ import { sanitizeMiddleware } from '../middleware/sanitizer';
 import { insertHostSchema, insertHostContactSchema } from '@shared/schema';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
+import { scrapeHostAvailability } from '../services/host-availability-scraper';
+import {
+  hostsErrorHandler,
+  asyncHandler,
+  createHostsError,
+  validateId,
+  validateRequired,
+  HostsError,
+} from './hosts/error-handler';
 
 const router = Router();
 
 // Host management routes
-router.get('/hosts', requirePermission(PERMISSIONS.HOSTS_VIEW), async (req, res) => {
-  try {
+router.get('/hosts', 
+  requirePermission(PERMISSIONS.HOSTS_VIEW), 
+  asyncHandler(async (req, res) => {
     const hosts = await storage.getAllHosts();
     res.json(hosts);
-  } catch (error) {
-    console.error('Error fetching hosts:', error);
-    res.status(500).json({ error: 'Failed to fetch hosts' });
-  }
-});
+  })
+);
 
 router.get(
   '/hosts-with-contacts',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
-  async (req, res) => {
-    try {
-      const hostsWithContacts = await storage.getAllHostsWithContacts();
-      res.json(hostsWithContacts);
-    } catch (error) {
-      console.error('Error fetching hosts with contacts:', error);
-      res.status(500).json({ error: 'Failed to fetch hosts with contacts' });
-    }
-  }
+  asyncHandler(async (req, res) => {
+    const hostsWithContacts = await storage.getAllHostsWithContacts();
+    res.json(hostsWithContacts);
+  })
 );
 
 router.get(
   '/hosts/:id',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
-  async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const host = await storage.getHost(id);
-      if (!host) {
-        return res.status(404).json({ error: 'Host not found' });
-      }
-      res.json(host);
-    } catch (error) {
-      console.error('Error fetching host:', error);
-      res.status(500).json({ error: 'Failed to fetch host' });
+  asyncHandler(async (req, res) => {
+    const id = validateId(req.params.id, 'host');
+    const host = await storage.getHost(id);
+    if (!host) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
     }
-  }
+    res.json(host);
+  })
 );
 
 router.post(
   '/hosts',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  async (req, res) => {
-    try {
-      const result = insertHostSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ error: result.error.message });
-      }
-      const host = await storage.createHost(result.data);
-      res.status(201).json(host);
-    } catch (error) {
-      console.error('Error creating host:', error);
-      res.status(500).json({ error: 'Failed to create host' });
+  asyncHandler(async (req, res) => {
+    validateRequired(req.body, ['name'], 'host creation');
+    
+    const result = insertHostSchema.safeParse(req.body);
+    if (!result.success) {
+      throw createHostsError(
+        'Invalid host data provided',
+        400,
+        'VALIDATION_ERROR',
+        { validationErrors: result.error.errors }
+      );
     }
-  }
+    
+    const host = await storage.createHost(result.data);
+    res.status(201).json(host);
+  })
 );
 
 router.patch(
   '/hosts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updates = req.body;
-      const host = await storage.updateHost(id, updates);
-      if (!host) {
-        return res.status(404).json({ error: 'Host not found' });
-      }
-      res.json(host);
-    } catch (error) {
-      console.error('Error updating host:', error);
-      res.status(500).json({ error: 'Failed to update host' });
+  asyncHandler(async (req, res) => {
+    const id = validateId(req.params.id, 'host');
+    const updates = req.body;
+    
+    if (!updates || Object.keys(updates).length === 0) {
+      throw createHostsError('No update data provided', 400, 'NO_UPDATE_DATA');
     }
-  }
+    
+    const host = await storage.updateHost(id, updates);
+    if (!host) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+    res.json(host);
+  })
 );
 
 router.delete(
   '/hosts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
-  async (req, res) => {
+  asyncHandler(async (req, res) => {
+    const id = validateId(req.params.id, 'host');
+    
     try {
-      const id = parseInt(req.params.id);
       const success = await storage.deleteHost(id);
       if (!success) {
-        return res.status(404).json({ error: 'Host not found' });
+        throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
       }
       res.status(204).send();
     } catch (error) {
-      console.error('Error deleting host:', error);
       // Check if it's a constraint error (has associated records)
       if (error.message && error.message.includes('associated collection')) {
-        return res.status(409).json({
-          error: error.message,
-          code: 'CONSTRAINT_VIOLATION',
-        });
+        throw createHostsError(
+          error.message,
+          409,
+          'CONSTRAINT_VIOLATION',
+          { hostId: id, constraintType: 'associated_records' }
+        );
       }
-      res.status(500).json({ error: 'Failed to delete host' });
+      throw error; // Re-throw to be handled by error handler
     }
-  }
+  })
 );
 
 // Host contact routes
 router.get(
   '/host-contacts',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
-  async (req, res) => {
-    try {
-      const hostId = req.query.hostId
-        ? parseInt(req.query.hostId as string)
-        : undefined;
-      if (hostId) {
-        const contacts = await storage.getHostContacts(hostId);
-        res.json(contacts);
-      } else {
-        // Return all host contacts
-        const hosts = await storage.getAllHostsWithContacts();
-        const allContacts = hosts.flatMap((host) => host.contacts);
-        res.json(allContacts);
-      }
-    } catch (error) {
-      console.error('Error fetching host contacts:', error);
-      res.status(500).json({ error: 'Failed to fetch host contacts' });
+  asyncHandler(async (req, res) => {
+    const hostId = req.query.hostId
+      ? parseInt(req.query.hostId as string)
+      : undefined;
+      
+    if (hostId && isNaN(hostId)) {
+      throw createHostsError('Invalid host ID in query', 400, 'INVALID_HOST_ID', { providedHostId: req.query.hostId });
     }
-  }
+    
+    if (hostId) {
+      const contacts = await storage.getHostContacts(hostId);
+      res.json(contacts);
+    } else {
+      // Return all host contacts
+      const hosts = await storage.getAllHostsWithContacts();
+      const allContacts = hosts.flatMap((host) => host.contacts);
+      res.json(allContacts);
+    }
+  })
 );
 
 router.post(
   '/host-contacts',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  async (req, res) => {
-    try {
-      const result = insertHostContactSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ error: result.error.message });
-      }
-      const contact = await storage.createHostContact(result.data);
-      res.status(201).json(contact);
-    } catch (error) {
-      console.error('Error creating host contact:', error);
-      res.status(500).json({ error: 'Failed to create host contact' });
+  asyncHandler(async (req, res) => {
+    validateRequired(req.body, ['name', 'role', 'phone', 'hostId'], 'host contact creation');
+    
+    const result = insertHostContactSchema.safeParse(req.body);
+    if (!result.success) {
+      throw createHostsError(
+        'Invalid host contact data provided',
+        400,
+        'VALIDATION_ERROR',
+        { validationErrors: result.error.errors }
+      );
     }
-  }
+    
+    const contact = await storage.createHostContact(result.data);
+    res.status(201).json(contact);
+  })
 );
 
 router.patch(
   '/host-contacts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updates = req.body;
+  asyncHandler(async (req, res) => {
+    const id = validateId(req.params.id, 'host contact');
+    const updates = req.body;
 
-      console.log('[PATCH /host-contacts/:id] Attempting to update contact:', {
-        id,
-        updates,
-        isValidId: !isNaN(id),
-      });
-
-      const contact = await storage.updateHostContact(id, updates);
-
-      console.log('[PATCH /host-contacts/:id] Update result:', {
-        found: !!contact,
-        contactId: contact?.id,
-      });
-
-      if (!contact) {
-        return res.status(404).json({ error: 'Host contact not found' });
-      }
-      res.json(contact);
-    } catch (error) {
-      console.error('Error updating host contact:', error);
-      res.status(500).json({ error: 'Failed to update host contact' });
+    if (!updates || Object.keys(updates).length === 0) {
+      throw createHostsError('No update data provided', 400, 'NO_UPDATE_DATA');
     }
-  }
+
+    const contact = await storage.updateHostContact(id, updates);
+    if (!contact) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
+    }
+    res.json(contact);
+  })
 );
 
 router.delete(
   '/host-contacts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
-  async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const success = await storage.deleteHostContact(id);
-      if (!success) {
-        return res.status(404).json({ error: 'Host contact not found' });
-      }
-      res.status(204).send();
-    } catch (error) {
-      console.error('Error deleting host contact:', error);
-      res.status(500).json({ error: 'Failed to delete host contact' });
+  asyncHandler(async (req, res) => {
+    const id = validateId(req.params.id, 'host contact');
+    const success = await storage.deleteHostContact(id);
+    if (!success) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
     }
-  }
+    res.status(204).send();
+  })
 );
+
+// Weekly availability scraper endpoint
+router.post(
+  '/scrape-availability',
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
+  asyncHandler(async (req, res) => {
+    const result = await scrapeHostAvailability();
+
+    if (result.success) {
+      res.json({
+        message: 'Host availability updated successfully',
+        ...result,
+      });
+    } else {
+      throw createHostsError(
+        'Host availability scrape failed',
+        500,
+        'SCRAPE_FAILED',
+        { scrapeResult: result }
+      );
+    }
+  })
+);
+
+// Add error handling middleware for all routes
+router.use(hostsErrorHandler());
 
 export { router as hostsRoutes };

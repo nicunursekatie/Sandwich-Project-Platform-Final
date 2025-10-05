@@ -752,6 +752,8 @@ export const hostContacts = pgTable('host_contacts', {
   isPrimary: boolean('is_primary').notNull().default(false),
   notes: text('notes'),
   hostLocation: text('host_location'), // Location name for grouping contacts
+  weeklyActive: boolean('weekly_active').default(false), // Auto-updated from external site scrape every Monday
+  lastScraped: timestamp('last_scraped'), // Last time availability was scraped from external site
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

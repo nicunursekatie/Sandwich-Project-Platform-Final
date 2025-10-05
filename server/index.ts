@@ -350,6 +350,11 @@ async function startServer() {
           startBackgroundSync(storage as any); // TODO: Fix storage interface types
           console.log('✓ Background Google Sheets sync service started');
 
+          // Initialize cron jobs for scheduled tasks
+          const { initializeCronJobs } = await import('./services/cron-jobs');
+          initializeCronJobs();
+          console.log('✓ Cron jobs initialized (host availability scraper scheduled)');
+
           // Routes already registered during server startup
           console.log(
             '✓ Database initialization completed after route registration'

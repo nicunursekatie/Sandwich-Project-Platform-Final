@@ -17,6 +17,8 @@ import {
   Search,
   Filter,
   X,
+  CheckCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -637,6 +639,29 @@ export default function HostsManagementConsolidated() {
     },
   });
 
+  const refreshAvailabilityMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/hosts/scrape-availability');
+    },
+    onSuccess: (result: any) => {
+      // Refresh hosts data to show updated weekly active status
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.refetchQueries({ queryKey: ['/api/hosts-with-contacts'] });
+
+      toast({
+        title: 'Availability Updated',
+        description: `${result.matchedContacts} contacts marked as available, ${result.unmatchedContacts} as unavailable.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: `Failed to refresh availability: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleAddHost = () => {
     if (!newHost.name.trim()) return;
     createHostMutation.mutate(newHost);
@@ -730,6 +755,7 @@ export default function HostsManagementConsolidated() {
       email: editingContact.email?.trim(),
       address: editingContact.address?.trim() || '',
       hostLocation: editingContact.hostLocation?.trim() || '',
+      weeklyActive: editingContact.weeklyActive || false,
       notes: editingContact.notes?.trim() || '',
     };
 
@@ -880,6 +906,12 @@ export default function HostsManagementConsolidated() {
                               {contact.name}
                             </span>
                             <div className="flex items-center space-x-1">
+                              {contact.weeklyActive && (
+                                <CheckCircle
+                                  className="w-3 h-3 text-green-600 fill-current"
+                                  title={`Available this week${contact.lastScraped ? ` (updated ${new Date(contact.lastScraped).toLocaleDateString()})` : ''}`}
+                                />
+                              )}
                               {contact.role === 'lead' && (
                                 <Crown className="w-3 h-3 text-purple-600 fill-current" />
                               )}
@@ -1003,13 +1035,14 @@ export default function HostsManagementConsolidated() {
 
       {/* Action Bar */}
       <div className="flex items-center justify-between">
-        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={!canEdit}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Contact
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={!canEdit}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Contact
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">
@@ -1171,6 +1204,16 @@ export default function HostsManagementConsolidated() {
             </form>
           </DialogContent>
         </Dialog>
+
+        <Button
+          variant="outline"
+          disabled={!canEdit || refreshAvailabilityMutation.isPending}
+          onClick={() => refreshAvailabilityMutation.mutate()}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshAvailabilityMutation.isPending ? 'animate-spin' : ''}`} />
+          {refreshAvailabilityMutation.isPending ? 'Refreshing...' : 'Refresh Availability'}
+        </Button>
+      </div>
       </div>
 
       {/* Search and Filter Controls */}
@@ -1374,7 +1417,13 @@ export default function HostsManagementConsolidated() {
                           <h3 className="font-semibold text-gray-900 truncate">
                             {contact.name}
                           </h3>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {contact.weeklyActive && (
+                              <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Available This Week
+                              </Badge>
+                            )}
                             <Badge
                               className={`text-xs ${
                                 contact.role === 'lead'
@@ -1628,27 +1677,49 @@ export default function HostsManagementConsolidated() {
                       <h3 className="font-medium text-sm text-slate-700 mb-3">
                         Contact Settings
                       </h3>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="edit-contact-lead"
-                          checked={editingContact.role === 'lead'}
-                          onCheckedChange={(checked) => {
-                            setEditingContact({
-                              ...editingContact,
-                              role: checked ? 'lead' : '',
-                            });
-                          }}
-                        />
-                        <Label
-                          htmlFor="edit-contact-lead"
-                          className="text-sm"
-                        >
-                          Mark as Location Lead
-                          <span className="block text-xs text-slate-500">
-                            Leads will be highlighted with a star in the main
-                            view
-                          </span>
-                        </Label>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="edit-contact-lead"
+                            checked={editingContact.role === 'lead'}
+                            onCheckedChange={(checked) => {
+                              setEditingContact({
+                                ...editingContact,
+                                role: checked ? 'lead' : '',
+                              });
+                            }}
+                          />
+                          <Label
+                            htmlFor="edit-contact-lead"
+                            className="text-sm"
+                          >
+                            Mark as Location Lead
+                            <span className="block text-xs text-slate-500">
+                              Leads will be highlighted with a crown icon
+                            </span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="edit-contact-weekly-active"
+                            checked={editingContact.weeklyActive || false}
+                            onCheckedChange={(checked) => {
+                              setEditingContact({
+                                ...editingContact,
+                                weeklyActive: checked,
+                              });
+                            }}
+                          />
+                          <Label
+                            htmlFor="edit-contact-weekly-active"
+                            className="text-sm"
+                          >
+                            Available This Week (Manual Override)
+                            <span className="block text-xs text-slate-500">
+                              Will be reset on next Monday at 1pm when availability is auto-updated
+                            </span>
+                          </Label>
+                        </div>
                       </div>
                     </div>
 
