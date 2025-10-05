@@ -849,6 +849,12 @@ export default function HostsManagementConsolidated() {
                               {contact.email}
                             </div>
                           )}
+                          {contact.address && (
+                            <div className="flex items-start text-xs text-slate-600">
+                              <MapPin className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+                              <span>{contact.address}</span>
+                            </div>
+                          )}
                         </div>
                       ))}
                       {sortedContacts.length > 2 && (
