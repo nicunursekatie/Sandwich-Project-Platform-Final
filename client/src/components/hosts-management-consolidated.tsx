@@ -670,12 +670,51 @@ export default function HostsManagementConsolidated() {
     }
   };
 
-  const handleAddContact = () => {
-    if (!selectedHost || !newContact.name.trim()) return;
-    createContactMutation.mutate({
-      ...newContact,
-      hostId: selectedHost.id,
-    });
+  const handleAddContact = async () => {
+    if (!newContact.name.trim()) return;
+
+    // If adding from within a host dialog, use that host's ID
+    if (selectedHost) {
+      createContactMutation.mutate({
+        ...newContact,
+        hostId: selectedHost.id,
+      });
+      return;
+    }
+
+    // If adding from main page, find or create a host for the selected area
+    let hostId: number;
+    const areaName = newContact.hostLocation || 'Unassigned';
+
+    // Try to find existing host with matching name
+    const existingHost = hostsWithContacts.find(h => h.name === areaName);
+
+    if (existingHost) {
+      hostId = existingHost.id;
+      createContactMutation.mutate({
+        ...newContact,
+        hostId,
+      });
+    } else {
+      // Create new host for this area
+      try {
+        const newHost = await apiRequest('POST', '/api/hosts', {
+          name: areaName,
+          status: 'active',
+          notes: `Auto-created for ${areaName} area`,
+        });
+        createContactMutation.mutate({
+          ...newContact,
+          hostId: newHost.id,
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to create host area for contact',
+          variant: 'destructive',
+        });
+      }
+    }
   };
 
   const handleUpdateContact = () => {
@@ -968,71 +1007,145 @@ export default function HostsManagementConsolidated() {
           <DialogTrigger asChild>
             <Button disabled={!canEdit}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Host
+              Add Contact
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">
-                Add New Host
+                Add New Contact
               </DialogTitle>
             </DialogHeader>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                handleAddHost();
+                handleAddContact();
               }}
               className="space-y-4"
             >
               <div>
-                <Label htmlFor="name">Host Location Name *</Label>
+                <Label htmlFor="main-contact-name">Name *</Label>
                 <Input
-                  id="name"
-                  value={newHost.name}
+                  id="main-contact-name"
+                  value={newContact.name}
                   onChange={(e) => {
                     e.stopPropagation();
-                    setNewHost({ ...newHost, name: e.target.value });
+                    setNewContact({
+                      ...newContact,
+                      name: e.target.value,
+                    });
                   }}
-                  placeholder="Enter host location name (e.g., Alpharetta, Dunwoody/PTC)"
+                  placeholder="Enter contact name"
                 />
               </div>
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="main-contact-role">Role</Label>
                 <Input
-                  id="address"
-                  value={newHost.address || ''}
+                  id="main-contact-role"
+                  value={newContact.role}
                   onChange={(e) => {
                     e.stopPropagation();
-                    setNewHost({ ...newHost, address: e.target.value });
+                    setNewContact({
+                      ...newContact,
+                      role: e.target.value,
+                    });
                   }}
-                  placeholder="Enter host location address (e.g., 123 Main St, Alpharetta, GA 30009)"
+                  placeholder="e.g., Manager, Coordinator, Lead, Volunteer"
                 />
               </div>
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="main-contact-phone">Phone</Label>
+                <Input
+                  id="main-contact-phone"
+                  value={newContact.phone}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewContact({
+                      ...newContact,
+                      phone: e.target.value,
+                    });
+                  }}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="main-contact-email">Email</Label>
+                <Input
+                  id="main-contact-email"
+                  type="email"
+                  value={newContact.email}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewContact({
+                      ...newContact,
+                      email: e.target.value,
+                    });
+                  }}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="main-contact-address">Address</Label>
+                <Input
+                  id="main-contact-address"
+                  value={newContact.address || ''}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setNewContact({
+                      ...newContact,
+                      address: e.target.value,
+                    });
+                  }}
+                  placeholder="Enter contact address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="main-contact-location">Area/Location</Label>
                 <Select
-                  value={newHost.status}
-                  onValueChange={(value) =>
-                    setNewHost({ ...newHost, status: value })
-                  }
+                  value={newContact.hostLocation || ''}
+                  onValueChange={(value) => {
+                    setNewContact({
+                      ...newContact,
+                      hostLocation: value,
+                    });
+                  }}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger id="main-contact-location">
+                    <SelectValue placeholder="Select an area..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    {HOST_AREAS.map((area) => (
+                      <SelectItem key={area} value={area}>
+                        {area}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-slate-500 mt-1">
+                  Used to group contacts by geographic area on the main view
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="main-contact-primary"
+                  checked={newContact.isPrimary}
+                  onCheckedChange={(checked) =>
+                    setNewContact({ ...newContact, isPrimary: checked })
+                  }
+                />
+                <Label htmlFor="main-contact-primary">Primary Contact</Label>
               </div>
               <div>
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="main-contact-notes">Notes</Label>
                 <Textarea
-                  id="notes"
-                  value={newHost.notes || ''}
+                  id="main-contact-notes"
+                  value={newContact.notes || ''}
                   onChange={(e) => {
                     e.stopPropagation();
-                    setNewHost({ ...newHost, notes: e.target.value });
+                    setNewContact({
+                      ...newContact,
+                      notes: e.target.value,
+                    });
                   }}
                   placeholder="Enter any additional notes"
                   rows={3}
@@ -1049,10 +1162,10 @@ export default function HostsManagementConsolidated() {
                 <Button
                   type="submit"
                   disabled={
-                    !newHost.name.trim() || createHostMutation.isPending
+                    !newContact.name.trim() || createContactMutation.isPending
                   }
                 >
-                  {createHostMutation.isPending ? 'Adding...' : 'Add Host'}
+                  {createContactMutation.isPending ? 'Adding...' : 'Add Contact'}
                 </Button>
               </div>
             </form>
