@@ -89,7 +89,7 @@ function ComprehensivePersonSelector({
     (host.contacts || []).map((contact: any) => ({
       ...contact,
       hostName: host.name,
-      displayName: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email || 'Unknown Contact',
+      displayName: contact.name || contact.email || 'Unknown Contact',
       type: 'host-contact'
     }))
   );
