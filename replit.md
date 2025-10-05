@@ -41,6 +41,7 @@ Key technical implementations include:
 - **Event Toolkit Email System**: Professional email system for event contacts with proper formatting, attachments, and SendGrid integration, bypassing internal message wrappers.
 - **User Activity Logging System**: Comprehensive tracking of authenticated user actions into `user_activity_logs` table via middleware, powering enhanced analytics.
 - **Groups Catalog Event Editing**: Direct access from groups catalog to edit individual event request details. Each event request in the organization history dialog includes an "Edit Request" button that navigates to the event management interface with the specific event pre-loaded for editing, enabling quick data cleanup and corrections for imported records.
+- **Team Availability Calendar**: Calendar integration for tracking team member availability. Users can set their available/unavailable times via My Availability page, coordinators can view team availability via Team Availability dashboard, and availability indicators are displayed in event assignment dialogs showing who's available for specific dates. Uses overlap-based date range queries and enforces proper CRUD permissions (AVAILABILITY_VIEW, AVAILABILITY_ADD, AVAILABILITY_EDIT_OWN/ALL, AVAILABILITY_DELETE_OWN/ALL).
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`

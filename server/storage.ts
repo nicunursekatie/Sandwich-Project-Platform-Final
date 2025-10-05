@@ -35,6 +35,7 @@ import {
   eventVolunteers,
   meetingNotes,
   importedExternalIds,
+  availabilitySlots,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -108,6 +109,8 @@ import {
   type InsertMeetingNote,
   type ImportedExternalId,
   type InsertImportedExternalId,
+  type AvailabilitySlot,
+  type InsertAvailabilitySlot,
 } from '@shared/schema';
 
 export interface IStorage {
@@ -655,6 +658,23 @@ export interface IStorage {
     sourceTable?: string
   ): Promise<ImportedExternalId | undefined>;
   backfillExistingExternalIds(): Promise<number>;
+
+  // Availability Slots (Team member availability calendar)
+  getAllAvailabilitySlots(): Promise<AvailabilitySlot[]>;
+  getAvailabilitySlotById(id: number): Promise<AvailabilitySlot | undefined>;
+  getAvailabilitySlotsByUserId(userId: string): Promise<AvailabilitySlot[]>;
+  getAvailabilitySlotsByDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<AvailabilitySlot[]>;
+  createAvailabilitySlot(
+    slot: InsertAvailabilitySlot
+  ): Promise<AvailabilitySlot>;
+  updateAvailabilitySlot(
+    id: number,
+    updates: Partial<InsertAvailabilitySlot>
+  ): Promise<AvailabilitySlot>;
+  deleteAvailabilitySlot(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {

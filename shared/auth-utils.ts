@@ -121,6 +121,14 @@ export const PERMISSIONS = {
   SUGGESTIONS_DELETE_ALL: 'SUGGESTIONS_DELETE_ALL', // Delete any suggestions
   SUGGESTIONS_MANAGE: 'SUGGESTIONS_MANAGE', // Respond to suggestions
 
+  // AVAILABILITY - Team member availability calendar
+  AVAILABILITY_VIEW: 'AVAILABILITY_VIEW',
+  AVAILABILITY_ADD: 'AVAILABILITY_ADD',
+  AVAILABILITY_EDIT_OWN: 'AVAILABILITY_EDIT_OWN', // Edit own availability
+  AVAILABILITY_EDIT_ALL: 'AVAILABILITY_EDIT_ALL', // Edit any availability
+  AVAILABILITY_DELETE_OWN: 'AVAILABILITY_DELETE_OWN', // Delete own availability
+  AVAILABILITY_DELETE_ALL: 'AVAILABILITY_DELETE_ALL', // Delete any availability
+
   // CHAT - Chat room access
   CHAT_GENERAL: 'CHAT_GENERAL',
   CHAT_GRANTS_COMMITTEE: 'CHAT_GRANTS_COMMITTEE',
@@ -272,6 +280,12 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions + edit/delete own
         PERMISSIONS.DATA_EXPORT,
 
+        // Availability permissions
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
+
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
@@ -303,6 +317,12 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT,
         PERMISSIONS.ORGANIZATIONS_VIEW,
+
+        // Availability permissions
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
 
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
@@ -364,6 +384,12 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         // Data and analytics
         PERMISSIONS.DATA_EXPORT,
 
+        // Availability permissions
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
+
         // Kudos system
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
@@ -382,6 +408,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
         PERMISSIONS.KUDOS_VIEW,
@@ -401,6 +431,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
         PERMISSIONS.KUDOS_SEND,
         PERMISSIONS.KUDOS_RECEIVE,
         PERMISSIONS.KUDOS_VIEW,
@@ -417,6 +451,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
         PERMISSIONS.KUDOS_RECEIVE, // Recipients can receive kudos but not send them by default
         PERMISSIONS.KUDOS_VIEW,
       ];
@@ -442,6 +480,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.ADMIN_ACCESS,
         PERMISSIONS.TOOLKIT_ACCESS,
+        PERMISSIONS.AVAILABILITY_VIEW,
 
         // Chat permissions (read-only)
         PERMISSIONS.CHAT_GENERAL,
@@ -470,6 +509,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.KUDOS_VIEW, // Viewers can only view kudos, not send or receive
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
       ];
 
     case USER_ROLES.WORK_LOGGER:
@@ -480,6 +523,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.PROJECTS_VIEW,
         PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.AVAILABILITY_VIEW,
+        PERMISSIONS.AVAILABILITY_ADD,
+        PERMISSIONS.AVAILABILITY_EDIT_OWN,
+        PERMISSIONS.AVAILABILITY_DELETE_OWN,
         'log_work',
       ];
 

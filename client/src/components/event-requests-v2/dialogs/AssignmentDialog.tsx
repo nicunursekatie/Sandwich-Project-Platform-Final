@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,22 +20,50 @@ import {
   X,
   UserPlus,
   Users,
+  CheckCircle,
+  XCircle,
+  HelpCircle,
+  ExternalLink,
+  Loader2,
 } from 'lucide-react';
+import { useEventRequestContext } from '../context/EventRequestContext';
+import type { AvailabilitySlot } from '@shared/schema';
 
 interface ComprehensivePersonSelectorProps {
   selectedPeople: string[];
   onSelectionChange: (selected: string[]) => void;
   assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
+  availabilitySlots: AvailabilitySlot[];
+  isLoadingAvailability: boolean;
 }
 
 function ComprehensivePersonSelector({
   selectedPeople,
   onSelectionChange,
-  assignmentType
+  assignmentType,
+  availabilitySlots,
+  isLoadingAvailability
 }: ComprehensivePersonSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customEntryText, setCustomEntryText] = useState('');
   const [showCustomEntry, setShowCustomEntry] = useState(false);
+
+  // Helper function to get availability status for a user ID
+  const getAvailabilityStatus = (userId: string): 'available' | 'unavailable' | 'not_set' => {
+    // Custom entries and non-user types don't have availability
+    if (userId.startsWith('custom-') || userId.startsWith('volunteer-') || userId.startsWith('host-contact-')) {
+      return 'not_set';
+    }
+
+    // Check if user has any availability slot
+    const userSlot = availabilitySlots.find(slot => slot.userId === userId);
+    
+    if (!userSlot) {
+      return 'not_set';
+    }
+
+    return userSlot.status === 'available' ? 'available' : 'unavailable';
+  };
 
   // Fetch all the different types of people
   const { data: users = [], isLoading: usersLoading } = useQuery<any[]>({
@@ -262,6 +290,8 @@ function ComprehensivePersonSelector({
                 <div className="space-y-2">
                   {people.map((person) => {
                     const isSelected = selectedPeople.includes(person.id);
+                    const availabilityStatus = getAvailabilityStatus(person.id);
+                    
                     return (
                       <button
                         key={person.id}
@@ -274,13 +304,41 @@ function ComprehensivePersonSelector({
                         onClick={() => togglePersonSelection(person.id)}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-3 flex-1">
                             {person.type === 'user' && <User className="w-4 h-4 text-gray-400" />}
                             {person.type === 'driver' && <Car className="w-4 h-4 text-gray-400" />}
                             {person.type === 'volunteer' && <Users className="w-4 h-4 text-gray-400" />}
                             {person.type === 'host-contact' && <Building className="w-4 h-4 text-gray-400" />}
-                            <div>
-                              <div className="font-medium">{person.displayName}</div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <div className="font-medium">{person.displayName}</div>
+                                {/* Availability indicator */}
+                                {!isLoadingAvailability && person.type === 'user' && (
+                                  <>
+                                    {availabilityStatus === 'available' && (
+                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                        Available
+                                      </Badge>
+                                    )}
+                                    {availabilityStatus === 'unavailable' && (
+                                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                                        <XCircle className="w-3 h-3 mr-1" />
+                                        Unavailable
+                                      </Badge>
+                                    )}
+                                    {availabilityStatus === 'not_set' && (
+                                      <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200 text-xs">
+                                        <HelpCircle className="w-3 h-3 mr-1" />
+                                        Not Set
+                                      </Badge>
+                                    )}
+                                  </>
+                                )}
+                                {isLoadingAvailability && person.type === 'user' && (
+                                  <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+                                )}
+                              </div>
                               {person.email && (
                                 <div className="text-sm text-gray-500">{person.email}</div>
                               )}
@@ -293,7 +351,7 @@ function ComprehensivePersonSelector({
                             </div>
                           </div>
                           {isSelected && (
-                            <Check className="w-4 h-4 text-green-600" />
+                            <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
                           )}
                         </div>
                       </button>
@@ -332,6 +390,41 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   setSelectedAssignees,
   onAssign,
 }) => {
+  // Get context to find the event date
+  const { assignmentEventId, eventRequests } = useEventRequestContext();
+
+  // Find the current event request
+  const currentEvent = useMemo(() => {
+    return eventRequests.find(e => e.id === assignmentEventId);
+  }, [eventRequests, assignmentEventId]);
+
+  // Extract event date (use scheduledEventDate if available, otherwise desiredEventDate)
+  const eventDate = useMemo(() => {
+    if (!currentEvent) return null;
+    
+    const dateToUse = currentEvent.scheduledEventDate || currentEvent.desiredEventDate;
+    if (!dateToUse) return null;
+
+    // Format as YYYY-MM-DD for the API
+    const date = new Date(dateToUse);
+    return date.toISOString().split('T')[0];
+  }, [currentEvent]);
+
+  // Fetch availability data for the event date
+  const { data: availabilitySlots = [], isLoading: isLoadingAvailability } = useQuery<AvailabilitySlot[]>({
+    queryKey: ['/api/availability', eventDate],
+    enabled: !!eventDate && isOpen, // Only fetch when dialog is open and we have a date
+    queryFn: async () => {
+      if (!eventDate) return [];
+      const response = await fetch(`/api/availability?startDate=${eventDate}&endDate=${eventDate}`);
+      if (!response.ok) {
+        console.error('Failed to fetch availability');
+        return [];
+      }
+      return response.json();
+    },
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) {
@@ -350,10 +443,27 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
+        {/* View Team Availability Link */}
+        <div className="flex items-center justify-end">
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            onClick={() => window.open('/team-availability', '_blank')}
+            className="text-teal-600 hover:text-teal-700"
+            data-testid="link-view-team-availability"
+          >
+            <ExternalLink className="w-4 h-4 mr-1" />
+            View Full Team Availability Calendar
+          </Button>
+        </div>
+
         <ComprehensivePersonSelector
           selectedPeople={selectedAssignees}
           onSelectionChange={setSelectedAssignees}
           assignmentType={assignmentType}
+          availabilitySlots={availabilitySlots}
+          isLoadingAvailability={isLoadingAvailability}
         />
 
         <div className="flex justify-end space-x-2 pt-4 border-t">

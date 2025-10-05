@@ -100,6 +100,18 @@ export const userActivityLogs = pgTable(
   })
 );
 
+// Team member availability calendar system
+export const availabilitySlots = pgTable('availability_slots', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  startAt: timestamp('start_at').notNull(),
+  endAt: timestamp('end_at').notNull(),
+  status: varchar('status').notNull(), // 'available' or 'unavailable'
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 // Chat messages table for real-time chat system
 export const chatMessages = pgTable('chat_messages', {
   id: serial('id').primaryKey(),
@@ -2452,3 +2464,13 @@ export type InsertNotificationAnalytics = z.infer<typeof insertNotificationAnaly
 
 export type NotificationABTests = typeof notificationABTests.$inferSelect;
 export type InsertNotificationABTests = z.infer<typeof insertNotificationABTestsSchema>;
+
+// Availability slots insert schema and types
+export const insertAvailabilitySlotSchema = createInsertSchema(availabilitySlots).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
+export type InsertAvailabilitySlot = z.infer<typeof insertAvailabilitySlotSchema>;
