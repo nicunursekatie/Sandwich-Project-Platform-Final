@@ -42,6 +42,96 @@ export interface ImportSummary {
 
 export class ExcelImportService {
   /**
+   * Column name mapping for flexible imports
+   * Maps various common column names to expected field names
+   */
+  private normalizeColumnNames(row: any): ExcelImportRow {
+    const normalized: ExcelImportRow = {};
+
+    // Map each field from various possible column names
+    const fieldMappings: Record<string, string[]> = {
+      organizationName: [
+        'organizationName', 'organization name', 'organization', 'org name', 'org',
+        'groupe name', 'group name', 'group', 'name', 'recipient', 'destination/recipient',
+        'destination', 'organization/recipient'
+      ],
+      eventDate: [
+        'eventDate', 'event date', 'date', 'event_date', 'delivery date', 'delivery_date'
+      ],
+      sandwichesProvided: [
+        'sandwichesProvided', 'sandwiches provided', 'sandwiches', 'final # sandwiches made',
+        'final sandwiches', '# sandwiches', 'number of sandwiches', 'sandwich count', 'count'
+      ],
+      eventType: [
+        'eventType', 'event type', 'type', 'type of sandwich', 'sandwich type', 'event_type'
+      ],
+      contactName: [
+        'contactName', 'contact name', 'contact', 'contact_name', 'person', 'primary contact'
+      ],
+      contactEmail: [
+        'contactEmail', 'contact email', 'email', 'email address', 'contact_email', 'e-mail'
+      ],
+      contactPhone: [
+        'contactPhone', 'contact phone', 'phone', 'contact cell number', 'cell', 'cell number',
+        'phone number', 'contact_phone', 'telephone'
+      ],
+      location: [
+        'location', 'address', 'delivery location', 'delivery address', 'site', 'venue'
+      ],
+      tspContact: [
+        'tspContact', 'tsp contact', 'tsp', 'staff', 'staff contact', 'coordinator', 'tsp_contact'
+      ],
+      notes: [
+        'notes', 'note', 'comments', 'remarks', 'driver', 'special instructions', 'details'
+      ],
+      status: [
+        'status', 'event status', 'state', 'completion status'
+      ],
+      department: [
+        'department', 'dept', 'division', 'unit'
+      ]
+    };
+
+    // Normalize each row key-value pair
+    const notesParts: string[] = []; // Collect multiple notes fields
+
+    for (const [originalKey, value] of Object.entries(row)) {
+      if (value === null || value === undefined || value === '') {
+        continue; // Skip empty values
+      }
+
+      const normalizedKey = originalKey.toLowerCase().trim();
+
+      // Find which standard field this column maps to
+      let mapped = false;
+      for (const [standardField, variations] of Object.entries(fieldMappings)) {
+        if (variations.some(v => v.toLowerCase() === normalizedKey)) {
+          // Special handling for notes - combine multiple sources
+          if (standardField === 'notes') {
+            notesParts.push(`${originalKey}: ${value}`);
+          } else {
+            normalized[standardField] = value;
+          }
+          mapped = true;
+          break;
+        }
+      }
+
+      // If not mapped, keep original (in case of custom fields)
+      if (!mapped) {
+        normalized[originalKey] = value;
+      }
+    }
+
+    // Combine all notes parts
+    if (notesParts.length > 0) {
+      normalized.notes = notesParts.join('; ');
+    }
+
+    return normalized;
+  }
+
+  /**
    * Parse Excel file buffer and return rows
    */
   parseExcelFile(buffer: Buffer): ExcelImportRow[] {
@@ -57,14 +147,19 @@ export class ExcelImportService {
       const worksheet = workbook.Sheets[sheetName];
 
       // Convert to JSON with header row
-      const data = XLSX.utils.sheet_to_json<ExcelImportRow>(worksheet, {
+      const rawData = XLSX.utils.sheet_to_json(worksheet, {
         raw: false,
         defval: undefined,
       });
 
+      // Normalize column names
+      const data = rawData.map(row => this.normalizeColumnNames(row));
+
       logger.info('Excel file parsed successfully', {
         sheetName,
         rowCount: data.length,
+        originalColumns: rawData.length > 0 ? Object.keys(rawData[0]) : [],
+        normalizedColumns: data.length > 0 ? Object.keys(data[0]) : [],
       });
 
       return data;

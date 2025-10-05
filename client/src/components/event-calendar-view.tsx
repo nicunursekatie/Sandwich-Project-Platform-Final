@@ -56,8 +56,17 @@ const getStatusColor = (status: string) => {
 };
 
 // Helper function to get staffing indicators for an event
-const getStaffingIndicators = (event: EventRequest) => {
+const getStaffingIndicators = (event: EventRequest, allEvents?: EventRequest[]) => {
   const indicators = [];
+  
+  console.log('Checking staffing for event:', event.organizationName, {
+    driversNeeded: event.driversNeeded,
+    speakersNeeded: event.speakersNeeded,
+    volunteersNeeded: event.volunteersNeeded,
+    driversNeededType: typeof event.driversNeeded,
+    speakersNeededType: typeof event.speakersNeeded,
+    volunteersNeededType: typeof event.volunteersNeeded,
+  });
   
   if (event.driversNeeded && event.driversNeeded > 0) {
     indicators.push({
@@ -86,6 +95,22 @@ const getStaffingIndicators = (event: EventRequest) => {
     });
   }
   
+  console.log('Staffing indicators found:', indicators.length, 'for', event.organizationName);
+  
+  // TEMPORARY: Add test indicators for debugging
+  if (indicators.length === 0 && event.organizationName && allEvents) {
+    // Add a test driver indicator for the first few events to test the visual system
+    const eventIndex = allEvents.findIndex(e => e.id === event.id);
+    if (eventIndex >= 0 && eventIndex < 3) {
+      indicators.push({
+        icon: Car,
+        count: 1,
+        color: 'text-blue-600',
+        tooltip: 'Test driver indicator'
+      });
+    }
+  }
+  
   return indicators;
 };
 
@@ -95,6 +120,17 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
   // Fetch all event requests
   const { data: events = [] } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
+    onSuccess: (data) => {
+      console.log('Calendar events data:', data);
+      if (data.length > 0) {
+        console.log('First event sample:', data[0]);
+        console.log('Staffing fields in first event:', {
+          driversNeeded: data[0].driversNeeded,
+          speakersNeeded: data[0].speakersNeeded,
+          volunteersNeeded: data[0].volunteersNeeded,
+        });
+      }
+    },
   });
 
   // Get the first and last day of the current month
@@ -256,7 +292,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                 {/* Events for this day */}
                 <div className="space-y-1">
                   {dayEvents.slice(0, 3).map((event) => {
-                    const staffingIndicators = getStaffingIndicators(event);
+                    const staffingIndicators = getStaffingIndicators(event, events);
                     
                     return (
                       <button
