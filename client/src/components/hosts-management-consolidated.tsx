@@ -133,6 +133,7 @@ export default function HostsManagementConsolidated() {
     role: '',
     phone: '',
     email: '',
+    address: '',
     isPrimary: false,
     notes: '',
   });
@@ -669,6 +670,7 @@ export default function HostsManagementConsolidated() {
       role: editingContact.role?.trim(),
       phone: editingContact.phone?.trim(),
       email: editingContact.email?.trim(),
+      address: editingContact.address?.trim() || '',
       notes: editingContact.notes?.trim() || '',
     };
 
