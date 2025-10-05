@@ -1677,61 +1677,60 @@ export default function HostsManagementConsolidated() {
                               )}
                             </div>
                             <div className="flex space-x-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!canEdit}
+                                onClick={async () => {
+                                  console.log(
+                                    'Edit button clicked for contact:',
+                                    contact.id,
+                                    contact.name
+                                  );
+
+                                  // Force fresh data before editing to ensure contact IDs are correct
+                                  await queryClient.refetchQueries({
+                                    queryKey: ['/api/hosts-with-contacts'],
+                                  });
+                                  const freshHosts =
+                                    queryClient.getQueryData([
+                                      '/api/hosts-with-contacts',
+                                    ]) as HostWithContacts[];
+                                  const freshHost = freshHosts?.find(
+                                    (h) => h.id === selectedHost?.id
+                                  );
+                                  const freshContact =
+                                    freshHost?.contacts?.find(
+                                      (c) => c.id === contact.id
+                                    );
+
+                                  console.log(
+                                    'Fresh contact found:',
+                                    freshContact
+                                  );
+
+                                  if (freshContact) {
+                                    setEditingContact(freshContact);
+                                  } else {
+                                    console.error(
+                                      'Could not find fresh contact data for ID:',
+                                      contact.id,
+                                      'Contact:',
+                                      contact.name
+                                    );
+                                    setEditingContact(contact);
+                                  }
+                                }}
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+
                               <Dialog
                                 open={editingContact?.id === contact.id}
                                 onOpenChange={(open) =>
                                   !open && setEditingContact(null)
                                 }
                               >
-                                <DialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={!canEdit}
-                                    onClick={async () => {
-                                      console.log(
-                                        'Edit button clicked for contact:',
-                                        contact.id,
-                                        contact.name
-                                      );
-
-                                      // Force fresh data before editing to ensure contact IDs are correct
-                                      await queryClient.refetchQueries({
-                                        queryKey: ['/api/hosts-with-contacts'],
-                                      });
-                                      const freshHosts =
-                                        queryClient.getQueryData([
-                                          '/api/hosts-with-contacts',
-                                        ]) as HostWithContacts[];
-                                      const freshHost = freshHosts?.find(
-                                        (h) => h.id === selectedHost?.id
-                                      );
-                                      const freshContact =
-                                        freshHost?.contacts?.find(
-                                          (c) => c.id === contact.id
-                                        );
-
-                                      console.log(
-                                        'Fresh contact found:',
-                                        freshContact
-                                      );
-
-                                      if (freshContact) {
-                                        setEditingContact(freshContact);
-                                      } else {
-                                        console.error(
-                                          'Could not find fresh contact data for ID:',
-                                          contact.id,
-                                          'Contact:',
-                                          contact.name
-                                        );
-                                        setEditingContact(contact);
-                                      }
-                                    }}
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                </DialogTrigger>
                                 <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                                   <DialogHeader>
                                     <DialogTitle>Edit Contact</DialogTitle>
