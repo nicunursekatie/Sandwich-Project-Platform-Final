@@ -63,8 +63,8 @@ export const useEventAssignments = () => {
     }
 
     try {
-      // Handle user IDs (format: user_xxxx_xxxxx or admin_xxxx)
-      if (userIdOrName.includes('_') && (userIdOrName.startsWith('user_') || userIdOrName.startsWith('admin_'))) {
+      // Handle user IDs (format: user_xxxx_xxxxx, admin_xxxx, or committee_xxxx)
+      if (userIdOrName.includes('_') && (userIdOrName.startsWith('user_') || userIdOrName.startsWith('admin_') || userIdOrName.startsWith('committee_'))) {
         const user = allUsers.find((u) => u?.id === userIdOrName);
         if (user) {
           return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.displayName || user.email || 'Unknown User';
