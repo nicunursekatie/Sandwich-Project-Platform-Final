@@ -637,7 +637,7 @@ export default function HostsManagementConsolidated() {
   };
 
   const handleDeleteHost = (id: number) => {
-    const host = hosts.find((h) => h.id === id);
+    const host = hostsWithContacts.find((h) => h.id === id);
     if (
       confirm(
         `Are you sure you want to hide "${host?.name}" from this list? It will be completely hidden but data will be preserved.`
@@ -695,7 +695,7 @@ export default function HostsManagementConsolidated() {
   }
 
   // Filter hosts by status and contact count
-  const visibleHosts = hosts.filter((host) => {
+  const visibleHosts = hostsWithContacts.filter((host) => {
     // Always hide "hidden" hosts
     if (host.status === 'hidden') return false;
 
@@ -1299,7 +1299,7 @@ export default function HostsManagementConsolidated() {
 
           {/* Results Summary */}
           <div className="text-sm text-slate-600">
-            Showing {hosts.length} of {hostsWithContacts.length} hosts
+            Showing {visibleHosts.length} of {hostsWithContacts.length} hosts
             {searchTerm && <span> • Search: "{searchTerm}"</span>}
             {statusFilter !== 'all' && <span> • {statusFilter}</span>}
             {locationFilter !== 'all' && (
