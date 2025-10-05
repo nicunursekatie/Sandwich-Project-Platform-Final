@@ -906,7 +906,7 @@ export default function HostsManagementConsolidated() {
                   });
                   // Get the refreshed host data
                   const freshHosts = queryClient.getQueryData([
-                    '/api/hosts-with-contacts'],
+                    '/api/hosts-with-contacts'
                   ]) as HostWithContacts[];
                   const freshHost = freshHosts?.find((h) => h.id === host.id);
                   setSelectedHost(freshHost || host);
