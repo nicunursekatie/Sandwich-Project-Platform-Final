@@ -1481,6 +1481,203 @@ export default function HostsManagementConsolidated() {
               ))}
             </div>
           )}
+
+          {/* Edit Contact Dialog for Contacts View */}
+          <Dialog
+            open={!!editingContact && viewMode === 'contacts'}
+            onOpenChange={(open) => !open && setEditingContact(null)}
+          >
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Contact</DialogTitle>
+              </DialogHeader>
+              {editingContact && (
+                <div className="space-y-4">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleUpdateContact();
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <Label htmlFor="edit-contact-name">Name *</Label>
+                      <Input
+                        id="edit-contact-name"
+                        value={editingContact.name}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            name: e.target.value,
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-role">Role</Label>
+                      <Input
+                        id="edit-contact-role"
+                        value={editingContact.role || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            role: e.target.value,
+                          });
+                        }}
+                        placeholder="e.g., Manager, Coordinator, Lead"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-phone">Phone *</Label>
+                      <Input
+                        id="edit-contact-phone"
+                        value={editingContact.phone}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            phone: e.target.value,
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-email">Email</Label>
+                      <Input
+                        id="edit-contact-email"
+                        type="email"
+                        value={editingContact.email || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            email: e.target.value,
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-address">Address</Label>
+                      <Input
+                        id="edit-contact-address"
+                        value={editingContact.address || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            address: e.target.value,
+                          });
+                        }}
+                        placeholder="Enter contact address"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-location">
+                        Area/Location
+                      </Label>
+                      <Select
+                        value={editingContact.hostLocation || ''}
+                        onValueChange={(value) => {
+                          setEditingContact({
+                            ...editingContact,
+                            hostLocation: value,
+                          });
+                        }}
+                      >
+                        <SelectTrigger id="edit-contact-location">
+                          <SelectValue placeholder="Select an area..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {HOST_AREAS.map((area) => (
+                            <SelectItem key={area} value={area}>
+                              {area}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Used to group contacts by geographic area on the main
+                        view
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-contact-notes">Notes</Label>
+                      <Textarea
+                        id="edit-contact-notes"
+                        value={editingContact.notes || ''}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setEditingContact({
+                            ...editingContact,
+                            notes: e.target.value,
+                          });
+                        }}
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="border-t pt-4">
+                      <h3 className="font-medium text-sm text-slate-700 mb-3">
+                        Contact Settings
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="edit-contact-lead"
+                          checked={editingContact.role === 'lead'}
+                          onCheckedChange={(checked) => {
+                            setEditingContact({
+                              ...editingContact,
+                              role: checked ? 'lead' : '',
+                            });
+                          }}
+                        />
+                        <Label
+                          htmlFor="edit-contact-lead"
+                          className="text-sm"
+                        >
+                          Mark as Location Lead
+                          <span className="block text-xs text-slate-500">
+                            Leads will be highlighted with a star in the main
+                            view
+                          </span>
+                        </Label>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setEditingContact(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={
+                          !editingContact.name.trim() ||
+                          !editingContact.phone.trim() ||
+                          updateContactMutation.isPending
+                        }
+                      >
+                        {updateContactMutation.isPending
+                          ? 'Saving...'
+                          : 'Save Changes'}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       ) : (
         /* Original Location-based View */
