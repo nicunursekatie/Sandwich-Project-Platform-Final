@@ -269,9 +269,10 @@ export default function GroupCatalog({
 
     const matchesStatus = statusFilter === 'all' || org.status === statusFilter;
 
-    const activityDate = org.latestActivityDate ? new Date(org.latestActivityDate) : null;
-    const matchesDateStart = !dateFilterStart || !activityDate || activityDate >= new Date(dateFilterStart);
-    const matchesDateEnd = !dateFilterEnd || !activityDate || activityDate <= new Date(dateFilterEnd + 'T23:59:59');
+    // Use event date for filtering (when the event actually happened), not activity date (when it was created)
+    const eventDate = org.eventDate ? new Date(org.eventDate) : null;
+    const matchesDateStart = !dateFilterStart || !eventDate || eventDate >= new Date(dateFilterStart);
+    const matchesDateEnd = !dateFilterEnd || !eventDate || eventDate <= new Date(dateFilterEnd + 'T23:59:59');
 
     return matchesSearch && matchesStatus && matchesDateStart && matchesDateEnd;
   });
