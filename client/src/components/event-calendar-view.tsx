@@ -48,7 +48,7 @@ const getStatusColor = (status: string) => {
     case 'scheduled':
       return 'bg-green-100 text-green-800 border-green-300';
     case 'completed':
-      return 'bg-teal-100 text-teal-800 border-teal-300';
+      return 'bg-navy-100 text-navy-800 border-navy-300';
     case 'cancelled':
       return 'bg-red-100 text-red-800 border-red-300';
     default:
@@ -99,7 +99,7 @@ const getSandwichInfo = (event: EventRequest) => {
     sandwichInfo.push({
       icon: Sandwich,
       count: event.estimatedSandwichCount,
-      color: 'text-orange-600',
+      color: 'text-[#fbad3f]',
       tooltip: `${event.estimatedSandwichCount} sandwiches estimated`
     });
   }
@@ -109,7 +109,7 @@ const getSandwichInfo = (event: EventRequest) => {
     sandwichInfo.push({
       icon: Sandwich,
       count: event.actualSandwichCount,
-      color: 'text-orange-700',
+      color: 'text-[#fbad3f]',
       tooltip: `${event.actualSandwichCount} sandwiches delivered`
     });
   }
@@ -120,7 +120,7 @@ const getSandwichInfo = (event: EventRequest) => {
     sandwichInfo.push({
       icon: Sandwich,
       count: null,
-      color: 'text-orange-500',
+      color: 'text-[#fbad3f]',
       tooltip: `Types: ${typesText}`,
       showTypes: true,
       types: event.sandwichTypes
@@ -403,7 +403,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
             <Badge className="bg-green-100 text-green-800 border-green-300">
               Scheduled
             </Badge>
-            <Badge className="bg-teal-100 text-teal-800 border-teal-300">
+            <Badge className="bg-navy-100 text-navy-800 border-navy-300">
               Completed
             </Badge>
             <Badge className="bg-red-100 text-red-800 border-red-300">
@@ -432,16 +432,8 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
           <div className="flex flex-wrap gap-4 items-center">
             <span className="text-sm font-medium text-gray-700">Sandwiches:</span>
             <div className="flex items-center gap-1">
-              <Sandwich className="w-3 h-3 text-orange-600" />
-              <span className="text-xs text-gray-600">Estimated Count</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Sandwich className="w-3 h-3 text-orange-700" />
-              <span className="text-xs text-gray-600">Delivered Count</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Sandwich className="w-3 h-3 text-orange-500" />
-              <span className="text-xs text-gray-600">Types</span>
+              <Sandwich className="w-3 h-3 text-[#fbad3f]" />
+              <span className="text-xs text-gray-600">Count & Types</span>
             </div>
           </div>
         </div>
