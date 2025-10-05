@@ -61,18 +61,6 @@ interface ExtendedHostContact extends HostContact {
   newAssignmentId?: number;
 }
 
-// Predefined host areas/locations
-const HOST_AREAS = [
-  'Alpharetta',
-  'East Cobb/Roswell',
-  'Dacula',
-  'Dunwoody/PTC',
-  'Flowery Branch',
-  'Intown/Druid Hills/Oak Grove/Chamblee/Brookhaven/Buckhead',
-  'Sandy Springs/Chastain',
-  'UGA',
-] as const;
-
 export default function HostsManagementConsolidated() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -1549,26 +1537,18 @@ export default function HostsManagementConsolidated() {
                         </div>
                         <div>
                           <Label htmlFor="contact-location">Area/Location</Label>
-                          <Select
+                          <Input
+                            id="contact-location"
                             value={newContact.hostLocation || ''}
-                            onValueChange={(value) => {
+                            onChange={(e) => {
+                              e.stopPropagation();
                               setNewContact({
                                 ...newContact,
-                                hostLocation: value,
+                                hostLocation: e.target.value,
                               });
                             }}
-                          >
-                            <SelectTrigger id="contact-location">
-                              <SelectValue placeholder="Select an area..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {HOST_AREAS.map((area) => (
-                                <SelectItem key={area} value={area}>
-                                  {area}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            placeholder="e.g., Alpharetta, Dunwoody/PTC, etc."
+                          />
                           <p className="text-xs text-slate-500 mt-1">
                             Used to group contacts by geographic area on the main view
                           </p>
@@ -1835,26 +1815,18 @@ export default function HostsManagementConsolidated() {
                                           <Label htmlFor="edit-contact-location">
                                             Area/Location
                                           </Label>
-                                          <Select
+                                          <Input
+                                            id="edit-contact-location"
                                             value={editingContact.hostLocation || ''}
-                                            onValueChange={(value) => {
+                                            onChange={(e) => {
+                                              e.stopPropagation();
                                               setEditingContact({
                                                 ...editingContact,
-                                                hostLocation: value,
+                                                hostLocation: e.target.value,
                                               });
                                             }}
-                                          >
-                                            <SelectTrigger id="edit-contact-location">
-                                              <SelectValue placeholder="Select an area..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              {HOST_AREAS.map((area) => (
-                                                <SelectItem key={area} value={area}>
-                                                  {area}
-                                                </SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
+                                            placeholder="e.g., Alpharetta, Dunwoody/PTC, etc."
+                                          />
                                           <p className="text-xs text-slate-500 mt-1">
                                             Used to group contacts by geographic area on the main view
                                           </p>
