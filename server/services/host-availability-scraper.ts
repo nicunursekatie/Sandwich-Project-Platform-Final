@@ -8,8 +8,10 @@
  */
 
 import { storage } from '../storage-wrapper';
+import { createServiceLogger, logError } from '../utils/logger';
 
 const EXTERNAL_SITE_URL = 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/';
+const scraperLogger = createServiceLogger('host-scraper');
 
 interface ScrapeResult {
   success: boolean;
@@ -40,17 +42,26 @@ async function fetchHostNamesFromSite(): Promise<string[]> {
     const matches = html.match(namePattern);
 
     if (!matches) {
-      console.warn('[Host Scraper] No host names found in HTML');
+      scraperLogger.warn('No host names found in HTML', { url: EXTERNAL_SITE_URL });
       return [];
     }
 
     // Remove duplicates and return unique names
     const uniqueNames = [...new Set(matches)];
-    console.log(`[Host Scraper] Found ${uniqueNames.length} unique host names:`, uniqueNames);
+    scraperLogger.info('Found unique host names from external site', {
+      count: uniqueNames.length,
+      hostNames: uniqueNames,
+      url: EXTERNAL_SITE_URL,
+    });
 
     return uniqueNames;
   } catch (error) {
-    console.error('[Host Scraper] Error fetching host names:', error);
+    logError(
+      error as Error,
+      'Error fetching host names from external site',
+      undefined,
+      { url: EXTERNAL_SITE_URL }
+    );
     throw error;
   }
 }
@@ -76,12 +87,15 @@ export async function scrapeHostAvailability(): Promise<ScrapeResult> {
   const timestamp = new Date();
 
   try {
-    console.log(`[Host Scraper] Starting scrape at ${timestamp.toISOString()}`);
+    scraperLogger.info('Starting host availability scrape', {
+      timestamp: timestamp.toISOString(),
+    });
 
     // Fetch host names from external site
     const scrapedHosts = await fetchHostNamesFromSite();
 
     if (scrapedHosts.length === 0) {
+      scraperLogger.warn('No host names found on external site', { timestamp });
       return {
         success: false,
         scrapedHosts: [],
@@ -96,7 +110,10 @@ export async function scrapeHostAvailability(): Promise<ScrapeResult> {
     const hostsWithContacts = await storage.getAllHostsWithContacts();
     const allContacts = hostsWithContacts.flatMap(host => host.contacts);
 
-    console.log(`[Host Scraper] Checking ${allContacts.length} contacts against ${scrapedHosts.length} scraped names`);
+    scraperLogger.info('Matching contacts against scraped hosts', {
+      totalContacts: allContacts.length,
+      scrapedHostsCount: scrapedHosts.length,
+    });
 
     let matchedCount = 0;
     let unmatchedCount = 0;
@@ -116,14 +133,25 @@ export async function scrapeHostAvailability(): Promise<ScrapeResult> {
 
       if (isActive) {
         matchedCount++;
-        console.log(`[Host Scraper] ✓ Matched: ${contact.name} -> ACTIVE`);
+        scraperLogger.debug('Contact matched - marking as ACTIVE', {
+          contactId: contact.id,
+          contactName: contact.name,
+        });
       } else {
         unmatchedCount++;
-        console.log(`[Host Scraper] ✗ No match: ${contact.name} -> INACTIVE`);
+        scraperLogger.debug('Contact not matched - marking as INACTIVE', {
+          contactId: contact.id,
+          contactName: contact.name,
+        });
       }
     }
 
-    console.log(`[Host Scraper] Scrape complete: ${matchedCount} active, ${unmatchedCount} inactive`);
+    scraperLogger.info('Host availability scrape completed', {
+      matchedContacts: matchedCount,
+      unmatchedContacts: unmatchedCount,
+      totalProcessed: matchedCount + unmatchedCount,
+      timestamp,
+    });
 
     return {
       success: true,
@@ -133,7 +161,12 @@ export async function scrapeHostAvailability(): Promise<ScrapeResult> {
       timestamp,
     };
   } catch (error) {
-    console.error('[Host Scraper] Error during scrape:', error);
+    logError(
+      error as Error,
+      'Error during host availability scrape',
+      undefined,
+      { timestamp }
+    );
     return {
       success: false,
       scrapedHosts: [],

@@ -10,7 +10,16 @@ export const CompletedTab: React.FC = () => {
   const { toast } = useToast();
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation } = useEventMutations();
-  const { handleStatusChange, resolveUserName } = useEventAssignments();
+  const {
+    handleStatusChange,
+    resolveUserName,
+    openAssignmentDialog,
+    openEditAssignmentDialog,
+    handleRemoveAssignment,
+    handleSelfSignup,
+    canSelfSignup,
+    isUserSignedUp,
+  } = useEventAssignments();
 
   const {
     setSelectedEventRequest,
@@ -107,6 +116,12 @@ export const CompletedTab: React.FC = () => {
               setTspContactEventRequest(request);
               setShowTspContactAssignmentDialog(true);
             }}
+            openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
+            openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}
+            handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
+            handleSelfSignup={(type) => handleSelfSignup(request.id, type)}
+            canSelfSignup={canSelfSignup}
+            isUserSignedUp={isUserSignedUp}
           />
         ))
       )}
