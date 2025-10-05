@@ -10,6 +10,9 @@ import {
   Clock,
   MapPin,
   Users,
+  Car,
+  Mic,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EventRequest } from '@shared/schema';
@@ -50,6 +53,40 @@ const getStatusColor = (status: string) => {
     default:
       return 'bg-gray-100 text-gray-800 border-gray-300';
   }
+};
+
+// Helper function to get staffing indicators for an event
+const getStaffingIndicators = (event: EventRequest) => {
+  const indicators = [];
+  
+  if (event.driversNeeded && event.driversNeeded > 0) {
+    indicators.push({
+      icon: Car,
+      count: event.driversNeeded,
+      color: 'text-blue-600',
+      tooltip: `${event.driversNeeded} driver${event.driversNeeded > 1 ? 's' : ''} needed`
+    });
+  }
+  
+  if (event.speakersNeeded && event.speakersNeeded > 0) {
+    indicators.push({
+      icon: Mic,
+      count: event.speakersNeeded,
+      color: 'text-purple-600',
+      tooltip: `${event.speakersNeeded} speaker${event.speakersNeeded > 1 ? 's' : ''} needed`
+    });
+  }
+  
+  if (event.volunteersNeeded && event.volunteersNeeded > 0) {
+    indicators.push({
+      icon: UserCheck,
+      count: event.volunteersNeeded,
+      color: 'text-green-600',
+      tooltip: `${event.volunteersNeeded} volunteer${event.volunteersNeeded > 1 ? 's' : ''} needed`
+    });
+  }
+  
+  return indicators;
 };
 
 export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
@@ -218,26 +255,54 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
 
                 {/* Events for this day */}
                 <div className="space-y-1">
-                  {dayEvents.slice(0, 3).map((event) => (
-                    <button
-                      key={event.id}
-                      onClick={() => onEventClick?.(event)}
-                      className={cn(
-                        'w-full text-left text-xs p-1 rounded border truncate hover:shadow-md transition-shadow',
-                        getStatusColor(event.status)
-                      )}
-                      title={`${event.organizationName} - ${event.status}`}
-                    >
-                      <div className="font-medium truncate">
-                        {event.organizationName}
-                      </div>
-                      {event.eventStartTime && (
-                        <div className="text-[10px] opacity-75">
-                          {event.eventStartTime}
+                  {dayEvents.slice(0, 3).map((event) => {
+                    const staffingIndicators = getStaffingIndicators(event);
+                    
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={() => onEventClick?.(event)}
+                        className={cn(
+                          'w-full text-left text-xs p-1 rounded border truncate hover:shadow-md transition-shadow',
+                          getStatusColor(event.status)
+                        )}
+                        title={`${event.organizationName} - ${event.status}`}
+                      >
+                        <div className="font-medium truncate">
+                          {event.organizationName}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        
+                        {/* Staffing indicators row */}
+                        {staffingIndicators.length > 0 && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {staffingIndicators.map((indicator, idx) => {
+                              const IconComponent = indicator.icon;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={cn('flex items-center', indicator.color)}
+                                  title={indicator.tooltip}
+                                >
+                                  <IconComponent className="w-2.5 h-2.5" />
+                                  {indicator.count > 1 && (
+                                    <span className="text-[9px] ml-0.5 font-medium">
+                                      {indicator.count}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {event.eventStartTime && (
+                          <div className="text-[10px] opacity-75 mt-0.5">
+                            {event.eventStartTime}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                   {dayEvents.length > 3 && (
                     <div className="text-xs text-gray-500 text-center">
                       +{dayEvents.length - 3} more
@@ -250,23 +315,43 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
         </div>
 
         {/* Legend */}
-        <div className="mt-6 pt-4 border-t flex flex-wrap gap-3 items-center">
-          <span className="text-sm font-medium text-gray-700">Status:</span>
-          <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong">
-            New
-          </Badge>
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-            In Process
-          </Badge>
-          <Badge className="bg-green-100 text-green-800 border-green-300">
-            Scheduled
-          </Badge>
-          <Badge className="bg-teal-100 text-teal-800 border-teal-300">
-            Completed
-          </Badge>
-          <Badge className="bg-red-100 text-red-800 border-red-300">
-            Cancelled
-          </Badge>
+        <div className="mt-6 pt-4 border-t space-y-4">
+          {/* Status Legend */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="text-sm font-medium text-gray-700">Status:</span>
+            <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong">
+              New
+            </Badge>
+            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+              In Process
+            </Badge>
+            <Badge className="bg-green-100 text-green-800 border-green-300">
+              Scheduled
+            </Badge>
+            <Badge className="bg-teal-100 text-teal-800 border-teal-300">
+              Completed
+            </Badge>
+            <Badge className="bg-red-100 text-red-800 border-red-300">
+              Cancelled
+            </Badge>
+          </div>
+          
+          {/* Staffing Indicators Legend */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-medium text-gray-700">Staffing Needed:</span>
+            <div className="flex items-center gap-1">
+              <Car className="w-3 h-3 text-blue-600" />
+              <span className="text-xs text-gray-600">Drivers</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Mic className="w-3 h-3 text-purple-600" />
+              <span className="text-xs text-gray-600">Speakers</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <UserCheck className="w-3 h-3 text-green-600" />
+              <span className="text-xs text-gray-600">Volunteers</span>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
