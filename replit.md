@@ -40,6 +40,7 @@ Key technical implementations include:
 - **Toolkit Attachment Filtering**: Event toolkit email composer filters attachments to include only essential documents for event communications.
 - **Event Toolkit Email System**: Professional email system for event contacts with proper formatting, attachments, and SendGrid integration, bypassing internal message wrappers.
 - **User Activity Logging System**: Comprehensive tracking of authenticated user actions into `user_activity_logs` table via middleware, powering enhanced analytics.
+- **Groups Catalog Event Editing**: Direct access from groups catalog to edit individual event request details. Each event request in the organization history dialog includes an "Edit Request" button that navigates to the event management interface with the specific event pre-loaded for editing, enabling quick data cleanup and corrections for imported records.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`

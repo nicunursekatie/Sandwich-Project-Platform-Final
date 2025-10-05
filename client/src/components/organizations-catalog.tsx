@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -35,6 +36,7 @@ import {
   Clock,
   CheckCircle,
   UserCheck,
+  Edit,
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/date-utils';
 
@@ -91,6 +93,7 @@ interface GroupCatalogProps {
 export default function GroupCatalog({
   onNavigateToEventPlanning,
 }: GroupCatalogProps = {}) {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('groupName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -167,6 +170,14 @@ export default function GroupCatalog({
     } finally {
       setLoadingOrganizationDetails(false);
     }
+  };
+
+  // Function to navigate to event request for editing
+  const handleEditEventRequest = (eventId: number) => {
+    // Close the dialog
+    setShowEventDetailsDialog(false);
+    // Navigate to event requests page with the event ID
+    setLocation(`/event-requests?eventId=${eventId}`);
   };
 
   // Helper function to get status badge color
@@ -1268,6 +1279,22 @@ export default function GroupCatalog({
                                   </div>
                                 )}
                               </div>
+
+                              {/* Edit button for event requests */}
+                              {event.type === 'event_request' && event.id && (
+                                <div className="ml-4 flex-shrink-0">
+                                  <Button
+                                    onClick={() => handleEditEventRequest(event.id)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-brand-primary hover:bg-brand-primary hover:text-white"
+                                    data-testid={`button-edit-event-${event.id}`}
+                                  >
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit Request
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )
