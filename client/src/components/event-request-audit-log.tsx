@@ -599,16 +599,21 @@ export function EventRequestAuditLog({
   };
 
   const handleRefresh = async () => {
+    console.log('🔄 Refresh button clicked');
     trackClick(
       'Refresh Audit Log',
       'Audit',
       'Event Requests',
       'Manual refresh of audit log data'
     );
-    // Invalidate the query to force a fresh network call
-    await queryClient.invalidateQueries({
-      queryKey: ['/api/event-requests/audit-logs']
-    });
+    try {
+      console.log('📡 Triggering refetch...');
+      // Use refetch directly from the query hook
+      await refetch();
+      console.log('✅ Refetch complete');
+    } catch (error) {
+      console.error('❌ Refetch error:', error);
+    }
   };
 
   const handleFilterChange = (type: string, value: string) => {
