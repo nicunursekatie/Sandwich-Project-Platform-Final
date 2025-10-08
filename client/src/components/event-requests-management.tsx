@@ -2466,75 +2466,78 @@ export default function EventRequestsManagement({
     <TooltipProvider>
       <div className="w-full flex flex-col space-y-4">
         {/* Header */}
-        <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'} w-full`}>
-          <div>
-            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
-            <p className="text-[#236383]">
+        <div className="w-full flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:justify-between">
+          <div className="flex-shrink-0">
+            <h1 className="text-2xl md:text-3xl font-bold">Event Requests Management</h1>
+            <p className="text-[#236383] text-sm md:text-base">
               {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
             </p>
           </div>
-          <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
-            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
+          
+          {/* Buttons and Badge Container */}
+          <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:space-x-3">
+            {/* Main Action Buttons */}
+            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_ADD) && (
                 <Button
                   onClick={() => setShowQuickCreateDialog(true)}
-                  className="text-white w-full bg-[#007E8C] hover:bg-[#006070]"
+                  className="text-white w-full sm:w-auto bg-[#007E8C] hover:bg-[#006070] min-h-[44px]"
                   data-testid="button-quick-event-create"
                 >
-                  <CalendarPlus className="w-4 h-4 mr-2" />
-                  {isMobile ? 'Quick Add' : 'Quick Event Create'}
+                  <CalendarPlus className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="hidden sm:inline">Quick Event Create</span>
+                  <span className="sm:hidden">Quick Add</span>
                 </Button>
               )}
               <Button
                 onClick={() => {
-                  // Close any open dialogs first
                   setShowScheduleCallDialog(false);
                   setShowOneDayFollowUpDialog(false);
                   setShowOneMonthFollowUpDialog(false);
                   setShowToolkitSentDialog(false);
                   setShowAssignmentDialog(false);
-                  
-                  // Set up for manual event request creation
                   setSelectedEventRequest(null);
                   setIsEditing(true);
                   setShowEventDetails(true);
-                  
-                  // Initialize modal sandwich state for new event
                   initializeModalSandwichState(null);
                 }}
-                className="text-white w-full"
-                style={{ backgroundColor: '#007E8C' }}
+                className="text-white w-full sm:w-auto bg-[#007E8C] hover:bg-[#006070] min-h-[44px]"
                 data-testid="button-add-manual-event"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                {isMobile ? 'Add Event' : 'Add Manual Event Request'}
+                <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="hidden sm:inline">Add Manual Event Request</span>
+                <span className="sm:hidden">Add Event</span>
               </Button>
-              <div className={`${isMobile ? 'flex space-x-2' : 'flex items-center space-x-2'}`}>
-                <Button
-                  onClick={() => setShowSandwichPlanningModal(true)}
-                  variant="outline"
-                  className={`flex items-center space-x-2 ${isMobile ? 'flex-1' : ''}`}
-                  data-testid="button-sandwich-planning"
-                >
-                  <span className="text-lg mr-1">🥪</span>
-                  <span className={isMobile ? 'hidden' : ''}>Sandwich Planning</span>
-                </Button>
-                <Button
-                  onClick={() => setShowStaffingPlanningModal(true)}
-                  variant="outline"
-                  className={`flex items-center space-x-2 ${isMobile ? 'flex-1' : ''}`}
-                  data-testid="button-staffing-planning"
-                >
-                  <Users className="w-4 h-4" />
-                  <span className={isMobile ? 'hidden' : ''}>Staffing Planning</span>
-                </Button>
-              </div>
             </div>
+
+            {/* Secondary Buttons */}
+            <div className="flex space-x-2">
+              <Button
+                onClick={() => setShowSandwichPlanningModal(true)}
+                variant="outline"
+                className="flex items-center space-x-1 flex-1 sm:flex-initial min-h-[44px]"
+                data-testid="button-sandwich-planning"
+              >
+                <span className="text-lg">🥪</span>
+                <span className="hidden lg:inline ml-1">Sandwich Planning</span>
+              </Button>
+              <Button
+                onClick={() => setShowStaffingPlanningModal(true)}
+                variant="outline"
+                className="flex items-center space-x-1 flex-1 sm:flex-initial min-h-[44px]"
+                data-testid="button-staffing-planning"
+              >
+                <Users className="w-4 h-4" />
+                <span className="hidden lg:inline ml-1">Staffing Planning</span>
+              </Button>
+            </div>
+
+            {/* Badge */}
             <Badge
               variant="secondary"
-              className="bg-brand-primary text-white px-3 py-1 text-sm self-start"
+              className="bg-brand-primary text-white px-3 py-1 text-sm self-start md:self-center whitespace-nowrap"
             >
-              {eventRequests.length} Total Requests
+              {eventRequests.length} Total
             </Badge>
           </div>
         </div>

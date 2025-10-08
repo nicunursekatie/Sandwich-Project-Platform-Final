@@ -184,41 +184,43 @@ export default function RequestFilters({
       ) : (
         /* Desktop: Traditional Tabs */
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
-          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
-            {tabConfig.map((tab) => (
-              <TabsTrigger 
-                key={tab.value}
-                value={tab.value} 
-                className="relative text-xs sm:text-sm"
-                data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
-                data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
-              >
-                <div className="flex items-center space-x-1">
-                  <tab.icon className="w-3 h-3" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.shortLabel}</span>
-                  <span className="text-xs opacity-70">({tab.count})</span>
-                </div>
-                {tab.hasNotification && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="w-full overflow-x-auto pb-1">
+            <TabsList className="w-full inline-flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-1 min-w-full">
+              {tabConfig.map((tab) => (
+                <TabsTrigger 
+                  key={tab.value}
+                  value={tab.value} 
+                  className="relative text-xs sm:text-sm whitespace-nowrap flex-shrink-0"
+                  data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
+                  data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
+                >
+                  <div className="flex items-center space-x-1">
+                    <tab.icon className="w-3 h-3 flex-shrink-0" />
+                    <span className="hidden md:inline">{tab.label}</span>
+                    <span className="md:hidden">{tab.shortLabel}</span>
+                    <span className="text-xs opacity-70">({tab.count})</span>
+                  </div>
+                  {tab.hasNotification && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           {/* Desktop Tab Content */}
           {['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].map(
             (status) => (
               <TabsContent key={status} value={status} className="space-y-4">
                 {/* Search and Filters for this specific status */}
-                <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
                     <Input
                       placeholder="Search by organization, name, email, date, or location..."
                       value={searchQuery}
                       onChange={(e) => onSearchChange(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 w-full"
                       data-testid="input-search-requests"
                     />
                   </div>
@@ -226,7 +228,7 @@ export default function RequestFilters({
                     value={sortBy}
                     onValueChange={(value: any) => onSortByChange(value)}
                   >
-                    <SelectTrigger className="w-48" data-testid="sort-select-trigger">
+                    <SelectTrigger className="w-full sm:w-48 md:w-56" data-testid="sort-select-trigger">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="z-[100]" position="popper" sideOffset={5}>
