@@ -15,6 +15,13 @@
       "when": 1759278970401,
       "tag": "0001_wild_warbird",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1759939241998,
+      "tag": "0002_cool_the_enforcers",
+      "breakpoints": true
     }
   ]
 }
