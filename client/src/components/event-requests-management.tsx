@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +32,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
@@ -95,6 +106,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import type { EventRequest } from '@shared/schema';
+import { insertEventRequestSchema } from '@shared/schema';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TaskAssigneeSelector } from './task-assignee-selector';
 import { VolunteerSelectionModal } from './volunteer-selection-modal';
@@ -121,6 +133,226 @@ import FollowUpDialog from './event-requests/FollowUpDialog';
 import EventCollectionLog from './event-requests/EventCollectionLog';
 import RequestFilters from './event-requests/RequestFilters';
 import ContactOrganizerDialog from './ContactOrganizerDialog';
+
+// Quick Event Create Schema
+const quickEventCreateSchema = insertEventRequestSchema.pick({
+  organizationName: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  phone: true,
+  desiredEventDate: true,
+  message: true,
+}).extend({
+  organizationName: z.string().min(1, 'Organization name is required'),
+  desiredEventDate: z.string().min(1, 'Event date is required'),
+  email: z.string().email('Invalid email format').or(z.literal('')).optional(),
+});
+
+type QuickEventCreateForm = z.infer<typeof quickEventCreateSchema>;
+
+// Quick Event Create Dialog Component
+interface QuickEventCreateDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function QuickEventCreateDialog({ isOpen, onClose, onSuccess }: QuickEventCreateDialogProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const form = useForm<QuickEventCreateForm>({
+    resolver: zodResolver(quickEventCreateSchema),
+    defaultValues: {
+      organizationName: '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      desiredEventDate: '',
+      message: '',
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/event-requests', data),
+    onSuccess: async () => {
+      toast({
+        title: 'Event created successfully',
+        description: 'The new event request has been added.',
+      });
+      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      form.reset();
+      onClose();
+      onSuccess();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to create event',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const onSubmit = (data: QuickEventCreateForm) => {
+    const eventData = {
+      ...data,
+      status: 'new',
+      previouslyHosted: 'i_dont_know',
+      externalId: crypto.randomUUID(),
+      desiredEventDate: data.desiredEventDate ? new Date(data.desiredEventDate + 'T12:00:00').toISOString() : undefined,
+      email: data.email || undefined,
+      firstName: data.firstName || undefined,
+      lastName: data.lastName || undefined,
+      phone: data.phone || undefined,
+      message: data.message || undefined,
+    };
+    createMutation.mutate(eventData);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <CalendarPlus className="w-5 h-5 text-[#007E8C]" />
+            <span>Quick Create Event</span>
+          </DialogTitle>
+          <DialogDescription>
+            Quickly add a new event request with essential details
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="organizationName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Organization Name *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter organization name" data-testid="input-quick-organization-name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="First name" data-testid="input-quick-first-name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Last name" data-testid="input-quick-last-name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" placeholder="email@example.com" data-testid="input-quick-email" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Phone number" data-testid="input-quick-phone" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="desiredEventDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Desired Event Date *</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="date" data-testid="input-quick-event-date" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="message"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Message/Notes</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} placeholder="Additional information about the event..." rows={4} data-testid="input-quick-message" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={createMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="bg-[#007E8C] hover:bg-[#006070] text-white"
+                data-testid="button-submit-quick-create"
+              >
+                {createMutation.isPending ? 'Creating...' : 'Create Event'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 // Schedule Call Dialog Component
 interface ScheduleCallDialogProps {
@@ -550,6 +782,9 @@ export default function EventRequestsManagement({
   // Send email dialog states (for scheduled events)
   const [showSendEmailDialog, setShowSendEmailDialog] = useState(false);
   const [sendEmailEventRequest, setSendEmailEventRequest] = useState<EventRequest | null>(null);
+
+  // Quick event create dialog state
+  const [showQuickCreateDialog, setShowQuickCreateDialog] = useState(false);
 
   // 1. Add state for inline editing of completed event fields:
   const [editingCompletedId, setEditingCompletedId] = useState<number | null>(
@@ -2240,6 +2475,16 @@ export default function EventRequestsManagement({
           </div>
           <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
             <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
+              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_ADD) && (
+                <Button
+                  onClick={() => setShowQuickCreateDialog(true)}
+                  className="text-white w-full bg-[#007E8C] hover:bg-[#006070]"
+                  data-testid="button-quick-event-create"
+                >
+                  <CalendarPlus className="w-4 h-4 mr-2" />
+                  {isMobile ? 'Quick Add' : 'Quick Event Create'}
+                </Button>
+              )}
               <Button
                 onClick={() => {
                   // Close any open dialogs first
@@ -2560,6 +2805,16 @@ export default function EventRequestsManagement({
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Quick Event Create Dialog */}
+        <QuickEventCreateDialog
+          isOpen={showQuickCreateDialog}
+          onClose={() => setShowQuickCreateDialog(false)}
+          onSuccess={() => {
+            // Optionally switch to 'new' tab to see the newly created event
+            setActiveTab('new');
+          }}
+        />
 
         {/* Schedule Call Dialog */}
         <ScheduleCallDialog
