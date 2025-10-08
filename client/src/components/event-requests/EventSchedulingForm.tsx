@@ -91,10 +91,27 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     toolkitSent: false,
     toolkitSentDate: '',
     toolkitStatus: 'not_sent',
+    // Completed event tracking fields
+    socialMediaPostRequested: false,
+    socialMediaPostRequestedDate: '',
+    socialMediaPostCompleted: false,
+    socialMediaPostCompletedDate: '',
+    socialMediaPostNotes: '',
+    actualSandwichCount: 0,
+    actualSandwichTypes: [] as Array<{type: string, quantity: number}>,
+    actualSandwichCountRecordedDate: '',
+    actualSandwichCountRecordedBy: '',
+    followUpOneDayCompleted: false,
+    followUpOneDayDate: '',
+    followUpOneMonthCompleted: false,
+    followUpOneMonthDate: '',
+    followUpNotes: '',
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'types'>('total');
+  const [actualSandwichMode, setActualSandwichMode] = useState<'total' | 'types'>('total');
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [showCompletedDetails, setShowCompletedDetails] = useState(false);
   const [showDateConfirmation, setShowDateConfirmation] = useState(false);
   const [pendingDateChange, setPendingDateChange] = useState('');
   const [isMessageEditable, setIsMessageEditable] = useState(false);
@@ -142,6 +159,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
       const totalCount = eventRequest?.estimatedSandwichCount || 0;
       
+      const existingActualSandwichTypes = eventRequest?.actualSandwichTypes ? 
+        (typeof eventRequest?.actualSandwichTypes === 'string' ? 
+          JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
+      
+      const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
+      
       setFormData({
         eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
         eventStartTime: eventRequest?.eventStartTime || '',
@@ -178,10 +201,26 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         toolkitSent: eventRequest?.toolkitSent || false,
         toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
         toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+        // Completed event tracking fields
+        socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
+        socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
+        socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
+        socialMediaPostCompletedDate: (eventRequest as any)?.socialMediaPostCompletedDate ? formatDateForInput((eventRequest as any).socialMediaPostCompletedDate) : '',
+        socialMediaPostNotes: (eventRequest as any)?.socialMediaPostNotes || '',
+        actualSandwichCount: (eventRequest as any)?.actualSandwichCount || 0,
+        actualSandwichTypes: existingActualSandwichTypes,
+        actualSandwichCountRecordedDate: (eventRequest as any)?.actualSandwichCountRecordedDate ? formatDateForInput((eventRequest as any).actualSandwichCountRecordedDate) : '',
+        actualSandwichCountRecordedBy: (eventRequest as any)?.actualSandwichCountRecordedBy || '',
+        followUpOneDayCompleted: (eventRequest as any)?.followUpOneDayCompleted || false,
+        followUpOneDayDate: (eventRequest as any)?.followUpOneDayDate ? formatDateForInput((eventRequest as any).followUpOneDayDate) : '',
+        followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
+        followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
+        followUpNotes: (eventRequest as any)?.followUpNotes || '',
       });
       
       // Set mode based on existing data
       setSandwichMode(hasTypesData ? 'types' : 'total');
+      setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
     }
   }, [isVisible, isOpen, eventRequest, mode]);
 
@@ -313,6 +352,30 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
     }
 
+    // Include completed event tracking fields
+    eventData.socialMediaPostRequested = formData.socialMediaPostRequested;
+    eventData.socialMediaPostRequestedDate = serializeDateToISO(formData.socialMediaPostRequestedDate);
+    eventData.socialMediaPostCompleted = formData.socialMediaPostCompleted;
+    eventData.socialMediaPostCompletedDate = serializeDateToISO(formData.socialMediaPostCompletedDate);
+    eventData.socialMediaPostNotes = formData.socialMediaPostNotes || null;
+    
+    // Handle actual sandwich data based on mode
+    if (actualSandwichMode === 'total') {
+      eventData.actualSandwichCount = formData.actualSandwichCount;
+      eventData.actualSandwichTypes = null;
+    } else {
+      eventData.actualSandwichTypes = JSON.stringify(formData.actualSandwichTypes);
+      eventData.actualSandwichCount = formData.actualSandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+    }
+    eventData.actualSandwichCountRecordedDate = serializeDateToISO(formData.actualSandwichCountRecordedDate);
+    eventData.actualSandwichCountRecordedBy = formData.actualSandwichCountRecordedBy || null;
+    
+    eventData.followUpOneDayCompleted = formData.followUpOneDayCompleted;
+    eventData.followUpOneDayDate = serializeDateToISO(formData.followUpOneDayDate);
+    eventData.followUpOneMonthCompleted = formData.followUpOneMonthCompleted;
+    eventData.followUpOneMonthDate = serializeDateToISO(formData.followUpOneMonthDate);
+    eventData.followUpNotes = formData.followUpNotes || null;
+
     console.log('📋 FORM SUBMIT DEBUG:');
     console.log('  - eventRequest exists?', !!eventRequest);
     console.log('  - mode:', mode);
@@ -353,6 +416,30 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     setFormData(prev => ({
       ...prev,
       sandwichTypes: prev.sandwichTypes.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Helper functions for actual sandwich types
+  const addActualSandwichType = () => {
+    setFormData(prev => ({
+      ...prev,
+      actualSandwichTypes: [...prev.actualSandwichTypes, { type: 'deli_turkey', quantity: 0 }]
+    }));
+  };
+
+  const updateActualSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      actualSandwichTypes: prev.actualSandwichTypes.map((item, i) => 
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const removeActualSandwichType = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      actualSandwichTypes: prev.actualSandwichTypes.filter((_, i) => i !== index)
     }));
   };
 
@@ -938,6 +1025,303 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Completed Event Details Section - Only visible when status is "completed" */}
+          {formData.status === 'completed' && (
+            <div className="border rounded-lg">
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full flex justify-between items-center p-4"
+                onClick={() => setShowCompletedDetails(!showCompletedDetails)}
+                data-testid="toggle-completed-details"
+              >
+                <span className="font-semibold text-[#236383]">
+                  Completed Event Details
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showCompletedDetails ? 'rotate-180' : ''}`} />
+              </Button>
+              
+              {showCompletedDetails && (
+                <div className="p-4 border-t bg-[#e6f2f5] space-y-6">
+                  
+                  {/* Social Media Tracking Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-md font-semibold text-[#236383]">Social Media Tracking</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="socialMediaPostRequested"
+                            checked={formData.socialMediaPostRequested}
+                            onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostRequested: e.target.checked }))}
+                            className="w-4 h-4"
+                            data-testid="checkbox-social-media-requested"
+                          />
+                          <Label htmlFor="socialMediaPostRequested">Social Media Post Requested</Label>
+                        </div>
+                        {formData.socialMediaPostRequested && (
+                          <div className="ml-6">
+                            <Label htmlFor="socialMediaPostRequestedDate">Requested Date</Label>
+                            <Input
+                              id="socialMediaPostRequestedDate"
+                              type="date"
+                              value={formData.socialMediaPostRequestedDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostRequestedDate: e.target.value }))}
+                              data-testid="input-social-media-requested-date"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="socialMediaPostCompleted"
+                            checked={formData.socialMediaPostCompleted}
+                            onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostCompleted: e.target.checked }))}
+                            className="w-4 h-4"
+                            data-testid="checkbox-social-media-completed"
+                          />
+                          <Label htmlFor="socialMediaPostCompleted">Social Media Post Completed</Label>
+                        </div>
+                        {formData.socialMediaPostCompleted && (
+                          <div className="ml-6">
+                            <Label htmlFor="socialMediaPostCompletedDate">Completed Date</Label>
+                            <Input
+                              id="socialMediaPostCompletedDate"
+                              type="date"
+                              value={formData.socialMediaPostCompletedDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostCompletedDate: e.target.value }))}
+                              data-testid="input-social-media-completed-date"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="socialMediaPostNotes">Social Media Notes</Label>
+                      <Textarea
+                        id="socialMediaPostNotes"
+                        value={formData.socialMediaPostNotes}
+                        onChange={(e) => setFormData(prev => ({ ...prev, socialMediaPostNotes: e.target.value }))}
+                        placeholder="Notes about social media posts, links, or other details"
+                        className="min-h-[80px]"
+                        data-testid="textarea-social-media-notes"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Actual Sandwiches Delivered Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-md font-semibold text-[#236383]">Actual Sandwiches Delivered</h4>
+                    
+                    {/* Mode Selector for Actual Sandwiches */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={actualSandwichMode === 'total' ? 'default' : 'outline'}
+                        onClick={() => setActualSandwichMode('total')}
+                        className="text-xs"
+                        data-testid="button-actual-sandwich-mode-total"
+                      >
+                        Total Count Only
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={actualSandwichMode === 'types' ? 'default' : 'outline'}
+                        onClick={() => setActualSandwichMode('types')}
+                        className="text-xs"
+                        data-testid="button-actual-sandwich-mode-types"
+                      >
+                        Specify Types
+                      </Button>
+                    </div>
+
+                    {/* Total Count Mode for Actual Sandwiches */}
+                    {actualSandwichMode === 'total' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="actualSandwichCount">Total Number of Sandwiches Actually Delivered</Label>
+                        <Input
+                          id="actualSandwichCount"
+                          type="number"
+                          value={formData.actualSandwichCount}
+                          onChange={(e) => setFormData(prev => ({ ...prev, actualSandwichCount: parseInt(e.target.value) || 0 }))}
+                          placeholder="Enter actual sandwich count"
+                          min="0"
+                          className="w-40"
+                          data-testid="input-actual-sandwich-count"
+                        />
+                      </div>
+                    )}
+
+                    {/* Specific Types Mode for Actual Sandwiches */}
+                    {actualSandwichMode === 'types' && (
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <Label>Actual Sandwich Types & Quantities</Label>
+                          <Button 
+                            type="button" 
+                            onClick={addActualSandwichType} 
+                            size="sm"
+                            data-testid="button-add-actual-sandwich-type"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Type
+                          </Button>
+                        </div>
+                        
+                        {formData.actualSandwichTypes.length === 0 ? (
+                          <div className="text-center py-4 text-[#007E8C] border-2 border-dashed border-[#236383]/30 rounded">
+                            <p>No actual sandwich types added yet. Click "Add Type" to get started.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {formData.actualSandwichTypes.map((sandwich, index) => (
+                              <div key={index} className="flex items-center gap-3 p-3 border rounded bg-white">
+                                <Select
+                                  value={sandwich.type}
+                                  onValueChange={(value) => updateActualSandwichType(index, 'type', value)}
+                                >
+                                  <SelectTrigger className="w-40">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {SANDWICH_TYPES.map((type) => (
+                                      <SelectItem key={type.value} value={type.value}>
+                                        {type.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Input
+                                  type="number"
+                                  placeholder="Quantity"
+                                  value={sandwich.quantity}
+                                  onChange={(e) => updateActualSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
+                                  className="w-24"
+                                  min="0"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeActualSandwichType(index)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                            <div className="text-sm text-[#236383] bg-white p-2 rounded border border-[#236383]/30">
+                              <strong>Total:</strong> {formData.actualSandwichTypes.reduce((sum, item) => sum + item.quantity, 0)} sandwiches
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div>
+                      <Label htmlFor="actualSandwichCountRecordedDate">Date Recorded</Label>
+                      <Input
+                        id="actualSandwichCountRecordedDate"
+                        type="date"
+                        value={formData.actualSandwichCountRecordedDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, actualSandwichCountRecordedDate: e.target.value }))}
+                        data-testid="input-actual-sandwich-recorded-date"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="actualSandwichCountRecordedBy">Recorded By</Label>
+                      <Input
+                        id="actualSandwichCountRecordedBy"
+                        value={formData.actualSandwichCountRecordedBy}
+                        onChange={(e) => setFormData(prev => ({ ...prev, actualSandwichCountRecordedBy: e.target.value }))}
+                        placeholder="Enter name of person who recorded the count"
+                        data-testid="input-actual-sandwich-recorded-by"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Follow-up Completion Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-md font-semibold text-[#236383]">Follow-up Completion</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="followUpOneDayCompleted"
+                            checked={formData.followUpOneDayCompleted}
+                            onChange={(e) => setFormData(prev => ({ ...prev, followUpOneDayCompleted: e.target.checked }))}
+                            className="w-4 h-4"
+                            data-testid="checkbox-followup-oneday-completed"
+                          />
+                          <Label htmlFor="followUpOneDayCompleted">1-Day Follow-up Completed</Label>
+                        </div>
+                        {formData.followUpOneDayCompleted && (
+                          <div className="ml-6">
+                            <Label htmlFor="followUpOneDayDate">Follow-up Date</Label>
+                            <Input
+                              id="followUpOneDayDate"
+                              type="date"
+                              value={formData.followUpOneDayDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, followUpOneDayDate: e.target.value }))}
+                              data-testid="input-followup-oneday-date"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="followUpOneMonthCompleted"
+                            checked={formData.followUpOneMonthCompleted}
+                            onChange={(e) => setFormData(prev => ({ ...prev, followUpOneMonthCompleted: e.target.checked }))}
+                            className="w-4 h-4"
+                            data-testid="checkbox-followup-onemonth-completed"
+                          />
+                          <Label htmlFor="followUpOneMonthCompleted">1-Month Follow-up Completed</Label>
+                        </div>
+                        {formData.followUpOneMonthCompleted && (
+                          <div className="ml-6">
+                            <Label htmlFor="followUpOneMonthDate">Follow-up Date</Label>
+                            <Input
+                              id="followUpOneMonthDate"
+                              type="date"
+                              value={formData.followUpOneMonthDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, followUpOneMonthDate: e.target.value }))}
+                              data-testid="input-followup-onemonth-date"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="followUpNotes">Follow-up Notes</Label>
+                      <Textarea
+                        id="followUpNotes"
+                        value={formData.followUpNotes}
+                        onChange={(e) => setFormData(prev => ({ ...prev, followUpNotes: e.target.value }))}
+                        placeholder="Notes from follow-up conversations or feedback received"
+                        className="min-h-[80px]"
+                        data-testid="textarea-followup-notes"
+                      />
+                    </div>
+                  </div>
+                  
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Form Actions */}
           <div className="flex justify-between pt-4 border-t">
