@@ -1218,6 +1218,8 @@ router.patch(
         'statusChangedAt',
         'pickupDateTime',
         'scheduledEventDate',
+        'socialMediaPostRequestedDate',
+        'socialMediaPostCompletedDate',
       ];
       
       console.log('🔍 Pre-conversion debug - checking timestamp fields:');
