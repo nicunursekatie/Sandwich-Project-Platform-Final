@@ -580,6 +580,9 @@ export function hasPermission(user: any, permission: string): boolean {
   // Simple permission check to avoid import issues in browser
   if (!user || !permission) return false;
   
+  // Universal permissions: All authenticated users have these
+  if (permission === 'VOLUNTEERS_VIEW') return true;
+  
   // Super admins have all permissions
   if (user.role === 'super_admin') return true;
   

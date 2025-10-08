@@ -55,6 +55,16 @@ export function checkPermission(user: User | null | undefined, permission: strin
     };
   }
 
+  // Step 1.5: Universal permissions - all authenticated users have these
+  if (permission === 'VOLUNTEERS_VIEW') {
+    return {
+      granted: true,
+      reason: 'Universal permission (all users have access)',
+      userRole: user.role,
+      userPermissions: ['VOLUNTEERS_VIEW']
+    };
+  }
+
   // Step 2: Super admin bypass
   if (user.role === 'super_admin' || user.role === USER_ROLES.SUPER_ADMIN) {
     return {
