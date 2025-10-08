@@ -2483,13 +2483,19 @@ export default function SandwichCollectionLog() {
                           
                           {/* Show the entry being kept */}
                           <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="text-xs font-medium text-green-700 uppercase">
-                                ✓ Keeping (Newest)
-                              </span>
-                              <span className="text-xs text-green-600">
-                                ID: {group.keepNewest.id}
-                              </span>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-medium text-green-700 uppercase">
+                                  ✓ Keeping (Newest)
+                                </span>
+                                <span className="text-xs text-green-600">
+                                  ID: {group.keepNewest.id}
+                                </span>
+                              </div>
+                              <div className="text-xs text-green-700">
+                                <User className="w-3 h-3 inline mr-1" />
+                                {group.keepNewest.createdByName || 'Unknown'}
+                              </div>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                               <div className="flex items-center space-x-3">
@@ -2513,6 +2519,12 @@ export default function SandwichCollectionLog() {
                                 {calculateTotal(group.keepNewest)} total
                               </span>
                             </div>
+                            {group.keepNewest.submittedAt && (
+                              <div className="text-xs text-green-600 mt-1">
+                                <Calendar className="w-3 h-3 inline mr-1" />
+                                {new Date(group.keepNewest.submittedAt).toLocaleString()}
+                              </div>
+                            )}
                           </div>
 
                           {/* Show duplicates to delete with checkboxes */}
@@ -2547,20 +2559,34 @@ export default function SandwichCollectionLog() {
                                   />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
-                                      <span className="text-xs text-slate-500">
-                                        ID: {entry.id}
-                                      </span>
+                                      <div className="flex items-center space-x-2">
+                                        <span className="text-xs text-slate-500">
+                                          ID: {entry.id}
+                                        </span>
+                                        <span className="text-xs text-slate-600">
+                                          <User className="w-3 h-3 inline mr-1" />
+                                          {entry.createdByName || 'Unknown'}
+                                        </span>
+                                      </div>
                                       <span className="text-sm font-medium text-slate-900">
                                         {totalSandwiches} total
                                       </span>
                                     </div>
-                                    <div className="flex items-center space-x-3 text-xs text-slate-600 mt-1">
-                                      <span>
-                                        {entry.individualSandwiches || 0} individual
-                                      </span>
-                                      {groupTotal > 0 && (
+                                    <div className="flex items-center justify-between text-xs text-slate-600 mt-1">
+                                      <div className="flex items-center space-x-3">
                                         <span>
-                                          {groupTotal} group
+                                          {entry.individualSandwiches || 0} individual
+                                        </span>
+                                        {groupTotal > 0 && (
+                                          <span>
+                                            {groupTotal} group
+                                          </span>
+                                        )}
+                                      </div>
+                                      {entry.submittedAt && (
+                                        <span className="text-slate-500">
+                                          <Calendar className="w-3 h-3 inline mr-1" />
+                                          {new Date(entry.submittedAt).toLocaleDateString()}
                                         </span>
                                       )}
                                     </div>
