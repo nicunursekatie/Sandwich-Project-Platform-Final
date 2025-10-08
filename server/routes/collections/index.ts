@@ -390,6 +390,274 @@ collectionsRouter.get('/analyze-duplicates', async (req, res) => {
   }
 });
 
+// Bulk delete sandwich collections (must be before :id route)
+collectionsRouter.delete('/bulk', async (req, res) => {
+  try {
+    const collections = await storage.getAllSandwichCollections();
+    const collectionsToDelete = collections.filter((collection) => {
+      const hostName = collection.hostName;
+      return hostName.startsWith('Loc ') || /^Group [1-8]/.test(hostName);
+    });
+
+    let deletedCount = 0;
+    // Delete in reverse order by ID to maintain consistency
+    const sortedCollections = collectionsToDelete.sort((a, b) => b.id - a.id);
+
+    for (const collection of sortedCollections) {
+      try {
+        const deleted = await storage.deleteSandwichCollection(collection.id);
+        if (deleted) {
+          deletedCount++;
+        }
+      } catch (error) {
+        console.error(`Failed to delete collection ${collection.id}:`, error);
+      }
+    }
+
+    res.json({
+      message: `Successfully deleted ${deletedCount} duplicate entries`,
+      deletedCount,
+      patterns: ['Loc *', 'Group 1-8'],
+    });
+  } catch (error) {
+    logger.error('Failed to bulk delete sandwich collections', error);
+    res.status(500).json({ message: 'Failed to delete duplicate entries' });
+  }
+});
+
+// Clean selected suspicious entries from sandwich collections
+collectionsRouter.delete(
+  '/clean-selected',
+  requirePermission('DATA_EXPORT'),
+  async (req, res) => {
+    try {
+      const { ids } = req.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: 'Invalid or empty IDs array' });
+      }
+
+      let deletedCount = 0;
+      for (const id of ids) {
+        try {
+          await storage.deleteSandwichCollection(id);
+          deletedCount++;
+        } catch (error) {
+          logger.warn(`Failed to delete collection ${id}:`, error);
+        }
+      }
+
+      res.json({
+        message: `Successfully deleted ${deletedCount} selected entries`,
+        deletedCount,
+      });
+    } catch (error) {
+      logger.error('Failed to delete selected suspicious entries:', error);
+      res.status(500).json({ message: 'Failed to delete selected entries' });
+    }
+  }
+);
+
+// Clean duplicates from sandwich collections
+collectionsRouter.delete(
+  '/clean-duplicates',
+  requirePermission('DATA_EXPORT'),
+  async (req, res) => {
+    try {
+      const { mode = 'exact' } = req.body; // 'exact', 'suspicious', or 'og-duplicates'
+      const collections = await storage.getAllSandwichCollections();
+
+      let collectionsToDelete = [];
+
+      if (mode === 'exact') {
+        // Find exact duplicates based on date, host, and counts
+        const duplicateGroups = new Map();
+
+        collections.forEach((collection) => {
+          const key = `${collection.collectionDate}-${collection.hostName}-${collection.individualSandwiches}-${collection.groupCollections}`;
+
+          if (!duplicateGroups.has(key)) {
+            duplicateGroups.set(key, []);
+          }
+          duplicateGroups.get(key).push(collection);
+        });
+
+        // Keep only the newest entry from each duplicate group
+        duplicateGroups.forEach((group) => {
+          if (group.length > 1) {
+            const sorted = group.sort(
+              (a, b) =>
+                new Date(b.submittedAt).getTime() -
+                new Date(a.submittedAt).getTime()
+            );
+            collectionsToDelete.push(...sorted.slice(1)); // Keep first (newest), delete rest
+          }
+        });
+      } else if (mode === 'suspicious') {
+        // Remove entries with suspicious patterns (improved detection)
+        collectionsToDelete = collections.filter((collection) => {
+          const hostName = (collection.hostName || '').toLowerCase().trim();
+          return (
+            hostName.startsWith('loc ') ||
+            hostName.startsWith('group ') ||
+            hostName.match(/^group \d+(-\d+)?$/) ||
+            hostName.match(/^loc\d+$/) ||
+            hostName === 'groups' ||
+            hostName === 'test' ||
+            hostName.includes('test') ||
+            hostName.includes('duplicate') ||
+            hostName.includes('unknown') ||
+            hostName.includes('no location') ||
+            hostName === '' ||
+            hostName === 'null' ||
+            // Check for obviously incorrect host names
+            hostName.length < 3 ||
+            hostName.match(/^\d+$/) || // Pure numbers
+            hostName.match(/^[a-z]{1,2}$/) // Single/double letters
+          );
+        });
+      }
+
+      let deletedCount = 0;
+      const errors = [];
+
+      // Delete in reverse order by ID to maintain consistency
+      const sortedCollections = collectionsToDelete.sort((a, b) => b.id - a.id);
+
+      for (const collection of sortedCollections) {
+        try {
+          // Ensure ID is a valid number
+          const id = Number(collection.id);
+          if (isNaN(id)) {
+            errors.push(`Invalid collection ID: ${collection.id}`);
+            continue;
+          }
+
+          const deleted = await storage.deleteSandwichCollection(id);
+          if (deleted) {
+            deletedCount++;
+          }
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+          errors.push(
+            `Failed to delete collection ${collection.id}: ${errorMessage}`
+          );
+          console.error(`Failed to delete collection ${collection.id}:`, error);
+        }
+      }
+
+      res.json({
+        message: `Successfully cleaned ${deletedCount} duplicate entries using ${mode} mode`,
+        deletedCount,
+        totalFound: collectionsToDelete.length,
+        errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
+        mode,
+      });
+    } catch (error) {
+      logger.error('Failed to clean duplicates', error);
+      res.status(500).json({ message: 'Failed to clean duplicate entries' });
+    }
+  }
+);
+
+// Batch delete sandwich collections
+collectionsRouter.delete('/batch-delete', async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Invalid or empty IDs array' });
+    }
+
+    let deletedCount = 0;
+    const errors = [];
+
+    // Delete in reverse order to maintain consistency
+    const sortedIds = ids.sort((a, b) => b - a);
+
+    for (const id of sortedIds) {
+      try {
+        const deleted = await storage.deleteSandwichCollection(id);
+        if (deleted) {
+          deletedCount++;
+        } else {
+          errors.push(`Collection with ID ${id} not found`);
+        }
+      } catch (error) {
+        errors.push(
+          `Failed to delete collection ${id}: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`
+        );
+      }
+    }
+
+    res.json({
+      message: `Successfully deleted ${deletedCount} of ${ids.length} collections`,
+      deletedCount,
+      totalRequested: ids.length,
+      errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
+    });
+  } catch (error) {
+    logger.error('Failed to batch delete collections', error);
+    res.status(500).json({ message: 'Failed to batch delete collections' });
+  }
+});
+
+// Batch edit sandwich collections
+collectionsRouter.patch(
+  '/batch-edit',
+  requirePermission('DATA_EXPORT'),
+  async (req, res) => {
+    try {
+      const { ids, updates } = req.body;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: 'Invalid or empty IDs array' });
+      }
+
+      if (!updates || Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: 'No updates provided' });
+      }
+
+      let updatedCount = 0;
+      const errors = [];
+
+      for (const id of ids) {
+        try {
+          const updated = await storage.updateSandwichCollection(id, updates);
+          if (updated) {
+            updatedCount++;
+          } else {
+            errors.push(`Collection with ID ${id} not found`);
+          }
+        } catch (error) {
+          errors.push(
+            `Failed to update collection ${id}: ${
+              error instanceof Error ? error.message : 'Unknown error'
+            }`
+          );
+        }
+      }
+
+      res.json({
+        message: `Successfully updated ${updatedCount} of ${ids.length} collections`,
+        updatedCount,
+        totalRequested: ids.length,
+        errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
+      });
+    } catch (error) {
+      logger.error('Failed to batch edit collections', error);
+      res.status(500).json({ message: 'Failed to batch edit collections' });
+    }
+  }
+);
+
+// =============================================================================
+// PARAMETERIZED ROUTES - These MUST come AFTER all named routes above
+// =============================================================================
+
 // GET individual sandwich collection by ID
 collectionsRouter.get('/:id', async (req, res) => {
   try {
@@ -564,40 +832,6 @@ collectionsRouter.patch(
   }
 );
 
-collectionsRouter.delete('/bulk', async (req, res) => {
-  try {
-    const collections = await storage.getAllSandwichCollections();
-    const collectionsToDelete = collections.filter((collection) => {
-      const hostName = collection.hostName;
-      return hostName.startsWith('Loc ') || /^Group [1-8]/.test(hostName);
-    });
-
-    let deletedCount = 0;
-    // Delete in reverse order by ID to maintain consistency
-    const sortedCollections = collectionsToDelete.sort((a, b) => b.id - a.id);
-
-    for (const collection of sortedCollections) {
-      try {
-        const deleted = await storage.deleteSandwichCollection(collection.id);
-        if (deleted) {
-          deletedCount++;
-        }
-      } catch (error) {
-        console.error(`Failed to delete collection ${collection.id}:`, error);
-      }
-    }
-
-    res.json({
-      message: `Successfully deleted ${deletedCount} duplicate entries`,
-      deletedCount,
-      patterns: ['Loc *', 'Group 1-8'],
-    });
-  } catch (error) {
-    logger.error('Failed to bulk delete sandwich collections', error);
-    res.status(500).json({ message: 'Failed to delete duplicate entries' });
-  }
-});
-
 // DELETE individual collection
 collectionsRouter.delete(
   '/:id',
@@ -629,235 +863,6 @@ collectionsRouter.delete(
     } catch (error) {
       logger.error('Failed to delete sandwich collection', error);
       res.status(500).json({ message: 'Failed to delete collection' });
-    }
-  }
-);
-
-// Clean selected suspicious entries from sandwich collections
-collectionsRouter.delete(
-  '/clean-selected',
-  requirePermission('DATA_EXPORT'),
-  async (req, res) => {
-    try {
-      const { ids } = req.body;
-
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ message: 'Invalid or empty IDs array' });
-      }
-
-      let deletedCount = 0;
-      for (const id of ids) {
-        try {
-          await storage.deleteSandwichCollection(id);
-          deletedCount++;
-        } catch (error) {
-          logger.warn(`Failed to delete collection ${id}:`, error);
-        }
-      }
-
-      res.json({
-        message: `Successfully deleted ${deletedCount} selected entries`,
-        deletedCount,
-      });
-    } catch (error) {
-      logger.error('Failed to delete selected suspicious entries:', error);
-      res.status(500).json({ message: 'Failed to delete selected entries' });
-    }
-  }
-);
-
-// Clean duplicates from sandwich collections
-collectionsRouter.delete(
-  '/clean-duplicates',
-  requirePermission('DATA_EXPORT'),
-  async (req, res) => {
-    try {
-      const { mode = 'exact' } = req.body; // 'exact', 'suspicious', or 'og-duplicates'
-      const collections = await storage.getAllSandwichCollections();
-
-      let collectionsToDelete = [];
-
-      if (mode === 'exact') {
-        // Find exact duplicates based on date, host, and counts
-        const duplicateGroups = new Map();
-
-        collections.forEach((collection) => {
-          const key = `${collection.collectionDate}-${collection.hostName}-${collection.individualSandwiches}-${collection.groupCollections}`;
-
-          if (!duplicateGroups.has(key)) {
-            duplicateGroups.set(key, []);
-          }
-          duplicateGroups.get(key).push(collection);
-        });
-
-        // Keep only the newest entry from each duplicate group
-        duplicateGroups.forEach((group) => {
-          if (group.length > 1) {
-            const sorted = group.sort(
-              (a, b) =>
-                new Date(b.submittedAt).getTime() -
-                new Date(a.submittedAt).getTime()
-            );
-            collectionsToDelete.push(...sorted.slice(1)); // Keep first (newest), delete rest
-          }
-        });
-      } else if (mode === 'suspicious') {
-        // Remove entries with suspicious patterns (improved detection)
-        collectionsToDelete = collections.filter((collection) => {
-          const hostName = (collection.hostName || '').toLowerCase().trim();
-          return (
-            hostName.startsWith('loc ') ||
-            hostName.startsWith('group ') ||
-            hostName.match(/^group \d+(-\d+)?$/) ||
-            hostName.match(/^loc\d+$/) ||
-            hostName === 'groups' ||
-            hostName === 'test' ||
-            hostName.includes('test') ||
-            hostName.includes('duplicate') ||
-            hostName.includes('unknown') ||
-            hostName.includes('no location') ||
-            hostName === '' ||
-            hostName === 'null' ||
-            // Check for obviously incorrect host names
-            hostName.length < 3 ||
-            hostName.match(/^\d+$/) || // Pure numbers
-            hostName.match(/^[a-z]{1,2}$/) // Single/double letters
-          );
-        });
-      }
-
-      let deletedCount = 0;
-      const errors = [];
-
-      // Delete in reverse order by ID to maintain consistency
-      const sortedCollections = collectionsToDelete.sort((a, b) => b.id - a.id);
-
-      for (const collection of sortedCollections) {
-        try {
-          // Ensure ID is a valid number
-          const id = Number(collection.id);
-          if (isNaN(id)) {
-            errors.push(`Invalid collection ID: ${collection.id}`);
-            continue;
-          }
-
-          const deleted = await storage.deleteSandwichCollection(id);
-          if (deleted) {
-            deletedCount++;
-          }
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Unknown error';
-          errors.push(
-            `Failed to delete collection ${collection.id}: ${errorMessage}`
-          );
-          console.error(`Failed to delete collection ${collection.id}:`, error);
-        }
-      }
-
-      res.json({
-        message: `Successfully cleaned ${deletedCount} duplicate entries using ${mode} mode`,
-        deletedCount,
-        totalFound: collectionsToDelete.length,
-        errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
-        mode,
-      });
-    } catch (error) {
-      logger.error('Failed to clean duplicates', error);
-      res.status(500).json({ message: 'Failed to clean duplicate entries' });
-    }
-  }
-);
-
-// Batch delete sandwich collections (must be before :id route)
-collectionsRouter.delete('/batch-delete', async (req, res) => {
-  try {
-    const { ids } = req.body;
-
-    if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ message: 'Invalid or empty IDs array' });
-    }
-
-    let deletedCount = 0;
-    const errors = [];
-
-    // Delete in reverse order to maintain consistency
-    const sortedIds = ids.sort((a, b) => b - a);
-
-    for (const id of sortedIds) {
-      try {
-        const deleted = await storage.deleteSandwichCollection(id);
-        if (deleted) {
-          deletedCount++;
-        } else {
-          errors.push(`Collection with ID ${id} not found`);
-        }
-      } catch (error) {
-        errors.push(
-          `Failed to delete collection ${id}: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`
-        );
-      }
-    }
-
-    res.json({
-      message: `Successfully deleted ${deletedCount} of ${ids.length} collections`,
-      deletedCount,
-      totalRequested: ids.length,
-      errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
-    });
-  } catch (error) {
-    logger.error('Failed to batch delete collections', error);
-    res.status(500).json({ message: 'Failed to batch delete collections' });
-  }
-});
-
-// Batch edit sandwich collections
-collectionsRouter.patch(
-  '/batch-edit',
-  requirePermission('DATA_EXPORT'),
-  async (req, res) => {
-    try {
-      const { ids, updates } = req.body;
-
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ message: 'Invalid or empty IDs array' });
-      }
-
-      if (!updates || Object.keys(updates).length === 0) {
-        return res.status(400).json({ message: 'No updates provided' });
-      }
-
-      let updatedCount = 0;
-      const errors = [];
-
-      for (const id of ids) {
-        try {
-          const updated = await storage.updateSandwichCollection(id, updates);
-          if (updated) {
-            updatedCount++;
-          } else {
-            errors.push(`Collection with ID ${id} not found`);
-          }
-        } catch (error) {
-          errors.push(
-            `Failed to update collection ${id}: ${
-              error instanceof Error ? error.message : 'Unknown error'
-            }`
-          );
-        }
-      }
-
-      res.json({
-        message: `Successfully updated ${updatedCount} of ${ids.length} collections`,
-        updatedCount,
-        totalRequested: ids.length,
-        errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
-      });
-    } catch (error) {
-      logger.error('Failed to batch edit collections', error);
-      res.status(500).json({ message: 'Failed to batch edit collections' });
     }
   }
 );
