@@ -704,8 +704,18 @@ router.post(
       }
 
       console.log('🔍 Validating data with Zod schema...');
-      const validatedData = insertEventRequestSchema.parse(requestData);
-      console.log('✅ Data validated successfully');
+      let validatedData;
+      try {
+        validatedData = insertEventRequestSchema.parse(requestData);
+        console.log('✅ Data validated successfully');
+      } catch (validationError: any) {
+        console.error('❌ Validation failed:', validationError);
+        return res.status(400).json({
+          error: 'Validation failed',
+          details: validationError.errors || validationError.message,
+          message: 'Please check your input and try again. Make sure you provide at least an organization name or contact information.'
+        });
+      }
 
       // Check for organization duplicates
       const duplicateCheck = { exists: false, matches: [] as any[] };

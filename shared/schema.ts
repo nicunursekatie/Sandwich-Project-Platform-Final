@@ -1423,13 +1423,13 @@ export const eventRequests = pgTable(
   {
     id: serial('id').primaryKey(),
     // Submitter information
-    firstName: varchar('first_name').notNull(),
-    lastName: varchar('last_name').notNull(),
+    firstName: varchar('first_name'), // Made optional for manual entries
+    lastName: varchar('last_name'), // Made optional for manual entries
     email: varchar('email'), // Made optional - can be null
     phone: varchar('phone'),
 
     // Organization information
-    organizationName: varchar('organization_name').notNull(),
+    organizationName: varchar('organization_name'), // Made optional for manual entries
     department: varchar('department'),
 
     // Event details
@@ -1865,6 +1865,17 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
         z.null(),
       ])
       .optional(),
+  })
+  .refine((data) => {
+    // Require at least organization name OR some contact information
+    const hasOrgName = data.organizationName && data.organizationName.trim().length > 0;
+    const hasContactInfo = (data.firstName && data.firstName.trim().length > 0) || 
+                          (data.lastName && data.lastName.trim().length > 0) ||
+                          (data.email && data.email.trim().length > 0);
+    return hasOrgName || hasContactInfo;
+  }, {
+    message: "Either organization name or contact information (name/email) is required",
+    path: ["organizationName"]
   });
 
 export const insertEventReminderSchema = createInsertSchema(eventReminders)
