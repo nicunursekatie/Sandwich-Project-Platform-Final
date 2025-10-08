@@ -305,273 +305,157 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     return [];
   };
 
-  const renderAssignmentColumn = (
-    type: 'driver' | 'speaker' | 'volunteer',
-    icon: React.ReactNode,
-    title: string,
-    needed: number | null | undefined,
-    assignedIds: string[] | any,
-    details?: any
-  ) => {
-    const assigned = type === 'speaker' ?
-      Object.keys(details || {}) :
-      parsePostgresArray(assignedIds);
-
-    const hasCapacity = typeof needed === 'number' ? assigned.length < needed : true;
-    const canSignup = canSelfSignup && canSelfSignup(request, type);
-    const isSignedUp = isUserSignedUp && isUserSignedUp(request, type);
-    const isFullyStaffed = typeof needed === 'number' ? assigned.length >= needed : false;
-    const isUnderStaffed = typeof needed === 'number' ? assigned.length < needed : false;
-    const isOverStaffed = typeof needed === 'number' ? assigned.length > needed : false;
-
-    return (
-      <div className={`rounded-lg p-4 border min-h-[120px] ${
-        isUnderStaffed 
-          ? 'bg-red-50 border-red-200' 
-          : isFullyStaffed && !isOverStaffed
-            ? 'bg-teal-50 border-teal-200'
-            : isOverStaffed
-              ? 'bg-brand-primary-lighter border-brand-primary-border'
-              : 'bg-white/60 border-white/80'
-      }`}>
-        {/* Header with clear status - Completed Event Summary */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            {icon}
-            <span className="font-semibold text-base text-[#236383]">{title}</span>
-          </div>
-          {typeof needed === 'number' && (
-            <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                isUnderStaffed 
-                  ? 'bg-red-100 text-red-700 border border-red-200' 
-                  : isFullyStaffed && !isOverStaffed
-                    ? 'bg-teal-100 text-teal-700 border border-teal-200'
-                    : isOverStaffed
-                      ? 'bg-brand-primary-light text-brand-primary border border-brand-primary-border'
-                      : 'bg-gray-100 text-gray-600'
-              }`}>
-                {isUnderStaffed && <AlertTriangle className="w-3 h-3" />}
-                {isFullyStaffed && !isOverStaffed && <Check className="w-3 h-3" />}
-                {isOverStaffed && <Users className="w-3 h-3" />}
-                <span className="font-bold">{assigned.length}/{needed}</span>
-                {isUnderStaffed && <span className="ml-1">Short-staffed</span>}
-                {isOverStaffed && <span className="ml-1">Extra help</span>}
-                {isFullyStaffed && !isOverStaffed && <span className="ml-1">Fully staffed</span>}
-              </div>
-            </div>
-          )}
-        </div>
-        
-        {/* Final team summary */}
-        {typeof needed === 'number' && (
-          <div className="mb-3 text-xs text-gray-600 bg-white/50 rounded px-2 py-1">
-            <span className="font-medium">Event Team:</span> {assigned.length} {title.toLowerCase()} 
-            {needed > 0 && <span className="ml-2">(Requested: {needed})</span>}
-          </div>
-        )}
-        
-        {/* Team members who served */}
-        <div className="space-y-2 mb-3">
-          {assigned.length > 0 ? (
-            assigned.map((personId: string) => {
-              const detailName = details?.[personId]?.name;
-              let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
-              
-              // Extract name from custom ID if needed for any assignment type
-              if (name.startsWith('custom-')) {
-                name = extractNameFromCustomId(name);
-              }
-              
-              return (
-                <div key={personId} className="flex items-center bg-white/90 rounded px-3 py-2 shadow-sm">
-                  <Check className="w-3 h-3 text-teal-600 mr-2" />
-                  <span className="text-sm font-medium">{name}</span>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-gray-500 italic text-sm text-center py-2 bg-white/30 rounded border-2 border-dashed border-gray-300">
-              No one served in this role
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Custom render for van driver (single assignment)
-  const renderVanDriverAssignment = () => {
-    if (!request.vanDriverNeeded && !request.assignedVanDriverId) {
-      return null; // Don't show section if not needed and no one assigned
-    }
-
-    let assignedVanDriverName = request.assignedVanDriverId 
-      ? (request.customVanDriverName || resolveUserName(request.assignedVanDriverId))
-      : null;
-    
-    // Extract name from custom ID if needed
-    if (assignedVanDriverName && assignedVanDriverName.startsWith('custom-')) {
-      assignedVanDriverName = extractNameFromCustomId(assignedVanDriverName);
-    }
-
-    return (
-      <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-3">
-          <Car className="w-5 h-5 text-[#A31C41]" />
-          <span className="font-semibold text-base text-[#A31C41]">Van Driver</span>
-        </div>
-
-        {/* Assigned van driver */}
-        <div className="space-y-2 mb-3 min-h-[60px]">
-          {assignedVanDriverName ? (
-            <div className="flex items-center justify-between bg-white/80 rounded px-3 py-2">
-              <span className="text-sm font-medium">{assignedVanDriverName}</span>
-              {canEdit && onRemoveAssignment && (
-                <button
-                  onClick={() => onRemoveAssignment('driver', request.assignedVanDriverId!)}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-1"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="text-sm text-[#A31C41]/60 italic">No van driver assigned</div>
-          )}
-        </div>
-
-        {/* Assign button - only show if no one assigned yet */}
-        {canEdit && !assignedVanDriverName && onAssign && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onAssign('driver')}
-            className="w-full text-sm border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Assign Van Driver
-          </Button>
-        )}
-      </div>
-    );
-  };
-
-  // Render Social Media section similar to assignment columns, but using the full component
-  const renderSocialMediaSection = () => {
-    const isPosted = request.socialMediaPostCompleted;
-    const isRequested = request.socialMediaPostRequested;
-    
-    // Determine background color based on status
-    let bgColor = 'bg-white/60 border-white/80'; // Default
-    if (isPosted) {
-      bgColor = 'bg-teal-50 border-teal-200'; // Completed
-    } else if (isRequested) {
-      bgColor = 'bg-brand-primary-lighter border-brand-primary-border'; // In progress
-    }
-    
-    return (
-      <div className={`rounded-lg p-4 border ${bgColor} min-h-[120px]`}>
-        {/* Header with status indicator */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Share2 className="w-5 h-5 text-[#236383]" />
-            <span className="font-semibold text-base text-[#236383]">Social Media</span>
-          </div>
-          {isPosted && (
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-700 border border-teal-200">
-              <Check className="w-3 h-3" />
-              <span className="font-bold">Posted</span>
-            </div>
-          )}
-          {isRequested && !isPosted && (
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-brand-primary-light text-brand-primary border border-brand-primary-border">
-              <Clock className="w-3 h-3" />
-              <span className="font-bold">Pending</span>
-            </div>
-          )}
-        </div>
-        
-        {/* Status summary line to match other sections */}
-        <div className="mb-3 text-xs text-gray-600 bg-white/50 rounded px-2 py-1">
-          <span className="font-medium">Status:</span> {
-            isPosted ? 'Social media post completed' : 
-            isRequested ? 'Post requested' : 
-            'No activity'
-          }
-        </div>
-        
-        {/* Use the existing SocialMediaTracking component for full functionality */}
-        <div className="scale-95 -mx-1">
-          <SocialMediaTracking request={request} />
-        </div>
-      </div>
-    );
-  };
-
-  // Combine regular drivers with van driver for accurate count
-  const combinedDriverIds = (() => {
+  // Get all team members with names
+  const getDrivers = () => {
     const regularDrivers = parsePostgresArray(request.assignedDriverIds);
-    if (request.assignedVanDriverId) {
-      return [...regularDrivers, request.assignedVanDriverId];
-    }
-    return regularDrivers;
-  })();
+    const drivers: { id: string; name: string }[] = regularDrivers.map(id => {
+      const detailName = request.driverDetails?.[id]?.name;
+      let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
+      if (name.startsWith('custom-')) {
+        name = extractNameFromCustomId(name);
+      }
+      return { id, name };
+    });
 
-  // Combine driver details with van driver details
-  const combinedDriverDetails = (() => {
-    const details = { ...(request.driverDetails || {}) };
-    if (request.assignedVanDriverId && request.customVanDriverName) {
-      details[request.assignedVanDriverId] = { name: request.customVanDriverName };
+    // Add van driver if assigned
+    if (request.assignedVanDriverId) {
+      let vanDriverName = request.customVanDriverName || resolveUserName(request.assignedVanDriverId);
+      if (vanDriverName.startsWith('custom-')) {
+        vanDriverName = extractNameFromCustomId(vanDriverName);
+      }
+      drivers.push({ id: request.assignedVanDriverId, name: vanDriverName });
     }
-    return details;
-  })();
+
+    return drivers;
+  };
+
+  const getSpeakers = () => {
+    const speakerIds = Object.keys(request.speakerDetails || {});
+    return speakerIds.map(id => {
+      const detailName = request.speakerDetails?.[id]?.name;
+      let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
+      if (name.startsWith('custom-')) {
+        name = extractNameFromCustomId(name);
+      }
+      return { id, name };
+    });
+  };
+
+  const getVolunteers = () => {
+    const volunteerIds = parsePostgresArray(request.assignedVolunteerIds);
+    return volunteerIds.map(id => {
+      let name = resolveUserName(id);
+      if (name.startsWith('custom-')) {
+        name = extractNameFromCustomId(name);
+      }
+      return { id, name };
+    });
+  };
+
+  const drivers = getDrivers();
+  const speakers = getSpeakers();
+  const volunteers = getVolunteers();
+
+  // Calculate staffing gaps
+  const staffingGaps: string[] = [];
+  const driversNeeded = request.driversNeeded || 0;
+  const speakersNeeded = request.speakersNeeded || 0;
+  const volunteersNeeded = request.volunteersNeeded || 0;
+
+  // Count regular drivers only (excluding van driver) for staffing gap calculation
+  const regularDriversCount = parsePostgresArray(request.assignedDriverIds).length;
+  
+  if (driversNeeded > regularDriversCount) {
+    staffingGaps.push(`Needed ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} (had ${regularDriversCount})`);
+  }
+  if (speakersNeeded > speakers.length) {
+    staffingGaps.push(`Needed ${speakersNeeded} speaker${speakersNeeded > 1 ? 's' : ''} (had ${speakers.length})`);
+  }
+  if (volunteersNeeded > volunteers.length) {
+    staffingGaps.push(`Needed ${volunteersNeeded} volunteer${volunteersNeeded > 1 ? 's' : ''} (had ${volunteers.length})`);
+  }
 
   return (
-    <div className="pt-4">
-      {/* Assignments Section - Now 3 columns without Social Media */}
-      <div className="grid grid-cols-3 gap-4">
-        {/* Drivers Column - includes van driver in count */}
-        {renderAssignmentColumn(
-          'driver',
-          <Car className="w-5 h-5 text-[#236383]" />,
-          'Drivers',
-          request.driversNeeded,
-          combinedDriverIds,
-          combinedDriverDetails
-        )}
-
-        {/* Speakers Column */}
-        {renderAssignmentColumn(
-          'speaker',
-          <Megaphone className="w-5 h-5 text-[#236383]" />,
-          'Speakers',
-          request.speakersNeeded,
-          request.assignedSpeakerIds,
-          request.speakerDetails
-        )}
-
-        {/* Volunteers Column */}
-        {renderAssignmentColumn(
-          'volunteer',
-          <Users className="w-5 h-5 text-[#236383]" />,
-          'Volunteers',
-          request.volunteersNeeded,
-          request.assignedVolunteerIds,
-          undefined
-        )}
-      </div>
-
-      {/* Van Driver Section - separate row if needed */}
-      {(request.vanDriverNeeded || request.assignedVanDriverId) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div className="md:col-span-1">
-            {renderVanDriverAssignment()}
+    <div className="space-y-3">
+      {/* Unmet Needs Alert - only show if there were staffing gaps */}
+      {staffingGaps.length > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-amber-800">
+            <span className="font-semibold">Staffing Gap: </span>
+            {staffingGaps.join(', ')}
           </div>
-          <div className="md:col-span-2"></div> {/* Empty space to maintain layout */}
         </div>
       )}
+
+      {/* Compact Team Display */}
+      <div className="bg-white/50 rounded-lg px-3 py-2 text-sm">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {/* Drivers */}
+          <div className="flex items-center gap-2">
+            <Car className="w-4 h-4 text-[#236383]" />
+            <span className="font-medium text-[#236383]">Drivers:</span>
+            {drivers.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {drivers.map((driver, index) => (
+                  <React.Fragment key={driver.id}>
+                    <Badge variant="secondary" className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5">
+                      {driver.name}
+                    </Badge>
+                    {index < drivers.length - 1 && <span className="text-gray-400">•</span>}
+                  </React.Fragment>
+                ))}
+              </div>
+            ) : (
+              <span className="text-gray-500 italic text-xs">(none)</span>
+            )}
+          </div>
+
+          <span className="text-gray-300">|</span>
+
+          {/* Speakers */}
+          <div className="flex items-center gap-2">
+            <Megaphone className="w-4 h-4 text-[#236383]" />
+            <span className="font-medium text-[#236383]">Speakers:</span>
+            {speakers.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {speakers.map((speaker, index) => (
+                  <React.Fragment key={speaker.id}>
+                    <Badge variant="secondary" className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5">
+                      {speaker.name}
+                    </Badge>
+                    {index < speakers.length - 1 && <span className="text-gray-400">•</span>}
+                  </React.Fragment>
+                ))}
+              </div>
+            ) : (
+              <span className="text-gray-500 italic text-xs">(none)</span>
+            )}
+          </div>
+
+          <span className="text-gray-300">|</span>
+
+          {/* Volunteers */}
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-[#236383]" />
+            <span className="font-medium text-[#236383]">Volunteers:</span>
+            {volunteers.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {volunteers.map((volunteer, index) => (
+                  <React.Fragment key={volunteer.id}>
+                    <Badge variant="secondary" className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5">
+                      {volunteer.name}
+                    </Badge>
+                    {index < volunteers.length - 1 && <span className="text-gray-400">•</span>}
+                  </React.Fragment>
+                ))}
+              </div>
+            ) : (
+              <span className="text-gray-500 italic text-xs">(none)</span>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
