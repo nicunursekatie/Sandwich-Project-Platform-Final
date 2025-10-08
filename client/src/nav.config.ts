@@ -144,7 +144,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: 'google-calendar-availability',
-    label: 'TSP Volunteer Availability (Google)',
+    label: 'Volunteer Calendar',
     icon: Calendar,
     href: 'google-calendar-availability',
     permission: PERMISSIONS.AVAILABILITY_VIEW,

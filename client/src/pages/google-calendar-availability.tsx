@@ -17,10 +17,10 @@ export default function GoogleCalendarAvailability() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
-              TSP Volunteer Availability
+              Volunteer Calendar
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Live view of team member availability calendar
+              Live Google Calendar showing team member availability
             </p>
           </div>
         </div>

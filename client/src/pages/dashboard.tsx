@@ -675,6 +675,24 @@ export default function Dashboard({
                     return;
                   }
                   
+                  if (section === 'my-availability') {
+                    setLocation('/my-availability');
+                    setIsMobileMenuOpen(false);
+                    return;
+                  }
+                  
+                  if (section === 'team-availability') {
+                    setLocation('/team-availability');
+                    setIsMobileMenuOpen(false);
+                    return;
+                  }
+                  
+                  if (section === 'google-calendar-availability') {
+                    setLocation('/google-calendar-availability');
+                    setIsMobileMenuOpen(false);
+                    return;
+                  }
+                  
                   setActiveSection(section);
                   // Close mobile menu when navigation item is clicked
                   setIsMobileMenuOpen(false);
