@@ -33,6 +33,7 @@ Key technical implementations include:
 - **Analytics**: Dashboard for community impact and user activity tracking.
 - **Meeting Management**: Full-featured system with agenda compilation, project integration, and PDF export, including a database-backed meeting notes system.
 - **Event Requests Management System**: Complete tracking, duplicate detection, status tracking, and Google Sheets integration. Van drivers are correctly counted toward total driver count in staffing calculations across all event card types.
+- **Multi-Recipient Assignment System**: Events can now be assigned to multiple recipient organizations instead of just one. The `assignedRecipientIds` field (stored as `text().array()` in PostgreSQL) tracks all recipient organizations that received sandwiches from an event. The MultiRecipientSelector component provides a badge-based UI for selecting/removing recipients, integrated into the "Completed Event Details" section. Type normalization ensures proper string-to-number conversion when loading from database (PostgreSQL returns strings from text().array()) to prevent comparison bugs in the selector component.
 - **Google Sheets Integration**: Bidirectional automatic synchronization for project tracker and event requests.
 - **Enhanced Audit Log Display**: User-friendly audit trail with human-readable field names and formatted values.
 - **Email Compliance**: SendGrid emails include required opt-out text, with a centralized utility for consistent footers and proper HTML structure.
