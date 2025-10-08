@@ -30,6 +30,7 @@ import {
   Share2,
   Instagram,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { extractNameFromCustomId } from '@/lib/utils';
@@ -1137,6 +1138,41 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     ? String(request.deliveryDestination)
     : null;
 
+  // Fetch recipients for name lookup
+  const { data: recipients = [] } = useQuery<{ id: number; name: string }[]>({
+    queryKey: ['/api/recipients'],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Helper to get recipient names from IDs
+  const getRecipientNames = (recipientIds: any): string[] => {
+    if (!recipientIds) return [];
+    
+    // Parse the array (could be string or array)
+    let ids: number[] = [];
+    if (Array.isArray(recipientIds)) {
+      ids = recipientIds;
+    } else if (typeof recipientIds === 'string') {
+      try {
+        // Handle PostgreSQL array format: {1,2,3}
+        const cleaned = recipientIds.replace(/[{}]/g, '');
+        if (cleaned) {
+          ids = cleaned.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+        }
+      } catch {
+        return [];
+      }
+    }
+    
+    // Map IDs to names
+    return ids.map(id => {
+      const recipient = recipients.find(r => r.id === id);
+      return recipient?.name || `Unknown (ID: ${id})`;
+    });
+  };
+
+  const assignedRecipientNames = getRecipientNames((request as any).assignedRecipientIds);
+
   // Get event date and time for display
   const eventDate = request.scheduledEventDate || request.desiredEventDate;
   const eventDateDisplay = eventDate ? formatEventDate(eventDate.toString()).text : 'No date set';
@@ -1292,6 +1328,30 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 </div>
               </div>
             ) : null}
+
+            {/* Assigned Recipients */}
+            {assignedRecipientNames.length > 0 && (
+              <div className="bg-[#e6f2f5] rounded-lg p-3">
+                <div className="flex items-start gap-2 text-sm">
+                  <Building className="w-4 h-4 text-[#236383] mt-0.5" />
+                  <div className="flex-1">
+                    <span className="font-medium text-[#236383]">Recipient Organizations:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {assignedRecipientNames.map((name, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="bg-white text-[#236383] border border-[#236383]/30 text-xs"
+                          data-testid={`badge-recipient-${index}`}
+                        >
+                          {name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Follow-up Status */}
             <div className="flex gap-2">

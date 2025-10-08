@@ -40,6 +40,7 @@ import { SANDWICH_TYPES } from './constants';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { getPickupDateTimeForInput } from './utils';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
+import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -106,6 +107,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     followUpOneMonthCompleted: false,
     followUpOneMonthDate: '',
     followUpNotes: '',
+    assignedRecipientIds: [] as number[],
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'types'>('total');
@@ -216,6 +218,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
         followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
         followUpNotes: (eventRequest as any)?.followUpNotes || '',
+        assignedRecipientIds: (eventRequest as any)?.assignedRecipientIds || [],
       });
       
       // Set mode based on existing data
@@ -378,6 +381,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventData.followUpOneMonthCompleted = formData.followUpOneMonthCompleted;
     eventData.followUpOneMonthDate = serializeDateToISO(formData.followUpOneMonthDate);
     eventData.followUpNotes = formData.followUpNotes || null;
+    
+    // Include assigned recipient IDs
+    eventData.assignedRecipientIds = formData.assignedRecipientIds || [];
 
     console.log('📋 FORM SUBMIT DEBUG:');
     console.log('  - eventRequest exists?', !!eventRequest);
@@ -1317,6 +1323,23 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         placeholder="Notes from follow-up conversations or feedback received"
                         className="min-h-[80px]"
                         data-testid="textarea-followup-notes"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Recipient Assignment Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-md font-semibold text-[#236383]">Recipient Assignment</h4>
+                    <div className="space-y-2">
+                      <Label>Recipient Organizations</Label>
+                      <p className="text-sm text-gray-500 mb-2">
+                        Track which recipient organizations actually received the sandwiches from this event
+                      </p>
+                      <MultiRecipientSelector
+                        value={formData.assignedRecipientIds}
+                        onChange={(ids) => setFormData(prev => ({ ...prev, assignedRecipientIds: ids }))}
+                        placeholder="Select recipient organizations..."
+                        data-testid="multi-recipient-selector"
                       />
                     </div>
                   </div>
