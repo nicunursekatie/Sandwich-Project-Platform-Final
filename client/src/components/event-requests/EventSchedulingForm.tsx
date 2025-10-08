@@ -167,26 +167,82 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       
       const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
       
-      // Normalize assignedRecipientIds to ensure they're always numbers
-      // Database stores as text().array() which returns strings, but we need numbers for comparison
-      const normalizeRecipientIds = (ids: any): number[] => {
+      // Normalize assignedRecipientIds to new string format with prefixes
+      // Supports legacy numeric IDs and new prefixed format (host:ID, recipient:ID, custom:text)
+      const normalizeRecipientIds = (ids: any): string[] => {
         if (!ids) return [];
         
-        // Handle PostgreSQL array format: {1,2,3}
+        let rawIds: any[] = [];
+        
+        // Handle PostgreSQL array format: {1,2,3} or {"host:5","recipient:10","custom:Hall, Room 2"}
         if (typeof ids === 'string' && ids.startsWith('{') && ids.endsWith('}')) {
-          return ids
-            .slice(1, -1) // Remove { and }
-            .split(',')
-            .map(id => parseInt(id.trim(), 10))
-            .filter(id => !isNaN(id));
+          const arrayContent = ids.slice(1, -1); // Remove { and }
+          
+          // Parse PostgreSQL array format respecting quoted strings
+          // PostgreSQL escapes quotes as "" (doubled) or \" (backslash)
+          // Handles: {value1,value2} and {"value 1","value 2"} and {"value,with,commas"} and {"value with ""quotes"""}
+          const parsed: string[] = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < arrayContent.length; i++) {
+            const char = arrayContent[i];
+            const nextChar = i < arrayContent.length - 1 ? arrayContent[i + 1] : null;
+            const prevChar = i > 0 ? arrayContent[i - 1] : null;
+            
+            if (char === '"') {
+              if (inQuotes && nextChar === '"') {
+                // Doubled quote ("") inside quoted string = escaped quote, add one quote
+                current += '"';
+                i++; // Skip the next quote
+              } else if (inQuotes && prevChar === '\\') {
+                // Backslash-escaped quote (\") = actual quote (backslash was already added)
+                current = current.slice(0, -1) + '"'; // Replace the backslash with quote
+              } else {
+                // Regular quote - toggle quote state
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              // Comma outside quotes = separator
+              if (current.trim()) {
+                parsed.push(current.trim());
+              }
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          
+          // Don't forget the last value
+          if (current.trim()) {
+            parsed.push(current.trim());
+          }
+          
+          rawIds = parsed;
+        }
+        // Handle JSON array format: [1,2,3] or ["host:5","recipient:10"]
+        else if (Array.isArray(ids)) {
+          rawIds = ids;
         }
         
-        // Handle JSON array format: [1,2,3] or ["1","2","3"]
-        if (Array.isArray(ids)) {
-          return ids.map(id => parseInt(String(id), 10)).filter(id => !isNaN(id));
-        }
-        
-        return [];
+        // Convert to new format with prefixes
+        return rawIds.map(id => {
+          const idStr = String(id);
+          
+          // If already has a prefix (host:, recipient:, custom:), keep as-is
+          if (idStr.includes(':')) {
+            return idStr;
+          }
+          
+          // Legacy numeric ID - assume it's a recipient ID
+          const numId = parseInt(idStr, 10);
+          if (!isNaN(numId)) {
+            return `recipient:${numId}`;
+          }
+          
+          // Fallback - treat as custom text
+          return `custom:${idStr}`;
+        }).filter(id => id);
       };
 
       setFormData({

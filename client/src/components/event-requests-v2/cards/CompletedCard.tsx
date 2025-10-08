@@ -1138,41 +1138,127 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     ? String(request.deliveryDestination)
     : null;
 
-  // Fetch recipients for name lookup
+  // Fetch recipients and hosts for name lookup
   const { data: recipients = [] } = useQuery<{ id: number; name: string }[]>({
     queryKey: ['/api/recipients'],
     staleTime: 10 * 60 * 1000,
   });
 
-  // Helper to get recipient names from IDs
-  const getRecipientNames = (recipientIds: any): string[] => {
+  const { data: hosts = [] } = useQuery<{ id: number; name: string }[]>({
+    queryKey: ['/api/hosts'],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Helper to get display information from IDs (supports new prefixed format)
+  const getRecipientDisplayInfo = (recipientIds: any): Array<{ name: string; type: string; icon: React.ReactNode }> => {
     if (!recipientIds) return [];
     
-    // Parse the array (could be string or array) and normalize to numbers
-    let ids: number[] = [];
+    // Parse the array (could be string or array)
+    let ids: string[] = [];
     if (Array.isArray(recipientIds)) {
-      // Convert all values to numbers, filtering out NaN
-      ids = recipientIds.map(id => parseInt(String(id), 10)).filter(id => !isNaN(id));
+      ids = recipientIds.map(id => String(id));
     } else if (typeof recipientIds === 'string') {
       try {
-        // Handle PostgreSQL array format: {1,2,3}
-        const cleaned = recipientIds.replace(/[{}]/g, '');
-        if (cleaned) {
-          ids = cleaned.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+        // Handle PostgreSQL array format: {1,2,3} or {"host:5","recipient:10","custom:Hall, Room 2"}
+        if (recipientIds.startsWith('{') && recipientIds.endsWith('}')) {
+          const arrayContent = recipientIds.slice(1, -1); // Remove { and }
+          
+          // Parse PostgreSQL array format respecting quoted strings
+          // PostgreSQL escapes quotes as "" (doubled) or \" (backslash)
+          // Handles: {value1,value2} and {"value 1","value 2"} and {"value,with,commas"} and {"value with ""quotes"""}
+          const parsed: string[] = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < arrayContent.length; i++) {
+            const char = arrayContent[i];
+            const nextChar = i < arrayContent.length - 1 ? arrayContent[i + 1] : null;
+            const prevChar = i > 0 ? arrayContent[i - 1] : null;
+            
+            if (char === '"') {
+              if (inQuotes && nextChar === '"') {
+                // Doubled quote ("") inside quoted string = escaped quote, add one quote
+                current += '"';
+                i++; // Skip the next quote
+              } else if (inQuotes && prevChar === '\\') {
+                // Backslash-escaped quote (\") = actual quote (backslash was already added)
+                current = current.slice(0, -1) + '"'; // Replace the backslash with quote
+              } else {
+                // Regular quote - toggle quote state
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              // Comma outside quotes = separator
+              if (current.trim()) {
+                parsed.push(current.trim());
+              }
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          
+          // Don't forget the last value
+          if (current.trim()) {
+            parsed.push(current.trim());
+          }
+          
+          ids = parsed;
         }
       } catch {
         return [];
       }
     }
     
-    // Map IDs to names - both are now guaranteed to be numbers
+    // Map IDs to display info
     return ids.map(id => {
-      const recipient = recipients.find(r => r.id === id);
-      return recipient?.name || `Unknown (ID: ${id})`;
+      const idStr = String(id);
+      
+      // Check for prefixed format
+      if (idStr.startsWith('host:')) {
+        const hostId = parseInt(idStr.replace('host:', ''));
+        const host = hosts.find(h => h.id === hostId);
+        return {
+          name: host?.name || `Unknown Host (${hostId})`,
+          type: 'host',
+          icon: <Home className="w-3 h-3 mr-1" />
+        };
+      } else if (idStr.startsWith('recipient:')) {
+        const recipientId = parseInt(idStr.replace('recipient:', ''));
+        const recipient = recipients.find(r => r.id === recipientId);
+        return {
+          name: recipient?.name || `Unknown Recipient (${recipientId})`,
+          type: 'recipient',
+          icon: <Building className="w-3 h-3 mr-1" />
+        };
+      } else if (idStr.startsWith('custom:')) {
+        return {
+          name: idStr.replace('custom:', ''),
+          type: 'custom',
+          icon: null
+        };
+      }
+      
+      // Legacy numeric ID - assume it's a recipient
+      const numId = parseInt(idStr, 10);
+      if (!isNaN(numId)) {
+        const recipient = recipients.find(r => r.id === numId);
+        return {
+          name: recipient?.name || `Unknown (${numId})`,
+          type: 'recipient',
+          icon: <Building className="w-3 h-3 mr-1" />
+        };
+      }
+      
+      return {
+        name: idStr,
+        type: 'unknown',
+        icon: null
+      };
     });
   };
 
-  const assignedRecipientNames = getRecipientNames((request as any).assignedRecipientIds);
+  const assignedRecipientInfo = getRecipientDisplayInfo((request as any).assignedRecipientIds);
 
   // Get event date and time for display
   const eventDate = request.scheduledEventDate || request.desiredEventDate;
@@ -1331,21 +1417,22 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             ) : null}
 
             {/* Assigned Recipients */}
-            {assignedRecipientNames.length > 0 && (
+            {assignedRecipientInfo.length > 0 && (
               <div className="bg-[#e6f2f5] rounded-lg p-3">
                 <div className="flex items-start gap-2 text-sm">
                   <Building className="w-4 h-4 text-[#236383] mt-0.5" />
                   <div className="flex-1">
-                    <span className="font-medium text-[#236383]">Recipient Organizations:</span>
+                    <span className="font-medium text-[#236383]">Recipients & Hosts:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {assignedRecipientNames.map((name, index) => (
+                      {assignedRecipientInfo.map((item, index) => (
                         <Badge
                           key={index}
                           variant="secondary"
-                          className="bg-white text-[#236383] border border-[#236383]/30 text-xs"
-                          data-testid={`badge-recipient-${index}`}
+                          className="bg-white text-[#236383] border border-[#236383]/30 text-xs flex items-center gap-1"
+                          data-testid={`badge-${item.type}-${index}`}
                         >
-                          {name}
+                          {item.icon}
+                          {item.name}
                         </Badge>
                       ))}
                     </div>
