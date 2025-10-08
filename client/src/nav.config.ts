@@ -54,6 +54,22 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'dashboard',
   },
 
+  // AVAILABILITY
+  {
+    id: 'my-availability',
+    label: 'My Availability',
+    icon: Calendar,
+    href: 'my-availability',
+    group: 'dashboard',
+  },
+  {
+    id: 'team-availability',
+    label: 'Team Availability',
+    icon: Users,
+    href: 'team-availability',
+    group: 'dashboard',
+  },
+
   // COLLECTIONS LOG
   {
     id: 'collections',
