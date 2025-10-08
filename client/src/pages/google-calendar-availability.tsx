@@ -1,6 +1,11 @@
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function GoogleCalendarAvailability() {
+  const handleBack = () => {
+    window.location.href = '/dashboard';
+  };
+
   // Extract calendar ID from the cid parameter (base64 decoded)
   const calendarId = '0813cd575e262fbc020927f88f1fd5a1906f5bd9b2f27a66a49202359e5ff4@group.calendar.google.com';
   
@@ -11,6 +16,16 @@ export default function GoogleCalendarAvailability() {
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <div className="flex-shrink-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 sm:p-6">
+        <Button
+          variant="ghost"
+          onClick={handleBack}
+          className="mb-4"
+          data-testid="button-back-to-dashboard"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Dashboard
+        </Button>
+        
         <div className="flex items-center gap-3">
           <div className="p-2 bg-brand-primary/10 dark:bg-brand-primary/20 rounded-lg">
             <CalendarIcon className="h-6 w-6 text-brand-primary" />
