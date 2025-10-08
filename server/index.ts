@@ -1,45 +1,5 @@
-// CRITICAL: Prevent server exit in production before any other imports
-if (process.env.NODE_ENV === 'production') {
-  // Note: Using console.log here since logger isn't initialized yet
-  console.log('🛡️ PRODUCTION MODE: Installing aggressive exit prevention...');
-
-  // Override process.exit to prevent any exit calls
-  const originalExit = process.exit;
-  process.exit = ((code?: number) => {
-    console.log(`⚠️ BLOCKED process.exit(${code}) in production mode`);
-    console.log('Server MUST stay alive for deployment - exit blocked');
-    return undefined as never;
-  }) as typeof process.exit;
-
-  // Keep process alive immediately
-  process.stdin.resume();
-
-  // Prevent any unhandled errors from crashing the server
-  process.on('uncaughtException', (error) => {
-    console.error(
-      '🚨 Uncaught Exception (production - server continues):',
-      error
-    );
-  });
-
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error(
-      '🚨 Unhandled Rejection (production - server continues):',
-      reason
-    );
-  });
-
-  process.on('beforeExit', (code) => {
-    console.log(
-      `🛡️ beforeExit triggered with code ${code} - keeping server alive`
-    );
-    setImmediate(() => {
-      console.log('✅ Server kept alive via setImmediate');
-    });
-  });
-
-  console.log('✅ Production exit prevention installed');
-}
+// Clean error handling for Replit - let Replit handle restarts
+// Replit already monitors and restarts crashed apps automatically
 
 import express, { type Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
@@ -402,179 +362,66 @@ async function startServer() {
           console.log(
             '✓ The Sandwich Project server is fully ready to handle requests'
           );
-
-          // In production, add aggressive keep-alive measures
-          if (process.env.NODE_ENV === 'production') {
-            console.log('🚀 PRODUCTION SERVER INITIALIZATION COMPLETE 🚀');
-
-            // Keep process alive with multiple strategies
-            process.stdin.resume();
-            process.on('beforeExit', (code) => {
-              console.log(
-                `⚠ Process attempting to exit with code ${code} - preventing in production`
-              );
-              setTimeout(() => {
-                console.log('✓ Production keep-alive timeout triggered');
-              }, 1000);
-            });
-
-            // Minimal heartbeat for autoscale
-            setInterval(() => {
-              // Silent heartbeat
-            }, 300000);
-          }
+          console.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
         } catch (initError) {
-          console.error('✗ Background initialization failed:', initError);
-          console.log('Server continues to run with basic functionality...');
-
-          // Even if initialization fails, keep the server alive in production
-          if (process.env.NODE_ENV === 'production') {
-            process.stdin.resume();
-            console.log('✓ Server kept alive despite initialization error');
-          }
+          serverLogger.error('✗ Background initialization failed:', initError);
+          serverLogger.error('This is a fatal error - exiting to allow Replit to restart');
+          // Let Replit restart the app to recover from initialization failures
+          process.exit(1);
         }
       });
     });
 
-    // Graceful shutdown - disabled in production to prevent exit
+    // Graceful shutdown handler - works in both dev and production
     const shutdown = async (signal: string) => {
-      if (process.env.NODE_ENV === 'production') {
-        console.log(
-          `⚠ Ignoring ${signal} in production mode - server will continue running`
-        );
-        return;
-      }
-      console.log(`Received ${signal}, starting graceful shutdown...`);
+      serverLogger.info(`Received ${signal}, starting graceful shutdown...`);
+
+      // Close server gracefully
       httpServer.close(() => {
-        console.log('HTTP server closed gracefully');
-        setTimeout(() => process.exit(0), 1000);
+        serverLogger.info('HTTP server closed gracefully');
+        process.exit(0);
       });
+
+      // Force shutdown after 10 seconds if graceful shutdown fails
       setTimeout(() => {
-        console.log('Forcing shutdown after timeout');
+        serverLogger.warn('Forcing shutdown after timeout');
         process.exit(1);
       }, 10000);
     };
 
+    // Handle shutdown signals properly
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
 
+    // Proper error handling - log and exit, let Replit restart
     process.on('uncaughtException', (error) => {
-      console.error('Uncaught Exception:', error);
-      // Don't shutdown in production to keep deployment stable
-      if (process.env.NODE_ENV !== 'production') {
-        shutdown('uncaughtException');
-      } else {
-        console.log(
-          'Production mode: continuing operation despite uncaught exception...'
-        );
-      }
+      serverLogger.error('🚨 Uncaught Exception - this is fatal:', error);
+      serverLogger.error('Exiting to allow Replit to restart the app cleanly');
+      process.exit(1);
     });
 
     process.on('unhandledRejection', (reason, promise) => {
-      console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-      // Never shutdown for unhandled rejections - just log them
-      console.log('Continuing server operation despite unhandled rejection...');
+      serverLogger.error('🚨 Unhandled Promise Rejection:', { reason, promise });
+      serverLogger.error('Exiting to allow Replit to restart the app cleanly');
+      process.exit(1);
     });
-
-    // Keep the process alive in production with multiple strategies
-    if (process.env.NODE_ENV === 'production') {
-      // Strategy 1: Regular heartbeat
-      setInterval(() => {
-        // Silent heartbeat to prevent process from being garbage collected
-      }, 5000);
-
-      // Strategy 2: Prevent process exit events
-      process.stdin.resume(); // Keep process alive
-
-      // Strategy 3: Override process.exit in production
-      const originalExit = process.exit;
-      process.exit = ((code?: number) => {
-        console.log(`⚠ Prevented process.exit(${code}) in production mode`);
-        console.log('Server will continue running...');
-        return undefined as never;
-      }) as typeof process.exit;
-
-      console.log('✓ Production process keep-alive strategies activated');
-    }
 
     return httpServer;
   } catch (error) {
-    console.error('✗ Server startup failed:', error);
-    throw error; // Don't create fallback server that conflicts with main server
+    serverLogger.error('✗ Server startup failed:', error);
+    serverLogger.error('Fatal startup error - exiting to allow Replit to restart');
+    process.exit(1);
   }
 }
 
-// Final launch
+// Start server - simple and clean
 startServer()
   .then((server) => {
-    console.log('✓ Server startup sequence completed successfully');
-    console.log('✓ Server object:', server ? 'EXISTS' : 'NULL');
-
-    setInterval(() => {
-      console.log(
-        `✓ KEEPALIVE - Server still listening: ${server?.listening || 'UNKNOWN'}`
-      );
-    }, 30000);
+    serverLogger.info('✅ Server startup sequence completed successfully');
+    serverLogger.info(`Server listening: ${server?.listening}`);
   })
   .catch((error) => {
     console.error('✗ Failed to start server:', error);
-    // Don't exit in production - try to start a minimal server instead
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Starting minimal fallback server for production...');
-      const express = require('express');
-      const fallbackApp = express();
-
-      fallbackApp.get('/', (req: any, res: any) =>
-        res.status(200).send(`
-        <!DOCTYPE html>
-        <html>
-          <head><title>The Sandwich Project</title></head>
-          <body>
-            <h1>The Sandwich Project - Fallback Mode</h1>
-            <p>Server is running in fallback mode</p>
-            <p>Timestamp: ${new Date().toISOString()}</p>
-          </body>
-        </html>
-      `)
-      );
-
-      fallbackApp.get('/health', (req: any, res: any) =>
-        res.status(200).json({
-          status: 'fallback',
-          timestamp: Date.now(),
-          mode: 'production-fallback',
-        })
-      );
-
-      const fallbackServer = fallbackApp.listen(5000, '0.0.0.0', () => {
-        console.log('✓ Minimal fallback server running on port 5000');
-
-        // Keep fallback server alive too
-        setInterval(() => {
-          console.log('✓ Fallback server heartbeat');
-        }, 30000);
-      });
-
-      // Prevent fallback server from exiting
-      process.stdin.resume();
-    } else {
-      process.exit(1);
-    }
+    console.error('Fatal error - exiting to allow Replit to restart');
+    process.exit(1);
   });
-
-// PRODUCTION INFINITE KEEP-ALIVE LOOP
-if (process.env.NODE_ENV === 'production') {
-  console.log('🔄 Starting production infinite keep-alive loop...');
-
-  const keepAlive = () => {
-    setTimeout(() => {
-      console.log(
-        `🔄 Production keep-alive tick - uptime: ${Math.floor(process.uptime())}s`
-      );
-      keepAlive(); // Recursive call to keep the loop going forever
-    }, 60000); // Every 60 seconds
-  };
-
-  keepAlive();
-  console.log('✅ Production infinite keep-alive loop started');
-}

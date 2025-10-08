@@ -10,6 +10,8 @@ packages = ["chromium", "glib", "glibcLocales", "gtk3", "jq", "killall", "nss", 
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
+# Replit automatically monitors /health endpoint and restarts on crashes
+# No need for aggressive keep-alive code in server/index.ts
 
 [[ports]]
 localPort = 80
