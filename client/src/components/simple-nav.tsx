@@ -122,7 +122,7 @@ export default function SimpleNav({
     };
 
     return (
-      <nav className="flex flex-col gap-1 p-2">
+      <nav className="flex flex-col gap-1 p-2" data-tour="navigation">
         {groupedItems.map((groupItem, index) => {
           if (groupItem.type === 'separator') {
             return !isCollapsed ? (
@@ -171,6 +171,8 @@ export default function SimpleNav({
                 onSectionChange(item.href);
               }}
               title={isCollapsed ? item.label : undefined}
+              data-nav-id={item.id}
+              data-testid={`nav-${item.id}`}
             >
               {item.customIcon ? (
                 <img

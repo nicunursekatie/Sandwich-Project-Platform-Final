@@ -32,7 +32,7 @@ Key technical implementations include:
 - **Collection Walkthrough Tool**: Permissions-based data entry with a standard form and step-by-step guidance.
 - **Analytics**: Dashboard for community impact and user activity tracking.
 - **Meeting Management**: Full-featured system with agenda compilation, project integration, and PDF export, including a database-backed meeting notes system.
-- **Event Requests Management System**: Complete tracking, duplicate detection, status tracking, and Google Sheets integration.
+- **Event Requests Management System**: Complete tracking, duplicate detection, status tracking, and Google Sheets integration. Van drivers are correctly counted toward total driver count in staffing calculations across all event card types.
 - **Google Sheets Integration**: Bidirectional automatic synchronization for project tracker and event requests.
 - **Enhanced Audit Log Display**: User-friendly audit trail with human-readable field names and formatted values.
 - **Email Compliance**: SendGrid emails include required opt-out text, with a centralized utility for consistent footers and proper HTML structure.
@@ -42,6 +42,7 @@ Key technical implementations include:
 - **User Activity Logging System**: Comprehensive tracking of authenticated user actions into `user_activity_logs` table via middleware, powering enhanced analytics.
 - **Groups Catalog Event Editing**: Direct access from groups catalog to edit individual event request details. Each event request in the organization history dialog includes an "Edit Request" button that navigates to the event management interface with the specific event pre-loaded for editing, enabling quick data cleanup and corrections for imported records.
 - **Team Availability Calendar**: Calendar integration for tracking team member availability. Users can set their available/unavailable times via My Availability page, coordinators can view team availability via Team Availability dashboard, and availability indicators are displayed in event assignment dialogs showing who's available for specific dates. Uses overlap-based date range queries and enforces proper CRUD permissions (AVAILABILITY_VIEW, AVAILABILITY_ADD, AVAILABILITY_EDIT_OWN/ALL, AVAILABILITY_DELETE_OWN/ALL).
+- **Interactive Guided Tour System**: Revolutionary on-demand help system with floating help button (?), categorized "What are you looking for?" menu, and step-by-step guided tours. Features 7 comprehensive tours covering Files & Resources (logos, forms), Events & Calendar (calendar view, symbols), Analytics & Reports (tabs overview), My Work (dashboard assignments, action hub, event assignments), and Team Management. Non-blocking spotlight overlay system highlights actual UI elements with smooth animations, keyboard navigation (ESC, arrows), localStorage persistence for tour progress, and full mobile responsiveness. Includes searchable Help page (/help) with expandable sections and "Launch Tour" buttons. Brand-consistent design using #236383, #fbad3f, #007e8c colors. Users can skip ahead, go back, or close anytime without forced completion - truly on-demand feature discovery.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`

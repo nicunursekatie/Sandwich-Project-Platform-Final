@@ -26,7 +26,7 @@ import {
   Truck,
   FileImage,
 } from 'lucide-react';
-import { useLocation } from 'wouter';
+import { useLocation, useRoute } from 'wouter';
 // Using optimized SVG for faster loading
 const sandwichLogo = '/sandwich-icon-optimized.svg';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -95,6 +95,7 @@ import LogosPage from '@/pages/logos';
 import ImportantLinks from '@/pages/important-links';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import HistoricalImport from '@/pages/historical-import';
+import { GuidedTour } from '@/components/GuidedTour';
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -105,7 +106,7 @@ export default function Dashboard({
 }: {
   initialSection?: string;
 }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
 
@@ -666,6 +667,14 @@ export default function Dashboard({
                     'Dashboard setActiveSection called with:',
                     section
                   );
+                  
+                  // Handle standalone routes (navigate away from dashboard)
+                  if (section === 'help') {
+                    setLocation('/help');
+                    setIsMobileMenuOpen(false);
+                    return;
+                  }
+                  
                   setActiveSection(section);
                   // Close mobile menu when navigation item is clicked
                   setIsMobileMenuOpen(false);
@@ -713,6 +722,9 @@ export default function Dashboard({
           </div>
         </div>
       </div>
+
+      {/* Guided Tour System */}
+      <GuidedTour />
     </>
   );
 }

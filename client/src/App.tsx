@@ -20,6 +20,7 @@ import ResetPassword from '@/pages/reset-password';
 import NotFound from '@/pages/not-found';
 import MyAvailability from '@/pages/my-availability';
 import TeamAvailability from '@/pages/team-availability';
+import Help from '@/pages/Help';
 
 function Router() {
   const { isAuthenticated, isLoading, error } = useAuth();
@@ -237,6 +238,7 @@ function Router() {
       <Route path="/profile">
         {() => <Dashboard initialSection="profile" />}
       </Route>
+      <Route path="/help" component={Help} />
       <Route path="/dashboard">{() => <Dashboard />}</Route>
       <Route path="/dashboard/:section">
         {(params) => <Dashboard initialSection={params.section} />}
