@@ -325,39 +325,7 @@ async function startServer() {
             res.status(200).json({ status: 'ok' });
           });
 
-          if (process.env.NODE_ENV === 'production') {
-            // Add catch-all for unknown routes before SPA
-            app.use('*', (req: Request, res: Response, next: NextFunction) => {
-              console.log(
-                `Catch-all route hit: ${req.method} ${req.originalUrl}`
-              );
-              if (req.originalUrl.startsWith('/api')) {
-                return res
-                  .status(404)
-                  .json({ error: `API route not found: ${req.originalUrl}` });
-              }
-              next();
-            });
-
-            // In production, serve React app for all non-API routes
-            app.get('*', async (_req: Request, res: Response) => {
-              try {
-                const path = await import('path');
-                const indexPath = path.join(
-                  process.cwd(),
-                  'dist/public/index.html'
-                );
-                console.log(
-                  `Serving SPA for route: ${_req.path}, file: ${indexPath}`
-                );
-                res.sendFile(indexPath);
-              } catch (error) {
-                console.error('SPA serving error:', error);
-                res.status(500).send('Error serving application');
-              }
-            });
-            console.log('✓ Production SPA routing configured');
-          }
+          // SPA routing already configured earlier - no need to re-register
 
           console.log(
             '✓ The Sandwich Project server is fully ready to handle requests'
