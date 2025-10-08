@@ -973,7 +973,7 @@ export default function GroupCatalog({
                       ))}
                     </div>
                   </div>
-                ))}
+                })}
                       </div>
                     );
                   } else {
