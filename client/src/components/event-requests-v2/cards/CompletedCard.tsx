@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,14 +27,20 @@ import {
   History,
   ChevronDown,
   ChevronUp,
+  Share2,
 } from 'lucide-react';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
 interface CompletedCardProps {
   request: EventRequest;
@@ -480,6 +486,193 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   );
 };
 
+// Social Media Tracking Component
+interface SocialMediaTrackingProps {
+  request: EventRequest;
+}
+
+const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Only keep local state for notes textarea (needs onChange handling)
+  const [socialMediaPostNotes, setSocialMediaPostNotes] = useState(
+    request.socialMediaPostNotes || ''
+  );
+
+  // Sync notes with request prop changes
+  useEffect(() => {
+    setSocialMediaPostNotes(request.socialMediaPostNotes || '');
+  }, [request.socialMediaPostNotes]);
+
+  const updateSocialMediaMutation = useMutation({
+    mutationFn: (data: any) =>
+      apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
+    onSuccess: () => {
+      toast({
+        title: 'Social media tracking updated',
+        description: 'Social media tracking information has been successfully updated.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update social media tracking.',
+        variant: 'destructive',
+      });
+      // Invalidate to revert to correct server values
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+    },
+  });
+
+  const handleRequestedChange = (checked: boolean) => {
+    const data: any = { socialMediaPostRequested: checked };
+    
+    if (checked && !request.socialMediaPostRequestedDate) {
+      const today = new Date().toISOString().split('T')[0];
+      data.socialMediaPostRequestedDate = new Date(today).toISOString();
+    } else if (!checked) {
+      data.socialMediaPostRequestedDate = null;
+    }
+    
+    updateSocialMediaMutation.mutate(data);
+  };
+
+  const handleRequestedDateChange = (date: string) => {
+    updateSocialMediaMutation.mutate({
+      socialMediaPostRequestedDate: date ? new Date(date).toISOString() : null,
+    });
+  };
+
+  const handleCompletedChange = (checked: boolean) => {
+    const data: any = { socialMediaPostCompleted: checked };
+    
+    if (checked && !request.socialMediaPostCompletedDate) {
+      const today = new Date().toISOString().split('T')[0];
+      data.socialMediaPostCompletedDate = new Date(today).toISOString();
+    } else if (!checked) {
+      data.socialMediaPostCompletedDate = null;
+    }
+    
+    updateSocialMediaMutation.mutate(data);
+  };
+
+  const handleCompletedDateChange = (date: string) => {
+    updateSocialMediaMutation.mutate({
+      socialMediaPostCompletedDate: date ? new Date(date).toISOString() : null,
+    });
+  };
+
+  const handleNotesBlur = () => {
+    if (socialMediaPostNotes !== (request.socialMediaPostNotes || '')) {
+      updateSocialMediaMutation.mutate({
+        socialMediaPostNotes: socialMediaPostNotes,
+      });
+    }
+  };
+
+  // Helper to format date for input
+  const formatDateForInput = (dateString: string | null | undefined) => {
+    if (!dateString) return '';
+    return new Date(dateString).toISOString().split('T')[0];
+  };
+
+  return (
+    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200" data-testid="social-media-tracking">
+      <div className="flex items-center gap-2 mb-3">
+        <Share2 className="w-5 h-5 text-blue-600" />
+        <h4 className="font-semibold text-base text-blue-900">Social Media Tracking</h4>
+        {updateSocialMediaMutation.isPending && (
+          <span className="text-xs text-blue-600 ml-2">Saving...</span>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        {/* Post Requested */}
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id={`social-media-requested-${request.id}`}
+            checked={request.socialMediaPostRequested || false}
+            onCheckedChange={handleRequestedChange}
+            disabled={updateSocialMediaMutation.isPending}
+            data-testid="checkbox-social-media-requested"
+          />
+          <div className="flex-1">
+            <label
+              htmlFor={`social-media-requested-${request.id}`}
+              className="text-sm font-medium cursor-pointer"
+            >
+              Social media post requested
+            </label>
+            {request.socialMediaPostRequested && (
+              <div className="mt-2">
+                <label className="text-xs text-gray-600 block mb-1">Request date:</label>
+                <Input
+                  type="date"
+                  value={formatDateForInput(request.socialMediaPostRequestedDate)}
+                  onChange={(e) => handleRequestedDateChange(e.target.value)}
+                  disabled={updateSocialMediaMutation.isPending}
+                  className="h-8 w-48"
+                  data-testid="input-social-media-requested-date"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Post Completed */}
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id={`social-media-completed-${request.id}`}
+            checked={request.socialMediaPostCompleted || false}
+            onCheckedChange={handleCompletedChange}
+            disabled={updateSocialMediaMutation.isPending}
+            data-testid="checkbox-social-media-completed"
+          />
+          <div className="flex-1">
+            <label
+              htmlFor={`social-media-completed-${request.id}`}
+              className="text-sm font-medium cursor-pointer"
+            >
+              Social media post completed
+            </label>
+            {request.socialMediaPostCompleted && (
+              <div className="mt-2">
+                <label className="text-xs text-gray-600 block mb-1">Completion date:</label>
+                <Input
+                  type="date"
+                  value={formatDateForInput(request.socialMediaPostCompletedDate)}
+                  onChange={(e) => handleCompletedDateChange(e.target.value)}
+                  disabled={updateSocialMediaMutation.isPending}
+                  className="h-8 w-48"
+                  data-testid="input-social-media-completed-date"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label className="text-sm font-medium block mb-1">
+            Social media notes:
+          </label>
+          <Textarea
+            value={socialMediaPostNotes}
+            onChange={(e) => setSocialMediaPostNotes(e.target.value)}
+            onBlur={handleNotesBlur}
+            disabled={updateSocialMediaMutation.isPending}
+            placeholder="Add notes about social media posts, tags, engagement, etc."
+            className="min-h-[80px] resize-none"
+            data-testid="textarea-social-media-notes"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const CompletedCard: React.FC<CompletedCardProps> = ({
   request,
   onView,
@@ -580,6 +773,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 </Badge>
               )}
             </div>
+
+            {/* Social Media Tracking Section */}
+            <SocialMediaTracking request={request} />
 
             {/* Completion Notes */}
             {request.followUpNotes && (
