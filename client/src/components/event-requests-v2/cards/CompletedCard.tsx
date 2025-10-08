@@ -395,12 +395,38 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           <div className="flex items-center gap-2">
             <Car className="w-4 h-4 text-[#236383]" />
             <span className="font-medium text-[#236383]">Drivers:</span>
+            {canEdit && onAssign && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onAssign('driver')}
+                className="h-5 w-5 p-0 hover:bg-[#236383]/10"
+                title="Add driver"
+                data-testid="button-add-driver"
+              >
+                <UserPlus className="w-3 h-3 text-[#236383]" />
+              </Button>
+            )}
             {drivers.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {drivers.map((driver, index) => (
                   <React.Fragment key={driver.id}>
-                    <Badge variant="secondary" className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5">
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
+                      data-testid={`badge-driver-${driver.id}`}
+                    >
                       {driver.name}
+                      {canEdit && onRemoveAssignment && (
+                        <button
+                          onClick={() => onRemoveAssignment('driver', driver.id)}
+                          className="ml-1 inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
+                          title="Remove driver"
+                          data-testid={`button-remove-driver-${driver.id}`}
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      )}
                     </Badge>
                     {index < drivers.length - 1 && <span className="text-gray-400">•</span>}
                   </React.Fragment>
@@ -417,12 +443,38 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           <div className="flex items-center gap-2">
             <Megaphone className="w-4 h-4 text-[#236383]" />
             <span className="font-medium text-[#236383]">Speakers:</span>
+            {canEdit && onAssign && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onAssign('speaker')}
+                className="h-5 w-5 p-0 hover:bg-[#236383]/10"
+                title="Add speaker"
+                data-testid="button-add-speaker"
+              >
+                <UserPlus className="w-3 h-3 text-[#236383]" />
+              </Button>
+            )}
             {speakers.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {speakers.map((speaker, index) => (
                   <React.Fragment key={speaker.id}>
-                    <Badge variant="secondary" className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5">
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
+                      data-testid={`badge-speaker-${speaker.id}`}
+                    >
                       {speaker.name}
+                      {canEdit && onRemoveAssignment && (
+                        <button
+                          onClick={() => onRemoveAssignment('speaker', speaker.id)}
+                          className="ml-1 inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
+                          title="Remove speaker"
+                          data-testid={`button-remove-speaker-${speaker.id}`}
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      )}
                     </Badge>
                     {index < speakers.length - 1 && <span className="text-gray-400">•</span>}
                   </React.Fragment>
@@ -439,12 +491,38 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-[#236383]" />
             <span className="font-medium text-[#236383]">Volunteers:</span>
+            {canEdit && onAssign && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onAssign('volunteer')}
+                className="h-5 w-5 p-0 hover:bg-[#236383]/10"
+                title="Add volunteer"
+                data-testid="button-add-volunteer"
+              >
+                <UserPlus className="w-3 h-3 text-[#236383]" />
+              </Button>
+            )}
             {volunteers.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {volunteers.map((volunteer, index) => (
                   <React.Fragment key={volunteer.id}>
-                    <Badge variant="secondary" className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5">
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
+                      data-testid={`badge-volunteer-${volunteer.id}`}
+                    >
                       {volunteer.name}
+                      {canEdit && onRemoveAssignment && (
+                        <button
+                          onClick={() => onRemoveAssignment('volunteer', volunteer.id)}
+                          className="ml-1 inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
+                          title="Remove volunteer"
+                          data-testid={`button-remove-volunteer-${volunteer.id}`}
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      )}
                     </Badge>
                     {index < volunteers.length - 1 && <span className="text-gray-400">•</span>}
                   </React.Fragment>
