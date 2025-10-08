@@ -510,18 +510,36 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     );
   };
 
+  // Combine regular drivers with van driver for accurate count
+  const combinedDriverIds = (() => {
+    const regularDrivers = parsePostgresArray(request.assignedDriverIds);
+    if (request.assignedVanDriverId) {
+      return [...regularDrivers, request.assignedVanDriverId];
+    }
+    return regularDrivers;
+  })();
+
+  // Combine driver details with van driver details
+  const combinedDriverDetails = (() => {
+    const details = { ...(request.driverDetails || {}) };
+    if (request.assignedVanDriverId && request.customVanDriverName) {
+      details[request.assignedVanDriverId] = { name: request.customVanDriverName };
+    }
+    return details;
+  })();
+
   return (
     <div className="pt-4">
       {/* Assignments Section - Now 3 columns without Social Media */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Drivers Column */}
+        {/* Drivers Column - includes van driver in count */}
         {renderAssignmentColumn(
           'driver',
           <Car className="w-5 h-5 text-[#236383]" />,
           'Drivers',
           request.driversNeeded,
-          request.assignedDriverIds,
-          request.driverDetails
+          combinedDriverIds,
+          combinedDriverDetails
         )}
 
         {/* Speakers Column */}
