@@ -2772,7 +2772,6 @@ export default function SandwichCollectionLog() {
                 </Button>
                 {duplicateAnalysis.duplicates.length > 0 && (
                   <Button
-                    variant="outline"
                     onClick={() => {
                       const idsToDelete: number[] = [];
                       duplicateAnalysis.duplicates.forEach((group, index) => {
@@ -2789,7 +2788,7 @@ export default function SandwichCollectionLog() {
                       }
                     }}
                     disabled={cleanSelectedSuspiciousMutation.isPending}
-                    className="text-red-600 hover:text-red-700 border-red-300 w-full sm:w-auto"
+                    className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
                   >
                     {cleanSelectedSuspiciousMutation.isPending
                       ? 'Deleting...'
@@ -2829,17 +2828,6 @@ export default function SandwichCollectionLog() {
                     {cleanDuplicatesMutation.isPending
                       ? 'Cleaning...'
                       : `Delete All Suspicious (${duplicateAnalysis.suspiciousPatterns})`}
-                  </Button>
-                )}
-                {duplicateAnalysis.totalDuplicateEntries > 0 && (
-                  <Button
-                    onClick={() => cleanDuplicatesMutation.mutate('exact')}
-                    disabled={cleanDuplicatesMutation.isPending}
-                    className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
-                  >
-                    {cleanDuplicatesMutation.isPending
-                      ? 'Cleaning...'
-                      : `Delete All Duplicates (${duplicateAnalysis.totalDuplicateEntries})`}
                   </Button>
                 )}
               </div>
