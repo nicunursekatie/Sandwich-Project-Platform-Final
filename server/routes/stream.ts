@@ -125,7 +125,7 @@ streamRoutes.post('/credentials', async (req, res) => {
         { id: 'recipient', name: 'Recipient Chat', permission: 'CHAT_RECIPIENT' },
       ];
 
-      // Create team channels that the user has permission for
+      // Create team channels that the user has permission for AND add user as member
       const userPermissions = user.permissions || [];
       for (const room of teamRooms) {
         if (userPermissions.includes(room.permission)) {
@@ -133,11 +133,21 @@ streamRoutes.post('/credentials', async (req, res) => {
             const channel = streamServerClient.channel('team', room.id, {
               name: room.name,
               created_by_id: streamUserId,
+              members: [streamUserId], // Add user as member so they can read
             });
             await channel.create();
+
+            // Also ensure user is added as member (in case channel already exists)
+            await channel.addMembers([streamUserId]);
           } catch (channelError) {
-            // Channel might already exist, that's okay
-            console.log(`Channel ${room.id} already exists or couldn't be created`);
+            // Channel might already exist, try to add user as member anyway
+            console.log(`Channel ${room.id} status:`, channelError.message);
+            try {
+              const existingChannel = streamServerClient.channel('team', room.id);
+              await existingChannel.addMembers([streamUserId]);
+            } catch (addError) {
+              console.log(`Could not add user to ${room.id}:`, addError.message);
+            }
           }
         }
       }

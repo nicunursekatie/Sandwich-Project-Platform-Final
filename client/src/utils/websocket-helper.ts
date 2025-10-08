@@ -33,8 +33,9 @@ export function getWebSocketUrl(config: WebSocketConfig): string {
 
   // Handle different deployment scenarios
   if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('replit.app') || hostname.includes('spock.replit.dev')) {
-    // Replit environment - use full hostname with port if available
-    host = port ? `${hostname}:${port}` : hostname;
+    // Replit environment - NEVER include port, Replit handles port mapping internally
+    // The external URL should not have :5000, it's mapped to port 80
+    host = hostname;
     console.log('Detected Replit environment, using host:', host);
   } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development - force port 5000 if no port specified
