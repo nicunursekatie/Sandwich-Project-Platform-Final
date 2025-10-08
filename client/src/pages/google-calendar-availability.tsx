@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar as CalendarIcon, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +24,6 @@ interface CalendarEvent {
 
 export default function GoogleCalendarAvailability() {
   const [currentWeek, setCurrentWeek] = useState(new Date());
-
-  const handleBack = () => {
-    window.location.href = '/dashboard';
-  };
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 }); // Sunday
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 }); // Saturday
@@ -62,16 +58,6 @@ export default function GoogleCalendarAvailability() {
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <div className="flex-shrink-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 sm:p-6">
-        <Button
-          variant="ghost"
-          onClick={handleBack}
-          className="mb-4"
-          data-testid="button-back-to-dashboard"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
-        
         <div className="flex items-center gap-3">
           <div className="p-2 bg-brand-primary/10 dark:bg-brand-primary/20 rounded-lg">
             <CalendarIcon className="h-6 w-6 text-brand-primary" />

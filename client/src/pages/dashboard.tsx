@@ -96,6 +96,9 @@ import ImportantLinks from '@/pages/important-links';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import HistoricalImport from '@/pages/historical-import';
 import { GuidedTour } from '@/components/GuidedTour';
+import MyAvailability from '@/pages/my-availability';
+import TeamAvailability from '@/pages/team-availability';
+import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -417,6 +420,12 @@ export default function Dashboard({
             <CommitteeChat />
           </div>
         );
+      case 'my-availability':
+        return <MyAvailability />;
+      case 'team-availability':
+        return <TeamAvailability />;
+      case 'google-calendar-availability':
+        return <GoogleCalendarAvailability />;
       case 'user-management':
         return <UserManagementRedesigned />;
       case 'admin':

@@ -17,7 +17,6 @@ import {
   Search,
   UserCheck,
   UserX,
-  ArrowLeft,
 } from 'lucide-react';
 
 import type { AvailabilitySlot } from '@shared/schema';
@@ -45,10 +44,6 @@ export default function TeamAvailability() {
   const [startDate, setStartDate] = useState<Date>(startOfDay(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfDay(new Date()));
   const [searchQuery, setSearchQuery] = useState('');
-
-  const handleBack = () => {
-    window.location.href = '/dashboard';
-  };
 
   // Fetch all users
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
@@ -169,17 +164,6 @@ export default function TeamAvailability() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       {/* Back Button Header */}
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={handleBack}
-          className="mb-4"
-          data-testid="button-back-to-dashboard"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
-      </div>
 
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="page-title">

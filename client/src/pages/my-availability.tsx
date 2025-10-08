@@ -21,7 +21,6 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  ArrowLeft,
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -64,10 +63,6 @@ export default function MyAvailability() {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<AvailabilitySlot | null>(null);
-
-  const handleBack = () => {
-    window.location.href = '/dashboard';
-  };
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 }); // Sunday
@@ -183,17 +178,6 @@ export default function MyAvailability() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       {/* Back Button Header */}
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={handleBack}
-          className="mb-4"
-          data-testid="button-back-to-dashboard"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
-      </div>
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">My Availability</h1>

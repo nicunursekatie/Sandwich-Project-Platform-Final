@@ -18,9 +18,6 @@ import Landing from '@/pages/landing';
 import SignupPage from '@/pages/signup';
 import ResetPassword from '@/pages/reset-password';
 import NotFound from '@/pages/not-found';
-import MyAvailability from '@/pages/my-availability';
-import TeamAvailability from '@/pages/team-availability';
-import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
 import Help from '@/pages/Help';
 
 function Router() {
@@ -226,8 +223,6 @@ function Router() {
       <Route path="/historical-import">
         {() => <Dashboard initialSection="historical-import" />}
       </Route>
-      <Route path="/my-availability" component={MyAvailability} />
-      <Route path="/team-availability" component={TeamAvailability} />
       <Route
         path="/sms-opt-in"
         component={lazy(() => import('./pages/sms-opt-in'))}
@@ -240,7 +235,6 @@ function Router() {
         {() => <Dashboard initialSection="profile" />}
       </Route>
       <Route path="/help" component={Help} />
-      <Route path="/google-calendar-availability" component={GoogleCalendarAvailability} />
       <Route path="/dashboard">{() => <Dashboard />}</Route>
       <Route path="/dashboard/:section">
         {(params) => <Dashboard initialSection={params.section} />}
