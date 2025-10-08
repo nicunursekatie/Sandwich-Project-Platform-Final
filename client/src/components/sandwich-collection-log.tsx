@@ -50,6 +50,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import BulkDataManager from '@/components/bulk-data-manager';
 import CollectionFormSelector from '@/components/collection-form-selector';
 import { useToast } from '@/hooks/use-toast';
@@ -154,6 +155,9 @@ export default function SandwichCollectionLog() {
   const [selectedDuplicateIds, setSelectedDuplicateIds] = useState<
     Set<number>
   >(new Set());
+  const [selectedKeepIds, setSelectedKeepIds] = useState<Map<number, number>>(
+    new Map()
+  );
   const [showBatchEdit, setShowBatchEdit] = useState(false);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [batchEditData, setBatchEditData] = useState({
@@ -1066,6 +1070,13 @@ export default function SandwichCollectionLog() {
     onSuccess: (result: DuplicateAnalysis) => {
       setDuplicateAnalysis(result);
       setShowDuplicateAnalysis(true);
+      
+      const initialKeepIds = new Map<number, number>();
+      result.duplicates.forEach((group, index) => {
+        initialKeepIds.set(index, group.keepNewest.id);
+      });
+      setSelectedKeepIds(initialKeepIds);
+      
       toast({
         title: 'Analysis complete',
         description: `Found ${result.totalDuplicateEntries} duplicate entries and ${result.suspiciousPatterns} suspicious patterns.`,
@@ -1095,6 +1106,7 @@ export default function SandwichCollectionLog() {
       setShowDuplicateAnalysis(false);
       setDuplicateAnalysis(null);
       setSelectedSuspiciousIds(new Set());
+      setSelectedKeepIds(new Map());
       toast({
         title: 'Cleanup completed',
         description: `Successfully cleaned ${result.deletedCount} duplicate entries.`,
@@ -1122,6 +1134,7 @@ export default function SandwichCollectionLog() {
       setShowDuplicateAnalysis(false);
       setDuplicateAnalysis(null);
       setSelectedSuspiciousIds(new Set());
+      setSelectedKeepIds(new Map());
       toast({
         title: 'Selected entries deleted',
         description: `Successfully deleted ${result.deletedCount} selected entries.`,
@@ -2456,29 +2469,9 @@ export default function SandwichCollectionLog() {
                     <h3 className="font-medium text-slate-900">
                       Exact Duplicates ({duplicateAnalysis.totalDuplicateEntries})
                     </h3>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const allDuplicateIds = new Set<number>();
-                        duplicateAnalysis.duplicates.forEach(group => {
-                          group.toDelete.forEach((entry: any) => allDuplicateIds.add(entry.id));
-                        });
-                        setSelectedDuplicateIds(
-                          selectedDuplicateIds.size === allDuplicateIds.size
-                            ? new Set()
-                            : allDuplicateIds
-                        );
-                      }}
-                      className="text-xs"
-                    >
-                      {selectedDuplicateIds.size === duplicateAnalysis.totalDuplicateEntries
-                        ? 'Deselect All'
-                        : 'Select All'}
-                    </Button>
                   </div>
                   <div className="text-sm text-slate-600 mb-2">
-                    Review and select specific duplicates to delete. The newest entry in each group will be kept.
+                    Use radio buttons to select which entry to keep in each duplicate group. All other entries will be deleted.
                   </div>
                   <div className="max-h-96 overflow-y-auto border border-slate-200 rounded-lg">
                     <div className="space-y-3 p-3">
@@ -2520,140 +2513,121 @@ export default function SandwichCollectionLog() {
                             </div>
                           </div>
                           
-                          {/* Show the entry being kept */}
-                          <div className="mb-2 p-3 bg-green-50 border-2 border-green-300 rounded-lg" data-testid={`keeping-entry-${group.keepNewest.id}`}>
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm font-bold text-green-700 uppercase bg-green-200 px-2 py-1 rounded">
-                                  ✓ Keeping (Newest)
-                                </span>
-                                <span className="text-xs text-green-600 font-medium">
-                                  ID: {group.keepNewest.id}
-                                </span>
-                              </div>
-                              <div className="text-sm text-green-700 font-medium">
-                                <User className="w-4 h-4 inline mr-1" />
-                                {group.keepNewest.createdBy}
-                              </div>
+                          {/* Show ALL entries with radio buttons to select which to keep */}
+                          <div className="space-y-2">
+                            <div className="text-xs font-bold text-slate-700 mb-2 uppercase">
+                              Select which entry to keep:
                             </div>
-                            
-                            {/* Prominent Group Names Display */}
-                            {group.keepNewest.groupNames && (
-                              <div className="mb-2 p-2 bg-green-100 border border-green-300 rounded">
-                                <div className="flex items-center space-x-2">
-                                  <Users className="w-4 h-4 text-green-700" />
-                                  <div>
-                                    <div className="text-xs text-green-600 font-medium">Groups</div>
-                                    <div className="text-sm font-semibold text-green-900">
-                                      {group.keepNewest.groupNames}
+                            <RadioGroup
+                              value={selectedKeepIds.get(groupIndex)?.toString() || group.keepNewest.id.toString()}
+                              onValueChange={(value) => {
+                                const newMap = new Map(selectedKeepIds);
+                                newMap.set(groupIndex, parseInt(value));
+                                setSelectedKeepIds(newMap);
+                              }}
+                            >
+                              {/* Combine all entries (keepNewest + toDelete) into one list */}
+                              {[group.keepNewest, ...group.toDelete].map((entry) => {
+                                const isSelected = selectedKeepIds.get(groupIndex) === entry.id;
+                                return (
+                                  <div
+                                    key={entry.id}
+                                    className={`flex items-start space-x-3 p-3 border-2 rounded-lg transition-colors ${
+                                      isSelected
+                                        ? 'bg-green-50 border-green-400 shadow-sm'
+                                        : 'bg-white border-slate-200 hover:border-slate-300'
+                                    }`}
+                                    data-testid={`entry-${entry.id}`}
+                                  >
+                                    <div className="flex items-start pt-1">
+                                      <RadioGroupItem
+                                        value={entry.id.toString()}
+                                        id={`entry-${groupIndex}-${entry.id}`}
+                                        className="mt-0.5"
+                                      />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center space-x-2">
+                                          {isSelected && (
+                                            <span className="text-xs font-bold text-green-700 uppercase bg-green-200 px-2 py-1 rounded">
+                                              ✓ Keeping
+                                            </span>
+                                          )}
+                                          <span className={`text-xs font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
+                                            ID: {entry.id}
+                                          </span>
+                                        </div>
+                                        <div className={`text-sm font-medium ${isSelected ? 'text-green-700' : 'text-slate-600'}`}>
+                                          <User className="w-4 h-4 inline mr-1" />
+                                          {entry.createdBy}
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Group Names Display */}
+                                      {entry.groupNames && (
+                                        <div className={`mb-2 p-2 border rounded ${
+                                          isSelected ? 'bg-green-100 border-green-300' : 'bg-slate-50 border-slate-200'
+                                        }`}>
+                                          <div className="flex items-center space-x-2">
+                                            <Users className={`w-4 h-4 ${isSelected ? 'text-green-700' : 'text-slate-600'}`} />
+                                            <div>
+                                              <div className={`text-xs font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
+                                                Groups
+                                              </div>
+                                              <div className={`text-sm font-semibold ${isSelected ? 'text-green-900' : 'text-slate-700'}`}>
+                                                {entry.groupNames}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      <div className="flex items-center justify-between text-sm mb-2">
+                                        <div className="flex items-center space-x-3">
+                                          <span className={isSelected ? 'text-slate-700' : 'text-slate-600'}>
+                                            <Sandwich className="w-3 h-3 inline mr-1" />
+                                            {entry.individualSandwiches} individual
+                                          </span>
+                                        </div>
+                                        <span className={`font-bold px-2 py-1 rounded ${
+                                          isSelected ? 'text-green-900 bg-green-100' : 'text-slate-900 bg-slate-100'
+                                        }`}>
+                                          {entry.totalSandwiches} total
+                                        </span>
+                                      </div>
+                                      
+                                      <div className={`text-xs ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
+                                        <Calendar className="w-3 h-3 inline mr-1" />
+                                        Submitted: {new Date(entry.submittedAt).toLocaleString('en-US', {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          year: 'numeric',
+                                          hour: 'numeric',
+                                          minute: '2-digit'
+                                        })}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </div>
-                            )}
-                            
-                            <div className="flex items-center justify-between text-sm mb-2">
-                              <div className="flex items-center space-x-3">
-                                <span className="text-slate-700">
-                                  <Sandwich className="w-3 h-3 inline mr-1" />
-                                  {group.keepNewest.individualSandwiches} individual
-                                </span>
-                              </div>
-                              <span className="font-bold text-green-900 bg-green-100 px-2 py-1 rounded">
-                                {group.keepNewest.totalSandwiches} total
-                              </span>
-                            </div>
-                            
-                            <div className="text-xs text-green-600">
-                              <Calendar className="w-3 h-3 inline mr-1" />
-                              Submitted: {new Date(group.keepNewest.submittedAt).toLocaleString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit'
+                                );
                               })}
-                            </div>
-                          </div>
-
-                          {/* Show duplicates to delete with checkboxes */}
-                          <div className="space-y-1">
-                            <div className="text-xs font-bold text-red-600 mb-2 uppercase">
-                              Duplicates to delete ({group.toDelete.length}):
-                            </div>
-                            {group.toDelete.map((entry) => (
-                              <div
-                                key={entry.id}
-                                className="flex items-center space-x-3 p-2 border border-red-200 rounded bg-white hover:bg-red-50"
-                                data-testid={`delete-entry-${entry.id}`}
-                              >
-                                <Checkbox
-                                  id={`duplicate-${entry.id}`}
-                                  checked={selectedDuplicateIds.has(entry.id)}
-                                  onCheckedChange={(checked) => {
-                                    const newSet = new Set(selectedDuplicateIds);
-                                    if (checked) {
-                                      newSet.add(entry.id);
-                                    } else {
-                                      newSet.delete(entry.id);
-                                    }
-                                    setSelectedDuplicateIds(newSet);
-                                  }}
-                                  data-testid={`checkbox-duplicate-${entry.id}`}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center space-x-2">
-                                      <span className="text-xs text-slate-500 font-medium">
-                                        ID: {entry.id}
-                                      </span>
-                                      <span className="text-xs text-slate-600">
-                                        <User className="w-3 h-3 inline mr-1" />
-                                        {entry.createdBy}
-                                      </span>
-                                    </div>
-                                    <span className="text-sm font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded">
-                                      {entry.totalSandwiches} total
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Group Names for delete entry */}
-                                  {entry.groupNames && (
-                                    <div className="mb-1 text-xs text-slate-600">
-                                      <Users className="w-3 h-3 inline mr-1" />
-                                      <span className="font-medium">Groups:</span> {entry.groupNames}
-                                    </div>
-                                  )}
-                                  
-                                  <div className="flex items-center justify-between text-xs text-slate-600">
-                                    <div className="flex items-center space-x-3">
-                                      <span>
-                                        <Sandwich className="w-3 h-3 inline mr-1" />
-                                        {entry.individualSandwiches} individual
-                                      </span>
-                                    </div>
-                                    <span className="text-slate-500">
-                                      <Calendar className="w-3 h-3 inline mr-1" />
-                                      {new Date(entry.submittedAt).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: 'numeric',
-                                        minute: '2-digit'
-                                      })}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                            </RadioGroup>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
-                  {selectedDuplicateIds.size > 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <div className="text-sm text-red-800">
-                        {selectedDuplicateIds.size} duplicate{selectedDuplicateIds.size === 1 ? '' : 's'} selected for deletion
+                  {duplicateAnalysis.duplicates.length > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="text-sm text-blue-800">
+                        {(() => {
+                          const totalEntriesToDelete = duplicateAnalysis.duplicates.reduce((sum, group, index) => {
+                            const keepId = selectedKeepIds.get(index) || group.keepNewest.id;
+                            const allIds = [group.keepNewest, ...group.toDelete].map(e => e.id);
+                            return sum + allIds.filter(id => id !== keepId).length;
+                          }, 0);
+                          return `${totalEntriesToDelete} duplicate entr${totalEntriesToDelete === 1 ? 'y' : 'ies'} will be deleted (keeping ${duplicateAnalysis.duplicates.length} selected entr${duplicateAnalysis.duplicates.length === 1 ? 'y' : 'ies'})`;
+                        })()}
                       </div>
                     </div>
                   )}
@@ -2790,25 +2764,43 @@ export default function SandwichCollectionLog() {
                     setShowDuplicateAnalysis(false);
                     setSelectedSuspiciousIds(new Set());
                     setSelectedDuplicateIds(new Set());
+                    setSelectedKeepIds(new Map());
                   }}
                   className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
-                {selectedDuplicateIds.size > 0 && (
+                {duplicateAnalysis.duplicates.length > 0 && (
                   <Button
                     variant="outline"
-                    onClick={() =>
-                      cleanSelectedSuspiciousMutation.mutate(
-                        Array.from(selectedDuplicateIds)
-                      )
-                    }
+                    onClick={() => {
+                      const idsToDelete: number[] = [];
+                      duplicateAnalysis.duplicates.forEach((group, index) => {
+                        const keepId = selectedKeepIds.get(index) || group.keepNewest.id;
+                        const allIds = [group.keepNewest, ...group.toDelete].map(e => e.id);
+                        allIds.forEach(id => {
+                          if (id !== keepId) {
+                            idsToDelete.push(id);
+                          }
+                        });
+                      });
+                      if (idsToDelete.length > 0) {
+                        cleanSelectedSuspiciousMutation.mutate(idsToDelete);
+                      }
+                    }}
                     disabled={cleanSelectedSuspiciousMutation.isPending}
                     className="text-red-600 hover:text-red-700 border-red-300 w-full sm:w-auto"
                   >
                     {cleanSelectedSuspiciousMutation.isPending
                       ? 'Deleting...'
-                      : `Delete Selected Duplicates (${selectedDuplicateIds.size})`}
+                      : (() => {
+                          const totalToDelete = duplicateAnalysis.duplicates.reduce((sum, group, index) => {
+                            const keepId = selectedKeepIds.get(index) || group.keepNewest.id;
+                            const allIds = [group.keepNewest, ...group.toDelete].map(e => e.id);
+                            return sum + allIds.filter(id => id !== keepId).length;
+                          }, 0);
+                          return `Delete Duplicates (${totalToDelete})`;
+                        })()}
                   </Button>
                 )}
                 {selectedSuspiciousIds.size > 0 && (
