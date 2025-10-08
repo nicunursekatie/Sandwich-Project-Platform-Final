@@ -290,7 +290,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
               <div
                 key={index}
                 className={cn(
-                  'min-h-[180px] border rounded-lg p-3',
+                  'min-h-[220px] border rounded-lg p-4',
                   isCurrentMonthDay
                     ? 'bg-white border-gray-200'
                     : 'bg-gray-50 border-gray-100',
@@ -300,17 +300,17 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                 {/* Date number */}
                 <div
                   className={cn(
-                    'text-lg font-bold mb-2',
+                    'text-xl font-bold mb-3',
                     isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
                     isTodayDay &&
-                      'bg-brand-primary-lighter text-white rounded-full w-8 h-8 flex items-center justify-center'
+                      'bg-brand-primary-lighter text-white rounded-full w-10 h-10 flex items-center justify-center'
                   )}
                 >
                   {date.getDate()}
                 </div>
 
                 {/* Events for this day */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {dayEvents.slice(0, 3).map((event) => {
                     const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
@@ -320,18 +320,18 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                         key={event.id}
                         onClick={() => onEventClick?.(event)}
                         className={cn(
-                          'w-full text-left text-sm p-2 rounded border truncate hover:shadow-md transition-shadow',
+                          'w-full text-left text-lg p-3 rounded border truncate hover:shadow-md transition-shadow',
                           getStatusColor(event.status)
                         )}
                         title={`${event.organizationName} - ${event.status}`}
                       >
-                        <div className="font-semibold truncate text-base">
+                        <div className="font-bold truncate text-xl">
                           {event.organizationName}
                         </div>
 
                         {/* Staffing indicators row */}
                         {staffingIndicators.length > 0 && (
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-3 mt-2">
                             {staffingIndicators.map((indicator, idx) => {
                               const IconComponent = indicator.icon;
                               return (
@@ -343,9 +343,9 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                   )}
                                   title={indicator.tooltip}
                                 >
-                                  <IconComponent className="w-4 h-4" />
+                                  <IconComponent className="w-6 h-6" />
                                   {indicator.count > 1 && (
-                                    <span className="text-xs ml-1 font-semibold">
+                                    <span className="text-sm ml-2 font-bold">
                                       {indicator.count}
                                     </span>
                                   )}
@@ -357,7 +357,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
 
                         {/* Sandwich information row */}
                         {sandwichInfo.length > 0 && (
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-3 mt-2">
                             {sandwichInfo.map((info, idx) => {
                               const IconComponent = info.icon;
                               return (
@@ -369,14 +369,14 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                   )}
                                   title={info.tooltip}
                                 >
-                                  <IconComponent className="w-4 h-4" />
+                                  <IconComponent className="w-6 h-6" />
                                   {info.count && (
-                                    <span className="text-xs ml-1 font-semibold">
+                                    <span className="text-sm ml-2 font-bold">
                                       {info.count}
                                     </span>
                                   )}
                                   {info.showTypes && (
-                                    <span className="text-xs ml-1 opacity-75 truncate max-w-[80px]">
+                                    <span className="text-sm ml-2 opacity-75 truncate max-w-[100px]">
                                       {info.types.map((t) => t.type).join(', ')}
                                     </span>
                                   )}
@@ -387,7 +387,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                         )}
 
                         {event.eventStartTime && (
-                          <div className="text-sm opacity-75 mt-1 font-medium">
+                          <div className="text-base opacity-75 mt-2 font-bold">
                             {event.eventStartTime}
                           </div>
                         )}
@@ -395,7 +395,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                     );
                   })}
                   {dayEvents.length > 3 && (
-                    <div className="text-sm text-gray-500 text-center font-semibold">
+                    <div className="text-base text-gray-500 text-center font-bold">
                       +{dayEvents.length - 3} more
                     </div>
                   )}

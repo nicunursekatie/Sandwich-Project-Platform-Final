@@ -89,16 +89,14 @@ export default function StreamChatRooms() {
 
         setUserRooms(accessibleRooms);
 
-        // Create/join channels for accessible rooms
+        // Join channels for accessible rooms (channels are created server-side)
+        // Don't try to create them here - just watch them
         for (const room of accessibleRooms) {
           try {
-            const channel = chatClient.channel('team', room.id, {
-              name: room.name,
-              members: [streamUserId],
-            });
+            const channel = chatClient.channel('team', room.id);
             await channel.watch();
           } catch (error) {
-            console.error(`Failed to create/join channel ${room.id}:`, error);
+            console.error(`Failed to join channel ${room.id}:`, error);
           }
         }
 

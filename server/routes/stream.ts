@@ -130,24 +130,29 @@ streamRoutes.post('/credentials', async (req, res) => {
       for (const room of teamRooms) {
         if (userPermissions.includes(room.permission)) {
           try {
+            // Get or create the channel
             const channel = streamServerClient.channel('team', room.id, {
               name: room.name,
               created_by_id: streamUserId,
-              members: [streamUserId], // Add user as member so they can read
             });
-            await channel.create();
 
-            // Also ensure user is added as member (in case channel already exists)
-            await channel.addMembers([streamUserId]);
-          } catch (channelError) {
-            // Channel might already exist, try to add user as member anyway
-            console.log(`Channel ${room.id} status:`, channelError.message);
+            // Use getOrCreate to handle both new and existing channels
+            await channel.getOrCreate();
+
+            // Add user as member (this works for both new and existing channels)
             try {
-              const existingChannel = streamServerClient.channel('team', room.id);
-              await existingChannel.addMembers([streamUserId]);
-            } catch (addError) {
-              console.log(`Could not add user to ${room.id}:`, addError.message);
+              await channel.addMembers([streamUserId]);
+              console.log(`✅ Added ${user.email} to channel ${room.id}`);
+            } catch (addError: any) {
+              // User might already be a member
+              if (addError.message?.includes('already a member')) {
+                console.log(`User ${user.email} already in channel ${room.id}`);
+              } else {
+                console.error(`Failed to add user to ${room.id}:`, addError.message);
+              }
             }
+          } catch (channelError: any) {
+            console.error(`Failed to setup channel ${room.id}:`, channelError.message);
           }
         }
       }
