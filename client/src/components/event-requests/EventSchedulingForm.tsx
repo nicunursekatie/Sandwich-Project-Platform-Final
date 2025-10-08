@@ -167,6 +167,28 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       
       const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
       
+      // Normalize assignedRecipientIds to ensure they're always numbers
+      // Database stores as text().array() which returns strings, but we need numbers for comparison
+      const normalizeRecipientIds = (ids: any): number[] => {
+        if (!ids) return [];
+        
+        // Handle PostgreSQL array format: {1,2,3}
+        if (typeof ids === 'string' && ids.startsWith('{') && ids.endsWith('}')) {
+          return ids
+            .slice(1, -1) // Remove { and }
+            .split(',')
+            .map(id => parseInt(id.trim(), 10))
+            .filter(id => !isNaN(id));
+        }
+        
+        // Handle JSON array format: [1,2,3] or ["1","2","3"]
+        if (Array.isArray(ids)) {
+          return ids.map(id => parseInt(String(id), 10)).filter(id => !isNaN(id));
+        }
+        
+        return [];
+      };
+
       setFormData({
         eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
         eventStartTime: eventRequest?.eventStartTime || '',
@@ -218,7 +240,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
         followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
         followUpNotes: (eventRequest as any)?.followUpNotes || '',
-        assignedRecipientIds: (eventRequest as any)?.assignedRecipientIds || [],
+        assignedRecipientIds: normalizeRecipientIds((eventRequest as any)?.assignedRecipientIds),
       });
       
       // Set mode based on existing data

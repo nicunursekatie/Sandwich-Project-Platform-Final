@@ -1148,23 +1148,24 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const getRecipientNames = (recipientIds: any): string[] => {
     if (!recipientIds) return [];
     
-    // Parse the array (could be string or array)
+    // Parse the array (could be string or array) and normalize to numbers
     let ids: number[] = [];
     if (Array.isArray(recipientIds)) {
-      ids = recipientIds;
+      // Convert all values to numbers, filtering out NaN
+      ids = recipientIds.map(id => parseInt(String(id), 10)).filter(id => !isNaN(id));
     } else if (typeof recipientIds === 'string') {
       try {
         // Handle PostgreSQL array format: {1,2,3}
         const cleaned = recipientIds.replace(/[{}]/g, '');
         if (cleaned) {
-          ids = cleaned.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+          ids = cleaned.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
         }
       } catch {
         return [];
       }
     }
     
-    // Map IDs to names
+    // Map IDs to names - both are now guaranteed to be numbers
     return ids.map(id => {
       const recipient = recipients.find(r => r.id === id);
       return recipient?.name || `Unknown (ID: ${id})`;
