@@ -307,8 +307,31 @@ collectionsRouter.get('/analyze-duplicates', async (req, res) => {
     const ogDuplicates = [];
 
     collections.forEach((collection) => {
-      // Exact match key
-      const key = `${collection.collectionDate}-${collection.hostName}-${collection.individualSandwiches}-${collection.groupCollections}`;
+      // Extract group names for duplicate detection
+      let groupNames = '';
+      if (Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
+        // Use new groupCollections array - extract and sort group names
+        const names = collection.groupCollections
+          .map((g: any) => g.name || '')
+          .filter((name: string) => name.trim() !== '')
+          .sort()
+          .join(',');
+        groupNames = names;
+      } else {
+        // Fall back to legacy group1Name and group2Name
+        const names = [collection.group1Name, collection.group2Name]
+          .filter((name: any) => name && name.trim() !== '')
+          .sort()
+          .join(',');
+        groupNames = names;
+      }
+
+      // Calculate total sandwiches (individual + all group counts)
+      const totalSandwiches = calculateTotal(collection);
+
+      // Create duplicate key: same date + same group names + same individual count + same total count
+      // This ensures we only flag TRUE duplicates (same everything)
+      const key = `${collection.collectionDate}-${groupNames}-${collection.individualSandwiches || 0}-${totalSandwiches}`;
 
       if (!duplicateGroups.has(key)) {
         duplicateGroups.set(key, []);
@@ -402,16 +425,53 @@ collectionsRouter.get('/analyze-duplicates', async (req, res) => {
     // Find actual duplicates (groups with more than 1 entry)
     const duplicates = Array.from(duplicateGroups.values())
       .filter((group) => group.length > 1)
-      .map((group) => ({
-        entries: group,
-        count: group.length,
-        keepNewest: group.sort(
+      .map((group) => {
+        // Sort by submission date to keep the newest
+        const sorted = group.sort(
           (a, b) =>
             new Date(b.submittedAt).getTime() -
             new Date(a.submittedAt).getTime()
-        )[0],
-        toDelete: group.slice(1),
-      }));
+        );
+        
+        const keepEntry = sorted[0];
+        const deleteEntries = sorted.slice(1);
+        
+        // Extract group names for display
+        const extractGroupNames = (c: any) => {
+          if (Array.isArray(c.groupCollections) && c.groupCollections.length > 0) {
+            return c.groupCollections.map((g: any) => g.name).filter((n: string) => n).join(', ');
+          } else {
+            return [c.group1Name, c.group2Name].filter((n: any) => n && n.trim()).join(', ');
+          }
+        };
+        
+        return {
+          entries: group,
+          count: group.length,
+          duplicateInfo: {
+            collectionDate: keepEntry.collectionDate,
+            groupNames: extractGroupNames(keepEntry),
+            individualSandwiches: keepEntry.individualSandwiches || 0,
+            totalSandwiches: calculateTotal(keepEntry),
+          },
+          keepNewest: {
+            id: keepEntry.id,
+            submittedAt: keepEntry.submittedAt,
+            createdBy: keepEntry.createdByName || keepEntry.createdBy || 'Unknown',
+            individualSandwiches: keepEntry.individualSandwiches || 0,
+            groupNames: extractGroupNames(keepEntry),
+            totalSandwiches: calculateTotal(keepEntry),
+          },
+          toDelete: deleteEntries.map((c: any) => ({
+            id: c.id,
+            submittedAt: c.submittedAt,
+            createdBy: c.createdByName || c.createdBy || 'Unknown',
+            individualSandwiches: c.individualSandwiches || 0,
+            groupNames: extractGroupNames(c),
+            totalSandwiches: calculateTotal(c),
+          })),
+        };
+      });
 
     // Find near-duplicates: same date & host but slightly different totals
     const potentialNearDuplicates: any[] = [];
