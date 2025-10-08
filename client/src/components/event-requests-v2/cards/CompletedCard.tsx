@@ -1236,6 +1236,24 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   <span className="text-gray-400 italic">Not tracked</span>
                 )}
               </p>
+              {/* Display Instagram link if posted and link exists */}
+              {request.socialMediaPostCompleted && (() => {
+                const instagramLink = getInstagramLinkFromNotes();
+                if (instagramLink) {
+                  return (
+                    <a
+                      href={instagramLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1 mt-2 text-xs text-[#236383] hover:text-[#007e8c] hover:underline"
+                    >
+                      <Instagram className="w-3 h-3" />
+                      View Post
+                    </a>
+                  );
+                }
+                return null;
+              })()}
               {/* Quick action buttons when not tracked */}
               {!request.socialMediaPostRequested && !request.socialMediaPostCompleted && (
                 <div className="flex flex-col gap-1 mt-2">
