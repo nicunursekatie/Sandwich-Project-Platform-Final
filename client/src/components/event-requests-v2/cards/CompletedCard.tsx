@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
+import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
@@ -375,7 +376,13 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           {assigned.length > 0 ? (
             assigned.map((personId: string) => {
               const detailName = details?.[personId]?.name;
-              const name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
+              let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(personId);
+              
+              // Extract name from custom ID if needed for any assignment type
+              if (name.startsWith('custom-')) {
+                name = extractNameFromCustomId(name);
+              }
+              
               return (
                 <div key={personId} className="flex items-center bg-white/90 rounded px-3 py-2 shadow-sm">
                   <Check className="w-3 h-3 text-teal-600 mr-2" />
@@ -399,9 +406,14 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
       return null; // Don't show section if not needed and no one assigned
     }
 
-    const assignedVanDriverName = request.assignedVanDriverId 
+    let assignedVanDriverName = request.assignedVanDriverId 
       ? (request.customVanDriverName || resolveUserName(request.assignedVanDriverId))
       : null;
+    
+    // Extract name from custom ID if needed
+    if (assignedVanDriverName && assignedVanDriverName.startsWith('custom-')) {
+      assignedVanDriverName = extractNameFromCustomId(assignedVanDriverName);
+    }
 
     return (
       <div className="bg-white/60 rounded-lg p-4 border border-white/80 min-h-[120px]">
