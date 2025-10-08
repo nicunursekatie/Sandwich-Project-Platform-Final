@@ -7,7 +7,7 @@
  * permission checking system.
  */
 
-import { PERMISSIONS, USER_ROLES } from './auth-utils';
+import { PERMISSIONS, USER_ROLES, applyPermissionDependencies } from './auth-utils';
 
 export interface User {
   id: string;
@@ -55,6 +55,16 @@ export function checkPermission(user: User | null | undefined, permission: strin
     };
   }
 
+  // Step 1.5: Universal permissions - all authenticated users have these
+  if (permission === 'VOLUNTEERS_VIEW') {
+    return {
+      granted: true,
+      reason: 'Universal permission (all users have access)',
+      userRole: user.role,
+      userPermissions: ['VOLUNTEERS_VIEW']
+    };
+  }
+
   // Step 2: Super admin bypass
   if (user.role === 'super_admin' || user.role === USER_ROLES.SUPER_ADMIN) {
     return {
@@ -97,13 +107,16 @@ export function checkPermission(user: User | null | undefined, permission: strin
     }
   }
 
-  // Step 4: Check for exact permission match
-  if (userPermissions.includes(permission)) {
+  // Step 4: Apply permission dependencies and check for permission match
+  // This handles cases where users have NAV_* permissions but not the underlying functional permissions
+  const effectivePermissions = applyPermissionDependencies(userPermissions);
+  
+  if (effectivePermissions.includes(permission)) {
     return {
       granted: true,
       reason: 'Permission granted',
       userRole: user.role,
-      userPermissions: userPermissions
+      userPermissions: effectivePermissions
     };
   }
 
