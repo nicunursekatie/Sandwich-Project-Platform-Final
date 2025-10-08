@@ -523,6 +523,8 @@ export default function ImportantDocuments() {
             <TabsTrigger
               value="logos"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+              data-tour="logos-tab"
+              data-testid="tab-logos"
             >
               <FileImage className="h-4 w-4" />
               Logos & Branding
@@ -558,6 +560,8 @@ export default function ImportantDocuments() {
                         ? 'px-6 py-3 text-sm font-medium bg-gradient-to-r from-brand-primary to-brand-primary-dark text-white border-0 shadow-[0_4px_12px_rgba(35,99,131,0.25),0_2px_4px_rgba(35,99,131,0.1)] transform hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(35,99,131,0.3),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg'
                         : 'px-6 py-3 text-sm font-medium border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] transform hover:scale-[1.02] hover:shadow-[0_4px_12px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg'
                     }
+                    data-tour={`category-${category.toLowerCase().replace(/\s+/g, '-')}`}
+                    data-testid={`category-${category.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     {category}
                   </Button>

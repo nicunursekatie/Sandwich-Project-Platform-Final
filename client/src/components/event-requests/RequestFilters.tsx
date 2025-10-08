@@ -191,6 +191,7 @@ export default function RequestFilters({
                 value={tab.value} 
                 className="relative text-xs sm:text-sm"
                 data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
+                data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
               >
                 <div className="flex items-center space-x-1">
                   <tab.icon className="w-3 h-3" />

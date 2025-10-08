@@ -28,6 +28,7 @@ import {
   UserCog,
   Trophy,
   FileSpreadsheet,
+  HelpCircle,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -256,6 +257,13 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Important Links',
     icon: Link,
     href: 'important-links',
+    group: 'documentation',
+  },
+  {
+    id: 'help',
+    label: 'Help',
+    icon: HelpCircle,
+    href: 'help',
     group: 'documentation',
   },
   {
