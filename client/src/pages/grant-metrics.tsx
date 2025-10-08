@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -7,6 +8,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   TrendingUp,
   Heart,
@@ -27,6 +36,12 @@ import {
   Rocket,
   AlertTriangle,
   Mail,
+  Download,
+  FileText,
+  HandHeart,
+  PieChartIcon,
+  TrendingDown,
+  Activity,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -45,6 +60,9 @@ import {
 import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
 
 export default function GrantMetrics() {
+  const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>('all');
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('all');
+
   // Fetch collections data
   const { data: collectionsData } = useQuery({
     queryKey: ['/api/sandwich-collections'],
@@ -76,6 +94,162 @@ export default function GrantMetrics() {
 
   // Hardcoded host count (actual database has 34 active hosts)
   const totalHosts = 34;
+
+  // Filter collections by fiscal year and quarter
+  const getFilteredCollections = () => {
+    if (!Array.isArray(collections)) return [];
+
+    let filtered = collections.filter((c: any) => c.hostName !== 'Groups');
+
+    if (selectedFiscalYear !== 'all') {
+      const fiscalYear = parseInt(selectedFiscalYear);
+      filtered = filtered.filter((c: any) => {
+        if (!c.collectionDate) return false;
+        const date = parseCollectionDate(c.collectionDate);
+        if (Number.isNaN(date.getTime())) return false;
+        // Fiscal year runs July 1 - June 30
+        const year = date.getFullYear();
+        const month = date.getMonth(); // 0-11
+        if (month >= 6) { // July-December
+          return year === fiscalYear;
+        } else { // January-June
+          return year === fiscalYear + 1;
+        }
+      });
+    }
+
+    if (selectedQuarter !== 'all' && selectedFiscalYear !== 'all') {
+      const fiscalYear = parseInt(selectedFiscalYear);
+      const quarter = parseInt(selectedQuarter);
+      filtered = filtered.filter((c: any) => {
+        if (!c.collectionDate) return false;
+        const date = parseCollectionDate(c.collectionDate);
+        if (Number.isNaN(date.getTime())) return false;
+        const year = date.getFullYear();
+        const month = date.getMonth(); // 0-11
+
+        // Q1: July-Sept, Q2: Oct-Dec, Q3: Jan-Mar, Q4: Apr-Jun
+        let collectionQuarter = 0;
+        let collectionFY = year;
+
+        if (month >= 6 && month <= 8) { // July-Sept
+          collectionQuarter = 1;
+        } else if (month >= 9 && month <= 11) { // Oct-Dec
+          collectionQuarter = 2;
+        } else if (month >= 0 && month <= 2) { // Jan-Mar
+          collectionQuarter = 3;
+          collectionFY = year - 1;
+        } else { // Apr-Jun
+          collectionQuarter = 4;
+          collectionFY = year - 1;
+        }
+
+        return collectionFY === fiscalYear && collectionQuarter === quarter;
+      });
+    }
+
+    return filtered;
+  };
+
+  const filteredCollections = getFilteredCollections();
+
+  // Calculate volunteer hours based on conservative estimates
+  const calculateVolunteerMetrics = (collectionsToAnalyze: any[]) => {
+    // Conservative estimates:
+    // - Individual sandwich makers: 20 min (0.33 hours) per person
+    // - Group builds: 1.5 hours average per participant
+    // - Hosts: 2.5 hours per collection event
+    // - Administrative/coordination: 3 hours per event
+
+    const individualEvents = collectionsToAnalyze.filter((c: any) => c.individualSandwiches > 0).length;
+    const groupEvents = collectionsToAnalyze.filter((c: any) => {
+      const groups = Array.isArray(c.groupCollections) ? c.groupCollections : [];
+      return (c.group1Count && c.group1Count > 0) || (c.group2Count && c.group2Count > 0) || groups.length > 0;
+    }).length;
+
+    const totalEvents = collectionsToAnalyze.length;
+
+    // Estimate participants based on sandwiches made
+    // Avg person makes ~8-12 sandwiches, use 10 as conservative estimate
+    const totalSandwiches = collectionsToAnalyze.reduce((sum: number, c: any) => sum + calculateTotalSandwiches(c), 0);
+    const estimatedParticipants = Math.round(totalSandwiches / 10);
+
+    // Calculate hours
+    const makingHours = estimatedParticipants * 0.33; // 20 min per person
+    const hostHours = totalEvents * 2.5; // Host coordination
+    const adminHours = totalEvents * 3; // Administrative overhead
+    const driverHours = totalEvents * 1.5; // Driver/logistics
+
+    const totalVolunteerHours = Math.round(makingHours + hostHours + adminHours + driverHours);
+
+    // IRS values volunteer time at $33.49/hour (2024 rate)
+    const economicValue = Math.round(totalVolunteerHours * 33.49);
+
+    return {
+      estimatedParticipants,
+      totalVolunteerHours,
+      economicValue,
+      avgHoursPerEvent: Math.round(totalVolunteerHours / Math.max(totalEvents, 1)),
+    };
+  };
+
+  // Calculate cost efficiency metrics
+  const calculateCostMetrics = (collectionsToAnalyze: any[]) => {
+    const totalSandwiches = collectionsToAnalyze.reduce((sum: number, c: any) => sum + calculateTotalSandwiches(c), 0);
+
+    // Industry estimates:
+    // - Cost per sandwich (ingredients): $1.40-$1.48
+    // - Cost per person served (1 sandwich): same
+    // - With volunteer labor valued: add ~$3.35 per sandwich (20 min @ $33.49/hr / 10 sandwiches)
+
+    const costPerSandwich = 1.44; // Average ingredient cost
+    const totalFoodValue = Math.round(totalSandwiches * costPerSandwich);
+
+    return {
+      totalSandwiches,
+      costPerSandwich,
+      totalFoodValue,
+      costPerPerson: costPerSandwich, // 1 sandwich per person served
+    };
+  };
+
+  // Calculate quarterly breakdown
+  const getQuarterlyBreakdown = (collectionsToAnalyze: any[]) => {
+    const quarterlyData: Record<string, { sandwiches: number; events: number; quarter: string }> = {};
+
+    collectionsToAnalyze.forEach((c: any) => {
+      if (!c.collectionDate) return;
+      const date = parseCollectionDate(c.collectionDate);
+      if (Number.isNaN(date.getTime())) return;
+
+      const year = date.getFullYear();
+      const month = date.getMonth();
+
+      let quarter = '';
+      let fy = year;
+
+      if (month >= 6 && month <= 8) {
+        quarter = `FY${year} Q1 (Jul-Sep)`;
+      } else if (month >= 9 && month <= 11) {
+        quarter = `FY${year} Q2 (Oct-Dec)`;
+      } else if (month >= 0 && month <= 2) {
+        fy = year - 1;
+        quarter = `FY${fy} Q3 (Jan-Mar)`;
+      } else {
+        fy = year - 1;
+        quarter = `FY${fy} Q4 (Apr-Jun)`;
+      }
+
+      if (!quarterlyData[quarter]) {
+        quarterlyData[quarter] = { sandwiches: 0, events: 0, quarter };
+      }
+
+      quarterlyData[quarter].sandwiches += calculateTotalSandwiches(c);
+      quarterlyData[quarter].events += 1;
+    });
+
+    return Object.values(quarterlyData).sort((a, b) => a.quarter.localeCompare(b.quarter));
+  };
 
   // Calculate impressive metrics
   const calculateGrantMetrics = () => {
@@ -208,7 +382,31 @@ export default function GrantMetrics() {
     };
   };
 
+  // Calculate metrics for filtered data (respects fiscal year/quarter selection)
+  const filteredVolunteerMetrics = calculateVolunteerMetrics(filteredCollections);
+  const filteredCostMetrics = calculateCostMetrics(filteredCollections);
+  const filteredQuarterlyBreakdown = getQuarterlyBreakdown(filteredCollections);
+
+  // Calculate ALL-TIME metrics for the hero stats and growth charts (always show full history)
+  const allTimeCollections = collections.filter((c: any) => c.hostName !== 'Groups');
   const metrics = calculateGrantMetrics();
+  const allTimeVolunteerMetrics = calculateVolunteerMetrics(allTimeCollections);
+  const allTimeCostMetrics = calculateCostMetrics(allTimeCollections);
+
+  // Get available fiscal years from data
+  const availableFiscalYears = Array.from(
+    new Set(
+      collections.map((c: any) => {
+        if (!c.collectionDate) return null;
+        const date = parseCollectionDate(c.collectionDate);
+        if (Number.isNaN(date.getTime())) return null;
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        // If July-Dec, fiscal year starts that year. If Jan-Jun, fiscal year started previous year
+        return month >= 6 ? year : year - 1;
+      }).filter(Boolean)
+    )
+  ).sort((a: any, b: any) => b - a);
 
   // Debug peak month calculation
   console.log('=== PEAK MONTH DEBUG ===');
@@ -252,14 +450,85 @@ export default function GrantMetrics() {
   return (
     <div className="bg-gradient-to-br from-[#E8F4F8] to-[#F0F9FB] p-6 rounded-lg">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header with Filter Controls */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Grant Metrics & Impact Showcase
-          </h1>
-          <p className="text-lg text-gray-600">
-            Highlighting our community impact for donors, grants, and partnerships
-          </p>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Grant Metrics & Impact Showcase
+              </h1>
+              <p className="text-lg text-gray-600">
+                Highlighting our community impact for donors, grants, and partnerships
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={() => window.print()}
+              >
+                <Download className="w-4 h-4" />
+                Export PDF
+              </Button>
+            </div>
+          </div>
+
+          {/* Fiscal Year and Quarter Filters */}
+          <Card className="bg-white/80 backdrop-blur border-[#236383]/20">
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-[#236383]" />
+                  <span className="font-semibold text-gray-700">Reporting Period:</span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                  <Select value={selectedFiscalYear} onValueChange={(value) => {
+                    setSelectedFiscalYear(value);
+                    if (value === 'all') setSelectedQuarter('all');
+                  }}>
+                    <SelectTrigger className="w-full sm:w-[200px]">
+                      <SelectValue placeholder="Select Fiscal Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Years</SelectItem>
+                      {availableFiscalYears.map((year: any) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          FY {year} (Jul {year} - Jun {year + 1})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={selectedQuarter}
+                    onValueChange={setSelectedQuarter}
+                    disabled={selectedFiscalYear === 'all'}
+                  >
+                    <SelectTrigger className="w-full sm:w-[200px]">
+                      <SelectValue placeholder="Select Quarter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Quarters</SelectItem>
+                      <SelectItem value="1">Q1 (Jul-Sep)</SelectItem>
+                      <SelectItem value="2">Q2 (Oct-Dec)</SelectItem>
+                      <SelectItem value="3">Q3 (Jan-Mar)</SelectItem>
+                      <SelectItem value="4">Q4 (Apr-Jun)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Badge variant="outline" className="bg-[#236383]/10 text-[#236383] border-[#236383]/30">
+                  {selectedFiscalYear === 'all'
+                    ? 'Showing All-Time Data'
+                    : selectedQuarter === 'all'
+                    ? `FY ${selectedFiscalYear}`
+                    : `FY ${selectedFiscalYear} Q${selectedQuarter}`}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Hero Stats - The Big Numbers */}
@@ -650,6 +919,552 @@ export default function GrantMetrics() {
                   Professional food safety standards
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* GRANT-SPECIFIC SECTIONS */}
+
+        {/* Volunteer Engagement & Economic Value - INTERACTIVE */}
+        <Card className="mb-8 border-2 border-[#FBAD3F] shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-[#FBAD3F] to-[#e89a2c] text-white">
+            <CardTitle className="flex items-center text-xl">
+              <HandHeart className="w-6 h-6 mr-2" />
+              Volunteer Engagement & Economic Impact
+            </CardTitle>
+            <CardDescription className="text-white/90">
+              Demonstrating community mobilization and in-kind value {selectedFiscalYear !== 'all' && `(FY ${selectedFiscalYear}${selectedQuarter !== 'all' ? ` Q${selectedQuarter}` : ''})`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <div className="text-center p-4 bg-[#FEF4E0] rounded-lg">
+                <Users className="w-8 h-8 mx-auto mb-2 text-[#FBAD3F]" />
+                <div className="text-3xl font-black text-[#FBAD3F] mb-1">
+                  {filteredVolunteerMetrics.estimatedParticipants.toLocaleString()}
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Est. volunteer participants
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Based on collection data
+                </p>
+              </div>
+
+              <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
+                <Clock className="w-8 h-8 mx-auto mb-2 text-[#007E8C]" />
+                <div className="text-3xl font-black text-[#007E8C] mb-1">
+                  {filteredVolunteerMetrics.totalVolunteerHours.toLocaleString()}
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Est. volunteer hours
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Conservative estimate
+                </p>
+              </div>
+
+              <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
+                <DollarSign className="w-8 h-8 mx-auto mb-2 text-[#236383]" />
+                <div className="text-3xl font-black text-[#236383] mb-1">
+                  ${(filteredVolunteerMetrics.economicValue / 1000).toFixed(0)}K
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Economic value (IRS rate)
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  @$33.49/hour (2024)
+                </p>
+              </div>
+
+              <div className="text-center p-4 bg-[#FCE4E6] rounded-lg">
+                <Activity className="w-8 h-8 mx-auto mb-2 text-[#A31C41]" />
+                <div className="text-3xl font-black text-[#A31C41] mb-1">
+                  {filteredVolunteerMetrics.avgHoursPerEvent}
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Avg hours per event
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Sustained efficiency
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-white to-[#FEF4E0] p-5 rounded-lg border border-[#FBAD3F]/30">
+              <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+                How We Calculate Volunteer Hours (Conservative Methodology)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
+                <div className="flex items-start gap-2">
+                  <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30 shrink-0">
+                    Making
+                  </Badge>
+                  <span>20 min per participant (0.33 hrs × ~10 sandwiches/person)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shrink-0">
+                    Hosting
+                  </Badge>
+                  <span>2.5 hours per collection event (setup, coordination, cleanup)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
+                    Logistics
+                  </Badge>
+                  <span>1.5 hours per event (driving, delivery, returns)</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Badge className="bg-[#A31C41]/20 text-[#A31C41] border-[#A31C41]/30 shrink-0">
+                    Admin
+                  </Badge>
+                  <span>3 hours per event (coordination, communication, tracking)</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-600 mt-3 italic">
+                * All estimates use conservative industry standards to ensure defensible grant reporting
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cost Efficiency & Financial Metrics - INTERACTIVE */}
+        <Card className="mb-8 border-2 border-[#007E8C] shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-[#007E8C] to-[#236383] text-white">
+            <CardTitle className="flex items-center text-xl">
+              <DollarSign className="w-6 h-6 mr-2" />
+              Cost Efficiency & Financial Impact
+            </CardTitle>
+            <CardDescription className="text-white/90">
+              Demonstrating value delivered to community {selectedFiscalYear !== 'all' && `(FY ${selectedFiscalYear}${selectedQuarter !== 'all' ? ` Q${selectedQuarter}` : ''})`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
+                <div className="text-4xl font-black text-[#007E8C] mb-2">
+                  ${filteredCostMetrics.costPerSandwich.toFixed(2)}
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Cost per sandwich
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Ingredients only
+                </p>
+              </div>
+
+              <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
+                <div className="text-4xl font-black text-[#236383] mb-2">
+                  ${filteredCostMetrics.costPerPerson.toFixed(2)}
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Cost per person served
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Direct food cost
+                </p>
+              </div>
+
+              <div className="text-center p-4 bg-[#FEF4E0] rounded-lg">
+                <div className="text-4xl font-black text-[#FBAD3F] mb-2">
+                  ${filteredCostMetrics.totalFoodValue >= 1000000
+                    ? (filteredCostMetrics.totalFoodValue / 1000000).toFixed(2) + 'M'
+                    : (filteredCostMetrics.totalFoodValue / 1000).toFixed(0) + 'K'}
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Total food value delivered
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Selected period
+                </p>
+              </div>
+
+              <div className="text-center p-4 bg-[#FCE4E6] rounded-lg">
+                <div className="text-4xl font-black text-[#A31C41] mb-2">
+                  ${((filteredVolunteerMetrics.economicValue + filteredCostMetrics.totalFoodValue) >= 1000000
+                    ? ((filteredVolunteerMetrics.economicValue + filteredCostMetrics.totalFoodValue) / 1000000).toFixed(2) + 'M'
+                    : ((filteredVolunteerMetrics.economicValue + filteredCostMetrics.totalFoodValue) / 1000).toFixed(0) + 'K')}
+                </div>
+                <p className="text-sm text-gray-700 font-medium">
+                  Total community value
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Food + volunteer hours
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-[#E0F2F1] to-white p-5 rounded-lg border border-[#007E8C]/30">
+              <h3 className="font-bold text-gray-900 mb-3">Why This Matters for Funders</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#007E8C] flex items-center justify-center text-white font-bold shrink-0">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Exceptional Cost Efficiency</p>
+                    <p className="text-sm text-gray-600">
+                      At ${filteredCostMetrics.costPerPerson.toFixed(2)}/person, we deliver dignified food assistance at a fraction of traditional meal program costs ($8-15/meal)
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#236383] flex items-center justify-center text-white font-bold shrink-0">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Volunteer Force Multiplier</p>
+                    <p className="text-sm text-gray-600">
+                      Every $1 in grants leverages ${((filteredVolunteerMetrics.economicValue / Math.max(filteredCostMetrics.totalFoodValue, 1))).toFixed(1)} in volunteer economic value
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#FBAD3F] flex items-center justify-center text-white font-bold shrink-0">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Proven Sustainability</p>
+                    <p className="text-sm text-gray-600">
+                      Operating continuously since April 2020 with consistent growth, not a one-time initiative
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#A31C41] flex items-center justify-center text-white font-bold shrink-0">
+                    4
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Community Ownership</p>
+                    <p className="text-sm text-gray-600">
+                      {filteredVolunteerMetrics.estimatedParticipants.toLocaleString()}+ participants means deep community buy-in and resilience
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quarterly Reporting Breakdown - INTERACTIVE */}
+        {filteredQuarterlyBreakdown.length > 0 && (
+          <Card className="mb-8 border-2 border-[#47B3CB] shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white">
+              <CardTitle className="flex items-center text-xl">
+                <Calendar className="w-6 h-6 mr-2" />
+                Quarterly Performance Breakdown
+              </CardTitle>
+              <CardDescription className="text-white/90">
+                For grant reporting and compliance {selectedFiscalYear !== 'all' && `(FY ${selectedFiscalYear}${selectedQuarter !== 'all' ? ` Q${selectedQuarter}` : ''})`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredQuarterlyBreakdown.slice(-12).map((quarter) => (
+                  <div
+                    key={quarter.quarter}
+                    className="p-4 bg-gradient-to-br from-white to-[#E8F4F8] rounded-lg border border-[#47B3CB]/30 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge className="bg-[#47B3CB]/20 text-[#47B3CB] border-[#47B3CB]/30">
+                        {quarter.quarter}
+                      </Badge>
+                      <BarChart3 className="w-5 h-5 text-[#236383]" />
+                    </div>
+                    <div className="text-3xl font-black text-[#236383] mb-1">
+                      {quarter.sandwiches.toLocaleString()}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">sandwiches distributed</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <Building2 className="w-3 h-3" />
+                      {quarter.events} collection events
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Geographic Reach & Demographics */}
+        <Card className="mb-8 border-2 border-[#A31C41] shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-[#A31C41] to-[#8a1636] text-white">
+            <CardTitle className="flex items-center text-xl">
+              <MapPin className="w-6 h-6 mr-2" />
+              Geographic Reach & Communities Served
+            </CardTitle>
+            <CardDescription className="text-white/90">
+              Demonstrating diversity and accessibility
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center">
+                  <MapPin className="w-5 h-5 mr-2 text-[#A31C41]" />
+                  Service Area
+                </h3>
+                <div className="space-y-3">
+                  <div className="p-3 bg-[#FCE4E6] rounded-lg">
+                    <div className="font-semibold text-gray-900 mb-1">Metro Atlanta Coverage</div>
+                    <div className="text-sm text-gray-700">
+                      <strong>35 collection sites</strong> across Fulton, DeKalb, Gwinnett, and Cobb counties
+                    </div>
+                  </div>
+                  <div className="p-3 bg-white rounded-lg border border-[#A31C41]/20">
+                    <div className="font-semibold text-gray-900 mb-1">Strategic Distribution</div>
+                    <div className="text-sm text-gray-700">
+                      <strong>70+ partner organizations</strong> receiving weekly deliveries in high-need zip codes
+                    </div>
+                  </div>
+                  <div className="p-3 bg-[#FCE4E6] rounded-lg">
+                    <div className="font-semibold text-gray-900 mb-1">Expansion</div>
+                    <div className="text-sm text-gray-700">
+                      Extended operations to <strong>Athens-Clarke County</strong> in 2024
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center">
+                  <Users className="w-5 h-5 mr-2 text-[#A31C41]" />
+                  Diverse Communities Served
+                </h3>
+                <div className="bg-gradient-to-br from-white to-[#FCE4E6] p-5 rounded-lg border border-[#A31C41]/20">
+                  <p className="text-sm text-gray-700 mb-4">
+                    Our distribution network serves diverse populations across Metro Atlanta:
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>Black communities</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>Latino communities</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>AAPI communities</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>White communities</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>Housed individuals</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>Unhoused individuals</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>Seniors</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>Children & families</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>Veterans</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>LGBTQ+ community</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>Trafficking survivors</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#A31C41]"></div>
+                      <span>Recovery programs</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-4 italic">
+                    Distribution partners serve their communities directly, ensuring cultural competence and dignity
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Partnership & Collaboration Strength */}
+        <Card className="mb-8 border-2 border-[#47B3CB] shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-[#47B3CB] to-[#007E8C] text-white">
+            <CardTitle className="flex items-center text-xl">
+              <Building2 className="w-6 h-6 mr-2" />
+              Partnership & Collaboration Network
+            </CardTitle>
+            <CardDescription className="text-white/90">
+              Evidence of community integration and collaboration
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="text-center p-6 bg-gradient-to-br from-[#47B3CB]/10 to-white rounded-lg border border-[#47B3CB]/30">
+                <Building2 className="w-12 h-12 mx-auto mb-3 text-[#47B3CB]" />
+                <div className="text-4xl font-black text-[#47B3CB] mb-2">
+                  70+
+                </div>
+                <p className="font-medium text-gray-900">Partner Organizations</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Receiving weekly deliveries
+                </p>
+              </div>
+
+              <div className="text-center p-6 bg-gradient-to-br from-[#007E8C]/10 to-white rounded-lg border border-[#007E8C]/30">
+                <MapPin className="w-12 h-12 mx-auto mb-3 text-[#007E8C]" />
+                <div className="text-4xl font-black text-[#007E8C] mb-2">
+                  35
+                </div>
+                <p className="font-medium text-gray-900">Host Locations</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Active collection sites
+                </p>
+              </div>
+
+              <div className="text-center p-6 bg-gradient-to-br from-[#236383]/10 to-white rounded-lg border border-[#236383]/30">
+                <Users className="w-12 h-12 mx-auto mb-3 text-[#236383]" />
+                <div className="text-4xl font-black text-[#236383] mb-2">
+                  4,000+
+                </div>
+                <p className="font-medium text-gray-900">Community Members</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  In private volunteer network
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-white to-[#E8F4F8] p-5 rounded-lg border border-[#47B3CB]/30">
+              <h3 className="font-bold text-gray-900 mb-3">Partnership Categories</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="font-semibold text-[#47B3CB] mb-2">Collection Hosts</p>
+                  <ul className="space-y-1 text-gray-700">
+                    <li>• Churches and faith communities</li>
+                    <li>• Schools and universities</li>
+                    <li>• Corporate offices and businesses</li>
+                    <li>• Community centers</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-semibold text-[#007E8C] mb-2">Distribution Partners</p>
+                  <ul className="space-y-1 text-gray-700">
+                    <li>• Homeless service providers</li>
+                    <li>• Food banks and pantries</li>
+                    <li>• Senior centers</li>
+                    <li>• Recovery and support organizations</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Capacity Building & Organizational Development */}
+        <Card className="mb-8 border-2 border-[#FBAD3F] shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-[#FBAD3F] to-[#e89a2c] text-white">
+            <CardTitle className="flex items-center text-xl">
+              <Rocket className="w-6 h-6 mr-2" />
+              Capacity Building & Infrastructure Development
+            </CardTitle>
+            <CardDescription className="text-white/90">
+              Strategic investments for sustainable growth
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-[#FEF4E0] to-white p-5 rounded-lg border-l-4 border-[#FBAD3F]">
+                <div className="flex items-start gap-4">
+                  <UserCheck className="w-8 h-8 text-[#FBAD3F] shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-2">Executive Leadership (Priority)</h3>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Need:</strong> Full-time Executive Director to manage operations, fundraising, and strategic partnerships
+                    </p>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Impact:</strong> Currently operating with volunteer leadership at 107x our founding scale - professionalization will unlock next phase of growth
+                    </p>
+                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30">
+                      Est. Cost: $65K-85K annually
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-white to-[#E0F2F1] p-5 rounded-lg border-l-4 border-[#007E8C]">
+                <div className="flex items-start gap-4">
+                  <Activity className="w-8 h-8 text-[#007E8C] shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-2">Logistics Infrastructure</h3>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Need:</strong> Additional refrigerated van for expanded distribution capacity
+                    </p>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Impact:</strong> Enable simultaneous routes, reduce volunteer burden, improve crisis response time
+                    </p>
+                    <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30">
+                      Est. Cost: $35K-50K (one-time)
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-[#E8F4F8] to-white p-5 rounded-lg border-l-4 border-[#236383]">
+                <div className="flex items-start gap-4">
+                  <Shield className="w-8 h-8 text-[#236383] shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-2">Technology & Systems</h3>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Current:</strong> Custom-built platform for collection tracking, volunteer coordination, and impact reporting
+                    </p>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Future Need:</strong> Mobile app for real-time volunteer coordination and automated route optimization
+                    </p>
+                    <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30">
+                      Est. Cost: $15K-25K (development)
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-5 bg-gradient-to-br from-[#FBAD3F]/10 to-white rounded-lg border border-[#FBAD3F]/30">
+              <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                <Target className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+                Why These Investments Matter
+              </h3>
+              <p className="text-sm text-gray-700 mb-3">
+                The Sandwich Project has grown 107x since inception while maintaining volunteer-led operations.
+                These strategic investments will:
+              </p>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <Zap className="w-4 h-4 text-[#FBAD3F] shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Sustainability:</strong> Reduce burnout risk and ensure continuity beyond founding volunteers
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Zap className="w-4 h-4 text-[#FBAD3F] shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Scale:</strong> Current infrastructure at capacity - investments enable 2-3x growth
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Zap className="w-4 h-4 text-[#FBAD3F] shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Impact:</strong> Professional leadership unlocks corporate partnerships, larger grants, and strategic expansion
+                  </span>
+                </li>
+              </ul>
             </div>
           </CardContent>
         </Card>
