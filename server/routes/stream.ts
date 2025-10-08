@@ -127,8 +127,11 @@ streamRoutes.post('/credentials', async (req, res) => {
 
       // Create team channels that the user has permission for AND add user as member
       const userPermissions = user.permissions || [];
+      console.log(`🔍 Processing channels for ${user.email}, permissions:`, userPermissions);
+
       for (const room of teamRooms) {
         if (userPermissions.includes(room.permission)) {
+          console.log(`✓ User has permission ${room.permission}, setting up channel ${room.id}`);
           try {
             // Get or create the channel
             const channel = streamServerClient.channel('team', room.id, {
