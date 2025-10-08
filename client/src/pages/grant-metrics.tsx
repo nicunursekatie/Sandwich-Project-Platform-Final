@@ -564,12 +564,38 @@ export default function GrantMetrics() {
   console.log('Duplicate IDs in November 2023:', duplicateIds.length > 0 ? duplicateIds : 'None');
   console.log('=======================');
 
-  // Prepare year-over-year chart data
-  const yearChartData = [
-    { year: '2023', sandwiches: metrics.yearTotals[2023] || 0 },
-    { year: '2024', sandwiches: metrics.yearTotals[2024] || 0 },
-    { year: '2025 YTD', sandwiches: metrics.yearTotals[2025] || 0 },
-  ];
+  // Prepare year-over-year chart data - ONLY COMPLETE YEARS
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth(); // 0-11
+
+  // Get all years from data and sort
+  const allYears = Object.keys(metrics.yearTotals)
+    .map(y => parseInt(y))
+    .filter(y => !isNaN(y))
+    .sort((a, b) => a - b);
+
+  // Only include complete years (exclude current year if we're not in December yet)
+  const completeYears = allYears.filter(year => {
+    if (year < currentYear) return true; // Past years are complete
+    if (year === currentYear && currentMonth === 11) return true; // Current year in December
+    return false; // Don't include incomplete current year
+  });
+
+  // Prepare chart data from complete years only
+  const yearChartData = completeYears.map(year => ({
+    year: year.toString(),
+    sandwiches: metrics.yearTotals[year] || 0,
+  }));
+
+  // Calculate year-over-year growth percentages for annotations
+  const yearGrowthData = yearChartData.map((data, index) => {
+    if (index === 0) return { ...data, growth: null };
+    const prevYear = yearChartData[index - 1];
+    const growth = prevYear.sandwiches > 0
+      ? Math.round(((data.sandwiches - prevYear.sandwiches) / prevYear.sandwiches) * 100)
+      : 0;
+    return { ...data, growth };
+  });
 
   return (
     <div className="bg-gradient-to-br from-[#E8F4F8] to-[#F0F9FB] p-6 rounded-lg">
@@ -805,38 +831,90 @@ export default function GrantMetrics() {
           </Card>
         </div>
 
-        {/* Year-over-Year Growth Chart */}
+        {/* Year-over-Year Growth Chart - COMPLETE YEARS ONLY */}
         <Card className="mb-8 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
               <BarChart3 className="w-6 h-6 mr-2 text-brand-primary" />
-              Year-Over-Year Impact Growth
+              Year-Over-Year Impact Growth (Complete Years)
             </CardTitle>
             <CardDescription>
-              Demonstrating sustained and growing community impact
+              Demonstrating sustained and growing community impact {currentYear === 2025 && currentMonth < 11 && '(2025 excluded - year in progress)'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={yearChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="year" />
-                <YAxis
-                  tickFormatter={(value) => value.toLocaleString()}
-                  label={{ value: 'Sandwiches', angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip
-                  formatter={(value: number) => [value.toLocaleString(), 'Sandwiches']}
-                  contentStyle={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    border: '1px solid #ccc',
-                    borderRadius: '8px',
-                    padding: '10px'
-                  }}
-                />
-                <Bar dataKey="sandwiches" fill="#236383" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="mb-6">
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={yearChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis dataKey="year" />
+                  <YAxis
+                    tickFormatter={(value) => value.toLocaleString()}
+                    label={{ value: 'Sandwiches', angle: -90, position: 'insideLeft' }}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [value.toLocaleString(), 'Sandwiches']}
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #ccc',
+                      borderRadius: '8px',
+                      padding: '10px'
+                    }}
+                  />
+                  <Bar dataKey="sandwiches" fill="#236383" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Year-over-Year Growth Summary */}
+            <div className="bg-gradient-to-r from-[#E8F4F8] to-white p-5 rounded-lg border border-[#236383]/20">
+              <h3 className="font-bold text-gray-900 mb-3">Year-Over-Year Growth Rates</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {yearGrowthData.map((data, index) => (
+                  <div key={data.year} className="text-center">
+                    <div className="text-lg font-bold text-[#236383]">{data.year}</div>
+                    <div className="text-2xl font-black text-gray-900 mb-1">
+                      {data.sandwiches.toLocaleString()}
+                    </div>
+                    {data.growth !== null && (
+                      <Badge
+                        className={`${
+                          data.growth > 0
+                            ? 'bg-green-100 text-green-700 border-green-300'
+                            : data.growth < 0
+                            ? 'bg-red-100 text-red-700 border-red-300'
+                            : 'bg-gray-100 text-gray-700 border-gray-300'
+                        }`}
+                      >
+                        {data.growth > 0 ? '+' : ''}{data.growth}% YoY
+                      </Badge>
+                    )}
+                    {index === 0 && (
+                      <div className="text-xs text-gray-500 mt-1">Baseline</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Current Year Status (if incomplete) */}
+            {currentYear > Math.max(...completeYears) && metrics.yearTotals[currentYear] && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-[#FEF4E0] to-white rounded-lg border border-[#FBAD3F]/30">
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-[#FBAD3F] shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold text-gray-900 mb-1">{currentYear} In Progress</h4>
+                    <p className="text-sm text-gray-700">
+                      Current year: <strong>{(metrics.yearTotals[currentYear] || 0).toLocaleString()} sandwiches</strong> so far
+                      {completeYears.length > 0 && ` (on pace for ${Math.round((metrics.yearTotals[currentYear] || 0) / ((currentMonth + 1) / 12)).toLocaleString()})`}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      * Excluded from chart above to show only complete years for fair comparison
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
