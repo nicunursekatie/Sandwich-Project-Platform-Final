@@ -512,8 +512,8 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
 
   return (
     <div className="pt-4">
-      {/* Assignments Section - Now with 4 columns including Social Media */}
-      <div className="grid grid-cols-4 gap-4">
+      {/* Assignments Section - Now 3 columns without Social Media */}
+      <div className="grid grid-cols-3 gap-4">
         {/* Drivers Column */}
         {renderAssignmentColumn(
           'driver',
@@ -543,9 +543,6 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           request.assignedVolunteerIds,
           undefined
         )}
-
-        {/* Social Media Column */}
-        {renderSocialMediaSection()}
       </div>
 
       {/* Van Driver Section - separate row if needed */}
@@ -573,14 +570,18 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
   // State for inline editing
   const [showRequestedDate, setShowRequestedDate] = useState(false);
   const [showPostedDate, setShowPostedDate] = useState(false);
-  const [editingPostLink, setEditingPostLink] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
-  const [postLink, setPostLink] = useState(request.socialMediaPostLink || '');
   const [notes, setNotes] = useState(request.socialMediaPostNotes || '');
   
-  // State for confirmation dialog
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmDialogDate, setConfirmDialogDate] = useState(new Date().toISOString().split('T')[0]);
+  // State for post link editing
+  const [editingPostLink, setEditingPostLink] = useState(false);
+  const [postLink, setPostLink] = useState(request.socialMediaPostLink || '');
+  
+  // State for Instagram link
+  const [showInstagramDialog, setShowInstagramDialog] = useState(false);
+  const [instagramLink, setInstagramLink] = useState('');
+  const [editingInstagramLink, setEditingInstagramLink] = useState(false);
+  const [tempInstagramLink, setTempInstagramLink] = useState('');
 
   const updateSocialMediaMutation = useMutation({
     mutationFn: (data: any) =>
@@ -594,9 +595,8 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
       // Reset states
       setShowRequestedDate(false);
       setShowPostedDate(false);
-      setEditingPostLink(false);
       setEditingNotes(false);
-      setShowConfirmDialog(false);
+      setShowInstagramDialog(false);
     },
     onError: () => {
       toast({
@@ -624,22 +624,41 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
     });
   };
 
-  // Handle marking as requested (with confirmation)
-  const handleConfirmMarkRequested = () => {
-    const selectedDate = new Date(confirmDialogDate).toISOString();
+  // Handle marking as requested (simplified - just use today's date)
+  const handleMarkRequested = () => {
+    const todayDate = new Date().toISOString();
     updateSocialMediaMutation.mutate({
       socialMediaPostRequested: true,
-      socialMediaPostRequestedDate: selectedDate,
+      socialMediaPostRequestedDate: todayDate,
     });
   };
 
-  // Handle marking as posted
-  const handleMarkPosted = () => {
+  // Handle marking as posted (with optional Instagram link)
+  const handleMarkPostedWithLink = () => {
     const todayDate = new Date().toISOString();
-    updateSocialMediaMutation.mutate({
+    const updateData: any = {
       socialMediaPostCompleted: true,
       socialMediaPostCompletedDate: todayDate,
-    });
+    };
+    
+    // Append Instagram link to existing notes if provided
+    if (instagramLink.trim()) {
+      const existingNotes = request.socialMediaPostNotes || '';
+      const instagramLinkText = `Instagram: ${instagramLink.trim()}`;
+      
+      // Check if there's already an Instagram link and remove it
+      const notesWithoutInstagram = existingNotes.replace(/Instagram:\s*https?:\/\/[^\s\n]+(\n)?/g, '').trim();
+      
+      // Append the new Instagram link
+      if (notesWithoutInstagram) {
+        updateData.socialMediaPostNotes = `${notesWithoutInstagram}\n${instagramLinkText}`;
+      } else {
+        updateData.socialMediaPostNotes = instagramLinkText;
+      }
+    }
+    
+    updateSocialMediaMutation.mutate(updateData);
+    setInstagramLink('');
   };
 
   // Update requested date
@@ -656,20 +675,58 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
     });
   };
 
-  // Update post link
-  const handleUpdatePostLink = () => {
-    updateSocialMediaMutation.mutate({
-      socialMediaPostLink: postLink,
-    });
-    setEditingPostLink(false);
-  };
-
   // Update notes
   const handleUpdateNotes = () => {
     updateSocialMediaMutation.mutate({
       socialMediaPostNotes: notes,
     });
     setEditingNotes(false);
+  };
+
+  // Update post link
+  const handleUpdatePostLink = () => {
+    updateSocialMediaMutation.mutate({
+      socialMediaPostLink: postLink.trim() || null,
+    });
+    setEditingPostLink(false);
+  };
+
+  // Extract Instagram link from notes if it exists
+  const getInstagramLinkFromNotes = () => {
+    if (!request.socialMediaPostNotes) return null;
+    const match = request.socialMediaPostNotes.match(/Instagram:\s*(https?:\/\/[^\s\n]+)/);
+    return match ? match[1] : null;
+  };
+  
+  // Get notes without Instagram link for display
+  const getNotesWithoutInstagramLink = () => {
+    if (!request.socialMediaPostNotes) return '';
+    return request.socialMediaPostNotes.replace(/Instagram:\s*https?:\/\/[^\s\n]+(\n)?/g, '').trim();
+  };
+  
+  // Update Instagram link separately
+  const handleUpdateInstagramLink = (newLink: string) => {
+    const existingNotes = getNotesWithoutInstagramLink();
+    let updatedNotes = existingNotes;
+    
+    if (newLink.trim()) {
+      const instagramLinkText = `Instagram: ${newLink.trim()}`;
+      updatedNotes = existingNotes ? `${existingNotes}\n${instagramLinkText}` : instagramLinkText;
+    }
+    
+    updateSocialMediaMutation.mutate({
+      socialMediaPostNotes: updatedNotes || null,
+    });
+    setEditingInstagramLink(false);
+    setTempInstagramLink('');
+  };
+  
+  // Remove Instagram link
+  const handleRemoveInstagramLink = () => {
+    const notesWithoutInstagram = getNotesWithoutInstagramLink();
+    updateSocialMediaMutation.mutate({
+      socialMediaPostNotes: notesWithoutInstagram || null,
+    });
   };
 
   return (
@@ -689,14 +746,11 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
           {/* Not requested yet - show compact button */}
           {!request.socialMediaPostRequested && !request.socialMediaPostCompleted && (
             <Button
-              onClick={() => {
-                setConfirmDialogDate(new Date().toISOString().split('T')[0]);
-                setShowConfirmDialog(true);
-              }}
+              onClick={handleMarkRequested}
               className="bg-[#007e8c] hover:bg-[#236383] text-white text-xs px-3 py-1 h-8 w-full"
               disabled={updateSocialMediaMutation.isPending}
             >
-              📱 Mark Requested
+              📱 Mark Social Media Requested
             </Button>
           )}
 
@@ -730,11 +784,11 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                 </div>
                 
                 <Button
-                  onClick={handleMarkPosted}
+                  onClick={() => setShowInstagramDialog(true)}
                   className="bg-[#fbad3f] hover:bg-[#a31c41] text-white text-xs px-3 py-1 h-7 w-full"
                   disabled={updateSocialMediaMutation.isPending}
                 >
-                  Mark Posted
+                  Mark as Posted
                 </Button>
               </div>
             </>
@@ -767,6 +821,106 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                   </button>
                 )}
               </div>
+              
+              {/* Display notes (without Instagram link) */}
+              {getNotesWithoutInstagramLink() && (
+                <div className="text-xs text-gray-600 bg-gray-50 rounded p-2 mb-2">
+                  <div className="flex items-start gap-1">
+                    <MessageCircle className="w-3 h-3 text-gray-500 mt-0.5" />
+                    <span>{getNotesWithoutInstagramLink()}</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Display/Edit Instagram link */}
+              {editingInstagramLink ? (
+                <div className="flex flex-col gap-1 mb-2">
+                  <div className="flex items-center gap-1">
+                    <Instagram className="w-3 h-3 text-[#E4405F]" />
+                    <Input
+                      type="url"
+                      value={tempInstagramLink}
+                      onChange={(e) => setTempInstagramLink(e.target.value)}
+                      placeholder="https://instagram.com/..."
+                      className="h-6 text-xs border-[#E4405F]/30 flex-1"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleUpdateInstagramLink(tempInstagramLink);
+                        }
+                        if (e.key === 'Escape') {
+                          setEditingInstagramLink(false);
+                          setTempInstagramLink('');
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      onClick={() => handleUpdateInstagramLink(tempInstagramLink)}
+                      className="bg-[#E4405F] hover:bg-[#C13584] text-white text-xs px-2 py-0.5 h-5"
+                      disabled={updateSocialMediaMutation.isPending}
+                    >
+                      <Save className="w-3 h-3 mr-1" />
+                      Save
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setEditingInstagramLink(false);
+                        setTempInstagramLink('');
+                      }}
+                      className="text-xs px-2 py-0.5 h-5"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : getInstagramLinkFromNotes() ? (
+                <div className="flex items-center gap-1 text-xs group">
+                  <Instagram className="w-3 h-3 text-[#E4405F]" />
+                  <a 
+                    href={getInstagramLinkFromNotes()!} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[#E4405F] underline hover:text-[#C13584] text-xs flex-1"
+                  >
+                    View on Instagram
+                  </a>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                    <button
+                      onClick={() => {
+                        setTempInstagramLink(getInstagramLinkFromNotes() || '');
+                        setEditingInstagramLink(true);
+                      }}
+                      className="text-[#E4405F] hover:text-[#C13584] p-0.5"
+                      title="Edit Instagram link"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={handleRemoveInstagramLink}
+                      className="text-red-500 hover:text-red-700 p-0.5"
+                      title="Remove Instagram link"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setTempInstagramLink('');
+                    setEditingInstagramLink(true);
+                  }}
+                  className="bg-[#E4405F]/10 hover:bg-[#E4405F]/20 text-[#E4405F] text-xs px-2 py-1 h-6 w-full"
+                >
+                  <Instagram className="w-3 h-3 mr-1" />
+                  Add Instagram Link
+                </Button>
+              )}
 
               {/* Compact Post Link */}
               {(request.socialMediaPostLink || editingPostLink) && (
@@ -846,41 +1000,63 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
       </div>
       
       {/* Confirmation Dialog */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+      <Dialog open={showInstagramDialog} onOpenChange={setShowInstagramDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirm Social Media Request</DialogTitle>
+            <DialogTitle>Mark Social Media as Posted</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Mark that you've requested a social media post for this event?
+              Confirm that the social media post has been completed.
             </p>
+            {request.socialMediaPostNotes && getNotesWithoutInstagramLink() && (
+              <div className="bg-gray-50 rounded p-2">
+                <p className="text-xs text-gray-600">
+                  <strong>Existing notes:</strong> {getNotesWithoutInstagramLink()}
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
-                Date Requested
+                Instagram Link (Optional)
               </label>
-              <Input
-                type="date"
-                value={confirmDialogDate}
-                onChange={(e) => setConfirmDialogDate(e.target.value)}
-                className="w-full border-[#47b3cb] focus:border-[#007e8c]"
-              />
+              <div className="flex items-center gap-2">
+                <Instagram className="w-4 h-4 text-[#E4405F]" />
+                <Input
+                  type="url"
+                  placeholder="https://instagram.com/..."
+                  value={instagramLink}
+                  onChange={(e) => setInstagramLink(e.target.value)}
+                  className="w-full border-[#47b3cb] focus:border-[#007e8c]"
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                {getNotesWithoutInstagramLink() 
+                  ? 'The Instagram link will be added to the existing notes'
+                  : 'Add the Instagram post link if available'}
+              </p>
             </div>
           </div>
           <DialogFooter className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => setShowConfirmDialog(false)}
+              onClick={() => {
+                setShowInstagramDialog(false);
+                setInstagramLink('');
+              }}
               className="flex-1"
             >
               Cancel
             </Button>
             <Button
-              onClick={handleConfirmMarkRequested}
-              className="flex-1 bg-[#007e8c] hover:bg-[#236383] text-white"
+              onClick={() => {
+                handleMarkPostedWithLink();
+                setShowInstagramDialog(false);
+              }}
+              className="flex-1 bg-[#47b3cb] hover:bg-[#236383] text-white"
               disabled={updateSocialMediaMutation.isPending}
             >
-              Confirm
+              Mark as Posted
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -920,56 +1096,82 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     ? String(request.deliveryDestination)
     : null;
 
+  // Get event date and time for display
+  const eventDate = request.scheduledEventDate || request.desiredEventDate;
+  const eventDateDisplay = eventDate ? formatEventDate(eventDate.toString()).text : 'No date set';
+  const eventTimeDisplay = request.eventStartTime
+    ? `${formatTime12Hour(request.eventStartTime)}${request.eventEndTime ? ` - ${formatTime12Hour(request.eventEndTime)}` : ''}`
+    : 'No time set';
+
   return (
     <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-gradient-to-br from-[#e6f7f5] via-[#007E8C]/10 to-[#007E8C]/20 border border-[#007E8C]/30">
       <CardContent className="p-6">
         <CardHeader request={request} resolveUserName={resolveUserName} />
 
+        {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}
+        <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+          <div className="grid grid-cols-3 gap-4">
+            {/* Event Time Section */}
+            <div className="text-center">
+              <Clock className="w-5 h-5 text-[#236383] mx-auto mb-2" />
+              <p className="text-sm text-gray-600 font-medium">Event Time</p>
+              <p className="font-semibold text-[#236383] mt-1">{eventDateDisplay}</p>
+              <p className="text-sm text-[#236383]">{eventTimeDisplay}</p>
+            </div>
+
+            {/* Sandwiches Delivered Section */}
+            <div className="text-center">
+              <Package className="w-5 h-5 text-[#D68319] mx-auto mb-2" />
+              <p className="text-sm text-gray-600 font-medium">Sandwiches Delivered</p>
+              <p className="font-semibold text-[#D68319] mt-1">
+                {request.actualSandwichCount ? (
+                  <>
+                    <span className="text-lg">{request.actualSandwichCount}</span>
+                    {request.estimatedSandwichCount && (
+                      <span className="text-xs text-gray-500 block">
+                        (Planned: {request.estimatedSandwichCount})
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-gray-400 italic">Not recorded</span>
+                )}
+              </p>
+            </div>
+
+            {/* Social Media Status Section */}
+            <div className="text-center">
+              <Share2 className="w-5 h-5 text-[#47b3cb] mx-auto mb-2" />
+              <p className="text-sm text-gray-600 font-medium">Social Media</p>
+              <p className="font-semibold text-[#47b3cb] mt-1">
+                {request.socialMediaPostCompleted ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <CheckCircle className="w-4 h-4 text-teal-600" />
+                    Posted
+                  </span>
+                ) : request.socialMediaPostRequested ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <Clock className="w-4 h-4 text-[#47b3cb]" />
+                    Requested
+                  </span>
+                ) : (
+                  <span className="text-gray-400 italic">Not tracked</span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Event Summary */}
         <div className="space-y-3 mb-4">
           <div className="bg-white rounded-lg p-3 space-y-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Event Time</p>
-                <p className="font-medium">
-                  {request.eventStartTime && formatTime12Hour(request.eventStartTime)}
-                  {request.eventEndTime && ` - ${formatTime12Hour(request.eventEndTime)}`}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Event Participation</p>
-                <p className="font-medium">
-                  {request.actualAttendance 
-                    ? `${request.actualAttendance} people attended`
-                    : request.estimatedAttendance 
-                      ? `~${request.estimatedAttendance} estimated`
-                      : 'Not recorded'}
-                </p>
-              </div>
-            </div>
-
             {/* Delivery Destination */}
             {typeof deliveryDestination === 'string' && deliveryDestination.trim() !== '' ? (
-              <div className="bg-brand-primary-lighter rounded-lg p-3 mt-2">
+              <div className="bg-brand-primary-lighter rounded-lg p-3">
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-brand-primary-muted" />
                   <span className="font-medium">Delivery Destination:</span>
                   <span>{deliveryDestination}</span>
-                </div>
-              </div>
-            ) : null}
-
-            {/* Sandwich Info */}
-            {(request.actualSandwichCount || request.estimatedSandwichCount || request.sandwichTypes) ? (
-              <div className="bg-teal-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Package className="w-4 h-4 text-teal-600" />
-                  <span className="font-medium">Sandwiches Delivered:</span>
-                  <span>
-                    {request.actualSandwichCount
-                      ? `${request.actualSandwichCount} delivered`
-                      : formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount ?? undefined)}
-                  </span>
                 </div>
               </div>
             ) : null}
