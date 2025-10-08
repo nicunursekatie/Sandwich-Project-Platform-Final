@@ -32,7 +32,7 @@ Key technical implementations include:
 - **Collection Walkthrough Tool**: Permissions-based data entry with a standard form and step-by-step guidance.
 - **Analytics**: Dashboard for community impact and user activity tracking.
 - **Meeting Management**: Full-featured system with agenda compilation, project integration, and PDF export, including a database-backed meeting notes system.
-- **Event Requests Management System**: Complete tracking, duplicate detection, status tracking, and Google Sheets integration.
+- **Event Requests Management System**: Complete tracking, duplicate detection, status tracking, and Google Sheets integration. Van drivers are correctly counted toward total driver count in staffing calculations across all event card types.
 - **Google Sheets Integration**: Bidirectional automatic synchronization for project tracker and event requests.
 - **Enhanced Audit Log Display**: User-friendly audit trail with human-readable field names and formatted values.
 - **Email Compliance**: SendGrid emails include required opt-out text, with a centralized utility for consistent footers and proper HTML structure.
