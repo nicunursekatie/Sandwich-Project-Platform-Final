@@ -131,6 +131,9 @@ export default function SandwichCollectionLog() {
   const [selectedSuspiciousIds, setSelectedSuspiciousIds] = useState<
     Set<number>
   >(new Set());
+  const [selectedDuplicateIds, setSelectedDuplicateIds] = useState<
+    Set<number>
+  >(new Set());
   const [showBatchEdit, setShowBatchEdit] = useState(false);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [batchEditData, setBatchEditData] = useState({
@@ -2429,29 +2432,161 @@ export default function SandwichCollectionLog() {
 
               {duplicateAnalysis.totalDuplicateEntries > 0 && (
                 <div className="space-y-3">
-                  <h3 className="font-medium text-slate-900">
-                    Exact Duplicates
-                  </h3>
-                  {duplicateAnalysis.duplicates.map((group, index) => (
-                    <div
-                      key={index}
-                      className="border border-slate-200 rounded-lg p-3"
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-slate-900">
+                      Exact Duplicates ({duplicateAnalysis.totalDuplicateEntries})
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const allDuplicateIds = new Set<number>();
+                        duplicateAnalysis.duplicates.forEach(group => {
+                          group.toDelete.forEach((entry: any) => allDuplicateIds.add(entry.id));
+                        });
+                        setSelectedDuplicateIds(
+                          selectedDuplicateIds.size === allDuplicateIds.size
+                            ? new Set()
+                            : allDuplicateIds
+                        );
+                      }}
+                      className="text-xs"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">
-                          {group.entries[0].hostName} -{' '}
-                          {group.entries[0].collectionDate}
-                        </span>
-                        <span className="text-sm text-slate-600">
-                          {group.count} entries
-                        </span>
-                      </div>
-                      <div className="text-sm text-slate-600">
-                        Will keep newest entry (ID: {group.keepNewest.id}) and
-                        remove {group.toDelete.length} duplicates
+                      {selectedDuplicateIds.size === duplicateAnalysis.totalDuplicateEntries
+                        ? 'Deselect All'
+                        : 'Select All'}
+                    </Button>
+                  </div>
+                  <div className="text-sm text-slate-600 mb-2">
+                    Review and select specific duplicates to delete. The newest entry in each group will be kept.
+                  </div>
+                  <div className="max-h-96 overflow-y-auto border border-slate-200 rounded-lg">
+                    <div className="space-y-3 p-3">
+                      {duplicateAnalysis.duplicates.map((group, groupIndex) => (
+                        <div
+                          key={groupIndex}
+                          className="border border-slate-100 rounded-lg p-3 bg-slate-50"
+                        >
+                          <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200">
+                            <div>
+                              <span className="font-medium text-slate-900">
+                                {group.entries[0].hostName}
+                              </span>
+                              <span className="text-sm text-slate-500 ml-2">
+                                {group.entries[0].collectionDate}
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium text-slate-600">
+                              {group.count} total entries
+                            </span>
+                          </div>
+                          
+                          {/* Show the entry being kept */}
+                          <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="text-xs font-medium text-green-700 uppercase">
+                                ✓ Keeping (Newest)
+                              </span>
+                              <span className="text-xs text-green-600">
+                                ID: {group.keepNewest.id}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <div className="flex items-center space-x-3">
+                                <span className="text-slate-700">
+                                  {group.keepNewest.individualSandwiches || 0} individual
+                                </span>
+                                {(() => {
+                                  const groupData = getGroupCollections(group.keepNewest);
+                                  const groupTotal = groupData.reduce(
+                                    (sum: number, g: any) => sum + (Number(g.sandwichCount) || 0),
+                                    0
+                                  );
+                                  return groupTotal > 0 && (
+                                    <span className="text-slate-700">
+                                      {groupTotal} group
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                              <span className="font-medium text-slate-900">
+                                {calculateTotal(group.keepNewest)} total
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Show duplicates to delete with checkboxes */}
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-red-600 mb-1">
+                              Duplicates to delete:
+                            </div>
+                            {group.toDelete.map((entry: any) => {
+                              const groupData = getGroupCollections(entry);
+                              const totalSandwiches = calculateTotal(entry);
+                              const groupTotal = groupData.reduce(
+                                (sum: number, g: any) => sum + (Number(g.sandwichCount) || 0),
+                                0
+                              );
+                              return (
+                                <div
+                                  key={entry.id}
+                                  className="flex items-center space-x-3 p-2 border border-red-100 rounded bg-white hover:bg-red-50"
+                                >
+                                  <Checkbox
+                                    id={`duplicate-${entry.id}`}
+                                    checked={selectedDuplicateIds.has(entry.id)}
+                                    onCheckedChange={(checked) => {
+                                      const newSet = new Set(selectedDuplicateIds);
+                                      if (checked) {
+                                        newSet.add(entry.id);
+                                      } else {
+                                        newSet.delete(entry.id);
+                                      }
+                                      setSelectedDuplicateIds(newSet);
+                                    }}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs text-slate-500">
+                                        ID: {entry.id}
+                                      </span>
+                                      <span className="text-sm font-medium text-slate-900">
+                                        {totalSandwiches} total
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center space-x-3 text-xs text-slate-600 mt-1">
+                                      <span>
+                                        {entry.individualSandwiches || 0} individual
+                                      </span>
+                                      {groupTotal > 0 && (
+                                        <span>
+                                          {groupTotal} group
+                                        </span>
+                                      )}
+                                    </div>
+                                    {groupData.length > 0 && (
+                                      <div className="text-xs text-slate-500 mt-1">
+                                        Groups: {groupData.map((g: any) => 
+                                          `${g.groupName || g.name}: ${g.sandwichCount || g.count}`
+                                        ).join(', ')}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {selectedDuplicateIds.size > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <div className="text-sm text-red-800">
+                        {selectedDuplicateIds.size} duplicate{selectedDuplicateIds.size === 1 ? '' : 's'} selected for deletion
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
 
@@ -2584,11 +2719,28 @@ export default function SandwichCollectionLog() {
                   onClick={() => {
                     setShowDuplicateAnalysis(false);
                     setSelectedSuspiciousIds(new Set());
+                    setSelectedDuplicateIds(new Set());
                   }}
                   className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
+                {selectedDuplicateIds.size > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      cleanSelectedSuspiciousMutation.mutate(
+                        Array.from(selectedDuplicateIds)
+                      )
+                    }
+                    disabled={cleanSelectedSuspiciousMutation.isPending}
+                    className="text-red-600 hover:text-red-700 border-red-300 w-full sm:w-auto"
+                  >
+                    {cleanSelectedSuspiciousMutation.isPending
+                      ? 'Deleting...'
+                      : `Delete Selected Duplicates (${selectedDuplicateIds.size})`}
+                  </Button>
+                )}
                 {selectedSuspiciousIds.size > 0 && (
                   <Button
                     variant="outline"
@@ -2602,7 +2754,7 @@ export default function SandwichCollectionLog() {
                   >
                     {cleanSelectedSuspiciousMutation.isPending
                       ? 'Deleting...'
-                      : `Delete Selected (${selectedSuspiciousIds.size})`}
+                      : `Delete Selected Suspicious (${selectedSuspiciousIds.size})`}
                   </Button>
                 )}
                 {duplicateAnalysis.suspiciousPatterns > 0 && (
@@ -2625,7 +2777,7 @@ export default function SandwichCollectionLog() {
                   >
                     {cleanDuplicatesMutation.isPending
                       ? 'Cleaning...'
-                      : `Clean Duplicates (${duplicateAnalysis.totalDuplicateEntries})`}
+                      : `Delete All Duplicates (${duplicateAnalysis.totalDuplicateEntries})`}
                   </Button>
                 )}
               </div>
