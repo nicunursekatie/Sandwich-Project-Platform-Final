@@ -59,6 +59,13 @@ export function createMainRoutes(deps: RouterDependencies) {
   });
   router.use('/api/auth', authRoutes);
 
+  // Backwards compatibility: redirect /api/login to /api/auth/login
+  router.all('/api/login', (req, res, next) => {
+    req.url = '/api/auth/login';
+    next('route');
+  });
+  router.use('/api/login', authRoutes);
+
   const groupsCatalogRoutes = createGroupsCatalogRoutes({
     isAuthenticated: deps.isAuthenticated,
   });
