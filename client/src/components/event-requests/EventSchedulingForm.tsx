@@ -221,6 +221,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // Set mode based on existing data
       setSandwichMode(hasTypesData ? 'types' : 'total');
       setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
+      
+      // Auto-expand Completed Event Details section if event is completed
+      setShowCompletedDetails(eventRequest?.status === 'completed');
     }
   }, [isVisible, isOpen, eventRequest, mode]);
 
