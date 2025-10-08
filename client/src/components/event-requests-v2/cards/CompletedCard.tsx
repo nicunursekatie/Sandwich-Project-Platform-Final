@@ -42,6 +42,13 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface CompletedCardProps {
   request: EventRequest;
@@ -503,6 +510,10 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
   const [editingNotes, setEditingNotes] = useState(false);
   const [postLink, setPostLink] = useState(request.socialMediaPostLink || '');
   const [notes, setNotes] = useState(request.socialMediaPostNotes || '');
+  
+  // State for confirmation dialog
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmDialogDate, setConfirmDialogDate] = useState(new Date().toISOString().split('T')[0]);
 
   const updateSocialMediaMutation = useMutation({
     mutationFn: (data: any) =>
@@ -518,6 +529,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
       setShowPostedDate(false);
       setEditingPostLink(false);
       setEditingNotes(false);
+      setShowConfirmDialog(false);
     },
     onError: () => {
       toast({
@@ -545,12 +557,12 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
     });
   };
 
-  // Handle marking as requested
-  const handleMarkRequested = () => {
-    const todayDate = new Date().toISOString();
+  // Handle marking as requested (with confirmation)
+  const handleConfirmMarkRequested = () => {
+    const selectedDate = new Date(confirmDialogDate).toISOString();
     updateSocialMediaMutation.mutate({
       socialMediaPostRequested: true,
-      socialMediaPostRequestedDate: todayDate,
+      socialMediaPostRequestedDate: selectedDate,
     });
   };
 
@@ -594,209 +606,219 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
   };
 
   return (
-    <div className="bg-[#47b3cb]/10 rounded-lg p-4 border border-[#47b3cb]" data-testid="social-media-tracking">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <Share2 className="w-5 h-5 text-[#236383]" />
-        <h4 className="font-semibold text-base text-[#236383]">Social Media Tracking</h4>
-        {updateSocialMediaMutation.isPending && (
-          <span className="text-xs text-[#007e8c] ml-2">Saving...</span>
-        )}
-      </div>
+    <>
+      {/* Compact Social Media Tracking Section - positioned in the corner */}
+      <div className="inline-block bg-[#47b3cb]/5 rounded-lg p-3 border border-[#47b3cb]/30 max-w-xs" data-testid="social-media-tracking">
+        {/* Compact Header */}
+        <div className="flex items-center gap-2 mb-2">
+          <Share2 className="w-4 h-4 text-[#236383]" />
+          <span className="font-semibold text-sm text-[#236383]">Social Media</span>
+          {updateSocialMediaMutation.isPending && (
+            <span className="text-xs text-[#007e8c] ml-auto">Saving...</span>
+          )}
+        </div>
 
-      <div className="space-y-3">
-        {/* Not requested yet - show simple button */}
-        {!request.socialMediaPostRequested && !request.socialMediaPostCompleted && (
-          <Button
-            onClick={handleMarkRequested}
-            className="bg-[#007e8c] hover:bg-[#236383] text-white"
-            disabled={updateSocialMediaMutation.isPending}
-          >
-            📱 Mark Social Media Requested
-          </Button>
-        )}
-
-        {/* Requested but not posted */}
-        {request.socialMediaPostRequested && !request.socialMediaPostCompleted && (
-          <>
-            <div className="flex items-center gap-2">
-              <span className="text-[#236383] font-medium">
-                ✓ Requested on
-              </span>
-              {showRequestedDate ? (
-                <Input
-                  type="date"
-                  value={formatDateForInput(request.socialMediaPostRequestedDate)}
-                  onChange={(e) => {
-                    handleUpdateRequestedDate(e.target.value);
-                    setShowRequestedDate(false);
-                  }}
-                  className="h-8 w-40 border-[#47b3cb]"
-                  disabled={updateSocialMediaMutation.isPending}
-                  onBlur={() => setShowRequestedDate(false)}
-                  autoFocus
-                />
-              ) : (
-                <button
-                  onClick={() => setShowRequestedDate(true)}
-                  className="text-[#007e8c] underline hover:text-[#236383]"
-                >
-                  {formatDateForDisplay(request.socialMediaPostRequestedDate)}
-                </button>
-              )}
-            </div>
-            
+        <div className="space-y-2">
+          {/* Not requested yet - show compact button */}
+          {!request.socialMediaPostRequested && !request.socialMediaPostCompleted && (
             <Button
-              onClick={handleMarkPosted}
-              className="bg-[#fbad3f] hover:bg-[#e89a30] text-white"
+              onClick={() => {
+                setConfirmDialogDate(new Date().toISOString().split('T')[0]);
+                setShowConfirmDialog(true);
+              }}
+              className="bg-[#007e8c] hover:bg-[#236383] text-white text-xs px-3 py-1 h-8 w-full"
               disabled={updateSocialMediaMutation.isPending}
             >
-              Mark as Posted
+              📱 Mark Requested
             </Button>
-          </>
-        )}
+          )}
 
-        {/* Posted - show full details */}
-        {request.socialMediaPostCompleted && (
-          <>
-            <div className="flex items-center gap-2">
-              <span className="text-[#236383] font-medium">
-                ✓ Posted on
-              </span>
-              {showPostedDate ? (
-                <Input
-                  type="date"
-                  value={formatDateForInput(request.socialMediaPostCompletedDate)}
-                  onChange={(e) => {
-                    handleUpdatePostedDate(e.target.value);
-                    setShowPostedDate(false);
-                  }}
-                  className="h-8 w-40 border-[#47b3cb]"
-                  disabled={updateSocialMediaMutation.isPending}
-                  onBlur={() => setShowPostedDate(false)}
-                  autoFocus
-                />
-              ) : (
-                <button
-                  onClick={() => setShowPostedDate(true)}
-                  className="text-[#007e8c] underline hover:text-[#236383]"
-                >
-                  {formatDateForDisplay(request.socialMediaPostCompletedDate)}
-                </button>
-              )}
-            </div>
-
-            {/* Post Link */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-[#236383]">Post Link (optional)</label>
-              {editingPostLink ? (
-                <div className="flex gap-2">
-                  <Input
-                    type="url"
-                    value={postLink}
-                    onChange={(e) => setPostLink(e.target.value)}
-                    placeholder="https://..."
-                    className="flex-1 border-[#47b3cb] focus:border-[#007e8c]"
-                    disabled={updateSocialMediaMutation.isPending}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleUpdatePostLink();
-                      if (e.key === 'Escape') {
-                        setPostLink(request.socialMediaPostLink || '');
-                        setEditingPostLink(false);
-                      }
-                    }}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handleUpdatePostLink}
-                    className="bg-[#007e8c] hover:bg-[#236383] text-white"
-                    disabled={updateSocialMediaMutation.isPending}
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setPostLink(request.socialMediaPostLink || '');
-                      setEditingPostLink(false);
-                    }}
-                    disabled={updateSocialMediaMutation.isPending}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <div
-                  onClick={() => {
-                    setPostLink(request.socialMediaPostLink || '');
-                    setEditingPostLink(true);
-                  }}
-                  className="p-2 rounded border border-[#47b3cb] bg-white/50 min-h-[40px] cursor-pointer hover:bg-white/70 transition-colors"
-                >
-                  {request.socialMediaPostLink ? (
-                    <a href={request.socialMediaPostLink} target="_blank" rel="noopener noreferrer" className="text-[#007e8c] underline">
-                      {request.socialMediaPostLink}
-                    </a>
-                  ) : (
-                    <span className="text-gray-400 italic">Click to add post link...</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-[#236383]">Notes</label>
-              {editingNotes ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add any notes about the social media post..."
-                    className="border-[#47b3cb] focus:border-[#007e8c] min-h-[80px]"
-                    disabled={updateSocialMediaMutation.isPending}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handleUpdateNotes}
-                      className="bg-[#007e8c] hover:bg-[#236383] text-white"
-                      disabled={updateSocialMediaMutation.isPending}
-                    >
-                      Save Notes
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setNotes(request.socialMediaPostNotes || '');
-                        setEditingNotes(false);
+          {/* Requested but not posted - compact display */}
+          {request.socialMediaPostRequested && !request.socialMediaPostCompleted && (
+            <>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1 text-xs">
+                  <span className="text-[#236383] font-medium">✓ Requested</span>
+                  {showRequestedDate ? (
+                    <Input
+                      type="date"
+                      value={formatDateForInput(request.socialMediaPostRequestedDate)}
+                      onChange={(e) => {
+                        handleUpdateRequestedDate(e.target.value);
+                        setShowRequestedDate(false);
                       }}
+                      className="h-6 text-xs border-[#47b3cb]"
                       disabled={updateSocialMediaMutation.isPending}
+                      onBlur={() => setShowRequestedDate(false)}
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setShowRequestedDate(true)}
+                      className="text-[#007e8c] underline hover:text-[#236383] text-xs"
                     >
-                      Cancel
-                    </Button>
-                  </div>
+                      {formatDateForDisplay(request.socialMediaPostRequestedDate)}
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <div
-                  onClick={() => {
-                    setNotes(request.socialMediaPostNotes || '');
-                    setEditingNotes(true);
-                  }}
-                  className="p-2 rounded border border-[#47b3cb] bg-white/50 min-h-[40px] cursor-pointer hover:bg-white/70 transition-colors"
+                
+                <Button
+                  onClick={handleMarkPosted}
+                  className="bg-[#fbad3f] hover:bg-[#a31c41] text-white text-xs px-3 py-1 h-7 w-full"
+                  disabled={updateSocialMediaMutation.isPending}
                 >
-                  {request.socialMediaPostNotes || (
-                    <span className="text-gray-400 italic">Click to add notes...</span>
+                  Mark Posted
+                </Button>
+              </div>
+            </>
+          )}
+
+          {/* Posted - compact display */}
+          {request.socialMediaPostCompleted && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1 text-xs">
+                <span className="text-[#236383] font-medium">✓ Posted</span>
+                {showPostedDate ? (
+                  <Input
+                    type="date"
+                    value={formatDateForInput(request.socialMediaPostCompletedDate)}
+                    onChange={(e) => {
+                      handleUpdatePostedDate(e.target.value);
+                      setShowPostedDate(false);
+                    }}
+                    className="h-6 text-xs border-[#47b3cb]"
+                    disabled={updateSocialMediaMutation.isPending}
+                    onBlur={() => setShowPostedDate(false)}
+                    autoFocus
+                  />
+                ) : (
+                  <button
+                    onClick={() => setShowPostedDate(true)}
+                    className="text-[#007e8c] underline hover:text-[#236383] text-xs"
+                  >
+                    {formatDateForDisplay(request.socialMediaPostCompletedDate)}
+                  </button>
+                )}
+              </div>
+
+              {/* Compact Post Link */}
+              {(request.socialMediaPostLink || editingPostLink) && (
+                <div className="text-xs">
+                  {editingPostLink ? (
+                    <div className="flex flex-col gap-1">
+                      <Input
+                        type="url"
+                        value={postLink}
+                        onChange={(e) => setPostLink(e.target.value)}
+                        placeholder="Post link..."
+                        className="h-6 text-xs border-[#47b3cb]"
+                        disabled={updateSocialMediaMutation.isPending}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdatePostLink();
+                          if (e.key === 'Escape') {
+                            setPostLink(request.socialMediaPostLink || '');
+                            setEditingPostLink(false);
+                          }
+                        }}
+                      />
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          onClick={handleUpdatePostLink}
+                          className="bg-[#007e8c] hover:bg-[#236383] text-white text-xs px-2 py-1 h-6"
+                          disabled={updateSocialMediaMutation.isPending}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setPostLink(request.socialMediaPostLink || '');
+                            setEditingPostLink(false);
+                          }}
+                          className="text-xs px-2 py-1 h-6"
+                          disabled={updateSocialMediaMutation.isPending}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => {
+                        setPostLink(request.socialMediaPostLink || '');
+                        setEditingPostLink(true);
+                      }}
+                      className="p-1 rounded border border-[#47b3cb]/30 bg-white/50 cursor-pointer hover:bg-white/70 transition-colors truncate"
+                    >
+                      {request.socialMediaPostLink ? (
+                        <a href={request.socialMediaPostLink} target="_blank" rel="noopener noreferrer" className="text-[#007e8c] underline text-xs">
+                          View post
+                        </a>
+                      ) : (
+                        <span className="text-gray-500">Add link</span>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
+              
+              {/* Add link button if no link exists */}
+              {!request.socialMediaPostLink && !editingPostLink && (
+                <Button
+                  onClick={() => setEditingPostLink(true)}
+                  className="bg-[#47b3cb]/20 hover:bg-[#47b3cb]/30 text-[#236383] text-xs px-2 py-1 h-6 w-full"
+                >
+                  + Add link
+                </Button>
+              )}
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+      
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Social Media Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Mark that you've requested a social media post for this event?
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Date Requested
+              </label>
+              <Input
+                type="date"
+                value={confirmDialogDate}
+                onChange={(e) => setConfirmDialogDate(e.target.value)}
+                className="w-full border-[#47b3cb] focus:border-[#007e8c]"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmMarkRequested}
+              className="flex-1 bg-[#007e8c] hover:bg-[#236383] text-white"
+              disabled={updateSocialMediaMutation.isPending}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
