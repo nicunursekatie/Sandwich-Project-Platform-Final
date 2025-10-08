@@ -127,6 +127,22 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'operations',
   },
   {
+    id: 'my-availability',
+    label: 'My Availability',
+    icon: Calendar,
+    href: 'my-availability',
+    permission: PERMISSIONS.AVAILABILITY_VIEW,
+    group: 'operations',
+  },
+  {
+    id: 'team-availability',
+    label: 'Team Availability',
+    icon: Calendar,
+    href: 'team-availability',
+    permission: PERMISSIONS.AVAILABILITY_VIEW,
+    group: 'operations',
+  },
+  {
     id: 'volunteers',
     label: 'Volunteers',
     icon: Users,

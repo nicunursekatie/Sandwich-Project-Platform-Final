@@ -335,7 +335,7 @@ export default function DriversManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="hostLocation">Host Location</Label>
+                      <Label htmlFor="hostLocation">Driver Location</Label>
                       <select
                         id="hostLocation"
                         value={newDriver.hostLocation}
@@ -347,7 +347,7 @@ export default function DriversManagement() {
                         }
                         className="w-full px-3 py-2 border rounded-md"
                       >
-                        <option value="">Select host location</option>
+                        <option value="">Select driver location</option>
                         {hosts.map((host) => (
                           <option key={host.id} value={host.name}>
                             {host.name}
@@ -631,7 +631,7 @@ export default function DriversManagement() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-hostLocation">Host Location</Label>
+                <Label htmlFor="edit-hostLocation">Driver Location</Label>
                 <select
                   id="edit-hostLocation"
                   value={editingDriver.hostLocation || ''}
@@ -643,7 +643,7 @@ export default function DriversManagement() {
                   }
                   className="w-full px-3 py-2 border rounded-md"
                 >
-                  <option value="">Select host location</option>
+                  <option value="">Select driver location</option>
                   {hosts.map((host) => (
                     <option key={host.id} value={host.name}>
                       {host.name}
@@ -825,7 +825,7 @@ export default function DriversManagement() {
                           </div>
                           {driver.hostLocation && (
                             <div className="text-xs text-gray-500 mt-1">
-                              Host Location: {driver.hostLocation}
+                              Driver Location: {driver.hostLocation}
                             </div>
                           )}
                           {driver.availability && (
