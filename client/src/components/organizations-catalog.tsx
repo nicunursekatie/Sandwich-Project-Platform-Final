@@ -739,34 +739,11 @@ export default function GroupCatalog({
               </div>
 
               <div className="space-y-6">
-                {/* Multi-department organizations - keep current detailed layout */}
-                {(() => {
-                  const multiDeptGroups = paginatedActiveGroups.filter(group => group.totalDepartments > 1);
-                  const singleDeptGroups = paginatedActiveGroups.filter(group => group.totalDepartments === 1);
-                  console.log('🔍 Layout Debug:', {
-                    totalGroups: paginatedActiveGroups.length,
-                    multiDeptCount: multiDeptGroups.length,
-                    singleDeptCount: singleDeptGroups.length,
-                    multiDeptNames: multiDeptGroups.map(g => `${g.groupName} (${g.totalDepartments} depts)`),
-                    singleDeptNames: singleDeptGroups.map(g => `${g.groupName} (${g.totalDepartments} dept)`)
-                  });
-                  
-                  // Show section header for multi-department organizations if any exist
-                  if (multiDeptGroups.length > 0) {
+                {/* Unified organizations catalog - all organizations together */}
+                {paginatedActiveGroups.map((group, groupIndex) => {
+                  // Use detailed layout for multi-department organizations
+                  if (group.totalDepartments > 1) {
                     return (
-                      <div className="space-y-6">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-200">
-                            <Building className="w-5 h-5 text-blue-700" />
-                          </div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Organizations with Multiple Departments
-                          </h3>
-                          <Badge className="bg-blue-100 text-blue-700">
-                            {multiDeptGroups.length} organizations
-                          </Badge>
-                        </div>
-                        {multiDeptGroups.map((group, groupIndex) => (
                   <div
                     key={`multi-${group.groupName}-${groupIndex}`}
                     className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm"
@@ -1000,12 +977,117 @@ export default function GroupCatalog({
                       </div>
                     );
                   } else {
-                    return null;
+                    // Use compact layout for single-department organizations
+                    const org = group.departments[0];
+                    return (
+                      <Card
+                        key={`single-${group.groupName}-${groupIndex}`}
+                        className={`hover:shadow-lg transition-all duration-300 border-l-4 ${
+                          org.status === 'declined'
+                            ? 'border-l-4 border-2 shadow-xl'
+                            : 'bg-gradient-to-br from-white to-orange-50 border-l-4'
+                        }`}
+                        style={
+                          org.status === 'declined'
+                            ? {
+                                background:
+                                  'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)',
+                                borderLeftColor: '#A31C41',
+                                borderColor: '#A31C41',
+                              }
+                            : { borderLeftColor: '#FBAD3F' }
+                        }
+                      >
+                        <CardHeader className="pb-3">
+                          {/* Organization Header - Compact */}
+                          <div className="flex items-center space-x-2 mb-3">
+                            <Building
+                              className="w-4 h-4 flex-shrink-0"
+                              style={{ color: '#236383' }}
+                            />
+                            <h3 className="text-lg font-bold text-gray-900 truncate">
+                              {group.groupName}
+                            </h3>
+                          </div>
+
+                          {/* Event Date */}
+                          <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
+                            <Calendar className="w-4 h-4 text-teal-600" />
+                            <span className="font-medium">
+                              {formatDateForDisplay(org.eventDate)}
+                            </span>
+                          </div>
+
+                          {/* Contact Information */}
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-1 text-sm">
+                              <User className="w-4 h-4 text-teal-600" />
+                              <span className="font-medium text-gray-900 truncate">
+                                {org.contactName}
+                              </span>
+                            </div>
+                            {org.email && (
+                              <div className="flex items-center space-x-1 text-xs">
+                                <Mail className="w-3 h-3 text-teal-500" />
+                                <span className="text-teal-700 hover:text-teal-800 truncate">
+                                  {org.email}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </CardHeader>
+
+                        <CardContent className="pt-0">
+                          {/* Status and Count */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-2">
+                              <Badge
+                                className={
+                                  org.status === 'completed'
+                                    ? 'bg-green-100 text-green-700'
+                                    : org.status === 'upcoming'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-red-100 text-red-700'
+                                }
+                              >
+                                {org.status}
+                              </Badge>
+                              <span className="text-lg font-bold text-gray-900">
+                                {org.sandwichCount}
+                              </span>
+                              <SandwichIcon className="w-4 h-4 text-orange-600" />
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {org.eventCount} event
+                              {org.eventCount !== 1 ? 's' : ''}
+                            </div>
+                          </div>
+
+                          {/* Compact View History Button */}
+                          <Button
+                            onClick={() => {
+                              setSelectedOrganization(org);
+                              setOrganizationDetails(null);
+                              fetchOrganizationDetails(org.organizationName);
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-1"
+                          >
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            View History
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
                   }
                 })()}
 
-                {/* Single-department organizations - compact grid layout */}
+                {/* REMOVED: Single-department organizations are now integrated above in the main loop */}
                 {(() => {
+                  // DISABLED: Single-department organizations are now integrated above
+                  return null;
+                  
                   const singleDepartmentGroups = paginatedActiveGroups.filter(group => group.totalDepartments === 1);
                   
                   if (singleDepartmentGroups.length === 0) return null;
