@@ -1133,10 +1133,27 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                       </span>
                     )}
                   </>
+                ) : request.estimatedSandwichCount ? (
+                  <>
+                    <span className="text-lg">{request.estimatedSandwichCount}</span>
+                    <span className="text-xs text-gray-500 block">(Planned)</span>
+                  </>
                 ) : (
                   <span className="text-gray-400 italic">Not recorded</span>
                 )}
               </p>
+              {/* Display sandwich types - use actual if available, otherwise fall back to planned */}
+              {(() => {
+                const types = request.actualSandwichTypes || request.sandwichTypes;
+                if (types && Array.isArray(types) && types.length > 0) {
+                  return (
+                    <p className="text-xs text-gray-600 mt-1">
+                      {formatSandwichTypesDisplay(types)}
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Social Media Status Section */}
