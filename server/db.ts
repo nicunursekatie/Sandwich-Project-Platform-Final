@@ -3,12 +3,14 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { drizzle as drizzleSQLite } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from '@shared/schema';
+import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 // Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
 // Otherwise use development database (workspace)
 const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
 
-let db;
+let db: NeonHttpDatabase<typeof schema> | BetterSQLite3Database<typeof schema>;
 
 if (databaseUrl) {
   console.log(`🗄️ Using ${process.env.PRODUCTION_DATABASE_URL ? 'PRODUCTION' : 'DEVELOPMENT'} database`);

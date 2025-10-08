@@ -153,11 +153,8 @@ export default function DashboardOverview({
     staleTime: 30 * 1000, // 30 seconds for dashboard stats
     refetchOnMount: true,
     refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
-    keepPreviousData: true,
     enabled: deferredLoad,
   });
-
-  // Trigger deferred loading after initial render
   React.useEffect(() => {
     const timer = setTimeout(() => setDeferredLoad(true), 100);
     return () => clearTimeout(timer);
@@ -343,7 +340,7 @@ export default function DashboardOverview({
 
         {/* Collection Call-to-Action */}
         {(hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-          hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT)) && (
+          hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_OWN)) && (
           <div className="bg-white rounded-xl mx-4 p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <div className="text-center">
               <div className="mb-4 sm:mb-6">

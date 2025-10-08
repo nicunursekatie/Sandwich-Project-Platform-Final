@@ -191,6 +191,205 @@ collectionsRouter.post(
   }
 );
 
+// =============================================================================
+// IMPORTANT: All named routes (e.g., /analyze-duplicates, /batch-delete) MUST
+// be defined BEFORE the /:id route, otherwise Express will match them as IDs
+// =============================================================================
+
+// Analyze duplicates in sandwich collections
+collectionsRouter.get('/analyze-duplicates', async (req, res) => {
+  try {
+    const collections = await storage.getAllSandwichCollections();
+
+    // Helper function to calculate total sandwiches
+    const calculateTotal = (c: any) => {
+      const individual = c.individualSandwiches || 0;
+      const group1 = c.group1Count || 0;
+      const group2 = c.group2Count || 0;
+      const groupCollections = Array.isArray(c.groupCollections)
+        ? c.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0)
+        : 0;
+      return individual + group1 + group2 + groupCollections;
+    };
+
+    // Group by date, host, and sandwich counts to find exact duplicates
+    const duplicateGroups = new Map();
+    const nearDuplicates = new Map(); // For entries that are VERY similar but not exact
+    const suspiciousPatterns = [];
+    const ogDuplicates = [];
+
+    collections.forEach((collection) => {
+      // Exact match key
+      const key = `${collection.collectionDate}-${collection.hostName}-${collection.individualSandwiches}-${collection.groupCollections}`;
+
+      if (!duplicateGroups.has(key)) {
+        duplicateGroups.set(key, []);
+      }
+      duplicateGroups.get(key).push(collection);
+
+      // Near-duplicate detection: same date, host, and total sandwiches (within 5%)
+      const total = calculateTotal(collection);
+      const nearKey = `${collection.collectionDate}-${collection.hostName}`;
+
+      if (!nearDuplicates.has(nearKey)) {
+        nearDuplicates.set(nearKey, []);
+      }
+      nearDuplicates.get(nearKey).push({ collection, total });
+
+      // Check for suspicious patterns - ONLY truly problematic entries
+      const hostName = (collection.hostName || '').toLowerCase().trim();
+      if (
+        hostName.startsWith('loc ') ||
+        hostName.match(/^group \d+(-\d+)?$/) ||
+        hostName.match(/^loc\d+$/) ||
+        hostName === 'test' ||
+        hostName.includes('test') ||
+        hostName.includes('duplicate') ||
+        hostName.includes('unknown') ||
+        hostName.includes('no location') ||
+        hostName === '' ||
+        hostName === 'null' ||
+        // Check for obviously incorrect host names
+        hostName.length < 3 ||
+        hostName.match(/^\d+$/) || // Pure numbers
+        hostName.match(/^[a-z]{1,2}$/) // Single/double letters
+      ) {
+        suspiciousPatterns.push(collection);
+      }
+    });
+
+    // Find OG Sandwich Project duplicates with early collections
+    const ogCollections = collections.filter(
+      (c) => c.hostName === 'OG Sandwich Project'
+    );
+    const earlyCollections = collections.filter(
+      (c) =>
+        c.hostName !== 'OG Sandwich Project' &&
+        (c.hostName === '' ||
+          c.hostName === null ||
+          c.hostName.trim() === '' ||
+          c.hostName.toLowerCase().includes('unknown') ||
+          c.hostName.toLowerCase().includes('no location'))
+    );
+
+    const ogMap = new Map();
+    ogCollections.forEach((og) => {
+      const key = `${og.collectionDate}-${og.individualSandwiches}`;
+      if (!ogMap.has(key)) {
+        ogMap.set(key, []);
+      }
+      ogMap.get(key).push(og);
+    });
+
+    earlyCollections.forEach((early) => {
+      const key = `${early.collectionDate}-${early.individualSandwiches}`;
+      if (ogMap.has(key)) {
+        const ogEntries = ogMap.get(key);
+        ogDuplicates.push({
+          ogEntry: ogEntries[0],
+          earlyEntry: early,
+          reason: 'Same date and sandwich count as OG Project entry',
+        });
+      }
+    });
+
+    // Also find duplicate OG entries
+    ogMap.forEach((ogGroup) => {
+      if (ogGroup.length > 1) {
+        const sorted = ogGroup.sort(
+          (a, b) =>
+            new Date(b.submittedAt).getTime() -
+            new Date(a.submittedAt).getTime()
+        );
+        sorted.slice(1).forEach((duplicate) => {
+          ogDuplicates.push({
+            ogEntry: sorted[0],
+            duplicateOgEntry: duplicate,
+            reason: 'Duplicate OG Project entry',
+          });
+        });
+      }
+    });
+
+    // Find actual duplicates (groups with more than 1 entry)
+    const duplicates = Array.from(duplicateGroups.values())
+      .filter((group) => group.length > 1)
+      .map((group) => ({
+        entries: group,
+        count: group.length,
+        keepNewest: group.sort(
+          (a, b) =>
+            new Date(b.submittedAt).getTime() -
+            new Date(a.submittedAt).getTime()
+        )[0],
+        toDelete: group.slice(1),
+      }));
+
+    // Find near-duplicates: same date & host but slightly different totals
+    const potentialNearDuplicates: any[] = [];
+    nearDuplicates.forEach((group) => {
+      if (group.length > 1) {
+        // Check if any entries are within 10% of each other or exact same total
+        for (let i = 0; i < group.length; i++) {
+          for (let j = i + 1; j < group.length; j++) {
+            const entry1 = group[i];
+            const entry2 = group[j];
+
+            // Check if totals are the same or within 10%
+            const diff = Math.abs(entry1.total - entry2.total);
+            const avg = (entry1.total + entry2.total) / 2;
+            const percentDiff = avg > 0 ? (diff / avg) * 100 : 0;
+
+            if (entry1.total === entry2.total || percentDiff <= 10) {
+              // Check if they're not already in exact duplicates
+              const isDuplicate = duplicates.some((dup) =>
+                dup.entries.some(
+                  (e: any) =>
+                    e.id === entry1.collection.id || e.id === entry2.collection.id
+                )
+              );
+
+              if (!isDuplicate) {
+                potentialNearDuplicates.push({
+                  entry1: entry1.collection,
+                  entry2: entry2.collection,
+                  total1: entry1.total,
+                  total2: entry2.total,
+                  difference: diff,
+                  percentDifference: percentDiff.toFixed(1),
+                  reason:
+                    entry1.total === entry2.total
+                      ? 'Exact same total sandwiches'
+                      : `${percentDiff.toFixed(1)}% difference`,
+                });
+              }
+            }
+          }
+        }
+      }
+    });
+
+    res.json({
+      totalCollections: collections.length,
+      duplicateGroups: duplicates.length,
+      totalDuplicateEntries: duplicates.reduce(
+        (sum, group) => sum + group.toDelete.length,
+        0
+      ),
+      suspiciousPatterns: suspiciousPatterns.length,
+      ogDuplicates: ogDuplicates.length,
+      nearDuplicates: potentialNearDuplicates.length,
+      duplicates,
+      suspiciousEntries: suspiciousPatterns,
+      ogDuplicateEntries: ogDuplicates,
+      nearDuplicateEntries: potentialNearDuplicates,
+    });
+  } catch (error) {
+    logger.error('Failed to analyze duplicates', error);
+    res.status(500).json({ message: 'Failed to analyze duplicates' });
+  }
+});
+
 // GET individual sandwich collection by ID
 collectionsRouter.get('/:id', async (req, res) => {
   try {
@@ -433,200 +632,6 @@ collectionsRouter.delete(
     }
   }
 );
-
-// Analyze duplicates in sandwich collections
-collectionsRouter.get('/analyze-duplicates', async (req, res) => {
-  try {
-    const collections = await storage.getAllSandwichCollections();
-
-    // Helper function to calculate total sandwiches
-    const calculateTotal = (c: any) => {
-      const individual = c.individualSandwiches || 0;
-      const group1 = c.group1Count || 0;
-      const group2 = c.group2Count || 0;
-      const groupCollections = Array.isArray(c.groupCollections)
-        ? c.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0)
-        : 0;
-      return individual + group1 + group2 + groupCollections;
-    };
-
-    // Group by date, host, and sandwich counts to find exact duplicates
-    const duplicateGroups = new Map();
-    const nearDuplicates = new Map(); // For entries that are VERY similar but not exact
-    const suspiciousPatterns = [];
-    const ogDuplicates = [];
-
-    collections.forEach((collection) => {
-      // Exact match key
-      const key = `${collection.collectionDate}-${collection.hostName}-${collection.individualSandwiches}-${collection.groupCollections}`;
-
-      if (!duplicateGroups.has(key)) {
-        duplicateGroups.set(key, []);
-      }
-      duplicateGroups.get(key).push(collection);
-
-      // Near-duplicate detection: same date, host, and total sandwiches (within 5%)
-      const total = calculateTotal(collection);
-      const nearKey = `${collection.collectionDate}-${collection.hostName}`;
-
-      if (!nearDuplicates.has(nearKey)) {
-        nearDuplicates.set(nearKey, []);
-      }
-      nearDuplicates.get(nearKey).push({ collection, total });
-
-      // Check for suspicious patterns - ONLY truly problematic entries
-      const hostName = (collection.hostName || '').toLowerCase().trim();
-      if (
-        hostName.startsWith('loc ') ||
-        hostName.match(/^group \d+(-\d+)?$/) ||
-        hostName.match(/^loc\d+$/) ||
-        hostName === 'test' ||
-        hostName.includes('test') ||
-        hostName.includes('duplicate') ||
-        hostName.includes('unknown') ||
-        hostName.includes('no location') ||
-        hostName === '' ||
-        hostName === 'null' ||
-        // Check for obviously incorrect host names
-        hostName.length < 3 ||
-        hostName.match(/^\d+$/) || // Pure numbers
-        hostName.match(/^[a-z]{1,2}$/) // Single/double letters
-      ) {
-        suspiciousPatterns.push(collection);
-      }
-    });
-
-    // Find OG Sandwich Project duplicates with early collections
-    const ogCollections = collections.filter(
-      (c) => c.hostName === 'OG Sandwich Project'
-    );
-    const earlyCollections = collections.filter(
-      (c) =>
-        c.hostName !== 'OG Sandwich Project' &&
-        (c.hostName === '' ||
-          c.hostName === null ||
-          c.hostName.trim() === '' ||
-          c.hostName.toLowerCase().includes('unknown') ||
-          c.hostName.toLowerCase().includes('no location'))
-    );
-
-    const ogMap = new Map();
-    ogCollections.forEach((og) => {
-      const key = `${og.collectionDate}-${og.individualSandwiches}`;
-      if (!ogMap.has(key)) {
-        ogMap.set(key, []);
-      }
-      ogMap.get(key).push(og);
-    });
-
-    earlyCollections.forEach((early) => {
-      const key = `${early.collectionDate}-${early.individualSandwiches}`;
-      if (ogMap.has(key)) {
-        const ogEntries = ogMap.get(key);
-        ogDuplicates.push({
-          ogEntry: ogEntries[0],
-          earlyEntry: early,
-          reason: 'Same date and sandwich count as OG Project entry',
-        });
-      }
-    });
-
-    // Also find duplicate OG entries
-    ogMap.forEach((ogGroup) => {
-      if (ogGroup.length > 1) {
-        const sorted = ogGroup.sort(
-          (a, b) =>
-            new Date(b.submittedAt).getTime() -
-            new Date(a.submittedAt).getTime()
-        );
-        sorted.slice(1).forEach((duplicate) => {
-          ogDuplicates.push({
-            ogEntry: sorted[0],
-            duplicateOgEntry: duplicate,
-            reason: 'Duplicate OG Project entry',
-          });
-        });
-      }
-    });
-
-    // Find actual duplicates (groups with more than 1 entry)
-    const duplicates = Array.from(duplicateGroups.values())
-      .filter((group) => group.length > 1)
-      .map((group) => ({
-        entries: group,
-        count: group.length,
-        keepNewest: group.sort(
-          (a, b) =>
-            new Date(b.submittedAt).getTime() -
-            new Date(a.submittedAt).getTime()
-        )[0],
-        toDelete: group.slice(1),
-      }));
-
-    // Find near-duplicates: same date & host but slightly different totals
-    const potentialNearDuplicates: any[] = [];
-    nearDuplicates.forEach((group) => {
-      if (group.length > 1) {
-        // Check if any entries are within 10% of each other or exact same total
-        for (let i = 0; i < group.length; i++) {
-          for (let j = i + 1; j < group.length; j++) {
-            const entry1 = group[i];
-            const entry2 = group[j];
-
-            // Check if totals are the same or within 10%
-            const diff = Math.abs(entry1.total - entry2.total);
-            const avg = (entry1.total + entry2.total) / 2;
-            const percentDiff = avg > 0 ? (diff / avg) * 100 : 0;
-
-            if (entry1.total === entry2.total || percentDiff <= 10) {
-              // Check if they're not already in exact duplicates
-              const isDuplicate = duplicates.some((dup) =>
-                dup.entries.some(
-                  (e: any) =>
-                    e.id === entry1.collection.id || e.id === entry2.collection.id
-                )
-              );
-
-              if (!isDuplicate) {
-                potentialNearDuplicates.push({
-                  entry1: entry1.collection,
-                  entry2: entry2.collection,
-                  total1: entry1.total,
-                  total2: entry2.total,
-                  difference: diff,
-                  percentDifference: percentDiff.toFixed(1),
-                  reason:
-                    entry1.total === entry2.total
-                      ? 'Exact same total sandwiches'
-                      : `${percentDiff.toFixed(1)}% difference`,
-                });
-              }
-            }
-          }
-        }
-      }
-    });
-
-    res.json({
-      totalCollections: collections.length,
-      duplicateGroups: duplicates.length,
-      totalDuplicateEntries: duplicates.reduce(
-        (sum, group) => sum + group.toDelete.length,
-        0
-      ),
-      suspiciousPatterns: suspiciousPatterns.length,
-      ogDuplicates: ogDuplicates.length,
-      nearDuplicates: potentialNearDuplicates.length,
-      duplicates,
-      suspiciousEntries: suspiciousPatterns,
-      ogDuplicateEntries: ogDuplicates,
-      nearDuplicateEntries: potentialNearDuplicates,
-    });
-  } catch (error) {
-    logger.error('Failed to analyze duplicates', error);
-    res.status(500).json({ message: 'Failed to analyze duplicates' });
-  }
-});
 
 // Clean selected suspicious entries from sandwich collections
 collectionsRouter.delete(

@@ -159,12 +159,6 @@ export default function HostsManagementConsolidated() {
     queryKey: ['/api/hosts-with-contacts'],
     staleTime: 0, // Always fetch fresh data
     gcTime: 0, // Don't cache data
-    onSuccess: (data) => {
-      console.log('Hosts with contacts data:', data);
-      if (data.length > 0 && data[0].contacts && data[0].contacts.length > 0) {
-        console.log('First contact sample:', data[0].contacts[0]);
-      }
-    },
   });
 
   const { data: recipients = [] } = useQuery<Recipient[]>({
@@ -476,6 +470,8 @@ export default function HostsManagementConsolidated() {
         role: '',
         phone: '',
         email: '',
+        address: '',
+        hostLocation: '',
         isPrimary: false,
         notes: '',
       });
@@ -907,10 +903,18 @@ export default function HostsManagementConsolidated() {
                             </span>
                             <div className="flex items-center space-x-1">
                               {contact.weeklyActive && (
-                                <CheckCircle
-                                  className="w-3 h-3 text-green-600 fill-current"
-                                  title={`Available this week${contact.lastScraped ? ` (updated ${new Date(contact.lastScraped).toLocaleDateString()})` : ''}`}
-                                />
+                                <span
+                                  className="group relative flex items-center"
+                                  tabIndex={0}
+                                >
+                                  <CheckCircle
+                                    className="w-3 h-3 text-green-600 fill-current"
+                                    aria-label={`Available this week${contact.lastScraped ? ` (updated ${new Date(contact.lastScraped).toLocaleDateString()})` : ''}`}
+                                  />
+                                  <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 hidden group-hover:block group-focus:block bg-slate-800 text-white text-xs rounded px-2 py-1 z-10 whitespace-nowrap">
+                                    {`Available this week${contact.lastScraped ? ` (updated ${new Date(contact.lastScraped).toLocaleDateString()})` : ''}`}
+                                  </span>
+                                </span>
                               )}
                               {contact.role === 'lead' && (
                                 <Crown className="w-3 h-3 text-purple-600 fill-current" />

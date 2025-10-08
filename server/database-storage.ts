@@ -83,8 +83,6 @@ import {
   type InsertVolunteer,
   type Host,
   type InsertHost,
-  type Notification,
-  type InsertNotification,
   type HostContact,
   type InsertHostContact,
   type Recipient,

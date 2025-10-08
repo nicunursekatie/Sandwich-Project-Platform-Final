@@ -101,11 +101,17 @@ router.delete(
         throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
       }
       res.status(204).send();
-    } catch (error) {
+    } catch (error: unknown) {
       // Check if it's a constraint error (has associated records)
-      if (error.message && error.message.includes('associated collection')) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'message' in error &&
+        typeof (error as any).message === 'string' &&
+        (error as any).message.includes('associated collection')
+      ) {
         throw createHostsError(
-          error.message,
+          (error as any).message,
           409,
           'CONSTRAINT_VIOLATION',
           { hostId: id, constraintType: 'associated_records' }
