@@ -20,6 +20,7 @@ import ResetPassword from '@/pages/reset-password';
 import NotFound from '@/pages/not-found';
 import MyAvailability from '@/pages/my-availability';
 import TeamAvailability from '@/pages/team-availability';
+import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
 import Help from '@/pages/Help';
 
 function Router() {
@@ -239,6 +240,7 @@ function Router() {
         {() => <Dashboard initialSection="profile" />}
       </Route>
       <Route path="/help" component={Help} />
+      <Route path="/google-calendar-availability" component={GoogleCalendarAvailability} />
       <Route path="/dashboard">{() => <Dashboard />}</Route>
       <Route path="/dashboard/:section">
         {(params) => <Dashboard initialSection={params.section} />}
