@@ -1236,7 +1236,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   <span className="text-gray-400 italic">Not tracked</span>
                 )}
               </p>
-              {/* Display Instagram link if posted and link exists */}
+              {/* Display Instagram link if posted and link exists, or show "Add Link" button */}
               {request.socialMediaPostCompleted && (() => {
                 const instagramLink = getInstagramLinkFromNotes();
                 if (instagramLink) {
@@ -1251,8 +1251,20 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                       View Post
                     </a>
                   );
+                } else {
+                  // No link yet - show Add Link button
+                  return (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowInstagramDialog(true)}
+                      className="bg-[#fbad3f] hover:bg-[#a31c41] text-white text-xs h-7 px-2 mt-2"
+                      disabled={updateSocialMediaMutation.isPending}
+                    >
+                      <Instagram className="w-3 h-3 mr-1" />
+                      Add Link
+                    </Button>
+                  );
                 }
-                return null;
               })()}
               {/* Quick action buttons */}
               {!request.socialMediaPostCompleted && (
