@@ -1086,7 +1086,68 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   canSelfSignup,
   isUserSignedUp,
 }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showInstagramDialog, setShowInstagramDialog] = useState(false);
+  const [instagramLink, setInstagramLink] = useState('');
+  
+  // Social media mutation
+  const updateSocialMediaMutation = useMutation({
+    mutationFn: (data: any) =>
+      apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
+    onSuccess: () => {
+      toast({
+        title: 'Social media tracking updated',
+        description: 'Social media tracking information has been successfully updated.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setShowInstagramDialog(false);
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update social media tracking.',
+        variant: 'destructive',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+    },
+  });
+
+  // Helper functions for Instagram link
+  const getInstagramLinkFromNotes = () => {
+    const notes = request.socialMediaPostNotes || '';
+    const match = notes.match(/Instagram:\s*(https?:\/\/[^\s\n]+)/);
+    return match ? match[1] : '';
+  };
+
+  const getNotesWithoutInstagramLink = () => {
+    const notes = request.socialMediaPostNotes || '';
+    return notes.replace(/Instagram:\s*https?:\/\/[^\s\n]+\n?/, '').trim();
+  };
+
+  const handleMarkPostedWithLink = () => {
+    const todayDate = new Date().toISOString();
+    const updateData: any = {
+      socialMediaPostCompleted: true,
+      socialMediaPostCompletedDate: todayDate,
+    };
+    
+    // Append Instagram link to existing notes if provided
+    if (instagramLink.trim()) {
+      const existingNotes = getNotesWithoutInstagramLink();
+      const instagramLinkText = `Instagram: ${instagramLink.trim()}`;
+      
+      if (existingNotes) {
+        updateData.socialMediaPostNotes = `${existingNotes}\n${instagramLinkText}`;
+      } else {
+        updateData.socialMediaPostNotes = instagramLinkText;
+      }
+    }
+    
+    updateSocialMediaMutation.mutate(updateData);
+    setInstagramLink('');
+  };
   
   // Allow assignment editing when assignment functions are provided
   const canEditAssignments = !!(openAssignmentDialog && handleRemoveAssignment);
@@ -1175,6 +1236,33 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   <span className="text-gray-400 italic">Not tracked</span>
                 )}
               </p>
+              {/* Quick action buttons when not tracked */}
+              {!request.socialMediaPostRequested && !request.socialMediaPostCompleted && (
+                <div className="flex flex-col gap-1 mt-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const todayDate = new Date().toISOString();
+                      updateSocialMediaMutation.mutate({
+                        socialMediaPostRequested: true,
+                        socialMediaPostRequestedDate: todayDate,
+                      });
+                    }}
+                    className="bg-[#007e8c] hover:bg-[#236383] text-white text-xs h-7 px-2"
+                    disabled={updateSocialMediaMutation.isPending}
+                  >
+                    Mark Requested
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowInstagramDialog(true)}
+                    className="bg-[#fbad3f] hover:bg-[#a31c41] text-white text-xs h-7 px-2"
+                    disabled={updateSocialMediaMutation.isPending}
+                  >
+                    Mark Posted
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1362,6 +1450,57 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           )}
         </div>
       </CardContent>
+
+      {/* Dialog for marking as posted with Instagram link */}
+      <Dialog open={showInstagramDialog} onOpenChange={setShowInstagramDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mark Social Media as Posted</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Confirm that the social media post has been completed.
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Instagram Link (optional)
+              </label>
+              <Input
+                type="url"
+                placeholder="https://instagram.com/p/..."
+                value={instagramLink}
+                onChange={(e) => setInstagramLink(e.target.value)}
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500">
+                Add a link to the Instagram post if available
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowInstagramDialog(false);
+                setInstagramLink('');
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                handleMarkPostedWithLink();
+                setShowInstagramDialog(false);
+              }}
+              className="flex-1 bg-[#47b3cb] hover:bg-[#236383] text-white"
+              disabled={updateSocialMediaMutation.isPending}
+            >
+              Mark as Posted
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
