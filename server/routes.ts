@@ -141,6 +141,10 @@ export async function registerRoutes(app: Express): Promise<void> {
   const googleSheetsRoutes = await import('./routes/google-sheets');
   app.use('/api/google-sheets', googleSheetsRoutes.default);
 
+  // Google Calendar routes
+  const googleCalendarRoutes = await import('./routes/google-calendar');
+  app.use('/api/google-calendar', googleCalendarRoutes.default);
+
   // Monitoring routes for weekly collection tracking
   try {
     const monitoringRoutes = await import('./routes/monitoring');
