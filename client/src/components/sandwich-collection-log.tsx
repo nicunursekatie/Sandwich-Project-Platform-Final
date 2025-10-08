@@ -84,8 +84,28 @@ interface DuplicateAnalysis {
   duplicates: Array<{
     entries: SandwichCollection[];
     count: number;
-    keepNewest: SandwichCollection;
-    toDelete: SandwichCollection[];
+    duplicateInfo: {
+      collectionDate: string;
+      groupNames: string;
+      individualSandwiches: number;
+      totalSandwiches: number;
+    };
+    keepNewest: {
+      id: number;
+      submittedAt: string;
+      createdBy: string;
+      individualSandwiches: number;
+      totalSandwiches: number;
+      groupNames: string;
+    };
+    toDelete: Array<{
+      id: number;
+      submittedAt: string;
+      createdBy: string;
+      individualSandwiches: number;
+      totalSandwiches: number;
+      groupNames: string;
+    }>;
   }>;
   suspiciousEntries: SandwichCollection[];
   ogDuplicateEntries: Array<{
@@ -2467,140 +2487,164 @@ export default function SandwichCollectionLog() {
                           key={groupIndex}
                           className="border border-slate-100 rounded-lg p-3 bg-slate-50"
                         >
-                          <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200">
-                            <div>
-                              <span className="font-medium text-slate-900">
-                                {group.entries[0].hostName}
-                              </span>
-                              <span className="text-sm text-slate-500 ml-2">
-                                {group.entries[0].collectionDate}
+                          {/* Duplicate Info Header */}
+                          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <Calendar className="w-4 h-4 text-blue-600" />
+                                <span className="font-semibold text-blue-900">
+                                  {new Date(group.duplicateInfo.collectionDate).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              </div>
+                              <span className="text-sm font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded">
+                                {group.count} duplicate{group.count !== 1 ? 's' : ''}
                               </span>
                             </div>
-                            <span className="text-sm font-medium text-slate-600">
-                              {group.count} total entries
-                            </span>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <div className="text-xs text-blue-600 font-medium mb-1">Group Names</div>
+                                <div className="text-blue-900 font-medium">
+                                  {group.duplicateInfo.groupNames || 'No groups'}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-blue-600 font-medium mb-1">Sandwich Counts</div>
+                                <div className="text-blue-900 font-medium">
+                                  {group.duplicateInfo.individualSandwiches} individual, {group.duplicateInfo.totalSandwiches} total
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           
                           {/* Show the entry being kept */}
-                          <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded">
-                            <div className="flex items-center justify-between mb-1">
+                          <div className="mb-2 p-3 bg-green-50 border-2 border-green-300 rounded-lg" data-testid={`keeping-entry-${group.keepNewest.id}`}>
+                            <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center space-x-2">
-                                <span className="text-xs font-medium text-green-700 uppercase">
+                                <span className="text-sm font-bold text-green-700 uppercase bg-green-200 px-2 py-1 rounded">
                                   ✓ Keeping (Newest)
                                 </span>
-                                <span className="text-xs text-green-600">
+                                <span className="text-xs text-green-600 font-medium">
                                   ID: {group.keepNewest.id}
                                 </span>
                               </div>
-                              <div className="text-xs text-green-700">
-                                <User className="w-3 h-3 inline mr-1" />
-                                {group.keepNewest.createdByName || 'Unknown'}
+                              <div className="text-sm text-green-700 font-medium">
+                                <User className="w-4 h-4 inline mr-1" />
+                                {group.keepNewest.createdBy}
                               </div>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <div className="flex items-center space-x-3">
-                                <span className="text-slate-700">
-                                  {group.keepNewest.individualSandwiches || 0} individual
-                                </span>
-                                {(() => {
-                                  const groupData = getGroupCollections(group.keepNewest);
-                                  const groupTotal = groupData.reduce(
-                                    (sum: number, g: any) => sum + (Number(g.sandwichCount) || 0),
-                                    0
-                                  );
-                                  return groupTotal > 0 && (
-                                    <span className="text-slate-700">
-                                      {groupTotal} group
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                              <span className="font-medium text-slate-900">
-                                {calculateTotal(group.keepNewest)} total
-                              </span>
-                            </div>
-                            {group.keepNewest.submittedAt && (
-                              <div className="text-xs text-green-600 mt-1">
-                                <Calendar className="w-3 h-3 inline mr-1" />
-                                {new Date(group.keepNewest.submittedAt).toLocaleString()}
+                            
+                            {/* Prominent Group Names Display */}
+                            {group.keepNewest.groupNames && (
+                              <div className="mb-2 p-2 bg-green-100 border border-green-300 rounded">
+                                <div className="flex items-center space-x-2">
+                                  <Users className="w-4 h-4 text-green-700" />
+                                  <div>
+                                    <div className="text-xs text-green-600 font-medium">Groups</div>
+                                    <div className="text-sm font-semibold text-green-900">
+                                      {group.keepNewest.groupNames}
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             )}
+                            
+                            <div className="flex items-center justify-between text-sm mb-2">
+                              <div className="flex items-center space-x-3">
+                                <span className="text-slate-700">
+                                  <Sandwich className="w-3 h-3 inline mr-1" />
+                                  {group.keepNewest.individualSandwiches} individual
+                                </span>
+                              </div>
+                              <span className="font-bold text-green-900 bg-green-100 px-2 py-1 rounded">
+                                {group.keepNewest.totalSandwiches} total
+                              </span>
+                            </div>
+                            
+                            <div className="text-xs text-green-600">
+                              <Calendar className="w-3 h-3 inline mr-1" />
+                              Submitted: {new Date(group.keepNewest.submittedAt).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit'
+                              })}
+                            </div>
                           </div>
 
                           {/* Show duplicates to delete with checkboxes */}
                           <div className="space-y-1">
-                            <div className="text-xs font-medium text-red-600 mb-1">
-                              Duplicates to delete:
+                            <div className="text-xs font-bold text-red-600 mb-2 uppercase">
+                              Duplicates to delete ({group.toDelete.length}):
                             </div>
-                            {group.toDelete.map((entry: any) => {
-                              const groupData = getGroupCollections(entry);
-                              const totalSandwiches = calculateTotal(entry);
-                              const groupTotal = groupData.reduce(
-                                (sum: number, g: any) => sum + (Number(g.sandwichCount) || 0),
-                                0
-                              );
-                              return (
-                                <div
-                                  key={entry.id}
-                                  className="flex items-center space-x-3 p-2 border border-red-100 rounded bg-white hover:bg-red-50"
-                                >
-                                  <Checkbox
-                                    id={`duplicate-${entry.id}`}
-                                    checked={selectedDuplicateIds.has(entry.id)}
-                                    onCheckedChange={(checked) => {
-                                      const newSet = new Set(selectedDuplicateIds);
-                                      if (checked) {
-                                        newSet.add(entry.id);
-                                      } else {
-                                        newSet.delete(entry.id);
-                                      }
-                                      setSelectedDuplicateIds(newSet);
-                                    }}
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center space-x-2">
-                                        <span className="text-xs text-slate-500">
-                                          ID: {entry.id}
-                                        </span>
-                                        <span className="text-xs text-slate-600">
-                                          <User className="w-3 h-3 inline mr-1" />
-                                          {entry.createdByName || 'Unknown'}
-                                        </span>
-                                      </div>
-                                      <span className="text-sm font-medium text-slate-900">
-                                        {totalSandwiches} total
+                            {group.toDelete.map((entry) => (
+                              <div
+                                key={entry.id}
+                                className="flex items-center space-x-3 p-2 border border-red-200 rounded bg-white hover:bg-red-50"
+                                data-testid={`delete-entry-${entry.id}`}
+                              >
+                                <Checkbox
+                                  id={`duplicate-${entry.id}`}
+                                  checked={selectedDuplicateIds.has(entry.id)}
+                                  onCheckedChange={(checked) => {
+                                    const newSet = new Set(selectedDuplicateIds);
+                                    if (checked) {
+                                      newSet.add(entry.id);
+                                    } else {
+                                      newSet.delete(entry.id);
+                                    }
+                                    setSelectedDuplicateIds(newSet);
+                                  }}
+                                  data-testid={`checkbox-duplicate-${entry.id}`}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xs text-slate-500 font-medium">
+                                        ID: {entry.id}
+                                      </span>
+                                      <span className="text-xs text-slate-600">
+                                        <User className="w-3 h-3 inline mr-1" />
+                                        {entry.createdBy}
                                       </span>
                                     </div>
-                                    <div className="flex items-center justify-between text-xs text-slate-600 mt-1">
-                                      <div className="flex items-center space-x-3">
-                                        <span>
-                                          {entry.individualSandwiches || 0} individual
-                                        </span>
-                                        {groupTotal > 0 && (
-                                          <span>
-                                            {groupTotal} group
-                                          </span>
-                                        )}
-                                      </div>
-                                      {entry.submittedAt && (
-                                        <span className="text-slate-500">
-                                          <Calendar className="w-3 h-3 inline mr-1" />
-                                          {new Date(entry.submittedAt).toLocaleDateString()}
-                                        </span>
-                                      )}
+                                    <span className="text-sm font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded">
+                                      {entry.totalSandwiches} total
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Group Names for delete entry */}
+                                  {entry.groupNames && (
+                                    <div className="mb-1 text-xs text-slate-600">
+                                      <Users className="w-3 h-3 inline mr-1" />
+                                      <span className="font-medium">Groups:</span> {entry.groupNames}
                                     </div>
-                                    {groupData.length > 0 && (
-                                      <div className="text-xs text-slate-500 mt-1">
-                                        Groups: {groupData.map((g: any) => 
-                                          `${g.groupName || g.name}: ${g.sandwichCount || g.count}`
-                                        ).join(', ')}
-                                      </div>
-                                    )}
+                                  )}
+                                  
+                                  <div className="flex items-center justify-between text-xs text-slate-600">
+                                    <div className="flex items-center space-x-3">
+                                      <span>
+                                        <Sandwich className="w-3 h-3 inline mr-1" />
+                                        {entry.individualSandwiches} individual
+                                      </span>
+                                    </div>
+                                    <span className="text-slate-500">
+                                      <Calendar className="w-3 h-3 inline mr-1" />
+                                      {new Date(entry.submittedAt).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: 'numeric',
+                                        minute: '2-digit'
+                                      })}
+                                    </span>
                                   </div>
                                 </div>
-                              );
-                            })}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}
