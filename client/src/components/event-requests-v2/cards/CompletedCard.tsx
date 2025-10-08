@@ -1254,23 +1254,25 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 }
                 return null;
               })()}
-              {/* Quick action buttons when not tracked */}
-              {!request.socialMediaPostRequested && !request.socialMediaPostCompleted && (
+              {/* Quick action buttons */}
+              {!request.socialMediaPostCompleted && (
                 <div className="flex flex-col gap-1 mt-2">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const todayDate = new Date().toISOString();
-                      updateSocialMediaMutation.mutate({
-                        socialMediaPostRequested: true,
-                        socialMediaPostRequestedDate: todayDate,
-                      });
-                    }}
-                    className="bg-[#007e8c] hover:bg-[#236383] text-white text-xs h-7 px-2"
-                    disabled={updateSocialMediaMutation.isPending}
-                  >
-                    Mark Requested
-                  </Button>
+                  {!request.socialMediaPostRequested && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const todayDate = new Date().toISOString();
+                        updateSocialMediaMutation.mutate({
+                          socialMediaPostRequested: true,
+                          socialMediaPostRequestedDate: todayDate,
+                        });
+                      }}
+                      className="bg-[#007e8c] hover:bg-[#236383] text-white text-xs h-7 px-2"
+                      disabled={updateSocialMediaMutation.isPending}
+                    >
+                      Mark Requested
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     onClick={() => setShowInstagramDialog(true)}
