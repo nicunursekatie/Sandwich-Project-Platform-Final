@@ -446,10 +446,62 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     );
   };
 
+  // Render Social Media section similar to assignment columns, but using the full component
+  const renderSocialMediaSection = () => {
+    const isPosted = request.socialMediaPostCompleted;
+    const isRequested = request.socialMediaPostRequested;
+    
+    // Determine background color based on status
+    let bgColor = 'bg-white/60 border-white/80'; // Default
+    if (isPosted) {
+      bgColor = 'bg-teal-50 border-teal-200'; // Completed
+    } else if (isRequested) {
+      bgColor = 'bg-brand-primary-lighter border-brand-primary-border'; // In progress
+    }
+    
+    return (
+      <div className={`rounded-lg p-4 border ${bgColor} min-h-[120px]`}>
+        {/* Header with status indicator */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Share2 className="w-5 h-5 text-[#236383]" />
+            <span className="font-semibold text-base text-[#236383]">Social Media</span>
+          </div>
+          {isPosted && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-700 border border-teal-200">
+              <Check className="w-3 h-3" />
+              <span className="font-bold">Posted</span>
+            </div>
+          )}
+          {isRequested && !isPosted && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-brand-primary-light text-brand-primary border border-brand-primary-border">
+              <Clock className="w-3 h-3" />
+              <span className="font-bold">Pending</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Status summary line to match other sections */}
+        <div className="mb-3 text-xs text-gray-600 bg-white/50 rounded px-2 py-1">
+          <span className="font-medium">Status:</span> {
+            isPosted ? 'Social media post completed' : 
+            isRequested ? 'Post requested' : 
+            'No activity'
+          }
+        </div>
+        
+        {/* Use the existing SocialMediaTracking component for full functionality */}
+        <div className="scale-95 -mx-1">
+          <SocialMediaTracking request={request} />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="pt-4">
-      {/* Assignments Section */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Assignments Section - Now with 4 columns including Social Media */}
+      <div className="grid grid-cols-4 gap-4">
         {/* Drivers Column */}
         {renderAssignmentColumn(
           'driver',
@@ -479,6 +531,9 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           request.assignedVolunteerIds,
           undefined
         )}
+
+        {/* Social Media Column */}
+        {renderSocialMediaSection()}
       </div>
 
       {/* Van Driver Section - separate row if needed */}
@@ -922,9 +977,6 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 </Badge>
               )}
             </div>
-
-            {/* Social Media Tracking Section */}
-            <SocialMediaTracking request={request} />
 
             {/* Completion Notes */}
             {request.followUpNotes && (
