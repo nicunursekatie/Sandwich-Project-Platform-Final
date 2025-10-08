@@ -196,6 +196,94 @@ collectionsRouter.post(
 // be defined BEFORE the /:id route, otherwise Express will match them as IDs
 // =============================================================================
 
+// Audit cleanup impact - identify what was changed by data cleanup
+collectionsRouter.get('/audit-cleanup-impact', async (req, res) => {
+  try {
+    const collections = await storage.getAllSandwichCollections();
+
+    // Helper to calculate total sandwiches
+    const calculateTotal = (c: any) => {
+      const individual = c.individualSandwiches || 0;
+      const group1 = c.group1Count || 0;
+      const group2 = c.group2Count || 0;
+      const groupCollections = Array.isArray(c.groupCollections)
+        ? c.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0)
+        : 0;
+      return individual + group1 + group2 + groupCollections;
+    };
+
+    // Find records with individual=0 but have group totals (potential Fix #1 victims)
+    const zeroIndividualWithGroups = collections.filter((c) => {
+      const individual = Number(c.individualSandwiches) || 0;
+      const groupTotal = (c.group1Count || 0) + (c.group2Count || 0);
+      return individual === 0 && groupTotal > 0 && c.hostName !== 'Groups';
+    });
+
+    // Find current records where individual == groupTotal (would trigger Fix #1 if enabled)
+    const equalIndividualAndGroup = collections.filter((c) => {
+      const individual = Number(c.individualSandwiches) || 0;
+      const groupTotal = (c.group1Count || 0) + (c.group2Count || 0);
+      return individual > 0 && groupTotal > 0 && individual === groupTotal;
+    });
+
+    // Check "Groups" entries status
+    const groupsEntries = collections.filter((c) =>
+      c.hostName === 'Groups' || c.hostName === 'groups'
+    );
+
+    const groupsWithIndividual = groupsEntries.filter((c) =>
+      (c.individualSandwiches || 0) > 0
+    );
+
+    res.json({
+      totalCollections: collections.length,
+      potentialFix1Victims: {
+        count: zeroIndividualWithGroups.length,
+        description: 'Records with individual=0 and group totals (may have been modified by cleanup)',
+        records: zeroIndividualWithGroups.slice(0, 100).map((c) => ({
+          id: c.id,
+          hostName: c.hostName,
+          collectionDate: c.collectionDate,
+          individual: c.individualSandwiches || 0,
+          groupTotal: (c.group1Count || 0) + (c.group2Count || 0),
+          total: calculateTotal(c),
+          submittedAt: c.submittedAt,
+          createdBy: c.createdBy,
+          note: 'Individual count may have been removed by cleanup if it matched group total',
+        })),
+      },
+      currentEqualCounts: {
+        count: equalIndividualAndGroup.length,
+        description: 'Current records where individual equals group total',
+        records: equalIndividualAndGroup.map((c) => ({
+          id: c.id,
+          hostName: c.hostName,
+          collectionDate: c.collectionDate,
+          individual: c.individualSandwiches,
+          groupTotal: (c.group1Count || 0) + (c.group2Count || 0),
+          submittedAt: c.submittedAt,
+          note: 'SAFE NOW - Fix #1 is disabled so these will not be modified',
+        })),
+      },
+      groupsEntriesStatus: {
+        total: groupsEntries.length,
+        clean: groupsEntries.length - groupsWithIndividual.length,
+        needsFix: groupsWithIndividual.length,
+        problematicRecords: groupsWithIndividual.map((c) => ({
+          id: c.id,
+          individual: c.individualSandwiches,
+          groupTotal: (c.group1Count || 0) + (c.group2Count || 0),
+          submittedAt: c.submittedAt,
+          note: 'Groups entry with individual count - should be moved to group data',
+        })),
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to audit cleanup impact:', error);
+    res.status(500).json({ message: 'Failed to audit cleanup impact' });
+  }
+});
+
 // Analyze duplicates in sandwich collections
 collectionsRouter.get('/analyze-duplicates', async (req, res) => {
   try {
