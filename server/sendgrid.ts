@@ -2,12 +2,13 @@ import { MailService } from '@sendgrid/mail';
 import * as fs from 'fs';
 import * as path from 'path';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error('SENDGRID_API_KEY environment variable must be set');
-}
-
 const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+
+if (process.env.SENDGRID_API_KEY) {
+  mailService.setApiKey(process.env.SENDGRID_API_KEY);
+} else {
+  console.warn('⚠️ SENDGRID_API_KEY not set - email functionality will be disabled');
+}
 
 interface EmailAttachment {
   filePath: string;
@@ -25,6 +26,11 @@ interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
+  if (!process.env.SENDGRID_API_KEY) {
+    console.warn('Email sending skipped - SENDGRID_API_KEY not configured');
+    return false;
+  }
+  
   try {
     console.log(
       `Attempting to send email to ${params.to} from ${params.from} with subject: ${params.subject}`
