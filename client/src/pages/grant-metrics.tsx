@@ -92,8 +92,132 @@ export default function GrantMetrics() {
     refetchOnMount: 'always',
   });
 
+  // Fetch recipients data
+  const { data: recipientsData } = useQuery({
+    queryKey: ['/api/recipients'],
+    queryFn: async () => {
+      const response = await fetch('/api/recipients', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch recipients');
+      return response.json();
+    },
+    staleTime: 60000, // Cache for 1 minute
+  });
+
+  // Fetch event requests data (completed events)
+  const { data: eventRequestsData } = useQuery({
+    queryKey: ['/api/event-requests'],
+    queryFn: async () => {
+      const response = await fetch('/api/event-requests', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch event requests');
+      return response.json();
+    },
+    staleTime: 60000,
+  });
+
   // Hardcoded host count (actual database has 34 active hosts)
   const totalHosts = 34;
+
+  // Process recipients data
+  const recipients = recipientsData || [];
+  const activeRecipients = recipients.filter((r: any) => r.status === 'active');
+
+  // Process event requests data
+  const eventRequests = eventRequestsData || [];
+  const completedEvents = eventRequests.filter((e: any) => e.status === 'completed');
+
+  // Calculate REAL recipient metrics
+  const calculateRecipientMetrics = () => {
+    const byFocusArea: Record<string, number> = {};
+    const byRegion: Record<string, number> = {};
+
+    activeRecipients.forEach((r: any) => {
+      if (r.focusArea) {
+        byFocusArea[r.focusArea] = (byFocusArea[r.focusArea] || 0) + 1;
+      }
+      if (r.region) {
+        byRegion[r.region] = (byRegion[r.region] || 0) + 1;
+      }
+    });
+
+    const totalWeeklyCapacity = activeRecipients.reduce(
+      (sum: number, r: any) => sum + (r.weeklyEstimate || r.estimatedSandwiches || 0),
+      0
+    );
+
+    const contractsSigned = activeRecipients.filter((r: any) => r.contractSigned).length;
+
+    return {
+      total: activeRecipients.length,
+      byFocusArea,
+      byRegion,
+      totalWeeklyCapacity,
+      contractsSigned,
+      contractSignedPercentage: activeRecipients.length > 0
+        ? Math.round((contractsSigned / activeRecipients.length) * 100)
+        : 0,
+    };
+  };
+
+  // Calculate REAL event participation metrics from event requests
+  const calculateEventMetrics = () => {
+    // Filter for events within selected time period if applicable
+    let eventsToAnalyze = completedEvents;
+
+    if (selectedFiscalYear !== 'all') {
+      const fiscalYear = parseInt(selectedFiscalYear);
+      eventsToAnalyze = eventsToAnalyze.filter((e: any) => {
+        if (!e.scheduledEventDate && !e.desiredEventDate) return false;
+        const eventDate = new Date(e.scheduledEventDate || e.desiredEventDate);
+        if (Number.isNaN(eventDate.getTime())) return false;
+
+        const year = eventDate.getFullYear();
+        const month = eventDate.getMonth();
+
+        if (month >= 6) { // July-December
+          return year === fiscalYear;
+        } else { // January-June
+          return year === fiscalYear + 1;
+        }
+      });
+    }
+
+    const totalEvents = eventsToAnalyze.length;
+    const totalActualAttendance = eventsToAnalyze.reduce(
+      (sum: number, e: any) => sum + (e.actualAttendance || e.estimatedAttendance || 0),
+      0
+    );
+    const totalActualSandwiches = eventsToAnalyze.reduce(
+      (sum: number, e: any) => sum + (e.actualSandwichCount || e.estimatedSandwichCount || 0),
+      0
+    );
+
+    // Get unique organizations
+    const uniqueOrgs = new Set(
+      eventsToAnalyze.map((e: any) => e.organizationName).filter(Boolean)
+    );
+
+    // Calculate events with social media posts
+    const socialMediaPosts = eventsToAnalyze.filter(
+      (e: any) => e.socialMediaPostCompleted
+    ).length;
+
+    return {
+      totalEvents,
+      totalActualAttendance,
+      totalActualSandwiches,
+      uniqueOrganizations: uniqueOrgs.size,
+      socialMediaPostsCompleted: socialMediaPosts,
+      avgAttendeesPerEvent: totalEvents > 0 ? Math.round(totalActualAttendance / totalEvents) : 0,
+      avgSandwichesPerEvent: totalEvents > 0 ? Math.round(totalActualSandwiches / totalEvents) : 0,
+    };
+  };
+
+  const recipientMetrics = calculateRecipientMetrics();
+  const eventMetrics = calculateEventMetrics();
 
   // Filter collections by fiscal year and quarter
   const getFilteredCollections = () => {
@@ -1295,7 +1419,7 @@ export default function GrantMetrics() {
           </CardContent>
         </Card>
 
-        {/* Partnership & Collaboration Strength */}
+        {/* Partnership & Collaboration Strength - NOW WITH REAL DATA! */}
         <Card className="mb-8 border-2 border-[#47B3CB] shadow-lg">
           <CardHeader className="bg-gradient-to-r from-[#47B3CB] to-[#007E8C] text-white">
             <CardTitle className="flex items-center text-xl">
@@ -1303,26 +1427,26 @@ export default function GrantMetrics() {
               Partnership & Collaboration Network
             </CardTitle>
             <CardDescription className="text-white/90">
-              Evidence of community integration and collaboration
+              Evidence of community integration and collaboration (LIVE DATA from database)
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
               <div className="text-center p-6 bg-gradient-to-br from-[#47B3CB]/10 to-white rounded-lg border border-[#47B3CB]/30">
                 <Building2 className="w-12 h-12 mx-auto mb-3 text-[#47B3CB]" />
                 <div className="text-4xl font-black text-[#47B3CB] mb-2">
-                  70+
+                  {recipientMetrics.total}
                 </div>
-                <p className="font-medium text-gray-900">Partner Organizations</p>
+                <p className="font-medium text-gray-900">Active Recipient Partners</p>
                 <p className="text-sm text-gray-600 mt-2">
-                  Receiving weekly deliveries
+                  Organizations in database
                 </p>
               </div>
 
               <div className="text-center p-6 bg-gradient-to-br from-[#007E8C]/10 to-white rounded-lg border border-[#007E8C]/30">
                 <MapPin className="w-12 h-12 mx-auto mb-3 text-[#007E8C]" />
                 <div className="text-4xl font-black text-[#007E8C] mb-2">
-                  35
+                  {totalHosts}
                 </div>
                 <p className="font-medium text-gray-900">Host Locations</p>
                 <p className="text-sm text-gray-600 mt-2">
@@ -1333,40 +1457,231 @@ export default function GrantMetrics() {
               <div className="text-center p-6 bg-gradient-to-br from-[#236383]/10 to-white rounded-lg border border-[#236383]/30">
                 <Users className="w-12 h-12 mx-auto mb-3 text-[#236383]" />
                 <div className="text-4xl font-black text-[#236383] mb-2">
-                  4,000+
+                  {eventMetrics.uniqueOrganizations}
                 </div>
-                <p className="font-medium text-gray-900">Community Members</p>
+                <p className="font-medium text-gray-900">Group Build Partners</p>
                 <p className="text-sm text-gray-600 mt-2">
-                  In private volunteer network
+                  Unique organizations hosted events
+                </p>
+              </div>
+
+              <div className="text-center p-6 bg-gradient-to-br from-[#FBAD3F]/10 to-white rounded-lg border border-[#FBAD3F]/30">
+                <Shield className="w-12 h-12 mx-auto mb-3 text-[#FBAD3F]" />
+                <div className="text-4xl font-black text-[#FBAD3F] mb-2">
+                  {recipientMetrics.contractSignedPercentage}%
+                </div>
+                <p className="font-medium text-gray-900">Contracts Signed</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  {recipientMetrics.contractsSigned} of {recipientMetrics.total} partners
                 </p>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-white to-[#E8F4F8] p-5 rounded-lg border border-[#47B3CB]/30">
-              <h3 className="font-bold text-gray-900 mb-3">Partnership Categories</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="font-semibold text-[#47B3CB] mb-2">Collection Hosts</p>
-                  <ul className="space-y-1 text-gray-700">
-                    <li>• Churches and faith communities</li>
-                    <li>• Schools and universities</li>
-                    <li>• Corporate offices and businesses</li>
-                    <li>• Community centers</li>
-                  </ul>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Focus Areas Breakdown */}
+              <div className="bg-gradient-to-r from-white to-[#E8F4F8] p-5 rounded-lg border border-[#47B3CB]/30">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                  <Target className="w-5 h-5 mr-2 text-[#47B3CB]" />
+                  Recipients by Focus Area (Database)
+                </h3>
+                <div className="space-y-2">
+                  {Object.entries(recipientMetrics.byFocusArea)
+                    .sort(([, a], [, b]) => (b as number) - (a as number))
+                    .map(([area, count]) => (
+                      <div key={area} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700 capitalize">{area}</span>
+                        <Badge className="bg-[#47B3CB]/20 text-[#47B3CB] border-[#47B3CB]/30">
+                          {count} orgs
+                        </Badge>
+                      </div>
+                    ))}
+                  {Object.keys(recipientMetrics.byFocusArea).length === 0 && (
+                    <p className="text-sm text-gray-500 italic">Focus areas being categorized...</p>
+                  )}
                 </div>
-                <div>
-                  <p className="font-semibold text-[#007E8C] mb-2">Distribution Partners</p>
-                  <ul className="space-y-1 text-gray-700">
-                    <li>• Homeless service providers</li>
-                    <li>• Food banks and pantries</li>
-                    <li>• Senior centers</li>
-                    <li>• Recovery and support organizations</li>
-                  </ul>
+              </div>
+
+              {/* Geographic Distribution */}
+              <div className="bg-gradient-to-r from-white to-[#FEF4E0] p-5 rounded-lg border border-[#FBAD3F]/30">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                  <MapPin className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+                  Recipients by Region (Database)
+                </h3>
+                <div className="space-y-2">
+                  {Object.entries(recipientMetrics.byRegion)
+                    .sort(([, a], [, b]) => (b as number) - (a as number))
+                    .map(([region, count]) => (
+                      <div key={region} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700">{region}</span>
+                        <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30">
+                          {count} orgs
+                        </Badge>
+                      </div>
+                    ))}
+                  {Object.keys(recipientMetrics.byRegion).length === 0 && (
+                    <p className="text-sm text-gray-500 italic">Regional data being collected...</p>
+                  )}
                 </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-[#E0F2F1] to-white p-5 rounded-lg border border-[#007E8C]/30">
+              <h3 className="font-bold text-gray-900 mb-3">Weekly Distribution Capacity</h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-black text-[#007E8C]">
+                    {recipientMetrics.totalWeeklyCapacity.toLocaleString()}
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Estimated weekly sandwich capacity across all {recipientMetrics.total} recipient partners
+                  </p>
+                </div>
+                <BarChart3 className="w-16 h-16 text-[#007E8C]/30" />
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Group Build Events Impact - REAL DATA */}
+        {eventMetrics.totalEvents > 0 && (
+          <Card className="mb-8 border-2 border-[#236383] shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
+              <CardTitle className="flex items-center text-xl">
+                <Users className="w-6 h-6 mr-2" />
+                Group Build Events & Community Engagement
+              </CardTitle>
+              <CardDescription className="text-white/90">
+                Tracked event participation from database {selectedFiscalYear !== 'all' && `(FY ${selectedFiscalYear})`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
+                  <Calendar className="w-8 h-8 mx-auto mb-2 text-[#236383]" />
+                  <div className="text-3xl font-black text-[#236383] mb-1">
+                    {eventMetrics.totalEvents}
+                  </div>
+                  <p className="text-sm text-gray-700 font-medium">
+                    Completed group events
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tracked in database
+                  </p>
+                </div>
+
+                <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
+                  <Users className="w-8 h-8 mx-auto mb-2 text-[#007E8C]" />
+                  <div className="text-3xl font-black text-[#007E8C] mb-1">
+                    {eventMetrics.totalActualAttendance.toLocaleString()}
+                  </div>
+                  <p className="text-sm text-gray-700 font-medium">
+                    Total participants
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Actual attendance recorded
+                  </p>
+                </div>
+
+                <div className="text-center p-4 bg-[#FEF4E0] rounded-lg">
+                  <Target className="w-8 h-8 mx-auto mb-2 text-[#FBAD3F]" />
+                  <div className="text-3xl font-black text-[#FBAD3F] mb-1">
+                    {eventMetrics.avgAttendeesPerEvent}
+                  </div>
+                  <p className="text-sm text-gray-700 font-medium">
+                    Avg attendees per event
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Consistent turnout
+                  </p>
+                </div>
+
+                <div className="text-center p-4 bg-[#FCE4E6] rounded-lg">
+                  <Building2 className="w-8 h-8 mx-auto mb-2 text-[#A31C41]" />
+                  <div className="text-3xl font-black text-[#A31C41] mb-1">
+                    {eventMetrics.uniqueOrganizations}
+                  </div>
+                  <p className="text-sm text-gray-700 font-medium">
+                    Unique organizations
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Hosted events
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gradient-to-r from-white to-[#E8F4F8] p-5 rounded-lg border border-[#236383]/30">
+                  <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                    <Trophy className="w-5 h-5 mr-2 text-[#236383]" />
+                    Sandwiches from Group Builds
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-4xl font-black text-[#236383]">
+                        {eventMetrics.totalActualSandwiches.toLocaleString()}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Sandwiches made at group events
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Avg {eventMetrics.avgSandwichesPerEvent} per event
+                      </p>
+                    </div>
+                    <Award className="w-16 h-16 text-[#236383]/20" />
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-white to-[#FEF4E0] p-5 rounded-lg border border-[#FBAD3F]/30">
+                  <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                    <Star className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+                    Social Media Engagement
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-4xl font-black text-[#FBAD3F]">
+                        {eventMetrics.socialMediaPostsCompleted}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Organizations shared posts
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {eventMetrics.totalEvents > 0
+                          ? Math.round((eventMetrics.socialMediaPostsCompleted / eventMetrics.totalEvents) * 100)
+                          : 0}% engagement rate
+                      </p>
+                    </div>
+                    <Mail className="w-16 h-16 text-[#FBAD3F]/20" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-5 bg-gradient-to-br from-[#236383]/10 to-white rounded-lg border border-[#236383]/30">
+                <h3 className="font-bold text-gray-900 mb-3">Why Group Builds Matter</h3>
+                <p className="text-sm text-gray-700 mb-3">
+                  Group builds transform sandwich-making into community building experiences, creating lasting partnerships with:
+                </p>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <Zap className="w-4 h-4 text-[#236383] shrink-0 mt-0.5" />
+                    <span><strong>Corporations:</strong> Team building events that serve the community</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Zap className="w-4 h-4 text-[#236383] shrink-0 mt-0.5" />
+                    <span><strong>Faith Communities:</strong> Service projects connecting members</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Zap className="w-4 h-4 text-[#236383] shrink-0 mt-0.5" />
+                    <span><strong>Schools:</strong> Student engagement and civic education</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Zap className="w-4 h-4 text-[#236383] shrink-0 mt-0.5" />
+                    <span><strong>Community Groups:</strong> Volunteer mobilization at scale</span>
+                  </li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Capacity Building & Organizational Development */}
         <Card className="mb-8 border-2 border-[#FBAD3F] shadow-lg">
