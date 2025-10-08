@@ -22,7 +22,7 @@ The backend employs a modular router architecture with a central router, middlew
 UI/UX design adheres to The Sandwich Project's official color palette and Roboto typography, prioritizing clarity, responsiveness, and visual hierarchy with card-based dashboards.
 
 Key technical implementations include:
-- **Unified Permissions System**: Consistent frontend/backend logic, visual role templates, and standardized `RESOURCE_ACTION` format for strict validation and audit trails.
+- **Unified Permissions System**: Consistent frontend/backend logic, visual role templates, and standardized `RESOURCE_ACTION` format for strict validation and audit trails. Permission dependencies (e.g., NAV_VOLUNTEERS → VOLUNTEERS_VIEW) are applied at runtime in both `hasPermission()` and `checkPermission()` functions, ensuring users with navigation permissions automatically get corresponding functional permissions even if they were granted before the dependency system was implemented.
 - **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation and timezone-safe date handling. Includes robust date field validation.
 - **Authentication & Authorization**: Role-based access, 30-day session management, and SendGrid-powered password reset.
 - **Search & Filtering**: Real-time capabilities across management interfaces.

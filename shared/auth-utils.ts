@@ -601,7 +601,9 @@ export function hasPermission(user: any, permission: string): boolean {
   if (!user.permissions) return false;
   
   if (Array.isArray(user.permissions)) {
-    return user.permissions.includes(permission);
+    // Apply permission dependencies at runtime to handle legacy permissions
+    const effectivePermissions = applyPermissionDependencies(user.permissions);
+    return effectivePermissions.includes(permission);
   }
   
   if (typeof user.permissions === 'number') {
