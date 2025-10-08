@@ -729,12 +729,15 @@ collectionsRouter.patch(
         const groupTotal =
           (collection.group1Count || 0) + (collection.group2Count || 0);
 
-        // Fix 1: Check if individual count equals group total (duplication issue)
-        if (individual > 0 && groupTotal > 0 && individual === groupTotal) {
-          updates.individualSandwiches = 0;
-          needsUpdate = true;
-          fixType.push('removed duplicate individual count');
-        }
+        // Fix 1: DISABLED - This fix was too aggressive
+        // In the current workflow, locations can have BOTH individual sandwiches AND group sandwiches
+        // It's possible (though rare) for the totals to coincidentally match
+        // Example: 300 individual + a group that also made 300 is legitimate, not a duplicate
+        // if (individual > 0 && groupTotal > 0 && individual === groupTotal) {
+        //   updates.individualSandwiches = 0;
+        //   needsUpdate = true;
+        //   fixType.push('removed duplicate individual count');
+        // }
 
         // Fix 2: Check if host name is "Groups" with individual count but no group data
         if (
