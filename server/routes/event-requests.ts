@@ -14,6 +14,7 @@ import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requ
 import { AuditLogger } from '../audit-logger';
 import { db } from '../db';
 import { eq, desc, and, sql, gte } from 'drizzle-orm';
+import { EmailNotificationService } from '../services/email-notification-service';
 
 const router = Router();
 
@@ -2980,6 +2981,24 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
 
     if (!updatedEventRequest) {
       return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Send email notification if TSP contact was assigned (not removed) and changed from previous value
+    if (
+      validatedData.tspContact && 
+      originalEvent.tspContact !== validatedData.tspContact
+    ) {
+      try {
+        await EmailNotificationService.sendTspContactAssignmentNotification(
+          validatedData.tspContact!,
+          id,
+          originalEvent.organizationName,
+          originalEvent.scheduledEventDate || originalEvent.desiredEventDate
+        );
+      } catch (error) {
+        // Log error but don't fail the request if email notification fails
+        console.error('Failed to send TSP contact assignment notification:', error);
+      }
     }
 
     // Enhanced audit logging for this operation
