@@ -101,7 +101,7 @@ export default function GroupCatalog({
   const [dateFilterStart, setDateFilterStart] = useState<string>('');
   const [dateFilterEnd, setDateFilterEnd] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(24);
   const [selectedOrganization, setSelectedOrganization] =
     useState<OrganizationContact | null>(null);
   const [showEventDetailsDialog, setShowEventDetailsDialog] = useState(false);
@@ -700,10 +700,10 @@ export default function GroupCatalog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="6">6</SelectItem>
                 <SelectItem value="12">12</SelectItem>
                 <SelectItem value="24">24</SelectItem>
                 <SelectItem value="48">48</SelectItem>
+                <SelectItem value="100">100</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -740,9 +740,33 @@ export default function GroupCatalog({
 
               <div className="space-y-6">
                 {/* Multi-department organizations - keep current detailed layout */}
-                {paginatedActiveGroups
-                  .filter(group => group.totalDepartments > 1)
-                  .map((group, groupIndex) => (
+                {(() => {
+                  const multiDeptGroups = paginatedActiveGroups.filter(group => group.totalDepartments > 1);
+                  const singleDeptGroups = paginatedActiveGroups.filter(group => group.totalDepartments === 1);
+                  console.log('🔍 Layout Debug:', {
+                    totalGroups: paginatedActiveGroups.length,
+                    multiDeptCount: multiDeptGroups.length,
+                    singleDeptCount: singleDeptGroups.length,
+                    multiDeptNames: multiDeptGroups.map(g => `${g.groupName} (${g.totalDepartments} depts)`),
+                    singleDeptNames: singleDeptGroups.map(g => `${g.groupName} (${g.totalDepartments} dept)`)
+                  });
+                  
+                  // Show section header for multi-department organizations if any exist
+                  if (multiDeptGroups.length > 0) {
+                    return (
+                      <div className="space-y-6">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-200">
+                            <Building className="w-5 h-5 text-blue-700" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Organizations with Multiple Departments
+                          </h3>
+                          <Badge className="bg-blue-100 text-blue-700">
+                            {multiDeptGroups.length} organizations
+                          </Badge>
+                        </div>
+                        {multiDeptGroups.map((group, groupIndex) => (
                   <div
                     key={`multi-${group.groupName}-${groupIndex}`}
                     className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm"
@@ -973,6 +997,12 @@ export default function GroupCatalog({
                     </div>
                   </div>
                 ))}
+                      </div>
+                    );
+                  } else {
+                    return null;
+                  }
+                })()}
 
                 {/* Single-department organizations - compact grid layout */}
                 {(() => {
@@ -981,7 +1011,19 @@ export default function GroupCatalog({
                   if (singleDepartmentGroups.length === 0) return null;
 
                   return (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-green-100 to-emerald-200">
+                          <Users className="w-5 h-5 text-green-700" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Single-Department Organizations
+                        </h3>
+                        <Badge className="bg-green-100 text-green-700">
+                          {singleDepartmentGroups.length} organizations
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {singleDepartmentGroups.map((group, groupIndex) => {
                         const org = group.departments[0]; // Single department
                         return (
@@ -1154,6 +1196,7 @@ export default function GroupCatalog({
                           </Card>
                         );
                       })}
+                      </div>
                     </div>
                   );
                 })()}
@@ -1232,10 +1275,10 @@ export default function GroupCatalog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
+                <SelectItem value="12">12</SelectItem>
+                <SelectItem value="24">24</SelectItem>
+                <SelectItem value="48">48</SelectItem>
+                <SelectItem value="100">100</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
