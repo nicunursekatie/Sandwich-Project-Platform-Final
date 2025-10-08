@@ -744,10 +744,10 @@ export default function GroupCatalog({
                   // Use detailed layout for multi-department organizations
                   if (group.totalDepartments > 1) {
                     return (
-                  <div
-                    key={`multi-${group.groupName}-${groupIndex}`}
-                    className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm"
-                  >
+                    <div
+                      key={`multi-${group.groupName}-${groupIndex}`}
+                      className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm"
+                    >
                     {/* Group Header */}
                     <div className="mb-6 pb-4 border-b border-gray-200">
                       <div className="flex items-center justify-between">
@@ -973,8 +973,6 @@ export default function GroupCatalog({
                       ))}
                     </div>
                   </div>
-                })}
-                      </div>
                     );
                   } else {
                     // Use compact layout for single-department organizations
