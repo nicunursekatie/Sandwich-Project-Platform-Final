@@ -1,5 +1,4 @@
 import type { Express } from 'express';
-import { createServer, type Server } from 'http';
 import express from 'express';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
@@ -9,7 +8,7 @@ import createMainRoutes from './routes/index';
 import { requirePermission } from './middleware/auth';
 import { createCorsMiddleware, logCorsConfig } from './config/cors';
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<void> {
   // Use database-backed session store for deployment persistence
   // Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
   const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
@@ -166,8 +165,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create HTTP server
-  const server = createServer(app);
-
-  return server;
+  // HTTP server is created by the caller (server/index.ts)
+  // This function only registers routes and middleware
 }
