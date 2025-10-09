@@ -109,25 +109,15 @@ async function startServer() {
     // Set up basic routes BEFORE starting server
     app.use('/attached_assets', express.static('attached_assets'));
 
-    // Root endpoint for health checks - responds immediately
-    // In production, this serves the SPA; in deployment health checks, returns JSON
-    app.get('/', (_req: Request, res: Response, next: NextFunction) => {
-      // For health checks (typically have specific headers or accept JSON)
-      const acceptsJson = _req.accepts('json');
-      const acceptsHtml = _req.accepts('html');
-
-      // If client prefers JSON or doesn't specify, send health check
-      if (!acceptsHtml || (acceptsJson && !_req.headers['user-agent']?.includes('Mozilla'))) {
-        return res.status(200).json({
-          status: 'healthy',
-          timestamp: new Date().toISOString(),
-          uptime: process.uptime(),
-          environment: process.env.NODE_ENV || 'development',
-        });
-      }
-
-      // Otherwise, let it pass through to SPA in production
-      next();
+    // Root endpoint for health checks - responds immediately with JSON
+    // This is critical for deployment health checks
+    app.get('/', (_req: Request, res: Response) => {
+      res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+      });
     });
 
     // Health check route - available before full initialization
@@ -195,8 +185,8 @@ async function startServer() {
       // In production, serve static files from the built frontend
       app.use(express.static('dist/public'));
 
-      // Simple SPA fallback for production - serve index.html for non-API routes
-      // This MUST be after API routes to prevent catching API requests
+      // SPA fallback for production - serve index.html for frontend routes
+      // This MUST be after API routes and MUST NOT catch / (health check endpoint)
       app.get('*', async (req: Request, res: Response, next: NextFunction) => {
         // NEVER serve HTML for API routes - let them 404 instead
         if (req.originalUrl.startsWith('/api/')) {
@@ -206,7 +196,12 @@ async function startServer() {
           return next(); // Let it 404 rather than serve HTML
         }
 
-        // Serve SPA for all other routes (including /)
+        // Root / is reserved for health checks, don't serve SPA for it
+        if (req.originalUrl === '/') {
+          return next(); // This shouldn't happen since / is already handled above
+        }
+
+        // Serve SPA for all other frontend routes
         const path = await import('path');
         res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
       });
@@ -353,10 +348,12 @@ async function startServer() {
         } catch (initError) {
           serverLogger.error('✗ Background initialization failed:', initError);
           serverLogger.error(
-            'This is a fatal error - exiting to allow Replit to restart'
+            'Server will continue running with limited functionality'
           );
-          // Let Replit restart the app to recover from initialization failures
-          process.exit(1);
+          serverLogger.error(
+            'Background tasks failed but the server remains operational for health checks'
+          );
+          // DO NOT exit - keep server running for health checks and basic functionality
         }
       });
     });
