@@ -342,69 +342,70 @@ async function startServer() {
       }
     };
 
-    httpServer.listen(Number(finalPort), host, () => {
-      serverLogger.info(`✅ Server listening on http://${host}:${finalPort}`);
-      serverLogger.info(
-        `WebSocket server ready on ws://${host}:${finalPort}/notifications`
-      );
-      serverLogger.info(
-        `Environment: ${process.env.NODE_ENV || 'development'}`
-      );
-
-      // Signal deployment readiness to Replit
-      if (process.env.NODE_ENV === 'production') {
-        serverLogger.info('🚀 PRODUCTION SERVER READY FOR TRAFFIC');
+    // Start server and keep process alive - critical for production deployments
+    return new Promise<Server>((resolve) => {
+      httpServer.listen(Number(finalPort), host, () => {
+        serverLogger.info(`✅ Server listening on http://${host}:${finalPort}`);
         serverLogger.info(
-          '✅ Server accepting connections - initialization will happen on first API request'
+          `WebSocket server ready on ws://${host}:${finalPort}/notifications`
         );
-      } else {
         serverLogger.info(
-          '✅ Development server ready - initialization will happen on first API request'
+          `Environment: ${process.env.NODE_ENV || 'development'}`
         );
-      }
-    
-   
-  
-    });
 
-    // Graceful shutdown handler - works in both dev and production
-    const shutdown = async (signal: string) => {
-      serverLogger.info(`Received ${signal}, starting graceful shutdown...`);
+        // Signal deployment readiness to Replit
+        if (process.env.NODE_ENV === 'production') {
+          serverLogger.info('🚀 PRODUCTION SERVER READY FOR TRAFFIC');
+          serverLogger.info(
+            '✅ Server accepting connections - initialization will happen on first API request'
+          );
+        } else {
+          serverLogger.info(
+            '✅ Development server ready - initialization will happen on first API request'
+          );
+        }
 
-      // Close server gracefully
-      httpServer.close(() => {
-        serverLogger.info('HTTP server closed gracefully');
-        process.exit(0);
+        // Graceful shutdown handler - works in both dev and production
+        const shutdown = async (signal: string) => {
+          serverLogger.info(`Received ${signal}, starting graceful shutdown...`);
+
+          // Close server gracefully
+          httpServer.close(() => {
+            serverLogger.info('HTTP server closed gracefully');
+            process.exit(0);
+          });
+
+          // Force shutdown after 10 seconds if graceful shutdown fails
+          setTimeout(() => {
+            serverLogger.warn('Forcing shutdown after timeout');
+            process.exit(1);
+          }, 10000);
+        };
+
+        // Handle shutdown signals properly
+        process.on('SIGTERM', () => shutdown('SIGTERM'));
+        process.on('SIGINT', () => shutdown('SIGINT'));
+
+        // Proper error handling - log and exit, let Replit restart
+        process.on('uncaughtException', (error) => {
+          serverLogger.error('🚨 Uncaught Exception - this is fatal:', error);
+          serverLogger.error('Exiting to allow Replit to restart the app cleanly');
+          process.exit(1);
+        });
+
+        process.on('unhandledRejection', (reason, promise) => {
+          serverLogger.error('🚨 Unhandled Promise Rejection:', {
+            reason,
+            promise,
+          });
+          serverLogger.error('Exiting to allow Replit to restart the app cleanly');
+          process.exit(1);
+        });
+
+        // Resolve with the server instance to keep reference alive
+        resolve(httpServer);
       });
-
-      // Force shutdown after 10 seconds if graceful shutdown fails
-      setTimeout(() => {
-        serverLogger.warn('Forcing shutdown after timeout');
-        process.exit(1);
-      }, 10000);
-    };
-
-    // Handle shutdown signals properly
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
-
-    // Proper error handling - log and exit, let Replit restart
-    process.on('uncaughtException', (error) => {
-      serverLogger.error('🚨 Uncaught Exception - this is fatal:', error);
-      serverLogger.error('Exiting to allow Replit to restart the app cleanly');
-      process.exit(1);
     });
-
-    process.on('unhandledRejection', (reason, promise) => {
-      serverLogger.error('🚨 Unhandled Promise Rejection:', {
-        reason,
-        promise,
-      });
-      serverLogger.error('Exiting to allow Replit to restart the app cleanly');
-      process.exit(1);
-    });
-
-    return httpServer;
   } catch (error) {
     serverLogger.error('✗ Server startup failed:', error);
     serverLogger.error(
@@ -414,14 +415,14 @@ async function startServer() {
   }
 }
 
-// Start server - simple and clean
-startServer().catch((error) => {
-  console.error('✗ Failed to start server:', error);
-  console.error('Fatal error - exiting to allow Replit to restart');
-  process.exit(1);
-});
-
-// Keep the process running
-process.on('exit', (code) => {
-  serverLogger.info(`Process exiting with code: ${code}`);
-});
+// Start server and keep it running - the returned Promise keeps the server reference alive
+startServer()
+  .then((server) => {
+    // Server is now listening and will stay alive
+    // The server reference and active listeners keep the process running
+  })
+  .catch((error) => {
+    console.error('✗ Failed to start server:', error);
+    console.error('Fatal error - exiting to allow Replit to restart');
+    process.exit(1);
+  });
