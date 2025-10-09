@@ -277,52 +277,52 @@ async function startServer() {
     };
 
     // Start server and keep process alive - critical for production deployments
-    return new Promise<Server>((resolve) => {
-      httpServer.listen(Number(port), host, () => {
-        serverLogger.info(`✅ Server listening on http://${host}:${port}`);
-        serverLogger.info(
-          `WebSocket server ready on ws://${host}:${port}/notifications`
-        );
-        serverLogger.info(
-          `Environment: ${process.env.NODE_ENV || 'development'}`
-        );
+    httpServer.listen(Number(port), host, () => {
+      serverLogger.info(`✅ Server listening on http://${host}:${port}`);
+      serverLogger.info(
+        `WebSocket server ready on ws://${host}:${port}/notifications`
+      );
+      serverLogger.info(
+        `Environment: ${process.env.NODE_ENV || 'development'}`
+      );
 
-        // Do heavy initialization in background after server is listening
-        setImmediate(async () => {
-          try {
-            await initializeDatabase();
-            console.log('✓ Database initialization complete');
+      // Do heavy initialization in background after server is listening
+      setImmediate(async () => {
+        try {
+          await initializeDatabase();
+          console.log('✓ Database initialization complete');
 
-            // Background Google Sheets sync re-enabled
-            const { storage } = await import('./storage-wrapper');
-            const { startBackgroundSync } = await import(
-              './background-sync-service'
-            );
-            startBackgroundSync(storage as any); // TODO: Fix storage interface types
-            console.log('✓ Background Google Sheets sync service started');
+          // Background Google Sheets sync re-enabled
+          const { storage } = await import('./storage-wrapper');
+          const { startBackgroundSync } = await import(
+            './background-sync-service'
+          );
+          startBackgroundSync(storage as any); // TODO: Fix storage interface types
+          console.log('✓ Background Google Sheets sync service started');
 
-            // Initialize cron jobs for scheduled tasks
-            const { initializeCronJobs } = await import('./services/cron-jobs');
-            initializeCronJobs();
-            console.log(
-              '✓ Cron jobs initialized (host availability scraper scheduled)'
-            );
+          // Initialize cron jobs for scheduled tasks
+          const { initializeCronJobs } = await import('./services/cron-jobs');
+          initializeCronJobs();
+          console.log(
+            '✓ Cron jobs initialized (host availability scraper scheduled)'
+          );
 
-            console.log(
-              '✓ The Sandwich Project server is fully ready to handle requests'
-            );
-            console.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
-          } catch (initError) {
-            serverLogger.error('✗ Background initialization failed:', initError);
-            serverLogger.error(
-              'This is a fatal error - exiting to allow Replit to restart'
-            );
-            // Let Replit restart the app to recover from initialization failures
-            process.exit(1);
-          }
-        });
+          console.log(
+            '✓ The Sandwich Project server is fully ready to handle requests'
+          );
+          console.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
+        } catch (initError) {
+          serverLogger.error('✗ Background initialization failed:', initError);
+          serverLogger.error(
+            'This is a fatal error - exiting to allow Replit to restart'
+          );
+          // Let Replit restart the app to recover from initialization failures
+          process.exit(1);
+        }
       });
     });
+
+    return httpServer;
 
     // Graceful shutdown handler - works in both dev and production
     const shutdown = async (signal: string) => {
