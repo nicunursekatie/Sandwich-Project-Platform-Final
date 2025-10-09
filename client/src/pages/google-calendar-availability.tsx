@@ -1,58 +1,11 @@
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { LoadingState } from '@/components/ui/loading';
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
-
-interface CalendarEvent {
-  id: string;
-  summary: string;
-  description?: string;
-  start: {
-    dateTime?: string;
-    date?: string;
-  };
-  end: {
-    dateTime?: string;
-    date?: string;
-  };
-  status?: string;
-}
+import { Calendar as CalendarIcon } from 'lucide-react';
 
 export default function GoogleCalendarAvailability() {
-  const [currentWeek, setCurrentWeek] = useState(new Date());
-
-  const weekStart = startOfWeek(currentWeek, { weekStartsOn: 0 }); // Sunday
-  const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 0 }); // Saturday
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
-
-  // Fetch calendar events
-  const { data: events = [], isLoading } = useQuery<CalendarEvent[]>({
-    queryKey: ['/api/google-calendar/events', format(weekStart, 'yyyy-MM-dd'), format(weekEnd, 'yyyy-MM-dd')],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        startDate: weekStart.toISOString(),
-        endDate: weekEnd.toISOString(),
-      });
-      const response = await fetch(`/api/google-calendar/events?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch calendar events');
-      return response.json();
-    },
-  });
-
-  const getEventsForDay = (day: Date) => {
-    return events.filter((event) => {
-      const eventDate = event.start.dateTime ? parseISO(event.start.dateTime) : parseISO(event.start.date!);
-      return isSameDay(eventDate, day);
-    });
-  };
-
-  if (isLoading) {
-    return <LoadingState text="Loading calendar..." size="lg" />;
-  }
+  // Extract calendar ID from the cid parameter (base64 decoded)
+  const calendarId = '0813cd575e262fbc020927f88f1fd5a1906f5bd9b2f27a66a49202359e5ff4@group.calendar.google.com';
+  
+  // Create embed URL with calendar ID and timezone
+  const embedUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calendarId)}&ctz=America/New_York&mode=WEEK&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0&showTz=0`;
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900">
@@ -64,104 +17,33 @@ export default function GoogleCalendarAvailability() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
-              Volunteer Calendar
+              TSP Volunteer Availability
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Team member availability from Google Calendar
+              Live view of team member availability calendar
             </p>
           </div>
         </div>
       </div>
 
       {/* Calendar Container */}
-      <div className="flex-1 p-4 sm:p-6 overflow-auto">
-        <Card className="p-6">
-          {/* Week Navigation */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {format(weekStart, 'MMM dd')} - {format(weekEnd, 'MMM dd, yyyy')}
-            </h2>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentWeek(subWeeks(currentWeek, 1))}
-                data-testid="button-previous-week"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentWeek(new Date())}
-                data-testid="button-current-week"
-              >
-                Today
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
-                data-testid="button-next-week"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Weekly Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2">
-            {weekDays.map((day) => {
-              const dayEvents = getEventsForDay(day);
-              const isToday = isSameDay(day, new Date());
-
-              return (
-                <div
-                  key={day.toISOString()}
-                  className={`border rounded-lg p-3 min-h-[150px] ${
-                    isToday ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-200'
-                  }`}
-                  data-testid={`calendar-day-${format(day, 'yyyy-MM-dd')}`}
-                >
-                  <div className={`font-semibold text-sm mb-2 ${
-                    isToday ? 'text-brand-primary' : 'text-gray-900'
-                  }`}>
-                    {format(day, 'EEE')}
-                    <div className="text-xs text-gray-500">{format(day, 'MMM dd')}</div>
-                  </div>
-                  <div className="space-y-1">
-                    {dayEvents.map((event) => {
-                      const startTime = event.start.dateTime
-                        ? format(parseISO(event.start.dateTime), 'h:mm a')
-                        : 'All day';
-
-                      return (
-                        <div
-                          key={event.id}
-                          className="text-xs p-2 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100"
-                          data-testid={`event-${event.id}`}
-                        >
-                          <div className="font-medium truncate">{event.summary}</div>
-                          <div className="text-xs opacity-75">{startTime}</div>
-                        </div>
-                      );
-                    })}
-                    {dayEvents.length === 0 && (
-                      <div className="text-xs text-gray-400 italic">No events</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+      <div className="flex-1 p-4 sm:p-6 overflow-hidden">
+        <div className="h-full bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <iframe
+            src={embedUrl}
+            className="w-full h-full border-0"
+            frameBorder="0"
+            scrolling="yes"
+            title="TSP Volunteer Availability Calendar"
+          />
+        </div>
       </div>
 
       {/* Footer Info */}
       <div className="flex-shrink-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
         <div className="flex items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-400">
           <CalendarIcon className="h-4 w-4" />
-          <span>Showing {events.length} event{events.length !== 1 ? 's' : ''} this week</span>
+          <span>This calendar displays real-time volunteer availability from Google Calendar</span>
         </div>
       </div>
     </div>
