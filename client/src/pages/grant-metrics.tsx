@@ -884,31 +884,39 @@ export default function GrantMetrics() {
             </div>
 
             {/* Year-over-Year Growth Summary */}
-            <div className="bg-gradient-to-r from-[#E8F4F8] to-white p-5 rounded-lg border border-[#236383]/20">
-              <h3 className="font-bold text-gray-900 mb-3">Year-Over-Year Growth Rates</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-r from-[#E8F4F8] to-white p-6 rounded-lg border border-[#236383]/20">
+              <h3 className="font-bold text-gray-900 mb-4 text-lg">Year-Over-Year Growth Rates</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 {yearGrowthData.map((data, index) => (
-                  <div key={data.year} className="text-center">
-                    <div className="text-lg font-bold text-[#236383]">{data.year}</div>
-                    <div className="text-2xl font-black text-gray-900 mb-1">
-                      {data.sandwiches.toLocaleString()}
+                  <div key={data.year} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="text-center">
+                      <div className="text-sm font-semibold text-[#236383] mb-2 uppercase tracking-wide">
+                        {data.year}
+                      </div>
+                      <div className="text-2xl font-black text-gray-900 mb-3">
+                        {data.sandwiches.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500 mb-2">
+                        sandwiches distributed
+                      </div>
+                      {data.growth !== null ? (
+                        <Badge
+                          className={`${
+                            data.growth > 0
+                              ? 'bg-green-100 text-green-700 border-green-300 font-semibold'
+                              : data.growth < 0
+                              ? 'bg-red-100 text-red-700 border-red-300 font-semibold'
+                              : 'bg-gray-100 text-gray-700 border-gray-300 font-semibold'
+                          }`}
+                        >
+                          {data.growth > 0 ? '+' : ''}{data.growth}% YoY
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-gray-100 text-gray-700 border-gray-300 font-semibold">
+                          Baseline
+                        </Badge>
+                      )}
                     </div>
-                    {data.growth !== null && (
-                      <Badge
-                        className={`${
-                          data.growth > 0
-                            ? 'bg-green-100 text-green-700 border-green-300'
-                            : data.growth < 0
-                            ? 'bg-red-100 text-red-700 border-red-300'
-                            : 'bg-gray-100 text-gray-700 border-gray-300'
-                        }`}
-                      >
-                        {data.growth > 0 ? '+' : ''}{data.growth}% YoY
-                      </Badge>
-                    )}
-                    {index === 0 && (
-                      <div className="text-xs text-gray-500 mt-1">Baseline</div>
-                    )}
                   </div>
                 ))}
               </div>
