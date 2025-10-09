@@ -20,7 +20,7 @@ packages = [
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
+run = ["sh", "-c", "NODE_ENV=production PORT=80 node dist/index.js"]
 
 [[ports]]
 localPort = 80

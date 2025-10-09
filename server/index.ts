@@ -16,6 +16,25 @@ import logger, { createServiceLogger, logRequest } from './utils/logger.js';
 const app = express();
 const serverLogger = createServiceLogger('server');
 
+// CRITICAL: Health check MUST be first - before any middleware or initialization
+// This ensures Autoscale deployments can verify the server is running immediately
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
+// Root endpoint also responds immediately for deployment health checks
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
 // Enable gzip/brotli compression for performance
 app.use(
   compression({
@@ -96,41 +115,20 @@ async function startServer() {
       res.status(status).json({ message });
     });
 
-    const port = process.env.PORT || 5000;
-    const host = process.env.HOST || '0.0.0.0';
+    // For Autoscale deployments, use port 80 in production, 5000 in development
+    const port = process.env.NODE_ENV === 'production' ? 80 : (process.env.PORT || 5000);
+    const host = '0.0.0.0';
 
     serverLogger.info(
       `Starting server on ${host}:${port} in ${process.env.NODE_ENV || 'development'} mode`
     );
 
-    // Simple port allocation for faster deployment
     const finalPort = port;
 
     // Set up basic routes BEFORE starting server
     app.use('/attached_assets', express.static('attached_assets'));
 
-    // Root endpoint for health checks - responds immediately with JSON
-    // This is critical for deployment health checks
-    app.get('/', (_req: Request, res: Response) => {
-      res.status(200).json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development',
-      });
-    });
-
-    // Health check route - available before full initialization
-    app.get('/health', (_req: Request, res: Response) => {
-      res.status(200).json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development',
-      });
-    });
-
-    // Health check route for deployment - API endpoint
+    // API health check endpoint
     app.get('/api/health', (_req: Request, res: Response) => {
       res.status(200).json({
         status: 'healthy',
@@ -139,6 +137,57 @@ async function startServer() {
         environment: process.env.NODE_ENV || 'development',
         version: '1.0.0',
       });
+    });
+
+    // Lazy initialization flag
+    let isInitialized = false;
+    let initializationPromise: Promise<void> | null = null;
+
+    // Lazy initialization function - runs on first API request
+    const ensureInitialized = async () => {
+      if (isInitialized) return;
+      if (initializationPromise) return initializationPromise;
+
+      initializationPromise = (async () => {
+        try {
+          serverLogger.info('Starting lazy initialization on first API request...');
+          
+          await initializeDatabase();
+          serverLogger.info('✓ Database initialized');
+
+          const { storage } = await import('./storage-wrapper');
+          const { startBackgroundSync } = await import('./background-sync-service');
+          startBackgroundSync(storage as any);
+          serverLogger.info('✓ Background sync started');
+
+          const { initializeCronJobs } = await import('./services/cron-jobs');
+          initializeCronJobs();
+          serverLogger.info('✓ Cron jobs initialized');
+
+          isInitialized = true;
+          serverLogger.info('✅ Lazy initialization complete');
+        } catch (error) {
+          serverLogger.error('Lazy initialization failed:', error);
+          initializationPromise = null; // Allow retry on next request
+          throw error;
+        }
+      })();
+
+      return initializationPromise;
+    };
+
+    // Middleware to trigger lazy initialization on API requests (but not health checks)
+    app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
+      if (req.path === '/health') {
+        return next(); // Skip initialization for health checks
+      }
+      try {
+        await ensureInitialized();
+        next();
+      } catch (error) {
+        serverLogger.error('Initialization failed during API request:', error);
+        next(); // Continue anyway - routes should handle their own errors
+      }
     });
 
     const httpServer = createServer(app);
@@ -294,68 +343,28 @@ async function startServer() {
     };
 
     httpServer.listen(Number(finalPort), host, () => {
-      serverLogger.info(`Server is running on http://${host}:${finalPort}`);
+      serverLogger.info(`✅ Server listening on http://${host}:${finalPort}`);
       serverLogger.info(
         `WebSocket server ready on ws://${host}:${finalPort}/notifications`
       );
       serverLogger.info(
         `Environment: ${process.env.NODE_ENV || 'development'}`
       );
-      serverLogger.info(
-        'Basic server ready - starting background initialization...'
-      );
 
       // Signal deployment readiness to Replit
       if (process.env.NODE_ENV === 'production') {
-        serverLogger.info('PRODUCTION SERVER READY FOR TRAFFIC');
+        serverLogger.info('🚀 PRODUCTION SERVER READY FOR TRAFFIC');
         serverLogger.info(
-          'Server is fully operational and accepting connections'
+          '✅ Server accepting connections - initialization will happen on first API request'
+        );
+      } else {
+        serverLogger.info(
+          '✅ Development server ready - initialization will happen on first API request'
         );
       }
-
-      // Do heavy initialization in background after server is listening
-      setImmediate(async () => {
-        try {
-          await initializeDatabase();
-          console.log('✓ Database initialization complete');
-
-          // Background Google Sheets sync re-enabled
-          const { storage } = await import('./storage-wrapper');
-          const { startBackgroundSync } = await import(
-            './background-sync-service'
-          );
-          startBackgroundSync(storage as any); // TODO: Fix storage interface types
-          console.log('✓ Background Google Sheets sync service started');
-
-          // Initialize cron jobs for scheduled tasks
-          const { initializeCronJobs } = await import('./services/cron-jobs');
-          initializeCronJobs();
-          console.log(
-            '✓ Cron jobs initialized (host availability scraper scheduled)'
-          );
-
-          // Routes already registered during server startup
-          console.log(
-            '✓ Database initialization completed after route registration'
-          );
-
-          // SPA routing already configured earlier - no need to re-register
-
-          console.log(
-            '✓ The Sandwich Project server is fully ready to handle requests'
-          );
-          console.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
-        } catch (initError) {
-          serverLogger.error('✗ Background initialization failed:', initError);
-          serverLogger.error(
-            'Server will continue running with limited functionality'
-          );
-          serverLogger.error(
-            'Background tasks failed but the server remains operational for health checks'
-          );
-          // DO NOT exit - keep server running for health checks and basic functionality
-        }
-      });
+    
+   
+  
     });
 
     // Graceful shutdown handler - works in both dev and production
