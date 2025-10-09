@@ -389,16 +389,11 @@ async function startServer() {
 }
 
 // Start server - simple and clean
-startServer()
-  .then((server) => {
-    serverLogger.info('✅ Server startup sequence completed successfully');
-    serverLogger.info(`Server listening: ${server?.listening}`);
-  })
-  .catch((error) => {
-    console.error('✗ Failed to start server:', error);
-    console.error('Fatal error - exiting to allow Replit to restart');
-    process.exit(1);
-  });
+startServer().catch((error) => {
+  console.error('✗ Failed to start server:', error);
+  console.error('Fatal error - exiting to allow Replit to restart');
+  process.exit(1);
+});
 
 // Keep the process running
 process.on('exit', (code) => {

@@ -110,7 +110,7 @@ const adminDocuments: AdminDocument[] = [
     name: 'Sandwich Sign-In Form',
     description: 'Simple sign-in form for tracking sandwich collection participants without requiring email addresses',
     category: 'Forms',
-    path: '/attached_assets/SandwichSigninNoEmail_1759447137962.pdf',
+    path: '/attached_assets/Sandwich Project - Sign In Sheet correct qrs.pdf',
     type: 'pdf',
     importance: 'high',
   },
