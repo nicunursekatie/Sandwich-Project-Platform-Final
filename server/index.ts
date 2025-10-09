@@ -115,15 +115,13 @@ async function startServer() {
       res.status(status).json({ message });
     });
 
-    // For Autoscale deployments, use port 80 in production, 5000 in development
-    const port = process.env.NODE_ENV === 'production' ? 80 : (process.env.PORT || 5000);
+    // Use PORT from environment (Replit sets this), fallback to 5000 for local dev
+    const port = process.env.PORT || 5000;
     const host = '0.0.0.0';
 
     serverLogger.info(
       `Starting server on ${host}:${port} in ${process.env.NODE_ENV || 'development'} mode`
     );
-
-    const finalPort = port;
 
     // Set up basic routes BEFORE starting server
     app.use('/attached_assets', express.static('attached_assets'));
@@ -293,10 +291,10 @@ async function startServer() {
 
     // Start server and keep process alive - critical for production deployments
     return new Promise<Server>((resolve) => {
-      httpServer.listen(Number(finalPort), host, () => {
-        serverLogger.info(`✅ Server listening on http://${host}:${finalPort}`);
+      httpServer.listen(Number(port), host, () => {
+        serverLogger.info(`✅ Server listening on http://${host}:${port}`);
         serverLogger.info(
-          `WebSocket server ready on ws://${host}:${finalPort}/notifications`
+          `WebSocket server ready on ws://${host}:${port}/notifications`
         );
         serverLogger.info(
           `Environment: ${process.env.NODE_ENV || 'development'}`
