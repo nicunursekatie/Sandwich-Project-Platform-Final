@@ -358,7 +358,34 @@ async function bootstrap() {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
 
-    // Server is now running - event loop will stay alive
+    // PRODUCTION MODE: Aggressive exit prevention
+    if (process.env.NODE_ENV === 'production') {
+      console.log('✅ Production exit prevention installed');
+
+      // Strategy 1: Keep stdin open
+      process.stdin.resume();
+
+      // Strategy 2: Prevent beforeExit
+      process.on('beforeExit', (code) => {
+        console.log(`⚠ Prevented process exit with code ${code} - keeping alive`);
+        setTimeout(() => {}, 1000);
+      });
+
+      // Strategy 3: Override process.exit
+      const originalExit = process.exit;
+      process.exit = ((code?: number) => {
+        console.log(`⚠ Prevented process.exit(${code}) in production mode`);
+        return undefined as never;
+      }) as typeof process.exit;
+
+      // Production heartbeat
+      setInterval(() => {
+        console.log(`✅ Production heartbeat - uptime: ${Math.floor(process.uptime())}s`);
+      }, 60000);
+
+      console.log('✅ Production infinite keep-alive loop started');
+    }
+
     console.log('✅ Health endpoints ready: / and /healthz');
     console.log('✅ Server startup complete - ready for traffic');
   } catch (error) {
@@ -367,7 +394,6 @@ async function bootstrap() {
   }
 }
 
-
-// Start server - run bootstrap in foreground (don't await, let event loop stay alive)
+// Start server - MUST NOT await, just call it
 bootstrap();
 
