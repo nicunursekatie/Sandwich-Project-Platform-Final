@@ -104,11 +104,6 @@ async function startServer() {
       `Starting server on ${host}:${port} in ${process.env.NODE_ENV || 'development'} mode`
     );
 
-
-    serverLogger.info(
-      `Starting server on ${host}:${port} in ${process.env.NODE_ENV || 'development'} mode`
-    );
-
     // Set up basic routes BEFORE starting server
     app.use('/attached_assets', express.static('attached_assets'));
 
@@ -291,85 +286,41 @@ async function startServer() {
         serverLogger.info(
           `Environment: ${process.env.NODE_ENV || 'development'}`
         );
-      }
 
-      // Do heavy initialization in background after server is listening
-      setImmediate(async () => {
-        try {
-          await initializeDatabase();
-          console.log('✓ Database initialization complete');
+        // Do heavy initialization in background after server is listening
+        setImmediate(async () => {
+          try {
+            await initializeDatabase();
+            console.log('✓ Database initialization complete');
 
-          // Background Google Sheets sync re-enabled
-          const { storage } = await import('./storage-wrapper');
-          const { startBackgroundSync } = await import(
-            './background-sync-service'
-          );
-          startBackgroundSync(storage as any); // TODO: Fix storage interface types
-          console.log('✓ Background Google Sheets sync service started');
+            // Background Google Sheets sync re-enabled
+            const { storage } = await import('./storage-wrapper');
+            const { startBackgroundSync } = await import(
+              './background-sync-service'
+            );
+            startBackgroundSync(storage as any); // TODO: Fix storage interface types
+            console.log('✓ Background Google Sheets sync service started');
 
-          // Initialize cron jobs for scheduled tasks
-          const { initializeCronJobs } = await import('./services/cron-jobs');
-          initializeCronJobs();
-          console.log(
-            '✓ Cron jobs initialized (host availability scraper scheduled)'
-          );
+            // Initialize cron jobs for scheduled tasks
+            const { initializeCronJobs } = await import('./services/cron-jobs');
+            initializeCronJobs();
+            console.log(
+              '✓ Cron jobs initialized (host availability scraper scheduled)'
+            );
 
-          // Routes already registered during server startup
-          console.log(
-            '✓ Database initialization completed after route registration'
-          );
-
-          // Update health check to reflect full init
-          app.get('/health', (_req: Request, res: Response) => {
-            res.status(200).json({ status: 'ok' });
-          });
-
-          if (process.env.NODE_ENV === 'production') {
-            // Add catch-all for unknown routes before SPA
-            app.use('*', (req: Request, res: Response, next: NextFunction) => {
-              console.log(
-                `Catch-all route hit: ${req.method} ${req.originalUrl}`
-              );
-              if (req.originalUrl.startsWith('/api')) {
-                return res
-                  .status(404)
-                  .json({ error: `API route not found: ${req.originalUrl}` });
-              }
-              next();
-            });
-
-            // In production, serve React app for all non-API routes
-            app.get('*', async (_req: Request, res: Response) => {
-              try {
-                const path = await import('path');
-                const indexPath = path.join(
-                  process.cwd(),
-                  'dist/public/index.html'
-                );
-                console.log(
-                  `Serving SPA for route: ${_req.path}, file: ${indexPath}`
-                );
-                res.sendFile(indexPath);
-              } catch (error) {
-                console.error('SPA serving error:', error);
-                res.status(500).send('Error serving application');
-              }
-            });
-            console.log('✓ Production SPA routing configured');
+            console.log(
+              '✓ The Sandwich Project server is fully ready to handle requests'
+            );
+            console.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
+          } catch (initError) {
+            serverLogger.error('✗ Background initialization failed:', initError);
+            serverLogger.error(
+              'This is a fatal error - exiting to allow Replit to restart'
+            );
+            // Let Replit restart the app to recover from initialization failures
+            process.exit(1);
           }
-
-          console.log(
-            '✓ The Sandwich Project server is fully ready to handle requests'
-          );
-          console.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
-        } catch (initError) {
-          serverLogger.error('✗ Background initialization failed:', initError);
-          serverLogger.error(
-            'This is a fatal error - exiting to allow Replit to restart'
-          );
-          // Let Replit restart the app to recover from initialization failures
-          process.exit(1);
-        }
+        });
       });
     });
 
@@ -409,8 +360,6 @@ async function startServer() {
       serverLogger.error('Exiting to allow Replit to restart the app cleanly');
       process.exit(1);
     });
-
-    return httpServer;
   } catch (error) {
     serverLogger.error('✗ Server startup failed:', error);
     serverLogger.error(
