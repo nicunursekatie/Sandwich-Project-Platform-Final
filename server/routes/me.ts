@@ -214,8 +214,8 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
 
     const assignedEvents = allEventRequests
       .filter((event: any) => {
-        // Exclude completed events and only show upcoming events
-        if (event.status === 'completed') return false;
+        // Exclude completed and declined events - only show active/upcoming events
+        if (event.status === 'completed' || event.status === 'declined') return false;
 
         // Method 1: Direct assignment via assignedTo field
         if (event.assignedTo === userId) return true;
@@ -326,7 +326,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     }).length;
 
     const totalEventsCount = allEventRequests.filter((event: any) => {
-      if (event.status === 'completed') return false;
+      if (event.status === 'completed' || event.status === 'declined') return false;
       return (
         event.assignedTo === userId ||
         event.tspContact === userId ||

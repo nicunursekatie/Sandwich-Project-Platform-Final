@@ -169,8 +169,8 @@ export const useEventFilters = () => {
         
         if (status === 'my_assignments') {
           // Special handling for my assignments - check if user is assigned
-          // AND exclude completed events as they're not actionable
-          matchesStatus = isUserAssignedToEvent(request) && request.status !== 'completed';
+          // AND exclude completed and declined events as they're not actionable
+          matchesStatus = isUserAssignedToEvent(request) && request.status !== 'completed' && request.status !== 'declined';
         } else {
           // Regular status filtering
           matchesStatus = request.status === status;
