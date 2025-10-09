@@ -785,19 +785,6 @@ export default function GrantMetrics() {
                   </div>
                 </div>
               )}
-
-              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#A31C41]">
-                <Shield className="w-8 h-8 text-[#A31C41] flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900">Crisis Response Achievement</h3>
-                  <p className="text-2xl font-black text-[#A31C41] my-1">
-                    14,023 sandwiches
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Mobilized during Hurricane Helene (October 2024) - proven disaster infrastructure
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
@@ -812,13 +799,9 @@ export default function GrantMetrics() {
             <CardContent className="space-y-6 pt-6">
               <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
                 <Building2 className="w-12 h-12 mx-auto mb-3 opacity-90" />
-                <h2 className="font-black mb-4 text-[23px]">
+                <h2 className="font-black mb-2 text-[23px]">
                   {totalHosts} Active Hosts
                 </h2>
-                
-                {/* Visual separator */}
-                <div className="w-16 h-px bg-white/30 mx-auto mb-4"></div>
-                
                 <div className="font-black mb-2 text-[30px] text-center bg-[#83234300]">
                   {metrics.avgPerCollection}
                 </div>
@@ -884,39 +867,31 @@ export default function GrantMetrics() {
             </div>
 
             {/* Year-over-Year Growth Summary */}
-            <div className="bg-gradient-to-r from-[#E8F4F8] to-white p-6 rounded-lg border border-[#236383]/20">
-              <h3 className="font-bold text-gray-900 mb-4 text-lg">Year-Over-Year Growth Rates</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="bg-gradient-to-r from-[#E8F4F8] to-white p-5 rounded-lg border border-[#236383]/20">
+              <h3 className="font-bold text-gray-900 mb-3">Year-Over-Year Growth Rates</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {yearGrowthData.map((data, index) => (
-                  <div key={data.year} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="text-center">
-                      <div className="text-sm font-semibold text-[#236383] mb-2 uppercase tracking-wide">
-                        {data.year}
-                      </div>
-                      <div className="text-2xl font-black text-gray-900 mb-3">
-                        {data.sandwiches.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-gray-500 mb-2">
-                        sandwiches distributed
-                      </div>
-                      {data.growth !== null ? (
-                        <Badge
-                          className={`${
-                            data.growth > 0
-                              ? 'bg-green-100 text-green-700 border-green-300 font-semibold'
-                              : data.growth < 0
-                              ? 'bg-red-100 text-red-700 border-red-300 font-semibold'
-                              : 'bg-gray-100 text-gray-700 border-gray-300 font-semibold'
-                          }`}
-                        >
-                          {data.growth > 0 ? '+' : ''}{data.growth}% YoY
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-gray-100 text-gray-700 border-gray-300 font-semibold">
-                          Baseline
-                        </Badge>
-                      )}
+                  <div key={data.year} className="text-center">
+                    <div className="text-lg font-bold text-[#236383]">{data.year}</div>
+                    <div className="text-2xl font-black text-gray-900 mb-1">
+                      {data.sandwiches.toLocaleString()}
                     </div>
+                    {data.growth !== null && (
+                      <Badge
+                        className={`${
+                          data.growth > 0
+                            ? 'bg-green-100 text-green-700 border-green-300'
+                            : data.growth < 0
+                            ? 'bg-red-100 text-red-700 border-red-300'
+                            : 'bg-gray-100 text-gray-700 border-gray-300'
+                        }`}
+                      >
+                        {data.growth > 0 ? '+' : ''}{data.growth}% YoY
+                      </Badge>
+                    )}
+                    {index === 0 && (
+                      <div className="text-xs text-gray-500 mt-1">Baseline</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -944,7 +919,41 @@ export default function GrantMetrics() {
         </Card>
 
         {/* Strategic Milestones & Infrastructure */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Crisis Response Capability */}
+          <Card className="border-2 border-[#A31C41] shadow-lg">
+            <CardHeader className="bg-[#FCE4E6]">
+              <CardTitle className="flex items-center text-[#A31C41]">
+                <Shield className="w-5 h-5 mr-2" />
+                Crisis Response
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-3xl font-black text-[#A31C41] mb-1">
+                    14,023
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Sandwiches mobilized during Hurricane Helene (October 2024)
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="text-2xl font-bold text-[#007E8C] mb-1">
+                    2-3x surge
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Capacity increase within one week when needed
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 italic">
+                    Proven disaster infrastructure, not just routine food distribution
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Distributed Network */}
           <Card className="border-2 border-[#007E8C] shadow-lg">
@@ -1340,80 +1349,45 @@ export default function GrantMetrics() {
           </CardContent>
         </Card>
 
-        {/* Crisis Response & Sustainable Growth Metrics */}
-        <Card className="mb-8 border-2 border-[#47B3CB] shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white">
-            <CardTitle className="flex items-center text-xl">
-              <TrendingUp className="w-6 h-6 mr-2" />
-              Crisis Response & Sustainable Growth
-            </CardTitle>
-            <CardDescription className="text-white/90">
-              Demonstrating resilience and consistent impact growth
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Crisis Response Growth */}
-              <div className="bg-gradient-to-br from-white to-[#E8F4F8] p-6 rounded-lg border border-[#47B3CB]/30">
-                <div className="flex items-center mb-4">
-                  <TrendingUp className="w-6 h-6 text-[#47B3CB] mr-2" />
-                  <h3 className="text-lg font-bold text-gray-900">📈 Since Crisis Response (2020-2025)</h3>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700">Week 1 of pandemic:</span>
-                    <span className="text-lg font-bold text-[#47B3CB]">317 sandwiches</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700">Current weekly capacity:</span>
-                    <span className="text-lg font-bold text-[#47B3CB]">3,230 sandwiches</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700">Growth multiplier:</span>
-                    <span className="text-lg font-bold text-[#236383]">10x growth</span>
-                  </div>
-                  <div className="mt-4 p-3 bg-[#47B3CB]/10 rounded-lg border border-[#47B3CB]/20">
-                    <p className="text-sm text-gray-700 italic">
-                      <strong>Quality maintained:</strong> While scaling 10x, we've maintained consistent sandwich quality and community trust
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sustainable Growth */}
-              <div className="bg-gradient-to-br from-white to-[#FEF4E0] p-6 rounded-lg border border-[#FBAD3F]/30">
-                <div className="flex items-center mb-4">
-                  <BarChart3 className="w-6 h-6 text-[#FBAD3F] mr-2" />
-                  <h3 className="text-lg font-bold text-gray-900">📊 2-Year Sustainable Growth (2023→2025)</h3>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700">Events:</span>
-                    <span className="text-lg font-bold text-[#FBAD3F]">243 → 370</span>
-                    <Badge className="bg-green-100 text-green-700 border-green-300">+52%</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700">Sandwiches:</span>
-                    <span className="text-lg font-bold text-[#FBAD3F]">125k → 168k</span>
-                    <Badge className="bg-green-100 text-green-700 border-green-300">+34%</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700">People served:</span>
-                    <span className="text-lg font-bold text-[#FBAD3F]">+43,000</span>
-                    <span className="text-xs text-gray-500">annually</span>
-                  </div>
-                  <div className="mt-4 p-3 bg-[#FBAD3F]/10 rounded-lg border border-[#FBAD3F]/20">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Annual growth rate:</span>
-                      <span className="text-lg font-bold text-[#FBAD3F]">26%</span>
+        {/* Quarterly Reporting Breakdown - INTERACTIVE */}
+        {filteredQuarterlyBreakdown.length > 0 && (
+          <Card className="mb-8 border-2 border-[#47B3CB] shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white">
+              <CardTitle className="flex items-center text-xl">
+                <Calendar className="w-6 h-6 mr-2" />
+                Quarterly Performance Breakdown
+              </CardTitle>
+              <CardDescription className="text-white/90">
+                For grant reporting and compliance {selectedFiscalYear !== 'all' && `(FY ${selectedFiscalYear}${selectedQuarter !== 'all' ? ` Q${selectedQuarter}` : ''})`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredQuarterlyBreakdown.slice(-12).map((quarter) => (
+                  <div
+                    key={quarter.quarter}
+                    className="p-4 bg-gradient-to-br from-white to-[#E8F4F8] rounded-lg border border-[#47B3CB]/30 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge className="bg-[#47B3CB]/20 text-[#47B3CB] border-[#47B3CB]/30">
+                        {quarter.quarter}
+                      </Badge>
+                      <BarChart3 className="w-5 h-5 text-[#236383]" />
                     </div>
-                    <p className="text-xs text-gray-600 mt-1 italic">Consistent, sustainable expansion</p>
+                    <div className="text-3xl font-black text-[#236383] mb-1">
+                      {quarter.sandwiches.toLocaleString()}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">sandwiches distributed</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <Building2 className="w-3 h-3" />
+                      {quarter.events} collection events
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Geographic Reach & Demographics */}
         <Card className="mb-8 border-2 border-[#A31C41] shadow-lg">
@@ -1615,313 +1589,4 @@ export default function GrantMetrics() {
                   {Object.entries(recipientMetrics.byRegion)
                     .sort(([, a], [, b]) => (b as number) - (a as number))
                     .map(([region, count]) => (
-                      <div key={region} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-700">{region}</span>
-                        <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30">
-                          {count} orgs
-                        </Badge>
-                      </div>
-                    ))}
-                  {Object.keys(recipientMetrics.byRegion).length === 0 && (
-                    <p className="text-sm text-gray-500 italic">Regional data being collected...</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-[#E0F2F1] to-white p-5 rounded-lg border border-[#007E8C]/30">
-              <h3 className="font-bold text-gray-900 mb-3">Weekly Distribution Capacity</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-3xl font-black text-[#007E8C]">
-                    {recipientMetrics.totalWeeklyCapacity.toLocaleString()}
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Estimated weekly sandwich capacity across all {recipientMetrics.total} recipient partners
-                  </p>
-                </div>
-                <BarChart3 className="w-16 h-16 text-[#007E8C]/30" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Group Events Impact - REAL DATA */}
-        {eventMetrics.totalEvents > 0 && (
-          <Card className="mb-8 border-2 border-[#236383] shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
-              <CardTitle className="flex items-center text-xl">
-                <Users className="w-6 h-6 mr-2" />
-                Group Events & Community Engagement
-              </CardTitle>
-              <CardDescription className="text-white/90">
-                Tracked event participation from database {selectedFiscalYear !== 'all' && `(FY ${selectedFiscalYear})`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
-                  <Calendar className="w-8 h-8 mx-auto mb-2 text-[#236383]" />
-                  <div className="text-3xl font-black text-[#236383] mb-1">
-                    {eventMetrics.totalEvents}
-                  </div>
-                  <p className="text-sm text-gray-700 font-medium">
-                    Completed group events
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Tracked in database
-                  </p>
-                </div>
-
-                <div className="text-center p-4 bg-[#FCE4E6] rounded-lg">
-                  <Building2 className="w-8 h-8 mx-auto mb-2 text-[#A31C41]" />
-                  <div className="text-3xl font-black text-[#A31C41] mb-1">
-                    {eventMetrics.uniqueOrganizations}
-                  </div>
-                  <p className="text-sm text-gray-700 font-medium">
-                    Unique organizations
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Hosted events
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-r from-white to-[#E8F4F8] p-5 rounded-lg border border-[#236383]/30">
-                  <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                    <Trophy className="w-5 h-5 mr-2 text-[#236383]" />
-                    Sandwiches from Group Events
-                  </h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-4xl font-black text-[#236383]">
-                        {eventMetrics.totalActualSandwiches.toLocaleString()}
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Sandwiches made at group events
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Avg {eventMetrics.avgSandwichesPerEvent} per event
-                      </p>
-                    </div>
-                    <Award className="w-16 h-16 text-[#236383]/20" />
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-white to-[#FEF4E0] p-5 rounded-lg border border-[#FBAD3F]/30">
-                  <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                    <Star className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                    Social Media Engagement
-                  </h3>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-4xl font-black text-[#FBAD3F]">
-                        {eventMetrics.socialMediaPostsCompleted}
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Organizations shared posts
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        {eventMetrics.totalEvents > 0
-                          ? Math.round((eventMetrics.socialMediaPostsCompleted / eventMetrics.totalEvents) * 100)
-                          : 0}% engagement rate
-                      </p>
-                    </div>
-                    <Mail className="w-16 h-16 text-[#FBAD3F]/20" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 p-5 bg-gradient-to-br from-[#236383]/10 to-white rounded-lg border border-[#236383]/30">
-                <h3 className="font-bold text-gray-900 mb-3">Why Group Events Matter</h3>
-                <p className="text-sm text-gray-700 mb-3">
-                  Group events transform sandwich-making into community building experiences, creating lasting partnerships with:
-                </p>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-[#236383] shrink-0 mt-0.5" />
-                    <span><strong>Corporations:</strong> Team building events that serve the community</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-[#236383] shrink-0 mt-0.5" />
-                    <span><strong>Faith Communities:</strong> Service projects connecting members</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-[#236383] shrink-0 mt-0.5" />
-                    <span><strong>Schools:</strong> Student engagement and civic education</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-[#236383] shrink-0 mt-0.5" />
-                    <span><strong>Community Groups:</strong> Volunteer mobilization at scale</span>
-                  </li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Capacity Building & Organizational Development */}
-        <Card className="mb-8 border-2 border-[#FBAD3F] shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-[#FBAD3F] to-[#e89a2c] text-white">
-            <CardTitle className="flex items-center text-xl">
-              <Rocket className="w-6 h-6 mr-2" />
-              Capacity Building & Infrastructure Development
-            </CardTitle>
-            <CardDescription className="text-white/90">
-              Strategic investments for sustainable growth
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="bg-gradient-to-r from-[#FEF4E0] to-white p-5 rounded-lg border-l-4 border-[#FBAD3F]">
-                <div className="flex items-start gap-4">
-                  <UserCheck className="w-8 h-8 text-[#FBAD3F] shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Executive Leadership (Priority)</h3>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Need:</strong> Full-time Executive Director to manage operations, fundraising, and strategic partnerships
-                    </p>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Impact:</strong> Currently operating with volunteer leadership at 107x our founding scale - professionalization will unlock next phase of growth
-                    </p>
-                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30">
-                      Est. Cost: $65K-85K annually
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-white to-[#E0F2F1] p-5 rounded-lg border-l-4 border-[#007E8C]">
-                <div className="flex items-start gap-4">
-                  <Activity className="w-8 h-8 text-[#007E8C] shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Logistics Infrastructure</h3>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Need:</strong> Additional refrigerated van for expanded distribution capacity
-                    </p>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Impact:</strong> Enable simultaneous routes, reduce volunteer burden, improve crisis response time
-                    </p>
-                    <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30">
-                      Est. Cost: $35K-50K (one-time)
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-[#E8F4F8] to-white p-5 rounded-lg border-l-4 border-[#236383]">
-                <div className="flex items-start gap-4">
-                  <Shield className="w-8 h-8 text-[#236383] shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Technology & Systems</h3>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Current:</strong> Custom-built platform for collection tracking, volunteer coordination, and impact reporting
-                    </p>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Future Need:</strong> Mobile app for real-time volunteer coordination and automated route optimization
-                    </p>
-                    <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30">
-                      Est. Cost: $15K-25K (development)
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 p-5 bg-gradient-to-br from-[#FBAD3F]/10 to-white rounded-lg border border-[#FBAD3F]/30">
-              <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                <Target className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                Why These Investments Matter
-              </h3>
-              <p className="text-sm text-gray-700 mb-3">
-                The Sandwich Project has grown 107x since inception while maintaining volunteer-led operations.
-                These strategic investments will:
-              </p>
-              <ul className="space-y-2 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <Zap className="w-4 h-4 text-[#FBAD3F] shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Sustainability:</strong> Reduce burnout risk and ensure continuity beyond founding volunteers
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Zap className="w-4 h-4 text-[#FBAD3F] shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Scale:</strong> Current infrastructure at capacity - investments enable 2-3x growth
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Zap className="w-4 h-4 text-[#FBAD3F] shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Impact:</strong> Professional leadership unlocks corporate partnerships, larger grants, and strategic expansion
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Impact Statement */}
-        <Card className="bg-gradient-to-br from-[#236383] to-[#007E8C] text-white shadow-xl border-0">
-          <CardContent className="p-8">
-            <h2 className="text-3xl font-bold mb-4 flex items-center">
-              <Heart className="w-8 h-8 mr-3" />
-              Community Infrastructure Disguised as Sandwiches
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-              <div>
-                <div className="text-4xl font-black mb-2">
-                  {metrics.totalCollections.toLocaleString()}
-                </div>
-                <p className="text-white/90 font-medium">
-                  Collection events organized
-                </p>
-              </div>
-              <div>
-                <div className="text-4xl font-black mb-2">
-                  35
-                </div>
-                <p className="text-white/90 font-medium">
-                  Host locations across Metro Atlanta
-                </p>
-              </div>
-              <div>
-                <div className="text-4xl font-black mb-2">
-                  70+
-                </div>
-                <p className="text-white/90 font-medium">
-                  Partner organizations served weekly
-                </p>
-              </div>
-              <div>
-                <div className="text-4xl font-black mb-2">
-                  4,000+
-                </div>
-                <p className="text-white/90 font-medium">
-                  Active volunteer community members
-                </p>
-              </div>
-            </div>
-            <div className="mt-8 p-6 bg-white/10 rounded-lg backdrop-blur-sm space-y-4">
-              <p className="text-lg leading-relaxed">
-                The Sandwich Project has evolved from pandemic response to <strong>proven community infrastructure</strong>.
-                Starting with just 317 sandwiches in April 2020, we've delivered <strong>{metrics.totalSandwiches.toLocaleString()}
-                sandwiches</strong> and grown <strong>{metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : '107x'} since inception</strong>.
-              </p>
-              <p className="text-lg leading-relaxed">
-                We don't just feed people - we've built <strong>disaster response capability</strong> (14,023 sandwiches during Hurricane Helene),
-                <strong> distributed logistics infrastructure</strong> across 35 sites, and a <strong>volunteer network</strong> that could
-                pivot tomorrow to housing crisis response, voter mobilization, or climate disaster coordination.
-              </p>
-              <p className="text-lg leading-relaxed font-semibold">
-                This is not charity. This is community infrastructure that happens to use sandwiches as its medium.
-                And we're just getting started.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
+                      <div k
