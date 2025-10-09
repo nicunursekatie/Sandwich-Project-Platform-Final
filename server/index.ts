@@ -16,10 +16,8 @@ import logger, { createServiceLogger, logRequest } from './utils/logger.js';
 const app = express();
 const serverLogger = createServiceLogger('server');
 
-// CRITICAL: Health check routes BEFORE any middleware - for deployment health checks
-app.get('/', (_req: Request, res: Response) => {
-  res.status(200).send('OK');
-});
+// CRITICAL: Health check route BEFORE any middleware - for deployment health checks
+// Use /healthz instead of / to avoid blocking the frontend
 app.get('/healthz', (_req: Request, res: Response) => res.sendStatus(200));
 
 // Enable gzip/brotli compression for performance
