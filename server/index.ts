@@ -384,7 +384,7 @@ async function bootstrap() {
       console.log('✅ Production infinite keep-alive loop started');
     }
 
-    console.log('✅ Health endpoints ready: / and /healthz');
+    console.log('✅ Health endpoint ready: /healthz');
     console.log('✅ Server startup complete - ready for traffic');
   } catch (error) {
     serverLogger.error('✗ Server startup failed:', error);

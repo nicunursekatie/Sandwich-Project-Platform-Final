@@ -26,6 +26,10 @@ run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 38605
+externalPort = 3000
+
 [workflows]
 runButton = "Development Server"
 
