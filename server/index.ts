@@ -384,14 +384,9 @@ async function startServer() {
   }
 }
 
-// Start server and keep it running - the returned Promise keeps the server reference alive
-startServer()
-  .then((server) => {
-    // Server is now listening and will stay alive
-    // The server reference and active listeners keep the process running
-  })
-  .catch((error) => {
-    console.error('✗ Failed to start server:', error);
-    console.error('Fatal error - exiting to allow Replit to restart');
-    process.exit(1);
-  });
+// Start server - the async function keeps running and the httpServer keeps the process alive
+startServer().catch((error) => {
+  console.error('✗ Failed to start server:', error);
+  console.error('Fatal error - exiting to allow Replit to restart');
+  process.exit(1);
+});
