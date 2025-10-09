@@ -22,7 +22,6 @@ deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = "NODE_ENV=production node dist/index.js"
 
-
 [[ports]]
 localPort = 80
 externalPort = 80
