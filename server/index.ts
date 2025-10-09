@@ -16,6 +16,12 @@ import logger, { createServiceLogger, logRequest } from './utils/logger.js';
 const app = express();
 const serverLogger = createServiceLogger('server');
 
+// CRITICAL: Health check routes BEFORE any middleware - for deployment health checks
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).send('OK');
+});
+app.get('/healthz', (_req: Request, res: Response) => res.sendStatus(200));
+
 // Enable gzip/brotli compression for performance
 app.use(
   compression({
@@ -78,9 +84,14 @@ app.use((req, res, next) => {
   next();
 });
 
-async function startServer() {
+// Debug process exit
+process.on('exit', (code) => console.log('⚠️ Process exiting with code:', code));
+process.on('uncaughtException', (e) => console.error('❌ Uncaught exception:', e));
+process.on('unhandledRejection', (e) => console.error('❌ Unhandled rejection:', e));
+
+async function bootstrap() {
   try {
-    serverLogger.info('Starting The Sandwich Project server...');
+    serverLogger.info('🚀 Starting The Sandwich Project server...');
 
     // Basic error handler - ensure JSON responses for API routes
     app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
@@ -174,8 +185,12 @@ async function startServer() {
 
       // Simple SPA fallback for production - serve index.html for non-API routes
       // This MUST be after API routes to prevent catching API requests
-      // More specific regex to absolutely exclude API routes
       app.get('*', async (req: Request, res: Response, next: NextFunction) => {
+        // Skip health check endpoints - they're already handled
+        if (req.originalUrl === '/' || req.originalUrl === '/healthz') {
+          return next();
+        }
+
         // NEVER serve HTML for API routes - let them 404 instead
         if (req.originalUrl.startsWith('/api/')) {
           serverLogger.warn(
@@ -322,8 +337,6 @@ async function startServer() {
       });
     });
 
-    return httpServer;
-
     // Graceful shutdown handler - works in both dev and production
     const shutdown = async (signal: string) => {
       serverLogger.info(`Received ${signal}, starting graceful shutdown...`);
@@ -345,35 +358,16 @@ async function startServer() {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
 
-    // Proper error handling - log and exit, let Replit restart
-    process.on('uncaughtException', (error) => {
-      serverLogger.error('🚨 Uncaught Exception - this is fatal:', error);
-      serverLogger.error('Exiting to allow Replit to restart the app cleanly');
-      process.exit(1);
-    });
-
-    process.on('unhandledRejection', (reason, promise) => {
-      serverLogger.error('🚨 Unhandled Promise Rejection:', {
-        reason,
-        promise,
-      });
-      serverLogger.error('Exiting to allow Replit to restart the app cleanly');
-      process.exit(1);
-    });
+    // Server is now running - event loop will stay alive
+    console.log('✅ Health endpoints ready: / and /healthz');
+    console.log('✅ Server startup complete - ready for traffic');
   } catch (error) {
     serverLogger.error('✗ Server startup failed:', error);
-    serverLogger.error(
-      'Fatal startup error - exiting to allow Replit to restart'
-    );
     process.exit(1);
   }
 }
 
 
-// Start server - the async function keeps running and the httpServer keeps the process alive
-startServer().catch((error) => {
-  console.error('✗ Failed to start server:', error);
-  console.error('Fatal error - exiting to allow Replit to restart');
-  process.exit(1);
-});
+// Start server - run bootstrap in foreground (don't await, let event loop stay alive)
+bootstrap();
 
