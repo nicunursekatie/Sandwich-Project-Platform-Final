@@ -146,7 +146,11 @@ export default function MyAvailability() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this time off/availability entry?')) {
+    if (
+      confirm(
+        'Are you sure you want to delete this time off/availability entry?'
+      )
+    ) {
       deleteMutation.mutate(id);
     }
   };
@@ -180,13 +184,12 @@ export default function MyAvailability() {
       {/* Back Button Header */}
 
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">My Schedule & Time Off</h1>
-        <Button
-          onClick={handleAddNew}
-          data-testid="button-add-availability"
-        >
+        <h1 className="text-3xl font-bold text-gray-900">
+          My Scheduled Availability
+        </h1>
+        <Button onClick={handleAddNew} data-testid="button-add-availability">
           <Plus className="mr-2 h-4 w-4" />
-          Mark Time Off
+          Mark Unavailability
         </Button>
       </div>
 
@@ -194,7 +197,8 @@ export default function MyAvailability() {
       <Card className="p-6 mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
-            Week of {format(weekStart, 'MMM dd')} - {format(weekEnd, 'MMM dd, yyyy')}
+            Week of {format(weekStart, 'MMM dd')} -{' '}
+            {format(weekEnd, 'MMM dd, yyyy')}
           </h2>
           <div className="flex gap-2">
             <Button
@@ -239,7 +243,9 @@ export default function MyAvailability() {
               >
                 <div className="font-semibold text-sm mb-2 text-gray-900">
                   {format(day, 'EEE')}
-                  <div className="text-xs text-gray-500">{format(day, 'MMM dd')}</div>
+                  <div className="text-xs text-gray-500">
+                    {format(day, 'MMM dd')}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   {daySlots.map((slot) => (
@@ -267,21 +273,18 @@ export default function MyAvailability() {
       {/* Availability Slots List */}
       <Card className="p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          All Scheduled Time Off & Availability
+          All Scheduled Availability
         </h2>
 
         {slots.length === 0 ? (
-          <div
-            className="text-center py-12"
-            data-testid="empty-state"
-          >
+          <div className="text-center py-12" data-testid="empty-state">
             <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <p className="text-gray-500 mb-4">
-              No scheduled time off or availability set yet
+              No scheduled unavailability recorded yet
             </p>
             <Button onClick={handleAddNew} data-testid="button-add-first">
               <Plus className="mr-2 h-4 w-4" />
-              Mark Your First Time Off
+              Indicate Days You Are Unavailable
             </Button>
           </div>
         ) : (
@@ -312,15 +315,21 @@ export default function MyAvailability() {
                     <Clock className="inline h-4 w-4 mr-1" />
                     {format(parseISO(slot.startAt), 'h:mm a')} -{' '}
                     {format(parseISO(slot.endAt), 'h:mm a')}
-                    {slot.endAt !== slot.startAt && 
-                     !isSameDay(parseISO(slot.startAt), parseISO(slot.endAt)) && (
-                      <span className="ml-1">
-                        (ends {format(parseISO(slot.endAt), 'MMM dd, yyyy')})
-                      </span>
-                    )}
+                    {slot.endAt !== slot.startAt &&
+                      !isSameDay(
+                        parseISO(slot.startAt),
+                        parseISO(slot.endAt)
+                      ) && (
+                        <span className="ml-1">
+                          (ends {format(parseISO(slot.endAt), 'MMM dd, yyyy')})
+                        </span>
+                      )}
                   </div>
                   {slot.notes && (
-                    <p className="text-sm text-gray-500 mt-1" data-testid={`notes-${slot.id}`}>
+                    <p
+                      className="text-sm text-gray-500 mt-1"
+                      data-testid={`notes-${slot.id}`}
+                    >
                       {slot.notes}
                     </p>
                   )}
@@ -406,12 +415,16 @@ export default function MyAvailability() {
                     <div className="flex items-center justify-between">
                       <FormLabel>Status</FormLabel>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Unavailable</span>
+                        <span className="text-sm text-gray-600">
+                          Unavailable
+                        </span>
                         <FormControl>
                           <Switch
                             checked={field.value === 'available'}
                             onCheckedChange={(checked) =>
-                              field.onChange(checked ? 'available' : 'unavailable')
+                              field.onChange(
+                                checked ? 'available' : 'unavailable'
+                              )
                             }
                             data-testid="switch-status"
                           />
@@ -433,7 +446,7 @@ export default function MyAvailability() {
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Add any notes about this time off (e.g., vacation, appointment, etc.)"
+                        placeholder="Add any notes about this unavailability (e.g., vacation, appointment, etc.)"
                         data-testid="input-notes"
                       />
                     </FormControl>
