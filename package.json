@@ -157,5 +157,20 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+  "unimported": {
+    "entry": [
+      "server/index.ts",
+      "server/meeting-agenda-pdf-generator.ts",
+      "client/src/main.tsx"
+    ],
+    "extensions": [".ts", ".tsx", ".js", ".jsx"],
+    "ignorePatterns": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "tests/**"
+    ]
   }
 }
