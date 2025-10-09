@@ -92,51 +92,69 @@ const PERMISSION_CATEGORIES = {
     icon: Shield,
     description: 'Basic access to main platform features',
     permissions: [
-      { 
-        key: 'NAV_DASHBOARD', 
-        name: '📍 Dashboard Tab', 
+      {
+        key: 'NAV_DASHBOARD',
+        name: '📍 Dashboard Tab',
         description: 'Show Dashboard tab in navigation',
         level: 'access'
       },
-      { 
-        key: 'NAV_MY_ACTIONS', 
-        name: '📍 My Actions Tab', 
+      {
+        key: 'NAV_MY_ACTIONS',
+        name: '📍 My Actions Tab',
         description: 'Show My Actions tab in navigation',
         level: 'access'
       },
-      { 
-        key: 'NAV_SUGGESTIONS', 
-        name: '📍 Suggestions Tab', 
+      {
+        key: 'NAV_SUGGESTIONS',
+        name: '📍 Suggestions Tab',
         description: 'Show Suggestions tab in navigation',
         level: 'access'
       },
-      { 
-        key: 'HOSTS_VIEW', 
-        name: 'View Hosts', 
+      {
+        key: 'NAV_MY_AVAILABILITY',
+        name: '📍 My Availability Tab',
+        description: 'Show My Availability tab in navigation',
+        level: 'access'
+      },
+      {
+        key: 'NAV_TEAM_AVAILABILITY',
+        name: '📍 Team Availability Tab',
+        description: 'Show Team Availability tab in navigation',
+        level: 'access'
+      },
+      {
+        key: 'NAV_VOLUNTEER_CALENDAR',
+        name: '📍 Volunteer Calendar Tab',
+        description: 'Show Volunteer Calendar tab in navigation',
+        level: 'access'
+      },
+      {
+        key: 'HOSTS_VIEW',
+        name: 'View Hosts',
         description: 'Access host directory and contact information',
         level: 'view'
       },
-      { 
-        key: 'RECIPIENTS_VIEW', 
-        name: 'View Recipients', 
+      {
+        key: 'RECIPIENTS_VIEW',
+        name: 'View Recipients',
         description: 'Access recipient organizations directory',
         level: 'view'
       },
-      { 
-        key: 'DRIVERS_VIEW', 
-        name: 'View Drivers', 
+      {
+        key: 'DRIVERS_VIEW',
+        name: 'View Drivers',
         description: 'Access driver directory and information',
         level: 'view'
       },
-      { 
-        key: 'COLLECTIONS_VIEW', 
-        name: 'View Collections', 
+      {
+        key: 'COLLECTIONS_VIEW',
+        name: 'View Collections',
         description: 'View sandwich collection data and reports',
         level: 'view'
       },
-      { 
-        key: 'PROJECTS_VIEW', 
-        name: 'View Projects', 
+      {
+        key: 'PROJECTS_VIEW',
+        name: 'View Projects',
         description: 'View project tracker and assignments',
         level: 'view'
       },

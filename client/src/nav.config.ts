@@ -60,6 +60,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'My Availability',
     icon: Calendar,
     href: 'my-availability',
+    permission: PERMISSIONS.NAV_MY_AVAILABILITY,
     group: 'dashboard',
   },
   {
@@ -67,6 +68,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Team Availability',
     icon: Users,
     href: 'team-availability',
+    permission: PERMISSIONS.NAV_TEAM_AVAILABILITY,
     group: 'dashboard',
   },
   {
@@ -74,6 +76,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Volunteer Calendar',
     icon: Calendar,
     href: 'google-calendar-availability',
+    permission: PERMISSIONS.NAV_VOLUNTEER_CALENDAR,
     group: 'dashboard',
   },
 
