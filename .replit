@@ -23,8 +23,68 @@ build = ["npm", "run", "build"]
 run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
 
 [[ports]]
-localPort = 5000
+localPort = 80
 externalPort = 80
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
+localPort = 4242
+externalPort = 3001
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
+localPort = 32939
+externalPort = 8099
+
+[[ports]]
+localPort = 33665
+externalPort = 5173
+
+[[ports]]
+localPort = 35033
+externalPort = 6800
+
+[[ports]]
+localPort = 35751
+externalPort = 8000
+
+[[ports]]
+localPort = 36811
+externalPort = 3002
+
+[[ports]]
+localPort = 37575
+externalPort = 8080
+
+[[ports]]
+localPort = 37757
+externalPort = 4200
+
+[[ports]]
+localPort = 38275
+externalPort = 8081
+
+[[ports]]
+localPort = 40575
+externalPort = 6000
+
+[[ports]]
+localPort = 41759
+externalPort = 3003
+
+[[ports]]
+localPort = 42269
+externalPort = 9000
+
+[[ports]]
+localPort = 45157
+externalPort = 8008
 
 [workflows]
 runButton = "Development Server"
