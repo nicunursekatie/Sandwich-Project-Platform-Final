@@ -16,25 +16,6 @@ import logger, { createServiceLogger, logRequest } from './utils/logger.js';
 const app = express();
 const serverLogger = createServiceLogger('server');
 
-// CRITICAL: Health check MUST be first - before any middleware or initialization
-// This ensures Autoscale deployments can verify the server is running immediately
-app.get('/health', (_req: Request, res: Response) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
-});
-
-// Root endpoint also responds immediately for deployment health checks
-app.get('/', (_req: Request, res: Response) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
-});
-
 // Enable gzip/brotli compression for performance
 app.use(
   compression({
@@ -115,20 +96,30 @@ async function startServer() {
       res.status(status).json({ message });
     });
 
-    // For Autoscale deployments, use port 80 in production, 5000 in development
-    const port = process.env.NODE_ENV === 'production' ? 80 : (process.env.PORT || 5000);
-    const host = '0.0.0.0';
+    const port = process.env.PORT || 5000;
+    const host = process.env.HOST || '0.0.0.0';
 
     serverLogger.info(
       `Starting server on ${host}:${port} in ${process.env.NODE_ENV || 'development'} mode`
     );
 
+    // Simple port allocation for faster deployment
     const finalPort = port;
 
     // Set up basic routes BEFORE starting server
     app.use('/attached_assets', express.static('attached_assets'));
 
-    // API health check endpoint
+    // Health check route - available before full initialization
+    app.get('/health', (_req: Request, res: Response) => {
+      res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+      });
+    });
+
+    // Health check route for deployment - API endpoint
     app.get('/api/health', (_req: Request, res: Response) => {
       res.status(200).json({
         status: 'healthy',
@@ -183,8 +174,9 @@ async function startServer() {
       // In production, serve static files from the built frontend
       app.use(express.static('dist/public'));
 
-      // SPA fallback for production - serve index.html for frontend routes
-      // This MUST be after API routes and MUST NOT catch / (health check endpoint)
+      // Simple SPA fallback for production - serve index.html for non-API routes
+      // This MUST be after API routes to prevent catching API requests
+      // More specific regex to absolutely exclude API routes
       app.get('*', async (req: Request, res: Response, next: NextFunction) => {
         // NEVER serve HTML for API routes - let them 404 instead
         if (req.originalUrl.startsWith('/api/')) {
@@ -194,12 +186,7 @@ async function startServer() {
           return next(); // Let it 404 rather than serve HTML
         }
 
-        // Root / is reserved for health checks, don't serve SPA for it
-        if (req.originalUrl === '/') {
-          return next(); // This shouldn't happen since / is already handled above
-        }
-
-        // Serve SPA for all other frontend routes
+        // Only serve SPA for non-API routes
         const path = await import('path');
         res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
       });
@@ -291,90 +278,144 @@ async function startServer() {
       }
     };
 
-    // Start server and keep process alive - critical for production deployments
-    return new Promise<Server>((resolve) => {
-      httpServer.listen(Number(finalPort), host, () => {
-        serverLogger.info(`✅ Server listening on http://${host}:${finalPort}`);
+    httpServer.listen(Number(finalPort), host, () => {
+      serverLogger.info(`Server is running on http://${host}:${finalPort}`);
+      serverLogger.info(
+        `WebSocket server ready on ws://${host}:${finalPort}/notifications`
+      );
+      serverLogger.info(
+        `Environment: ${process.env.NODE_ENV || 'development'}`
+      );
+      serverLogger.info(
+        'Basic server ready - starting background initialization...'
+      );
+
+      // Signal deployment readiness to Replit
+      if (process.env.NODE_ENV === 'production') {
+        serverLogger.info('PRODUCTION SERVER READY FOR TRAFFIC');
         serverLogger.info(
-          `WebSocket server ready on ws://${host}:${finalPort}/notifications`
+          'Server is fully operational and accepting connections'
         );
-        serverLogger.info(
-          `Environment: ${process.env.NODE_ENV || 'development'}`
-        );
+      }
 
-        // Signal deployment readiness to Replit
-        if (process.env.NODE_ENV === 'production') {
-          serverLogger.info('🚀 PRODUCTION SERVER READY FOR TRAFFIC');
-        } else {
-          serverLogger.info('✅ Development server ready');
-        }
+      // Do heavy initialization in background after server is listening
+      setImmediate(async () => {
+        try {
+          await initializeDatabase();
+          console.log('✓ Database initialization complete');
 
-        // Run initialization in the background AFTER server is listening
-        // This prevents blocking health checks and allows the server to respond immediately
-        (async () => {
-          try {
-            serverLogger.info('Starting background initialization...');
-            
-            await initializeDatabase();
-            serverLogger.info('✓ Database initialized');
+          // Background Google Sheets sync re-enabled
+          const { storage } = await import('./storage-wrapper');
+          const { startBackgroundSync } = await import(
+            './background-sync-service'
+          );
+          startBackgroundSync(storage as any); // TODO: Fix storage interface types
+          console.log('✓ Background Google Sheets sync service started');
 
-            const { storage } = await import('./storage-wrapper');
-            const { startBackgroundSync } = await import('./background-sync-service');
-            startBackgroundSync(storage as any);
-            serverLogger.info('✓ Background sync started');
+          // Initialize cron jobs for scheduled tasks
+          const { initializeCronJobs } = await import('./services/cron-jobs');
+          initializeCronJobs();
+          console.log(
+            '✓ Cron jobs initialized (host availability scraper scheduled)'
+          );
 
-            const { initializeCronJobs } = await import('./services/cron-jobs');
-            initializeCronJobs();
-            serverLogger.info('✓ Cron jobs initialized');
+          // Routes already registered during server startup
+          console.log(
+            '✓ Database initialization completed after route registration'
+          );
 
-            serverLogger.info('✅ Background initialization complete');
-          } catch (error) {
-            serverLogger.error('Background initialization failed:', error);
-            serverLogger.warn('Server will continue running, but some features may be unavailable');
+          // Update health check to reflect full init
+          app.get('/health', (_req: Request, res: Response) => {
+            res.status(200).json({ status: 'ok' });
+          });
+
+          if (process.env.NODE_ENV === 'production') {
+            // Add catch-all for unknown routes before SPA
+            app.use('*', (req: Request, res: Response, next: NextFunction) => {
+              console.log(
+                `Catch-all route hit: ${req.method} ${req.originalUrl}`
+              );
+              if (req.originalUrl.startsWith('/api')) {
+                return res
+                  .status(404)
+                  .json({ error: `API route not found: ${req.originalUrl}` });
+              }
+              next();
+            });
+
+            // In production, serve React app for all non-API routes
+            app.get('*', async (_req: Request, res: Response) => {
+              try {
+                const path = await import('path');
+                const indexPath = path.join(
+                  process.cwd(),
+                  'dist/public/index.html'
+                );
+                console.log(
+                  `Serving SPA for route: ${_req.path}, file: ${indexPath}`
+                );
+                res.sendFile(indexPath);
+              } catch (error) {
+                console.error('SPA serving error:', error);
+                res.status(500).send('Error serving application');
+              }
+            });
+            console.log('✓ Production SPA routing configured');
           }
-        })();
 
-        // Graceful shutdown handler - works in both dev and production
-        const shutdown = async (signal: string) => {
-          serverLogger.info(`Received ${signal}, starting graceful shutdown...`);
-
-          // Close server gracefully
-          httpServer.close(() => {
-            serverLogger.info('HTTP server closed gracefully');
-            process.exit(0);
-          });
-
-          // Force shutdown after 10 seconds if graceful shutdown fails
-          setTimeout(() => {
-            serverLogger.warn('Forcing shutdown after timeout');
-            process.exit(1);
-          }, 10000);
-        };
-
-        // Handle shutdown signals properly
-        process.on('SIGTERM', () => shutdown('SIGTERM'));
-        process.on('SIGINT', () => shutdown('SIGINT'));
-
-        // Proper error handling - log and exit, let Replit restart
-        process.on('uncaughtException', (error) => {
-          serverLogger.error('🚨 Uncaught Exception - this is fatal:', error);
-          serverLogger.error('Exiting to allow Replit to restart the app cleanly');
+          console.log(
+            '✓ The Sandwich Project server is fully ready to handle requests'
+          );
+          console.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
+        } catch (initError) {
+          serverLogger.error('✗ Background initialization failed:', initError);
+          serverLogger.error(
+            'This is a fatal error - exiting to allow Replit to restart'
+          );
+          // Let Replit restart the app to recover from initialization failures
           process.exit(1);
-        });
-
-        process.on('unhandledRejection', (reason, promise) => {
-          serverLogger.error('🚨 Unhandled Promise Rejection:', {
-            reason,
-            promise,
-          });
-          serverLogger.error('Exiting to allow Replit to restart the app cleanly');
-          process.exit(1);
-        });
-
-        // Resolve with the server instance to keep reference alive
-        resolve(httpServer);
+        }
       });
     });
+
+    // Graceful shutdown handler - works in both dev and production
+    const shutdown = async (signal: string) => {
+      serverLogger.info(`Received ${signal}, starting graceful shutdown...`);
+
+      // Close server gracefully
+      httpServer.close(() => {
+        serverLogger.info('HTTP server closed gracefully');
+        process.exit(0);
+      });
+
+      // Force shutdown after 10 seconds if graceful shutdown fails
+      setTimeout(() => {
+        serverLogger.warn('Forcing shutdown after timeout');
+        process.exit(1);
+      }, 10000);
+    };
+
+    // Handle shutdown signals properly
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
+    // Proper error handling - log and exit, let Replit restart
+    process.on('uncaughtException', (error) => {
+      serverLogger.error('🚨 Uncaught Exception - this is fatal:', error);
+      serverLogger.error('Exiting to allow Replit to restart the app cleanly');
+      process.exit(1);
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      serverLogger.error('🚨 Unhandled Promise Rejection:', {
+        reason,
+        promise,
+      });
+      serverLogger.error('Exiting to allow Replit to restart the app cleanly');
+      process.exit(1);
+    });
+
+    return httpServer;
   } catch (error) {
     serverLogger.error('✗ Server startup failed:', error);
     serverLogger.error(
@@ -384,11 +425,11 @@ async function startServer() {
   }
 }
 
-// Start server and keep it running - the returned Promise keeps the server reference alive
+// Start server - simple and clean
 startServer()
   .then((server) => {
-    // Server is now listening and will stay alive
-    // The server reference and active listeners keep the process running
+    serverLogger.info('✅ Server startup sequence completed successfully');
+    serverLogger.info(`Server listening: ${server?.listening}`);
   })
   .catch((error) => {
     console.error('✗ Failed to start server:', error);
