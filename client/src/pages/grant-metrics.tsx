@@ -1537,7 +1537,7 @@ export default function GrantMetrics() {
                 <div className="text-4xl font-black text-[#236383] mb-2">
                   {eventMetrics.uniqueOrganizations}
                 </div>
-                <p className="font-medium text-gray-900">Group Build Partners</p>
+                <p className="font-medium text-gray-900">Group Event Partners</p>
                 <p className="text-sm text-gray-600 mt-2">
                   Unique organizations hosted events
                 </p>
@@ -1620,20 +1620,20 @@ export default function GrantMetrics() {
           </CardContent>
         </Card>
 
-        {/* Group Build Events Impact - REAL DATA */}
+        {/* Group Events Impact - REAL DATA */}
         {eventMetrics.totalEvents > 0 && (
           <Card className="mb-8 border-2 border-[#236383] shadow-lg">
             <CardHeader className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
               <CardTitle className="flex items-center text-xl">
                 <Users className="w-6 h-6 mr-2" />
-                Group Build Events & Community Engagement
+                Group Events & Community Engagement
               </CardTitle>
               <CardDescription className="text-white/90">
                 Tracked event participation from database {selectedFiscalYear !== 'all' && `(FY ${selectedFiscalYear})`}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
                   <Calendar className="w-8 h-8 mx-auto mb-2 text-[#236383]" />
                   <div className="text-3xl font-black text-[#236383] mb-1">
@@ -1644,32 +1644,6 @@ export default function GrantMetrics() {
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Tracked in database
-                  </p>
-                </div>
-
-                <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
-                  <Users className="w-8 h-8 mx-auto mb-2 text-[#007E8C]" />
-                  <div className="text-3xl font-black text-[#007E8C] mb-1">
-                    {eventMetrics.totalActualAttendance.toLocaleString()}
-                  </div>
-                  <p className="text-sm text-gray-700 font-medium">
-                    Total participants
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Actual attendance recorded
-                  </p>
-                </div>
-
-                <div className="text-center p-4 bg-[#FEF4E0] rounded-lg">
-                  <Target className="w-8 h-8 mx-auto mb-2 text-[#FBAD3F]" />
-                  <div className="text-3xl font-black text-[#FBAD3F] mb-1">
-                    {eventMetrics.avgAttendeesPerEvent}
-                  </div>
-                  <p className="text-sm text-gray-700 font-medium">
-                    Avg attendees per event
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Consistent turnout
                   </p>
                 </div>
 
@@ -1691,7 +1665,7 @@ export default function GrantMetrics() {
                 <div className="bg-gradient-to-r from-white to-[#E8F4F8] p-5 rounded-lg border border-[#236383]/30">
                   <h3 className="font-bold text-gray-900 mb-3 flex items-center">
                     <Trophy className="w-5 h-5 mr-2 text-[#236383]" />
-                    Sandwiches from Group Builds
+                    Sandwiches from Group Events
                   </h3>
                   <div className="flex items-center justify-between">
                     <div>
@@ -1734,9 +1708,9 @@ export default function GrantMetrics() {
               </div>
 
               <div className="mt-6 p-5 bg-gradient-to-br from-[#236383]/10 to-white rounded-lg border border-[#236383]/30">
-                <h3 className="font-bold text-gray-900 mb-3">Why Group Builds Matter</h3>
+                <h3 className="font-bold text-gray-900 mb-3">Why Group Events Matter</h3>
                 <p className="text-sm text-gray-700 mb-3">
-                  Group builds transform sandwich-making into community building experiences, creating lasting partnerships with:
+                  Group events transform sandwich-making into community building experiences, creating lasting partnerships with:
                 </p>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700">
                   <li className="flex items-start gap-2">
