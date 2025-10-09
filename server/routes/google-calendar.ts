@@ -5,7 +5,7 @@ import { isAuthenticated } from '../temp-auth';
 const router = Router();
 
 // Calendar ID from environment or hardcoded
-const CALENDAR_ID = '0813cd575e262fbc020927f88f1fd5a1906f5bd9b2f27a66a49202359e5ff4@group.calendar.google.com';
+const CALENDAR_ID = '0813cd575e262fbc020927f88f1fd5a1906f5bd9b2f27a66a4920235939e5ff4@group.calendar.google.com';
 
 router.get('/events', isAuthenticated, async (req, res) => {
   try {

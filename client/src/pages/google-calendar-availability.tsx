@@ -2,7 +2,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 
 export default function GoogleCalendarAvailability() {
   // Extract calendar ID from the cid parameter (base64 decoded)
-  const calendarId = '0813cd575e262fbc020927f88f1fd5a1906f5bd9b2f27a66a49202359e5ff4@group.calendar.google.com';
+  const calendarId = '0813cd575e262fbc020927f88f1fd5a1906f5bd9b2f27a66a4920235939e5ff4@group.calendar.google.com';
   
   // Create embed URL with calendar ID and timezone - using Google's standard public embed format
   const embedUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calendarId)}&ctz=America/New_York`;
