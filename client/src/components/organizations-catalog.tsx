@@ -1053,7 +1053,11 @@ export default function GroupCatalog({
                               <span className="text-lg font-bold text-gray-900">
                                 {org.sandwichCount}
                               </span>
-                              <SandwichIcon className="w-4 h-4 text-orange-600" />
+                              <img 
+                                src="/attached_assets/LOGOS/sandwich logo.png" 
+                                alt="sandwich" 
+                                className="w-4 h-4 object-contain"
+                              />
                             </div>
                             <div className="text-xs text-gray-500">
                               {org.eventCount} event
