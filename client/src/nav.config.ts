@@ -69,6 +69,13 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'team-availability',
     group: 'dashboard',
   },
+  {
+    id: 'google-calendar-availability',
+    label: 'Volunteer Calendar',
+    icon: Calendar,
+    href: 'google-calendar-availability',
+    group: 'dashboard',
+  },
 
   // COLLECTIONS LOG
   {
@@ -124,30 +131,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Car,
     href: 'drivers',
     permission: PERMISSIONS.NAV_DRIVERS,
-    group: 'operations',
-  },
-  {
-    id: 'my-availability',
-    label: 'My Availability',
-    icon: Calendar,
-    href: 'my-availability',
-    permission: PERMISSIONS.AVAILABILITY_VIEW,
-    group: 'operations',
-  },
-  {
-    id: 'team-availability',
-    label: 'Team Availability',
-    icon: Calendar,
-    href: 'team-availability',
-    permission: PERMISSIONS.AVAILABILITY_VIEW,
-    group: 'operations',
-  },
-  {
-    id: 'google-calendar-availability',
-    label: 'Volunteer Calendar',
-    icon: Calendar,
-    href: 'google-calendar-availability',
-    permission: PERMISSIONS.AVAILABILITY_VIEW,
     group: 'operations',
   },
   {
