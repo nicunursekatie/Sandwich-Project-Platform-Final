@@ -87,16 +87,16 @@ async function startServer() {
       const status = err.status || err.statusCode || 500;
       const message = err.message || 'Internal Server Error';
       serverLogger.error('Unhandled error:', err);
-      
+
       // Ensure API routes always return JSON
       if (req.originalUrl.startsWith('/api')) {
         return res.status(status).json({ message, error: true });
       }
-      
+
       res.status(status).json({ message });
     });
 
-    const port = process.env.PORT || 5000;
+    const port = process.env.PORT || 3000;
     const host = process.env.HOST || '0.0.0.0';
 
     serverLogger.info(
@@ -108,6 +108,16 @@ async function startServer() {
 
     // Set up basic routes BEFORE starting server
     app.use('/attached_assets', express.static('attached_assets'));
+
+    // Root endpoint for health checks - responds immediately
+    app.get('/', (_req: Request, res: Response) => {
+      res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+      });
+    });
 
     // Health check route - available before full initialization
     app.get('/health', (_req: Request, res: Response) => {
@@ -134,7 +144,7 @@ async function startServer() {
 
     // Set up Socket.io for chat system
     const io = setupSocketChat(httpServer);
-    
+
     // Configure smart delivery service with Socket.IO for real-time notifications
     smartDeliveryService.setSocketIO(io);
 
@@ -162,10 +172,10 @@ async function startServer() {
     // This prevents API routes from falling through to Vite/SPA and returning HTML
     app.all('/api/*', (req: Request, res: Response) => {
       serverLogger.warn(`🚨 API route not found: ${req.originalUrl}`);
-      res.status(404).json({ 
+      res.status(404).json({
         error: `API route not found: ${req.originalUrl}`,
         method: req.method,
-        path: req.originalUrl
+        path: req.originalUrl,
       });
     });
 
@@ -180,10 +190,12 @@ async function startServer() {
       app.get('*', async (req: Request, res: Response, next: NextFunction) => {
         // NEVER serve HTML for API routes - let them 404 instead
         if (req.originalUrl.startsWith('/api/')) {
-          serverLogger.warn(`🚨 API route ${req.originalUrl} reached SPA fallback - this should not happen!`);
+          serverLogger.warn(
+            `🚨 API route ${req.originalUrl} reached SPA fallback - this should not happen!`
+          );
           return next(); // Let it 404 rather than serve HTML
         }
-        
+
         // Only serve SPA for non-API routes
         const path = await import('path');
         res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
@@ -313,17 +325,14 @@ async function startServer() {
           // Initialize cron jobs for scheduled tasks
           const { initializeCronJobs } = await import('./services/cron-jobs');
           initializeCronJobs();
-          console.log('✓ Cron jobs initialized (host availability scraper scheduled)');
+          console.log(
+            '✓ Cron jobs initialized (host availability scraper scheduled)'
+          );
 
           // Routes already registered during server startup
           console.log(
             '✓ Database initialization completed after route registration'
           );
-
-          // Update health check to reflect full init
-          app.get('/health', (_req: Request, res: Response) => {
-            res.status(200).json({ status: 'ok' });
-          });
 
           // SPA routing already configured earlier - no need to re-register
 
@@ -333,7 +342,9 @@ async function startServer() {
           console.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
         } catch (initError) {
           serverLogger.error('✗ Background initialization failed:', initError);
-          serverLogger.error('This is a fatal error - exiting to allow Replit to restart');
+          serverLogger.error(
+            'This is a fatal error - exiting to allow Replit to restart'
+          );
           // Let Replit restart the app to recover from initialization failures
           process.exit(1);
         }
@@ -369,7 +380,10 @@ async function startServer() {
     });
 
     process.on('unhandledRejection', (reason, promise) => {
-      serverLogger.error('🚨 Unhandled Promise Rejection:', { reason, promise });
+      serverLogger.error('🚨 Unhandled Promise Rejection:', {
+        reason,
+        promise,
+      });
       serverLogger.error('Exiting to allow Replit to restart the app cleanly');
       process.exit(1);
     });
@@ -377,7 +391,9 @@ async function startServer() {
     return httpServer;
   } catch (error) {
     serverLogger.error('✗ Server startup failed:', error);
-    serverLogger.error('Fatal startup error - exiting to allow Replit to restart');
+    serverLogger.error(
+      'Fatal startup error - exiting to allow Replit to restart'
+    );
     process.exit(1);
   }
 }
@@ -393,3 +409,8 @@ startServer()
     console.error('Fatal error - exiting to allow Replit to restart');
     process.exit(1);
   });
+
+// Keep the process running
+process.on('exit', (code) => {
+  serverLogger.info(`Process exiting with code: ${code}`);
+});
