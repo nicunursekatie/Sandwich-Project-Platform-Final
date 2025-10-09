@@ -16,6 +16,47 @@ import logger, { createServiceLogger, logRequest } from './utils/logger.js';
 const app = express();
 const serverLogger = createServiceLogger('server');
 
+// CRITICAL: Health check endpoints MUST be defined FIRST - before ANY middleware
+// This ensures they respond instantly without processing compression, body parsing, or logging
+app.get('/', (_req: Request, res: Response, next: NextFunction) => {
+  // For health checks (typically have specific headers or accept JSON)
+  const acceptsJson = _req.accepts('json');
+  const acceptsHtml = _req.accepts('html');
+
+  // If client prefers JSON or doesn't specify, send health check
+  if (!acceptsHtml || (acceptsJson && !_req.headers['user-agent']?.includes('Mozilla'))) {
+    return res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+    });
+  }
+
+  // Otherwise, let it pass through to SPA in production
+  next();
+});
+
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+  });
+});
+
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0',
+  });
+});
+
+// Now apply middleware AFTER health checks
 // Enable gzip/brotli compression for performance
 app.use(
   compression({
@@ -106,50 +147,8 @@ async function startServer() {
     // Simple port allocation for faster deployment
     const finalPort = port;
 
-    // Set up basic routes BEFORE starting server
+    // Set up static assets
     app.use('/attached_assets', express.static('attached_assets'));
-
-    // Root endpoint for health checks - responds immediately
-    // In production, this serves the SPA; in deployment health checks, returns JSON
-    app.get('/', (_req: Request, res: Response, next: NextFunction) => {
-      // For health checks (typically have specific headers or accept JSON)
-      const acceptsJson = _req.accepts('json');
-      const acceptsHtml = _req.accepts('html');
-
-      // If client prefers JSON or doesn't specify, send health check
-      if (!acceptsHtml || (acceptsJson && !_req.headers['user-agent']?.includes('Mozilla'))) {
-        return res.status(200).json({
-          status: 'healthy',
-          timestamp: new Date().toISOString(),
-          uptime: process.uptime(),
-          environment: process.env.NODE_ENV || 'development',
-        });
-      }
-
-      // Otherwise, let it pass through to SPA in production
-      next();
-    });
-
-    // Health check route - available before full initialization
-    app.get('/health', (_req: Request, res: Response) => {
-      res.status(200).json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development',
-      });
-    });
-
-    // Health check route for deployment - API endpoint
-    app.get('/api/health', (_req: Request, res: Response) => {
-      res.status(200).json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development',
-        version: '1.0.0',
-      });
-    });
 
     const httpServer = createServer(app);
 
