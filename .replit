@@ -3,13 +3,25 @@ run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
-channel = "stable-24_05"
-packages = ["chromium", "glib", "glibcLocales", "gtk3", "jq", "killall", "nss", "tree", "nano", "sqlite-interactive"]
+channel = "stable-22_11"
+packages = [
+  "chromium",
+  "glib",
+  "glibcLocales",
+  "gtk3",
+  "jq",
+  "killall",
+  "nss",
+  "tree",
+  "nano",
+  "sqlite-interactive",
+]
 
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+run = "NODE_ENV=production node dist/index.js"
+
 
 [[ports]]
 localPort = 80
