@@ -85,6 +85,7 @@ export function EventRequestAuditLog({
   const [userFilter, setUserFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [userNameCache, setUserNameCache] = useState<Record<string, string>>({});
   const { trackView, trackClick, trackFilter, trackSearch } =
     useActivityTracker();
 
@@ -119,6 +120,30 @@ export function EventRequestAuditLog({
         : 'Viewing general event request audit log'
     );
   }, [trackView, eventId]);
+
+  // Fetch all users to map IDs to names
+  const { data: allUsers } = useQuery({
+    queryKey: ['/api/users'],
+    queryFn: async () => {
+      const response = await fetch('/api/users');
+      if (!response.ok) throw new Error('Failed to fetch users');
+      const users = await response.json();
+      
+      // Build user name cache
+      const cache: Record<string, string> = {};
+      users.forEach((user: any) => {
+        const displayName = user.displayName || 
+                          `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
+                          user.email?.split('@')[0] || 
+                          'Unknown User';
+        cache[user.id] = displayName;
+      });
+      setUserNameCache(cache);
+      
+      return users;
+    },
+    enabled: hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW),
+  });
 
   // Fetch audit logs
   const {
@@ -315,13 +340,17 @@ export function EventRequestAuditLog({
       'lastContactedAt': 'Last Contacted',
       
       // Technical fields
-      'userId': 'User ID',
+      'userId': 'User',
       'eventId': 'Event ID',
       'requestId': 'Request ID',
       'organizationId': 'Organization ID',
       'submittedBy': 'Submitted By',
       'assignedTo': 'Assigned To',
       'modifiedBy': 'Modified By',
+      'tspContact': 'TSP Contact',
+      'tspContactAssigned': 'TSP Contact',
+      'tspContactAssignedDate': 'TSP Contact Assigned Date',
+      'additionalTspContacts': 'Additional TSP Contacts',
       
       // Boolean flags
       'isPublic': 'Public Event',
@@ -368,6 +397,34 @@ export function EventRequestAuditLog({
     
     // Convert to string for processing
     const stringValue = String(value);
+    
+    // Check if this looks like a user ID and convert to name
+    if (stringValue.startsWith('user_') && stringValue.includes('_')) {
+      // This is a user ID - convert to name
+      const userName = userNameCache[stringValue];
+      if (userName) {
+        return userName;
+      }
+      // If not in cache, try to make it more readable
+      return 'User (loading...)';
+    }
+    
+    // Also check if field name suggests it's a user field
+    if (fieldName && (
+      fieldName.toLowerCase().includes('tspcontact') ||
+      fieldName.toLowerCase().includes('assignedto') ||
+      fieldName.toLowerCase().includes('userid') ||
+      fieldName.toLowerCase().includes('assignee') ||
+      fieldName === 'tspContact' ||
+      fieldName === 'Tsp Contact' ||
+      fieldName === 'TSP Contact'
+    )) {
+      // Try to get user name from cache
+      const userName = userNameCache[stringValue];
+      if (userName) {
+        return userName;
+      }
+    }
     
     // Handle boolean values
     if (typeof value === 'boolean') {
@@ -465,25 +522,42 @@ export function EventRequestAuditLog({
   // Helper function to convert action names to human-readable format
   const getHumanReadableActionName = (action: string): string => {
     const actionMapping: Record<string, string> = {
-      'CREATE': 'Request Created',
-      'UPDATE': 'Request Updated', 
-      'PRIMARY_CONTACT_COMPLETED': 'Initial Contact Made',
-      'EVENT_DETAILS_UPDATED': 'Event Details Updated',
+      'CREATE': 'Created',
+      'UPDATE': 'Updated', 
+      'PRIMARY_CONTACT_COMPLETED': 'Contact Made',
+      'EVENT_DETAILS_UPDATED': 'Details Updated',
       'STATUS_CHANGED': 'Status Changed',
-      'FOLLOW_UP_RECORDED': 'Follow-up Recorded',
+      'FOLLOW_UP_RECORDED': 'Follow-up Added',
       'MARKED_UNRESPONSIVE': 'Marked Unresponsive',
-      'DELETE': 'Request Deleted',
-      'APPROVED': 'Request Approved',
-      'REJECTED': 'Request Rejected',
-      'CANCELLED': 'Request Cancelled',
-      'COMPLETED': 'Request Completed',
-      'ASSIGNED': 'Request Assigned',
-      'UNASSIGNED': 'Request Unassigned',
-      'REOPENED': 'Request Reopened',
-      'ARCHIVED': 'Request Archived'
+      'DELETE': 'Deleted',
+      'APPROVED': 'Approved',
+      'REJECTED': 'Rejected',
+      'CANCELLED': 'Cancelled',
+      'COMPLETED': 'Completed',
+      'ASSIGNED': 'Assigned',
+      'UNASSIGNED': 'Unassigned',
+      'REOPENED': 'Reopened',
+      'ARCHIVED': 'Archived',
+      // Add missing action types
+      'EVENT_REQUEST_CHANGE': 'Modified',
+      'EVENT_REQUEST_SIGNIFICANT_CHANGE': 'Major Update',
+      'TSP_CONTACT_ASSIGNED': 'TSP Contact Set',
+      'TSP_CONTACT_REMOVED': 'TSP Contact Removed'
     };
     
-    return actionMapping[action] || formatFieldName(action);
+    // If not in mapping, clean up the action name
+    if (!actionMapping[action]) {
+      return action
+        .replace(/_/g, ' ')
+        .replace(/EVENT REQUEST/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+    
+    return actionMapping[action];
   };
 
   // Helper function to render field changes from structured _auditMetadata or fallback to changeDescription
@@ -826,10 +900,10 @@ export function EventRequestAuditLog({
                 <Card key={log.id} className="shadow-sm hover:shadow-md transition-shadow" data-testid={`audit-entry-${log.id}`}>
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-4">
-                      {/* Action Badge */}
-                      <div className={`inline-flex items-center px-3 py-2 rounded-lg border ${getActionStyle(log.action)} flex-shrink-0`}>
+                      {/* Action Badge - More Compact */}
+                      <div className={`inline-flex items-center px-2 py-1 rounded-md border ${getActionStyle(log.action)} flex-shrink-0 max-w-[150px]`}>
                         {getActionIcon(log.action)}
-                        <span className="ml-2 font-medium text-[12px]">
+                        <span className="ml-1 font-medium text-[11px] truncate">
                           {getHumanReadableActionName(log.action)}
                         </span>
                       </div>
