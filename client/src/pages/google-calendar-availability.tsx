@@ -4,8 +4,8 @@ export default function GoogleCalendarAvailability() {
   // Extract calendar ID from the cid parameter (base64 decoded)
   const calendarId = '0813cd575e262fbc020927f88f1fd5a1906f5bd9b2f27a66a49202359e5ff4@group.calendar.google.com';
   
-  // Create embed URL with calendar ID and timezone
-  const embedUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calendarId)}&ctz=America/New_York&mode=WEEK&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0&showTz=0`;
+  // Create embed URL with calendar ID and timezone - optimized for public viewing
+  const embedUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calendarId)}&ctz=America/New_York&mode=WEEK&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0&showTz=0&wkst=1&bgcolor=%23ffffff`;
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900">

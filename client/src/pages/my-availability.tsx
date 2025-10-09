@@ -120,7 +120,7 @@ export default function MyAvailability() {
       userId: user?.id || '',
       startAt: '',
       endAt: '',
-      status: 'available',
+      status: 'unavailable',
       notes: '',
     },
   });
@@ -146,7 +146,7 @@ export default function MyAvailability() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this availability slot?')) {
+    if (confirm('Are you sure you want to delete this time off/availability entry?')) {
       deleteMutation.mutate(id);
     }
   };
@@ -157,7 +157,7 @@ export default function MyAvailability() {
       userId: user?.id || '',
       startAt: '',
       endAt: '',
-      status: 'available',
+      status: 'unavailable',
       notes: '',
     });
     setDialogOpen(true);
@@ -180,13 +180,13 @@ export default function MyAvailability() {
       {/* Back Button Header */}
 
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">My Availability</h1>
+        <h1 className="text-3xl font-bold text-gray-900">My Schedule & Time Off</h1>
         <Button
           onClick={handleAddNew}
           data-testid="button-add-availability"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add Availability
+          Mark Time Off
         </Button>
       </div>
 
@@ -246,9 +246,9 @@ export default function MyAvailability() {
                     <div
                       key={slot.id}
                       className={`text-xs p-1.5 rounded cursor-pointer ${
-                        slot.status === 'available'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                        slot.status === 'unavailable'
+                          ? 'bg-orange-100 text-orange-800 font-semibold'
+                          : 'bg-gray-100 text-gray-600'
                       }`}
                       onClick={() => handleEdit(slot)}
                       data-testid={`slot-${slot.id}`}
@@ -267,7 +267,7 @@ export default function MyAvailability() {
       {/* Availability Slots List */}
       <Card className="p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          All Availability Slots
+          All Scheduled Time Off & Availability
         </h2>
 
         {slots.length === 0 ? (
@@ -277,11 +277,11 @@ export default function MyAvailability() {
           >
             <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <p className="text-gray-500 mb-4">
-              No availability slots set yet
+              No scheduled time off or availability set yet
             </p>
             <Button onClick={handleAddNew} data-testid="button-add-first">
               <Plus className="mr-2 h-4 w-4" />
-              Add Your First Slot
+              Mark Your First Time Off
             </Button>
           </div>
         ) : (
@@ -296,13 +296,13 @@ export default function MyAvailability() {
                   <div className="flex items-center gap-3 mb-2">
                     <Badge
                       className={
-                        slot.status === 'available'
-                          ? 'bg-green-100 text-green-800 border-green-300'
-                          : 'bg-red-100 text-red-800 border-red-300'
+                        slot.status === 'unavailable'
+                          ? 'bg-orange-100 text-orange-800 border-orange-300 font-semibold'
+                          : 'bg-gray-100 text-gray-600 border-gray-300'
                       }
                       data-testid={`badge-status-${slot.id}`}
                     >
-                      {slot.status === 'available' ? 'Available' : 'Unavailable'}
+                      {slot.status === 'unavailable' ? 'Time Off' : 'Available'}
                     </Badge>
                     <span className="text-sm font-medium text-gray-900">
                       {format(parseISO(slot.startAt), 'MMM dd, yyyy')}
@@ -354,7 +354,7 @@ export default function MyAvailability() {
         <DialogContent className="sm:max-w-[500px] fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingSlot ? 'Edit Availability' : 'Add Availability'}
+              {editingSlot ? 'Edit Time Off' : 'Mark Time Off'}
             </DialogTitle>
           </DialogHeader>
 
@@ -433,7 +433,7 @@ export default function MyAvailability() {
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Add any notes about this availability"
+                        placeholder="Add any notes about this time off (e.g., vacation, appointment, etc.)"
                         data-testid="input-notes"
                       />
                     </FormControl>

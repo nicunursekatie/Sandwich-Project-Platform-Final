@@ -167,10 +167,10 @@ export default function TeamAvailability() {
 
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-2" data-testid="page-title">
-          Team Availability
+          Team Time Off & Unavailability
         </h1>
         <p className="text-gray-600" data-testid="page-description">
-          View and track team member availability across selected date ranges
+          Track team member time off and unavailability across selected date ranges
         </p>
       </div>
 
@@ -178,13 +178,13 @@ export default function TeamAvailability() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-orange-100 rounded-lg">
+              <UserX className="h-6 w-6 text-orange-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Total Team Members</p>
-              <p className="text-2xl font-bold text-gray-900" data-testid="stat-total">
-                {stats.totalMembers}
+              <p className="text-sm text-gray-600">Members On Time Off</p>
+              <p className="text-2xl font-bold text-orange-600" data-testid="stat-unavailable">
+                {stats.unavailableMembers}
               </p>
             </div>
           </div>
@@ -206,13 +206,13 @@ export default function TeamAvailability() {
 
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-red-100 rounded-lg">
-              <UserX className="h-6 w-6 text-red-600" />
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <Users className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Unavailable Members</p>
-              <p className="text-2xl font-bold text-red-600" data-testid="stat-unavailable">
-                {stats.unavailableMembers}
+              <p className="text-sm text-gray-600">Total Team Members</p>
+              <p className="text-2xl font-bold text-gray-900" data-testid="stat-total">
+                {stats.totalMembers}
               </p>
             </div>
           </div>
@@ -325,7 +325,7 @@ export default function TeamAvailability() {
       {/* Availability List */}
       <Card className="p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Team Member Availability
+          Team Time Off Schedule
         </h2>
 
         {filteredAndSortedUsers.length === 0 ? (
@@ -394,33 +394,33 @@ export default function TeamAvailability() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {/* Available Slots */}
-                        {availableSlots.length > 0 && (
+                        {/* Unavailable Slots (shown first for prominence) */}
+                        {unavailableSlots.length > 0 && (
                           <div>
                             <div className="flex items-center gap-2 mb-2">
                               <Badge
-                                className="bg-green-100 text-green-800 border-green-300"
-                                data-testid={`badge-available-count-${user.id}`}
+                                className="bg-orange-100 text-orange-800 border-orange-300 font-semibold"
+                                data-testid={`badge-unavailable-count-${user.id}`}
                               >
-                                Available ({availableSlots.length})
+                                Time Off ({unavailableSlots.length})
                               </Badge>
                             </div>
                             <div className="space-y-2">
-                              {availableSlots.map((slot) => (
+                              {unavailableSlots.map((slot) => (
                                 <div
                                   key={slot.id}
-                                  className="flex items-start gap-2 text-sm bg-green-50 p-2 rounded border border-green-200"
-                                  data-testid={`slot-available-${slot.id}`}
+                                  className="flex items-start gap-2 text-sm bg-orange-50 p-2 rounded border border-orange-300 font-medium"
+                                  data-testid={`slot-unavailable-${slot.id}`}
                                 >
-                                  <Clock className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                  <Clock className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
                                   <div className="flex-1">
-                                    <div className="text-gray-900 font-medium">
+                                    <div className="text-gray-900 font-semibold">
                                       {format(new Date(slot.startAt), 'MMM dd, yyyy h:mm a')} -{' '}
                                       {format(new Date(slot.endAt), 'h:mm a')}
                                     </div>
                                     {slot.notes && (
                                       <div
-                                        className="text-gray-600 mt-1"
+                                        className="text-gray-700 mt-1"
                                         data-testid={`text-notes-${slot.id}`}
                                       >
                                         {slot.notes}
@@ -433,33 +433,33 @@ export default function TeamAvailability() {
                           </div>
                         )}
 
-                        {/* Unavailable Slots */}
-                        {unavailableSlots.length > 0 && (
+                        {/* Available Slots (shown second) */}
+                        {availableSlots.length > 0 && (
                           <div>
                             <div className="flex items-center gap-2 mb-2">
                               <Badge
-                                className="bg-red-100 text-red-800 border-red-300"
-                                data-testid={`badge-unavailable-count-${user.id}`}
+                                className="bg-gray-100 text-gray-700 border-gray-300"
+                                data-testid={`badge-available-count-${user.id}`}
                               >
-                                Unavailable ({unavailableSlots.length})
+                                Available ({availableSlots.length})
                               </Badge>
                             </div>
                             <div className="space-y-2">
-                              {unavailableSlots.map((slot) => (
+                              {availableSlots.map((slot) => (
                                 <div
                                   key={slot.id}
-                                  className="flex items-start gap-2 text-sm bg-red-50 p-2 rounded border border-red-200"
-                                  data-testid={`slot-unavailable-${slot.id}`}
+                                  className="flex items-start gap-2 text-sm bg-gray-50 p-2 rounded border border-gray-200"
+                                  data-testid={`slot-available-${slot.id}`}
                                 >
-                                  <Clock className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                  <Clock className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
                                   <div className="flex-1">
-                                    <div className="text-gray-900 font-medium">
+                                    <div className="text-gray-700">
                                       {format(new Date(slot.startAt), 'MMM dd, yyyy h:mm a')} -{' '}
                                       {format(new Date(slot.endAt), 'h:mm a')}
                                     </div>
                                     {slot.notes && (
                                       <div
-                                        className="text-gray-600 mt-1"
+                                        className="text-gray-500 mt-1 text-xs"
                                         data-testid={`text-notes-${slot.id}`}
                                       >
                                         {slot.notes}
