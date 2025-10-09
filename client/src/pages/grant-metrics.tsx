@@ -1340,45 +1340,80 @@ export default function GrantMetrics() {
           </CardContent>
         </Card>
 
-        {/* Quarterly Reporting Breakdown - INTERACTIVE */}
-        {filteredQuarterlyBreakdown.length > 0 && (
-          <Card className="mb-8 border-2 border-[#47B3CB] shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white">
-              <CardTitle className="flex items-center text-xl">
-                <Calendar className="w-6 h-6 mr-2" />
-                Quarterly Performance Breakdown
-              </CardTitle>
-              <CardDescription className="text-white/90">
-                For grant reporting and compliance {selectedFiscalYear !== 'all' && `(FY ${selectedFiscalYear}${selectedQuarter !== 'all' ? ` Q${selectedQuarter}` : ''})`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredQuarterlyBreakdown.slice(-12).map((quarter) => (
-                  <div
-                    key={quarter.quarter}
-                    className="p-4 bg-gradient-to-br from-white to-[#E8F4F8] rounded-lg border border-[#47B3CB]/30 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge className="bg-[#47B3CB]/20 text-[#47B3CB] border-[#47B3CB]/30">
-                        {quarter.quarter}
-                      </Badge>
-                      <BarChart3 className="w-5 h-5 text-[#236383]" />
-                    </div>
-                    <div className="text-3xl font-black text-[#236383] mb-1">
-                      {quarter.sandwiches.toLocaleString()}
-                    </div>
-                    <p className="text-sm text-gray-600 mb-1">sandwiches distributed</p>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Building2 className="w-3 h-3" />
-                      {quarter.events} collection events
-                    </div>
+        {/* Crisis Response & Sustainable Growth Metrics */}
+        <Card className="mb-8 border-2 border-[#47B3CB] shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-[#47B3CB] to-[#236383] text-white">
+            <CardTitle className="flex items-center text-xl">
+              <TrendingUp className="w-6 h-6 mr-2" />
+              Crisis Response & Sustainable Growth
+            </CardTitle>
+            <CardDescription className="text-white/90">
+              Demonstrating resilience and consistent impact growth
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Crisis Response Growth */}
+              <div className="bg-gradient-to-br from-white to-[#E8F4F8] p-6 rounded-lg border border-[#47B3CB]/30">
+                <div className="flex items-center mb-4">
+                  <TrendingUp className="w-6 h-6 text-[#47B3CB] mr-2" />
+                  <h3 className="text-lg font-bold text-gray-900">📈 Since Crisis Response (2020-2025)</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Week 1 of pandemic:</span>
+                    <span className="text-lg font-bold text-[#47B3CB]">317 sandwiches</span>
                   </div>
-                ))}
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Current weekly capacity:</span>
+                    <span className="text-lg font-bold text-[#47B3CB]">3,230 sandwiches</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Growth multiplier:</span>
+                    <span className="text-lg font-bold text-[#236383]">10x growth</span>
+                  </div>
+                  <div className="mt-4 p-3 bg-[#47B3CB]/10 rounded-lg border border-[#47B3CB]/20">
+                    <p className="text-sm text-gray-700 italic">
+                      <strong>Quality maintained:</strong> While scaling 10x, we've maintained consistent sandwich quality and community trust
+                    </p>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+
+              {/* Sustainable Growth */}
+              <div className="bg-gradient-to-br from-white to-[#FEF4E0] p-6 rounded-lg border border-[#FBAD3F]/30">
+                <div className="flex items-center mb-4">
+                  <BarChart3 className="w-6 h-6 text-[#FBAD3F] mr-2" />
+                  <h3 className="text-lg font-bold text-gray-900">📊 2-Year Sustainable Growth (2023→2025)</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Events:</span>
+                    <span className="text-lg font-bold text-[#FBAD3F]">243 → 370</span>
+                    <Badge className="bg-green-100 text-green-700 border-green-300">+52%</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Sandwiches:</span>
+                    <span className="text-lg font-bold text-[#FBAD3F]">125k → 168k</span>
+                    <Badge className="bg-green-100 text-green-700 border-green-300">+34%</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">People served:</span>
+                    <span className="text-lg font-bold text-[#FBAD3F]">+43,000</span>
+                    <span className="text-xs text-gray-500">annually</span>
+                  </div>
+                  <div className="mt-4 p-3 bg-[#FBAD3F]/10 rounded-lg border border-[#FBAD3F]/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Annual growth rate:</span>
+                      <span className="text-lg font-bold text-[#FBAD3F]">26%</span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1 italic">Consistent, sustainable expansion</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Geographic Reach & Demographics */}
         <Card className="mb-8 border-2 border-[#A31C41] shadow-lg">
