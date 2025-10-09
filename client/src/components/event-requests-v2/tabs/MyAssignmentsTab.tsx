@@ -297,15 +297,15 @@ export const MyAssignmentsTab: React.FC = () => {
     <div className="space-y-4">
       {myAssignments.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          <div className="mb-2">No assignments found</div>
+          <div className="mb-2">No active assignments found</div>
           <div className="text-sm">
-            You are not currently assigned to any events as a TSP contact, driver, speaker, or volunteer.
+            You are not currently assigned to any upcoming or in-progress events as a TSP contact, driver, speaker, or volunteer.
           </div>
         </div>
       ) : (
         <div className="space-y-4">
           <div className="text-sm text-gray-600 mb-4">
-            Showing {myAssignments.length} event{myAssignments.length !== 1 ? 's' : ''} where you are assigned as TSP contact, driver, speaker, or volunteer
+            Showing {myAssignments.length} active event{myAssignments.length !== 1 ? 's' : ''} where you are assigned as TSP contact, driver, speaker, or volunteer (completed events excluded)
           </div>
           {myAssignments.map(renderEventCard)}
         </div>
