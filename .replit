@@ -20,7 +20,13 @@ packages = [
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
+run = "NODE_ENV=production node dist/index.js"
+
+[packager]
+language = "nodejs"
+
+[nix]
+channel = "stable-22_11"
 
 [[ports]]
 localPort = 5000
