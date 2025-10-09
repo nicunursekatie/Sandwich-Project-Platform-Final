@@ -109,16 +109,6 @@ async function startServer() {
     // Set up basic routes BEFORE starting server
     app.use('/attached_assets', express.static('attached_assets'));
 
-    // Root endpoint for health checks - responds immediately
-    app.get('/', (_req: Request, res: Response) => {
-      res.status(200).json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development',
-      });
-    });
-
     // Health check route - available before full initialization
     app.get('/health', (_req: Request, res: Response) => {
       res.status(200).json({
