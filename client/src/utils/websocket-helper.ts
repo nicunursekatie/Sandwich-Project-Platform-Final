@@ -12,14 +12,14 @@ export function getWebSocketUrl(config: WebSocketConfig): string {
   if (typeof window === 'undefined') return '';
 
   const { path, protocol: forcedProtocol, maxRetries = 3, retryDelay = 5000 } = config;
-  
+
   // Determine protocol
   const protocol = forcedProtocol || (window.location.protocol === 'https:' ? 'wss:' : 'ws:');
-  
+
   // Get hostname and port from current location
   const hostname = window.location.hostname;
   const port = window.location.port;
-  
+
   console.log('WebSocket URL Construction Debug:', {
     hostname,
     port,
@@ -29,14 +29,13 @@ export function getWebSocketUrl(config: WebSocketConfig): string {
     origin: window.location.origin
   });
 
-  let host: string;
+  let host;
 
   // Handle different deployment scenarios
   if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('replit.app') || hostname.includes('spock.replit.dev')) {
-    // Replit environment - NEVER include port, Replit handles port mapping internally
-    // The external URL should not have :5000, it's mapped to port 80
-    host = hostname;
-    console.log('Detected Replit environment, using host:', host);
+    // In Replit development, always use port 5000
+    host = `${hostname}:5000`;
+    console.log('Detected Replit environment, using host with port:', host);
   } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development - force port 5000 if no port specified
     const resolvedPort = port || '5000';
@@ -54,7 +53,7 @@ export function getWebSocketUrl(config: WebSocketConfig): string {
 
   const url = `${protocol}//${host}${path}`;
   console.log('Final WebSocket URL:', url);
-  
+
   return url;
 }
 
@@ -80,7 +79,7 @@ export function createWebSocketConnection(
     try {
       const url = getWebSocketUrl(config);
       console.log(`Attempting WebSocket connection to: ${url}`);
-      
+
       ws = new WebSocket(url);
 
       ws.onopen = (event) => {
@@ -101,7 +100,7 @@ export function createWebSocketConnection(
       ws.onclose = (event) => {
         console.log('WebSocket closed:', event.code, event.reason);
         onClose?.(event);
-        
+
         // Auto-reconnect if not a normal closure and not cleaned up
         if (autoReconnect && !isCleanedUp && event.code !== 1000) {
           const maxRetries = config.maxRetries || 5;
@@ -109,7 +108,7 @@ export function createWebSocketConnection(
             reconnectAttempts++;
             const delay = (config.retryDelay || 5000) * reconnectAttempts;
             console.log(`Attempting reconnect ${reconnectAttempts}/${maxRetries} in ${delay}ms`);
-            
+
             reconnectTimeout = setTimeout(connect, delay);
           } else {
             console.error('Max reconnection attempts reached');
