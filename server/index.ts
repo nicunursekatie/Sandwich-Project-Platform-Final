@@ -139,57 +139,6 @@ async function startServer() {
       });
     });
 
-    // Lazy initialization flag
-    let isInitialized = false;
-    let initializationPromise: Promise<void> | null = null;
-
-    // Lazy initialization function - runs on first API request
-    const ensureInitialized = async () => {
-      if (isInitialized) return;
-      if (initializationPromise) return initializationPromise;
-
-      initializationPromise = (async () => {
-        try {
-          serverLogger.info('Starting lazy initialization on first API request...');
-          
-          await initializeDatabase();
-          serverLogger.info('✓ Database initialized');
-
-          const { storage } = await import('./storage-wrapper');
-          const { startBackgroundSync } = await import('./background-sync-service');
-          startBackgroundSync(storage as any);
-          serverLogger.info('✓ Background sync started');
-
-          const { initializeCronJobs } = await import('./services/cron-jobs');
-          initializeCronJobs();
-          serverLogger.info('✓ Cron jobs initialized');
-
-          isInitialized = true;
-          serverLogger.info('✅ Lazy initialization complete');
-        } catch (error) {
-          serverLogger.error('Lazy initialization failed:', error);
-          initializationPromise = null; // Allow retry on next request
-          throw error;
-        }
-      })();
-
-      return initializationPromise;
-    };
-
-    // Middleware to trigger lazy initialization on API requests (but not health checks)
-    app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
-      if (req.path === '/health') {
-        return next(); // Skip initialization for health checks
-      }
-      try {
-        await ensureInitialized();
-        next();
-      } catch (error) {
-        serverLogger.error('Initialization failed during API request:', error);
-        next(); // Continue anyway - routes should handle their own errors
-      }
-    });
-
     const httpServer = createServer(app);
 
     // Set up Socket.io for chat system
@@ -356,14 +305,34 @@ async function startServer() {
         // Signal deployment readiness to Replit
         if (process.env.NODE_ENV === 'production') {
           serverLogger.info('🚀 PRODUCTION SERVER READY FOR TRAFFIC');
-          serverLogger.info(
-            '✅ Server accepting connections - initialization will happen on first API request'
-          );
         } else {
-          serverLogger.info(
-            '✅ Development server ready - initialization will happen on first API request'
-          );
+          serverLogger.info('✅ Development server ready');
         }
+
+        // Run initialization in the background AFTER server is listening
+        // This prevents blocking health checks and allows the server to respond immediately
+        (async () => {
+          try {
+            serverLogger.info('Starting background initialization...');
+            
+            await initializeDatabase();
+            serverLogger.info('✓ Database initialized');
+
+            const { storage } = await import('./storage-wrapper');
+            const { startBackgroundSync } = await import('./background-sync-service');
+            startBackgroundSync(storage as any);
+            serverLogger.info('✓ Background sync started');
+
+            const { initializeCronJobs } = await import('./services/cron-jobs');
+            initializeCronJobs();
+            serverLogger.info('✓ Cron jobs initialized');
+
+            serverLogger.info('✅ Background initialization complete');
+          } catch (error) {
+            serverLogger.error('Background initialization failed:', error);
+            serverLogger.warn('Server will continue running, but some features may be unavailable');
+          }
+        })();
 
         // Graceful shutdown handler - works in both dev and production
         const shutdown = async (signal: string) => {
