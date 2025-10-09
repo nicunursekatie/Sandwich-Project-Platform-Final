@@ -110,13 +110,24 @@ async function startServer() {
     app.use('/attached_assets', express.static('attached_assets'));
 
     // Root endpoint for health checks - responds immediately
-    app.get('/', (_req: Request, res: Response) => {
-      res.status(200).json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development',
-      });
+    // In production, this serves the SPA; in deployment health checks, returns JSON
+    app.get('/', (_req: Request, res: Response, next: NextFunction) => {
+      // For health checks (typically have specific headers or accept JSON)
+      const acceptsJson = _req.accepts('json');
+      const acceptsHtml = _req.accepts('html');
+
+      // If client prefers JSON or doesn't specify, send health check
+      if (!acceptsHtml || (acceptsJson && !_req.headers['user-agent']?.includes('Mozilla'))) {
+        return res.status(200).json({
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          uptime: process.uptime(),
+          environment: process.env.NODE_ENV || 'development',
+        });
+      }
+
+      // Otherwise, let it pass through to SPA in production
+      next();
     });
 
     // Health check route - available before full initialization
@@ -186,7 +197,6 @@ async function startServer() {
 
       // Simple SPA fallback for production - serve index.html for non-API routes
       // This MUST be after API routes to prevent catching API requests
-      // More specific regex to absolutely exclude API routes
       app.get('*', async (req: Request, res: Response, next: NextFunction) => {
         // NEVER serve HTML for API routes - let them 404 instead
         if (req.originalUrl.startsWith('/api/')) {
@@ -196,7 +206,7 @@ async function startServer() {
           return next(); // Let it 404 rather than serve HTML
         }
 
-        // Only serve SPA for non-API routes
+        // Serve SPA for all other routes (including /)
         const path = await import('path');
         res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
       });
