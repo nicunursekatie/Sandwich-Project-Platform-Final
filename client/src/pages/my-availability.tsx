@@ -12,6 +12,8 @@ import {
   parseISO,
   addWeeks,
   subWeeks,
+  startOfDay,
+  endOfDay,
 } from 'date-fns';
 import {
   Calendar,
@@ -63,6 +65,7 @@ export default function MyAvailability() {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<AvailabilitySlot | null>(null);
+  const [isAllDay, setIsAllDay] = useState(false);
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 }); // Sunday
@@ -126,15 +129,37 @@ export default function MyAvailability() {
   });
 
   const onSubmit = (data: FormData) => {
+    let submitData = { ...data };
+    
+    // If all-day is selected, adjust times to cover the full day(s)
+    if (isAllDay) {
+      const startDate = new Date(data.startAt);
+      const endDate = new Date(data.endAt);
+      
+      // Set start to beginning of day (00:00:00)
+      submitData.startAt = startOfDay(startDate).toISOString();
+      
+      // Set end to end of day (23:59:59)
+      submitData.endAt = endOfDay(endDate).toISOString();
+    }
+    
     if (editingSlot) {
-      updateMutation.mutate({ id: editingSlot.id, data });
+      updateMutation.mutate({ id: editingSlot.id, data: submitData });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(submitData);
     }
   };
 
   const handleEdit = (slot: AvailabilitySlot) => {
     setEditingSlot(slot);
+    
+    // Check if this is an all-day slot (starts at 00:00:00 and ends at 23:59:59)
+    const start = parseISO(slot.startAt);
+    const end = parseISO(slot.endAt);
+    const isAllDaySlot = start.getHours() === 0 && start.getMinutes() === 0 && start.getSeconds() === 0 &&
+                         end.getHours() === 23 && end.getMinutes() === 59 && end.getSeconds() === 59;
+    
+    setIsAllDay(isAllDaySlot);
     form.reset({
       userId: slot.userId,
       startAt: slot.startAt,
@@ -157,6 +182,7 @@ export default function MyAvailability() {
 
   const handleAddNew = () => {
     setEditingSlot(null);
+    setIsAllDay(false);
     form.reset({
       userId: user?.id || '',
       startAt: '',
@@ -369,43 +395,110 @@ export default function MyAvailability() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="startAt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Date & Time</FormLabel>
-                    <FormControl>
-                      <DateTimePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select start date and time"
-                        data-testid="input-start-datetime"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* All Day Toggle */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <label className="text-sm font-medium text-gray-900">All Day</label>
+                  <p className="text-xs text-gray-500">Mark entire day(s) as unavailable</p>
+                </div>
+                <Switch
+                  checked={isAllDay}
+                  onCheckedChange={setIsAllDay}
+                  data-testid="switch-all-day"
+                />
+              </div>
 
-              <FormField
-                control={form.control}
-                name="endAt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Date & Time</FormLabel>
-                    <FormControl>
-                      <DateTimePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select end date and time"
-                        data-testid="input-end-datetime"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {isAllDay ? (
+                <>
+                  {/* Date Range for All Day */}
+                  <FormField
+                    control={form.control}
+                    name="startAt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                field.onChange(new Date(e.target.value + 'T00:00:00').toISOString());
+                              }
+                            }}
+                            data-testid="input-start-date"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="endAt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                field.onChange(new Date(e.target.value + 'T23:59:59').toISOString());
+                              }
+                            }}
+                            data-testid="input-end-date"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              ) : (
+                <>
+                  {/* Date & Time Pickers for Specific Times */}
+                  <FormField
+                    control={form.control}
+                    name="startAt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Date & Time</FormLabel>
+                        <FormControl>
+                          <DateTimePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select start date and time"
+                            data-testid="input-start-datetime"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="endAt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date & Time</FormLabel>
+                        <FormControl>
+                          <DateTimePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select end date and time"
+                            data-testid="input-end-datetime"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
 
               <FormField
                 control={form.control}
