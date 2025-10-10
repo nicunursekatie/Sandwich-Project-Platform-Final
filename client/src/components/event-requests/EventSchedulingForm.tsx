@@ -88,6 +88,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     schedulingNotes: '',
     planningNotes: '',
     totalSandwichCount: 0,
+    volunteerCount: 0,
     status: 'new',
     toolkitSent: false,
     toolkitSentDate: '',
@@ -266,6 +267,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         planningNotes: (eventRequest as any)?.planningNotes || '',
         totalSandwichCount: totalCount,
+        volunteerCount: (eventRequest as any)?.volunteerCount || 0,
         // Contact information fields
         firstName: eventRequest?.firstName || '',
         lastName: eventRequest?.lastName || '',
@@ -435,6 +437,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventData.sandwichTypes = JSON.stringify(formData.sandwichTypes);
       eventData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
     }
+
+    // Include volunteer count
+    eventData.volunteerCount = formData.volunteerCount || 0;
 
     // Include completed event tracking fields
     eventData.socialMediaPostRequested = formData.socialMediaPostRequested;
@@ -859,6 +864,24 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 )}
               </div>
             )}
+          </div>
+
+          {/* Volunteer Count (Optional) */}
+          <div>
+            <Label htmlFor="volunteerCount"># of Volunteers (Optional)</Label>
+            <Input
+              id="volunteerCount"
+              type="number"
+              value={formData.volunteerCount}
+              onChange={(e) => setFormData(prev => ({ ...prev, volunteerCount: parseInt(e.target.value) || 0 }))}
+              placeholder="Enter expected number of volunteers"
+              min="0"
+              className="w-40"
+              data-testid="input-volunteer-count"
+            />
+            <p className="text-sm text-[#236383]">
+              Optional: Estimate how many volunteers will participate in this event.
+            </p>
           </div>
 
           {/* Refrigeration */}
