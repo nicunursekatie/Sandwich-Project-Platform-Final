@@ -1269,12 +1269,12 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   return (
     <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-gradient-to-br from-[#e6f7f5] via-[#007E8C]/10 to-[#007E8C]/20 border border-[#007E8C]/30">
-      <CardContent className="p-6">
+      <CardContent className="p-4">
         <CardHeader request={request} resolveUserName={resolveUserName} />
 
         {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}
-        <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-          <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200">
+          <div className="grid grid-cols-3 gap-3">
             {/* Event Time Section */}
             <div className="text-center">
               <Clock className="w-5 h-5 text-[#236383] mx-auto mb-2" />
@@ -1403,8 +1403,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         </div>
 
         {/* Event Summary */}
-        <div className="space-y-3 mb-4">
-          <div className="bg-white rounded-lg p-3 space-y-2">
+        <div className="space-y-2 mb-3">
+          <div className="bg-white rounded-lg p-2 space-y-2">
             {/* Delivery Destination */}
             {typeof deliveryDestination === 'string' && deliveryDestination.trim() !== '' ? (
               <div className="bg-brand-primary-lighter rounded-lg p-3">
@@ -1466,27 +1466,27 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             )}
           </div>
 
-          {/* Assignments Summary */}
-          {(request.assignedDriverIds || request.speakerDetails || request.assignedVolunteerIds || canEditAssignments) && (
-            <div className="bg-white rounded-lg p-3">
-              <p className="text-sm font-medium mb-2">Event Team{canEditAssignments ? ' (Editable)' : ''}:</p>
-              <CardAssignments
-                request={request}
-                resolveUserName={resolveUserName}
-                canEdit={canEditAssignments}
-                onAssign={openAssignmentDialog}
-                onEditAssignment={openEditAssignmentDialog}
-                onRemoveAssignment={handleRemoveAssignment}
-                onSelfSignup={handleSelfSignup}
-                canSelfSignup={canSelfSignup}
-                isUserSignedUp={isUserSignedUp}
-              />
-            </div>
+          {/* Assignments Summary - Only show if there are assignments or edit capability */}
+          {(request.assignedDriverIds?.length > 0 || 
+            request.speakerDetails || 
+            request.assignedVolunteerIds?.length > 0 || 
+            canEditAssignments) && (
+            <CardAssignments
+              request={request}
+              resolveUserName={resolveUserName}
+              canEdit={canEditAssignments}
+              onAssign={openAssignmentDialog}
+              onEditAssignment={openEditAssignmentDialog}
+              onRemoveAssignment={handleRemoveAssignment}
+              onSelfSignup={handleSelfSignup}
+              canSelfSignup={canSelfSignup}
+              isUserSignedUp={isUserSignedUp}
+            />
           )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
           <Button size="sm" variant="outline" onClick={onView}>
             <Eye className="w-4 h-4 mr-1" />
             View Details
@@ -1580,7 +1580,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         </div>
 
         {/* Audit Log Section */}
-        <div className="mt-4 border-t border-gray-200 pt-4">
+        <div className="mt-3 border-t border-gray-200 pt-2">
           <Button
             variant="ghost"
             size="sm"
