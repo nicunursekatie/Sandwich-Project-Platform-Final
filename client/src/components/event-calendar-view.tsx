@@ -355,34 +355,37 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                           </div>
                         )}
 
-                        {/* Sandwich information row */}
+                        {/* Sandwich information - single icon with compact info */}
                         {sandwichInfo.length > 0 && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            {sandwichInfo.map((info, idx) => {
-                              const IconComponent = info.icon;
-                              return (
-                                <div
-                                  key={idx}
-                                  className={cn(
-                                    'flex items-center',
-                                    info.color
-                                  )}
-                                  title={info.tooltip}
-                                >
-                                  <IconComponent className="w-5 h-5" />
-                                  {info.count && (
-                                    <span className="text-sm ml-1 font-semibold">
-                                      {info.count}
-                                    </span>
-                                  )}
-                                  {info.showTypes && (
-                                    <span className="text-xs ml-1 opacity-75 truncate max-w-[90px]">
-                                      {info.types.map((t) => t.type).join(', ')}
-                                    </span>
+                          <div className="mt-1">
+                            {/* If we have sandwich types, show them with one icon */}
+                            {sandwichInfo.some(info => info.showTypes) ? (
+                              <div className="flex items-start gap-1">
+                                <Sandwich className="w-5 h-5 text-[#fbad3f] flex-shrink-0" />
+                                <div className="text-xs">
+                                  {sandwichInfo.map((info, idx) => (
+                                    info.showTypes && info.types ? (
+                                      info.types.slice(0, 2).map((type, typeIdx) => (
+                                        <div key={`${idx}-${typeIdx}`} className="font-semibold truncate">
+                                          {type.quantity} {type.type.toLowerCase().replace('sandwiches', '').trim()}
+                                        </div>
+                                      ))
+                                    ) : null
+                                  ))}
+                                  {sandwichInfo.some(info => info.types && info.types.length > 2) && (
+                                    <div className="text-[10px] opacity-75">+more</div>
                                   )}
                                 </div>
-                              );
-                            })}
+                              </div>
+                            ) : (
+                              /* Just show count if no types specified */
+                              <div className="flex items-center gap-1">
+                                <Sandwich className="w-5 h-5 text-[#fbad3f]" />
+                                <span className="text-sm font-semibold">
+                                  {sandwichInfo[0].count}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         )}
 
