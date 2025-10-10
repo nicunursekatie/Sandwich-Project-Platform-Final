@@ -298,7 +298,7 @@ export default function GroupCatalog({
   const activeGroupInfo: GroupInfo[] = Array.from(
     filteredActiveGroups
       .reduce((groups: Map<string, GroupInfo>, org) => {
-        const orgName = org.organizationName;
+        const orgName = org.organizationName || 'Unknown Organization';
 
         if (!groups.has(orgName)) {
           groups.set(orgName, {
@@ -340,7 +340,7 @@ export default function GroupCatalog({
   const historicalGroupInfo: GroupInfo[] = Array.from(
     filteredHistoricalGroups
       .reduce((groups: Map<string, GroupInfo>, org) => {
-        const orgName = org.organizationName;
+        const orgName = org.organizationName || 'Unknown Organization';
 
         if (!groups.has(orgName)) {
           groups.set(orgName, {
@@ -366,9 +366,11 @@ export default function GroupCatalog({
   // Sort active groups by organization name or latest activity date
   const sortedActiveGroups = activeGroupInfo.sort((a, b) => {
     if (sortBy === 'groupName') {
+      const aName = a.groupName || '';
+      const bName = b.groupName || '';
       return sortOrder === 'desc'
-        ? b.groupName.localeCompare(a.groupName)
-        : a.groupName.localeCompare(b.groupName);
+        ? bName.localeCompare(aName)
+        : aName.localeCompare(bName);
     }
 
     // Default sort by latest activity date (includes both requests and collections)
@@ -379,7 +381,9 @@ export default function GroupCatalog({
 
   // Sort historical groups by organization name
   const sortedHistoricalGroups = historicalGroupInfo.sort((a, b) => {
-    return a.groupName.localeCompare(b.groupName);
+    const aName = a.groupName || '';
+    const bName = b.groupName || '';
+    return aName.localeCompare(bName);
   });
 
   // Sort departments within each active group

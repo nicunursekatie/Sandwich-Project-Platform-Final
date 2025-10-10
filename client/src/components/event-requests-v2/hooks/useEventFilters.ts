@@ -106,12 +106,12 @@ export const useEventFilters = () => {
     let filtered = eventRequests.filter((request: EventRequest) => {
       const matchesSearch =
         searchQuery === '' ||
-        request.organizationName
+        (request.organizationName && request.organizationName
           .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
+          .includes(searchQuery.toLowerCase())) ||
         (request.department && request.department.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        request.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (request.firstName && request.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (request.lastName && request.lastName.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (request.email && request.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
         dateMatchesSearch(request.desiredEventDate, searchQuery);
