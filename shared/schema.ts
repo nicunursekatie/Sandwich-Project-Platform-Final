@@ -1431,6 +1431,8 @@ export const eventRequests = pgTable(
     // Organization information
     organizationName: varchar('organization_name'), // Made optional for manual entries
     department: varchar('department'),
+    organizationCategory: varchar('organization_category'), // 'small_medium_corp', 'large_corp', 'church_faith', 'school', 'neighborhood', 'club', 'other'
+    schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only applicable when category is 'school')
 
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
