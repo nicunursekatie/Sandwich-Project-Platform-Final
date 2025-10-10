@@ -275,6 +275,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         phone: eventRequest?.phone || '',
         organizationName: eventRequest?.organizationName || '',
         department: eventRequest?.department || '',
+        organizationCategory: (eventRequest as any)?.organizationCategory || '',
+        schoolClassification: (eventRequest as any)?.schoolClassification || '',
         // Van driver assignment
         assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
         // Status
@@ -422,6 +424,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       phone: formData.phone || null,
       organizationName: formData.organizationName || null,
       department: formData.department || null,
+      organizationCategory: formData.organizationCategory || null,
+      schoolClassification: formData.schoolClassification || null,
       // Van driver assignment
       assignedVanDriverId: (formData.assignedVanDriverId && formData.assignedVanDriverId !== 'none') ? formData.assignedVanDriverId : null,
       // Toolkit information
@@ -633,6 +637,49 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       placeholder="Enter department"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="organizationCategory">Organization Category</Label>
+                    <Select
+                      value={formData.organizationCategory || ''}
+                      onValueChange={(value) => setFormData(prev => ({ 
+                        ...prev, 
+                        organizationCategory: value,
+                        // Clear school classification if category changes to non-school
+                        schoolClassification: value === 'school' ? prev.schoolClassification : ''
+                      }))}
+                    >
+                      <SelectTrigger id="organizationCategory">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="small_medium_corp">Small/Medium Corporation</SelectItem>
+                        <SelectItem value="large_corp">Large Corporation</SelectItem>
+                        <SelectItem value="church_faith">Church/Faith Group</SelectItem>
+                        <SelectItem value="school">School</SelectItem>
+                        <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                        <SelectItem value="club">Club</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {formData.organizationCategory === 'school' && (
+                    <div>
+                      <Label htmlFor="schoolClassification">School Classification</Label>
+                      <Select
+                        value={formData.schoolClassification || ''}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, schoolClassification: value }))}
+                      >
+                        <SelectTrigger id="schoolClassification">
+                          <SelectValue placeholder="Select school type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="public">Public</SelectItem>
+                          <SelectItem value="private">Private</SelectItem>
+                          <SelectItem value="charter">Charter</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </>
               </div>
             )}
