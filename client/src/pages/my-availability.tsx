@@ -274,21 +274,37 @@ export default function MyAvailability() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  {daySlots.map((slot) => (
-                    <div
-                      key={slot.id}
-                      className={`text-xs p-1.5 rounded cursor-pointer ${
-                        slot.status === 'unavailable'
-                          ? 'bg-orange-100 text-orange-800 font-semibold'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                      onClick={() => handleEdit(slot)}
-                      data-testid={`slot-${slot.id}`}
-                    >
-                      <Clock className="inline h-3 w-3 mr-1" />
-                      {format(parseISO(slot.startAt), 'h:mm a')}
-                    </div>
-                  ))}
+                  {daySlots.map((slot) => {
+                    const start = parseISO(slot.startAt);
+                    const end = parseISO(slot.endAt);
+                    const isAllDaySlot = start.getHours() === 0 && start.getMinutes() === 0 && start.getSeconds() === 0 &&
+                                         end.getHours() === 23 && end.getMinutes() === 59 && end.getSeconds() === 59;
+                    
+                    return (
+                      <div
+                        key={slot.id}
+                        className={`text-xs p-1.5 rounded cursor-pointer ${
+                          slot.status === 'unavailable'
+                            ? 'bg-orange-100 text-orange-800 font-semibold'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                        onClick={() => handleEdit(slot)}
+                        data-testid={`slot-${slot.id}`}
+                      >
+                        {isAllDaySlot ? (
+                          <>
+                            <Calendar className="inline h-3 w-3 mr-1" />
+                            All Day
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="inline h-3 w-3 mr-1" />
+                            {format(parseISO(slot.startAt), 'h:mm a')}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -315,51 +331,71 @@ export default function MyAvailability() {
           </div>
         ) : (
           <div className="space-y-3">
-            {slots.map((slot) => (
-              <div
-                key={slot.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-                data-testid={`slot-item-${slot.id}`}
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Badge
-                      className={
-                        slot.status === 'unavailable'
-                          ? 'bg-orange-100 text-orange-800 border-orange-300 font-semibold'
-                          : 'bg-gray-100 text-gray-600 border-gray-300'
-                      }
-                      data-testid={`badge-status-${slot.id}`}
-                    >
-                      {slot.status === 'unavailable' ? 'Time Off' : 'Available'}
-                    </Badge>
-                    <span className="text-sm font-medium text-gray-900">
-                      {format(parseISO(slot.startAt), 'MMM dd, yyyy')}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <Clock className="inline h-4 w-4 mr-1" />
-                    {format(parseISO(slot.startAt), 'h:mm a')} -{' '}
-                    {format(parseISO(slot.endAt), 'h:mm a')}
-                    {slot.endAt !== slot.startAt &&
-                      !isSameDay(
-                        parseISO(slot.startAt),
-                        parseISO(slot.endAt)
-                      ) && (
-                        <span className="ml-1">
-                          (ends {format(parseISO(slot.endAt), 'MMM dd, yyyy')})
-                        </span>
+            {slots.map((slot) => {
+              const start = parseISO(slot.startAt);
+              const end = parseISO(slot.endAt);
+              const isAllDaySlot = start.getHours() === 0 && start.getMinutes() === 0 && start.getSeconds() === 0 &&
+                                   end.getHours() === 23 && end.getMinutes() === 59 && end.getSeconds() === 59;
+              
+              return (
+                <div
+                  key={slot.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  data-testid={`slot-item-${slot.id}`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Badge
+                        className={
+                          slot.status === 'unavailable'
+                            ? 'bg-orange-100 text-orange-800 border-orange-300 font-semibold'
+                            : 'bg-gray-100 text-gray-600 border-gray-300'
+                        }
+                        data-testid={`badge-status-${slot.id}`}
+                      >
+                        {slot.status === 'unavailable' ? 'Time Off' : 'Available'}
+                      </Badge>
+                      <span className="text-sm font-medium text-gray-900">
+                        {format(parseISO(slot.startAt), 'MMM dd, yyyy')}
+                        {!isSameDay(start, end) && (
+                          <> - {format(end, 'MMM dd, yyyy')}</>
+                        )}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {isAllDaySlot ? (
+                        <>
+                          <Calendar className="inline h-4 w-4 mr-1" />
+                          All Day
+                          {!isSameDay(start, end) && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              (Multiple days)
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="inline h-4 w-4 mr-1" />
+                          {format(parseISO(slot.startAt), 'h:mm a')} -{' '}
+                          {format(parseISO(slot.endAt), 'h:mm a')}
+                          {slot.endAt !== slot.startAt &&
+                            !isSameDay(start, end) && (
+                              <span className="ml-1">
+                                (ends {format(end, 'MMM dd, yyyy')})
+                              </span>
+                            )}
+                        </>
                       )}
+                    </div>
+                    {slot.notes && (
+                      <p
+                        className="text-sm text-gray-500 mt-1"
+                        data-testid={`notes-${slot.id}`}
+                      >
+                        {slot.notes}
+                      </p>
+                    )}
                   </div>
-                  {slot.notes && (
-                    <p
-                      className="text-sm text-gray-500 mt-1"
-                      data-testid={`notes-${slot.id}`}
-                    >
-                      {slot.notes}
-                    </p>
-                  )}
-                </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
