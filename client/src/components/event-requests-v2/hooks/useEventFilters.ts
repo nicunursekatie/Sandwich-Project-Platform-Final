@@ -188,16 +188,16 @@ export const useEventFilters = () => {
         
         const matchesSearch =
           searchQuery === '' ||
-          request.organizationName
+          (request.organizationName && request.organizationName
             .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
+            .includes(searchQuery.toLowerCase())) ||
           (request.department && request.department.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          request.firstName
+          (request.firstName && request.firstName
             .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          request.lastName
+            .includes(searchQuery.toLowerCase())) ||
+          (request.lastName && request.lastName
             .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
+            .includes(searchQuery.toLowerCase())) ||
           (request.email && request.email
             .toLowerCase()
             .includes(searchQuery.toLowerCase())) ||
