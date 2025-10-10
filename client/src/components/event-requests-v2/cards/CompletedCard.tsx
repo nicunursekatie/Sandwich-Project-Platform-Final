@@ -43,6 +43,7 @@ import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import {
   Dialog,
