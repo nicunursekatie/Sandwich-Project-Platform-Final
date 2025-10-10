@@ -214,7 +214,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             )}
 
             {/* Department - with inline editing for admins */}
-            {(request.department || isEditingDepartment) && (
+            {(request.department || isEditingDepartment || canEditOrgDetails) && (
               <>
                 <span className="text-gray-600">&bull;</span>
                 {isEditingDepartment ? (
@@ -236,14 +236,18 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 group">
-                    <span className="text-gray-600">{request.department}</span>
+                    {request.department ? (
+                      <span className="text-gray-600">{request.department}</span>
+                    ) : canEditOrgDetails ? (
+                      <span className="text-gray-400 italic text-sm">No department</span>
+                    ) : null}
                     {canEditOrgDetails && startEditing && (
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => startEditing('department', request.department || '')}
                         className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                        title="Edit department"
+                        title={request.department ? "Edit department" : "Add department"}
                         data-testid="button-edit-department"
                       >
                         <Edit2 className="w-3 h-3" />
