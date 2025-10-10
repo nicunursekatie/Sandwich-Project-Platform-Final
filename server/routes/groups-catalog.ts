@@ -54,8 +54,9 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         if (!orgName || !contactName) return;
 
         // Create a unique key using canonical name for matching
+        // Include event request ID to keep each event as a separate entry
         const canonicalOrgName = canonicalizeOrgName(orgName);
-        const departmentKey = `${canonicalOrgName}|${department}`;
+        const departmentKey = `${canonicalOrgName}|${department}|${request.id}`;
 
         // Track department-level aggregation
         if (!departmentsMap.has(departmentKey)) {
