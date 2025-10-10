@@ -126,12 +126,22 @@ export const useEventFilters = () => {
     filtered.sort((a: EventRequest, b: EventRequest) => {
       switch (sortBy) {
         case 'event_date_desc':
-          const newestDateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-          const newestDateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+          // For completed events, use scheduledEventDate if available, otherwise desiredEventDate
+          const newestDateA = (a.status === 'completed' && a.scheduledEventDate)
+            ? new Date(a.scheduledEventDate).getTime()
+            : a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+          const newestDateB = (b.status === 'completed' && b.scheduledEventDate)
+            ? new Date(b.scheduledEventDate).getTime()
+            : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
           return newestDateB - newestDateA;
         case 'event_date_asc':
-          const oldestDateA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-          const oldestDateB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+          // For completed events, use scheduledEventDate if available, otherwise desiredEventDate
+          const oldestDateA = (a.status === 'completed' && a.scheduledEventDate)
+            ? new Date(a.scheduledEventDate).getTime()
+            : a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+          const oldestDateB = (b.status === 'completed' && b.scheduledEventDate)
+            ? new Date(b.scheduledEventDate).getTime()
+            : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
           return oldestDateA - oldestDateB;
         case 'organization_asc':
           return a.organizationName.localeCompare(b.organizationName);
@@ -199,12 +209,22 @@ export const useEventFilters = () => {
       .sort((a: EventRequest, b: EventRequest) => {
         switch (sortBy) {
           case 'event_date_desc':
-            const dateDescA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-            const dateDescB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+            // For completed events, use scheduledEventDate if available, otherwise desiredEventDate
+            const dateDescA = (status === 'completed' && a.scheduledEventDate) 
+              ? new Date(a.scheduledEventDate).getTime()
+              : a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+            const dateDescB = (status === 'completed' && b.scheduledEventDate)
+              ? new Date(b.scheduledEventDate).getTime()
+              : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
             return dateDescB - dateDescA;
           case 'event_date_asc':
-            const dateAscA = a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
-            const dateAscB = b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
+            // For completed events, use scheduledEventDate if available, otherwise desiredEventDate
+            const dateAscA = (status === 'completed' && a.scheduledEventDate)
+              ? new Date(a.scheduledEventDate).getTime()
+              : a.desiredEventDate ? new Date(a.desiredEventDate).getTime() : 0;
+            const dateAscB = (status === 'completed' && b.scheduledEventDate)
+              ? new Date(b.scheduledEventDate).getTime()
+              : b.desiredEventDate ? new Date(b.desiredEventDate).getTime() : 0;
             return dateAscA - dateAscB;
           case 'organization_asc':
             return a.organizationName.localeCompare(b.organizationName);
