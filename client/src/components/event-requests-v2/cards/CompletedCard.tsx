@@ -87,6 +87,7 @@ interface CardHeaderProps {
   cancelEdit?: () => void;
   setEditingValue?: (value: string) => void;
   resolveUserName?: (id: string) => string;
+  canEditOrgDetails?: boolean;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -100,7 +101,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   saveEdit,
   cancelEdit,
   setEditingValue,
-  resolveUserName
+  resolveUserName,
+  canEditOrgDetails = false
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -164,19 +166,93 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   // Check if we're editing this date field
   const isEditingDate = isEditingThisCard && editingField === dateFieldToEdit;
 
+  // Check if we're editing organization or department fields
+  const isEditingOrgName = isEditingThisCard && editingField === 'organizationName';
+  const isEditingDepartment = isEditingThisCard && editingField === 'department';
+
   return (
     <div className="flex items-start justify-between mb-4">
       <div className="flex items-start space-x-3">
         <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-lg text-[#1A2332]">
-              {request.organizationName}
-              {request.department && (
-                <span className="text-gray-600 ml-1">
-                  &bull; {request.department}
-                </span>
-              )}
-            </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Organization Name - with inline editing for admins */}
+            {isEditingOrgName ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={editingValue}
+                  onChange={(e) => setEditingValue?.(e.target.value)}
+                  className="h-8 text-lg font-semibold"
+                  autoFocus
+                  data-testid="input-organization-name"
+                />
+                <Button size="sm" onClick={saveEdit} data-testid="button-save-org-name">
+                  <Save className="w-3 h-3" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-org-name">
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 group">
+                <h3 className="font-semibold text-lg text-[#1A2332]">
+                  {request.organizationName}
+                </h3>
+                {canEditOrgDetails && startEditing && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startEditing('organizationName', request.organizationName || '')}
+                    className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                    title="Edit organization name"
+                    data-testid="button-edit-org-name"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Department - with inline editing for admins */}
+            {(request.department || isEditingDepartment) && (
+              <>
+                <span className="text-gray-600">&bull;</span>
+                {isEditingDepartment ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editingValue}
+                      onChange={(e) => setEditingValue?.(e.target.value)}
+                      className="h-8"
+                      placeholder="Department"
+                      autoFocus
+                      data-testid="input-department"
+                    />
+                    <Button size="sm" onClick={saveEdit} data-testid="button-save-department">
+                      <Save className="w-3 h-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-department">
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group">
+                    <span className="text-gray-600">{request.department}</span>
+                    {canEditOrgDetails && startEditing && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('department', request.department || '')}
+                        className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        title="Edit department"
+                        data-testid="button-edit-department"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
             <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}
@@ -1069,10 +1145,19 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showInstagramDialog, setShowInstagramDialog] = useState(false);
   const [instagramLink, setInstagramLink] = useState('');
-  
+
+  // Inline editing state for organization and department
+  const [isEditingField, setIsEditingField] = useState(false);
+  const [editingField, setEditingField] = useState('');
+  const [editingValue, setEditingValue] = useState('');
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin' || user?.role === 'admin_coordinator';
+
   // Social media mutation
   const updateSocialMediaMutation = useMutation({
     mutationFn: (data: any) =>
@@ -1094,6 +1179,53 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
     },
   });
+
+  // Organization details mutation
+  const updateOrgDetailsMutation = useMutation({
+    mutationFn: (data: { organizationName?: string; department?: string }) =>
+      apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
+    onSuccess: () => {
+      toast({
+        title: 'Organization details updated',
+        description: 'Organization name or department has been successfully updated.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setIsEditingField(false);
+      setEditingField('');
+      setEditingValue('');
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update organization details.',
+        variant: 'destructive',
+      });
+      setIsEditingField(false);
+      setEditingField('');
+      setEditingValue('');
+    },
+  });
+
+  // Handlers for inline editing
+  const startEditing = (field: string, value: string) => {
+    setIsEditingField(true);
+    setEditingField(field);
+    setEditingValue(value);
+  };
+
+  const saveEdit = () => {
+    if (editingField === 'organizationName') {
+      updateOrgDetailsMutation.mutate({ organizationName: editingValue });
+    } else if (editingField === 'department') {
+      updateOrgDetailsMutation.mutate({ department: editingValue });
+    }
+  };
+
+  const cancelEdit = () => {
+    setIsEditingField(false);
+    setEditingField('');
+    setEditingValue('');
+  };
 
   // Helper functions for Instagram link
   const getInstagramLinkFromNotes = () => {
@@ -1270,7 +1402,18 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   return (
     <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-gradient-to-br from-[#e6f7f5] via-[#007E8C]/10 to-[#007E8C]/20 border border-[#007E8C]/30">
       <CardContent className="p-4">
-        <CardHeader request={request} resolveUserName={resolveUserName} />
+        <CardHeader
+          request={request}
+          resolveUserName={resolveUserName}
+          canEditOrgDetails={isAdmin}
+          isEditingThisCard={isEditingField}
+          editingField={editingField}
+          editingValue={editingValue}
+          startEditing={startEditing}
+          saveEdit={saveEdit}
+          cancelEdit={cancelEdit}
+          setEditingValue={setEditingValue}
+        />
 
         {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}
         <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200">
