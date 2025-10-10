@@ -1082,7 +1082,7 @@ export default function GroupCatalog({
                       </Card>
                     );
                   }
-                })()}
+                })}
 
                 {/* REMOVED: Single-department organizations are now integrated above in the main loop */}
                 {(() => {
