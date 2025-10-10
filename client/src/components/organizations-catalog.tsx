@@ -260,12 +260,10 @@ export default function GroupCatalog({
   // Filter active organizations
   const filteredActiveGroups = activeOrganizations.filter((org) => {
     const matchesSearch =
-      org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      org.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (org.email &&
-        org.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (org.department &&
-        org.department.toLowerCase().includes(searchTerm.toLowerCase()));
+      (org.organizationName && org.organizationName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (org.contactName && org.contactName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (org.email && org.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (org.department && org.department.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus = statusFilter === 'all' || org.status === statusFilter;
 
@@ -280,8 +278,8 @@ export default function GroupCatalog({
   // Filter historical organizations (simpler filtering since they don't have emails/status)
   const filteredHistoricalGroups = historicalOrganizations.filter((org) => {
     return (
-      org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      org.contactName.toLowerCase().includes(searchTerm.toLowerCase())
+      (org.organizationName && org.organizationName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (org.contactName && org.contactName.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   });
 
