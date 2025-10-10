@@ -268,12 +268,12 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
       </CardHeader>
       <CardContent>
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1">
           {/* Day headers */}
           {DAYS_OF_WEEK.map((day) => (
             <div
               key={day}
-              className="p-3 text-center font-bold text-lg text-gray-700 bg-gray-100 rounded-lg"
+              className="p-2 text-center font-semibold text-sm text-gray-700 bg-gray-100 rounded"
             >
               {day}
             </div>
@@ -290,7 +290,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
               <div
                 key={index}
                 className={cn(
-                  'min-h-[280px] border rounded-lg p-4',
+                  'min-h-[140px] border rounded-lg p-2',
                   isCurrentMonthDay
                     ? 'bg-white border-gray-200'
                     : 'bg-gray-50 border-gray-100',
@@ -300,17 +300,17 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                 {/* Date number */}
                 <div
                   className={cn(
-                    'text-xl font-bold mb-3',
+                    'text-sm font-semibold mb-1',
                     isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
                     isTodayDay &&
-                      'bg-brand-primary-lighter text-white rounded-full w-10 h-10 flex items-center justify-center'
+                      'bg-brand-primary-lighter text-white rounded-full w-6 h-6 flex items-center justify-center text-xs'
                   )}
                 >
                   {date.getDate()}
                 </div>
 
                 {/* Events for this day */}
-                <div className="space-y-4">
+                <div className="space-y-1">
                   {dayEvents.slice(0, 3).map((event) => {
                     const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
@@ -320,18 +320,18 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                         key={event.id}
                         onClick={() => onEventClick?.(event)}
                         className={cn(
-                          'w-full text-left text-xl p-4 rounded-lg border-2 truncate hover:shadow-lg transition-shadow',
+                          'w-full text-left text-xs p-1.5 rounded border truncate hover:shadow-md transition-shadow',
                           getStatusColor(event.status)
                         )}
                         title={`${event.organizationName} - ${event.status}`}
                       >
-                        <div className="font-bold truncate text-2xl mb-2">
+                        <div className="font-semibold truncate text-xs mb-1">
                           {event.organizationName}
                         </div>
 
                         {/* Staffing indicators row */}
                         {staffingIndicators.length > 0 && (
-                          <div className="flex items-center gap-4 mt-3">
+                          <div className="flex items-center gap-1 mt-0.5">
                             {staffingIndicators.map((indicator, idx) => {
                               const IconComponent = indicator.icon;
                               return (
@@ -343,9 +343,9 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                   )}
                                   title={indicator.tooltip}
                                 >
-                                  <IconComponent className="w-8 h-8" />
+                                  <IconComponent className="w-3 h-3" />
                                   {indicator.count > 1 && (
-                                    <span className="text-lg ml-3 font-bold">
+                                    <span className="text-[10px] ml-0.5 font-semibold">
                                       {indicator.count}
                                     </span>
                                   )}
@@ -357,7 +357,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
 
                         {/* Sandwich information row */}
                         {sandwichInfo.length > 0 && (
-                          <div className="flex items-center gap-4 mt-3">
+                          <div className="flex items-center gap-1 mt-0.5">
                             {sandwichInfo.map((info, idx) => {
                               const IconComponent = info.icon;
                               return (
@@ -369,14 +369,14 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                   )}
                                   title={info.tooltip}
                                 >
-                                  <IconComponent className="w-8 h-8" />
+                                  <IconComponent className="w-3 h-3" />
                                   {info.count && (
-                                    <span className="text-lg ml-3 font-bold">
+                                    <span className="text-[10px] ml-0.5 font-semibold">
                                       {info.count}
                                     </span>
                                   )}
                                   {info.showTypes && (
-                                    <span className="text-lg ml-3 opacity-75 truncate max-w-[120px]">
+                                    <span className="text-[10px] ml-0.5 opacity-75 truncate max-w-[60px]">
                                       {info.types.map((t) => t.type).join(', ')}
                                     </span>
                                   )}
@@ -387,7 +387,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                         )}
 
                         {event.eventStartTime && (
-                          <div className="text-lg opacity-75 mt-3 font-bold">
+                          <div className="text-[10px] opacity-75 mt-0.5 font-semibold">
                             {event.eventStartTime}
                           </div>
                         )}
@@ -395,7 +395,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                     );
                   })}
                   {dayEvents.length > 3 && (
-                    <div className="text-lg text-gray-500 text-center font-bold mt-2">
+                    <div className="text-[10px] text-gray-500 text-center font-semibold mt-0.5">
                       +{dayEvents.length - 3} more
                     </div>
                   )}
@@ -406,54 +406,54 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
         </div>
 
         {/* Legend */}
-        <div className="mt-8 pt-6 border-t space-y-6">
+        <div className="mt-6 pt-4 border-t space-y-4">
           {/* Status Legend */}
-          <div className="flex flex-wrap gap-6 items-center">
-            <span className="text-lg font-bold text-gray-800">Status:</span>
-            <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong text-base px-4 py-2">
+          <div className="flex flex-wrap gap-3 items-center">
+            <span className="text-sm font-semibold text-gray-800">Status:</span>
+            <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong text-xs px-2 py-1">
               New
             </Badge>
-            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-base px-4 py-2">
+            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs px-2 py-1">
               In Process
             </Badge>
-            <Badge className="bg-green-100 text-green-800 border-green-300 text-base px-4 py-2">
+            <Badge className="bg-green-100 text-green-800 border-green-300 text-xs px-2 py-1">
               Scheduled
             </Badge>
-            <Badge className="bg-navy-100 text-navy-800 border-navy-300 text-base px-4 py-2">
+            <Badge className="bg-navy-100 text-navy-800 border-navy-300 text-xs px-2 py-1">
               Completed
             </Badge>
-            <Badge className="bg-red-100 text-red-800 border-red-300 text-base px-4 py-2">
+            <Badge className="bg-red-100 text-red-800 border-red-300 text-xs px-2 py-1">
               Cancelled
             </Badge>
           </div>
 
           {/* Staffing Indicators Legend */}
-          <div className="flex flex-wrap gap-8 items-center">
-            <span className="text-lg font-bold text-gray-800">
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
               Staffing Needed:
             </span>
-            <div className="flex items-center gap-3">
-              <Car className="w-7 h-7 text-blue-600" />
-              <span className="text-base font-bold text-gray-700">Drivers</span>
+            <div className="flex items-center gap-1.5">
+              <Car className="w-4 h-4 text-blue-600" />
+              <span className="text-xs text-gray-700">Drivers</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Mic className="w-7 h-7 text-purple-600" />
-              <span className="text-base font-bold text-gray-700">Speakers</span>
+            <div className="flex items-center gap-1.5">
+              <Mic className="w-4 h-4 text-purple-600" />
+              <span className="text-xs text-gray-700">Speakers</span>
             </div>
-            <div className="flex items-center gap-3">
-              <UserCheck className="w-7 h-7 text-green-600" />
-              <span className="text-base font-bold text-gray-700">Volunteers</span>
+            <div className="flex items-center gap-1.5">
+              <UserCheck className="w-4 h-4 text-green-600" />
+              <span className="text-xs text-gray-700">Volunteers</span>
             </div>
           </div>
 
           {/* Sandwich Information Legend */}
-          <div className="flex flex-wrap gap-8 items-center">
-            <span className="text-lg font-bold text-gray-800">
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="text-sm font-semibold text-gray-800">
               Sandwiches:
             </span>
-            <div className="flex items-center gap-3">
-              <Sandwich className="w-7 h-7 text-[#fbad3f]" />
-              <span className="text-base font-bold text-gray-700">Count & Types</span>
+            <div className="flex items-center gap-1.5">
+              <Sandwich className="w-4 h-4 text-[#fbad3f]" />
+              <span className="text-xs text-gray-700">Count & Types</span>
             </div>
           </div>
         </div>
