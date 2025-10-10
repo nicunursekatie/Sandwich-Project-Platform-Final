@@ -304,15 +304,27 @@ const PERMISSION_CATEGORIES = {
     icon: Calendar,
     description: 'Manage event requests and scheduling',
     permissions: [
-      { 
-        key: 'NAV_EVENT_PLANNING', 
-        name: '📍 Event Planning Tab', 
+      {
+        key: 'NAV_EVENT_PLANNING',
+        name: '📍 Event Planning Tab',
         description: 'Show Event Planning tab in navigation',
         level: 'access'
       },
-      { 
-        key: 'EVENT_REQUESTS_VIEW', 
-        name: 'View Event Requests', 
+      {
+        key: 'NAV_EVENTS_GOOGLE_SHEET',
+        name: '📍 Events Google Sheet Tab',
+        description: 'Show Events Google Sheet tab in navigation',
+        level: 'access'
+      },
+      {
+        key: 'NAV_EVENT_REMINDERS',
+        name: '📍 Event Reminders Tab',
+        description: 'Show Event Reminders tab in navigation',
+        level: 'access'
+      },
+      {
+        key: 'EVENT_REQUESTS_VIEW',
+        name: 'View Event Requests',
         description: 'View all event requests and scheduling',
         level: 'view'
       },
@@ -571,15 +583,21 @@ const PERMISSION_CATEGORIES = {
     icon: TrendingUp,
     description: 'Data analysis and reporting tools',
     permissions: [
-      { 
-        key: 'ANALYTICS_VIEW', 
-        name: 'View Analytics', 
+      {
+        key: 'NAV_ANALYTICS',
+        name: '📍 Analytics Tab',
+        description: 'Show Analytics tab in navigation',
+        level: 'access'
+      },
+      {
+        key: 'ANALYTICS_VIEW',
+        name: 'View Analytics',
         description: 'Access analytics dashboards and reports',
         level: 'view'
       },
-      { 
-        key: 'DATA_EXPORT', 
-        name: 'Export Data', 
+      {
+        key: 'DATA_EXPORT',
+        name: 'Export Data',
         description: 'Export data to CSV and other formats',
         level: 'action'
       },
@@ -725,15 +743,21 @@ const PERMISSION_CATEGORIES = {
     icon: Calendar,
     description: 'Meeting scheduling and agenda management with project integration',
     permissions: [
-      { 
-        key: 'MEETINGS_VIEW', 
-        name: 'View Meetings', 
+      {
+        key: 'NAV_MEETINGS',
+        name: '📍 Meetings Tab',
+        description: 'Show Meetings tab in navigation',
+        level: 'access'
+      },
+      {
+        key: 'MEETINGS_VIEW',
+        name: 'View Meetings',
         description: 'Access to meeting information and minutes',
         level: 'view'
       },
-      { 
-        key: 'MEETINGS_MANAGE', 
-        name: 'Manage Meetings', 
+      {
+        key: 'MEETINGS_MANAGE',
+        name: 'Manage Meetings',
         description: 'Schedule meetings and manage agendas',
         level: 'admin'
       },
@@ -756,15 +780,27 @@ const PERMISSION_CATEGORIES = {
     icon: FileText,
     description: 'Access to tools and documentation',
     permissions: [
-      { 
-        key: 'NAV_IMPORTANT_DOCUMENTS', 
-        name: '📍 Important Documents Tab', 
+      {
+        key: 'NAV_IMPORTANT_DOCUMENTS',
+        name: '📍 Important Documents Tab',
         description: 'Show Important Documents tab in navigation',
         level: 'access'
       },
-      { 
-        key: 'TOOLKIT_ACCESS', 
-        name: 'Toolkit Access', 
+      {
+        key: 'NAV_IMPORTANT_LINKS',
+        name: '📍 Important Links Tab',
+        description: 'Show Important Links tab in navigation',
+        level: 'access'
+      },
+      {
+        key: 'NAV_TOOLKIT',
+        name: '📍 Toolkit Tab',
+        description: 'Show Toolkit tab in navigation',
+        level: 'access'
+      },
+      {
+        key: 'TOOLKIT_ACCESS',
+        name: 'Toolkit Access',
         description: 'Access to toolkit and documentation',
         level: 'access'
       },
