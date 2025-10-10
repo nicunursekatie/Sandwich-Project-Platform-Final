@@ -1159,6 +1159,15 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   // Check if user is admin
   const isAdmin = user?.role === 'admin' || user?.role === 'admin_coordinator';
 
+  // Debug: log admin status
+  console.log('CompletedCard admin check:', {
+    userId: user?.id,
+    userRole: user?.role,
+    isAdmin,
+    requestId: request.id,
+    orgName: request.organizationName
+  });
+
   // Social media mutation
   const updateSocialMediaMutation = useMutation({
     mutationFn: (data: any) =>
