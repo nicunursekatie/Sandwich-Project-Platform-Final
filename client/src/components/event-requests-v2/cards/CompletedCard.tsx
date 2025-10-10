@@ -1156,8 +1156,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [editingField, setEditingField] = useState('');
   const [editingValue, setEditingValue] = useState('');
 
-  // Check if user is admin
-  const isAdmin = user?.role === 'admin' || user?.role === 'admin_coordinator';
+  // Check if user is admin (includes super_admin, admin, and admin_coordinator)
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'admin_coordinator';
 
   // Debug: log admin status
   console.log('CompletedCard admin check:', {
