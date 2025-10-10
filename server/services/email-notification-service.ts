@@ -212,7 +212,8 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         return false;
       }
 
-      const userEmail = user[0].email;
+      // Use preferred email if available, otherwise use regular email
+      const userEmail = user[0].preferredEmail || user[0].email;
       const userName = user[0].displayName || user[0].firstName || userEmail.split('@')[0];
       
       // Format event date
