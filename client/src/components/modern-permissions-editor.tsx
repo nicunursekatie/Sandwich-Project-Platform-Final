@@ -388,15 +388,21 @@ const PERMISSION_CATEGORIES = {
         description: 'Edit staffing needs directly on cards',
         level: 'edit'
       },
-      { 
-        key: 'EVENT_REQUESTS_INLINE_EDIT_LOGISTICS', 
-        name: 'Inline Edit Logistics', 
+      {
+        key: 'EVENT_REQUESTS_INLINE_EDIT_LOGISTICS',
+        name: 'Inline Edit Logistics',
         description: 'Edit refrigeration/logistics on cards',
         level: 'edit'
       },
-      { 
-        key: 'EVENT_REQUESTS_DELETE', 
-        name: 'Delete Event Requests', 
+      {
+        key: 'EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS',
+        name: 'Inline Edit Organization Details',
+        description: 'Edit organization name and department on completed cards',
+        level: 'edit'
+      },
+      {
+        key: 'EVENT_REQUESTS_DELETE',
+        name: 'Delete Event Requests',
         description: 'Delete event requests from the system',
         level: 'admin'
       },

@@ -1156,14 +1156,18 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [editingField, setEditingField] = useState('');
   const [editingValue, setEditingValue] = useState('');
 
-  // Check if user is admin (includes super_admin, admin, and admin_coordinator)
-  const isAdmin = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'admin_coordinator';
+  // Check if user has permission to edit organization details
+  const canEditOrgDetails =
+    user?.permissions?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS') ||
+    user?.role === 'super_admin' ||
+    user?.role === 'admin';
 
-  // Debug: log admin status
-  console.log('CompletedCard admin check:', {
+  // Debug: log permission check
+  console.log('CompletedCard org details edit permission:', {
     userId: user?.id,
     userRole: user?.role,
-    isAdmin,
+    hasPermission: user?.permissions?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS'),
+    canEditOrgDetails,
     requestId: request.id,
     orgName: request.organizationName
   });
@@ -1415,7 +1419,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         <CardHeader
           request={request}
           resolveUserName={resolveUserName}
-          canEditOrgDetails={isAdmin}
+          canEditOrgDetails={canEditOrgDetails}
           isEditingThisCard={isEditingField}
           editingField={editingField}
           editingValue={editingValue}
