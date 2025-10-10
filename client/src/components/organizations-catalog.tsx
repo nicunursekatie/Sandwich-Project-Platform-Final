@@ -432,10 +432,9 @@ export default function GroupCatalog({
   });
   const activeStartIndex = (currentPage - 1) * itemsPerPage;
   const activeEndIndex = activeStartIndex + itemsPerPage;
-  const paginatedActiveGroups = sortedActiveGroups.slice(
-    activeStartIndex,
-    activeEndIndex
-  );
+  const paginatedActiveGroups = Array.isArray(sortedActiveGroups)
+    ? sortedActiveGroups.slice(activeStartIndex, activeEndIndex)
+    : [];
 
   // Historical groups don't need pagination initially - show all
   const paginatedHistoricalGroups = sortedHistoricalGroups;
