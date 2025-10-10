@@ -331,7 +331,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
 
                         {/* Staffing indicators row */}
                         {staffingIndicators.length > 0 && (
-                          <div className="flex items-center gap-1.5 mt-1">
+                          <div className="flex items-center gap-2 mt-1">
                             {staffingIndicators.map((indicator, idx) => {
                               const IconComponent = indicator.icon;
                               return (
@@ -343,9 +343,9 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                   )}
                                   title={indicator.tooltip}
                                 >
-                                  <IconComponent className="w-4 h-4" />
+                                  <IconComponent className="w-6 h-6" />
                                   {indicator.count > 1 && (
-                                    <span className="text-xs ml-1 font-semibold">
+                                    <span className="text-base ml-1 font-bold">
                                       {indicator.count}
                                     </span>
                                   )}
@@ -357,7 +357,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
 
                         {/* Sandwich information row */}
                         {sandwichInfo.length > 0 && (
-                          <div className="flex items-center gap-1.5 mt-1">
+                          <div className="flex items-center gap-2 mt-1">
                             {sandwichInfo.map((info, idx) => {
                               const IconComponent = info.icon;
                               return (
@@ -369,14 +369,14 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                   )}
                                   title={info.tooltip}
                                 >
-                                  <IconComponent className="w-4 h-4" />
+                                  <IconComponent className="w-6 h-6" />
                                   {info.count && (
-                                    <span className="text-xs ml-1 font-semibold">
+                                    <span className="text-base ml-1 font-bold">
                                       {info.count}
                                     </span>
                                   )}
                                   {info.showTypes && (
-                                    <span className="text-[11px] ml-1 opacity-75 truncate max-w-[80px]">
+                                    <span className="text-sm ml-1 opacity-75 truncate max-w-[100px]">
                                       {info.types.map((t) => t.type).join(', ')}
                                     </span>
                                   )}
