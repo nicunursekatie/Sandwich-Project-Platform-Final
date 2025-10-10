@@ -2986,14 +2986,15 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'Event request not found' });
     }
 
-    // Send email notification ONLY if:
+    // Send email notification if:
     // 1. TSP contact was assigned (not removed)
     // 2. It changed from previous value
-    // 3. Event status is 'new' (not completed, scheduled, etc.)
+    // 3. Event is not already completed or declined
     if (
       validatedData.tspContact && 
       originalEvent.tspContact !== validatedData.tspContact &&
-      originalEvent.status === 'new'
+      originalEvent.status !== 'completed' &&
+      originalEvent.status !== 'declined'
     ) {
       try {
         await EmailNotificationService.sendTspContactAssignmentNotification(
@@ -3002,17 +3003,11 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
           originalEvent.organizationName,
           originalEvent.scheduledEventDate || originalEvent.desiredEventDate
         );
-        console.log(`✅ TSP contact assignment email sent for NEW event ${id} to user ${validatedData.tspContact}`);
+        console.log(`✅ TSP contact assignment email sent for event ${id} (${originalEvent.status}) to user ${validatedData.tspContact}`);
       } catch (error) {
         // Log error but don't fail the request if email notification fails
         console.error('Failed to send TSP contact assignment notification:', error);
       }
-    } else if (
-      validatedData.tspContact && 
-      originalEvent.tspContact !== validatedData.tspContact &&
-      originalEvent.status !== 'new'
-    ) {
-      console.log(`ℹ️ TSP contact assigned for ${originalEvent.status} event ${id} - no email sent (only sent for new requests)`);
     }
 
     // Enhanced audit logging for this operation
