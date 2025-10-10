@@ -365,11 +365,29 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                 <div className="text-xs">
                                   {sandwichInfo.map((info, idx) => (
                                     info.showTypes && info.types ? (
-                                      info.types.slice(0, 2).map((type, typeIdx) => (
-                                        <div key={`${idx}-${typeIdx}`} className="font-semibold truncate">
-                                          {type.quantity} {type.type.toLowerCase().replace('sandwiches', '').trim()}
-                                        </div>
-                                      ))
+                                      info.types.slice(0, 2).map((type, typeIdx) => {
+                                        // Process sandwich type name
+                                        let displayType = type.type.toLowerCase().replace('sandwiches', '').trim();
+                                        
+                                        // Handle deli with meat specification in parentheses
+                                        const deliMatch = displayType.match(/deli\s*\(([^)]+)\)/);
+                                        if (deliMatch) {
+                                          const meat = deliMatch[1].trim();
+                                          // If meat is specified and not "general", use the meat name
+                                          if (meat && meat !== 'general') {
+                                            displayType = meat;
+                                          } else {
+                                            // For "general" or empty, just use "deli"
+                                            displayType = 'deli';
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <div key={`${idx}-${typeIdx}`} className="font-semibold truncate">
+                                            {type.quantity} {displayType}
+                                          </div>
+                                        );
+                                      })
                                     ) : null
                                   ))}
                                   {sandwichInfo.some(info => info.types && info.types.length > 2) && (
