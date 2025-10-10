@@ -45,10 +45,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         const contactName =
           request.firstName && request.lastName
             ? `${request.firstName} ${request.lastName}`.trim()
-            : request.firstName || request.lastName || '';
+            : request.firstName || request.lastName || request.email || 'Unknown Contact';
         const contactEmail = request.email;
 
-        if (!orgName || !contactName) return;
+        if (!orgName) return;
 
         // Create a unique key using canonical name for matching
         const canonicalOrgName = canonicalizeOrgName(orgName);
@@ -495,7 +495,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           contactName:
             request.firstName && request.lastName
               ? `${request.firstName} ${request.lastName}`.trim()
-              : request.firstName || request.lastName || '',
+              : request.firstName || request.lastName || request.email || 'Unknown Contact',
           email: request.email,
           phone: request.phone,
           estimatedSandwiches: request.estimatedSandwichCount || 0,
