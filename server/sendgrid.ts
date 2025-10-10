@@ -19,6 +19,7 @@ interface EmailParams {
   to: string;
   from: string;
   replyTo?: string;
+  bcc?: string | string[];
   subject: string;
   text?: string;
   html?: string;
@@ -46,6 +47,11 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     // Add Reply-To header if provided
     if (params.replyTo) {
       emailData.replyTo = params.replyTo;
+    }
+    
+    // Add BCC if provided
+    if (params.bcc) {
+      emailData.bcc = params.bcc;
     }
     
     // Process attachments if provided

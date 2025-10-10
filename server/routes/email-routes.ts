@@ -563,6 +563,7 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
       to: recipientEmail,
       from: 'katie@thesandwichproject.org',
       replyTo: replyToEmail,
+      bcc: 'katielong2316@gmail.com', // BCC to Katie for quality monitoring
       subject,
       text: `${textContent}\n\n${EMAIL_FOOTER_TEXT}`,
       html: finalHtml,
