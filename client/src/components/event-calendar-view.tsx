@@ -325,7 +325,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                         )}
                         title={`${event.organizationName} - ${event.status}`}
                       >
-                        <div className="font-semibold truncate text-xs mb-1">
+                        <div className="font-semibold truncate mb-1 text-[14px]">
                           {event.organizationName}
                         </div>
 
