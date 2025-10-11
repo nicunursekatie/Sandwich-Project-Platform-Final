@@ -785,6 +785,25 @@ export default function GrantMetrics() {
                   </div>
                 </div>
               )}
+
+              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#A31C41]">
+                <Shield className="w-8 h-8 text-[#A31C41] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900">Crisis Response</h3>
+                  <p className="text-2xl font-black text-[#A31C41] my-1">
+                    14,023 sandwiches
+                  </p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Mobilized during Hurricane Helene (October 2024)
+                  </p>
+                  <p className="text-sm font-semibold text-[#007E8C]">
+                    2-3x surge capacity within one week
+                  </p>
+                  <p className="text-xs text-gray-500 italic mt-1">
+                    Proven disaster infrastructure, not just routine food distribution
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -919,42 +938,7 @@ export default function GrantMetrics() {
         </Card>
 
         {/* Strategic Milestones & Infrastructure */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Crisis Response Capability */}
-          <Card className="border-2 border-[#A31C41] shadow-lg">
-            <CardHeader className="bg-[#FCE4E6]">
-              <CardTitle className="flex items-center text-[#A31C41]">
-                <Shield className="w-5 h-5 mr-2" />
-                Crisis Response
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div>
-                  <div className="text-3xl font-black text-[#A31C41] mb-1">
-                    14,023
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Sandwiches mobilized during Hurricane Helene (October 2024)
-                  </p>
-                </div>
-                <div className="pt-3 border-t border-gray-200">
-                  <div className="text-2xl font-bold text-[#007E8C] mb-1">
-                    2-3x surge
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Capacity increase within one week when needed
-                  </p>
-                </div>
-                <div className="pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 italic">
-                    Proven disaster infrastructure, not just routine food distribution
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Distributed Network */}
           <Card className="border-2 border-[#007E8C] shadow-lg">
             <CardHeader className="bg-[#E0F2F1]">
