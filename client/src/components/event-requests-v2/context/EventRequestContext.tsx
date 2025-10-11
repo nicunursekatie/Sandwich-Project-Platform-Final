@@ -373,18 +373,22 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setCurrentPage(1);
   }, [searchQuery, statusFilter, sortBy]);
 
+  // Track if we've already handled the initial event to prevent reopening
+  const [hasHandledInitialEvent, setHasHandledInitialEvent] = useState(false);
+
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
     if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
 
-    if (initialEventId && eventRequests.length > 0) {
+    if (initialEventId && eventRequests.length > 0 && !hasHandledInitialEvent) {
       const targetEvent = eventRequests.find(req => req.id === initialEventId);
       if (targetEvent) {
         setSelectedEventRequest(targetEvent);
         setShowEventDetails(true);
         setIsEditing(false);
+        setHasHandledInitialEvent(true); // Mark as handled to prevent reopening
 
         if (!initialTab) {
           if (targetEvent.status === 'completed') {
@@ -403,7 +407,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
-  }, [initialTab, initialEventId, eventRequests]);
+  }, [initialTab, initialEventId, eventRequests, hasHandledInitialEvent]);
 
   const value: EventRequestContextType = {
     // Data
