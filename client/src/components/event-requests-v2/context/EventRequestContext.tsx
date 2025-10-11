@@ -349,7 +349,11 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     scheduled: requestsByStatus.scheduled?.length || 0,
     completed: requestsByStatus.completed?.length || 0,
     declined: requestsByStatus.declined?.length || 0,
-    my_assignments: eventRequests.filter(isUserAssignedToEvent).length,
+    my_assignments: eventRequests.filter(req => 
+      isUserAssignedToEvent(req) && 
+      req.status !== 'completed' && 
+      req.status !== 'declined'
+    ).length,
   };
 
   // Synchronize statusFilter with activeTab
