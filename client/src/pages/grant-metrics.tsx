@@ -828,8 +828,8 @@ export default function GrantMetrics() {
                 <div className="font-black mb-2 text-[30px] text-center bg-[#83234300]">
                   {metrics.avgPerCollection}
                 </div>
-                <p className="text-white/90 text-lg">
-                  Average sandwiches per collection - consistent quality across all hosts
+                <p className="text-white font-semibold text-base">
+                  Average per collection
                 </p>
               </div>
 
