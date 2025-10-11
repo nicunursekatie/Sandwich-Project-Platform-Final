@@ -16,6 +16,47 @@ export function createDriversRoutes(isAuthenticated: any, storage: IStorage) {
     }
   });
 
+  // Export drivers as CSV - MUST come before /:id route
+  router.get('/export', isAuthenticated, async (req: any, res: any) => {
+    try {
+      const drivers = await storage.getAllDrivers();
+
+      // CSV headers
+      const headers = ['ID', 'Name', 'Email', 'Phone', 'Status', 'Notes', 'Created At'];
+
+      // Convert drivers to CSV rows
+      const rows = drivers.map(driver => [
+        driver.id,
+        driver.name || '',
+        driver.email || '',
+        driver.phone || '',
+        driver.status || '',
+        driver.notes || '',
+        driver.createdAt ? new Date(driver.createdAt).toISOString() : ''
+      ]);
+
+      // Create CSV content
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => {
+          // Escape quotes and wrap in quotes if contains comma or quote
+          const cellStr = String(cell).replace(/"/g, '""');
+          return cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')
+            ? `"${cellStr}"`
+            : cellStr;
+        }).join(','))
+      ].join('\n');
+
+      // Set response headers for CSV download
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="drivers-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csvContent);
+    } catch (error) {
+      console.error('Failed to export drivers', error);
+      res.status(500).json({ message: 'Failed to export drivers' });
+    }
+  });
+
   // Get driver by ID
   router.get('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
