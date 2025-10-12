@@ -331,7 +331,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         if (!foundExisting) {
           const departmentKey = `${canonicalOrgName}|`; // Empty department for historical entries
           const latestCollectionDate = Math.max(
-            ...Array.from(orgData.eventDates).map((d) => new Date(d).getTime())
+            ...(Array.from(orgData.eventDates) as string[]).map((d) => new Date(d).getTime())
           );
 
           departmentsMap.set(departmentKey, {

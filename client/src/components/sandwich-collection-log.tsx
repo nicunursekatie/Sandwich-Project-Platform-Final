@@ -2409,25 +2409,55 @@ export default function SandwichCollectionLog() {
                     </div>
                   </div>
 
-                  {/* Individual count */}
-                  <div className="w-28 text-center shrink-0">
-                    <div className="text-sm text-slate-500 font-medium">Individual</div>
-                    <div className="text-base font-semibold text-slate-700">
-                      {collection.individualSandwiches}
+                  {/* Individual - with inline type breakdown when available */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-slate-500 font-medium mb-0.5">Individual</div>
+                    <div className="text-base text-slate-700">
+                      {(() => {
+                        const hasTypes = collection.individualDeli || collection.individualTurkey || collection.individualHam || collection.individualPbj;
+                        if (hasTypes) {
+                          const types = [];
+                          if (collection.individualTurkey) types.push(`${collection.individualTurkey} Turkey`);
+                          if (collection.individualHam) types.push(`${collection.individualHam} Ham`);
+                          if (collection.individualDeli) types.push(`${collection.individualDeli} Deli`);
+                          if (collection.individualPbj) types.push(`${collection.individualPbj} PB&J`);
+                          return <span className="font-medium">{types.join(', ')}</span>;
+                        }
+                        return <span className="font-semibold">{collection.individualSandwiches}</span>;
+                      })()}
                     </div>
                   </div>
 
-                  {/* Group count */}
-                  <div className="w-28 text-center shrink-0">
-                    <div className="text-sm text-slate-500 font-medium">Groups</div>
-                    <div className="text-base font-semibold text-slate-700">
-                      {calculateGroupTotal(collection)}
+                  {/* Groups - inline breakdown when available */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-slate-500 font-medium mb-0.5">Groups</div>
+                    <div className="text-base text-slate-700">
+                      {(() => {
+                        if (groupData.length === 0) {
+                          return <span className="font-semibold">0</span>;
+                        }
+                        if (groupData.length === 1) {
+                          const group = groupData[0];
+                          const hasTypes = group.deli || group.turkey || group.ham || group.pbj;
+                          if (hasTypes) {
+                            const types = [];
+                            if (group.turkey) types.push(`${group.turkey} Turkey`);
+                            if (group.ham) types.push(`${group.ham} Ham`);
+                            if (group.deli) types.push(`${group.deli} Deli`);
+                            if (group.pbj) types.push(`${group.pbj} PB&J`);
+                            return <span className="font-medium">{group.groupName}: {types.join(', ')}</span>;
+                          }
+                          return <span className="font-semibold">{group.sandwichCount} <span className="font-normal">({group.groupName})</span></span>;
+                        }
+                        // Multiple groups - just show total
+                        return <span className="font-semibold">{calculateGroupTotal(collection)}</span>;
+                      })()}
                     </div>
                   </div>
 
-                  {/* Total badge */}
+                  {/* Total - clean teal gradient pill */}
                   <div className="w-20 shrink-0">
-                    <div className="bg-brand-orange text-white px-4 py-2 rounded-full text-center shadow-sm">
+                    <div className="bg-gradient-to-r from-brand-primary to-brand-teal text-white px-4 py-2 rounded-full text-center shadow-sm">
                       <span className="text-lg font-bold">{totalSandwiches}</span>
                     </div>
                   </div>
@@ -2464,7 +2494,7 @@ export default function SandwichCollectionLog() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDelete(collection.id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 bg-white border-gray-300"
+                        className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
