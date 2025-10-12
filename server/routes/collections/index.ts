@@ -98,6 +98,8 @@ collectionsRouter.get('/', async (req, res) => {
     const sortField = (req.query.sort as string) || 'collectionDate';
     const sortOrder = (req.query.order as string) || 'desc';
 
+    console.log(`[Collections API] GET request - page: ${page}, limit: ${limit}, sort: ${sortField}, order: ${sortOrder}`);
+
     const result = await storage.getSandwichCollections(
       limit,
       offset,
@@ -105,6 +107,8 @@ collectionsRouter.get('/', async (req, res) => {
       sortOrder
     );
     const totalCount = await storage.getSandwichCollectionsCount();
+
+    console.log(`[Collections API] Found ${result.length} collections, total count: ${totalCount}`);
 
     res.json({
       collections: result,
@@ -118,6 +122,7 @@ collectionsRouter.get('/', async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('[Collections API] Error fetching collections:', error);
     res.status(500).json({ message: 'Failed to fetch sandwich collections' });
   }
 });
