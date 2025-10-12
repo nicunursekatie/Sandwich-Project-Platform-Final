@@ -20,20 +20,62 @@ export function createDriversRoutes(isAuthenticated: any, storage: IStorage) {
   router.get('/export', isAuthenticated, async (req: any, res: any) => {
     try {
       const drivers = await storage.getAllDrivers();
+      const agreements = await storage.getAllDriverAgreements();
 
-      // CSV headers
-      const headers = ['ID', 'Name', 'Email', 'Phone', 'Status', 'Notes', 'Created At'];
+      // Create a map of driver agreements by email for quick lookup
+      const agreementsByEmail = new Map();
+      agreements.forEach(agreement => {
+        agreementsByEmail.set(agreement.email.toLowerCase(), agreement);
+      });
+
+      // CSV headers - all the fields requested
+      const headers = [
+        'ID',
+        'Name',
+        'Email',
+        'Phone',
+        'Agreement Signed',
+        'Agreement Signed Date',
+        'Van Driver Approved',
+        'Van Driver Willing',
+        'Driver Location',
+        'Is Active',
+        'License Number',
+        'Availability',
+        'Zone',
+        'Route Description',
+        'Availability Notes',
+        'Email Agreement Sent',
+        'Notes',
+        'Created At'
+      ];
 
       // Convert drivers to CSV rows
-      const rows = drivers.map(driver => [
-        driver.id,
-        driver.name || '',
-        driver.email || '',
-        driver.phone || '',
-        driver.status || '',
-        driver.notes || '',
-        driver.createdAt ? new Date(driver.createdAt).toISOString() : ''
-      ]);
+      const rows = drivers.map(driver => {
+        const driverEmail = (driver.email || '').toLowerCase();
+        const agreement = agreementsByEmail.get(driverEmail);
+
+        return [
+          driver.id,
+          driver.name || '',
+          driver.email || '',
+          driver.phone || '',
+          agreement?.agreementAccepted ? 'Yes' : 'No',
+          agreement?.submittedAt ? new Date(agreement.submittedAt).toISOString().split('T')[0] : '',
+          driver.vanApproved ? 'Yes' : 'No',
+          driver.vehicleType === 'van' ? 'Yes' : 'No',
+          driver.hostLocation || driver.area || '',
+          driver.isActive ? 'Active' : 'Inactive',
+          driver.licenseNumber || '',
+          driver.availability || '',
+          driver.zone || '',
+          driver.routeDescription || '',
+          driver.availabilityNotes || '',
+          driver.emailAgreementSent ? 'Yes' : 'No',
+          driver.notes || '',
+          driver.createdAt ? new Date(driver.createdAt).toISOString().split('T')[0] : ''
+        ];
+      });
 
       // Create CSV content
       const csvContent = [
