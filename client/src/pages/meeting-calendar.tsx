@@ -276,7 +276,7 @@ export default function MeetingCalendar({
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-blue-500" />
+              <Calendar className="w-8 h-8 text-brand-primary" />
               <div>
                 <p className="text-2xl font-bold">{upcomingMeetings.length}</p>
                 <p className="text-sm text-gray-600">Upcoming</p>
@@ -416,7 +416,7 @@ export default function MeetingCalendar({
           <h2 className="text-base font-semibold mb-4">Upcoming Meetings</h2>
           <div className="space-y-4">
             {upcomingMeetings.map((meeting: Meeting) => (
-              <Card key={meeting.id} className="border-l-4 border-l-blue-500">
+              <Card key={meeting.id} className="border-l-4 border-l-brand-primary">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
