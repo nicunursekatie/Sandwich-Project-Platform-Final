@@ -17,7 +17,7 @@ function generateSheetUrls(sheetId: string) {
 // Get all Google Sheets
 router.get('/', async (req, res) => {
   try {
-    const sheets = await (db.select() as any).from(googleSheets);
+    const sheets = await (db as any).select().from(googleSheets);
 
     res.json(sheets);
   } catch (error) {
