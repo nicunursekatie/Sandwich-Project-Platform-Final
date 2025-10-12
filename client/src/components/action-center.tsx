@@ -59,9 +59,10 @@ export default function ActionCenter() {
     const currentYear = today.getFullYear();
     const dayOfWeek = today.getDay();
 
-    // Current week analysis
+    // Current week analysis (Wed-Tue)
     const currentWeekStart = new Date(today);
-    currentWeekStart.setDate(today.getDate() - today.getDay());
+    const daysFromWednesday = (dayOfWeek + 4) % 7;
+    currentWeekStart.setDate(today.getDate() - daysFromWednesday);
     currentWeekStart.setHours(0, 0, 0, 0);
 
     const currentWeekCollections = collections.filter((c) => {
@@ -74,12 +75,14 @@ export default function ActionCenter() {
       0
     );
 
-    // Calculate weekly average
+    // Calculate weekly average (Wed-Tue weeks)
     const weekMap = new Map<string, number>();
     collections.forEach((c) => {
       const date = parseCollectionDate(c.collectionDate);
       const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
+      const collectionDayOfWeek = date.getDay();
+      const daysFromWed = (collectionDayOfWeek + 4) % 7;
+      weekStart.setDate(date.getDate() - daysFromWed);
       const weekKey = weekStart.toISOString().split('T')[0];
       const current = weekMap.get(weekKey) || 0;
       weekMap.set(weekKey, current + calculateTotalSandwiches(c));
@@ -90,8 +93,9 @@ export default function ActionCenter() {
       ? weeklyTotals.reduce((a, b) => a + b, 0) / weeklyTotals.length
       : 0;
 
-    const projectedWeekTotal = dayOfWeek > 0
-      ? Math.round((currentWeekTotal / dayOfWeek) * 7)
+    const daysElapsedInWeek = (dayOfWeek + 4) % 7 + 1;
+    const projectedWeekTotal = currentWeekTotal > 0
+      ? Math.round((currentWeekTotal / daysElapsedInWeek) * 7)
       : currentWeekTotal;
 
     const weeklyGap = avgWeekly - projectedWeekTotal;

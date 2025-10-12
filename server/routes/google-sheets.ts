@@ -59,7 +59,7 @@ router.post('/', isAuthenticated, async (req, res) => {
     const user = (req as any).user;
     const userId = user?.id || user?.claims?.sub;
 
-    const [newSheet] = await db
+    const [newSheet] = await (db as any)
       .insert(googleSheets)
       .values({
         ...validatedData,
@@ -100,7 +100,7 @@ router.patch('/:id', isAuthenticated, async (req, res) => {
       urlData = { embedUrl, directUrl };
     }
 
-    const [updatedSheet] = await db
+    const [updatedSheet] = await (db as any)
       .update(googleSheets)
       .set({
         ...updateData,

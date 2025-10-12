@@ -59,13 +59,16 @@ export default function PredictiveForecasts() {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const monthProgress = dayOfMonth / daysInMonth;
 
-    // Calculate scheduled events for current week
+    // Calculate scheduled events for current week (Wed-Tue)
+    // Week runs Wednesday to Tuesday
     const currentWeekStart = new Date(today);
-    currentWeekStart.setDate(today.getDate() - today.getDay());
+    const dayOfWeek = today.getDay(); // 0=Sun, 3=Wed
+    const daysFromWednesday = (dayOfWeek + 4) % 7; // Days since last Wednesday
+    currentWeekStart.setDate(today.getDate() - daysFromWednesday);
     currentWeekStart.setHours(0, 0, 0, 0);
 
     const currentWeekEnd = new Date(currentWeekStart);
-    currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+    currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // Wed + 6 = Tue
     currentWeekEnd.setHours(23, 59, 59, 999);
 
     const scheduledThisWeek = (eventRequests || []).filter((event) => {
@@ -110,9 +113,11 @@ export default function PredictiveForecasts() {
     collections.forEach((c) => {
       const date = parseCollectionDate(c.collectionDate);
 
-      // Week aggregation
+      // Week aggregation (Wed-Tue)
       const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
+      const collectionDayOfWeek = date.getDay();
+      const daysFromWed = (collectionDayOfWeek + 4) % 7;
+      weekStart.setDate(date.getDate() - daysFromWed);
       const weekKey = weekStart.toISOString().split('T')[0];
       const weekCurrent = weekMap.get(weekKey) || 0;
       weekMap.set(weekKey, weekCurrent + calculateTotalSandwiches(c));
@@ -135,9 +140,9 @@ export default function PredictiveForecasts() {
       : 0;
 
     // Weekly projection - combine historical pace with scheduled events
-    const dayOfWeek = today.getDay();
-    // Days elapsed in current week (if Sunday=0, treat as 7 days complete)
-    const daysElapsedInWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+    // For Wed-Tue week: Wed=0 days, Thu=1, Fri=2, Sat=3, Sun=4, Mon=5, Tue=6
+    const todayDayOfWeek = today.getDay();
+    const daysElapsedInWeek = (todayDayOfWeek + 4) % 7 + 1; // +1 to count today as complete
 
     // Historical pace projection
     const historicalProjected = currentWeekTotal > 0
@@ -145,7 +150,10 @@ export default function PredictiveForecasts() {
       : Math.round(avgWeekly);
 
     // Combined projection: Already collected + Scheduled events
-    const weeklyProjected = currentWeekTotal + scheduledWeeklyTotal;
+    // If nothing collected yet this week and no scheduled events, use historical average
+    const weeklyProjected = (currentWeekTotal + scheduledWeeklyTotal) > 0
+      ? currentWeekTotal + scheduledWeeklyTotal
+      : Math.round(avgWeekly);
 
     const weeklyVsAvg = avgWeekly > 0 ? ((weeklyProjected - avgWeekly) / avgWeekly) * 100 : 0;
 
@@ -192,8 +200,8 @@ export default function PredictiveForecasts() {
         scheduledEventCount: scheduledThisWeek.length,
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
-        dayOfWeek,
-        daysRemaining: dayOfWeek === 0 ? 0 : 7 - dayOfWeek,
+        dayOfWeek: todayDayOfWeek,
+        daysRemaining: 7 - daysElapsedInWeek,
       },
       monthly: {
         current: currentMonthTotal,
@@ -230,7 +238,7 @@ export default function PredictiveForecasts() {
       <div>
         <h2 className="text-3xl font-bold text-brand-primary">Predictive Forecasts</h2>
         <p className="text-gray-600 mt-2">
-          Projections based on current pace and historical patterns
+          Projections based on current pace and historical patterns • Week runs Wed-Tue
         </p>
       </div>
 
@@ -239,7 +247,7 @@ export default function PredictiveForecasts() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl">Weekly Forecast</CardTitle>
+              <CardTitle className="text-2xl">Weekly Forecast (Wed-Tue)</CardTitle>
               <CardDescription>
                 Projected end-of-week total based on {currentDayName}'s data
               </CardDescription>
@@ -250,7 +258,7 @@ export default function PredictiveForecasts() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Current (through {currentDayName})</p>
+              <p className="text-sm text-gray-600 mb-1">Current Week (through {currentDayName})</p>
               <p className="text-3xl font-bold text-brand-primary">
                 {forecasts.weekly.current.toLocaleString()}
               </p>
