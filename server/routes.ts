@@ -154,6 +154,10 @@ export async function registerRoutes(app: Express): Promise<void> {
     console.error('❌ Failed to load monitoring routes:', error);
   }
 
+  // Route optimization routes
+  const routeOptimizationRoutes = await import('./routes/routes');
+  app.use('/api/routes', routeOptimizationRoutes.default);
+
   // Add catch-all handler for unknown API routes to prevent SPA fallback serving HTML
   // This must come AFTER all legitimate API routes but BEFORE static file serving
   app.use('/api', (req, res, next) => {

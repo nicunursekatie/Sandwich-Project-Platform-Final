@@ -226,6 +226,9 @@ function Router() {
       <Route path="/historical-import">
         {() => <Dashboard initialSection="historical-import" />}
       </Route>
+      <Route path="/route-map">
+        {() => <Dashboard initialSection="route-map" />}
+      </Route>
       <Route
         path="/sms-opt-in"
         component={lazy(() => import('./pages/sms-opt-in'))}

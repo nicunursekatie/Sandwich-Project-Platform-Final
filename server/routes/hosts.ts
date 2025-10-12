@@ -13,8 +13,15 @@ import {
   validateRequired,
   HostsError,
 } from './hosts/error-handler';
+import { z } from 'zod';
 
 const router = Router();
+
+// Validation schema for coordinate updates
+const coordinatesSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+});
 
 // Host management routes
 router.get('/hosts', 
@@ -31,6 +38,34 @@ router.get(
   asyncHandler(async (req, res) => {
     const hostsWithContacts = await storage.getAllHostsWithContacts();
     res.json(hostsWithContacts);
+  })
+);
+
+// Map endpoint - get hosts with valid coordinates for map display
+router.get(
+  '/hosts/map',
+  requirePermission(PERMISSIONS.HOSTS_VIEW),
+  asyncHandler(async (req, res) => {
+    const allHosts = await storage.getAllHosts();
+    
+    // Filter to only active hosts with valid coordinates
+    const hostsWithCoordinates = allHosts
+      .filter(host => 
+        host.status === 'active' && 
+        host.latitude !== null && 
+        host.longitude !== null
+      )
+      .map(host => ({
+        id: host.id,
+        name: host.name,
+        address: host.address,
+        latitude: host.latitude,
+        longitude: host.longitude,
+        email: host.email,
+        phone: host.phone,
+      }));
+    
+    res.json(hostsWithCoordinates);
   })
 );
 
@@ -85,6 +120,42 @@ router.patch(
     if (!host) {
       throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
     }
+    res.json(host);
+  })
+);
+
+// Update host coordinates endpoint
+router.patch(
+  '/hosts/:id/coordinates',
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
+  sanitizeMiddleware,
+  asyncHandler(async (req, res) => {
+    const id = validateId(req.params.id, 'host');
+    
+    // Validate coordinates using Zod schema
+    const result = coordinatesSchema.safeParse(req.body);
+    if (!result.success) {
+      throw createHostsError(
+        'Invalid coordinates provided',
+        400,
+        'VALIDATION_ERROR',
+        { validationErrors: result.error.errors }
+      );
+    }
+    
+    const { latitude, longitude } = result.data;
+    
+    // Update host with new coordinates and set geocodedAt timestamp
+    const host = await storage.updateHost(id, {
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      geocodedAt: new Date(),
+    });
+    
+    if (!host) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+    
     res.json(host);
   })
 );

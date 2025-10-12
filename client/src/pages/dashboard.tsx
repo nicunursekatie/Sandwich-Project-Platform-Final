@@ -100,6 +100,7 @@ import { GuidedTour } from '@/components/GuidedTour';
 import MyAvailability from '@/pages/my-availability';
 import TeamAvailability from '@/pages/team-availability';
 import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
+import RouteMapView from '@/pages/route-map';
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -314,6 +315,8 @@ export default function Dashboard({
 
       case 'hosts':
         return <HostsManagement />;
+      case 'route-map':
+        return <RouteMapView />;
       case 'recipients':
         return <RecipientsManagement />;
       case 'drivers':
