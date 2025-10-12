@@ -2559,46 +2559,37 @@ export default function SandwichCollectionLog() {
                     </div>
                     {Array.isArray(groupData) && groupData.length > 0 && (
                       <div className="space-y-1">
-                        {groupData.map((group: any, index: number) => (
-                          <div
-                            key={index}
-                            className="bg-white rounded px-2 py-1"
-                          >
-                            <div className="flex items-center justify-between text-base">
+                        {groupData.map((group: any, index: number) => {
+                          const hasTypes = group.deli || group.turkey || group.ham || group.pbj;
+                          const types = [];
+                          if (group.deli > 0) types.push(`${group.deli} Deli`);
+                          if (group.turkey > 0) types.push(`${group.turkey} Turkey`);
+                          if (group.ham > 0) types.push(`${group.ham} Ham`);
+                          if (group.pbj > 0) types.push(`${group.pbj} PBJ`);
+                          
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between text-base bg-white rounded px-2 py-1"
+                            >
                               <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">
                                 {group.groupName}
                               </span>
                               <span className="text-slate-700 font-medium ml-2">
-                                {group.sandwichCount}
+                                {hasTypes ? (
+                                  <span className="flex items-center gap-1">
+                                    <span>{group.sandwichCount}</span>
+                                    <span className="text-xs text-slate-500">
+                                      ({types.join(', ')})
+                                    </span>
+                                  </span>
+                                ) : (
+                                  group.sandwichCount
+                                )}
                               </span>
                             </div>
-                            {/* Show sandwich type breakdown for groups if available */}
-                            {(group.deli || group.turkey || group.ham || group.pbj) && (
-                              <div className="flex gap-2 text-xs mt-1 flex-wrap">
-                                {group.deli > 0 && (
-                                  <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">
-                                    {group.deli} Deli
-                                  </span>
-                                )}
-                                {group.turkey > 0 && (
-                                  <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">
-                                    {group.turkey} Turkey
-                                  </span>
-                                )}
-                                {group.ham > 0 && (
-                                  <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">
-                                    {group.ham} Ham
-                                  </span>
-                                )}
-                                {group.pbj > 0 && (
-                                  <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">
-                                    {group.pbj} PBJ
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                     {(!Array.isArray(groupData) || groupData.length === 0) && (
