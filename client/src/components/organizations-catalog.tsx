@@ -761,20 +761,38 @@ export default function GroupCatalog({
                             {group.groupName}
                           </h2>
                         </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <span className="flex items-center space-x-1">
-                            <Users className="w-4 h-4" />
-                            <span>
-                              {group.totalDepartments}{' '}
-                              {group.totalDepartments === 1
-                                ? 'contact'
-                                : 'departments'}
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <span className="flex items-center space-x-1">
+                              <Users className="w-4 h-4" />
+                              <span>
+                                {group.totalDepartments}{' '}
+                                {group.totalDepartments === 1
+                                  ? 'contact'
+                                  : 'departments'}
+                              </span>
                             </span>
-                          </span>
-                          <span className="flex items-center space-x-1">
-                            <Calendar className="w-4 h-4" />
-                            <span>{group.totalRequests} event requests</span>
-                          </span>
+                            <span className="flex items-center space-x-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>{group.totalRequests} event requests</span>
+                            </span>
+                          </div>
+                          {/* View Complete Organization History Button */}
+                          <Button
+                            onClick={() => {
+                              setSelectedOrganization(group.departments[0]); // Use first department as org reference
+                              setOrganizationDetails(null); // Reset previous details
+                              fetchOrganizationDetails(
+                                group.groupName
+                              ); // Fetch complete organization history
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90"
+                          >
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            View Complete History
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -810,8 +828,8 @@ export default function GroupCatalog({
                                       {org.department}
                                     </h3>
                                   )}
-                                  {/* Event Date - Prominent */}
-                                  {org.eventDate ? (
+                                  {/* Event Date - Show only if single event */}
+                                  {org.eventDate && org.eventCount === 1 ? (
                                     <div
                                       className="flex items-center mt-2 text-lg font-semibold"
                                       style={{ color: '#FBAD3F' }}
@@ -820,6 +838,11 @@ export default function GroupCatalog({
                                       <span>
                                         {formatDateForDisplay(org.eventDate)}
                                       </span>
+                                    </div>
+                                  ) : org.eventCount > 1 ? (
+                                    <div className="flex items-center mt-2 text-base text-gray-600">
+                                      <Calendar className="w-4 h-4 mr-2" />
+                                      <span>{org.eventCount} events</span>
                                     </div>
                                   ) : (
                                     <div className="flex items-center mt-2 text-base text-gray-500">
@@ -952,22 +975,6 @@ export default function GroupCatalog({
                                 )}
                               </div>
 
-                              {/* View Complete Organization History Button */}
-                              <Button
-                                onClick={() => {
-                                  setSelectedOrganization(org);
-                                  setOrganizationDetails(null); // Reset previous details
-                                  fetchOrganizationDetails(
-                                    org.organizationName
-                                  ); // Fetch complete organization history
-                                }}
-                                variant="outline"
-                                size="sm"
-                                className="w-full text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90"
-                              >
-                                <ExternalLink className="w-4 h-4 mr-2" />
-                                View Complete History
-                              </Button>
                             </div>
                           </CardContent>
                         </Card>
@@ -1009,13 +1016,20 @@ export default function GroupCatalog({
                             </h3>
                           </div>
 
-                          {/* Event Date */}
-                          <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
-                            <Calendar className="w-4 h-4 text-teal-600" />
-                            <span className="font-medium">
-                              {formatDateForDisplay(org.eventDate)}
-                            </span>
-                          </div>
+                          {/* Event Date - Show only if single event */}
+                          {org.eventDate && org.eventCount === 1 ? (
+                            <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
+                              <Calendar className="w-4 h-4 text-teal-600" />
+                              <span className="font-medium">
+                                {formatDateForDisplay(org.eventDate)}
+                              </span>
+                            </div>
+                          ) : org.eventCount > 1 ? (
+                            <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
+                              <Calendar className="w-4 h-4 text-teal-600" />
+                              <span className="font-medium">{org.eventCount} events</span>
+                            </div>
+                          ) : null}
 
                           {/* Contact Information */}
                           <div className="space-y-1">
@@ -1066,7 +1080,7 @@ export default function GroupCatalog({
                             </div>
                           </div>
 
-                          {/* Compact View History Button */}
+                          {/* Compact View Complete History Button */}
                           <Button
                             onClick={() => {
                               setSelectedOrganization(org);
@@ -1078,7 +1092,7 @@ export default function GroupCatalog({
                             className="w-full text-xs bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-1"
                           >
                             <ExternalLink className="w-3 h-3 mr-1" />
-                            View History
+                            View Complete History
                           </Button>
                         </CardContent>
                       </Card>
