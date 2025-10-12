@@ -252,6 +252,21 @@ export default function PredictiveForecasts() {
   const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentDayName = weekdays[forecasts.weekly.dayOfWeek];
 
+  // Calculate week date range
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const daysFromWednesday = (dayOfWeek + 4) % 7;
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - daysFromWednesday);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const currentMonth = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -267,9 +282,9 @@ export default function PredictiveForecasts() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl">Weekly Forecast (Wed-Tue)</CardTitle>
+              <CardTitle className="text-2xl">Weekly Forecast</CardTitle>
               <CardDescription>
-                Projected end-of-week total based on {currentDayName}'s data
+                {formatDate(weekStart)} - {formatDate(weekEnd)} • Currently {currentDayName}
               </CardDescription>
             </div>
             <Calendar className="h-8 w-8 text-brand-primary" />
@@ -284,12 +299,25 @@ export default function PredictiveForecasts() {
               </p>
               <p className="text-xs text-gray-500 mt-1 italic">From collection log</p>
             </div>
-            <div className="text-center p-4 bg-brand-primary/10 rounded-lg border-2 border-brand-primary">
+            <div className={`text-center p-4 rounded-lg border-2 ${
+              forecasts.weekly.vsAvg >= 10
+                ? 'bg-green-50 border-green-500'
+                : forecasts.weekly.vsAvg >= 0
+                ? 'bg-blue-50 border-blue-400'
+                : forecasts.weekly.vsAvg >= -10
+                ? 'bg-amber-50 border-amber-500'
+                : 'bg-red-50 border-red-500'
+            }`}>
               <p className="text-sm text-gray-600 mb-1">Projected Week Total</p>
-              <p className="text-3xl font-bold text-brand-primary">
+              <p className={`text-3xl font-bold ${
+                forecasts.weekly.vsAvg >= 10 ? 'text-green-700' :
+                forecasts.weekly.vsAvg >= 0 ? 'text-blue-700' :
+                forecasts.weekly.vsAvg >= -10 ? 'text-amber-700' :
+                'text-red-700'
+              }`}>
                 {forecasts.weekly.projected.toLocaleString()}
               </p>
-              <div className="text-xs text-brand-primary mt-2 space-y-0.5">
+              <div className="text-xs text-gray-700 mt-2 space-y-0.5">
                 <div>{forecasts.weekly.current.toLocaleString()} already collected</div>
                 {forecasts.weekly.scheduled > 0 && (
                   <div>+ {forecasts.weekly.scheduledEventCount} scheduled event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})</div>
@@ -299,20 +327,38 @@ export default function PredictiveForecasts() {
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-2 italic">Event requests + historical avg by day</p>
-              <div className="flex items-center justify-center gap-2 mt-2">
-                {forecasts.weekly.vsAvg >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
+
+              {/* Clear status indicator */}
+              <div className={`mt-3 px-3 py-2 rounded-md font-semibold text-sm ${
+                forecasts.weekly.vsAvg >= 10
+                  ? 'bg-green-600 text-white'
+                  : forecasts.weekly.vsAvg >= 0
+                  ? 'bg-blue-600 text-white'
+                  : forecasts.weekly.vsAvg >= -10
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-red-600 text-white'
+              }`}>
+                {forecasts.weekly.vsAvg >= 10 ? (
+                  <>
+                    <TrendingUp className="inline h-4 w-4 mr-1" />
+                    Exceeding Average (+{Math.round(forecasts.weekly.vsAvg)}%)
+                  </>
+                ) : forecasts.weekly.vsAvg >= 0 ? (
+                  <>
+                    <Target className="inline h-4 w-4 mr-1" />
+                    On Track (Meeting Average)
+                  </>
+                ) : forecasts.weekly.vsAvg >= -10 ? (
+                  <>
+                    <AlertCircle className="inline h-4 w-4 mr-1" />
+                    Slightly Below Average ({Math.round(forecasts.weekly.vsAvg)}%)
+                  </>
                 ) : (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
+                  <>
+                    <TrendingDown className="inline h-4 w-4 mr-1" />
+                    Significantly Below Average ({Math.round(forecasts.weekly.vsAvg)}%)
+                  </>
                 )}
-                <span
-                  className={`text-sm font-semibold ${
-                    forecasts.weekly.vsAvg >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}
-                >
-                  {forecasts.weekly.vsAvg > 0 ? '+' : ''}
-                  {Math.round(forecasts.weekly.vsAvg)}% vs avg
-                </span>
               </div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -325,14 +371,34 @@ export default function PredictiveForecasts() {
           </div>
 
           {forecasts.weekly.vsAvg < -10 && (
-            <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 flex items-start gap-3">
+            <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <div>
+                <p className="font-semibold text-red-900">Action Needed: Below Weekly Target</p>
+                <p className="text-sm text-red-800 mt-1">
+                  Need {Math.round(forecasts.weekly.average - forecasts.weekly.projected).toLocaleString()} more sandwiches this week to reach average weekly performance.
+                </p>
+              </div>
+            </div>
+          )}
+          {forecasts.weekly.vsAvg >= -10 && forecasts.weekly.vsAvg < 0 && (
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
               <div>
-                <p className="font-semibold text-amber-900">Behind Weekly Pace</p>
+                <p className="font-semibold text-amber-900">Slightly Below Weekly Average</p>
                 <p className="text-sm text-amber-800 mt-1">
-                  Need approximately{' '}
-                  {Math.round((forecasts.weekly.average - forecasts.weekly.projected) / forecasts.weekly.daysRemaining)}{' '}
-                  sandwiches per day over the next {forecasts.weekly.daysRemaining} days to reach average.
+                  {Math.round(forecasts.weekly.average - forecasts.weekly.projected).toLocaleString()} more sandwiches needed this week to meet historical average.
+                </p>
+              </div>
+            </div>
+          )}
+          {forecasts.weekly.vsAvg >= 10 && (
+            <div className="bg-green-50 border-2 border-green-400 rounded-lg p-4 flex items-start gap-3">
+              <TrendingUp className="h-5 w-5 text-green-600 mt-0.5" />
+              <div>
+                <p className="font-semibold text-green-900">Excellent Week!</p>
+                <p className="text-sm text-green-800 mt-1">
+                  On track to exceed weekly average by {Math.round(forecasts.weekly.projected - forecasts.weekly.average).toLocaleString()} sandwiches.
                 </p>
               </div>
             </div>
@@ -347,7 +413,7 @@ export default function PredictiveForecasts() {
             <div>
               <CardTitle className="text-2xl">Monthly Forecast</CardTitle>
               <CardDescription>
-                End-of-month projection • {Math.round(forecasts.monthly.progress)}% of month complete
+                {currentMonth} • Day {forecasts.monthly.dayOfMonth} of {forecasts.monthly.daysInMonth} ({Math.round(forecasts.monthly.progress)}% complete)
               </CardDescription>
             </div>
             <Target className="h-8 w-8 text-brand-teal" />
@@ -372,26 +438,57 @@ export default function PredictiveForecasts() {
               </p>
               <p className="text-xs text-gray-500 mt-1 italic">From collection log</p>
             </div>
-            <div className="text-center p-4 bg-brand-teal/10 rounded-lg border-2 border-brand-teal">
+            <div className={`text-center p-4 rounded-lg border-2 ${
+              forecasts.monthly.vsAvg >= 10
+                ? 'bg-green-50 border-green-500'
+                : forecasts.monthly.vsAvg >= 0
+                ? 'bg-blue-50 border-blue-400'
+                : forecasts.monthly.vsAvg >= -10
+                ? 'bg-amber-50 border-amber-500'
+                : 'bg-red-50 border-red-500'
+            }`}>
               <p className="text-sm text-gray-600 mb-1">Projected Month Total</p>
-              <p className="text-3xl font-bold text-brand-teal">
+              <p className={`text-3xl font-bold ${
+                forecasts.monthly.vsAvg >= 10 ? 'text-green-700' :
+                forecasts.monthly.vsAvg >= 0 ? 'text-blue-700' :
+                forecasts.monthly.vsAvg >= -10 ? 'text-amber-700' :
+                'text-red-700'
+              }`}>
                 {forecasts.monthly.projected.toLocaleString()}
               </p>
               <p className="text-xs text-gray-500 mt-2 italic">Based on current pace</p>
-              <div className="flex items-center justify-center gap-2 mt-2">
-                {forecasts.monthly.vsAvg >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
+
+              {/* Clear status indicator */}
+              <div className={`mt-3 px-3 py-2 rounded-md font-semibold text-sm ${
+                forecasts.monthly.vsAvg >= 10
+                  ? 'bg-green-600 text-white'
+                  : forecasts.monthly.vsAvg >= 0
+                  ? 'bg-blue-600 text-white'
+                  : forecasts.monthly.vsAvg >= -10
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-red-600 text-white'
+              }`}>
+                {forecasts.monthly.vsAvg >= 10 ? (
+                  <>
+                    <TrendingUp className="inline h-4 w-4 mr-1" />
+                    Exceeding Average (+{Math.round(forecasts.monthly.vsAvg)}%)
+                  </>
+                ) : forecasts.monthly.vsAvg >= 0 ? (
+                  <>
+                    <Target className="inline h-4 w-4 mr-1" />
+                    On Track (Meeting Average)
+                  </>
+                ) : forecasts.monthly.vsAvg >= -10 ? (
+                  <>
+                    <AlertCircle className="inline h-4 w-4 mr-1" />
+                    Slightly Below Average ({Math.round(forecasts.monthly.vsAvg)}%)
+                  </>
                 ) : (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
+                  <>
+                    <TrendingDown className="inline h-4 w-4 mr-1" />
+                    Significantly Below Average ({Math.round(forecasts.monthly.vsAvg)}%)
+                  </>
                 )}
-                <span
-                  className={`text-sm font-semibold ${
-                    forecasts.monthly.vsAvg >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}
-                >
-                  {forecasts.monthly.vsAvg > 0 ? '+' : ''}
-                  {Math.round(forecasts.monthly.vsAvg)}% vs avg
-                </span>
               </div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -404,15 +501,15 @@ export default function PredictiveForecasts() {
           </div>
 
           {forecasts.monthly.gap > 0 && (
-            <div className="bg-blue-50 border border-blue-300 rounded-lg p-4">
+            <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-4">
               <p className="font-semibold text-blue-900 mb-2">Path to Monthly Average</p>
               <p className="text-sm text-blue-800">
-                Need {forecasts.monthly.gap.toLocaleString()} more sandwiches over the next{' '}
+                Need {forecasts.monthly.gap.toLocaleString()} more sandwiches over the remaining{' '}
                 {forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth} days to reach monthly average.
               </p>
               <p className="text-sm text-blue-800 mt-1">
-                <span className="font-semibold">Daily target: </span>
-                ~{forecasts.monthly.dailyNeeded.toLocaleString()} sandwiches/day
+                <span className="font-semibold">Weekly target: </span>
+                ~{Math.round((forecasts.monthly.gap / (forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth)) * 7).toLocaleString()} sandwiches/week for remaining weeks
               </p>
             </div>
           )}

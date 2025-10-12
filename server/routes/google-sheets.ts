@@ -136,7 +136,7 @@ router.delete('/:id', isAuthenticated, async (req, res) => {
       return res.status(400).json({ message: 'Invalid sheet ID' });
     }
 
-    const [deletedSheet] = await db
+    const [deletedSheet] = await (db as any)
       .delete(googleSheets)
       .where(eq(googleSheets.id, id))
       .returning();
@@ -160,7 +160,7 @@ router.post('/:id/test', async (req, res) => {
       return res.status(400).json({ message: 'Invalid sheet ID' });
     }
 
-    const [sheet] = await db
+    const [sheet] = await (db as any)
       .select()
       .from(googleSheets)
       .where(eq(googleSheets.id, id));
