@@ -17,11 +17,15 @@ import {
   AuthenticatedRequest,
   getUserId,
 } from '../../types';
+import { RouterDependencies } from '../../types/router-deps';
 
-// Initialize meetings service with type-safe storage interface
-const meetingsService = new MeetingsService(storage);
+// Factory function to create meetings routes with dependencies
+export default function createMeetingsRouter(deps: RouterDependencies): Router {
+  const meetingsRouter = Router();
+  const { requirePermission } = deps;
 
-const meetingsRouter = Router();
+  // Initialize meetings service with type-safe storage interface
+  const meetingsService = new MeetingsService(storage);
 
 // Meeting Minutes
 meetingsRouter.get('/minutes', (async (req: AuthenticatedRequest, res: Response) => {
@@ -436,7 +440,7 @@ meetingsRouter.post('/', async (req, res) => {
 });
 
 // Meeting Notes
-meetingsRouter.get('/notes', async (req, res) => {
+meetingsRouter.get('/notes', requirePermission('MEETINGS_VIEW'), async (req, res) => {
   try {
     const { projectId, meetingId, type, status } = req.query;
     
@@ -457,7 +461,7 @@ meetingsRouter.get('/notes', async (req, res) => {
   }
 });
 
-meetingsRouter.get('/notes/:id', async (req, res) => {
+meetingsRouter.get('/notes/:id', requirePermission('MEETINGS_VIEW'), async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -476,7 +480,7 @@ meetingsRouter.get('/notes/:id', async (req, res) => {
   }
 });
 
-meetingsRouter.post('/notes', (async (req: AuthenticatedRequest, res: Response) => {
+meetingsRouter.post('/notes', requirePermission('MEETINGS_MANAGE'), (async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = getUserId(req);
     const user = userId ? await storage.getUser(userId) : null;
@@ -511,7 +515,7 @@ meetingsRouter.post('/notes', (async (req: AuthenticatedRequest, res: Response) 
   }
 }) as any);
 
-meetingsRouter.patch('/notes/:id', async (req, res) => {
+meetingsRouter.patch('/notes/:id', requirePermission('MEETINGS_MANAGE'), async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -550,7 +554,7 @@ meetingsRouter.patch('/notes/:id', async (req, res) => {
   }
 });
 
-meetingsRouter.delete('/notes/:id', async (req, res) => {
+meetingsRouter.delete('/notes/:id', requirePermission('MEETINGS_MANAGE'), async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -679,4 +683,5 @@ meetingsRouter.delete('/:id', async (req, res) => {
   }
 });
 
-export default meetingsRouter;
+  return meetingsRouter;
+}

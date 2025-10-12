@@ -8,7 +8,7 @@ import createGroupsCatalogRoutes from './collections/groups-catalog';
 import tasksRouter from './tasks';
 import collectionsRouter from './collections';
 import recipientsRouter from './recipients';
-import meetingsRouter from './meetings/index';
+import createMeetingsRouter from './meetings/index';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
 import importCollectionsRouter from './import-collections';
@@ -98,6 +98,9 @@ export function createMainRoutes(deps: RouterDependencies) {
     projectsRouter
   );
   router.use('/api/projects', createErrorHandler('projects'));
+
+  // Instantiate meetings router with required dependencies
+  const meetingsRouter = createMeetingsRouter(deps);
 
   router.use(
     '/api/tasks',
