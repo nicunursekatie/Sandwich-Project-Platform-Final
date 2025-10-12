@@ -2579,17 +2579,8 @@ export default function SandwichCollectionLog() {
                               <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">
                                 {group.groupName}
                               </span>
-                              <span className="text-slate-700 font-medium ml-2">
-                                {types.length > 0 ? (
-                                  <span className="flex items-center gap-1">
-                                    <span>{group.sandwichCount}</span>
-                                    <span className="text-xs text-slate-500">
-                                      ({types.join(', ')})
-                                    </span>
-                                  </span>
-                                ) : (
-                                  group.sandwichCount
-                                )}
+                              <span className="text-slate-700 font-medium ml-2 text-sm">
+                                {types.length > 0 ? types.join(', ') : group.sandwichCount}
                               </span>
                             </div>
                           );
