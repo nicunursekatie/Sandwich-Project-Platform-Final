@@ -2396,9 +2396,9 @@ export default function SandwichCollectionLog() {
                         {groupData.map((group: any, index: number) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between text-sm bg-white rounded px-2 py-1"
+                            className="flex items-center justify-between text-base bg-white rounded px-2 py-1"
                           >
-                            <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center justify-between text-base w-full">
                               <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">
                                 {group.groupName}
                               </span>
@@ -2408,7 +2408,7 @@ export default function SandwichCollectionLog() {
                             </div>
                             {/* Show sandwich type breakdown for groups if available */}
                             {(group.deli || group.pbj) && (
-                              <div className="flex gap-2 text-xs mt-1">
+                              <div className="flex gap-2 text-sm mt-1">
                                 {group.deli > 0 && (
                                   <span className="text-slate-500">
                                     {group.deli} Deli
@@ -2426,7 +2426,7 @@ export default function SandwichCollectionLog() {
                       </div>
                     )}
                     {(!Array.isArray(groupData) || groupData.length === 0) && (
-                      <div className="text-sm text-slate-500 italic">
+                      <div className="text-base text-slate-500 italic">
                         No group collections
                       </div>
                     )}
