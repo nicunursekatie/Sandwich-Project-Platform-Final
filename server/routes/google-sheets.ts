@@ -34,7 +34,7 @@ router.get('/:id', async (req, res) => {
       return res.status(400).json({ message: 'Invalid sheet ID' });
     }
 
-    const [sheet] = await db
+    const [sheet] = await (db as any)
       .select()
       .from(googleSheets)
       .where(eq(googleSheets.id, id));
