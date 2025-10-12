@@ -9,6 +9,7 @@ UI Design: Button labels and interface text must be extremely clear about their 
 Form Design: Eliminate redundant or confusing form fields - host dialogs should have a single "Host Location Name" field instead of separate "Name" and "Host Location" fields.
 Mobile UX Priority: Mobile user experience is critical - chat positioning and space efficiency are key concerns. Vehicle type should NOT be required for new driver entries.
 Documentation: All technical findings and fixes must be documented in replit.md to avoid repeated searching and debugging.
+Date Display Fix: When displaying dates from the database, always use `timeZone: 'UTC'` in toLocaleDateString() to prevent timezone conversion bugs that cause off-by-one-day display errors (e.g., `date.toLocaleDateString('en-US', { timeZone: 'UTC' })`).
 Navigation Icons: Collections log icon in simple-nav should use sandwich logo.png from LOGOS folder.
 Desktop Chat UX: Desktop users require proper scrolling behavior without nested scrolling containers that cause page focus issues - chat layout must handle desktop and mobile differently.
 

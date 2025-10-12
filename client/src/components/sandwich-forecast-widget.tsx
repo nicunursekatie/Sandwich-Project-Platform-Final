@@ -388,7 +388,7 @@ export default function SandwichForecastWidget() {
                     <div className="flex-1">
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
-                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -445,7 +445,7 @@ export default function SandwichForecastWidget() {
                     <div className="flex-1">
                       <div className="font-medium text-sm">{event.organizationName}</div>
                       <div className="text-xs text-gray-600">
-                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                        {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
