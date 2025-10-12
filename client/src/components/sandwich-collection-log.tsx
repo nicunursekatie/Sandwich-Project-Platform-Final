@@ -2354,6 +2354,28 @@ export default function SandwichCollectionLog() {
                         {collection.individualSandwiches}
                       </span>
                     </div>
+                    {/* Show sandwich type breakdown if available */}
+                    {(collection.individualDeli ||
+                      collection.individualPbj) && (
+                      <div className="mt-2 flex gap-2 text-xs">
+                        {collection.individualDeli > 0 && (
+                          <span className="bg-white px-2 py-1 rounded text-slate-600">
+                            <span className="font-medium text-slate-700">
+                              {collection.individualDeli}
+                            </span>{' '}
+                            Deli
+                          </span>
+                        )}
+                        {collection.individualPbj > 0 && (
+                          <span className="bg-white px-2 py-1 rounded text-slate-600">
+                            <span className="font-medium text-slate-700">
+                              {collection.individualPbj}
+                            </span>{' '}
+                            PBJ
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Group Collections */}
@@ -2376,12 +2398,29 @@ export default function SandwichCollectionLog() {
                             key={index}
                             className="flex items-center justify-between text-sm bg-white rounded px-2 py-1"
                           >
-                            <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">
-                              {group.groupName}
-                            </span>
-                            <span className="text-slate-700 font-medium ml-2">
-                              {group.sandwichCount}
-                            </span>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">
+                                {group.groupName}
+                              </span>
+                              <span className="text-slate-700 font-medium ml-2">
+                                {group.sandwichCount}
+                              </span>
+                            </div>
+                            {/* Show sandwich type breakdown for groups if available */}
+                            {(group.deli || group.pbj) && (
+                              <div className="flex gap-2 text-xs mt-1">
+                                {group.deli > 0 && (
+                                  <span className="text-slate-500">
+                                    {group.deli} Deli
+                                  </span>
+                                )}
+                                {group.pbj > 0 && (
+                                  <span className="text-slate-500">
+                                    {group.pbj} PBJ
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

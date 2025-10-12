@@ -86,6 +86,7 @@ import SignUpGeniusViewer from '@/components/signup-genius-viewer';
 import DonationTracking from '@/components/donation-tracking';
 import WeeklyMonitoringDashboard from '@/components/weekly-monitoring-dashboard';
 import WishlistPage from '@/pages/wishlist';
+import CoolerTrackingPage from '@/pages/cooler-tracking';
 import EventRequestsManagement from '@/components/event-requests-management';
 import EventRequestsManagementV2 from '@/components/event-requests-v2';
 import EventRemindersManagement from '@/components/event-reminders-management';
@@ -342,6 +343,8 @@ export default function Dashboard({
 
       case 'wishlist':
         return <WishlistPage />;
+      case 'cooler-tracking':
+        return <CoolerTrackingPage />;
       case 'important-links':
         return <ImportantLinks />;
       case 'analytics':

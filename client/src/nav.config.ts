@@ -28,6 +28,7 @@ import {
   UserCog,
   Trophy,
   FileSpreadsheet,
+  Package,
   HelpCircle,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
@@ -298,6 +299,13 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Gift,
     href: 'wishlist',
     group: 'documentation',
+  },
+  {
+    id: 'cooler-tracking',
+    label: 'Cooler Tracking',
+    icon: Package,
+    href: 'cooler-tracking',
+    group: 'operations',
   },
   {
     id: 'document-management',

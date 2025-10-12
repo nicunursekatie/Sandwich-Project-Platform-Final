@@ -582,13 +582,16 @@ export const sandwichCollections = pgTable('sandwich_collections', {
   collectionDate: text('collection_date').notNull(), // The date sandwiches were actually collected
   hostName: text('host_name').notNull(),
   individualSandwiches: integer('individual_sandwiches').notNull().default(0),
+  // Individual sandwich type breakdown (optional)
+  individualDeli: integer('individual_deli'), // Number of deli sandwiches for individuals
+  individualPbj: integer('individual_pbj'), // Number of PBJ sandwiches for individuals
   // Group collection columns (Phase 5: JSON column for unlimited groups)
   group1Name: text('group1_name'), // Name of first group (nullable) - LEGACY, use groupCollections
   group1Count: integer('group1_count'), // Count for first group (nullable) - LEGACY, use groupCollections
   group2Name: text('group2_name'), // Name of second group (nullable) - LEGACY, use groupCollections
   group2Count: integer('group2_count'), // Count for second group (nullable) - LEGACY, use groupCollections
   // New JSON column for unlimited groups
-  groupCollections: jsonb('group_collections').notNull().default('[]'), // Array of {name: string, count: number}
+  groupCollections: jsonb('group_collections').notNull().default('[]'), // Array of {name: string, count: number, deli?: number, pbj?: number}
   createdBy: text('created_by'), // User ID who created this entry
   createdByName: text('created_by_name'), // Display name of creator
   submittedAt: timestamp('submitted_at').notNull().defaultNow(), // When form was submitted
@@ -1416,6 +1419,48 @@ export type WishlistSuggestion = typeof wishlistSuggestions.$inferSelect;
 export type InsertWishlistSuggestion = z.infer<
   typeof insertWishlistSuggestionSchema
 >;
+
+// Cooler Types table for defining types of coolers
+export const coolerTypes = pgTable('cooler_types', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(), // e.g., "Large rolling cooler"
+  description: text('description'), // Optional details
+  isActive: boolean('is_active').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0), // For display ordering
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertCoolerTypeSchema = createInsertSchema(coolerTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CoolerType = typeof coolerTypes.$inferSelect;
+export type InsertCoolerType = z.infer<typeof insertCoolerTypeSchema>;
+
+// Cooler Inventory table for tracking cooler locations
+export const coolerInventory = pgTable('cooler_inventory', {
+  id: serial('id').primaryKey(),
+  hostHomeId: varchar('host_home_id').notNull(), // User ID of the host home
+  coolerTypeId: integer('cooler_type_id').notNull().references(() => coolerTypes.id),
+  quantity: integer('quantity').notNull().default(0),
+  notes: text('notes'), // Optional notes about condition, etc.
+  reportedAt: timestamp('reported_at').defaultNow().notNull(),
+  reportedBy: varchar('reported_by').notNull(), // User ID who submitted the report
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertCoolerInventorySchema = createInsertSchema(coolerInventory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CoolerInventory = typeof coolerInventory.$inferSelect;
+export type InsertCoolerInventory = z.infer<typeof insertCoolerInventorySchema>;
 
 // Event Requests table for tracking organization event planning
 export const eventRequests = pgTable(
