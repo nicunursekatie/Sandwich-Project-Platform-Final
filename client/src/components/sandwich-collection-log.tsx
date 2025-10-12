@@ -197,10 +197,16 @@ export default function SandwichCollectionLog() {
     hostName: '',
     individualSandwiches: '',
     groupCollections: '',
+    individualDeli: '',
+    individualTurkey: '',
+    individualHam: '',
+    individualPbj: '',
   });
   const [editGroupCollections, setEditGroupCollections] = useState<
-    Array<{ id: string; groupName: string; sandwichCount: number }>
+    Array<{ id: string; groupName: string; sandwichCount: number; deli?: number; turkey?: number; ham?: number; pbj?: number }>
   >([]);
+  const [showEditIndividualBreakdown, setShowEditIndividualBreakdown] = useState(false);
+  const [showEditGroupBreakdown, setShowEditGroupBreakdown] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [newCollectionData, setNewCollectionData] = useState({
@@ -1412,15 +1418,25 @@ export default function SandwichCollectionLog() {
 
   const handleEdit = (collection: SandwichCollection) => {
     setEditingCollection(collection);
+    
+    // Check if individual type breakdown exists
+    const hasIndividualBreakdown = !!(collection.individualDeli || collection.individualTurkey || collection.individualHam || collection.individualPbj);
+    setShowEditIndividualBreakdown(hasIndividualBreakdown);
+    
     setEditFormData({
       collectionDate: collection.collectionDate,
       hostName: collection.hostName,
       individualSandwiches: collection.individualSandwiches.toString(),
       groupCollections: '', // Not used with new schema
+      individualDeli: collection.individualDeli?.toString() || '',
+      individualTurkey: collection.individualTurkey?.toString() || '',
+      individualHam: collection.individualHam?.toString() || '',
+      individualPbj: collection.individualPbj?.toString() || '',
     });
 
     // Parse existing group collections from new schema fields
     const groupList = [];
+    let hasGroupBreakdown = false;
 
     // First try to read from the new groupCollections array
     if (
@@ -1430,11 +1446,22 @@ export default function SandwichCollectionLog() {
     ) {
       collection.groupCollections.forEach((group: any, index: number) => {
         if (group.name && group.count > 0) {
-          groupList.push({
+          const groupData: any = {
             id: `edit-${index + 1}`,
             groupName: group.name,
             sandwichCount: group.count,
-          });
+          };
+          
+          // Include type breakdown if available
+          if (group.deli || group.turkey || group.ham || group.pbj) {
+            groupData.deli = group.deli || 0;
+            groupData.turkey = group.turkey || 0;
+            groupData.ham = group.ham || 0;
+            groupData.pbj = group.pbj || 0;
+            hasGroupBreakdown = true;
+          }
+          
+          groupList.push(groupData);
         }
       });
     } else {
@@ -1455,6 +1482,8 @@ export default function SandwichCollectionLog() {
       }
     }
 
+    setShowEditGroupBreakdown(hasGroupBreakdown);
+
     if (groupList.length > 0) {
       setEditGroupCollections(groupList);
     } else {
@@ -1472,16 +1501,33 @@ export default function SandwichCollectionLog() {
       (g) => g.groupName.trim() && g.sandwichCount > 0
     );
 
-    // Prepare groupCollections array for unlimited groups
-    const groupCollections = validGroups.map((group) => ({
-      name: group.groupName,
-      count: group.sandwichCount,
-    }));
+    // Prepare groupCollections array for unlimited groups with type breakdown
+    const groupCollections = validGroups.map((group) => {
+      const groupData: any = {
+        name: group.groupName,
+        count: group.sandwichCount,
+      };
+      
+      // Include type breakdown if available
+      if (group.deli || group.turkey || group.ham || group.pbj) {
+        groupData.deli = group.deli || 0;
+        groupData.turkey = group.turkey || 0;
+        groupData.ham = group.ham || 0;
+        groupData.pbj = group.pbj || 0;
+      }
+      
+      return groupData;
+    });
 
     const updates: any = {
       collectionDate: editFormData.collectionDate,
       hostName: editFormData.hostName,
       individualSandwiches: parseInt(editFormData.individualSandwiches) || 0,
+      // Include individual type breakdown
+      individualDeli: parseInt(editFormData.individualDeli) || 0,
+      individualTurkey: parseInt(editFormData.individualTurkey) || 0,
+      individualHam: parseInt(editFormData.individualHam) || 0,
+      individualPbj: parseInt(editFormData.individualPbj) || 0,
       // Include the new unlimited groups array
       groupCollections: groupCollections,
       // Keep legacy fields for backward compatibility (first 2 groups only)
@@ -2955,9 +3001,15 @@ export default function SandwichCollectionLog() {
       {/* Edit Modal */}
       <Dialog
         open={!!editingCollection}
-        onOpenChange={(open) => !open && setEditingCollection(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingCollection(null);
+            setShowEditIndividualBreakdown(false);
+            setShowEditGroupBreakdown(false);
+          }
+        }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Collection</DialogTitle>
           </DialogHeader>
@@ -3000,18 +3052,145 @@ export default function SandwichCollectionLog() {
 
             <div>
               <Label htmlFor="edit-individual">Individual Sandwiches</Label>
-              <Input
-                id="edit-individual"
-                type="number"
-                min="0"
-                value={editFormData.individualSandwiches}
-                onChange={(e) =>
-                  setEditFormData({
-                    ...editFormData,
-                    individualSandwiches: e.target.value,
-                  })
-                }
-              />
+              {!showEditIndividualBreakdown ? (
+                <Input
+                  id="edit-individual"
+                  type="number"
+                  min="0"
+                  value={editFormData.individualSandwiches}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      individualSandwiches: e.target.value,
+                    })
+                  }
+                />
+              ) : (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                    <Label htmlFor="edit-deli" className="text-sm">Deli</Label>
+                    <Input
+                      id="edit-deli"
+                      type="number"
+                      min="0"
+                      value={editFormData.individualDeli}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setEditFormData({
+                          ...editFormData,
+                          individualDeli: value,
+                          individualSandwiches: (
+                            (parseInt(value) || 0) +
+                            (parseInt(editFormData.individualTurkey) || 0) +
+                            (parseInt(editFormData.individualHam) || 0) +
+                            (parseInt(editFormData.individualPbj) || 0)
+                          ).toString(),
+                        });
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-turkey" className="text-sm">Turkey</Label>
+                    <Input
+                      id="edit-turkey"
+                      type="number"
+                      min="0"
+                      value={editFormData.individualTurkey}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setEditFormData({
+                          ...editFormData,
+                          individualTurkey: value,
+                          individualSandwiches: (
+                            (parseInt(editFormData.individualDeli) || 0) +
+                            (parseInt(value) || 0) +
+                            (parseInt(editFormData.individualHam) || 0) +
+                            (parseInt(editFormData.individualPbj) || 0)
+                          ).toString(),
+                        });
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-ham" className="text-sm">Ham</Label>
+                    <Input
+                      id="edit-ham"
+                      type="number"
+                      min="0"
+                      value={editFormData.individualHam}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setEditFormData({
+                          ...editFormData,
+                          individualHam: value,
+                          individualSandwiches: (
+                            (parseInt(editFormData.individualDeli) || 0) +
+                            (parseInt(editFormData.individualTurkey) || 0) +
+                            (parseInt(value) || 0) +
+                            (parseInt(editFormData.individualPbj) || 0)
+                          ).toString(),
+                        });
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-pbj" className="text-sm">PBJ</Label>
+                    <Input
+                      id="edit-pbj"
+                      type="number"
+                      min="0"
+                      value={editFormData.individualPbj}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setEditFormData({
+                          ...editFormData,
+                          individualPbj: value,
+                          individualSandwiches: (
+                            (parseInt(editFormData.individualDeli) || 0) +
+                            (parseInt(editFormData.individualTurkey) || 0) +
+                            (parseInt(editFormData.individualHam) || 0) +
+                            (parseInt(value) || 0)
+                          ).toString(),
+                        });
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Toggle for individual sandwich type breakdown */}
+              <div className="mt-3">
+                <div className={`border rounded-lg p-3 ${showEditIndividualBreakdown ? 'bg-brand-primary-lighter border-brand-primary' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="edit-individual-breakdown"
+                      checked={showEditIndividualBreakdown}
+                      onChange={(e) => {
+                        setShowEditIndividualBreakdown(e.target.checked);
+                        if (!e.target.checked) {
+                          // Clear breakdown when hiding
+                          setEditFormData({
+                            ...editFormData,
+                            individualDeli: '',
+                            individualTurkey: '',
+                            individualHam: '',
+                            individualPbj: '',
+                          });
+                        }
+                      }}
+                      className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
+                    />
+                    <label htmlFor="edit-individual-breakdown" className="text-sm font-medium cursor-pointer">
+                      Specify sandwich types (Deli/Turkey/Ham/PBJ)
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div>
@@ -3019,67 +3198,197 @@ export default function SandwichCollectionLog() {
 
               <div className="space-y-3 mt-2">
                 {editGroupCollections.map((group) => (
-                  <div key={group.id} className="flex gap-3 items-center">
-                    <Input
-                      placeholder="Group name"
-                      value={group.groupName || ''}
-                      onChange={(e) =>
-                        updateEditGroupCollection(
-                          group.id,
-                          'groupName',
-                          e.target.value
-                        )
-                      }
-                      className="flex-1"
-                      required
-                    />
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="Count"
-                      value={
-                        group.sandwichCount === 0
-                          ? ''
-                          : group.sandwichCount?.toString() || ''
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        // Allow empty string or valid numbers
-                        if (value === '' || value === '0') {
+                  <div key={group.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex gap-3 items-center">
+                      <Input
+                        placeholder="Group name"
+                        value={group.groupName || ''}
+                        onChange={(e) =>
                           updateEditGroupCollection(
                             group.id,
-                            'sandwichCount',
-                            0
-                          );
-                        } else {
-                          updateEditGroupCollection(
-                            group.id,
-                            'sandwichCount',
-                            parseInt(value) || 0
-                          );
+                            'groupName',
+                            e.target.value
+                          )
                         }
-                      }}
-                      onFocus={(e) => {
-                        // Clear the field if it shows 0 when focused
-                        if (e.target.value === '0') {
-                          e.target.value = '';
-                        }
-                      }}
-                      className="w-24"
-                    />
-                    {editGroupCollections.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeEditGroupRow(group.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        className="flex-1"
+                        required
+                      />
+                      {!showEditGroupBreakdown && (
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="Count"
+                          value={
+                            group.sandwichCount === 0
+                              ? ''
+                              : group.sandwichCount?.toString() || ''
+                          }
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || value === '0') {
+                              updateEditGroupCollection(
+                                group.id,
+                                'sandwichCount',
+                                0
+                              );
+                            } else {
+                              updateEditGroupCollection(
+                                group.id,
+                                'sandwichCount',
+                                parseInt(value) || 0
+                              );
+                            }
+                          }}
+                          onFocus={(e) => {
+                            if (e.target.value === '0') {
+                              e.target.value = '';
+                            }
+                          }}
+                          className="w-24"
+                        />
+                      )}
+                      {editGroupCollections.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeEditGroupRow(group.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {/* Type breakdown fields for group when enabled */}
+                    {showEditGroupBreakdown && (
+                      <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded">
+                        <div>
+                          <Label className="text-xs">Deli</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={group.deli || ''}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              const updatedGroup = {
+                                ...group,
+                                deli: value,
+                                sandwichCount: value + (group.turkey || 0) + (group.ham || 0) + (group.pbj || 0),
+                              };
+                              setEditGroupCollections(
+                                editGroupCollections.map((g) =>
+                                  g.id === group.id ? updatedGroup : g
+                                )
+                              );
+                            }}
+                            placeholder="0"
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Turkey</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={group.turkey || ''}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              const updatedGroup = {
+                                ...group,
+                                turkey: value,
+                                sandwichCount: (group.deli || 0) + value + (group.ham || 0) + (group.pbj || 0),
+                              };
+                              setEditGroupCollections(
+                                editGroupCollections.map((g) =>
+                                  g.id === group.id ? updatedGroup : g
+                                )
+                              );
+                            }}
+                            placeholder="0"
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Ham</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={group.ham || ''}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              const updatedGroup = {
+                                ...group,
+                                ham: value,
+                                sandwichCount: (group.deli || 0) + (group.turkey || 0) + value + (group.pbj || 0),
+                              };
+                              setEditGroupCollections(
+                                editGroupCollections.map((g) =>
+                                  g.id === group.id ? updatedGroup : g
+                                )
+                              );
+                            }}
+                            placeholder="0"
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">PBJ</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={group.pbj || ''}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              const updatedGroup = {
+                                ...group,
+                                pbj: value,
+                                sandwichCount: (group.deli || 0) + (group.turkey || 0) + (group.ham || 0) + value,
+                              };
+                              setEditGroupCollections(
+                                editGroupCollections.map((g) =>
+                                  g.id === group.id ? updatedGroup : g
+                                )
+                              );
+                            }}
+                            placeholder="0"
+                            className="h-8"
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
                 ))}
+
+                {/* Toggle for group sandwich type breakdown */}
+                <div className={`border rounded-lg p-3 ${showEditGroupBreakdown ? 'bg-brand-primary-lighter border-brand-primary' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="edit-group-breakdown"
+                      checked={showEditGroupBreakdown}
+                      onChange={(e) => {
+                        setShowEditGroupBreakdown(e.target.checked);
+                        if (!e.target.checked) {
+                          // Clear breakdown when hiding
+                          setEditGroupCollections(
+                            editGroupCollections.map((g) => ({
+                              ...g,
+                              deli: undefined,
+                              turkey: undefined,
+                              ham: undefined,
+                              pbj: undefined,
+                            }))
+                          );
+                        }
+                      }}
+                      className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
+                    />
+                    <label htmlFor="edit-group-breakdown" className="text-sm font-medium cursor-pointer">
+                      Specify sandwich types for groups (Deli/Turkey/Ham/PBJ)
+                    </label>
+                  </div>
+                </div>
 
                 {/* Add Another Group Button - Below existing group rows */}
                 <Button
