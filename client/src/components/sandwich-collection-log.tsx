@@ -205,10 +205,9 @@ export default function SandwichCollectionLog() {
     individualPbj: '',
   });
   const [editGroupCollections, setEditGroupCollections] = useState<
-    Array<{ id: string; groupName: string; count?: number; sandwichCount?: number; deli?: number; turkey?: number; ham?: number; pbj?: number }>
+    Array<{ id: string; groupName: string; count?: number; sandwichCount?: number; deli?: number; turkey?: number; ham?: number; pbj?: number; hasTypeBreakdown?: boolean }>
   >([]);
   const [showEditIndividualBreakdown, setShowEditIndividualBreakdown] = useState(false);
-  const [showEditGroupBreakdown, setShowEditGroupBreakdown] = useState(false);
   
   // Validation state for Edit Collection Dialog
   const [editIndividualBreakdownError, setEditIndividualBreakdownError] = useState<string>('');
@@ -284,14 +283,14 @@ export default function SandwichCollectionLog() {
 
   // Validation for group breakdown in Edit dialog
   useEffect(() => {
-    if (!showEditGroupBreakdown) {
-      setEditGroupBreakdownErrors(new Map());
-      return;
-    }
-
     const errors = new Map<string, string>();
     
     editGroupCollections.forEach((group) => {
+      // Only validate groups that have type breakdown enabled
+      if (!group.hasTypeBreakdown) {
+        return;
+      }
+
       const deli = group.deli || 0;
       const turkey = group.turkey || 0;
       const ham = group.ham || 0;
@@ -314,7 +313,7 @@ export default function SandwichCollectionLog() {
     });
     
     setEditGroupBreakdownErrors(errors);
-  }, [showEditGroupBreakdown, editGroupCollections]);
+  }, [editGroupCollections]);
 
   // Memoize expensive computations using debounced filters
   // Only fetch all data when we need client-side filtering/sorting, not for basic pagination
@@ -1514,7 +1513,6 @@ export default function SandwichCollectionLog() {
 
     // Parse existing group collections from new schema fields
     const groupList = [];
-    let hasGroupBreakdown = false;
 
     // First try to read from the new groupCollections array
     if (
@@ -1524,19 +1522,20 @@ export default function SandwichCollectionLog() {
     ) {
       collection.groupCollections.forEach((group: any, index: number) => {
         if (group.name && group.count > 0) {
+          const hasTypeData = !!(group.deli || group.turkey || group.ham || group.pbj);
           const groupData: any = {
             id: `edit-${index + 1}`,
             groupName: group.name,
             sandwichCount: group.count,
+            hasTypeBreakdown: hasTypeData, // Track if this group has type breakdown
           };
           
           // Include type breakdown if available
-          if (group.deli || group.turkey || group.ham || group.pbj) {
+          if (hasTypeData) {
             groupData.deli = group.deli || 0;
             groupData.turkey = group.turkey || 0;
             groupData.ham = group.ham || 0;
             groupData.pbj = group.pbj || 0;
-            hasGroupBreakdown = true;
           }
           
           groupList.push(groupData);
@@ -1549,6 +1548,7 @@ export default function SandwichCollectionLog() {
           id: 'edit-1',
           groupName: collection.group1Name,
           sandwichCount: collection.group1Count,
+          hasTypeBreakdown: false,
         });
       }
       if (collection.group2Name && collection.group2Count) {
@@ -1556,11 +1556,10 @@ export default function SandwichCollectionLog() {
           id: 'edit-2',
           groupName: collection.group2Name,
           sandwichCount: collection.group2Count,
+          hasTypeBreakdown: false,
         });
       }
     }
-
-    setShowEditGroupBreakdown(hasGroupBreakdown);
 
     if (groupList.length > 0) {
       setEditGroupCollections(groupList);
@@ -1607,8 +1606,8 @@ export default function SandwichCollectionLog() {
         count: group.sandwichCount,
       };
       
-      // Include type breakdown if available
-      if (group.deli || group.turkey || group.ham || group.pbj) {
+      // Only include type breakdown if this group has it enabled
+      if (group.hasTypeBreakdown && (group.deli || group.turkey || group.ham || group.pbj)) {
         groupData.deli = group.deli || 0;
         groupData.turkey = group.turkey || 0;
         groupData.ham = group.ham || 0;
@@ -1647,7 +1646,7 @@ export default function SandwichCollectionLog() {
     const newId = `edit-${Date.now()}`;
     setEditGroupCollections([
       ...editGroupCollections,
-      { id: newId, groupName: '', sandwichCount: 0 },
+      { id: newId, groupName: '', sandwichCount: 0, hasTypeBreakdown: false },
     ]);
   };
 
@@ -3383,7 +3382,7 @@ export default function SandwichCollectionLog() {
                         className="flex-1"
                         required
                       />
-                      {!showEditGroupBreakdown && (
+                      {!group.hasTypeBreakdown && (
                         <Input
                           type="number"
                           min="0"
@@ -3416,6 +3415,43 @@ export default function SandwichCollectionLog() {
                           className="w-24"
                         />
                       )}
+                      
+                      {/* Individual toggle for this group's type breakdown */}
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          id={`group-${group.id}-breakdown`}
+                          checked={group.hasTypeBreakdown || false}
+                          onChange={(e) => {
+                            const updatedGroup = {
+                              ...group,
+                              hasTypeBreakdown: e.target.checked,
+                            };
+                            if (!e.target.checked) {
+                              // Clear type data when disabling
+                              updatedGroup.deli = undefined;
+                              updatedGroup.turkey = undefined;
+                              updatedGroup.ham = undefined;
+                              updatedGroup.pbj = undefined;
+                            }
+                            setEditGroupCollections(
+                              editGroupCollections.map((g) =>
+                                g.id === group.id ? updatedGroup : g
+                              )
+                            );
+                          }}
+                          className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
+                          title="Show sandwich types for this group"
+                        />
+                        <label 
+                          htmlFor={`group-${group.id}-breakdown`} 
+                          className="text-xs text-slate-600 cursor-pointer whitespace-nowrap"
+                          title="Show sandwich types for this group"
+                        >
+                          Types
+                        </label>
+                      </div>
+                      
                       {editGroupCollections.length > 1 && (
                         <Button
                           type="button"
@@ -3430,7 +3466,7 @@ export default function SandwichCollectionLog() {
                     </div>
                     
                     {/* Type breakdown fields for group when enabled */}
-                    {showEditGroupBreakdown && (
+                    {group.hasTypeBreakdown && (
                       <>
                         <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded">
                           <div>
@@ -3570,36 +3606,6 @@ export default function SandwichCollectionLog() {
                     )}
                   </div>
                 ))}
-
-                {/* Toggle for group sandwich type breakdown */}
-                <div className={`border rounded-lg p-3 ${showEditGroupBreakdown ? 'bg-brand-primary-lighter border-brand-primary' : 'bg-gray-50 border-gray-200'}`}>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="edit-group-breakdown"
-                      checked={showEditGroupBreakdown}
-                      onChange={(e) => {
-                        setShowEditGroupBreakdown(e.target.checked);
-                        if (!e.target.checked) {
-                          // Clear breakdown when hiding
-                          setEditGroupCollections(
-                            editGroupCollections.map((g) => ({
-                              ...g,
-                              deli: undefined,
-                              turkey: undefined,
-                              ham: undefined,
-                              pbj: undefined,
-                            }))
-                          );
-                        }
-                      }}
-                      className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
-                    />
-                    <label htmlFor="edit-group-breakdown" className="text-sm font-medium cursor-pointer">
-                      Specify sandwich types for groups (Deli/Turkey/Ham/PBJ)
-                    </label>
-                  </div>
-                </div>
 
                 {/* Add Another Group Button - Below existing group rows */}
                 <Button
