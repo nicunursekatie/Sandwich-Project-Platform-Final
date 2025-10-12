@@ -42,6 +42,11 @@ export default function PredictiveForecasts() {
     },
   });
 
+  // Fetch event requests for scheduled events forecast
+  const { data: eventRequests } = useQuery<any[]>({
+    queryKey: ['/api/event-requests?all=true'],
+  });
+
   const collections = collectionsData?.collections || [];
 
   const forecasts = useMemo(() => {
@@ -54,7 +59,7 @@ export default function PredictiveForecasts() {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const monthProgress = dayOfMonth / daysInMonth;
 
-    // Get current week data
+    // Calculate scheduled events for current week
     const currentWeekStart = new Date(today);
     currentWeekStart.setDate(today.getDate() - today.getDay());
     currentWeekStart.setHours(0, 0, 0, 0);
@@ -63,6 +68,20 @@ export default function PredictiveForecasts() {
     currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
     currentWeekEnd.setHours(23, 59, 59, 999);
 
+    const scheduledThisWeek = (eventRequests || []).filter((event) => {
+      if (!event.desiredEventDate) return false;
+      if (!['in_process', 'scheduled'].includes(event.status)) return false;
+
+      const eventDate = new Date(event.desiredEventDate);
+      return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
+    });
+
+    const scheduledWeeklyTotal = scheduledThisWeek.reduce(
+      (sum, event) => sum + (event.estimatedSandwichCount || 0),
+      0
+    );
+
+    // Get current week collections (already completed)
     const currentWeekCollections = collections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
       return date >= currentWeekStart && date <= today;
@@ -115,11 +134,19 @@ export default function PredictiveForecasts() {
       ? monthlyTotals.reduce((a, b) => a + b, 0) / monthlyTotals.length
       : 0;
 
-    // Weekly projection
+    // Weekly projection - combine historical pace with scheduled events
     const dayOfWeek = today.getDay();
     // Days elapsed in current week (if Sunday=0, treat as 7 days complete)
     const daysElapsedInWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
-    const weeklyProjected = Math.round((currentWeekTotal / daysElapsedInWeek) * 7);
+
+    // Historical pace projection
+    const historicalProjected = currentWeekTotal > 0
+      ? Math.round((currentWeekTotal / daysElapsedInWeek) * 7)
+      : Math.round(avgWeekly);
+
+    // Combined projection: Already collected + Scheduled events
+    const weeklyProjected = currentWeekTotal + scheduledWeeklyTotal;
+
     const weeklyVsAvg = avgWeekly > 0 ? ((weeklyProjected - avgWeekly) / avgWeekly) * 100 : 0;
 
     // Monthly projection
@@ -161,6 +188,8 @@ export default function PredictiveForecasts() {
       weekly: {
         current: currentWeekTotal,
         projected: weeklyProjected,
+        scheduled: scheduledWeeklyTotal,
+        scheduledEventCount: scheduledThisWeek.length,
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
         dayOfWeek,
@@ -231,6 +260,11 @@ export default function PredictiveForecasts() {
               <p className="text-3xl font-bold text-brand-primary">
                 {forecasts.weekly.projected.toLocaleString()}
               </p>
+              {forecasts.weekly.scheduled > 0 && (
+                <p className="text-xs text-brand-primary mt-1">
+                  Includes {forecasts.weekly.scheduledEventCount} scheduled event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})
+                </p>
+              )}
               <div className="flex items-center justify-center gap-2 mt-2">
                 {forecasts.weekly.vsAvg >= 0 ? (
                   <TrendingUp className="h-4 w-4 text-green-600" />

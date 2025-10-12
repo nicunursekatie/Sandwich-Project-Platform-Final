@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { googleSheets, insertGoogleSheetSchema } from '@shared/schema';
 import { isAuthenticated } from '../temp-auth';
@@ -17,10 +17,7 @@ function generateSheetUrls(sheetId: string) {
 // Get all Google Sheets
 router.get('/', async (req, res) => {
   try {
-    const sheets = await db
-      .select()
-      .from(googleSheets)
-      .orderBy(googleSheets.createdAt);
+    const sheets = await (db.select() as any).from(googleSheets);
 
     res.json(sheets);
   } catch (error) {
