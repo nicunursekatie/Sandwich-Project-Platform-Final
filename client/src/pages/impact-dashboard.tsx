@@ -43,6 +43,8 @@ import {
 import { apiRequest } from '@/lib/queryClient';
 import { useState } from 'react';
 import MonthlyComparisonAnalytics from '@/components/monthly-comparison-analytics';
+import ActionCenter from '@/components/action-center';
+import PredictiveForecasts from '@/components/predictive-forecasts';
 import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
 
 export default function ImpactDashboard() {
@@ -583,18 +585,26 @@ export default function ImpactDashboard() {
         </div>
 
         {/* Charts and Visualizations */}
-        <Tabs defaultValue="weekly" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="actions" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="actions" className="flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              Action Center
+            </TabsTrigger>
+            <TabsTrigger value="forecasts" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Forecasts
+            </TabsTrigger>
             <TabsTrigger value="weekly" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Weekly Planning
             </TabsTrigger>
             <TabsTrigger value="trends" className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
+              <BarChart3 className="w-4 h-4" />
               Collection Trends
             </TabsTrigger>
             <TabsTrigger value="analysis" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
+              <PieChart className="w-4 h-4" />
               Monthly Analysis
             </TabsTrigger>
             <TabsTrigger value="impact" className="flex items-center gap-2">
@@ -603,7 +613,17 @@ export default function ImpactDashboard() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Weekly Planning Tab - NEW! */}
+          {/* Action Center Tab - NEW! */}
+          <TabsContent value="actions">
+            <ActionCenter />
+          </TabsContent>
+
+          {/* Predictive Forecasts Tab - NEW! */}
+          <TabsContent value="forecasts">
+            <PredictiveForecasts />
+          </TabsContent>
+
+          {/* Weekly Planning Tab */}
           <TabsContent value="weekly">
             <div className="space-y-6">
               {/* Weekly Chart Controls */}
