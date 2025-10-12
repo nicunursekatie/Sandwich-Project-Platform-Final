@@ -713,7 +713,7 @@ export default function SandwichCollectionLog() {
     return (
       <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-white border-t border-slate-200 gap-4">
         {/* Left side - Per page selector only */}
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-base">
           <span className="text-slate-600">Per page:</span>
           <Select
             value={itemsPerPage.toString()}
@@ -1703,7 +1703,7 @@ export default function SandwichCollectionLog() {
               />
               <span className="truncate">Collections</span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-sm sm:text-base text-slate-500 mt-1">
               Manage collection data and bulk operations
             </p>
           </div>
@@ -1712,7 +1712,7 @@ export default function SandwichCollectionLog() {
               onClick={() => setShowDataManagement(true)}
               variant="outline"
               size="sm"
-              className="flex items-center space-x-2 w-full sm:w-auto btn-outline-tsp h-10 text-sm"
+              className="flex items-center space-x-2 w-full sm:w-auto btn-outline-tsp h-10 text-base"
               style={{
                 borderColor: 'var(--color-brand-teal)',
                 color: 'var(--color-brand-teal)',
@@ -1759,7 +1759,7 @@ export default function SandwichCollectionLog() {
             )}
           </div>
           {searchFilters.globalSearch && (
-            <p className="text-center text-sm text-slate-600 mt-2">
+            <p className="text-center text-base text-slate-600 mt-2">
               Searching across host names, group names, and dates
             </p>
           )}
@@ -1770,7 +1770,7 @@ export default function SandwichCollectionLog() {
           <div className="space-y-4">
             {/* Filter Status and Context */}
             {hasActiveFilters && (
-              <div className="bg-brand-primary-lighter border border-brand-primary-border rounded-lg p-3 text-sm">
+              <div className="bg-brand-primary-lighter border border-brand-primary-border rounded-lg p-3 text-base">
                 <div className="flex items-center text-brand-primary-dark">
                   <Filter className="w-4 h-4 mr-2" />
                   <span className="font-medium">
@@ -1780,7 +1780,7 @@ export default function SandwichCollectionLog() {
                   </span>
                 </div>
                 {currentStats.dateRange && (
-                  <div className="text-brand-primary mt-1 text-xs">
+                  <div className="text-brand-primary mt-1 text-sm">
                     Date range: {currentStats.dateRange.earliest} -{' '}
                     {currentStats.dateRange.latest}
                   </div>
@@ -1790,14 +1790,14 @@ export default function SandwichCollectionLog() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <p className="text-sm text-slate-500 font-medium">
+                <p className="text-base text-slate-500 font-medium">
                   {hasActiveFilters
                     ? `${currentStats.totalEntries}`
                     : `${totalItems}`}
                   {hasActiveFilters ? ' filtered' : ''} entries
                 </p>
                 {hasActiveFilters && !currentStats.hostName && (
-                  <span className="text-xs text-brand-primary bg-brand-primary-light px-2 py-1 rounded-full">
+                  <span className="text-sm text-brand-primary bg-brand-primary-light px-2 py-1 rounded-full">
                     Multiple Hosts
                   </span>
                 )}
@@ -1806,7 +1806,7 @@ export default function SandwichCollectionLog() {
                 <div className="text-xl sm:text-2xl font-black text-transparent bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text drop-shadow-sm">
                   {currentStats.completeTotalSandwiches.toLocaleString()}
                 </div>
-                <div className="text-sm font-semibold text-amber-700 uppercase tracking-wide">
+                <div className="text-base font-semibold text-amber-700 uppercase tracking-wide">
                   {hasActiveFilters ? 'Filtered' : 'Total'} Sandwiches
                 </div>
               </div>
@@ -1829,7 +1829,7 @@ export default function SandwichCollectionLog() {
                   {currentStats.individualSandwiches.toLocaleString()}
                 </div>
                 <div
-                  className={`text-sm font-semibold uppercase tracking-wide mt-1 ${
+                  className={`text-base font-semibold uppercase tracking-wide mt-1 ${
                     hasActiveFilters ? 'text-brand-primary' : 'text-teal-600'
                   }`}
                 >
@@ -1852,7 +1852,7 @@ export default function SandwichCollectionLog() {
                   {currentStats.groupSandwiches.toLocaleString()}
                 </div>
                 <div
-                  className={`text-sm font-semibold uppercase tracking-wide mt-1 ${
+                  className={`text-base font-semibold uppercase tracking-wide mt-1 ${
                     hasActiveFilters ? 'text-indigo-600' : 'text-orange-600'
                   }`}
                 >
@@ -1863,7 +1863,7 @@ export default function SandwichCollectionLog() {
 
             {/* Global Stats Reference when filtering */}
             {hasActiveFilters && totalStats && (
-              <div className="text-center text-xs text-slate-500 border-t pt-3">
+              <div className="text-center text-sm text-slate-500 border-t pt-3">
                 <span>
                   Global totals:{' '}
                   {totalStats.completeTotalSandwiches.toLocaleString()}{' '}
@@ -1887,7 +1887,7 @@ export default function SandwichCollectionLog() {
                   onClick={() => setShowSubmitForm(!showSubmitForm)}
                   variant="default"
                   size="sm"
-                  className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-dark py-4 px-6 !text-lg sm:!text-sm min-h-[56px] sm:min-h-[40px]"
+                  className="flex items-center justify-center space-x-2 w-full sm:w-auto bg-brand-primary hover:bg-brand-primary-dark py-4 px-6 !text-lg sm:!text-base min-h-[56px] sm:min-h-[40px]"
                 >
                   <Sandwich className="w-5 h-5 sm:w-4 sm:h-4" />
                   <span className="font-medium">
@@ -1975,7 +1975,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="hostFilter"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Host/Location Name
               </Label>
@@ -1994,13 +1994,13 @@ export default function SandwichCollectionLog() {
                   onClick={() =>
                     handleFilterChange({ hostName: 'OG Sandwich Project' })
                   }
-                  className="px-3 py-1 text-xs bg-amber-100 text-amber-800 border border-amber-300 rounded-full hover:bg-amber-200 transition-colors"
+                  className="px-3 py-1 text-sm bg-amber-100 text-amber-800 border border-amber-300 rounded-full hover:bg-amber-200 transition-colors"
                 >
                   👑 Historical OG Project
                 </button>
                 <button
                   onClick={() => handleFilterChange({ hostName: '' })}
-                  className="px-3 py-1 text-xs bg-slate-100 text-slate-700 border border-slate-300 rounded-full hover:bg-slate-200 transition-colors"
+                  className="px-3 py-1 text-sm bg-slate-100 text-slate-700 border border-slate-300 rounded-full hover:bg-slate-200 transition-colors"
                 >
                   All Locations
                 </button>
@@ -2009,7 +2009,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="groupFilter"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Group Name
               </Label>
@@ -2026,7 +2026,7 @@ export default function SandwichCollectionLog() {
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   onClick={() => handleFilterChange({ groupName: '' })}
-                  className="px-3 py-1 text-xs bg-slate-100 text-slate-700 border border-slate-300 rounded-full hover:bg-slate-200 transition-colors"
+                  className="px-3 py-1 text-sm bg-slate-100 text-slate-700 border border-slate-300 rounded-full hover:bg-slate-200 transition-colors"
                 >
                   All Groups
                 </button>
@@ -2035,7 +2035,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="collectionFromDate"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Collection Date From
               </Label>
@@ -2053,7 +2053,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="collectionToDate"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Collection Date To
               </Label>
@@ -2071,7 +2071,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="createdFromDate"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Created Date From
               </Label>
@@ -2089,7 +2089,7 @@ export default function SandwichCollectionLog() {
             <div>
               <Label
                 htmlFor="createdToDate"
-                className="text-sm font-medium text-slate-700"
+                className="text-base font-medium text-slate-700"
               >
                 Created Date To
               </Label>
@@ -2107,13 +2107,13 @@ export default function SandwichCollectionLog() {
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="text-sm text-slate-600">
+              <div className="text-base text-slate-600">
                 Showing {(currentPage - 1) * itemsPerPage + 1}-
                 {Math.min(currentPage * itemsPerPage, totalItems)} of{' '}
                 {totalItems} entries
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                <Label className="text-sm font-medium text-slate-700">
+                <Label className="text-base font-medium text-slate-700">
                   Sort by:
                 </Label>
                 <div className="flex items-center space-x-2">
@@ -2177,7 +2177,7 @@ export default function SandwichCollectionLog() {
                     selectedCollections.size < filteredCollections.length
                 )
               }
-              className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900"
+              className="flex items-center space-x-2 text-base text-slate-600 hover:text-slate-900"
             >
               {selectedCollections.size === filteredCollections.length ? (
                 <CheckSquare className="w-4 h-4" />
@@ -2187,7 +2187,7 @@ export default function SandwichCollectionLog() {
               <span>Select All</span>
             </button>
             {selectedCollections.size > 0 && (
-              <span className="text-sm text-slate-500">
+              <span className="text-base text-slate-500">
                 {selectedCollections.size} of {filteredCollections.length}{' '}
                 selected
               </span>
@@ -2244,7 +2244,7 @@ export default function SandwichCollectionLog() {
                           <Calendar
                             className={`w-4 h-4 mr-1 ${isInactiveHost ? 'text-gray-500' : ''}`}
                           />
-                          <span className="font-medium text-sm sm:text-base">
+                          <span className="font-medium text-base sm:text-lg">
                             {formatDate(collection.collectionDate)}
                           </span>
                         </div>
@@ -2254,16 +2254,16 @@ export default function SandwichCollectionLog() {
                           <User
                             className={`w-4 h-4 mr-1 ${isInactiveHost ? 'text-gray-400' : ''}`}
                           />
-                          <span className="text-sm sm:text-base truncate max-w-[200px] sm:max-w-none">
+                          <span className="text-base sm:text-lg truncate max-w-[200px] sm:max-w-none">
                             {collection.hostName}
                           </span>
                           {collection.hostName === 'OG Sandwich Project' && (
-                            <span className="ml-2 text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-0.5 rounded-full font-medium border border-amber-300 hidden sm:inline">
+                            <span className="ml-2 text-sm bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-0.5 rounded-full font-medium border border-amber-300 hidden sm:inline">
                               👑 HISTORICAL
                             </span>
                           )}
                           {isInactiveHost && (
-                            <span className="ml-2 text-xs bg-gray-300 text-gray-800 px-2 py-0.5 rounded-full font-medium hidden sm:inline">
+                            <span className="ml-2 text-sm bg-gray-300 text-gray-800 px-2 py-0.5 rounded-full font-medium hidden sm:inline">
                               INACTIVE HOST
                             </span>
                           )}
@@ -2273,12 +2273,12 @@ export default function SandwichCollectionLog() {
                     {/* Mobile badges */}
                     <div className="flex gap-1 mt-1 sm:hidden">
                       {collection.hostName === 'OG Sandwich Project' && (
-                        <span className="text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-0.5 rounded-full font-medium border border-amber-300">
+                        <span className="text-sm bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-0.5 rounded-full font-medium border border-amber-300">
                           👑 HISTORICAL
                         </span>
                       )}
                       {isInactiveHost && (
-                        <span className="text-xs bg-gray-300 text-gray-800 px-2 py-0.5 rounded-full font-medium">
+                        <span className="text-sm bg-gray-300 text-gray-800 px-2 py-0.5 rounded-full font-medium">
                           INACTIVE HOST
                         </span>
                       )}
@@ -2293,7 +2293,7 @@ export default function SandwichCollectionLog() {
                         {totalSandwiches}
                       </div>
                       <div
-                        className={`text-xs ${isInactiveHost ? 'text-gray-500' : 'text-slate-500'}`}
+                        className={`text-sm ${isInactiveHost ? 'text-gray-500' : 'text-slate-500'}`}
                       >
                         total
                       </div>
@@ -2346,7 +2346,7 @@ export default function SandwichCollectionLog() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <User className="w-4 h-4 mr-2 text-slate-500" />
-                        <span className="text-sm font-medium text-slate-700">
+                        <span className="text-base font-medium text-slate-700">
                           Individual
                         </span>
                       </div>
@@ -2361,7 +2361,7 @@ export default function SandwichCollectionLog() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center">
                         <Users className="w-4 h-4 mr-2 text-slate-500" />
-                        <span className="text-sm font-medium text-slate-700">
+                        <span className="text-base font-medium text-slate-700">
                           Groups
                         </span>
                       </div>
@@ -2374,7 +2374,7 @@ export default function SandwichCollectionLog() {
                         {groupData.map((group: any, index: number) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between text-xs bg-white rounded px-2 py-1"
+                            className="flex items-center justify-between text-sm bg-white rounded px-2 py-1"
                           >
                             <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">
                               {group.groupName}
@@ -2387,7 +2387,7 @@ export default function SandwichCollectionLog() {
                       </div>
                     )}
                     {(!Array.isArray(groupData) || groupData.length === 0) && (
-                      <div className="text-xs text-slate-500 italic">
+                      <div className="text-sm text-slate-500 italic">
                         No group collections
                       </div>
                     )}
@@ -2396,7 +2396,7 @@ export default function SandwichCollectionLog() {
 
                 {/* Footer */}
                 <div className="mt-3 pt-3 border-t border-slate-200">
-                  <div className="text-xs text-slate-500 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                  <div className="text-sm text-slate-500 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                     <span>
                       Submitted {formatSubmittedAt(collection.submittedAt)}
                       {collection.createdByName && (
@@ -2449,7 +2449,7 @@ export default function SandwichCollectionLog() {
                   <div className="text-2xl font-bold text-slate-900">
                     {duplicateAnalysis.totalCollections}
                   </div>
-                  <div className="text-sm text-slate-600">
+                  <div className="text-base text-slate-600">
                     Total Collections
                   </div>
                 </div>
@@ -2457,7 +2457,7 @@ export default function SandwichCollectionLog() {
                   <div className="text-2xl font-bold text-red-600">
                     {duplicateAnalysis.totalDuplicateEntries}
                   </div>
-                  <div className="text-sm text-slate-600">
+                  <div className="text-base text-slate-600">
                     Duplicate Entries
                   </div>
                 </div>
@@ -2470,7 +2470,7 @@ export default function SandwichCollectionLog() {
                       Exact Duplicates ({duplicateAnalysis.totalDuplicateEntries})
                     </h3>
                   </div>
-                  <div className="text-sm text-slate-600 mb-2">
+                  <div className="text-base text-slate-600 mb-2">
                     Use radio buttons to select which entry to keep in each duplicate group. All other entries will be deleted.
                   </div>
                   <div className="max-h-96 overflow-y-auto border border-slate-200 rounded-lg">
@@ -2493,19 +2493,19 @@ export default function SandwichCollectionLog() {
                                   })}
                                 </span>
                               </div>
-                              <span className="text-sm font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded">
+                              <span className="text-base font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded">
                                 {group.count} duplicate{group.count !== 1 ? 's' : ''}
                               </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="grid grid-cols-2 gap-3 text-base">
                               <div>
-                                <div className="text-xs text-blue-600 font-medium mb-1">Group Names</div>
+                                <div className="text-sm text-blue-600 font-medium mb-1">Group Names</div>
                                 <div className="text-blue-900 font-medium">
                                   {group.duplicateInfo.groupNames || 'No groups'}
                                 </div>
                               </div>
                               <div>
-                                <div className="text-xs text-blue-600 font-medium mb-1">Sandwich Counts</div>
+                                <div className="text-sm text-blue-600 font-medium mb-1">Sandwich Counts</div>
                                 <div className="text-blue-900 font-medium">
                                   {group.duplicateInfo.individualSandwiches} individual, {group.duplicateInfo.totalSandwiches} total
                                 </div>
@@ -2515,7 +2515,7 @@ export default function SandwichCollectionLog() {
                           
                           {/* Show ALL entries with radio buttons to select which to keep */}
                           <div className="space-y-2">
-                            <div className="text-xs font-bold text-slate-700 mb-2 uppercase">
+                            <div className="text-sm font-bold text-slate-700 mb-2 uppercase">
                               Select which entry to keep:
                             </div>
                             <RadioGroup
@@ -2550,15 +2550,15 @@ export default function SandwichCollectionLog() {
                                       <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center space-x-2">
                                           {isSelected && (
-                                            <span className="text-xs font-bold text-green-700 uppercase bg-green-200 px-2 py-1 rounded">
+                                            <span className="text-sm font-bold text-green-700 uppercase bg-green-200 px-2 py-1 rounded">
                                               ✓ Keeping
                                             </span>
                                           )}
-                                          <span className={`text-xs font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
+                                          <span className={`text-sm font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
                                             ID: {entry.id}
                                           </span>
                                         </div>
-                                        <div className={`text-sm font-medium ${isSelected ? 'text-green-700' : 'text-slate-600'}`}>
+                                        <div className={`text-base font-medium ${isSelected ? 'text-green-700' : 'text-slate-600'}`}>
                                           <User className="w-4 h-4 inline mr-1" />
                                           {entry.createdBy}
                                         </div>
@@ -2572,10 +2572,10 @@ export default function SandwichCollectionLog() {
                                           <div className="flex items-center space-x-2">
                                             <Users className={`w-4 h-4 ${isSelected ? 'text-green-700' : 'text-slate-600'}`} />
                                             <div>
-                                              <div className={`text-xs font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
+                                              <div className={`text-sm font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
                                                 Groups
                                               </div>
-                                              <div className={`text-sm font-semibold ${isSelected ? 'text-green-900' : 'text-slate-700'}`}>
+                                              <div className={`text-base font-semibold ${isSelected ? 'text-green-900' : 'text-slate-700'}`}>
                                                 {entry.groupNames}
                                               </div>
                                             </div>
@@ -2583,7 +2583,7 @@ export default function SandwichCollectionLog() {
                                         </div>
                                       )}
                                       
-                                      <div className="flex items-center justify-between text-sm mb-2">
+                                      <div className="flex items-center justify-between text-base mb-2">
                                         <div className="flex items-center space-x-3">
                                           <span className={isSelected ? 'text-slate-700' : 'text-slate-600'}>
                                             <Sandwich className="w-3 h-3 inline mr-1" />
@@ -2597,7 +2597,7 @@ export default function SandwichCollectionLog() {
                                         </span>
                                       </div>
                                       
-                                      <div className={`text-xs ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
+                                      <div className={`text-sm ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
                                         <Calendar className="w-3 h-3 inline mr-1" />
                                         Submitted: {new Date(entry.submittedAt).toLocaleString('en-US', {
                                           month: 'short',
@@ -2619,7 +2619,7 @@ export default function SandwichCollectionLog() {
                   </div>
                   {duplicateAnalysis.duplicates.length > 0 && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="text-sm text-blue-800">
+                      <div className="text-base text-blue-800">
                         {(() => {
                           const totalEntriesToDelete = duplicateAnalysis.duplicates.reduce((sum, group, index) => {
                             const keepId = selectedKeepIds.get(index) || group.keepNewest.id;
@@ -2657,7 +2657,7 @@ export default function SandwichCollectionLog() {
                               : allIds
                           );
                         }}
-                        className="text-xs"
+                        className="text-sm"
                       >
                         {selectedSuspiciousIds.size ===
                         duplicateAnalysis.suspiciousEntries.length
@@ -2666,7 +2666,7 @@ export default function SandwichCollectionLog() {
                       </Button>
                     </div>
                   </div>
-                  <div className="text-sm text-slate-600 mb-2">
+                  <div className="text-base text-slate-600 mb-2">
                     Review and select specific entries to delete. These entries
                     have problematic host names or data entry errors.
                   </div>
@@ -2696,18 +2696,18 @@ export default function SandwichCollectionLog() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
-                                  <span className="font-medium text-sm">
+                                  <span className="font-medium text-base">
                                     "{entry.hostName || 'No Host'}"
                                   </span>
-                                  <span className="text-xs text-slate-500">
+                                  <span className="text-sm text-slate-500">
                                     ID: {entry.id}
                                   </span>
                                 </div>
-                                <div className="text-sm font-medium text-slate-900">
+                                <div className="text-base font-medium text-slate-900">
                                   {totalSandwiches} sandwiches
                                 </div>
                               </div>
-                              <div className="flex items-center justify-between text-xs text-slate-600 mt-1">
+                              <div className="flex items-center justify-between text-sm text-slate-600 mt-1">
                                 <div>
                                   <Calendar className="w-3 h-3 inline mr-1" />
                                   {entry.collectionDate || 'No Date'}
@@ -2729,7 +2729,7 @@ export default function SandwichCollectionLog() {
                                 </div>
                               </div>
                               {groupData.length > 0 && (
-                                <div className="text-xs text-slate-500 mt-1">
+                                <div className="text-sm text-slate-500 mt-1">
                                   Groups:{' '}
                                   {groupData
                                     .map(
@@ -2747,7 +2747,7 @@ export default function SandwichCollectionLog() {
                   </div>
                   {selectedSuspiciousIds.size > 0 && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                      <div className="text-sm text-amber-800">
+                      <div className="text-base text-amber-800">
                         {selectedSuspiciousIds.size} entr
                         {selectedSuspiciousIds.size === 1 ? 'y' : 'ies'}{' '}
                         selected for deletion
@@ -3002,7 +3002,7 @@ export default function SandwichCollectionLog() {
             <DialogTitle>Batch Edit Collections</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-slate-600">
+            <p className="text-base text-slate-600">
               Editing {selectedCollections.size} selected collections. Leave
               fields empty to keep existing values.
             </p>
