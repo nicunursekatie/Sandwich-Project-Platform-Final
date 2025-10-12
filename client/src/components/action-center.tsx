@@ -59,27 +59,6 @@ export default function ActionCenter() {
     const currentYear = today.getFullYear();
     const dayOfWeek = today.getDay();
 
-    // Analyze day-of-week patterns
-    const dayOfWeekTotals: Record<number, number[]> = {
-      0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []
-    };
-
-    collections.forEach((c) => {
-      const date = parseCollectionDate(c.collectionDate);
-      const day = date.getDay();
-      dayOfWeekTotals[day].push(calculateTotalSandwiches(c));
-    });
-
-    // Calculate averages for each day
-    const dayAverages = Object.entries(dayOfWeekTotals).map(([day, totals]) => ({
-      day: parseInt(day),
-      average: totals.length > 0 ? totals.reduce((a, b) => a + b, 0) / totals.length : 0,
-      count: totals.length,
-    }));
-
-    const highestDay = dayAverages.reduce((max, d) => d.average > max.average ? d : max, dayAverages[0]);
-    const lowestDay = dayAverages.reduce((min, d) => d.count > 0 && d.average < min.average ? d : min, dayAverages[0]);
-
     // Current week analysis
     const currentWeekStart = new Date(today);
     currentWeekStart.setDate(today.getDate() - today.getDay());
@@ -133,21 +112,6 @@ export default function ActionCenter() {
       });
     }
 
-    // HIGH PRIORITY: Underutilized day of week
-    const utilizationGap = highestDay.average - lowestDay.average;
-    if (utilizationGap > 200 && lowestDay.count > 5) {
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      actions.push({
-        id: 'underutilized-day',
-        priority: 'high',
-        category: 'volunteer-recruitment',
-        title: `${dayNames[lowestDay.day]}s Are Underutilized`,
-        description: `${dayNames[lowestDay.day]} collections average ${Math.round(lowestDay.average)} sandwiches vs ${Math.round(highestDay.average)} on ${dayNames[highestDay.day]}s`,
-        impact: `Could add ${Math.round(utilizationGap * 52)} sandwiches annually`,
-        action: `Recruit volunteers for ${dayNames[lowestDay.day]} collections`,
-        data: { lowestDay, highestDay, dayNames },
-      });
-    }
 
     // MEDIUM PRIORITY: Celebrate top collection day
     if (currentWeekCollections.length > 0) {
@@ -217,23 +181,6 @@ export default function ActionCenter() {
       }
     }
 
-    // MEDIUM PRIORITY: Growth opportunity days
-    const daysWithFewCollections = dayAverages.filter(d => d.count > 0 && d.count < 20);
-    if (daysWithFewCollections.length > 0) {
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const targetDays = daysWithFewCollections.map(d => dayNames[d.day]);
-
-      actions.push({
-        id: 'growth-opportunity',
-        priority: 'medium',
-        category: 'volunteer-recruitment',
-        title: 'Expand Collection Coverage',
-        description: `${targetDays.join(', ')} have fewer regular collection events`,
-        impact: 'Steady weekly coverage reduces scheduling gaps',
-        action: 'Recruit volunteers for underrepresented days',
-        data: { targetDays },
-      });
-    }
 
     // LOW PRIORITY: Maintain momentum
     const recentWeeks = Array.from(weekMap.entries())
@@ -410,32 +357,6 @@ export default function ActionCenter() {
                         <p className="text-2xl font-bold text-gray-700">
                           {Math.round(item.data.avgWeekly)?.toLocaleString()}
                         </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Day of Week Opportunity */}
-                {item.id === 'underutilized-day' && item.data && (
-                  <div className="border-t pt-4 mt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-red-50 p-4 rounded-lg text-center">
-                        <p className="text-sm text-gray-600 mb-1">
-                          {item.data.dayNames[item.data.lowestDay.day]}
-                        </p>
-                        <p className="text-2xl font-bold text-red-600">
-                          {Math.round(item.data.lowestDay.average)}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">avg sandwiches</p>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg text-center">
-                        <p className="text-sm text-gray-600 mb-1">
-                          {item.data.dayNames[item.data.highestDay.day]}
-                        </p>
-                        <p className="text-2xl font-bold text-green-600">
-                          {Math.round(item.data.highestDay.average)}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">avg sandwiches</p>
                       </div>
                     </div>
                   </div>
