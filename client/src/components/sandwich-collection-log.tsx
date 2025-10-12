@@ -2402,14 +2402,32 @@ export default function SandwichCollectionLog() {
                     </div>
                     {/* Show sandwich type breakdown if available */}
                     {(collection.individualDeli ||
+                      collection.individualTurkey ||
+                      collection.individualHam ||
                       collection.individualPbj) && (
-                      <div className="mt-2 flex gap-2 text-xs">
+                      <div className="mt-2 flex gap-2 text-xs flex-wrap">
                         {collection.individualDeli > 0 && (
                           <span className="bg-white px-2 py-1 rounded text-slate-600">
                             <span className="font-medium text-slate-700">
                               {collection.individualDeli}
                             </span>{' '}
                             Deli
+                          </span>
+                        )}
+                        {collection.individualTurkey > 0 && (
+                          <span className="bg-white px-2 py-1 rounded text-slate-600">
+                            <span className="font-medium text-slate-700">
+                              {collection.individualTurkey}
+                            </span>{' '}
+                            Turkey
+                          </span>
+                        )}
+                        {collection.individualHam > 0 && (
+                          <span className="bg-white px-2 py-1 rounded text-slate-600">
+                            <span className="font-medium text-slate-700">
+                              {collection.individualHam}
+                            </span>{' '}
+                            Ham
                           </span>
                         )}
                         {collection.individualPbj > 0 && (
@@ -2453,11 +2471,21 @@ export default function SandwichCollectionLog() {
                               </span>
                             </div>
                             {/* Show sandwich type breakdown for groups if available */}
-                            {(group.deli || group.pbj) && (
-                              <div className="flex gap-2 text-sm mt-1">
+                            {(group.deli || group.turkey || group.ham || group.pbj) && (
+                              <div className="flex gap-2 text-sm mt-1 flex-wrap">
                                 {group.deli > 0 && (
                                   <span className="text-slate-500">
                                     {group.deli} Deli
+                                  </span>
+                                )}
+                                {group.turkey > 0 && (
+                                  <span className="text-slate-500">
+                                    {group.turkey} Turkey
+                                  </span>
+                                )}
+                                {group.ham > 0 && (
+                                  <span className="text-slate-500">
+                                    {group.ham} Ham
                                   </span>
                                 )}
                                 {group.pbj > 0 && (

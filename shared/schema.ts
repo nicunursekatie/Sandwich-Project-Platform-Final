@@ -1002,6 +1002,8 @@ export const insertSandwichCollectionSchema = createInsertSchema(
           name: z.string().trim().min(1).max(120),
           count: z.number().int().min(0),
           deli: z.number().int().min(0).optional(),
+          turkey: z.number().int().min(0).optional(),
+          ham: z.number().int().min(0).optional(),
           pbj: z.number().int().min(0).optional(),
         })
       )
@@ -1009,6 +1011,8 @@ export const insertSandwichCollectionSchema = createInsertSchema(
       .optional(),
     // Optional breakdown for individual sandwiches
     individualDeli: z.number().int().min(0).optional(),
+    individualTurkey: z.number().int().min(0).optional(),
+    individualHam: z.number().int().min(0).optional(),
     individualPbj: z.number().int().min(0).optional(),
   });
 export const insertMeetingMinutesSchema = createInsertSchema(
