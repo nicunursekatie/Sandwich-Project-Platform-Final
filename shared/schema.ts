@@ -742,6 +742,9 @@ export const hosts = pgTable('hosts', {
   phone: text('phone'),
   status: text('status').notNull().default('active'), // 'active', 'inactive'
   notes: text('notes'),
+  latitude: decimal('latitude'), // Latitude coordinate for map display (nullable for backwards compatibility)
+  longitude: decimal('longitude'), // Longitude coordinate for map display (nullable for backwards compatibility)
+  geocodedAt: timestamp('geocoded_at'), // When coordinates were last updated/geocoded (nullable)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
