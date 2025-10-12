@@ -1,9 +1,11 @@
 import type { Config } from 'tailwindcss';
+import { TAILWIND_SCREENS } from './shared/breakpoints';
 
 export default {
   // darkMode disabled per user request
   content: ['./client/index.html', './client/src/**/*.{js,jsx,ts,tsx}'],
   theme: {
+    screens: TAILWIND_SCREENS,
     extend: {
       fontFamily: {
         sans: ['Roboto', 'sans-serif'],

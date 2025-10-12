@@ -2149,6 +2149,7 @@ export default function RequestCard({
             </div>
           </div>
         </div>
+        </div>
       </CardContent>
     </Card>
   );
