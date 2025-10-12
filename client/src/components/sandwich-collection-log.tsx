@@ -2560,12 +2560,16 @@ export default function SandwichCollectionLog() {
                     {Array.isArray(groupData) && groupData.length > 0 && (
                       <div className="space-y-1">
                         {groupData.map((group: any, index: number) => {
-                          const hasTypes = group.deli || group.turkey || group.ham || group.pbj;
+                          const deli = Number(group.deli) || 0;
+                          const turkey = Number(group.turkey) || 0;
+                          const ham = Number(group.ham) || 0;
+                          const pbj = Number(group.pbj) || 0;
+                          
                           const types = [];
-                          if (group.deli > 0) types.push(`${group.deli} Deli`);
-                          if (group.turkey > 0) types.push(`${group.turkey} Turkey`);
-                          if (group.ham > 0) types.push(`${group.ham} Ham`);
-                          if (group.pbj > 0) types.push(`${group.pbj} PBJ`);
+                          if (deli > 0) types.push(`${deli} Deli`);
+                          if (turkey > 0) types.push(`${turkey} Turkey`);
+                          if (ham > 0) types.push(`${ham} Ham`);
+                          if (pbj > 0) types.push(`${pbj} PBJ`);
                           
                           return (
                             <div
@@ -2576,7 +2580,7 @@ export default function SandwichCollectionLog() {
                                 {group.groupName}
                               </span>
                               <span className="text-slate-700 font-medium ml-2">
-                                {hasTypes ? (
+                                {types.length > 0 ? (
                                   <span className="flex items-center gap-1">
                                     <span>{group.sandwichCount}</span>
                                     <span className="text-xs text-slate-500">
