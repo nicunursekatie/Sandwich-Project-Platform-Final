@@ -584,6 +584,8 @@ export const sandwichCollections = pgTable('sandwich_collections', {
   individualSandwiches: integer('individual_sandwiches').notNull().default(0),
   // Individual sandwich type breakdown (optional)
   individualDeli: integer('individual_deli'), // Number of deli sandwiches for individuals
+  individualTurkey: integer('individual_turkey'), // Number of turkey sandwiches for individuals
+  individualHam: integer('individual_ham'), // Number of ham sandwiches for individuals
   individualPbj: integer('individual_pbj'), // Number of PBJ sandwiches for individuals
   // Group collection columns (Phase 5: JSON column for unlimited groups)
   group1Name: text('group1_name'), // Name of first group (nullable) - LEGACY, use groupCollections
@@ -591,7 +593,7 @@ export const sandwichCollections = pgTable('sandwich_collections', {
   group2Name: text('group2_name'), // Name of second group (nullable) - LEGACY, use groupCollections
   group2Count: integer('group2_count'), // Count for second group (nullable) - LEGACY, use groupCollections
   // New JSON column for unlimited groups
-  groupCollections: jsonb('group_collections').notNull().default('[]'), // Array of {name: string, count: number, deli?: number, pbj?: number}
+  groupCollections: jsonb('group_collections').notNull().default('[]'), // Array of {name: string, count: number, deli?: number, turkey?: number, ham?: number, pbj?: number}
   createdBy: text('created_by'), // User ID who created this entry
   createdByName: text('created_by_name'), // Display name of creator
   submittedAt: timestamp('submitted_at').notNull().defaultNow(), // When form was submitted
