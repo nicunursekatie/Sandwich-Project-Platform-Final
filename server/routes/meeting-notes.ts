@@ -56,8 +56,9 @@ router.post('/', async (req, res) => {
     }
 
     // Get user info from session
-    const userId = (req.session as any)?.user?.id || (req as any).user?.id;
-    const userName = (req.session as any)?.user?.name || (req as any).user?.name;
+    const user = (req.session as any)?.user || (req as any).user;
+    const userId = user?.id;
+    const userName = user?.displayName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email;
 
     // Create the note object
     const noteData = {
