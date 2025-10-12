@@ -829,7 +829,7 @@ export default function GroupCatalog({
                                     </h3>
                                   )}
                                   {/* Event Date - Show only if single event */}
-                                  {org.eventDate && org.eventCount === 1 ? (
+                                  {org.eventDate && (org.actualEventCount ?? 0) === 1 ? (
                                     <div
                                       className="flex items-center mt-2 text-lg font-semibold"
                                       style={{ color: '#FBAD3F' }}
@@ -839,10 +839,10 @@ export default function GroupCatalog({
                                         {formatDateForDisplay(org.eventDate)}
                                       </span>
                                     </div>
-                                  ) : org.eventCount > 1 ? (
+                                  ) : (org.actualEventCount ?? 0) > 1 ? (
                                     <div className="flex items-center mt-2 text-base text-gray-600">
                                       <Calendar className="w-4 h-4 mr-2" />
-                                      <span>{org.eventCount} events</span>
+                                      <span>{org.actualEventCount} events</span>
                                     </div>
                                   ) : (
                                     <div className="flex items-center mt-2 text-base text-gray-500">
@@ -1017,17 +1017,17 @@ export default function GroupCatalog({
                           </div>
 
                           {/* Event Date - Show only if single event */}
-                          {org.eventDate && org.eventCount === 1 ? (
+                          {org.eventDate && (org.actualEventCount ?? 0) === 1 ? (
                             <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
                               <Calendar className="w-4 h-4 text-teal-600" />
                               <span className="font-medium">
                                 {formatDateForDisplay(org.eventDate)}
                               </span>
                             </div>
-                          ) : org.eventCount > 1 ? (
+                          ) : (org.actualEventCount ?? 0) > 1 ? (
                             <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
                               <Calendar className="w-4 h-4 text-teal-600" />
-                              <span className="font-medium">{org.eventCount} events</span>
+                              <span className="font-medium">{org.actualEventCount} events</span>
                             </div>
                           ) : null}
 
@@ -1058,7 +1058,7 @@ export default function GroupCatalog({
                                 className={
                                   org.status === 'completed'
                                     ? 'bg-green-100 text-green-700'
-                                    : org.status === 'upcoming'
+                                    : org.status === 'scheduled'
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-red-100 text-red-700'
                                 }
@@ -1066,7 +1066,7 @@ export default function GroupCatalog({
                                 {org.status}
                               </Badge>
                               <span className="text-lg font-bold text-gray-900">
-                                {org.sandwichCount}
+                                {org.actualSandwichTotal || org.totalSandwiches || 0}
                               </span>
                               <img 
                                 src="/attached_assets/LOGOS/sandwich logo.png" 
@@ -1075,8 +1075,8 @@ export default function GroupCatalog({
                               />
                             </div>
                             <div className="text-xs text-gray-500">
-                              {org.eventCount} event
-                              {org.eventCount !== 1 ? 's' : ''}
+                              {org.actualEventCount} event
+                              {org.actualEventCount !== 1 ? 's' : ''}
                             </div>
                           </div>
 
