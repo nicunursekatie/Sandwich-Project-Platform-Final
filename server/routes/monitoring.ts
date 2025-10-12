@@ -428,21 +428,53 @@ router.post('/test-email', async (req, res) => {
   }
 });
 
-// Send email reminder to single location
+// Send email reminder to single location (query parameter version for frontend compatibility)
+router.post('/send-email-reminder', async (req, res) => {
+  try {
+    const location = req.query.location as string;
+
+    if (!location) {
+      return res.status(400).json({ error: 'Location parameter is required' });
+    }
+
+    // Import email service
+    const { sendWeeklyMonitoringReminder } = await import('../services/email-service');
+
+    // Send the email reminder
+    const result = await sendWeeklyMonitoringReminder(location);
+
+    res.json({
+      success: true,
+      location,
+      message: 'Email reminder sent successfully',
+      ...result
+    });
+  } catch (error) {
+    console.error('Error sending email reminder:', error);
+    res.status(500).json({ error: 'Failed to send email reminder', details: error.message });
+  }
+});
+
+// Send email reminder to single location (path parameter version - legacy)
 router.post('/send-email-reminder/:location', async (req, res) => {
   try {
     const location = decodeURIComponent(req.params.location);
 
-    // This would send an email reminder
-    // For now, just return success
+    // Import email service
+    const { sendWeeklyMonitoringReminder } = await import('../services/email-service');
+
+    // Send the email reminder
+    const result = await sendWeeklyMonitoringReminder(location);
+
     res.json({
       success: true,
       location,
-      message: 'Email reminder functionality not yet implemented',
+      message: 'Email reminder sent successfully',
+      ...result
     });
   } catch (error) {
     console.error('Error sending email reminder:', error);
-    res.status(500).json({ error: 'Failed to send email reminder' });
+    res.status(500).json({ error: 'Failed to send email reminder', details: error.message });
   }
 });
 

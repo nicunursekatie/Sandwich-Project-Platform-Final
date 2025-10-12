@@ -190,3 +190,63 @@ This is an automated notification from The Sandwich Project suggestions portal.$
     html: htmlContent,
   });
 }
+
+export async function sendWeeklyMonitoringReminder(location: string): Promise<{success: boolean; message?: string}> {
+  try {
+    // Import SendGrid compliance footer
+    const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('./utils/email-footer');
+
+    const emailContent = `
+Weekly Monitoring Reminder - ${location}
+
+This is a reminder to submit the weekly monitoring data for ${location}.
+
+Please log in to The Sandwich Project dashboard and submit this week's monitoring information.
+
+---
+This is an automated reminder from The Sandwich Project weekly monitoring system.${EMAIL_FOOTER_TEXT}
+    `.trim();
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #236383;">Weekly Monitoring Reminder</h2>
+        <h3 style="color: #666;">${location}</h3>
+
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p>This is a reminder to submit the weekly monitoring data for <strong>${location}</strong>.</p>
+          <p>Please log in to The Sandwich Project dashboard and submit this week's monitoring information.</p>
+        </div>
+
+        <div style="margin: 20px 0; text-align: center;">
+          <a href="${process.env.APP_URL || 'https://your-app-url.com'}/dashboard"
+             style="background-color: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            Go to Dashboard
+          </a>
+        </div>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <p style="color: #666; font-size: 12px;">This is an automated reminder from The Sandwich Project weekly monitoring system.</p>
+        ${EMAIL_FOOTER_HTML}
+      </div>
+    `;
+
+    const sent = await sendEmail({
+      to: 'katielong2316@gmail.com', // TODO: Replace with actual location contact email
+      from: 'katielong2316@gmail.com',
+      subject: `Weekly Monitoring Reminder - ${location}`,
+      text: emailContent,
+      html: htmlContent,
+    });
+
+    return {
+      success: sent,
+      message: sent ? 'Email sent successfully' : 'Failed to send email'
+    };
+  } catch (error) {
+    console.error('Error sending weekly monitoring reminder:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to send email'
+    };
+  }
+}
