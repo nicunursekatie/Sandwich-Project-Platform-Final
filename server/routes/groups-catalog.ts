@@ -429,7 +429,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           canonicalName: org.canonicalName,
           nameVariations: Array.from(org.nameVariations),
           departments: org.departments.sort(
-            (a, b) =>
+            (a: any, b: any) =>
               new Date(b.latestActivityDate).getTime() -
               new Date(a.latestActivityDate).getTime()
           ),
@@ -439,10 +439,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       // Sort organizations by most recent activity across all departments
       organizations.sort((a, b) => {
         const aLatest = Math.max(
-          ...a.departments.map((d) => new Date(d.latestActivityDate).getTime())
+          ...a.departments.map((d: any) => new Date(d.latestActivityDate).getTime())
         );
         const bLatest = Math.max(
-          ...b.departments.map((d) => new Date(d.latestActivityDate).getTime())
+          ...b.departments.map((d: any) => new Date(d.latestActivityDate).getTime())
         );
         return bLatest - aLatest;
       });
@@ -470,7 +470,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         const eventRequests = await storage.getAllEventRequests();
         const orgEventRequests = eventRequests.filter(
           (request) =>
-            canonicalizeOrgName(request.organizationName) ===
+            canonicalizeOrgName(request.organizationName || '') ===
             canonicalSearchName
         );
 
@@ -516,7 +516,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           phone: request.phone,
           estimatedSandwiches: request.estimatedSandwichCount || 0,
           actualSandwiches: 0,
-          notes: request.description || '',
+          notes: '',
           createdAt: request.createdAt,
           lastUpdated: request.updatedAt || request.createdAt,
         }));

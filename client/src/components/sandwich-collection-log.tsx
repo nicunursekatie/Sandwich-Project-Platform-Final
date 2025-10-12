@@ -2348,17 +2348,17 @@ export default function SandwichCollectionLog() {
                           return 0;
                         }
                         if (groupData.length === 1) {
-                          const group = groupData[0];
+                          const group: any = groupData[0];
                           const hasTypes = group.deli || group.turkey || group.ham || group.pbj;
                           if (hasTypes) {
                             return (
                               <div>
                                 <div className="font-bold mb-1">{group.groupName}</div>
                                 <div className="space-y-0.5 font-normal text-sm">
-                                  {group.turkey > 0 && <div>{group.turkey} Turkey</div>}
-                                  {group.ham > 0 && <div>{group.ham} Ham</div>}
-                                  {group.deli > 0 && <div>{group.deli} Deli</div>}
-                                  {group.pbj > 0 && <div>{group.pbj} PB&J</div>}
+                                  {(group.turkey ?? 0) > 0 && <div>{group.turkey} Turkey</div>}
+                                  {(group.ham ?? 0) > 0 && <div>{group.ham} Ham</div>}
+                                  {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
+                                  {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
                                 </div>
                               </div>
                             );
@@ -2380,8 +2380,7 @@ export default function SandwichCollectionLog() {
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     {collection.createdBy &&
-                      collection.createdByName &&
-                      hasPermission(user, PERMISSIONS.SEND_KUDOS) && (
+                      collection.createdByName && (
                         <SendKudosButton
                           recipientId={collection.createdBy}
                           recipientName={collection.createdByName}
@@ -2939,7 +2938,6 @@ export default function SandwichCollectionLog() {
           if (!open) {
             setEditingCollection(null);
             setShowEditIndividualBreakdown(false);
-            setShowEditGroupBreakdown(false);
           }
         }}
       >
