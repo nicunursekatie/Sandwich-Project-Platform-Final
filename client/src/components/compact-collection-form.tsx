@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calculator, Plus, HelpCircle, AlertCircle } from 'lucide-react';
+import { Calculator, Plus, HelpCircle, AlertCircle, CheckCircle } from 'lucide-react';
 import sandwichLogo from '@assets/LOGOS/sandwich logo.png';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -51,6 +51,10 @@ export default function CompactCollectionForm({
   const [newGroupTurkey, setNewGroupTurkey] = useState(0);
   const [newGroupHam, setNewGroupHam] = useState(0);
   const [newGroupPbj, setNewGroupPbj] = useState(0);
+
+  // Validation state
+  const [individualBreakdownError, setIndividualBreakdownError] = useState<string>('');
+  const [groupBreakdownError, setGroupBreakdownError] = useState<string>('');
 
   const { toast} = useToast();
   const queryClient = useQueryClient();
@@ -100,15 +104,67 @@ export default function CompactCollectionForm({
     individualCount +
     groupCollections.reduce((sum, group) => sum + group.count, 0);
 
-  // Debug logging to track calculation
-  console.log('Calculation Debug:', {
-    individualCount,
-    groupCollections,
-    groupTotal: groupCollections.reduce((sum, group) => sum + group.count, 0),
-    totalSandwiches,
-  });
+  // Calculate breakdown sums
+  const individualBreakdownSum = individualDeli + individualTurkey + individualHam + individualPbj;
+  const groupBreakdownSum = newGroupDeli + newGroupTurkey + newGroupHam + newGroupPbj;
+
+  // Validation for individual sandwich breakdown
+  useEffect(() => {
+    if (!showIndividualBreakdown) {
+      setIndividualBreakdownError('');
+      return;
+    }
+
+    const hasAnyValue = individualDeli > 0 || individualTurkey > 0 || individualHam > 0 || individualPbj > 0;
+    
+    if (!hasAnyValue) {
+      // Allow empty breakdown (optional)
+      setIndividualBreakdownError('');
+      return;
+    }
+
+    // If any value is entered, enforce sum validation
+    if (individualBreakdownSum !== individualCount) {
+      setIndividualBreakdownError(`Type breakdown (${individualBreakdownSum}) must equal total individual sandwiches (${individualCount})`);
+    } else {
+      setIndividualBreakdownError('');
+    }
+  }, [showIndividualBreakdown, individualDeli, individualTurkey, individualHam, individualPbj, individualCount, individualBreakdownSum]);
+
+  // Validation for group breakdown
+  useEffect(() => {
+    if (!showGroupBreakdown) {
+      setGroupBreakdownError('');
+      return;
+    }
+
+    const hasAnyValue = newGroupDeli > 0 || newGroupTurkey > 0 || newGroupHam > 0 || newGroupPbj > 0;
+    
+    if (!hasAnyValue) {
+      // Allow empty breakdown (optional)
+      setGroupBreakdownError('');
+      return;
+    }
+
+    // If any value is entered, enforce sum validation
+    if (groupBreakdownSum !== newGroupCount) {
+      setGroupBreakdownError(`Group type breakdown (${groupBreakdownSum}) must equal group total (${newGroupCount})`);
+    } else {
+      setGroupBreakdownError('');
+    }
+  }, [showGroupBreakdown, newGroupDeli, newGroupTurkey, newGroupHam, newGroupPbj, newGroupCount, groupBreakdownSum]);
 
   const addGroup = () => {
+    // Prevent adding if there's a validation error
+    if (groupBreakdownError) {
+      toast({ 
+        title: 'Invalid breakdown', 
+        description: groupBreakdownError,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     if (newGroupName && newGroupCount > 0) {
       const newGroup: { name: string; count: number; deli?: number; turkey?: number; ham?: number; pbj?: number } = {
         name: newGroupName,
@@ -137,6 +193,16 @@ export default function CompactCollectionForm({
   const handleSubmit = () => {
     if (!location) {
       toast({ title: 'Please select a location', variant: 'destructive' });
+      return;
+    }
+
+    // Check for individual breakdown validation errors
+    if (individualBreakdownError) {
+      toast({ 
+        title: 'Invalid individual breakdown', 
+        description: individualBreakdownError,
+        variant: 'destructive' 
+      });
       return;
     }
 
@@ -366,8 +432,35 @@ export default function CompactCollectionForm({
                   />
                 </div>
                 {(individualDeli > 0 || individualTurkey > 0 || individualHam > 0 || individualPbj > 0) && (
-                  <div className="col-span-2 text-center text-sm text-gray-600 bg-gray-100 rounded p-2">
-                    Total: <span className="font-bold text-brand-orange">{individualDeli + individualTurkey + individualHam + individualPbj}</span>
+                  <div className={`col-span-2 text-center text-sm rounded p-3 border-2 ${
+                    individualBreakdownError 
+                      ? 'bg-red-50 border-red-400 text-red-800' 
+                      : 'bg-green-50 border-green-400 text-green-800'
+                  }`}>
+                    <div className="flex items-center justify-center gap-2">
+                      {individualBreakdownError ? (
+                        <AlertCircle className="h-4 w-4" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4" />
+                      )}
+                      <span className="font-medium">
+                        Breakdown Total: <span className="font-bold">{individualBreakdownSum}</span> 
+                        {individualCount > 0 && ` / Expected: ${individualCount}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {individualBreakdownError && (
+                  <div className="col-span-2 bg-red-50 border border-red-400 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-red-800">
+                        <p className="font-medium">{individualBreakdownError}</p>
+                        <p className="text-xs mt-1">
+                          Please adjust your sandwich type values so they add up to {individualCount}.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -512,8 +605,35 @@ export default function CompactCollectionForm({
                     </div>
                   </div>
                   {(newGroupDeli > 0 || newGroupTurkey > 0 || newGroupHam > 0 || newGroupPbj > 0) && (
-                    <div className="text-center text-xs text-gray-600 bg-gray-100 rounded p-2">
-                      Total: <span className="font-bold text-brand-orange">{newGroupDeli + newGroupTurkey + newGroupHam + newGroupPbj}</span>
+                    <div className={`text-center text-xs rounded p-2 border-2 ${
+                      groupBreakdownError 
+                        ? 'bg-red-50 border-red-400 text-red-800' 
+                        : 'bg-green-50 border-green-400 text-green-800'
+                    }`}>
+                      <div className="flex items-center justify-center gap-1">
+                        {groupBreakdownError ? (
+                          <AlertCircle className="h-3 w-3" />
+                        ) : (
+                          <CheckCircle className="h-3 w-3" />
+                        )}
+                        <span className="font-medium">
+                          Breakdown Total: <span className="font-bold">{groupBreakdownSum}</span>
+                          {newGroupCount > 0 && ` / Expected: ${newGroupCount}`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {groupBreakdownError && (
+                    <div className="bg-red-50 border border-red-400 rounded-lg p-2">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-xs text-red-800">
+                          <p className="font-medium">{groupBreakdownError}</p>
+                          <p className="text-xs mt-1">
+                            Please adjust the values so they add up to {newGroupCount}.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </>
@@ -547,8 +667,9 @@ export default function CompactCollectionForm({
               <div className="flex gap-2">
                 <Button
                   onClick={addGroup}
-                  disabled={!newGroupName || newGroupCount <= 0}
+                  disabled={!newGroupName || newGroupCount <= 0 || !!groupBreakdownError}
                   className="flex-1 h-12 md:h-10 text-lg md:text-base bg-brand-light-blue hover:bg-brand-primary"
+                  data-testid="button-add-group"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add This Group
@@ -620,8 +741,9 @@ export default function CompactCollectionForm({
           <div className="flex items-center gap-2">
             <Button
               onClick={handleSubmit}
-              disabled={submitMutation.isPending}
+              disabled={submitMutation.isPending || !!individualBreakdownError}
               className="flex-1 h-14 md:h-12 bg-gradient-to-r from-brand-orange to-[#e89b2e] hover:from-[#e89b2e] hover:to-brand-orange text-white font-semibold text-xl md:text-lg"
+              data-testid="button-submit-collection"
             >
               {submitMutation.isPending ? 'Saving...' : 'Save My Collection'}
             </Button>

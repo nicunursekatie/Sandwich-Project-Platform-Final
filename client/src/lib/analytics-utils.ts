@@ -178,3 +178,173 @@ export function calculateActualWeeklyAverage(
   );
   return Math.round(totalSandwiches / weeklyData.length);
 }
+
+// ============================================================================
+// SANDWICH TYPE BREAKDOWN FUNCTIONS
+// ============================================================================
+
+/**
+ * Type breakdown structure for sandwich analytics
+ */
+export interface TypeBreakdown {
+  deli: number;
+  turkey: number;
+  ham: number;
+  pbj: number;
+  total: number;
+}
+
+/**
+ * Calculate individual sandwich type breakdown for a collection.
+ * 
+ * Returns breakdown of individual sandwiches by type (deli, turkey, ham, pbj).
+ * Backward compatible - returns zeros if type data is not available.
+ * 
+ * @param collection - Sandwich collection to analyze
+ * @returns Type breakdown with deli, turkey, ham, pbj counts and total
+ */
+export function calculateIndividualTypeBreakdown(
+  collection: SandwichCollection
+): TypeBreakdown {
+  const deli = Number(collection.individualDeli || 0);
+  const turkey = Number(collection.individualTurkey || 0);
+  const ham = Number(collection.individualHam || 0);
+  const pbj = Number(collection.individualPbj || 0);
+  
+  return {
+    deli,
+    turkey,
+    ham,
+    pbj,
+    total: deli + turkey + ham + pbj,
+  };
+}
+
+/**
+ * Calculate group sandwich type breakdown for a collection.
+ * 
+ * Aggregates type data from all groups in the collection's groupCollections array.
+ * Backward compatible - returns zeros if type data is not available.
+ * 
+ * @param collection - Sandwich collection to analyze
+ * @returns Type breakdown with deli, turkey, ham, pbj counts and total
+ */
+export function calculateGroupTypeBreakdown(
+  collection: SandwichCollection
+): TypeBreakdown {
+  let deli = 0;
+  let turkey = 0;
+  let ham = 0;
+  let pbj = 0;
+
+  // Primary: Use groupCollections JSONB array if available and non-empty
+  if (
+    collection.groupCollections &&
+    Array.isArray(collection.groupCollections) &&
+    collection.groupCollections.length > 0
+  ) {
+    collection.groupCollections.forEach((group) => {
+      deli += Number(group.deli || 0);
+      turkey += Number(group.turkey || 0);
+      ham += Number(group.ham || 0);
+      pbj += Number(group.pbj || 0);
+    });
+    
+    return {
+      deli,
+      turkey,
+      ham,
+      pbj,
+      total: deli + turkey + ham + pbj,
+    };
+  }
+
+  // Handle string-encoded JSON (if data comes from API as string)
+  if (
+    collection.groupCollections &&
+    typeof collection.groupCollections === 'string' &&
+    collection.groupCollections !== '' &&
+    collection.groupCollections !== '[]'
+  ) {
+    try {
+      const groupData = JSON.parse(collection.groupCollections);
+      if (Array.isArray(groupData) && groupData.length > 0) {
+        groupData.forEach((group) => {
+          deli += Number(group.deli || 0);
+          turkey += Number(group.turkey || 0);
+          ham += Number(group.ham || 0);
+          pbj += Number(group.pbj || 0);
+        });
+      }
+    } catch (e) {
+      console.log('Error parsing groupCollections JSON for type breakdown:', e);
+      // Return zeros on error
+    }
+  }
+
+  return {
+    deli,
+    turkey,
+    ham,
+    pbj,
+    total: deli + turkey + ham + pbj,
+  };
+}
+
+/**
+ * Calculate total sandwich type breakdown for a collection.
+ * 
+ * Combines individual and group type data to provide complete breakdown.
+ * Backward compatible - returns zeros if type data is not available.
+ * 
+ * @param collection - Sandwich collection to analyze
+ * @returns Type breakdown with combined deli, turkey, ham, pbj counts and total
+ */
+export function calculateTotalTypeBreakdown(
+  collection: SandwichCollection
+): TypeBreakdown {
+  const individualBreakdown = calculateIndividualTypeBreakdown(collection);
+  const groupBreakdown = calculateGroupTypeBreakdown(collection);
+
+  return {
+    deli: individualBreakdown.deli + groupBreakdown.deli,
+    turkey: individualBreakdown.turkey + groupBreakdown.turkey,
+    ham: individualBreakdown.ham + groupBreakdown.ham,
+    pbj: individualBreakdown.pbj + groupBreakdown.pbj,
+    total: individualBreakdown.total + groupBreakdown.total,
+  };
+}
+
+/**
+ * Aggregate sandwich type breakdown across multiple collections.
+ * 
+ * Sums type data across all collections in the dataset to provide organization-wide totals.
+ * Backward compatible - handles collections without type data gracefully.
+ * 
+ * @param collections - Array of sandwich collections to aggregate
+ * @returns Type breakdown with total deli, turkey, ham, pbj counts across all collections
+ */
+export function aggregateTypeBreakdownAcrossCollections(
+  collections: SandwichCollection[]
+): TypeBreakdown {
+  let totalDeli = 0;
+  let totalTurkey = 0;
+  let totalHam = 0;
+  let totalPbj = 0;
+
+  collections.forEach((collection) => {
+    const breakdown = calculateTotalTypeBreakdown(collection);
+    totalDeli += breakdown.deli;
+    totalTurkey += breakdown.turkey;
+    totalHam += breakdown.ham;
+    totalPbj += breakdown.pbj;
+  });
+
+  return {
+    deli: totalDeli,
+    turkey: totalTurkey,
+    ham: totalHam,
+    pbj: totalPbj,
+    total: totalDeli + totalTurkey + totalHam + totalPbj,
+  };
+}

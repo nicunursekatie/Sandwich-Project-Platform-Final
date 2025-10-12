@@ -29,6 +29,8 @@ import {
   ChevronRight,
   HelpCircle,
   Heart,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 import SendKudosButton from '@/components/send-kudos-button';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
@@ -203,10 +205,14 @@ export default function SandwichCollectionLog() {
     individualPbj: '',
   });
   const [editGroupCollections, setEditGroupCollections] = useState<
-    Array<{ id: string; groupName: string; sandwichCount: number; deli?: number; turkey?: number; ham?: number; pbj?: number }>
+    Array<{ id: string; groupName: string; count?: number; sandwichCount?: number; deli?: number; turkey?: number; ham?: number; pbj?: number }>
   >([]);
   const [showEditIndividualBreakdown, setShowEditIndividualBreakdown] = useState(false);
   const [showEditGroupBreakdown, setShowEditGroupBreakdown] = useState(false);
+  
+  // Validation state for Edit Collection Dialog
+  const [editIndividualBreakdownError, setEditIndividualBreakdownError] = useState<string>('');
+  const [editGroupBreakdownErrors, setEditGroupBreakdownErrors] = useState<Map<string, string>>(new Map());
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [newCollectionData, setNewCollectionData] = useState({
@@ -245,6 +251,70 @@ export default function SandwichCollectionLog() {
 
     return () => clearTimeout(timeoutId);
   }, [searchFilters]);
+
+  // Validation for individual sandwich breakdown in Edit dialog
+  useEffect(() => {
+    if (!showEditIndividualBreakdown) {
+      setEditIndividualBreakdownError('');
+      return;
+    }
+
+    const individualDeli = parseInt(editFormData.individualDeli) || 0;
+    const individualTurkey = parseInt(editFormData.individualTurkey) || 0;
+    const individualHam = parseInt(editFormData.individualHam) || 0;
+    const individualPbj = parseInt(editFormData.individualPbj) || 0;
+    const individualSandwiches = parseInt(editFormData.individualSandwiches) || 0;
+    
+    const breakdownSum = individualDeli + individualTurkey + individualHam + individualPbj;
+    const hasAnyValue = individualDeli > 0 || individualTurkey > 0 || individualHam > 0 || individualPbj > 0;
+    
+    if (!hasAnyValue) {
+      // Allow empty breakdown (optional)
+      setEditIndividualBreakdownError('');
+      return;
+    }
+
+    // If any value is entered, enforce sum validation
+    if (breakdownSum !== individualSandwiches) {
+      setEditIndividualBreakdownError(`Type breakdown (${breakdownSum}) must equal total individual sandwiches (${individualSandwiches})`);
+    } else {
+      setEditIndividualBreakdownError('');
+    }
+  }, [showEditIndividualBreakdown, editFormData.individualDeli, editFormData.individualTurkey, editFormData.individualHam, editFormData.individualPbj, editFormData.individualSandwiches]);
+
+  // Validation for group breakdown in Edit dialog
+  useEffect(() => {
+    if (!showEditGroupBreakdown) {
+      setEditGroupBreakdownErrors(new Map());
+      return;
+    }
+
+    const errors = new Map<string, string>();
+    
+    editGroupCollections.forEach((group) => {
+      const deli = group.deli || 0;
+      const turkey = group.turkey || 0;
+      const ham = group.ham || 0;
+      const pbj = group.pbj || 0;
+      const breakdownSum = deli + turkey + ham + pbj;
+      const hasAnyValue = deli > 0 || turkey > 0 || ham > 0 || pbj > 0;
+      
+      if (!hasAnyValue) {
+        // Allow empty breakdown (optional)
+        return;
+      }
+
+      // Support both 'count' and 'sandwichCount' field names for compatibility
+      const groupCount = group.count || group.sandwichCount || 0;
+
+      // If any value is entered, enforce sum validation
+      if (breakdownSum !== groupCount) {
+        errors.set(group.id, `Group type breakdown (${breakdownSum}) must equal group total (${groupCount})`);
+      }
+    });
+    
+    setEditGroupBreakdownErrors(errors);
+  }, [showEditGroupBreakdown, editGroupCollections]);
 
   // Memoize expensive computations using debounced filters
   // Only fetch all data when we need client-side filtering/sorting, not for basic pagination
@@ -1495,6 +1565,27 @@ export default function SandwichCollectionLog() {
 
   const handleUpdate = () => {
     if (!editingCollection) return;
+
+    // Check for individual breakdown validation errors
+    if (editIndividualBreakdownError) {
+      toast({ 
+        title: 'Invalid individual breakdown', 
+        description: editIndividualBreakdownError,
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    // Check for group breakdown validation errors
+    if (editGroupBreakdownErrors.size > 0) {
+      const firstError = Array.from(editGroupBreakdownErrors.values())[0];
+      toast({ 
+        title: 'Invalid group breakdown', 
+        description: firstError,
+        variant: 'destructive' 
+      });
+      return;
+    }
 
     // Convert editGroupCollections to new schema format
     const validGroups = editGroupCollections.filter(
@@ -3219,6 +3310,49 @@ export default function SandwichCollectionLog() {
                   </div>
                 </div>
               </div>
+
+              {/* Validation Status for Individual Breakdown */}
+              {showEditIndividualBreakdown && (
+                <div className="mt-2">
+                  {(() => {
+                    const individualDeli = parseInt(editFormData.individualDeli) || 0;
+                    const individualTurkey = parseInt(editFormData.individualTurkey) || 0;
+                    const individualHam = parseInt(editFormData.individualHam) || 0;
+                    const individualPbj = parseInt(editFormData.individualPbj) || 0;
+                    const individualSandwiches = parseInt(editFormData.individualSandwiches) || 0;
+                    const breakdownSum = individualDeli + individualTurkey + individualHam + individualPbj;
+                    const hasAnyValue = individualDeli > 0 || individualTurkey > 0 || individualHam > 0 || individualPbj > 0;
+                    
+                    if (!hasAnyValue) {
+                      return null;
+                    }
+
+                    const isValid = breakdownSum === individualSandwiches;
+                    
+                    return (
+                      <div className={`border rounded-lg p-3 ${isValid ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                        <div className="flex items-center gap-2">
+                          {isValid ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-red-600" />
+                          )}
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">
+                              Breakdown Total: {breakdownSum} / Expected: {individualSandwiches}
+                            </div>
+                            {!isValid && (
+                              <div className="text-xs text-red-600 mt-1">
+                                {editIndividualBreakdownError}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             <div>
@@ -3246,11 +3380,10 @@ export default function SandwichCollectionLog() {
                           type="number"
                           min="0"
                           placeholder="Count"
-                          value={
-                            group.sandwichCount === 0
-                              ? ''
-                              : group.sandwichCount?.toString() || ''
-                          }
+                          value={(() => {
+                            const groupCount = group.count || group.sandwichCount || 0;
+                            return groupCount === 0 ? '' : groupCount.toString();
+                          })()}
                           onChange={(e) => {
                             const value = e.target.value;
                             if (value === '' || value === '0') {
@@ -3290,100 +3423,142 @@ export default function SandwichCollectionLog() {
                     
                     {/* Type breakdown fields for group when enabled */}
                     {showEditGroupBreakdown && (
-                      <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded">
-                        <div>
-                          <Label className="text-xs">Deli</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={group.deli || ''}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0;
-                              const updatedGroup = {
-                                ...group,
-                                deli: value,
-                                sandwichCount: value + (group.turkey || 0) + (group.ham || 0) + (group.pbj || 0),
-                              };
-                              setEditGroupCollections(
-                                editGroupCollections.map((g) =>
-                                  g.id === group.id ? updatedGroup : g
-                                )
-                              );
-                            }}
-                            placeholder="0"
-                            className="h-8"
-                          />
+                      <>
+                        <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded">
+                          <div>
+                            <Label className="text-xs">Deli</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={group.deli || ''}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                const updatedGroup = {
+                                  ...group,
+                                  deli: value,
+                                  sandwichCount: value + (group.turkey || 0) + (group.ham || 0) + (group.pbj || 0),
+                                };
+                                setEditGroupCollections(
+                                  editGroupCollections.map((g) =>
+                                    g.id === group.id ? updatedGroup : g
+                                  )
+                                );
+                              }}
+                              placeholder="0"
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Turkey</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={group.turkey || ''}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                const updatedGroup = {
+                                  ...group,
+                                  turkey: value,
+                                  sandwichCount: (group.deli || 0) + value + (group.ham || 0) + (group.pbj || 0),
+                                };
+                                setEditGroupCollections(
+                                  editGroupCollections.map((g) =>
+                                    g.id === group.id ? updatedGroup : g
+                                  )
+                                );
+                              }}
+                              placeholder="0"
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Ham</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={group.ham || ''}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                const updatedGroup = {
+                                  ...group,
+                                  ham: value,
+                                  sandwichCount: (group.deli || 0) + (group.turkey || 0) + value + (group.pbj || 0),
+                                };
+                                setEditGroupCollections(
+                                  editGroupCollections.map((g) =>
+                                    g.id === group.id ? updatedGroup : g
+                                  )
+                                );
+                              }}
+                              placeholder="0"
+                              className="h-8"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">PBJ</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={group.pbj || ''}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                const updatedGroup = {
+                                  ...group,
+                                  pbj: value,
+                                  sandwichCount: (group.deli || 0) + (group.turkey || 0) + (group.ham || 0) + value,
+                                };
+                                setEditGroupCollections(
+                                  editGroupCollections.map((g) =>
+                                    g.id === group.id ? updatedGroup : g
+                                  )
+                                );
+                              }}
+                              placeholder="0"
+                              className="h-8"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <Label className="text-xs">Turkey</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={group.turkey || ''}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0;
-                              const updatedGroup = {
-                                ...group,
-                                turkey: value,
-                                sandwichCount: (group.deli || 0) + value + (group.ham || 0) + (group.pbj || 0),
-                              };
-                              setEditGroupCollections(
-                                editGroupCollections.map((g) =>
-                                  g.id === group.id ? updatedGroup : g
-                                )
-                              );
-                            }}
-                            placeholder="0"
-                            className="h-8"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Ham</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={group.ham || ''}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0;
-                              const updatedGroup = {
-                                ...group,
-                                ham: value,
-                                sandwichCount: (group.deli || 0) + (group.turkey || 0) + value + (group.pbj || 0),
-                              };
-                              setEditGroupCollections(
-                                editGroupCollections.map((g) =>
-                                  g.id === group.id ? updatedGroup : g
-                                )
-                              );
-                            }}
-                            placeholder="0"
-                            className="h-8"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">PBJ</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={group.pbj || ''}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0;
-                              const updatedGroup = {
-                                ...group,
-                                pbj: value,
-                                sandwichCount: (group.deli || 0) + (group.turkey || 0) + (group.ham || 0) + value,
-                              };
-                              setEditGroupCollections(
-                                editGroupCollections.map((g) =>
-                                  g.id === group.id ? updatedGroup : g
-                                )
-                              );
-                            }}
-                            placeholder="0"
-                            className="h-8"
-                          />
-                        </div>
-                      </div>
+                        
+                        {/* Validation Status for Group Breakdown */}
+                        {(() => {
+                          const deli = group.deli || 0;
+                          const turkey = group.turkey || 0;
+                          const ham = group.ham || 0;
+                          const pbj = group.pbj || 0;
+                          const breakdownSum = deli + turkey + ham + pbj;
+                          const hasAnyValue = deli > 0 || turkey > 0 || ham > 0 || pbj > 0;
+                          
+                          if (!hasAnyValue) {
+                            return null;
+                          }
+
+                          const groupCount = group.count || group.sandwichCount || 0;
+                          const isValid = breakdownSum === groupCount;
+                          const errorMsg = editGroupBreakdownErrors.get(group.id);
+                          
+                          return (
+                            <div className={`border rounded-lg p-2 mt-2 ${isValid ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+                              <div className="flex items-center gap-2">
+                                {isValid ? (
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <AlertCircle className="h-4 w-4 text-red-600" />
+                                )}
+                                <div className="flex-1">
+                                  <div className="text-xs font-medium">
+                                    Breakdown Total: {breakdownSum} / Expected: {groupCount}
+                                  </div>
+                                  {!isValid && errorMsg && (
+                                    <div className="text-xs text-red-600 mt-1">
+                                      {errorMsg}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </>
                     )}
                   </div>
                 ))}
@@ -3439,7 +3614,7 @@ export default function SandwichCollectionLog() {
               </Button>
               <Button
                 onClick={handleUpdate}
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || editIndividualBreakdownError !== '' || editGroupBreakdownErrors.size > 0}
               >
                 {updateMutation.isPending ? 'Updating...' : 'Update Collection'}
               </Button>
