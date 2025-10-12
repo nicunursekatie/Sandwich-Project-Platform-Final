@@ -108,7 +108,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     followUpOneMonthCompleted: false,
     followUpOneMonthDate: '',
     followUpNotes: '',
-    assignedRecipientIds: [] as number[],
+    assignedRecipientIds: [] as string[],
+    // Contact information fields
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    organizationName: '',
+    department: '',
+    organizationCategory: '',
+    schoolClassification: '',
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'types'>('total');
@@ -251,7 +260,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         eventStartTime: eventRequest?.eventStartTime || '',
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
-        pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, eventRequest?.desiredEventDate),
+        pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
         overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
@@ -741,7 +750,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     // Clear legacy pickupTime when datetime is set
                     pickupTime: ''
                   }))}
-                  eventDate={formData.eventDate}
                   data-testid="pickup-datetime-picker"
                 />
               </div>

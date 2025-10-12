@@ -73,13 +73,11 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
           <div className="bg-[#e6f2f5] border border-[#007E8C]/20 rounded-lg p-3">
             <h4 className="font-medium text-[#1A2332] mb-2">Event Details</h4>
             <div className="space-y-1 text-sm">
-                              <div><strong>Event Date:</strong> {
-                                eventRequest.desiredEventDate ? 
-                                  (eventRequest.desiredEventDate instanceof Date ? 
-                                    eventRequest.desiredEventDate.toLocaleDateString() : 
-                                    eventRequest.desiredEventDate.toString()) : 
-                                  'Not specified'
-                              }</div>
+              <div><strong>Event Date:</strong> {
+                eventRequest.desiredEventDate ? 
+                  new Date(eventRequest.desiredEventDate).toLocaleDateString() : 
+                  'Not specified'
+              }</div>
               <div><strong>Address:</strong> {eventRequest.eventAddress || 'Not specified'}</div>
               <div><strong>Estimated Sandwiches:</strong> {eventRequest.estimatedSandwichCount || 'Not specified'}</div>
             </div>
