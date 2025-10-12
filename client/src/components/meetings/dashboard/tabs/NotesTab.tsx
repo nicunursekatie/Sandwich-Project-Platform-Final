@@ -377,24 +377,24 @@ export function NotesTab({
 
             {/* Main Content - Discussion Points and Decision Items */}
             {parsed.discussionPoints && (
-              <div className="bg-brand-primary-lighter border-l-4 border-brand-primary p-4 rounded-r-lg">
+              <div className="bg-[#47B3CB]/10 border-l-4 border-[#47B3CB] p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
-                  <MessageSquare className="w-4 h-4 text-brand-primary-muted mt-1 flex-shrink-0" />
+                  <MessageSquare className="w-4 h-4 text-[#47B3CB] mt-1 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-brand-primary-dark mb-1">Discussion Points/Questions</p>
-                    <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.discussionPoints}</p>
+                    <p className="text-sm font-medium text-[#007E8C] mb-1">📝 Pre-Meeting Discussion Points</p>
+                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed italic">{parsed.discussionPoints}</p>
                   </div>
                 </div>
               </div>
             )}
             
             {parsed.decisionItems && (
-              <div className="bg-[#47B3CB]/10 border-l-4 border-[#007E8C] p-4 rounded-r-lg">
+              <div className="bg-[#A31C41]/10 border-l-4 border-[#A31C41] p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#007E8C] mt-1 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-[#A31C41] mt-1 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-[#007E8C] mb-1">Meeting Notes</p>
-                    <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.decisionItems}</p>
+                    <p className="text-sm font-medium text-[#A31C41] mb-1">✅ Post-Meeting Outcome</p>
+                    <p className="text-gray-900 whitespace-pre-wrap leading-relaxed font-medium">{parsed.decisionItems}</p>
                   </div>
                 </div>
               </div>
