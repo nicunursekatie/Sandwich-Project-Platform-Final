@@ -1210,14 +1210,14 @@ export default function MonthlyComparisonAnalytics() {
                     </div>
 
                     <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium">Recovery Potential</span>
+                      <span className="text-sm font-medium">Growth Potential</span>
                       <Badge className="bg-indigo-100 text-indigo-700">Good</Badge>
                     </div>
                     
                     <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                       <h5 className="font-medium text-purple-800 mb-2">💡 Success Strategy</h5>
                       <p className="text-sm text-purple-700">
-                        Based on trends, targeting group organizations in September with compelling back-to-school messaging could recover {Math.round(selectedMonthAnalysis.shortfall * 0.6)?.toLocaleString()}+ sandwiches by October.
+                        Based on trends, targeting group organizations in September with compelling back-to-school messaging could generate {Math.round(selectedMonthAnalysis.shortfall * 0.6)?.toLocaleString()}+ additional sandwiches by October.
                       </p>
                     </div>
                   </div>
