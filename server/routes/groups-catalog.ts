@@ -369,6 +369,15 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       departmentsMap.forEach((dept) => {
         const canonicalKey = dept.canonicalName;
 
+        // Debug logging for Atlanta International School
+        if (canonicalKey === 'atlantainternationalschool') {
+          console.log('🔍 Atlanta International School department entry:', {
+            dept: dept.department,
+            contacts: dept.contacts.length,
+            contactName: dept.contacts[0]?.name
+          });
+        }
+
         if (!organizationsMap.has(canonicalKey)) {
           organizationsMap.set(canonicalKey, {
             canonicalName: canonicalKey,
