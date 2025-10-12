@@ -2319,57 +2319,65 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Individual - with inline type breakdown when available */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-slate-500 mb-0.5">Individual</div>
-                    <div className="text-base font-bold">
-                      {(() => {
-                        const hasTypes = collection.individualDeli || collection.individualTurkey || collection.individualHam || collection.individualPbj;
-                        if (hasTypes) {
-                          return (
-                            <div className="space-y-0.5">
-                              {(collection.individualTurkey ?? 0) > 0 && <div>{collection.individualTurkey} Turkey</div>}
-                              {(collection.individualHam ?? 0) > 0 && <div>{collection.individualHam} Ham</div>}
-                              {(collection.individualDeli ?? 0) > 0 && <div>{collection.individualDeli} Deli</div>}
-                              {(collection.individualPbj ?? 0) > 0 && <div>{collection.individualPbj} PB&J</div>}
-                            </div>
-                          );
-                        }
-                        return collection.individualSandwiches;
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* Groups - inline breakdown when available */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-slate-500 mb-0.5">Groups</div>
-                    <div className="text-base font-bold">
-                      {(() => {
-                        if (groupData.length === 0) {
-                          return 0;
-                        }
-                        if (groupData.length === 1) {
-                          const group: any = groupData[0];
-                          const hasTypes = group.deli || group.turkey || group.ham || group.pbj;
+                  {collection.individualSandwiches > 0 && (
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-slate-500 mb-0.5">Individual</div>
+                      <div className="text-base font-bold">
+                        {(() => {
+                          const hasTypes = collection.individualDeli || collection.individualTurkey || collection.individualHam || collection.individualPbj;
                           if (hasTypes) {
                             return (
-                              <div>
-                                <div className="font-bold mb-1">{group.groupName}</div>
-                                <div className="space-y-0.5 font-normal text-sm">
-                                  {(group.turkey ?? 0) > 0 && <div>{group.turkey} Turkey</div>}
-                                  {(group.ham ?? 0) > 0 && <div>{group.ham} Ham</div>}
-                                  {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
-                                  {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
-                                </div>
+                              <div className="space-y-0.5">
+                                {(collection.individualTurkey ?? 0) > 0 && <div>{collection.individualTurkey} Turkey</div>}
+                                {(collection.individualHam ?? 0) > 0 && <div>{collection.individualHam} Ham</div>}
+                                {(collection.individualDeli ?? 0) > 0 && <div>{collection.individualDeli} Deli</div>}
+                                {(collection.individualPbj ?? 0) > 0 && <div>{collection.individualPbj} PB&J</div>}
                               </div>
                             );
                           }
-                          return `${group.groupName}: ${group.sandwichCount}`;
-                        }
-                        // Multiple groups - just show total
-                        return calculateGroupTotal(collection);
-                      })()}
+                          return collection.individualSandwiches;
+                        })()}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Groups - inline breakdown when available */}
+                  {calculateGroupTotal(collection) > 0 && (
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-slate-500 mb-0.5">Groups</div>
+                      <div className="text-base font-bold">
+                        {(() => {
+                          if (groupData.length === 0) {
+                            return null;
+                          }
+
+                          // Always show group names and details vertically
+                          return (
+                            <div className="space-y-2">
+                              {groupData.map((group: any, index: number) => {
+                                const hasTypes = group.deli || group.turkey || group.ham || group.pbj;
+                                return (
+                                  <div key={index}>
+                                    <div className="mb-1">{group.groupName}</div>
+                                    {hasTypes ? (
+                                      <div className="space-y-0.5 text-sm">
+                                        {(group.turkey ?? 0) > 0 && <div>{group.turkey} Turkey</div>}
+                                        {(group.ham ?? 0) > 0 && <div>{group.ham} Ham</div>}
+                                        {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
+                                        {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm">{group.sandwichCount}</div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Total */}
                   <div className="w-20 shrink-0 text-right">
