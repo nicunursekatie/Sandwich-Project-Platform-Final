@@ -490,11 +490,19 @@ export default function SandwichCollectionLog() {
         };
       } else {
         const sortParam = `&sort=${sortConfig.field}&order=${sortConfig.direction}`;
-        const response = await fetch(
-          `/api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam}`
-        );
-        if (!response.ok) throw new Error('Failed to fetch collections');
-        return response.json();
+        const url = `/api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam}`;
+        console.log('Fetching paginated collections:', url);
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.error('Failed to fetch collections:', response.status, response.statusText);
+          throw new Error('Failed to fetch collections');
+        }
+        const data = await response.json();
+        console.log('Paginated collections response:', {
+          collectionsCount: data.collections?.length || 0,
+          pagination: data.pagination
+        });
+        return data;
       }
     }, [
       needsAllData,
