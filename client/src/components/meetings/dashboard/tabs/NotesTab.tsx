@@ -336,7 +336,7 @@ export function NotesTab({
       case 'discussion':
         return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border-strong';
       case 'meeting':
-        return 'bg-green-100 text-green-800 border-green-300';
+        return 'bg-[#47B3CB]/20 text-[#007E8C] border-[#007E8C]/40';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -344,7 +344,7 @@ export function NotesTab({
 
   const getStatusColor = (status: string) => {
     return status === 'active' 
-      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      ? 'bg-[#47B3CB]/10 text-[#007E8C] border-[#007E8C]/30'
       : 'bg-gray-50 text-gray-600 border-gray-200';
   };
 
@@ -389,11 +389,11 @@ export function NotesTab({
             )}
             
             {parsed.decisionItems && (
-              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
+              <div className="bg-[#47B3CB]/10 border-l-4 border-[#007E8C] p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-[#007E8C] mt-1 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-green-800 mb-1">Meeting Notes</p>
+                    <p className="text-sm font-medium text-[#007E8C] mb-1">Meeting Notes</p>
                     <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{parsed.decisionItems}</p>
                   </div>
                 </div>

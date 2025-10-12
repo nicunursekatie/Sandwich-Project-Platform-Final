@@ -758,7 +758,7 @@ export function AgendaPlanningTab({
                                     <Badge
                                       className={`text-xs font-medium shadow-sm ${
                                         agendaStatus === 'agenda'
-                                          ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-300 shadow-green-200'
+                                          ? 'bg-gradient-to-r from-[#47B3CB]/20 to-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/40 shadow-[#007E8C]/10'
                                           : agendaStatus === 'tabled'
                                             ? 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border-orange-300 shadow-orange-200'
                                             : needsDiscussion
@@ -831,7 +831,7 @@ export function AgendaPlanningTab({
                           data-testid={`card-project-expanded-${project.id}`}
                           className={`border-2 transition-all shadow-lg hover:shadow-xl ${
                             agendaStatus === 'agenda'
-                              ? 'border-green-400 bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 shadow-green-200'
+                              ? 'border-[#007E8C] bg-gradient-to-br from-[#47B3CB]/10 via-[#007E8C]/10 to-[#47B3CB]/20 shadow-[#007E8C]/20'
                               : agendaStatus === 'tabled'
                                 ? 'border-orange-400 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 shadow-orange-200'
                                 : needsDiscussion
@@ -1092,8 +1092,8 @@ export function AgendaPlanningTab({
                                   data-testid={`button-send-to-agenda-${project.id}`}
                                   className={
                                     agendaStatus === 'agenda'
-                                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-green-300 shadow-md'
-                                      : 'border-green-400 text-green-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 shadow-green-200 shadow-sm'
+                                      ? 'bg-gradient-to-r from-[#007E8C] to-[#236383] hover:from-[#006B75] hover:to-[#1A4F5E] text-white shadow-[#007E8C]/30 shadow-md'
+                                      : 'border-[#007E8C] text-[#007E8C] hover:bg-gradient-to-r hover:from-[#47B3CB]/10 hover:to-[#007E8C]/10 shadow-[#007E8C]/20 shadow-sm'
                                   }
                                 >
                                   {agendaStatus === 'agenda' ? (
