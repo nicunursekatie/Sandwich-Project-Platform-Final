@@ -2411,8 +2411,8 @@ export default function SandwichCollectionLog() {
 
                   {/* Individual - with inline type breakdown when available */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-slate-500 font-medium mb-0.5">Individual</div>
-                    <div className="text-base text-slate-700">
+                    <div className="text-xs text-slate-500 mb-0.5">Individual</div>
+                    <div className="text-base">
                       {(() => {
                         const hasTypes = collection.individualDeli || collection.individualTurkey || collection.individualHam || collection.individualPbj;
                         if (hasTypes) {
@@ -2421,20 +2421,20 @@ export default function SandwichCollectionLog() {
                           if (collection.individualHam) types.push(`${collection.individualHam} Ham`);
                           if (collection.individualDeli) types.push(`${collection.individualDeli} Deli`);
                           if (collection.individualPbj) types.push(`${collection.individualPbj} PB&J`);
-                          return <span className="font-medium">{types.join(', ')}</span>;
+                          return <span>{types.join(', ')}</span>;
                         }
-                        return <span className="font-semibold">{collection.individualSandwiches}</span>;
+                        return <span className="font-bold">{collection.individualSandwiches}</span>;
                       })()}
                     </div>
                   </div>
 
                   {/* Groups - inline breakdown when available */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-slate-500 font-medium mb-0.5">Groups</div>
-                    <div className="text-base text-slate-700">
+                    <div className="text-xs text-slate-500 mb-0.5">Groups</div>
+                    <div className="text-base">
                       {(() => {
                         if (groupData.length === 0) {
-                          return <span className="font-semibold">0</span>;
+                          return <span className="font-bold">0</span>;
                         }
                         if (groupData.length === 1) {
                           const group = groupData[0];
@@ -2445,21 +2445,20 @@ export default function SandwichCollectionLog() {
                             if (group.ham) types.push(`${group.ham} Ham`);
                             if (group.deli) types.push(`${group.deli} Deli`);
                             if (group.pbj) types.push(`${group.pbj} PB&J`);
-                            return <span className="font-medium">{group.groupName}: {types.join(', ')}</span>;
+                            return <span>{group.groupName}: {types.join(', ')}</span>;
                           }
-                          return <span className="font-semibold">{group.sandwichCount} <span className="font-normal">({group.groupName})</span></span>;
+                          return <span className="font-bold">{group.sandwichCount} <span className="font-normal">({group.groupName})</span></span>;
                         }
                         // Multiple groups - just show total
-                        return <span className="font-semibold">{calculateGroupTotal(collection)}</span>;
+                        return <span className="font-bold">{calculateGroupTotal(collection)}</span>;
                       })()}
                     </div>
                   </div>
 
-                  {/* Total - clean teal gradient pill */}
-                  <div className="w-20 shrink-0">
-                    <div className="bg-gradient-to-r from-brand-primary to-brand-teal text-white px-4 py-2 rounded-full text-center shadow-sm">
-                      <span className="text-lg font-bold">{totalSandwiches}</span>
-                    </div>
+                  {/* Total */}
+                  <div className="w-20 shrink-0 text-right">
+                    <div className="text-xs text-slate-500 mb-0.5">Total</div>
+                    <div className="text-2xl font-bold">{totalSandwiches}</div>
                   </div>
 
                   {/* Actions */}
