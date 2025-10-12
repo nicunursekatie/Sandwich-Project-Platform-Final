@@ -1578,7 +1578,7 @@ export default function GroupCatalog({
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <div className="font-semibold text-gray-900 dark:text-gray-100">
+                                  <div className="font-semibold text-gray-900 dark:text-gray-100 text-base">
                                     {formatDateForDisplay(event.date)}
                                   </div>
                                   <Badge
@@ -1600,11 +1600,11 @@ export default function GroupCatalog({
                                     <div className="font-medium text-gray-700 dark:text-gray-300">
                                       Contact
                                     </div>
-                                    <div className="text-gray-600 dark:text-gray-400">
+                                    <div className="text-gray-700 dark:text-gray-300">
                                       {event.contactName}
                                     </div>
                                     {event.email && (
-                                      <div className="text-xs text-gray-500 dark:text-gray-500">
+                                      <div className="text-xs text-gray-600 dark:text-gray-400">
                                         {event.email}
                                       </div>
                                     )}
@@ -1614,7 +1614,7 @@ export default function GroupCatalog({
                                     <div className="font-medium text-gray-700 dark:text-gray-300">
                                       Sandwiches
                                     </div>
-                                    <div className="text-gray-600 dark:text-gray-400">
+                                    <div className="text-gray-700 dark:text-gray-300">
                                       {event.actualSandwiches > 0
                                         ? `${event.actualSandwiches.toLocaleString()} made`
                                         : event.estimatedSandwiches > 0
@@ -1627,7 +1627,7 @@ export default function GroupCatalog({
                                     <div className="font-medium text-gray-700 dark:text-gray-300">
                                       Details
                                     </div>
-                                    <div className="text-gray-600 dark:text-gray-400">
+                                    <div className="text-gray-700 dark:text-gray-300">
                                       {event.department && (
                                         <div>Dept: {event.department}</div>
                                       )}
@@ -1639,7 +1639,7 @@ export default function GroupCatalog({
                                 </div>
 
                                 {event.notes && (
-                                  <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 italic">
+                                  <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 italic">
                                     {event.notes}
                                   </div>
                                 )}
