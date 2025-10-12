@@ -48,13 +48,24 @@ export default function ActionCenter() {
     },
   });
 
+  // Fetch event requests for forward-looking insights
+  const { data: eventRequests } = useQuery<any[]>({
+    queryKey: ['/api/event-requests'],
+    queryFn: async () => {
+      const response = await fetch('/api/event-requests?all=true');
+      if (!response.ok) throw new Error('Failed to fetch event requests');
+      return response.json();
+    },
+  });
+
   const collections = collectionsData?.collections || [];
 
-  // Calculate actionable insights focused on operations, not individual hosts
+  // Calculate actionable insights focused on forward-looking event forecasting
   const actionItems = useMemo((): ActionItem[] => {
     if (!collections.length) return [];
 
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
     const dayOfWeek = today.getDay();
@@ -98,12 +109,65 @@ export default function ActionCenter() {
       ? Math.round((currentWeekTotal / daysElapsedInWeek) * 7)
       : currentWeekTotal;
 
-    const weeklyGap = avgWeekly - projectedWeekTotal;
-
     const actions: ActionItem[] = [];
 
-    // HIGH PRIORITY: Weekly pace behind
-    if (weeklyGap > 500 && dayOfWeek >= 3) {
+    // Look ahead at next 4 weeks and forecast based on scheduled events
+    for (let weekOffset = 0; weekOffset < 4; weekOffset++) {
+      const weekStart = new Date(currentWeekStart);
+      weekStart.setDate(currentWeekStart.getDate() + (weekOffset * 7));
+
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      // Get scheduled events for this week
+      const scheduledThisWeek = (eventRequests || []).filter((event) => {
+        if (!event.desiredEventDate) return false;
+        if (!['in_process', 'scheduled'].includes(event.status)) return false;
+
+        const eventDate = new Date(event.desiredEventDate);
+        return eventDate >= weekStart && eventDate <= weekEnd;
+      });
+
+      const scheduledTotal = scheduledThisWeek.reduce(
+        (sum, event) => sum + (event.estimatedSandwichCount || 0),
+        0
+      );
+
+      // Get historical average for same week of month
+      const weekOfMonth = Math.ceil(weekStart.getDate() / 7);
+      const historicalWeeks = Array.from(weekMap.values());
+      const avgForWeek = historicalWeeks.length > 0
+        ? historicalWeeks.reduce((a, b) => a + b, 0) / historicalWeeks.length
+        : avgWeekly;
+
+      // Flag if scheduled events are significantly below average
+      const gap = avgForWeek - scheduledTotal;
+      const percentBelow = avgForWeek > 0 ? (gap / avgForWeek) * 100 : 0;
+
+      if (gap > 500 && percentBelow > 30) {
+        const weekLabel = weekOffset === 0 ? 'This Week' :
+                         weekOffset === 1 ? 'Next Week' :
+                         `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
+        actions.push({
+          id: `low-forecast-week-${weekOffset}`,
+          priority: weekOffset === 0 ? 'high' : weekOffset === 1 ? 'high' : 'medium',
+          category: 'volunteer-recruitment',
+          title: `${weekLabel}: Forecasted Below Average`,
+          description: `Only ${scheduledTotal.toLocaleString()} sandwiches scheduled vs ${Math.round(avgForWeek).toLocaleString()} average`,
+          impact: `Need ${Math.round(gap).toLocaleString()} more sandwiches to reach typical week`,
+          action: `Recruit volunteers for collections during ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+          data: { weekStart, weekEnd, scheduledTotal, avgForWeek, gap, scheduledEventCount: scheduledThisWeek.length },
+        });
+      }
+    }
+
+    // MEDIUM: Current week falling behind pace (only if not already flagged above)
+    const weeklyGap = avgWeekly - projectedWeekTotal;
+    const alreadyFlaggedThisWeek = actions.some(a => a.id === 'low-forecast-week-0');
+
+    if (!alreadyFlaggedThisWeek && weeklyGap > 500 && dayOfWeek >= 3) {
       actions.push({
         id: 'weekly-pace',
         priority: 'high',
@@ -116,102 +180,11 @@ export default function ActionCenter() {
       });
     }
 
-
-    // MEDIUM PRIORITY: Celebrate top collection day
-    if (currentWeekCollections.length > 0) {
-      const bestDayThisWeek = currentWeekCollections.reduce(
-        (max, c) => calculateTotalSandwiches(c) > calculateTotalSandwiches(max) ? c : max,
-        currentWeekCollections[0]
-      );
-      const bestDayTotal = calculateTotalSandwiches(bestDayThisWeek);
-
-      if (bestDayTotal > 300) {
-        actions.push({
-          id: 'celebrate-success',
-          priority: 'medium',
-          category: 'recognition',
-          title: 'Celebrate This Week\'s Success',
-          description: `${bestDayTotal.toLocaleString()} sandwiches collected on ${parseCollectionDate(bestDayThisWeek.collectionDate).toLocaleDateString()}`,
-          impact: 'Build momentum and volunteer morale',
-          action: 'Share success story on social media',
-          data: { bestDayThisWeek, bestDayTotal },
-        });
-      }
-    }
-
-    // MEDIUM PRIORITY: Month-end push
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const dayOfMonth = today.getDate();
-    const daysRemaining = daysInMonth - dayOfMonth;
-
-    if (daysRemaining <= 7 && daysRemaining > 0) {
-      const currentMonthCollections = collections.filter((c) => {
-        const date = parseCollectionDate(c.collectionDate);
-        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-      });
-
-      const currentMonthTotal = currentMonthCollections.reduce(
-        (sum, c) => sum + calculateTotalSandwiches(c),
-        0
-      );
-
-      // Get average monthly total
-      const monthMap = new Map<string, number>();
-      collections.forEach((c) => {
-        const date = parseCollectionDate(c.collectionDate);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const current = monthMap.get(monthKey) || 0;
-        monthMap.set(monthKey, current + calculateTotalSandwiches(c));
-      });
-
-      const monthlyTotals = Array.from(monthMap.values());
-      const avgMonthly = monthlyTotals.length > 0
-        ? monthlyTotals.reduce((a, b) => a + b, 0) / monthlyTotals.length
-        : 0;
-
-      const monthlyGap = avgMonthly - currentMonthTotal;
-
-      if (monthlyGap > 1000) {
-        actions.push({
-          id: 'month-end-push',
-          priority: 'medium',
-          category: 'volunteer-recruitment',
-          title: `${daysRemaining} Days Left in Month`,
-          description: `Currently ${Math.round((monthlyGap / avgMonthly) * 100)}% below monthly average`,
-          impact: `Need ${Math.round(monthlyGap / daysRemaining)} sandwiches/day to reach average`,
-          action: 'Schedule end-of-month volunteer drive',
-          data: { daysRemaining, monthlyGap, currentMonthTotal, avgMonthly },
-        });
-      }
-    }
-
-
-    // LOW PRIORITY: Maintain momentum
-    const recentWeeks = Array.from(weekMap.entries())
-      .sort((a, b) => b[0].localeCompare(a[0]))
-      .slice(0, 4)
-      .map(([, total]) => total);
-
-    const isUptrend = recentWeeks.length >= 2 && recentWeeks[0] > recentWeeks[recentWeeks.length - 1];
-
-    if (isUptrend && recentWeeks[0] > avgWeekly * 1.1) {
-      actions.push({
-        id: 'maintain-momentum',
-        priority: 'low',
-        category: 'planning',
-        title: 'Momentum Building - Keep It Going!',
-        description: `Collections up ${Math.round(((recentWeeks[0] - avgWeekly) / avgWeekly) * 100)}% vs average`,
-        impact: 'Sustaining growth builds program capacity',
-        action: 'Thank volunteers and maintain engagement',
-        data: { recentWeeks, avgWeekly },
-      });
-    }
-
     return actions.sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
     });
-  }, [collections]);
+  }, [collections, eventRequests]);
 
   const priorityColors = {
     high: 'bg-red-100 text-red-800 border-red-300',
