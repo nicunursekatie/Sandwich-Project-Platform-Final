@@ -438,7 +438,7 @@ router.post('/send-email-reminder', async (req, res) => {
     }
 
     // Import email service
-    const { sendWeeklyMonitoringReminder } = await import('../services/email-service');
+    const { sendWeeklyMonitoringReminder } = await import('../sendgrid');
 
     // Send the email reminder
     const result = await sendWeeklyMonitoringReminder(location);
@@ -461,7 +461,7 @@ router.post('/send-email-reminder/:location', async (req, res) => {
     const location = decodeURIComponent(req.params.location);
 
     // Import email service
-    const { sendWeeklyMonitoringReminder } = await import('../services/email-service');
+    const { sendWeeklyMonitoringReminder } = await import('../sendgrid');
 
     // Send the email reminder
     const result = await sendWeeklyMonitoringReminder(location);
