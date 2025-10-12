@@ -2410,24 +2410,24 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Individual count */}
-                  <div className="w-24 text-center shrink-0">
+                  <div className="w-28 text-center shrink-0">
+                    <div className="text-sm text-slate-500 font-medium">Individual</div>
                     <div className="text-base font-semibold text-slate-700">
                       {collection.individualSandwiches}
-                      <span className="text-sm text-slate-500 ml-1 font-normal">ind</span>
                     </div>
                   </div>
 
                   {/* Group count */}
-                  <div className="w-24 text-center shrink-0">
+                  <div className="w-28 text-center shrink-0">
+                    <div className="text-sm text-slate-500 font-medium">Groups</div>
                     <div className="text-base font-semibold text-slate-700">
                       {calculateGroupTotal(collection)}
-                      <span className="text-sm text-slate-500 ml-1 font-normal">grp</span>
                     </div>
                   </div>
 
-                  {/* Total badge with brand gradient */}
+                  {/* Total badge */}
                   <div className="w-20 shrink-0">
-                    <div className="bg-gradient-to-r from-brand-orange to-brand-primary text-white px-4 py-2 rounded-full text-center">
+                    <div className="bg-brand-orange text-white px-4 py-2 rounded-full text-center shadow-sm">
                       <span className="text-lg font-bold">{totalSandwiches}</span>
                     </div>
                   </div>
