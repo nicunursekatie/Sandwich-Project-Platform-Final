@@ -2558,9 +2558,9 @@ export default function SandwichCollectionLog() {
                         {groupData.map((group: any, index: number) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between text-base bg-white rounded px-2 py-1"
+                            className="bg-white rounded px-2 py-1"
                           >
-                            <div className="flex items-center justify-between text-base w-full">
+                            <div className="flex items-center justify-between text-base">
                               <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">
                                 {group.groupName}
                               </span>
@@ -2570,24 +2570,24 @@ export default function SandwichCollectionLog() {
                             </div>
                             {/* Show sandwich type breakdown for groups if available */}
                             {(group.deli || group.turkey || group.ham || group.pbj) && (
-                              <div className="flex gap-2 text-sm mt-1 flex-wrap">
+                              <div className="flex gap-2 text-xs mt-1 flex-wrap">
                                 {group.deli > 0 && (
-                                  <span className="text-slate-500">
+                                  <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">
                                     {group.deli} Deli
                                   </span>
                                 )}
                                 {group.turkey > 0 && (
-                                  <span className="text-slate-500">
+                                  <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">
                                     {group.turkey} Turkey
                                   </span>
                                 )}
                                 {group.ham > 0 && (
-                                  <span className="text-slate-500">
+                                  <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">
                                     {group.ham} Ham
                                   </span>
                                 )}
                                 {group.pbj > 0 && (
-                                  <span className="text-slate-500">
+                                  <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">
                                     {group.pbj} PBJ
                                   </span>
                                 )}
