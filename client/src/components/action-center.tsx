@@ -11,17 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   AlertTriangle,
-  TrendingDown,
   TrendingUp,
   Target,
   Calendar,
   Users,
-  Phone,
-  Mail,
   CheckCircle,
   ArrowRight,
+  Clock,
+  MapPin,
 } from 'lucide-react';
-import type { SandwichCollection, Host } from '@shared/schema';
+import type { SandwichCollection } from '@shared/schema';
 import {
   calculateTotalSandwiches,
   parseCollectionDate,
@@ -30,7 +29,7 @@ import {
 interface ActionItem {
   id: string;
   priority: 'high' | 'medium' | 'low';
-  category: 'engagement' | 'growth' | 'recognition' | 'planning';
+  category: 'volunteer-recruitment' | 'scheduling' | 'recognition' | 'planning';
   title: string;
   description: string;
   impact: string;
@@ -49,215 +48,211 @@ export default function ActionCenter() {
     },
   });
 
-  // Fetch hosts data
-  const { data: hostsData } = useQuery<Host[]>({
-    queryKey: ['/api/hosts'],
-  });
-
   const collections = collectionsData?.collections || [];
-  const hosts = hostsData || [];
 
-  // Calculate actionable insights
+  // Calculate actionable insights focused on operations, not individual hosts
   const actionItems = useMemo((): ActionItem[] => {
-    if (!collections.length || !hosts.length) return [];
+    if (!collections.length) return [];
 
     const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sixtyDaysAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
-    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const dayOfWeek = today.getDay();
 
-    // Get collections from this month and last month
-    const thisMonthCollections = collections.filter((c) => {
+    // Analyze day-of-week patterns
+    const dayOfWeekTotals: Record<number, number[]> = {
+      0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []
+    };
+
+    collections.forEach((c) => {
       const date = parseCollectionDate(c.collectionDate);
-      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      const day = date.getDay();
+      dayOfWeekTotals[day].push(calculateTotalSandwiches(c));
     });
 
-    const lastMonthCollections = collections.filter((c) => {
+    // Calculate averages for each day
+    const dayAverages = Object.entries(dayOfWeekTotals).map(([day, totals]) => ({
+      day: parseInt(day),
+      average: totals.length > 0 ? totals.reduce((a, b) => a + b, 0) / totals.length : 0,
+      count: totals.length,
+    }));
+
+    const highestDay = dayAverages.reduce((max, d) => d.average > max.average ? d : max, dayAverages[0]);
+    const lowestDay = dayAverages.reduce((min, d) => d.count > 0 && d.average < min.average ? d : min, dayAverages[0]);
+
+    // Current week analysis
+    const currentWeekStart = new Date(today);
+    currentWeekStart.setDate(today.getDate() - today.getDay());
+    currentWeekStart.setHours(0, 0, 0, 0);
+
+    const currentWeekCollections = collections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
-      return date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear;
+      return date >= currentWeekStart && date <= today;
     });
 
-    // Calculate host performance
-    const hostPerformance = hosts.map((host) => {
-      const thisMonthTotal = thisMonthCollections
-        .filter((c) => c.hostName === host.name)
-        .reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
-
-      const lastMonthTotal = lastMonthCollections
-        .filter((c) => c.hostName === host.name)
-        .reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
-
-      const allTimeCollections = collections.filter((c) => c.hostName === host.name);
-      const allTimeTotal = allTimeCollections.reduce(
-        (sum, c) => sum + calculateTotalSandwiches(c),
-        0
-      );
-      const avgMonthly = allTimeTotal / Math.max(1, allTimeCollections.length / 12);
-
-      const lastCollection = allTimeCollections.sort((a, b) => {
-        return (
-          new Date(b.collectionDate).getTime() - new Date(a.collectionDate).getTime()
-        );
-      })[0];
-
-      const daysSinceLastCollection = lastCollection
-        ? Math.floor(
-            (today.getTime() - parseCollectionDate(lastCollection.collectionDate).getTime()) /
-              (24 * 60 * 60 * 1000)
-          )
-        : 999;
-
-      return {
-        host,
-        thisMonthTotal,
-        lastMonthTotal,
-        avgMonthly,
-        percentChange:
-          lastMonthTotal > 0
-            ? ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100
-            : 0,
-        daysSinceLastCollection,
-        allTimeTotal,
-      };
-    });
-
-    const actions: ActionItem[] = [];
-
-    // HIGH PRIORITY: Hosts who might need support
-    const hostsNeedingSupport = hostPerformance
-      .filter(
-        (h) =>
-          h.percentChange < -30 &&
-          h.lastMonthTotal > 0 &&
-          h.daysSinceLastCollection < 90
-      )
-      .sort((a, b) => a.percentChange - b.percentChange)
-      .slice(0, 5);
-
-    if (hostsNeedingSupport.length > 0) {
-      actions.push({
-        id: 'hosts-needing-support',
-        priority: 'high',
-        category: 'engagement',
-        title: `Check In With ${hostsNeedingSupport.length} Hosts`,
-        description: `${hostsNeedingSupport.length} hosts may need support or have scheduling challenges this month`,
-        impact: 'Strengthen relationships and identify support needs',
-        action: 'Schedule friendly check-in',
-        data: hostsNeedingSupport,
-      });
-    }
-
-    // MEDIUM PRIORITY: Hosts we'd love to reconnect with
-    const hostsToReconnect = hostPerformance
-      .filter((h) => h.daysSinceLastCollection >= 60 && h.daysSinceLastCollection < 180)
-      .sort((a, b) => b.allTimeTotal - a.allTimeTotal)
-      .slice(0, 5);
-
-    if (hostsToReconnect.length > 0) {
-      actions.push({
-        id: 'hosts-to-reconnect',
-        priority: 'medium',
-        category: 'engagement',
-        title: `Reconnect With ${hostsToReconnect.length} Valued Hosts`,
-        description: 'Reach out to see how these great hosts are doing',
-        impact: `These hosts have contributed ${hostsToReconnect.reduce((s, h) => s + h.allTimeTotal, 0).toLocaleString()} sandwiches - let's stay connected!`,
-        action: 'Send friendly hello',
-        data: hostsToReconnect,
-      });
-    }
-
-    // MEDIUM PRIORITY: Top performers to thank
-    const topPerformers = hostPerformance
-      .filter((h) => h.thisMonthTotal > 0)
-      .sort((a, b) => b.thisMonthTotal - a.thisMonthTotal)
-      .slice(0, 5);
-
-    if (topPerformers.length > 0) {
-      actions.push({
-        id: 'top-performers',
-        priority: 'medium',
-        category: 'recognition',
-        title: 'Thank Top Performers This Month',
-        description: `${topPerformers.length} hosts are leading this month with exceptional contributions`,
-        impact: 'Boost morale and retention',
-        action: 'Send recognition messages',
-        data: topPerformers,
-      });
-    }
-
-    // MEDIUM PRIORITY: Growing hosts
-    const growingHosts = hostPerformance
-      .filter((h) => h.percentChange > 50 && h.thisMonthTotal > 100)
-      .sort((a, b) => b.percentChange - a.percentChange)
-      .slice(0, 3);
-
-    if (growingHosts.length > 0) {
-      actions.push({
-        id: 'growing-hosts',
-        priority: 'medium',
-        category: 'growth',
-        title: `${growingHosts.length} Hosts Showing Strong Growth`,
-        description: 'Hosts with 50%+ increase could share best practices',
-        impact: 'Scale success strategies network-wide',
-        action: 'Interview for case studies',
-        data: growingHosts,
-      });
-    }
-
-    // MEDIUM PRIORITY: Weekly pace projection
-    const thisWeekStart = new Date(today);
-    thisWeekStart.setDate(today.getDate() - today.getDay());
-    thisWeekStart.setHours(0, 0, 0, 0);
-
-    const thisWeekCollections = collections.filter((c) => {
-      const date = parseCollectionDate(c.collectionDate);
-      return date >= thisWeekStart && date <= today;
-    });
-
-    const thisWeekTotal = thisWeekCollections.reduce(
+    const currentWeekTotal = currentWeekCollections.reduce(
       (sum, c) => sum + calculateTotalSandwiches(c),
       0
     );
 
-    const dayOfWeek = today.getDay();
-    const projectedWeekTotal =
-      dayOfWeek > 0 ? Math.round((thisWeekTotal / dayOfWeek) * 7) : thisWeekTotal;
-
-    // Get average weekly total
-    const allWeeklyTotals: number[] = [];
+    // Calculate weekly average
     const weekMap = new Map<string, number>();
-
     collections.forEach((c) => {
       const date = parseCollectionDate(c.collectionDate);
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
       const weekKey = weekStart.toISOString().split('T')[0];
-
       const current = weekMap.get(weekKey) || 0;
       weekMap.set(weekKey, current + calculateTotalSandwiches(c));
     });
 
-    allWeeklyTotals.push(...Array.from(weekMap.values()));
-    const avgWeekly =
-      allWeeklyTotals.length > 0
-        ? allWeeklyTotals.reduce((a, b) => a + b, 0) / allWeeklyTotals.length
-        : 0;
+    const weeklyTotals = Array.from(weekMap.values());
+    const avgWeekly = weeklyTotals.length > 0
+      ? weeklyTotals.reduce((a, b) => a + b, 0) / weeklyTotals.length
+      : 0;
+
+    const projectedWeekTotal = dayOfWeek > 0
+      ? Math.round((currentWeekTotal / dayOfWeek) * 7)
+      : currentWeekTotal;
 
     const weeklyGap = avgWeekly - projectedWeekTotal;
 
+    const actions: ActionItem[] = [];
+
+    // HIGH PRIORITY: Weekly pace behind
     if (weeklyGap > 500 && dayOfWeek >= 3) {
       actions.push({
-        id: 'weekly-gap',
+        id: 'weekly-pace',
         priority: 'high',
+        category: 'volunteer-recruitment',
+        title: 'Weekly Collections Below Average Pace',
+        description: `Currently tracking ${Math.abs(Math.round((weeklyGap / avgWeekly) * 100))}% below typical weekly collections`,
+        impact: `Need ~${Math.round(weeklyGap)} more sandwiches to reach average week`,
+        action: 'Recruit volunteers for end-of-week collections',
+        data: { currentWeekTotal, projectedWeekTotal, avgWeekly, gap: weeklyGap },
+      });
+    }
+
+    // HIGH PRIORITY: Underutilized day of week
+    const utilizationGap = highestDay.average - lowestDay.average;
+    if (utilizationGap > 200 && lowestDay.count > 5) {
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      actions.push({
+        id: 'underutilized-day',
+        priority: 'high',
+        category: 'volunteer-recruitment',
+        title: `${dayNames[lowestDay.day]}s Are Underutilized`,
+        description: `${dayNames[lowestDay.day]} collections average ${Math.round(lowestDay.average)} sandwiches vs ${Math.round(highestDay.average)} on ${dayNames[highestDay.day]}s`,
+        impact: `Could add ${Math.round(utilizationGap * 52)} sandwiches annually`,
+        action: `Recruit volunteers for ${dayNames[lowestDay.day]} collections`,
+        data: { lowestDay, highestDay, dayNames },
+      });
+    }
+
+    // MEDIUM PRIORITY: Celebrate top collection day
+    if (currentWeekCollections.length > 0) {
+      const bestDayThisWeek = currentWeekCollections.reduce(
+        (max, c) => calculateTotalSandwiches(c) > calculateTotalSandwiches(max) ? c : max,
+        currentWeekCollections[0]
+      );
+      const bestDayTotal = calculateTotalSandwiches(bestDayThisWeek);
+
+      if (bestDayTotal > 300) {
+        actions.push({
+          id: 'celebrate-success',
+          priority: 'medium',
+          category: 'recognition',
+          title: 'Celebrate This Week\'s Success',
+          description: `${bestDayTotal.toLocaleString()} sandwiches collected on ${parseCollectionDate(bestDayThisWeek.collectionDate).toLocaleDateString()}`,
+          impact: 'Build momentum and volunteer morale',
+          action: 'Share success story on social media',
+          data: { bestDayThisWeek, bestDayTotal },
+        });
+      }
+    }
+
+    // MEDIUM PRIORITY: Month-end push
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const dayOfMonth = today.getDate();
+    const daysRemaining = daysInMonth - dayOfMonth;
+
+    if (daysRemaining <= 7 && daysRemaining > 0) {
+      const currentMonthCollections = collections.filter((c) => {
+        const date = parseCollectionDate(c.collectionDate);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      });
+
+      const currentMonthTotal = currentMonthCollections.reduce(
+        (sum, c) => sum + calculateTotalSandwiches(c),
+        0
+      );
+
+      // Get average monthly total
+      const monthMap = new Map<string, number>();
+      collections.forEach((c) => {
+        const date = parseCollectionDate(c.collectionDate);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const current = monthMap.get(monthKey) || 0;
+        monthMap.set(monthKey, current + calculateTotalSandwiches(c));
+      });
+
+      const monthlyTotals = Array.from(monthMap.values());
+      const avgMonthly = monthlyTotals.length > 0
+        ? monthlyTotals.reduce((a, b) => a + b, 0) / monthlyTotals.length
+        : 0;
+
+      const monthlyGap = avgMonthly - currentMonthTotal;
+
+      if (monthlyGap > 1000) {
+        actions.push({
+          id: 'month-end-push',
+          priority: 'medium',
+          category: 'volunteer-recruitment',
+          title: `${daysRemaining} Days Left in Month`,
+          description: `Currently ${Math.round((monthlyGap / avgMonthly) * 100)}% below monthly average`,
+          impact: `Need ${Math.round(monthlyGap / daysRemaining)} sandwiches/day to reach average`,
+          action: 'Schedule end-of-month volunteer drive',
+          data: { daysRemaining, monthlyGap, currentMonthTotal, avgMonthly },
+        });
+      }
+    }
+
+    // MEDIUM PRIORITY: Growth opportunity days
+    const daysWithFewCollections = dayAverages.filter(d => d.count > 0 && d.count < 20);
+    if (daysWithFewCollections.length > 0) {
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const targetDays = daysWithFewCollections.map(d => dayNames[d.day]);
+
+      actions.push({
+        id: 'growth-opportunity',
+        priority: 'medium',
+        category: 'volunteer-recruitment',
+        title: 'Expand Collection Coverage',
+        description: `${targetDays.join(', ')} have fewer regular collection events`,
+        impact: 'Steady weekly coverage reduces scheduling gaps',
+        action: 'Recruit volunteers for underrepresented days',
+        data: { targetDays },
+      });
+    }
+
+    // LOW PRIORITY: Maintain momentum
+    const recentWeeks = Array.from(weekMap.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, 4)
+      .map(([, total]) => total);
+
+    const isUptrend = recentWeeks.length >= 2 && recentWeeks[0] > recentWeeks[recentWeeks.length - 1];
+
+    if (isUptrend && recentWeeks[0] > avgWeekly * 1.1) {
+      actions.push({
+        id: 'maintain-momentum',
+        priority: 'low',
         category: 'planning',
-        title: 'Weekly Collection Below Pace',
-        description: `Tracking ${Math.abs(Math.round((weeklyGap / avgWeekly) * 100))}% below average for this week`,
-        impact: `${Math.round(weeklyGap)} sandwich shortfall projected`,
-        action: 'Rally hosts for end-of-week push',
-        data: { thisWeekTotal, projectedWeekTotal, avgWeekly },
+        title: 'Momentum Building - Keep It Going!',
+        description: `Collections up ${Math.round(((recentWeeks[0] - avgWeekly) / avgWeekly) * 100)}% vs average`,
+        impact: 'Sustaining growth builds program capacity',
+        action: 'Thank volunteers and maintain engagement',
+        data: { recentWeeks, avgWeekly },
       });
     }
 
@@ -265,7 +260,7 @@ export default function ActionCenter() {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
     });
-  }, [collections, hosts]);
+  }, [collections]);
 
   const priorityColors = {
     high: 'bg-red-100 text-red-800 border-red-300',
@@ -274,10 +269,10 @@ export default function ActionCenter() {
   };
 
   const categoryIcons = {
-    engagement: AlertTriangle,
-    growth: TrendingUp,
+    'volunteer-recruitment': Users,
+    scheduling: Calendar,
     recognition: CheckCircle,
-    planning: Calendar,
+    planning: Target,
   };
 
   return (
@@ -286,7 +281,7 @@ export default function ActionCenter() {
       <div>
         <h2 className="text-3xl font-bold text-brand-primary">Action Center</h2>
         <p className="text-gray-600 mt-2">
-          Prioritized actions based on your data • {actionItems.length} items need attention
+          Strategic opportunities for volunteer recruitment and program growth • {actionItems.length} insights
         </p>
       </div>
 
@@ -310,12 +305,12 @@ export default function ActionCenter() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Medium Priority</p>
-                <p className="text-2xl font-bold text-amber-600">
-                  {actionItems.filter((a) => a.priority === 'medium').length}
+                <p className="text-sm text-gray-600">Recruitment</p>
+                <p className="text-2xl font-bold text-brand-primary">
+                  {actionItems.filter((a) => a.category === 'volunteer-recruitment').length}
                 </p>
               </div>
-              <Target className="h-8 w-8 text-amber-600" />
+              <Users className="h-8 w-8 text-brand-primary" />
             </div>
           </CardContent>
         </Card>
@@ -324,12 +319,12 @@ export default function ActionCenter() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Engagement</p>
-                <p className="text-2xl font-bold text-brand-primary">
-                  {actionItems.filter((a) => a.category === 'engagement').length}
+                <p className="text-sm text-gray-600">Scheduling</p>
+                <p className="text-2xl font-bold text-brand-teal">
+                  {actionItems.filter((a) => a.category === 'scheduling').length}
                 </p>
               </div>
-              <Users className="h-8 w-8 text-brand-primary" />
+              <Calendar className="h-8 w-8 text-brand-teal" />
             </div>
           </CardContent>
         </Card>
@@ -394,59 +389,14 @@ export default function ActionCenter() {
                   </div>
                 </div>
 
-                {/* Data Details */}
-                {item.data && Array.isArray(item.data) && item.data.length > 0 && (
-                  <div className="border-t pt-4 mt-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-3">
-                      Hosts to Contact:
-                    </p>
-                    <div className="space-y-2">
-                      {item.data.slice(0, 5).map((hostData: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between bg-white p-3 rounded-lg border"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium">{hostData.host.name}</p>
-                            <p className="text-sm text-gray-600">
-                              {hostData.allTimeTotal !== undefined &&
-                                `${hostData.allTimeTotal.toLocaleString()} sandwiches all-time`}
-                              {hostData.daysSinceLastCollection !== undefined &&
-                                ` • Last collection ${hostData.daysSinceLastCollection} days ago`}
-                              {hostData.thisMonthTotal !== undefined && hostData.thisMonthTotal > 0 &&
-                                ` • ${hostData.thisMonthTotal.toLocaleString()} this month`}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            {hostData.host.email && (
-                              <Button variant="outline" size="sm" asChild>
-                                <a href={`mailto:${hostData.host.email}`}>
-                                  <Mail className="h-4 w-4" />
-                                </a>
-                              </Button>
-                            )}
-                            {hostData.host.phone && (
-                              <Button variant="outline" size="sm" asChild>
-                                <a href={`tel:${hostData.host.phone}`}>
-                                  <Phone className="h-4 w-4" />
-                                </a>
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Weekly Gap Details */}
-                {item.id === 'weekly-gap' && item.data && (
+                {/* Weekly Pace Details */}
+                {item.id === 'weekly-pace' && item.data && (
                   <div className="border-t pt-4 mt-4">
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-sm text-gray-600">This Week So Far</p>
                         <p className="text-2xl font-bold text-brand-primary">
-                          {item.data.thisWeekTotal?.toLocaleString()}
+                          {item.data.currentWeekTotal?.toLocaleString()}
                         </p>
                       </div>
                       <div>
@@ -460,6 +410,32 @@ export default function ActionCenter() {
                         <p className="text-2xl font-bold text-gray-700">
                           {Math.round(item.data.avgWeekly)?.toLocaleString()}
                         </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Day of Week Opportunity */}
+                {item.id === 'underutilized-day' && item.data && (
+                  <div className="border-t pt-4 mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-red-50 p-4 rounded-lg text-center">
+                        <p className="text-sm text-gray-600 mb-1">
+                          {item.data.dayNames[item.data.lowestDay.day]}
+                        </p>
+                        <p className="text-2xl font-bold text-red-600">
+                          {Math.round(item.data.lowestDay.average)}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">avg sandwiches</p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg text-center">
+                        <p className="text-sm text-gray-600 mb-1">
+                          {item.data.dayNames[item.data.highestDay.day]}
+                        </p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {Math.round(item.data.highestDay.average)}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">avg sandwiches</p>
                       </div>
                     </div>
                   </div>
@@ -484,7 +460,7 @@ export default function ActionCenter() {
                 All Caught Up!
               </h3>
               <p className="text-gray-600">
-                No urgent actions needed right now. Keep up the great work!
+                Program is running smoothly. Keep up the great work!
               </p>
             </CardContent>
           </Card>
