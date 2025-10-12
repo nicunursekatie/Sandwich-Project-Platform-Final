@@ -74,9 +74,11 @@ function createNumberedIcon(number: number): L.DivIcon {
   });
 }
 
-interface HostMapData {
+interface HostContactMapData {
   id: number;
-  name: string;
+  contactName: string;
+  role: string;
+  hostLocationName: string;
   address: string | null;
   latitude: string;
   longitude: string;
@@ -105,8 +107,8 @@ export default function RouteMapView() {
   const canView = hasPermission(user, PERMISSIONS.HOSTS_VIEW);
   const canOptimize = hasPermission(user, PERMISSIONS.DRIVERS_VIEW);
 
-  // Fetch hosts with coordinates
-  const { data: hosts = [], isLoading, error } = useQuery<HostMapData[]>({
+  // Fetch host contacts with coordinates
+  const { data: hosts = [], isLoading, error } = useQuery<HostContactMapData[]>({
     queryKey: ['/api/hosts/map'],
     enabled: canView,
   });
@@ -143,14 +145,15 @@ export default function RouteMapView() {
     },
   });
 
-  // Filter hosts based on search
+  // Filter host contacts based on search
   const filteredHosts = useMemo(() => {
     if (!searchTerm.trim()) return hosts;
     
     const search = searchTerm.toLowerCase();
-    return hosts.filter(host => 
-      host.name.toLowerCase().includes(search) ||
-      host.address?.toLowerCase().includes(search)
+    return hosts.filter(contact => 
+      contact.contactName.toLowerCase().includes(search) ||
+      contact.hostLocationName.toLowerCase().includes(search) ||
+      contact.address?.toLowerCase().includes(search)
     );
   }, [hosts, searchTerm]);
 
@@ -225,7 +228,7 @@ export default function RouteMapView() {
         const host = hosts.find(h => h.id === stop.id);
         return `
           <div style="margin: 12px 0; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
-            <div style="font-weight: bold; color: #007E8C;">Stop ${idx + 1}: ${host?.name || 'Unknown'}</div>
+            <div style="font-weight: bold; color: #007E8C;">Stop ${idx + 1}: ${host?.contactName || 'Unknown'} - ${host?.hostLocationName || 'Unknown Location'}</div>
             <div style="margin-top: 4px; color: #666;">${host?.address || 'No address'}</div>
           </div>
         `;
@@ -269,7 +272,7 @@ export default function RouteMapView() {
     const routeText = optimizedRoute.optimizedOrder
       .map((stop, idx) => {
         const host = hosts.find(h => h.id === stop.id);
-        return `Stop ${idx + 1}: ${host?.name || 'Unknown'}\n${host?.address || 'No address'}`;
+        return `Stop ${idx + 1}: ${host?.contactName || 'Unknown'} - ${host?.hostLocationName || 'Unknown Location'}\n${host?.address || 'No address'}`;
       })
       .join('\n\n');
 
@@ -297,16 +300,16 @@ ${routeText}`;
     }
   };
 
-  // Calculate map center based on hosts or optimized route
+  // Calculate map center based on host contacts or optimized route
   const mapCenter: [number, number] = useMemo(() => {
-    const hostsToCenter = optimizedRoute 
-      ? optimizedRoute.optimizedOrder.map(stop => hosts.find(h => h.id === stop.id)).filter(Boolean) as HostMapData[]
+    const contactsToCenter = optimizedRoute 
+      ? optimizedRoute.optimizedOrder.map(stop => hosts.find(h => h.id === stop.id)).filter(Boolean) as HostContactMapData[]
       : filteredHosts;
     
-    if (hostsToCenter.length === 0) return [33.7490, -84.3880]; // Atlanta default
+    if (contactsToCenter.length === 0) return [33.7490, -84.3880]; // Atlanta default
     
-    const avgLat = hostsToCenter.reduce((sum, host) => sum + parseFloat(host.latitude), 0) / hostsToCenter.length;
-    const avgLng = hostsToCenter.reduce((sum, host) => sum + parseFloat(host.longitude), 0) / hostsToCenter.length;
+    const avgLat = contactsToCenter.reduce((sum, contact) => sum + parseFloat(contact.latitude), 0) / contactsToCenter.length;
+    const avgLng = contactsToCenter.reduce((sum, contact) => sum + parseFloat(contact.longitude), 0) / contactsToCenter.length;
     
     return [avgLat, avgLng];
   }, [filteredHosts, optimizedRoute, hosts]);
@@ -555,7 +558,7 @@ ${routeText}`;
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm text-gray-900 truncate">
-                              {host?.name || 'Unknown'}
+                              {host?.contactName || 'Unknown'} - {host?.hostLocationName || 'Unknown Location'}
                             </div>
                             <div className="text-xs text-gray-500 truncate">
                               {host?.address || 'No address'}
@@ -612,21 +615,21 @@ ${routeText}`;
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-gray-700">Selected Hosts</h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {selectedHosts.map(host => (
+                  {selectedHosts.map(contact => (
                     <div 
-                      key={host.id}
+                      key={contact.id}
                       className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
-                      data-testid={`selected-host-${host.id}`}
+                      data-testid={`selected-host-${contact.id}`}
                     >
                       <span className="text-sm text-gray-900 truncate flex-1">
-                        {host.name}
+                        {contact.contactName} - {contact.hostLocationName}
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => toggleHostSelection(host.id)}
+                        onClick={() => toggleHostSelection(contact.id)}
                         className="h-6 w-6 p-0"
-                        data-testid={`button-remove-host-${host.id}`}
+                        data-testid={`button-remove-host-${contact.id}`}
                       >
                         <X className="w-3 h-3" />
                       </Button>
@@ -767,7 +770,8 @@ ${routeText}`;
                             <Building2 className="w-5 h-5 text-[#007E8C]" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900 text-lg">{host.name}</h3>
+                            <h3 className="font-semibold text-gray-900 text-lg">{host.contactName}</h3>
+                            <p className="text-sm text-[#007E8C] font-medium">{host.hostLocationName}</p>
                             {host.address && (
                               <p className="text-sm text-gray-600 mt-1">{host.address}</p>
                             )}

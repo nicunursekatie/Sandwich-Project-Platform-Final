@@ -762,6 +762,9 @@ export const hostContacts = pgTable('host_contacts', {
   hostLocation: text('host_location'), // Location name for grouping contacts
   weeklyActive: boolean('weekly_active').default(false), // Auto-updated from external site scrape every Monday
   lastScraped: timestamp('last_scraped'), // Last time availability was scraped from external site
+  latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
+  longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)
+  geocodedAt: timestamp('geocoded_at'), // When coordinates were last updated/geocoded (nullable)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

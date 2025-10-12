@@ -41,31 +41,36 @@ router.get(
   })
 );
 
-// Map endpoint - get hosts with valid coordinates for map display
+// Map endpoint - get host contacts with valid coordinates for map display
 router.get(
   '/hosts/map',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
   asyncHandler(async (req, res) => {
-    const allHosts = await storage.getAllHosts();
+    const hostsWithContacts = await storage.getAllHostsWithContacts();
     
-    // Filter to only active hosts with valid coordinates
-    const hostsWithCoordinates = allHosts
-      .filter(host => 
-        host.status === 'active' && 
-        host.latitude !== null && 
-        host.longitude !== null
-      )
-      .map(host => ({
-        id: host.id,
-        name: host.name,
-        address: host.address,
-        latitude: host.latitude,
-        longitude: host.longitude,
-        email: host.email,
-        phone: host.phone,
-      }));
+    // Flatten contacts and add host location info, filter for valid coordinates
+    const contactsWithCoordinates = hostsWithContacts
+      .filter(host => host.status === 'active') // Only active host locations
+      .flatMap(host => 
+        host.contacts
+          .filter(contact => 
+            contact.latitude !== null && 
+            contact.longitude !== null
+          )
+          .map(contact => ({
+            id: contact.id,
+            contactName: contact.name,
+            role: contact.role,
+            hostLocationName: host.name, // Host location area name
+            address: contact.address,
+            latitude: contact.latitude,
+            longitude: contact.longitude,
+            email: contact.email,
+            phone: contact.phone,
+          }))
+      );
     
-    res.json(hostsWithCoordinates);
+    res.json(contactsWithCoordinates);
   })
 );
 
