@@ -1611,10 +1611,10 @@ export default function GroupCatalog({
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                   <div>
-                                    <div className="font-medium text-gray-700 dark:text-gray-300">
+                                    <div className="font-medium text-gray-900 dark:text-gray-100">
                                       Contact
                                     </div>
-                                    <div className="text-gray-700 dark:text-gray-300">
+                                    <div className="text-gray-900 dark:text-gray-100">
                                       {event.contactName}
                                     </div>
                                     {event.email && (
@@ -1625,10 +1625,10 @@ export default function GroupCatalog({
                                   </div>
 
                                   <div>
-                                    <div className="font-medium text-gray-700 dark:text-gray-300">
+                                    <div className="font-medium text-gray-900 dark:text-gray-100">
                                       Sandwiches
                                     </div>
-                                    <div className="text-gray-700 dark:text-gray-300">
+                                    <div className="text-gray-900 dark:text-gray-100">
                                       {event.actualSandwiches > 0
                                         ? `${event.actualSandwiches.toLocaleString()} made`
                                         : event.estimatedSandwiches > 0
@@ -1638,10 +1638,10 @@ export default function GroupCatalog({
                                   </div>
 
                                   <div>
-                                    <div className="font-medium text-gray-700 dark:text-gray-300">
+                                    <div className="font-medium text-gray-900 dark:text-gray-100">
                                       Details
                                     </div>
-                                    <div className="text-gray-700 dark:text-gray-300">
+                                    <div className="text-gray-900 dark:text-gray-100">
                                       {event.department && (
                                         <div>Dept: {event.department}</div>
                                       )}
@@ -1653,7 +1653,7 @@ export default function GroupCatalog({
                                 </div>
 
                                 {event.notes && (
-                                  <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 italic">
+                                  <div className="mt-2 text-sm text-gray-900 dark:text-gray-100 italic">
                                     {event.notes}
                                   </div>
                                 )}
