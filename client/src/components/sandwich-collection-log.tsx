@@ -2393,7 +2393,7 @@ export default function SandwichCollectionLog() {
                   {/* Location/Host */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-medium text-slate-900 truncate">
+                      <span className="text-base font-medium text-slate-900 break-words">
                         {collection.hostName}
                       </span>
                       {collection.hostName === 'OG Sandwich Project' && (
