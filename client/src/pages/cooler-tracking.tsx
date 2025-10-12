@@ -301,8 +301,24 @@ export default function CoolerTrackingPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {coolerTypes.map((type) => {
+          {coolerTypes.length === 0 ? (
+            <div className="text-center py-8">
+              <AlertCircle className="w-12 h-12 mx-auto text-yellow-600 mb-3" />
+              <p className="text-slate-700 font-medium mb-2">
+                No Cooler Types Configured Yet
+              </p>
+              <p className="text-sm text-slate-600 mb-4">
+                An administrator needs to set up cooler types before you can report inventory.
+              </p>
+              {isAdmin && (
+                <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded">
+                  <strong>Admin:</strong> Run the seed script: <code className="bg-slate-200 px-2 py-1 rounded">npx tsx server/scripts/seed-cooler-types.ts</code>
+                </p>
+              )}
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {coolerTypes.map((type) => {
               const item = inventory.find((i) => i.coolerTypeId === type.id);
               return (
                 <div key={type.id} className="space-y-2">
@@ -336,14 +352,15 @@ export default function CoolerTrackingPage() {
               );
             })}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={submitInventoryMutation.isPending}
-            >
-              {submitInventoryMutation.isPending ? 'Submitting...' : 'Submit Report'}
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={submitInventoryMutation.isPending}
+              >
+                {submitInventoryMutation.isPending ? 'Submitting...' : 'Submit Report'}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
 
