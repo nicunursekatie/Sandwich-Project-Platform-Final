@@ -144,16 +144,30 @@ export default function PredictiveForecasts() {
     const todayDayOfWeek = today.getDay();
     const daysElapsedInWeek = (todayDayOfWeek + 4) % 7 + 1; // +1 to count today as complete
 
-    // Historical pace projection
-    const historicalProjected = currentWeekTotal > 0
-      ? Math.round((currentWeekTotal / daysElapsedInWeek) * 7)
-      : Math.round(avgWeekly);
+    // Calculate average collections by day of week for remaining days
+    const dayOfWeekTotals = new Map<number, { total: number; count: number }>();
+    collections.forEach((c) => {
+      const date = parseCollectionDate(c.collectionDate);
+      const dow = date.getDay();
+      const current = dayOfWeekTotals.get(dow) || { total: 0, count: 0 };
+      dayOfWeekTotals.set(dow, {
+        total: current.total + calculateTotalSandwiches(c),
+        count: current.count + 1,
+      });
+    });
 
-    // Combined projection: Already collected + Scheduled events
-    // If nothing collected yet this week and no scheduled events, use historical average
-    const weeklyProjected = (currentWeekTotal + scheduledWeeklyTotal) > 0
-      ? currentWeekTotal + scheduledWeeklyTotal
-      : Math.round(avgWeekly);
+    // Calculate expected collections for remaining days based on historical averages
+    let expectedRemainingDays = 0;
+    for (let i = 1; i <= 7 - daysElapsedInWeek; i++) {
+      const futureDayOfWeek = (todayDayOfWeek + i) % 7;
+      const dayData = dayOfWeekTotals.get(futureDayOfWeek);
+      if (dayData && dayData.count > 0) {
+        expectedRemainingDays += dayData.total / dayData.count;
+      }
+    }
+
+    // Combined projection: Already collected + Scheduled events + Expected remaining individual donations
+    const weeklyProjected = currentWeekTotal + scheduledWeeklyTotal + Math.round(expectedRemainingDays);
 
     const weeklyVsAvg = avgWeekly > 0 ? ((weeklyProjected - avgWeekly) / avgWeekly) * 100 : 0;
 
@@ -198,6 +212,7 @@ export default function PredictiveForecasts() {
         projected: weeklyProjected,
         scheduled: scheduledWeeklyTotal,
         scheduledEventCount: scheduledThisWeek.length,
+        expectedIndividual: Math.round(expectedRemainingDays),
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
         dayOfWeek: todayDayOfWeek,
@@ -268,11 +283,14 @@ export default function PredictiveForecasts() {
               <p className="text-3xl font-bold text-brand-primary">
                 {forecasts.weekly.projected.toLocaleString()}
               </p>
-              {forecasts.weekly.scheduled > 0 && (
-                <p className="text-xs text-brand-primary mt-1">
-                  Includes {forecasts.weekly.scheduledEventCount} scheduled event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})
-                </p>
-              )}
+              <div className="text-xs text-brand-primary mt-2 space-y-0.5">
+                {forecasts.weekly.scheduled > 0 && (
+                  <div>+ {forecasts.weekly.scheduledEventCount} scheduled event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})</div>
+                )}
+                {forecasts.weekly.expectedIndividual > 0 && (
+                  <div>+ Expected individual donations ({forecasts.weekly.expectedIndividual.toLocaleString()})</div>
+                )}
+              </div>
               <div className="flex items-center justify-center gap-2 mt-2">
                 {forecasts.weekly.vsAvg >= 0 ? (
                   <TrendingUp className="h-4 w-4 text-green-600" />
