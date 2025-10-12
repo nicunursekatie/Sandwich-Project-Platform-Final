@@ -822,7 +822,7 @@ export default function CompactCollectionForm({
           <div className="flex items-center gap-2">
             <Button
               onClick={handleSubmit}
-              disabled={submitMutation.isPending || !!individualBreakdownError}
+              disabled={submitMutation.isPending}
               className="flex-1 h-14 md:h-12 bg-gradient-to-r from-brand-orange to-[#e89b2e] hover:from-[#e89b2e] hover:to-brand-orange text-white font-semibold text-xl md:text-lg"
               data-testid="button-submit-collection"
             >
