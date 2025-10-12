@@ -40,7 +40,7 @@ const LOCATION_CONTACT_EMAILS: Record<string, string> = {
 
 // Admin email to receive notifications
 const ADMIN_EMAIL = 'katielong2316@gmail.com';
-const FROM_EMAIL = 'katielong2316@gmail.com'; // Using verified sender for reliable delivery
+const FROM_EMAIL = 'katie@thesandwichproject.org'; // Using verified domain sender to avoid spam filters
 
 interface WeeklySubmissionStatus {
   location: string;
