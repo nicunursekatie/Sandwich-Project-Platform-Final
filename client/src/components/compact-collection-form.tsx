@@ -35,7 +35,7 @@ export default function CompactCollectionForm({
   const [location, setLocation] = useState('');
   const [individualCount, setIndividualCount] = useState(0);
   const [groupCollections, setGroupCollections] = useState<
-    Array<{ name: string; count: number; deli?: number; pbj?: number }>
+    Array<{ name: string; count: number; deli?: number; turkey?: number; ham?: number; pbj?: number }>
   >([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupCount, setNewGroupCount] = useState(0);
@@ -43,9 +43,13 @@ export default function CompactCollectionForm({
   // Optional sandwich type breakdown
   const [showIndividualBreakdown, setShowIndividualBreakdown] = useState(false);
   const [individualDeli, setIndividualDeli] = useState(0);
+  const [individualTurkey, setIndividualTurkey] = useState(0);
+  const [individualHam, setIndividualHam] = useState(0);
   const [individualPbj, setIndividualPbj] = useState(0);
   const [showGroupBreakdown, setShowGroupBreakdown] = useState(false);
   const [newGroupDeli, setNewGroupDeli] = useState(0);
+  const [newGroupTurkey, setNewGroupTurkey] = useState(0);
+  const [newGroupHam, setNewGroupHam] = useState(0);
   const [newGroupPbj, setNewGroupPbj] = useState(0);
 
   const { toast} = useToast();
@@ -80,6 +84,8 @@ export default function CompactCollectionForm({
       // Reset form
       setIndividualCount(0);
       setIndividualDeli(0);
+      setIndividualTurkey(0);
+      setIndividualHam(0);
       setIndividualPbj(0);
       setShowIndividualBreakdown(false);
       setGroupCollections([]);
@@ -104,14 +110,16 @@ export default function CompactCollectionForm({
 
   const addGroup = () => {
     if (newGroupName && newGroupCount > 0) {
-      const newGroup: { name: string; count: number; deli?: number; pbj?: number } = {
+      const newGroup: { name: string; count: number; deli?: number; turkey?: number; ham?: number; pbj?: number } = {
         name: newGroupName,
         count: Number(newGroupCount),
       };
 
       // Only include breakdown if provided
-      if (showGroupBreakdown && (newGroupDeli > 0 || newGroupPbj > 0)) {
+      if (showGroupBreakdown && (newGroupDeli > 0 || newGroupTurkey > 0 || newGroupHam > 0 || newGroupPbj > 0)) {
         newGroup.deli = newGroupDeli;
+        newGroup.turkey = newGroupTurkey;
+        newGroup.ham = newGroupHam;
         newGroup.pbj = newGroupPbj;
       }
 
@@ -119,6 +127,8 @@ export default function CompactCollectionForm({
       setNewGroupName('');
       setNewGroupCount(0);
       setNewGroupDeli(0);
+      setNewGroupTurkey(0);
+      setNewGroupHam(0);
       setNewGroupPbj(0);
       setShowGroupBreakdown(false);
     }
@@ -150,8 +160,10 @@ export default function CompactCollectionForm({
     };
 
     // Include individual sandwich type breakdown if provided
-    if (showIndividualBreakdown && (individualDeli > 0 || individualPbj > 0)) {
+    if (showIndividualBreakdown && (individualDeli > 0 || individualTurkey > 0 || individualHam > 0 || individualPbj > 0)) {
       submissionData.individualDeli = individualDeli;
+      submissionData.individualTurkey = individualTurkey;
+      submissionData.individualHam = individualHam;
       submissionData.individualPbj = individualPbj;
     }
 
@@ -302,7 +314,37 @@ export default function CompactCollectionForm({
                       const value = parseInt(e.target.value) || 0;
                       setIndividualDeli(value);
                       // Auto-calculate total
-                      setIndividualCount(value + individualPbj);
+                      setIndividualCount(value + individualTurkey + individualHam + individualPbj);
+                    }}
+                    className="h-12 md:h-10 text-lg md:text-base"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Turkey</label>
+                  <Input
+                    type="number"
+                    value={individualTurkey || ''}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setIndividualTurkey(value);
+                      // Auto-calculate total
+                      setIndividualCount(individualDeli + value + individualHam + individualPbj);
+                    }}
+                    className="h-12 md:h-10 text-lg md:text-base"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Ham</label>
+                  <Input
+                    type="number"
+                    value={individualHam || ''}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setIndividualHam(value);
+                      // Auto-calculate total
+                      setIndividualCount(individualDeli + individualTurkey + value + individualPbj);
                     }}
                     className="h-12 md:h-10 text-lg md:text-base"
                     placeholder="0"
@@ -317,15 +359,15 @@ export default function CompactCollectionForm({
                       const value = parseInt(e.target.value) || 0;
                       setIndividualPbj(value);
                       // Auto-calculate total
-                      setIndividualCount(individualDeli + value);
+                      setIndividualCount(individualDeli + individualTurkey + individualHam + value);
                     }}
                     className="h-12 md:h-10 text-lg md:text-base"
                     placeholder="0"
                   />
                 </div>
-                {(individualDeli > 0 || individualPbj > 0) && (
+                {(individualDeli > 0 || individualTurkey > 0 || individualHam > 0 || individualPbj > 0) && (
                   <div className="col-span-2 text-center text-sm text-gray-600 bg-gray-100 rounded p-2">
-                    Total: <span className="font-bold text-brand-orange">{individualDeli + individualPbj}</span>
+                    Total: <span className="font-bold text-brand-orange">{individualDeli + individualTurkey + individualHam + individualPbj}</span>
                   </div>
                 )}
               </div>
@@ -344,13 +386,15 @@ export default function CompactCollectionForm({
                       // Reset breakdown when hiding
                       if (!e.target.checked) {
                         setIndividualDeli(0);
+                        setIndividualTurkey(0);
+                        setIndividualHam(0);
                         setIndividualPbj(0);
                       }
                     }}
                     className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
                   />
                   <label htmlFor="individual-breakdown" className="text-sm font-medium cursor-pointer">
-                    Specify sandwich types (Deli/PBJ) - Optional
+                    Specify sandwich types (Deli/Turkey/Ham/PBJ) - Optional
                   </label>
                 </div>
                 <p className="text-xs text-gray-600 mt-1 ml-6">
@@ -415,7 +459,37 @@ export default function CompactCollectionForm({
                           const value = parseInt(e.target.value) || 0;
                           setNewGroupDeli(value);
                           // Auto-calculate total
-                          setNewGroupCount(value + newGroupPbj);
+                          setNewGroupCount(value + newGroupTurkey + newGroupHam + newGroupPbj);
+                        }}
+                        className="h-10 text-base"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-700">Turkey</label>
+                      <Input
+                        type="number"
+                        value={newGroupTurkey || ''}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          setNewGroupTurkey(value);
+                          // Auto-calculate total
+                          setNewGroupCount(newGroupDeli + value + newGroupHam + newGroupPbj);
+                        }}
+                        className="h-10 text-base"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-700">Ham</label>
+                      <Input
+                        type="number"
+                        value={newGroupHam || ''}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          setNewGroupHam(value);
+                          // Auto-calculate total
+                          setNewGroupCount(newGroupDeli + newGroupTurkey + value + newGroupPbj);
                         }}
                         className="h-10 text-base"
                         placeholder="0"
@@ -430,16 +504,16 @@ export default function CompactCollectionForm({
                           const value = parseInt(e.target.value) || 0;
                           setNewGroupPbj(value);
                           // Auto-calculate total
-                          setNewGroupCount(newGroupDeli + value);
+                          setNewGroupCount(newGroupDeli + newGroupTurkey + newGroupHam + value);
                         }}
                         className="h-10 text-base"
                         placeholder="0"
                       />
                     </div>
                   </div>
-                  {(newGroupDeli > 0 || newGroupPbj > 0) && (
+                  {(newGroupDeli > 0 || newGroupTurkey > 0 || newGroupHam > 0 || newGroupPbj > 0) && (
                     <div className="text-center text-xs text-gray-600 bg-gray-100 rounded p-2">
-                      Total: <span className="font-bold text-brand-orange">{newGroupDeli + newGroupPbj}</span>
+                      Total: <span className="font-bold text-brand-orange">{newGroupDeli + newGroupTurkey + newGroupHam + newGroupPbj}</span>
                     </div>
                   )}
                 </>
@@ -457,6 +531,8 @@ export default function CompactCollectionForm({
                       // Reset breakdown when hiding
                       if (!e.target.checked) {
                         setNewGroupDeli(0);
+                        setNewGroupTurkey(0);
+                        setNewGroupHam(0);
                         setNewGroupPbj(0);
                       }
                     }}
@@ -529,9 +605,9 @@ export default function CompactCollectionForm({
                     <div className="text-3xl md:text-2xl font-bold text-gray-800">
                       {group.count}
                     </div>
-                    {(group.deli || group.pbj) && (
+                    {(group.deli || group.turkey || group.ham || group.pbj) && (
                       <div className="text-xs text-gray-600 mt-1">
-                        {group.deli ? `Deli: ${group.deli}` : ''} {group.deli && group.pbj ? '• ' : ''} {group.pbj ? `PBJ: ${group.pbj}` : ''}
+                        {group.deli ? `Deli: ${group.deli}` : ''}{group.deli && (group.turkey || group.ham || group.pbj) ? ' • ' : ''}{group.turkey ? `Turkey: ${group.turkey}` : ''}{group.turkey && (group.ham || group.pbj) ? ' • ' : ''}{group.ham ? `Ham: ${group.ham}` : ''}{group.ham && group.pbj ? ' • ' : ''}{group.pbj ? `PBJ: ${group.pbj}` : ''}
                       </div>
                     )}
                   </div>
