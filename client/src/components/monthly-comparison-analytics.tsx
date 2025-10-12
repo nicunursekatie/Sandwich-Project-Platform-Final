@@ -620,11 +620,11 @@ export default function MonthlyComparisonAnalytics() {
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4">
-            <div className="text-sm text-gray-600 mb-1">✓ Active Hosts</div>
+            <div className="text-sm text-gray-600 mb-1">✓ Collection Sites</div>
             <div className="text-3xl font-bold text-brand-primary">
-              {selectedMonthAnalysis.selectedMonthData.uniqueHosts}
+              {selectedMonthAnalysis.selectedMonthData.totalCollections}
             </div>
-            <p className="text-gray-500 mt-1 text-[14px]">Community partners engaged</p>
+            <p className="text-gray-500 mt-1 text-[14px]">{selectedMonthAnalysis.selectedMonthData.uniqueHosts} hosts recording data</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4">
