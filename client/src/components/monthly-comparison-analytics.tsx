@@ -67,9 +67,6 @@ export default function MonthlyComparisonAnalytics() {
   // Define months array at the top to avoid initialization errors
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  const [selectedTab, setSelectedTab] = useState<
-    'overview' | 'hosts' | 'patterns' | 'insights'
-  >('overview');
   const [compareYear, setCompareYear] = useState<number>(2025);
 
   // Default to current month and year - will be updated when data loads
@@ -689,32 +686,10 @@ export default function MonthlyComparisonAnalytics() {
           </div>
         </div>
       </div>
-      {/* Analytics Tabs */}
-      <Tabs
-        value={selectedTab}
-        onValueChange={(value) => setSelectedTab(value as any)}
-        className="space-y-6"
-      >
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="flex items-center gap-2 text-[16px]">
-            <BarChart3 className="h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="hosts" className="flex items-center gap-2 text-[16px]">
-            <Target className="h-4 w-4" />
-            Monthly Insights
-          </TabsTrigger>
-          <TabsTrigger value="patterns" className="flex items-center gap-2 text-[16px]">
-            <Activity className="h-4 w-4" />
-            Patterns
-          </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-2 text-[16px]">
-            <Lightbulb className="h-4 w-4" />
-            Insights
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
+      {/* Analytics Sections - Flattened from tabs */}
+      <div className="space-y-6">
+        {/* Overview Section */}
+        <div className="space-y-6">
           {/* Monthly Trends Chart */}
           <Card>
             <CardHeader>
@@ -837,9 +812,14 @@ export default function MonthlyComparisonAnalytics() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="hosts" className="space-y-6">
+        {/* Monthly Insights Section */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Target className="h-6 w-6 text-brand-primary" />
+            <h3 className="text-2xl font-bold text-brand-primary">Monthly Insights</h3>
+          </div>
           {/* Monthly Trends Analysis */}
           <Card>
             <CardHeader>
@@ -1245,9 +1225,14 @@ export default function MonthlyComparisonAnalytics() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="patterns" className="space-y-6">
+        {/* Collection Patterns Section */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="h-6 w-6 text-brand-primary" />
+            <h3 className="text-2xl font-bold text-brand-primary">Collection Patterns</h3>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -1370,9 +1355,14 @@ export default function MonthlyComparisonAnalytics() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="insights" className="space-y-6">
+        {/* Contextual Insights Section */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Lightbulb className="h-6 w-6 text-brand-primary" />
+            <h3 className="text-2xl font-bold text-brand-primary">Contextual Insights</h3>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Performance Overview */}
             <Card className="border-l-4 border-l-blue-500">
@@ -1453,8 +1443,8 @@ export default function MonthlyComparisonAnalytics() {
             </Card>
           </div>
 
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

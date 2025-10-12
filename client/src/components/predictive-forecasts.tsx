@@ -301,19 +301,19 @@ export default function PredictiveForecasts() {
             </div>
             <div className={`text-center p-4 rounded-lg border-2 ${
               forecasts.weekly.vsAvg >= 10
-                ? 'bg-green-50 border-green-500'
+                ? 'bg-[#007E8C]/10 border-[#007E8C]'
                 : forecasts.weekly.vsAvg >= 0
-                ? 'bg-blue-50 border-blue-400'
+                ? 'bg-brand-primary/10 border-brand-primary'
                 : forecasts.weekly.vsAvg >= -10
-                ? 'bg-amber-50 border-amber-500'
-                : 'bg-red-50 border-red-500'
+                ? 'bg-brand-orange/20 border-brand-orange'
+                : 'bg-[#A31C41]/10 border-[#A31C41]'
             }`}>
               <p className="text-sm text-gray-600 mb-1">Projected Week Total</p>
               <p className={`text-3xl font-bold ${
-                forecasts.weekly.vsAvg >= 10 ? 'text-green-700' :
-                forecasts.weekly.vsAvg >= 0 ? 'text-blue-700' :
-                forecasts.weekly.vsAvg >= -10 ? 'text-amber-700' :
-                'text-red-700'
+                forecasts.weekly.vsAvg >= 10 ? 'text-[#007E8C]' :
+                forecasts.weekly.vsAvg >= 0 ? 'text-brand-primary' :
+                forecasts.weekly.vsAvg >= -10 ? 'text-brand-orange' :
+                'text-[#A31C41]'
               }`}>
                 {forecasts.weekly.projected.toLocaleString()}
               </p>
@@ -331,12 +331,12 @@ export default function PredictiveForecasts() {
               {/* Clear status indicator */}
               <div className={`mt-3 px-3 py-2 rounded-md font-semibold text-sm ${
                 forecasts.weekly.vsAvg >= 10
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-[#007E8C] text-white'
                   : forecasts.weekly.vsAvg >= 0
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-brand-primary text-white'
                   : forecasts.weekly.vsAvg >= -10
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-red-600 text-white'
+                  ? 'bg-brand-orange text-white'
+                  : 'bg-[#A31C41] text-white'
               }`}>
                 {forecasts.weekly.vsAvg >= 10 ? (
                   <>
@@ -371,33 +371,33 @@ export default function PredictiveForecasts() {
           </div>
 
           {forecasts.weekly.vsAvg < -10 && (
-            <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+            <div className="bg-[#A31C41]/10 border-2 border-[#A31C41] rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-[#A31C41] mt-0.5" />
               <div>
-                <p className="font-semibold text-red-900">Action Needed: Below Weekly Target</p>
-                <p className="text-sm text-red-800 mt-1">
+                <p className="font-semibold text-[#A31C41]">Action Needed: Below Weekly Target</p>
+                <p className="text-sm text-gray-700 mt-1">
                   Need {Math.round(forecasts.weekly.average - forecasts.weekly.projected).toLocaleString()} more sandwiches this week to reach average weekly performance.
                 </p>
               </div>
             </div>
           )}
           {forecasts.weekly.vsAvg >= -10 && forecasts.weekly.vsAvg < 0 && (
-            <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+            <div className="bg-brand-orange/10 border-2 border-brand-orange rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-brand-orange mt-0.5" />
               <div>
-                <p className="font-semibold text-amber-900">Slightly Below Weekly Average</p>
-                <p className="text-sm text-amber-800 mt-1">
+                <p className="font-semibold text-brand-orange">Slightly Below Weekly Average</p>
+                <p className="text-sm text-gray-700 mt-1">
                   {Math.round(forecasts.weekly.average - forecasts.weekly.projected).toLocaleString()} more sandwiches needed this week to meet historical average.
                 </p>
               </div>
             </div>
           )}
           {forecasts.weekly.vsAvg >= 10 && (
-            <div className="bg-green-50 border-2 border-green-400 rounded-lg p-4 flex items-start gap-3">
-              <TrendingUp className="h-5 w-5 text-green-600 mt-0.5" />
+            <div className="bg-[#007E8C]/10 border-2 border-[#007E8C] rounded-lg p-4 flex items-start gap-3">
+              <TrendingUp className="h-5 w-5 text-[#007E8C] mt-0.5" />
               <div>
-                <p className="font-semibold text-green-900">Excellent Week!</p>
-                <p className="text-sm text-green-800 mt-1">
+                <p className="font-semibold text-[#007E8C]">Excellent Week!</p>
+                <p className="text-sm text-gray-700 mt-1">
                   On track to exceed weekly average by {Math.round(forecasts.weekly.projected - forecasts.weekly.average).toLocaleString()} sandwiches.
                 </p>
               </div>
@@ -440,19 +440,19 @@ export default function PredictiveForecasts() {
             </div>
             <div className={`text-center p-4 rounded-lg border-2 ${
               forecasts.monthly.vsAvg >= 10
-                ? 'bg-green-50 border-green-500'
+                ? 'bg-[#007E8C]/10 border-[#007E8C]'
                 : forecasts.monthly.vsAvg >= 0
-                ? 'bg-blue-50 border-blue-400'
+                ? 'bg-brand-teal/10 border-brand-teal'
                 : forecasts.monthly.vsAvg >= -10
-                ? 'bg-amber-50 border-amber-500'
-                : 'bg-red-50 border-red-500'
+                ? 'bg-brand-orange/20 border-brand-orange'
+                : 'bg-[#A31C41]/10 border-[#A31C41]'
             }`}>
               <p className="text-sm text-gray-600 mb-1">Projected Month Total</p>
               <p className={`text-3xl font-bold ${
-                forecasts.monthly.vsAvg >= 10 ? 'text-green-700' :
-                forecasts.monthly.vsAvg >= 0 ? 'text-blue-700' :
-                forecasts.monthly.vsAvg >= -10 ? 'text-amber-700' :
-                'text-red-700'
+                forecasts.monthly.vsAvg >= 10 ? 'text-[#007E8C]' :
+                forecasts.monthly.vsAvg >= 0 ? 'text-brand-teal' :
+                forecasts.monthly.vsAvg >= -10 ? 'text-brand-orange' :
+                'text-[#A31C41]'
               }`}>
                 {forecasts.monthly.projected.toLocaleString()}
               </p>
@@ -461,12 +461,12 @@ export default function PredictiveForecasts() {
               {/* Clear status indicator */}
               <div className={`mt-3 px-3 py-2 rounded-md font-semibold text-sm ${
                 forecasts.monthly.vsAvg >= 10
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-[#007E8C] text-white'
                   : forecasts.monthly.vsAvg >= 0
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-brand-teal text-white'
                   : forecasts.monthly.vsAvg >= -10
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-red-600 text-white'
+                  ? 'bg-brand-orange text-white'
+                  : 'bg-[#A31C41] text-white'
               }`}>
                 {forecasts.monthly.vsAvg >= 10 ? (
                   <>
@@ -501,13 +501,13 @@ export default function PredictiveForecasts() {
           </div>
 
           {forecasts.monthly.gap > 0 && (
-            <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-4">
-              <p className="font-semibold text-blue-900 mb-2">Path to Monthly Average</p>
-              <p className="text-sm text-blue-800">
+            <div className="bg-brand-primary/10 border-2 border-brand-primary rounded-lg p-4">
+              <p className="font-semibold text-brand-primary mb-2">Path to Monthly Average</p>
+              <p className="text-sm text-gray-700">
                 Need {forecasts.monthly.gap.toLocaleString()} more sandwiches over the remaining{' '}
                 {forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth} days to reach monthly average.
               </p>
-              <p className="text-sm text-blue-800 mt-1">
+              <p className="text-sm text-gray-700 mt-1">
                 <span className="font-semibold">Weekly target: </span>
                 ~{Math.round((forecasts.monthly.gap / (forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth)) * 7).toLocaleString()} sandwiches/week for remaining weeks
               </p>
