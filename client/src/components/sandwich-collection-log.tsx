@@ -2412,18 +2412,20 @@ export default function SandwichCollectionLog() {
                   {/* Individual - with inline type breakdown when available */}
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-slate-500 mb-0.5">Individual</div>
-                    <div className="text-base">
+                    <div className="text-base font-bold">
                       {(() => {
                         const hasTypes = collection.individualDeli || collection.individualTurkey || collection.individualHam || collection.individualPbj;
                         if (hasTypes) {
-                          const types = [];
-                          if (collection.individualTurkey) types.push(`${collection.individualTurkey} Turkey`);
-                          if (collection.individualHam) types.push(`${collection.individualHam} Ham`);
-                          if (collection.individualDeli) types.push(`${collection.individualDeli} Deli`);
-                          if (collection.individualPbj) types.push(`${collection.individualPbj} PB&J`);
-                          return <span>{types.join(', ')}</span>;
+                          return (
+                            <div className="space-y-0.5">
+                              {collection.individualTurkey > 0 && <div>{collection.individualTurkey} Turkey</div>}
+                              {collection.individualHam > 0 && <div>{collection.individualHam} Ham</div>}
+                              {collection.individualDeli > 0 && <div>{collection.individualDeli} Deli</div>}
+                              {collection.individualPbj > 0 && <div>{collection.individualPbj} PB&J</div>}
+                            </div>
+                          );
                         }
-                        return <span className="font-bold">{collection.individualSandwiches}</span>;
+                        return collection.individualSandwiches;
                       })()}
                     </div>
                   </div>
@@ -2431,26 +2433,31 @@ export default function SandwichCollectionLog() {
                   {/* Groups - inline breakdown when available */}
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-slate-500 mb-0.5">Groups</div>
-                    <div className="text-base">
+                    <div className="text-base font-bold">
                       {(() => {
                         if (groupData.length === 0) {
-                          return <span className="font-bold">0</span>;
+                          return 0;
                         }
                         if (groupData.length === 1) {
                           const group = groupData[0];
                           const hasTypes = group.deli || group.turkey || group.ham || group.pbj;
                           if (hasTypes) {
-                            const types = [];
-                            if (group.turkey) types.push(`${group.turkey} Turkey`);
-                            if (group.ham) types.push(`${group.ham} Ham`);
-                            if (group.deli) types.push(`${group.deli} Deli`);
-                            if (group.pbj) types.push(`${group.pbj} PB&J`);
-                            return <span>{group.groupName}: {types.join(', ')}</span>;
+                            return (
+                              <div>
+                                <div className="text-xs text-slate-500 font-normal mb-0.5">{group.groupName}</div>
+                                <div className="space-y-0.5">
+                                  {group.turkey > 0 && <div>{group.turkey} Turkey</div>}
+                                  {group.ham > 0 && <div>{group.ham} Ham</div>}
+                                  {group.deli > 0 && <div>{group.deli} Deli</div>}
+                                  {group.pbj > 0 && <div>{group.pbj} PB&J</div>}
+                                </div>
+                              </div>
+                            );
                           }
-                          return <span className="font-bold">{group.sandwichCount} <span className="font-normal">({group.groupName})</span></span>;
+                          return `${group.groupName}: ${group.sandwichCount}`;
                         }
                         // Multiple groups - just show total
-                        return <span className="font-bold">{calculateGroupTotal(collection)}</span>;
+                        return calculateGroupTotal(collection);
                       })()}
                     </div>
                   </div>
