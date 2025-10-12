@@ -117,10 +117,10 @@ export default function PredictiveForecasts() {
 
     // Weekly projection
     const dayOfWeek = today.getDay();
-    const weeklyProjected = dayOfWeek > 0
-      ? Math.round((currentWeekTotal / dayOfWeek) * 7)
-      : currentWeekTotal;
-    const weeklyVsAvg = ((weeklyProjected - avgWeekly) / avgWeekly) * 100;
+    // Days elapsed in current week (if Sunday=0, treat as 7 days complete)
+    const daysElapsedInWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+    const weeklyProjected = Math.round((currentWeekTotal / daysElapsedInWeek) * 7);
+    const weeklyVsAvg = avgWeekly > 0 ? ((weeklyProjected - avgWeekly) / avgWeekly) * 100 : 0;
 
     // Monthly projection
     const monthlyProjected = monthProgress > 0
@@ -164,7 +164,7 @@ export default function PredictiveForecasts() {
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
         dayOfWeek,
-        daysRemaining: 7 - dayOfWeek,
+        daysRemaining: dayOfWeek === 0 ? 0 : 7 - dayOfWeek,
       },
       monthly: {
         current: currentMonthTotal,
