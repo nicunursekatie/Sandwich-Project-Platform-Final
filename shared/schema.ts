@@ -1417,6 +1417,48 @@ export type InsertWishlistSuggestion = z.infer<
   typeof insertWishlistSuggestionSchema
 >;
 
+// Cooler Types table for defining types of coolers
+export const coolerTypes = pgTable('cooler_types', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(), // e.g., "Large rolling cooler"
+  description: text('description'), // Optional details
+  isActive: boolean('is_active').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0), // For display ordering
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertCoolerTypeSchema = createInsertSchema(coolerTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CoolerType = typeof coolerTypes.$inferSelect;
+export type InsertCoolerType = z.infer<typeof insertCoolerTypeSchema>;
+
+// Cooler Inventory table for tracking cooler locations
+export const coolerInventory = pgTable('cooler_inventory', {
+  id: serial('id').primaryKey(),
+  hostHomeId: varchar('host_home_id').notNull(), // User ID of the host home
+  coolerTypeId: integer('cooler_type_id').notNull().references(() => coolerTypes.id),
+  quantity: integer('quantity').notNull().default(0),
+  notes: text('notes'), // Optional notes about condition, etc.
+  reportedAt: timestamp('reported_at').defaultNow().notNull(),
+  reportedBy: varchar('reported_by').notNull(), // User ID who submitted the report
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertCoolerInventorySchema = createInsertSchema(coolerInventory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type CoolerInventory = typeof coolerInventory.$inferSelect;
+export type InsertCoolerInventory = z.infer<typeof insertCoolerInventorySchema>;
+
 // Event Requests table for tracking organization event planning
 export const eventRequests = pgTable(
   'event_requests',

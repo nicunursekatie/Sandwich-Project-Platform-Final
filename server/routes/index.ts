@@ -30,6 +30,7 @@ import monitoringRouter from './monitoring';
 import enhancedActivityRouter from './enhanced-user-activity';
 import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
+import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 
 // Import centralized middleware
 import {
@@ -328,6 +329,23 @@ export function createMainRoutes(deps: RouterDependencies) {
     wishlistActivityRouter
   );
   router.use('/api/wishlist-activity', createErrorHandler('wishlist-activity'));
+
+  // Cooler tracking routes
+  router.use(
+    '/api/cooler-types',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    coolerTypesRouter
+  );
+  router.use('/api/cooler-types', createErrorHandler('cooler-types'));
+
+  router.use(
+    '/api/cooler-inventory',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    coolerInventoryRouter
+  );
+  router.use('/api/cooler-inventory', createErrorHandler('cooler-inventory'));
 
   // Enhanced user activity tracking (stub) - enabled to prevent 404 errors
   router.use('/api/enhanced-user-activity', enhancedActivityRouter);
