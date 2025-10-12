@@ -33,7 +33,7 @@ Key technical implementations include:
 - **Messaging & Notifications**: Multi-layered communication including email, Socket.IO chat, SMS via Twilio, and dashboard notifications.
 - **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, confidential documents toolkit, and a permissions-based Collection Walkthrough Tool.
 - **Analytics**: Dashboard for community impact and user activity tracking.
-- **Meeting Management**: Full-featured system with agenda compilation, project integration, PDF export, and database-backed notes.
+- **Meeting Management**: Full-featured system with agenda compilation, project integration, PDF export, and database-backed notes with permission-controlled access (MEETINGS_VIEW for reading, MEETINGS_MANAGE for creating/editing).
 - **Event Requests Management System**: Tracking, duplicate detection, status tracking, Google Sheets integration, van driver staffing calculations, optional volunteer count, and organization categorization.
 - **Multi-Recipient Assignment System**: Events can be assigned to multiple destinations (hosts, recipient organizations, custom text) using a prefixed ID format and badge-based UI.
 - **Google Sheets Integration**: Bidirectional automatic synchronization for project tracker and event requests.
