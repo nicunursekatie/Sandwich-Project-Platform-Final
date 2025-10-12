@@ -377,7 +377,7 @@ export function NotesTab({
 
             {/* Main Content - Discussion Points and Decision Items */}
             {parsed.discussionPoints && (
-              <div className="bg-brand-primary-lighter border-l-4 border-blue-400 p-4 rounded-r-lg">
+              <div className="bg-brand-primary-lighter border-l-4 border-brand-primary p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
                   <MessageSquare className="w-4 h-4 text-brand-primary-muted mt-1 flex-shrink-0" />
                   <div className="flex-1">
