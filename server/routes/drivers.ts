@@ -20,7 +20,11 @@ export function createDriversRoutes(isAuthenticated: any, storage: IStorage) {
   router.get('/export', isAuthenticated, async (req: any, res: any) => {
     try {
       const drivers = await storage.getAllDrivers();
-      const agreements = await storage.getAllDriverAgreements();
+
+      // Query driver agreements directly from database
+      const { db } = await import('../db');
+      const { driverAgreements } = await import('@shared/schema');
+      const agreements = await db.select().from(driverAgreements);
 
       // Create a map of driver agreements by email for quick lookup
       const agreementsByEmail = new Map();
