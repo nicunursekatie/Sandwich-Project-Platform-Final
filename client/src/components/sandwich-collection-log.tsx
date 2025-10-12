@@ -939,6 +939,10 @@ export default function SandwichCollectionLog() {
         .map((group: any) => ({
           groupName: group.name,
           sandwichCount: group.count,
+          deli: group.deli || 0,
+          turkey: group.turkey || 0,
+          ham: group.ham || 0,
+          pbj: group.pbj || 0,
         }));
     }
 
