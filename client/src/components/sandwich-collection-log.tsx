@@ -64,9 +64,9 @@ import {
 } from '@shared/auth-utils';
 import type { SandwichCollection, Host } from '@shared/schema';
 import { HelpBubble, helpContent } from '@/components/help-system';
-import { 
-  calculateTotalSandwiches, 
-  calculateGroupSandwiches 
+import {
+  calculateTotalSandwiches,
+  calculateGroupSandwiches,
 } from '@/lib/analytics-utils';
 
 interface ImportResult {
@@ -152,9 +152,9 @@ export default function SandwichCollectionLog() {
   const [selectedSuspiciousIds, setSelectedSuspiciousIds] = useState<
     Set<number>
   >(new Set());
-  const [selectedDuplicateIds, setSelectedDuplicateIds] = useState<
-    Set<number>
-  >(new Set());
+  const [selectedDuplicateIds, setSelectedDuplicateIds] = useState<Set<number>>(
+    new Set()
+  );
   const [selectedKeepIds, setSelectedKeepIds] = useState<Map<number, number>>(
     new Map()
   );
@@ -631,12 +631,12 @@ export default function SandwichCollectionLog() {
         };
       }
     }
-    
+
     // No filters active - prefer current collections over global stats for consistency
     if (needsAllData && collections.length > 0) {
       return calculateFilteredStats(collections);
     }
-    
+
     // Fallback to global stats only when no filters are active and no current data
     return {
       totalEntries: totalStats?.totalEntries || 0,
@@ -1070,13 +1070,13 @@ export default function SandwichCollectionLog() {
     onSuccess: (result: DuplicateAnalysis) => {
       setDuplicateAnalysis(result);
       setShowDuplicateAnalysis(true);
-      
+
       const initialKeepIds = new Map<number, number>();
       result.duplicates.forEach((group, index) => {
         initialKeepIds.set(index, group.keepNewest.id);
       });
       setSelectedKeepIds(initialKeepIds);
-      
+
       toast({
         title: 'Analysis complete',
         description: `Found ${result.totalDuplicateEntries} duplicate entries and ${result.suspiciousPatterns} suspicious patterns.`,
@@ -2467,11 +2467,13 @@ export default function SandwichCollectionLog() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium text-slate-900">
-                      Exact Duplicates ({duplicateAnalysis.totalDuplicateEntries})
+                      Exact Duplicates (
+                      {duplicateAnalysis.totalDuplicateEntries})
                     </h3>
                   </div>
                   <div className="text-base text-slate-600 mb-2">
-                    Use radio buttons to select which entry to keep in each duplicate group. All other entries will be deleted.
+                    Use radio buttons to select which entry to keep in each
+                    duplicate group. All other entries will be deleted.
                   </div>
                   <div className="max-h-96 overflow-y-auto border border-slate-200 rounded-lg">
                     <div className="space-y-3 p-3">
@@ -2486,40 +2488,53 @@ export default function SandwichCollectionLog() {
                               <div className="flex items-center space-x-2">
                                 <Calendar className="w-4 h-4 text-blue-600" />
                                 <span className="font-semibold text-blue-900">
-                                  {new Date(group.duplicateInfo.collectionDate).toLocaleDateString('en-US', {
+                                  {new Date(
+                                    group.duplicateInfo.collectionDate
+                                  ).toLocaleDateString('en-US', {
                                     month: 'short',
                                     day: 'numeric',
-                                    year: 'numeric'
+                                    year: 'numeric',
                                   })}
                                 </span>
                               </div>
                               <span className="text-base font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded">
-                                {group.count} duplicate{group.count !== 1 ? 's' : ''}
+                                {group.count} duplicate
+                                {group.count !== 1 ? 's' : ''}
                               </span>
                             </div>
                             <div className="grid grid-cols-2 gap-3 text-base">
                               <div>
-                                <div className="text-sm text-blue-600 font-medium mb-1">Group Names</div>
+                                <div className="text-sm text-blue-600 font-medium mb-1">
+                                  Group Names
+                                </div>
                                 <div className="text-blue-900 font-medium">
-                                  {group.duplicateInfo.groupNames || 'No groups'}
+                                  {group.duplicateInfo.groupNames ||
+                                    'No groups'}
                                 </div>
                               </div>
                               <div>
-                                <div className="text-sm text-blue-600 font-medium mb-1">Sandwich Counts</div>
+                                <div className="text-sm text-blue-600 font-medium mb-1">
+                                  Sandwich Counts
+                                </div>
                                 <div className="text-blue-900 font-medium">
-                                  {group.duplicateInfo.individualSandwiches} individual, {group.duplicateInfo.totalSandwiches} total
+                                  {group.duplicateInfo.individualSandwiches}{' '}
+                                  individual,{' '}
+                                  {group.duplicateInfo.totalSandwiches} total
                                 </div>
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Show ALL entries with radio buttons to select which to keep */}
                           <div className="space-y-2">
                             <div className="text-sm font-bold text-slate-700 mb-2 uppercase">
                               Select which entry to keep:
                             </div>
                             <RadioGroup
-                              value={selectedKeepIds.get(groupIndex)?.toString() || group.keepNewest.id.toString()}
+                              value={
+                                selectedKeepIds.get(groupIndex)?.toString() ||
+                                group.keepNewest.id.toString()
+                              }
                               onValueChange={(value) => {
                                 const newMap = new Map(selectedKeepIds);
                                 newMap.set(groupIndex, parseInt(value));
@@ -2527,90 +2542,124 @@ export default function SandwichCollectionLog() {
                               }}
                             >
                               {/* Combine all entries (keepNewest + toDelete) into one list */}
-                              {[group.keepNewest, ...group.toDelete].map((entry) => {
-                                const isSelected = selectedKeepIds.get(groupIndex) === entry.id;
-                                return (
-                                  <div
-                                    key={entry.id}
-                                    className={`flex items-start space-x-3 p-3 border-2 rounded-lg transition-colors ${
-                                      isSelected
-                                        ? 'bg-green-50 border-green-400 shadow-sm'
-                                        : 'bg-white border-slate-200 hover:border-slate-300'
-                                    }`}
-                                    data-testid={`entry-${entry.id}`}
-                                  >
-                                    <div className="flex items-start pt-1">
-                                      <RadioGroupItem
-                                        value={entry.id.toString()}
-                                        id={`entry-${groupIndex}-${entry.id}`}
-                                        className="mt-0.5"
-                                      />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center space-x-2">
-                                          {isSelected && (
-                                            <span className="text-sm font-bold text-green-700 uppercase bg-green-200 px-2 py-1 rounded">
-                                              ✓ Keeping
-                                            </span>
-                                          )}
-                                          <span className={`text-sm font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
-                                            ID: {entry.id}
-                                          </span>
-                                        </div>
-                                        <div className={`text-base font-medium ${isSelected ? 'text-green-700' : 'text-slate-600'}`}>
-                                          <User className="w-4 h-4 inline mr-1" />
-                                          {entry.createdBy}
-                                        </div>
+                              {[group.keepNewest, ...group.toDelete].map(
+                                (entry) => {
+                                  const isSelected =
+                                    selectedKeepIds.get(groupIndex) ===
+                                    entry.id;
+                                  return (
+                                    <div
+                                      key={entry.id}
+                                      className={`flex items-start space-x-3 p-3 border-2 rounded-lg transition-colors ${
+                                        isSelected
+                                          ? 'bg-green-50 border-green-400 shadow-sm'
+                                          : 'bg-white border-slate-200 hover:border-slate-300'
+                                      }`}
+                                      data-testid={`entry-${entry.id}`}
+                                    >
+                                      <div className="flex items-start pt-1">
+                                        <RadioGroupItem
+                                          value={entry.id.toString()}
+                                          id={`entry-${groupIndex}-${entry.id}`}
+                                          className="mt-0.5"
+                                        />
                                       </div>
-                                      
-                                      {/* Group Names Display */}
-                                      {entry.groupNames && (
-                                        <div className={`mb-2 p-2 border rounded ${
-                                          isSelected ? 'bg-green-100 border-green-300' : 'bg-slate-50 border-slate-200'
-                                        }`}>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-2">
                                           <div className="flex items-center space-x-2">
-                                            <Users className={`w-4 h-4 ${isSelected ? 'text-green-700' : 'text-slate-600'}`} />
-                                            <div>
-                                              <div className={`text-sm font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
-                                                Groups
-                                              </div>
-                                              <div className={`text-base font-semibold ${isSelected ? 'text-green-900' : 'text-slate-700'}`}>
-                                                {entry.groupNames}
+                                            {isSelected && (
+                                              <span className="text-sm font-bold text-green-700 uppercase bg-green-200 px-2 py-1 rounded">
+                                                ✓ Keeping
+                                              </span>
+                                            )}
+                                            <span
+                                              className={`text-sm font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}
+                                            >
+                                              ID: {entry.id}
+                                            </span>
+                                          </div>
+                                          <div
+                                            className={`text-base font-medium ${isSelected ? 'text-green-700' : 'text-slate-600'}`}
+                                          >
+                                            <User className="w-4 h-4 inline mr-1" />
+                                            {entry.createdBy}
+                                          </div>
+                                        </div>
+
+                                        {/* Group Names Display */}
+                                        {entry.groupNames && (
+                                          <div
+                                            className={`mb-2 p-2 border rounded ${
+                                              isSelected
+                                                ? 'bg-green-100 border-green-300'
+                                                : 'bg-slate-50 border-slate-200'
+                                            }`}
+                                          >
+                                            <div className="flex items-center space-x-2">
+                                              <Users
+                                                className={`w-4 h-4 ${isSelected ? 'text-green-700' : 'text-slate-600'}`}
+                                              />
+                                              <div>
+                                                <div
+                                                  className={`text-sm font-medium ${isSelected ? 'text-green-600' : 'text-slate-500'}`}
+                                                >
+                                                  Groups
+                                                </div>
+                                                <div
+                                                  className={`text-base font-semibold ${isSelected ? 'text-green-900' : 'text-slate-700'}`}
+                                                >
+                                                  {entry.groupNames}
+                                                </div>
                                               </div>
                                             </div>
                                           </div>
-                                        </div>
-                                      )}
-                                      
-                                      <div className="flex items-center justify-between text-base mb-2">
-                                        <div className="flex items-center space-x-3">
-                                          <span className={isSelected ? 'text-slate-700' : 'text-slate-600'}>
-                                            <Sandwich className="w-3 h-3 inline mr-1" />
-                                            {entry.individualSandwiches} individual
+                                        )}
+
+                                        <div className="flex items-center justify-between text-base mb-2">
+                                          <div className="flex items-center space-x-3">
+                                            <span
+                                              className={
+                                                isSelected
+                                                  ? 'text-slate-700'
+                                                  : 'text-slate-600'
+                                              }
+                                            >
+                                              <Sandwich className="w-3 h-3 inline mr-1" />
+                                              {entry.individualSandwiches}{' '}
+                                              individual
+                                            </span>
+                                          </div>
+                                          <span
+                                            className={`font-bold px-2 py-1 rounded ${
+                                              isSelected
+                                                ? 'text-green-900 bg-green-100'
+                                                : 'text-slate-900 bg-slate-100'
+                                            }`}
+                                          >
+                                            {entry.totalSandwiches} total
                                           </span>
                                         </div>
-                                        <span className={`font-bold px-2 py-1 rounded ${
-                                          isSelected ? 'text-green-900 bg-green-100' : 'text-slate-900 bg-slate-100'
-                                        }`}>
-                                          {entry.totalSandwiches} total
-                                        </span>
-                                      </div>
-                                      
-                                      <div className={`text-sm ${isSelected ? 'text-green-600' : 'text-slate-500'}`}>
-                                        <Calendar className="w-3 h-3 inline mr-1" />
-                                        Submitted: {new Date(entry.submittedAt).toLocaleString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          year: 'numeric',
-                                          hour: 'numeric',
-                                          minute: '2-digit'
-                                        })}
+
+                                        <div
+                                          className={`text-sm ${isSelected ? 'text-green-600' : 'text-slate-500'}`}
+                                        >
+                                          <Calendar className="w-3 h-3 inline mr-1" />
+                                          Submitted:{' '}
+                                          {new Date(
+                                            entry.submittedAt
+                                          ).toLocaleString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                          })}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                }
+                              )}
                             </RadioGroup>
                           </div>
                         </div>
@@ -2621,11 +2670,23 @@ export default function SandwichCollectionLog() {
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <div className="text-base text-blue-800">
                         {(() => {
-                          const totalEntriesToDelete = duplicateAnalysis.duplicates.reduce((sum, group, index) => {
-                            const keepId = selectedKeepIds.get(index) || group.keepNewest.id;
-                            const allIds = [group.keepNewest, ...group.toDelete].map(e => e.id);
-                            return sum + allIds.filter(id => id !== keepId).length;
-                          }, 0);
+                          const totalEntriesToDelete =
+                            duplicateAnalysis.duplicates.reduce(
+                              (sum, group, index) => {
+                                const keepId =
+                                  selectedKeepIds.get(index) ||
+                                  group.keepNewest.id;
+                                const allIds = [
+                                  group.keepNewest,
+                                  ...group.toDelete,
+                                ].map((e) => e.id);
+                                return (
+                                  sum +
+                                  allIds.filter((id) => id !== keepId).length
+                                );
+                              },
+                              0
+                            );
                           return `${totalEntriesToDelete} duplicate entr${totalEntriesToDelete === 1 ? 'y' : 'ies'} will be deleted (keeping ${duplicateAnalysis.duplicates.length} selected entr${duplicateAnalysis.duplicates.length === 1 ? 'y' : 'ies'})`;
                         })()}
                       </div>
@@ -2775,9 +2836,13 @@ export default function SandwichCollectionLog() {
                     onClick={() => {
                       const idsToDelete: number[] = [];
                       duplicateAnalysis.duplicates.forEach((group, index) => {
-                        const keepId = selectedKeepIds.get(index) || group.keepNewest.id;
-                        const allIds = [group.keepNewest, ...group.toDelete].map(e => e.id);
-                        allIds.forEach(id => {
+                        const keepId =
+                          selectedKeepIds.get(index) || group.keepNewest.id;
+                        const allIds = [
+                          group.keepNewest,
+                          ...group.toDelete,
+                        ].map((e) => e.id);
+                        allIds.forEach((id) => {
                           if (id !== keepId) {
                             idsToDelete.push(id);
                           }
@@ -2793,11 +2858,23 @@ export default function SandwichCollectionLog() {
                     {cleanSelectedSuspiciousMutation.isPending
                       ? 'Deleting...'
                       : (() => {
-                          const totalToDelete = duplicateAnalysis.duplicates.reduce((sum, group, index) => {
-                            const keepId = selectedKeepIds.get(index) || group.keepNewest.id;
-                            const allIds = [group.keepNewest, ...group.toDelete].map(e => e.id);
-                            return sum + allIds.filter(id => id !== keepId).length;
-                          }, 0);
+                          const totalToDelete =
+                            duplicateAnalysis.duplicates.reduce(
+                              (sum, group, index) => {
+                                const keepId =
+                                  selectedKeepIds.get(index) ||
+                                  group.keepNewest.id;
+                                const allIds = [
+                                  group.keepNewest,
+                                  ...group.toDelete,
+                                ].map((e) => e.id);
+                                return (
+                                  sum +
+                                  allIds.filter((id) => id !== keepId).length
+                                );
+                              },
+                              0
+                            );
                           return `Delete Duplicates (${totalToDelete})`;
                         })()}
                   </Button>
