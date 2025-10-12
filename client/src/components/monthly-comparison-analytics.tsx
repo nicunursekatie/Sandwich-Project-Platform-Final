@@ -342,20 +342,32 @@ export default function MonthlyComparisonAnalytics() {
     const prevMonthKey = `${prevMonthYear}-${String(prevMonth + 1).padStart(2, '0')}`;
     const previousMonth = monthlyAnalytics[prevMonthKey];
 
-    // Calculate both percent changes
+    // Check if we're in a partial month (current month and not yet complete)
+    const today = new Date();
+    const isCurrentMonth = selectedYear === today.getFullYear() && selectedMonth === today.getMonth();
+    const dayOfMonth = today.getDate();
+    const daysInSelectedMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const monthProgressRatio = isCurrentMonth ? dayOfMonth / daysInSelectedMonth : 1;
+
+    // Calculate projected totals for current month if it's incomplete
+    const projectedSelectedMonthTotal = isCurrentMonth
+      ? Math.round(selectedMonthData.totalSandwiches / monthProgressRatio)
+      : selectedMonthData.totalSandwiches;
+
+    // Calculate both percent changes using projected values for partial months
     const yearOverYearChange = prevYearMonth
-      ? selectedMonthData.totalSandwiches - prevYearMonth.totalSandwiches
+      ? projectedSelectedMonthTotal - prevYearMonth.totalSandwiches
       : null;
     const yearOverYearPercent = prevYearMonth
-      ? ((selectedMonthData.totalSandwiches - prevYearMonth.totalSandwiches) /
+      ? ((projectedSelectedMonthTotal - prevYearMonth.totalSandwiches) /
           prevYearMonth.totalSandwiches) * 100
       : null;
 
     const monthOverMonthChange = previousMonth
-      ? selectedMonthData.totalSandwiches - previousMonth.totalSandwiches
+      ? projectedSelectedMonthTotal - previousMonth.totalSandwiches
       : null;
     const monthOverMonthPercent = previousMonth
-      ? ((selectedMonthData.totalSandwiches - previousMonth.totalSandwiches) /
+      ? ((projectedSelectedMonthTotal - previousMonth.totalSandwiches) /
           previousMonth.totalSandwiches) * 100
       : null;
 
@@ -454,6 +466,10 @@ export default function MonthlyComparisonAnalytics() {
       // Wed/Thu vs Other Days split
       wedThuSandwiches,
       otherDaysSandwiches,
+      // Partial month indicators
+      isCurrentMonth,
+      monthProgressRatio,
+      projectedSelectedMonthTotal,
     };
   }, [monthlyAnalytics, selectedMonth, selectedYear]);
 
@@ -745,6 +761,11 @@ export default function MonthlyComparisonAnalytics() {
                     <span className="text-gray-500">
                       ({selectedMonthAnalysis.comparisonChange > 0 ? '+' : ''}{selectedMonthAnalysis.comparisonPercent?.toFixed(1)}%)
                     </span>
+                    {selectedMonthAnalysis.isCurrentMonth && (
+                      <span className="text-xs text-blue-600 ml-2">
+                        • Projected based on {Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% of month complete
+                      </span>
+                    )}
                   </>
                 ) : (
                   'No comparison data available'
@@ -952,6 +973,11 @@ export default function MonthlyComparisonAnalytics() {
                       </div>
                       <div className="text-sm text-gray-500">
                         vs {selectedMonthAnalysis.comparisonLabel}
+                        {selectedMonthAnalysis.isCurrentMonth && (
+                          <div className="text-xs text-blue-600 mt-1">
+                            Projected ({Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% complete)
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
