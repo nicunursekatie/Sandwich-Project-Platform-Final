@@ -318,7 +318,7 @@ export default function MeetingAgenda() {
         <div className="px-6 py-4 border-b border-slate-200">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-slate-900 flex items-center">
-              <Calendar className="text-blue-500 mr-3 w-6 h-6" />
+              <Calendar className="text-brand-primary mr-3 w-6 h-6" />
               Meeting Agenda Management
             </h1>
             <Dialog

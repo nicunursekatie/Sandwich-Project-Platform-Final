@@ -234,7 +234,7 @@ export default function MeetingAgenda({
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <ListTodo className="w-8 h-8 text-blue-500" />
+              <ListTodo className="w-8 h-8 text-brand-primary" />
               <div>
                 <p className="text-2xl font-bold">
                   {(agendaItems as AgendaItem[]).length}

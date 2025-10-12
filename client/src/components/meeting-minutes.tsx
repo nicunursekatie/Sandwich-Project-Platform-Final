@@ -95,7 +95,7 @@ export default function MeetingMinutes() {
   const getBorderColor = (color: string) => {
     switch (color) {
       case 'blue':
-        return 'border-l-blue-500';
+        return 'border-l-brand-primary';
       case 'green':
         return 'border-l-green-500';
       case 'amber':
@@ -103,7 +103,7 @@ export default function MeetingMinutes() {
       case 'purple':
         return 'border-l-purple-500';
       default:
-        return 'border-l-blue-500';
+        return 'border-l-brand-primary';
     }
   };
 
@@ -157,7 +157,7 @@ export default function MeetingMinutes() {
                       {minute.title}
                     </h3>
                     {minute.filePath ? (
-                      <FileText className="w-4 h-4 text-blue-500" />
+                      <FileText className="w-4 h-4 text-brand-primary" />
                     ) : minute.summary.includes('Google Docs link:') ? (
                       <ExternalLink className="w-4 h-4 text-green-500" />
                     ) : null}

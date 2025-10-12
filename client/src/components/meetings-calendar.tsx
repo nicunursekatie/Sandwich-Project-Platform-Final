@@ -841,7 +841,7 @@ export default function MeetingsCalendar() {
                   <div className="flex text-sm text-gray-600">
                     <label
                       htmlFor="agenda-upload"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-brand-primary hover:text-blue-500 focus-within:outline-none"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-brand-primary hover:text-brand-primary-dark focus-within:outline-none"
                     >
                       <span>Upload agenda file</span>
                       <input
