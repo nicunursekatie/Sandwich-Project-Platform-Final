@@ -905,7 +905,6 @@ export default function SandwichCollectionLog() {
     const [year, month, day] = dateString.split('-').map(Number);
     const localDate = new Date(year, month - 1, day);
     return localDate.toLocaleDateString('en-US', {
-      weekday: 'short',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -2357,256 +2356,130 @@ export default function SandwichCollectionLog() {
             return (
               <div
                 key={collection.id}
-                className={`border rounded-lg p-3 sm:p-4 ${
+                className={`border-b py-3 px-2 hover:bg-slate-50 transition-colors ${
                   isSelected
-                    ? 'bg-brand-primary-lighter border-brand-primary-border'
+                    ? 'bg-brand-primary-lighter'
                     : isInactiveHost
-                      ? 'bg-gray-100 border-gray-400 opacity-70'
-                      : 'border-slate-200'
+                      ? 'bg-gray-50 opacity-70'
+                      : ''
                 }`}
               >
-                {/* Mobile-first Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    {/* Date and Host on mobile */}
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                      {(canEditAllCollections ||
-                        canEditCollection(user, collection)) && (
-                        <button
-                          onClick={() =>
-                            handleSelectCollection(collection.id, !isSelected)
-                          }
-                          className="flex items-center w-4 h-4 shrink-0"
-                        >
-                          {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-brand-primary" />
-                          ) : (
-                            <Square className="w-4 h-4 text-slate-400 hover:text-slate-600" />
-                          )}
-                        </button>
+                {/* Single horizontal row layout */}
+                <div className="flex items-center gap-3">
+                  {/* Checkbox */}
+                  {(canEditAllCollections ||
+                    canEditCollection(user, collection)) && (
+                    <button
+                      onClick={() =>
+                        handleSelectCollection(collection.id, !isSelected)
+                      }
+                      className="flex items-center shrink-0"
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-4 h-4 text-brand-primary" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-400 hover:text-slate-600" />
                       )}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 flex-1">
-                        <div
-                          className={`flex items-center ${isInactiveHost ? 'text-gray-600' : 'text-slate-700'}`}
-                        >
-                          <Calendar
-                            className={`w-4 h-4 mr-1 ${isInactiveHost ? 'text-gray-500' : ''}`}
-                          />
-                          <span className="font-medium text-base sm:text-lg">
-                            {formatDate(collection.collectionDate)}
-                          </span>
-                        </div>
-                        <div
-                          className={`flex items-center ${isInactiveHost ? 'text-gray-500' : 'text-slate-600'}`}
-                        >
-                          <User
-                            className={`w-4 h-4 mr-1 ${isInactiveHost ? 'text-gray-400' : ''}`}
-                          />
-                          <span className="text-base sm:text-lg truncate max-w-[200px] sm:max-w-none">
-                            {collection.hostName}
-                          </span>
-                          {collection.hostName === 'OG Sandwich Project' && (
-                            <span className="ml-2 text-sm bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-0.5 rounded-full font-medium border border-amber-300 hidden sm:inline">
-                              👑 HISTORICAL
-                            </span>
-                          )}
-                          {isInactiveHost && (
-                            <span className="ml-2 text-sm bg-gray-300 text-gray-800 px-2 py-0.5 rounded-full font-medium hidden sm:inline">
-                              INACTIVE HOST
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {/* Mobile badges */}
-                    <div className="flex gap-1 mt-1 sm:hidden">
+                    </button>
+                  )}
+
+                  {/* Date - American format (Oct 1, 2025) */}
+                  <div className="w-28 shrink-0">
+                    <span className="text-sm font-medium text-slate-700">
+                      {formatDate(collection.collectionDate)}
+                    </span>
+                  </div>
+
+                  {/* Location/Host */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-900 truncate">
+                        {collection.hostName}
+                      </span>
                       {collection.hostName === 'OG Sandwich Project' && (
-                        <span className="text-sm bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-0.5 rounded-full font-medium border border-amber-300">
-                          👑 HISTORICAL
+                        <span className="text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-0.5 rounded-full font-medium border border-amber-300 shrink-0">
+                          👑
                         </span>
                       )}
                       {isInactiveHost && (
-                        <span className="text-sm bg-gray-300 text-gray-800 px-2 py-0.5 rounded-full font-medium">
-                          INACTIVE HOST
+                        <span className="text-xs bg-gray-300 text-gray-800 px-2 py-0.5 rounded-full font-medium shrink-0">
+                          INACTIVE
                         </span>
                       )}
                     </div>
-                  </div>
-                  {/* Total count and actions - mobile responsive */}
-                  <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
-                    <div className="text-right">
-                      <div
-                        className={`text-xl sm:text-2xl font-bold ${isInactiveHost ? 'text-gray-700' : 'text-slate-900'}`}
-                      >
-                        {totalSandwiches}
-                      </div>
-                      <div
-                        className={`text-sm ${isInactiveHost ? 'text-gray-500' : 'text-slate-500'}`}
-                      >
-                        total
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {/* Send Kudos Button - only show if collection has a submitter and user can send kudos */}
-                      {collection.createdBy &&
-                        collection.createdByName &&
-                        hasPermission(user, PERMISSIONS.SEND_KUDOS) && (
-                          <SendKudosButton
-                            recipientId={collection.createdBy}
-                            recipientName={collection.createdByName}
-                            contextType="task"
-                            contextId={collection.id.toString()}
-                            contextTitle={`${totalSandwiches} sandwiches from ${collection.hostName}`}
-                            size="sm"
-                            variant="outline"
-                            iconOnly={true}
-                            className="h-7 w-7 p-0 sm:h-8 sm:w-8 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                          />
-                        )}
-                      {canEditCollection(user, collection) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(collection)}
-                          className="h-7 w-7 p-0 sm:h-8 sm:w-8 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
-                        >
-                          <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </Button>
-                      )}
-                      {canDeleteCollection(user, collection) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(collection.id)}
-                          className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 sm:h-8 sm:w-8 bg-white border-gray-300"
-                        >
-                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Details - Mobile optimized */}
-                <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
-                  {/* Individual Collections */}
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <User className="w-4 h-4 mr-2 text-slate-500" />
-                        <span className="text-base font-medium text-slate-700">
-                          Individual
-                        </span>
-                      </div>
-                      <span className="text-lg font-bold text-slate-900">
-                        {collection.individualSandwiches}
-                      </span>
-                    </div>
-                    {/* Show sandwich type breakdown if available */}
-                    {(collection.individualDeli ||
-                      collection.individualTurkey ||
-                      collection.individualHam ||
-                      collection.individualPbj) && (
-                      <div className="mt-2 flex gap-2 text-xs flex-wrap">
-                        {collection.individualDeli > 0 && (
-                          <span className="bg-white px-2 py-1 rounded text-slate-600">
-                            <span className="font-medium text-slate-700">
-                              {collection.individualDeli}
-                            </span>{' '}
-                            Deli
-                          </span>
-                        )}
-                        {collection.individualTurkey > 0 && (
-                          <span className="bg-white px-2 py-1 rounded text-slate-600">
-                            <span className="font-medium text-slate-700">
-                              {collection.individualTurkey}
-                            </span>{' '}
-                            Turkey
-                          </span>
-                        )}
-                        {collection.individualHam > 0 && (
-                          <span className="bg-white px-2 py-1 rounded text-slate-600">
-                            <span className="font-medium text-slate-700">
-                              {collection.individualHam}
-                            </span>{' '}
-                            Ham
-                          </span>
-                        )}
-                        {collection.individualPbj > 0 && (
-                          <span className="bg-white px-2 py-1 rounded text-slate-600">
-                            <span className="font-medium text-slate-700">
-                              {collection.individualPbj}
-                            </span>{' '}
-                            PBJ
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
 
-                  {/* Group Collections */}
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <Users className="w-4 h-4 mr-2 text-slate-500" />
-                        <span className="text-base font-medium text-slate-700">
-                          Groups
-                        </span>
-                      </div>
-                      <span className="text-lg font-bold text-slate-900">
-                        {calculateGroupTotal(collection)}
-                      </span>
+                  {/* Individual count */}
+                  <div className="w-20 text-center shrink-0">
+                    <div className="text-sm text-slate-600">
+                      {collection.individualSandwiches}
+                      <span className="text-xs text-slate-400 ml-1">ind</span>
                     </div>
-                    {Array.isArray(groupData) && groupData.length > 0 && (
-                      <div className="space-y-1">
-                        {groupData.map((group: any, index: number) => {
-                          const deli = Number(group.deli) || 0;
-                          const turkey = Number(group.turkey) || 0;
-                          const ham = Number(group.ham) || 0;
-                          const pbj = Number(group.pbj) || 0;
-                          
-                          const types = [];
-                          if (deli > 0) types.push(`${deli} Deli`);
-                          if (turkey > 0) types.push(`${turkey} Turkey`);
-                          if (ham > 0) types.push(`${ham} Ham`);
-                          if (pbj > 0) types.push(`${pbj} PBJ`);
-                          
-                          return (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between text-base bg-white rounded px-2 py-1"
-                            >
-                              <span className="text-slate-600 truncate max-w-[120px] sm:max-w-none">
-                                {group.groupName}
-                              </span>
-                              <span className="text-slate-700 font-medium ml-2 text-sm">
-                                {types.length > 0 ? types.join(', ') : group.sandwichCount}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                  </div>
+
+                  {/* Group count */}
+                  <div className="w-20 text-center shrink-0">
+                    <div className="text-sm text-slate-600">
+                      {calculateGroupTotal(collection)}
+                      <span className="text-xs text-slate-400 ml-1">grp</span>
+                    </div>
+                  </div>
+
+                  {/* Total badge with brand gradient */}
+                  <div className="w-16 shrink-0">
+                    <div className="bg-gradient-to-r from-brand-orange to-brand-primary text-white px-3 py-1 rounded-full text-center">
+                      <span className="text-sm font-bold">{totalSandwiches}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {collection.createdBy &&
+                      collection.createdByName &&
+                      hasPermission(user, PERMISSIONS.SEND_KUDOS) && (
+                        <SendKudosButton
+                          recipientId={collection.createdBy}
+                          recipientName={collection.createdByName}
+                          contextType="task"
+                          contextId={collection.id.toString()}
+                          contextTitle={`${totalSandwiches} sandwiches from ${collection.hostName}`}
+                          size="sm"
+                          variant="outline"
+                          iconOnly={true}
+                          className="h-7 w-7 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        />
+                      )}
+                    {canEditCollection(user, collection) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(collection)}
+                        className="h-7 w-7 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                      >
+                        <Edit className="w-3 h-3" />
+                      </Button>
                     )}
-                    {(!Array.isArray(groupData) || groupData.length === 0) && (
-                      <div className="text-base text-slate-500 italic">
-                        No group collections
-                      </div>
+                    {canDeleteCollection(user, collection) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(collection.id)}
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 bg-white border-gray-300"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
                     )}
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="mt-3 pt-3 border-t border-slate-200">
-                  <div className="text-sm text-slate-500 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
-                    <span>
-                      Submitted {formatSubmittedAt(collection.submittedAt)}
-                      {collection.createdByName && (
-                        <span className="text-slate-600 font-medium ml-1">
-                          by {collection.createdByName}
-                        </span>
-                      )}
+                {/* Submission info - small text at bottom */}
+                <div className="mt-1 ml-9 text-xs text-slate-400">
+                  Submitted {formatSubmittedAt(collection.submittedAt)}
+                  {collection.createdByName && (
+                    <span className="ml-1">
+                      by {collection.createdByName}
                     </span>
-                  </div>
+                  )}
                 </div>
               </div>
             );

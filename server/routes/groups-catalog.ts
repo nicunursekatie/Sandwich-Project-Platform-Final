@@ -310,7 +310,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
             // Update latest collection date and calculate latest activity date
             const latestCollectionDate = Math.max(
-              ...Array.from(orgData.eventDates).map((d) =>
+              ...(Array.from(orgData.eventDates) as string[]).map((d) =>
                 new Date(d).getTime()
               )
             );
