@@ -140,6 +140,25 @@ export function NotesTab({
     search: searchQuery,
   });
 
+  // Debug logging for notes
+  React.useEffect(() => {
+    console.log('[NotesTab] Current filters:', filters);
+    console.log('[NotesTab] Notes received from hook:', notes.length, 'notes');
+    if (notes.length > 0) {
+      console.log('[NotesTab] Sample notes (first 3):');
+      notes.slice(0, 3).forEach(note => {
+        console.log({
+          id: note.id,
+          projectId: note.projectId,
+          meetingId: note.meetingId,
+          type: note.type,
+          status: note.status,
+          createdAt: note.createdAt
+        });
+      });
+    }
+  }, [notes, filters]);
+
   // Memoized data for performance
   const notesWithProjectInfo = useMemo(() => {
     return notes.map(note => {

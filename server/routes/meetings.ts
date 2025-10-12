@@ -433,19 +433,34 @@ router.get('/notes', isAuthenticated, async (req: any, res) => {
   try {
     console.log('[Meeting Notes API] Getting meeting notes with filters:', req.query);
     const { projectId, meetingId, type, status } = req.query;
-    
+
     const filters: any = {};
     if (projectId) filters.projectId = parseInt(projectId as string);
     if (meetingId) filters.meetingId = parseInt(meetingId as string);
     if (type) filters.type = type as string;
     if (status) filters.status = status as string;
 
-    const notes = Object.keys(filters).length > 0 
+    const notes = Object.keys(filters).length > 0
       ? await storage.getMeetingNotesByFilters(filters)
       : await storage.getAllMeetingNotes();
-    
-    // TODO: Add joined data (projectTitle, meetingTitle) if needed by frontend
+
+    // Log detailed info about notes
     console.log(`[Meeting Notes API] Found ${notes.length} meeting notes`);
+    if (notes.length > 0) {
+      console.log('[Meeting Notes API] Sample of notes (first 3):');
+      notes.slice(0, 3).forEach(note => {
+        console.log({
+          id: note.id,
+          projectId: note.projectId,
+          meetingId: note.meetingId,
+          type: note.type,
+          status: note.status,
+          createdAt: note.createdAt,
+          contentPreview: note.content.substring(0, 100)
+        });
+      });
+    }
+
     res.json(notes);
   } catch (error) {
     logger.error('Failed to get meeting notes', error);
@@ -454,7 +469,7 @@ router.get('/notes', isAuthenticated, async (req: any, res) => {
   }
 });
 
-// POST /api/meetings/notes - Create a new meeting note  
+// POST /api/meetings/notes - Create a new meeting note
 router.post('/notes', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
@@ -463,27 +478,37 @@ router.post('/notes', isAuthenticated, async (req: any, res) => {
     }
 
     console.log('[Meeting Notes API] Creating new meeting note:', req.body);
-    
+
     const noteData = insertMeetingNoteSchema.parse(req.body);
-    
+
     // Add creator information
     noteData.createdBy = user.id;
     noteData.createdByName = user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
-    
+
+    console.log('[Meeting Notes API] Note data after validation and user info:', {
+      projectId: noteData.projectId,
+      meetingId: noteData.meetingId,
+      type: noteData.type,
+      status: noteData.status,
+      createdBy: noteData.createdBy,
+      createdByName: noteData.createdByName,
+      contentLength: noteData.content?.length || 0
+    });
+
     const note = await storage.createMeetingNote(noteData);
-    
-    console.log(`[Meeting Notes API] Created meeting note with ID: ${note.id}`);
+
+    console.log(`[Meeting Notes API] ✅ Successfully created meeting note with ID: ${note.id}, meetingId: ${note.meetingId}, status: ${note.status}`);
     res.status(201).json(note);
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('[Meeting Notes API] Validation error:', error.errors);
-      return res.status(400).json({ 
-        message: 'Invalid meeting note data', 
-        errors: error.errors 
+      return res.status(400).json({
+        message: 'Invalid meeting note data',
+        errors: error.errors
       });
     }
     logger.error('Failed to create meeting note', error);
-    console.error('[Meeting Notes API] Error creating meeting note:', error);
+    console.error('[Meeting Notes API] ❌ Error creating meeting note:', error);
     res.status(500).json({ message: 'Failed to create meeting note' });
   }
 });

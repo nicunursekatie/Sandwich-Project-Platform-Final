@@ -319,15 +319,19 @@ export function AgendaPlanningTab({
         // Only create note if there's meaningful content
         if (discussionPoints?.trim() || decisionItems?.trim()) {
           try {
-            await createNoteMutation.mutateAsync({
+            const noteData = {
               projectId: project.id,
               meetingId: selectedMeeting.id,
-              type: 'meeting',
+              type: 'meeting' as const,
               content: JSON.stringify(noteContent),
-              status: 'active',
-            });
+              status: 'active' as const,
+            };
+            console.log('Creating note for project:', project.title, noteData);
+            await createNoteMutation.mutateAsync(noteData);
             notesCreated++;
+            console.log('Successfully created note for:', project.title);
           } catch (error) {
+            console.error('Failed to save notes for', project.title, error);
             errors.push(`Failed to save notes for ${project.title}`);
           }
         }
@@ -400,27 +404,46 @@ export function AgendaPlanningTab({
 
       // Show success message
       if (notesCreated > 0) {
+        // Clear the local text state first
+        setLocalProjectText({});
+        setSelectedProjectIds([]);
+        setProjectAgendaStatus({});
+        setMinimizedProjects(new Set());
+
+        // Now clear the database fields for the projects
+        const clearPromises = agendaProjects.map(async (project) => {
+          try {
+            await apiRequest('PATCH', `/api/projects/${project.id}`, {
+              meetingDiscussionPoints: '',
+              meetingDecisionItems: '',
+            });
+          } catch (error) {
+            console.warn(`Failed to clear text for project ${project.id}:`, error);
+          }
+        });
+
+        // Also clear tabled projects
+        const tabledClearPromises = tabledProjects.map(async (project) => {
+          try {
+            await apiRequest('PATCH', `/api/projects/${project.id}`, {
+              meetingDiscussionPoints: '',
+              meetingDecisionItems: '',
+            });
+          } catch (error) {
+            console.warn(`Failed to clear text for tabled project ${project.id}:`, error);
+          }
+        });
+
+        // Wait for all clears to complete
+        await Promise.all([...clearPromises, ...tabledClearPromises]);
+
+        // Refresh the projects data
+        queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+
         toast({
           title: 'Notes Saved Successfully',
           description: `Saved ${notesCreated} note(s) from this meeting. View them in the Notes tab.`,
         });
-
-        // Reset agenda planning page to normal state
-        setSelectedProjectIds([]);
-        setProjectAgendaStatus({});
-        setMinimizedProjects(new Set());
-        setLocalProjectText({});
-        
-        // Clear discussion text by resetting the parent component state
-        // This will clear all the text boxes for discussion points and decision items
-        if (resetAgendaPlanningMutation) {
-          try {
-            await resetAgendaPlanningMutation.mutateAsync();
-          } catch (resetError) {
-            // Reset mutation failed, but notes were saved successfully
-            console.warn('Failed to reset agenda planning text:', resetError);
-          }
-        }
       } else {
         toast({
           title: 'No Notes to Save',
