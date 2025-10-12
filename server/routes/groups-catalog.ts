@@ -60,21 +60,36 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
         // Track department-level aggregation
         if (!departmentsMap.has(departmentKey)) {
+          // Normalize event date immediately
+          let normalizedEventDate = null;
+          if (request.desiredEventDate) {
+            try {
+              const dateObj = new Date(request.desiredEventDate);
+              if (!isNaN(dateObj.getTime())) {
+                normalizedEventDate = dateObj.toISOString().split('T')[0];
+              }
+            } catch {
+              normalizedEventDate = null;
+            }
+          }
+
           departmentsMap.set(departmentKey, {
             organizationName: orgName, // Preserve original display name
             canonicalName: canonicalOrgName, // Store canonical for matching
             department: department,
             contacts: [],
             totalRequests: 0,
-            latestStatus: 'new',
+            latestStatus: request.status || 'new',
             latestRequestDate: request.createdAt || new Date(),
-            hasHostedEvent: false,
-            totalSandwiches: 0,
-            eventDate: null,
-            tspContact: null,
-            tspContactAssigned: null,
-            assignedTo: null,
-            assignedToName: null,
+            hasHostedEvent: request.status === 'completed' || request.status === 'contact_completed',
+            totalSandwiches: request.estimatedSandwichCount || 0,
+            eventDate: normalizedEventDate,
+            tspContact: request.tspContact || null,
+            tspContactAssigned: request.tspContactAssigned || null,
+            assignedTo: request.assignedTo || null,
+            assignedToName: request.assignedTo && userIdToName.has(request.assignedTo)
+              ? userIdToName.get(request.assignedTo)
+              : null,
           });
         }
 
