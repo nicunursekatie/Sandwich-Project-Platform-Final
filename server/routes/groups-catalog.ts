@@ -98,7 +98,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
         // Add contact if not already present
         const existingContact = dept.contacts.find(
-          (c) => c.name === contactName && c.email === contactEmail
+          (c: { name: string; email: string }) => c.name === contactName && c.email === contactEmail
         );
 
         if (!existingContact) {
