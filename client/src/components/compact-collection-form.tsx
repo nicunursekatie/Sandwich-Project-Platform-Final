@@ -333,22 +333,30 @@ export default function CompactCollectionForm({
 
             {/* Toggle for sandwich type breakdown */}
             <div className="mt-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowIndividualBreakdown(!showIndividualBreakdown);
-                  // Reset breakdown when hiding
-                  if (showIndividualBreakdown) {
-                    setIndividualDeli(0);
-                    setIndividualPbj(0);
-                  }
-                }}
-                className="text-brand-primary text-sm"
-              >
-                {showIndividualBreakdown ? '- Use total count instead' : '+ Specify sandwich types (Deli/PBJ)'}
-              </Button>
+              <div className={`border rounded-lg p-3 ${showIndividualBreakdown ? 'bg-brand-primary-lighter border-brand-primary' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="individual-breakdown"
+                    checked={showIndividualBreakdown}
+                    onChange={(e) => {
+                      setShowIndividualBreakdown(e.target.checked);
+                      // Reset breakdown when hiding
+                      if (!e.target.checked) {
+                        setIndividualDeli(0);
+                        setIndividualPbj(0);
+                      }
+                    }}
+                    className="w-4 h-4 text-brand-primary focus:ring-brand-primary"
+                  />
+                  <label htmlFor="individual-breakdown" className="text-sm font-medium cursor-pointer">
+                    Specify sandwich types (Deli/PBJ) - Optional
+                  </label>
+                </div>
+                <p className="text-xs text-gray-600 mt-1 ml-6">
+                  Check this box if you know the breakdown of sandwich types
+                </p>
+              </div>
             </div>
           </div>
 
@@ -438,23 +446,26 @@ export default function CompactCollectionForm({
               )}
 
               {/* Toggle for sandwich type breakdown for groups */}
-              <div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowGroupBreakdown(!showGroupBreakdown);
-                    // Reset breakdown when hiding
-                    if (showGroupBreakdown) {
-                      setNewGroupDeli(0);
-                      setNewGroupPbj(0);
-                    }
-                  }}
-                  className="text-brand-primary text-xs"
-                >
-                  {showGroupBreakdown ? '- Use total count instead' : '+ Specify sandwich types (Deli/PBJ)'}
-                </Button>
+              <div className={`border rounded p-2 ${showGroupBreakdown ? 'bg-brand-primary-lighter border-brand-primary' : 'bg-white border-gray-200'}`}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="group-breakdown"
+                    checked={showGroupBreakdown}
+                    onChange={(e) => {
+                      setShowGroupBreakdown(e.target.checked);
+                      // Reset breakdown when hiding
+                      if (!e.target.checked) {
+                        setNewGroupDeli(0);
+                        setNewGroupPbj(0);
+                      }
+                    }}
+                    className="w-3 h-3 text-brand-primary focus:ring-brand-primary"
+                  />
+                  <label htmlFor="group-breakdown" className="text-xs font-medium cursor-pointer">
+                    Specify sandwich types (Optional)
+                  </label>
+                </div>
               </div>
 
               <div className="flex gap-2">
