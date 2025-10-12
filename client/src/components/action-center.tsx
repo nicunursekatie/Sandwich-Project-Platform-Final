@@ -126,8 +126,8 @@ export default function ActionCenter() {
 
     const actions: ActionItem[] = [];
 
-    // HIGH PRIORITY: Hosts with significant decline
-    const decliningHosts = hostPerformance
+    // HIGH PRIORITY: Hosts who might need support
+    const hostsNeedingSupport = hostPerformance
       .filter(
         (h) =>
           h.percentChange < -30 &&
@@ -137,35 +137,35 @@ export default function ActionCenter() {
       .sort((a, b) => a.percentChange - b.percentChange)
       .slice(0, 5);
 
-    if (decliningHosts.length > 0) {
+    if (hostsNeedingSupport.length > 0) {
       actions.push({
-        id: 'declining-hosts',
+        id: 'hosts-needing-support',
         priority: 'high',
         category: 'engagement',
-        title: `Re-engage ${decliningHosts.length} Declining Hosts`,
-        description: `${decliningHosts.length} hosts have decreased collections by 30%+ this month`,
-        impact: 'Could recover 500-2000 sandwiches',
-        action: 'Contact for check-in',
-        data: decliningHosts,
+        title: `Check In With ${hostsNeedingSupport.length} Hosts`,
+        description: `${hostsNeedingSupport.length} hosts may need support or have scheduling challenges this month`,
+        impact: 'Strengthen relationships and identify support needs',
+        action: 'Schedule friendly check-in',
+        data: hostsNeedingSupport,
       });
     }
 
-    // HIGH PRIORITY: Inactive hosts (60+ days)
-    const inactiveHosts = hostPerformance
+    // MEDIUM PRIORITY: Hosts we'd love to reconnect with
+    const hostsToReconnect = hostPerformance
       .filter((h) => h.daysSinceLastCollection >= 60 && h.daysSinceLastCollection < 180)
       .sort((a, b) => b.allTimeTotal - a.allTimeTotal)
       .slice(0, 5);
 
-    if (inactiveHosts.length > 0) {
+    if (hostsToReconnect.length > 0) {
       actions.push({
-        id: 'inactive-hosts',
-        priority: 'high',
+        id: 'hosts-to-reconnect',
+        priority: 'medium',
         category: 'engagement',
-        title: `${inactiveHosts.length} Hosts Haven't Collected in 60+ Days`,
-        description: 'Previously active hosts may need support or re-engagement',
-        impact: `These hosts contributed ${inactiveHosts.reduce((s, h) => s + h.allTimeTotal, 0).toLocaleString()} sandwiches historically`,
-        action: 'Schedule check-in calls',
-        data: inactiveHosts,
+        title: `Reconnect With ${hostsToReconnect.length} Valued Hosts`,
+        description: 'Reach out to see how these great hosts are doing',
+        impact: `These hosts have contributed ${hostsToReconnect.reduce((s, h) => s + h.allTimeTotal, 0).toLocaleString()} sandwiches - let's stay connected!`,
+        action: 'Send friendly hello',
+        data: hostsToReconnect,
       });
     }
 
@@ -409,11 +409,11 @@ export default function ActionCenter() {
                           <div className="flex-1">
                             <p className="font-medium">{hostData.host.name}</p>
                             <p className="text-sm text-gray-600">
-                              {hostData.percentChange !== undefined &&
-                                `${hostData.percentChange > 0 ? '+' : ''}${Math.round(hostData.percentChange)}% vs last month`}
+                              {hostData.allTimeTotal !== undefined &&
+                                `${hostData.allTimeTotal.toLocaleString()} sandwiches all-time`}
                               {hostData.daysSinceLastCollection !== undefined &&
-                                ` • ${hostData.daysSinceLastCollection} days since last collection`}
-                              {hostData.thisMonthTotal !== undefined &&
+                                ` • Last collection ${hostData.daysSinceLastCollection} days ago`}
+                              {hostData.thisMonthTotal !== undefined && hostData.thisMonthTotal > 0 &&
                                 ` • ${hostData.thisMonthTotal.toLocaleString()} this month`}
                             </p>
                           </div>
