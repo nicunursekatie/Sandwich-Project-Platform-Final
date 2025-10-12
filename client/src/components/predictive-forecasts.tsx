@@ -44,7 +44,12 @@ export default function PredictiveForecasts() {
 
   // Fetch event requests for scheduled events forecast
   const { data: eventRequests } = useQuery<any[]>({
-    queryKey: ['/api/event-requests?all=true'],
+    queryKey: ['/api/event-requests'],
+    queryFn: async () => {
+      const response = await fetch('/api/event-requests?all=true');
+      if (!response.ok) throw new Error('Failed to fetch event requests');
+      return response.json();
+    },
   });
 
   const collections = collectionsData?.collections || [];
@@ -234,7 +239,7 @@ export default function PredictiveForecasts() {
         data: trendData,
       },
     };
-  }, [collections]);
+  }, [collections, eventRequests]);
 
   if (!forecasts) {
     return (
