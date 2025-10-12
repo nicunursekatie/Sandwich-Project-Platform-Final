@@ -96,7 +96,7 @@ export default function GroupCatalog({
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('groupName');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilterStart, setDateFilterStart] = useState<string>('');
   const [dateFilterEnd, setDateFilterEnd] = useState<string>('');
