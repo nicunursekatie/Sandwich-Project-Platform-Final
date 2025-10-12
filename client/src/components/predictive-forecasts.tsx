@@ -277,6 +277,7 @@ export default function PredictiveForecasts() {
               <p className="text-3xl font-bold text-brand-primary">
                 {forecasts.weekly.current.toLocaleString()}
               </p>
+              <p className="text-xs text-gray-500 mt-1 italic">From collection log</p>
             </div>
             <div className="text-center p-4 bg-brand-primary/10 rounded-lg border-2 border-brand-primary">
               <p className="text-sm text-gray-600 mb-1">Projected Week Total</p>
@@ -284,6 +285,7 @@ export default function PredictiveForecasts() {
                 {forecasts.weekly.projected.toLocaleString()}
               </p>
               <div className="text-xs text-brand-primary mt-2 space-y-0.5">
+                <div>{forecasts.weekly.current.toLocaleString()} already collected</div>
                 {forecasts.weekly.scheduled > 0 && (
                   <div>+ {forecasts.weekly.scheduledEventCount} scheduled event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})</div>
                 )}
@@ -291,6 +293,7 @@ export default function PredictiveForecasts() {
                   <div>+ Expected individual donations ({forecasts.weekly.expectedIndividual.toLocaleString()})</div>
                 )}
               </div>
+              <p className="text-xs text-gray-500 mt-2 italic">Event requests + historical avg by day</p>
               <div className="flex items-center justify-center gap-2 mt-2">
                 {forecasts.weekly.vsAvg >= 0 ? (
                   <TrendingUp className="h-4 w-4 text-green-600" />
@@ -312,6 +315,7 @@ export default function PredictiveForecasts() {
               <p className="text-3xl font-bold text-gray-700">
                 {forecasts.weekly.average.toLocaleString()}
               </p>
+              <p className="text-xs text-gray-500 mt-1 italic">Historical avg (all weeks)</p>
             </div>
           </div>
 
@@ -361,12 +365,14 @@ export default function PredictiveForecasts() {
               <p className="text-3xl font-bold text-brand-primary">
                 {forecasts.monthly.current.toLocaleString()}
               </p>
+              <p className="text-xs text-gray-500 mt-1 italic">From collection log</p>
             </div>
             <div className="text-center p-4 bg-brand-teal/10 rounded-lg border-2 border-brand-teal">
               <p className="text-sm text-gray-600 mb-1">Projected Month Total</p>
               <p className="text-3xl font-bold text-brand-teal">
                 {forecasts.monthly.projected.toLocaleString()}
               </p>
+              <p className="text-xs text-gray-500 mt-2 italic">Based on current pace</p>
               <div className="flex items-center justify-center gap-2 mt-2">
                 {forecasts.monthly.vsAvg >= 0 ? (
                   <TrendingUp className="h-4 w-4 text-green-600" />
@@ -388,6 +394,7 @@ export default function PredictiveForecasts() {
               <p className="text-3xl font-bold text-gray-700">
                 {forecasts.monthly.average.toLocaleString()}
               </p>
+              <p className="text-xs text-gray-500 mt-1 italic">Historical avg (all months)</p>
             </div>
           </div>
 
