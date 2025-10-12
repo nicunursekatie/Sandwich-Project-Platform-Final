@@ -54,6 +54,7 @@ Key technical implementations include:
 - **Groups Catalog Organization Grouping**: Organizations in the groups catalog properly consolidate all events into a single organization card.
 - **Weekly Monitoring Email Routing**: Fixed location-to-contact email routing to send reminders to actual host contacts with fallback email mapping.
 - **Sandwich Type Tracking System**: Comprehensive tracking of sandwich types (deli, turkey, ham, pbj) for individual sandwiches and group collections with real-time validation, display, and analytics utilities.
+- **Interactive Route Map & Driver Optimization**: Interactive Leaflet map for visualizing host locations, multi-host selection, route optimization using nearest-neighbor algorithm, driver assignment, and export capabilities (Google Maps, print, clipboard). Includes geolocation storage (latitude/longitude) for hosts with permission-controlled coordinate updates.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
@@ -66,3 +67,4 @@ Key technical implementations include:
 - **Authentication**: `connect-pg-simple`
 - **File Uploads**: `multer`
 - **Google Integration**: Google Sheets API, `@google-cloud/storage`, Google Analytics
+- **Mapping**: `leaflet@1.9.4`, `react-leaflet@4.2.1` (OpenStreetMap tiles, no API key required)
