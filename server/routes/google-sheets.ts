@@ -193,7 +193,7 @@ router.get('/sync/analyze', async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
-    const syncService = new GoogleSheetsSyncService(storage);
+    const syncService = new GoogleSheetsSyncService(storage as any);
 
     const sheetName = (req.query.sheet as string) || 'Sheet1';
     const analysis = await syncService.analyzeSheetStructure(sheetName);
