@@ -63,16 +63,6 @@ interface MonthlyStats {
   daysWithCollections: number;
 }
 
-interface HostComparison {
-  hostName: string;
-  augustTotal: number;
-  avgMonthlyTotal: number;
-  difference: number;
-  percentChange: number;
-  augustCollections: number;
-  avgMonthlyCollections: number;
-}
-
 export default function MonthlyComparisonAnalytics() {
   // Define months array at the top to avoid initialization errors
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -472,93 +462,6 @@ export default function MonthlyComparisonAnalytics() {
       projectedSelectedMonthTotal,
     };
   }, [monthlyAnalytics, selectedMonth, selectedYear]);
-
-  // Host comparison analysis
-  const hostComparison = useMemo((): HostComparison[] => {
-    if (!monthlyAnalytics || !selectedMonthAnalysis?.selectedMonthData) return [];
-
-    const selectedStats = selectedMonthAnalysis.selectedMonthData;
-    const allHosts = new Set<string>();
-
-    // Collect all unique hosts
-    Object.values(monthlyAnalytics).forEach((month) => {
-      Object.keys(month.hostParticipation).forEach((host) =>
-        allHosts.add(host)
-      );
-    });
-
-    const comparisons: HostComparison[] = [];
-
-    allHosts.forEach((hostName) => {
-      if (hostName === 'Unknown') return;
-
-      const selectedMonthTotal = selectedStats.hostParticipation[hostName] || 0;
-
-      // Calculate average for this host across all months (excluding selected month)
-      const otherMonths = Object.values(monthlyAnalytics).filter(
-        (m) => !(m.year === selectedYear && m.month === selectedStats.month)
-      );
-
-      const monthlyTotals = otherMonths
-        .map((m) => m.hostParticipation[hostName] || 0)
-        .filter((total) => total > 0);
-
-      if (monthlyTotals.length === 0) return;
-
-      const avgMonthlyTotal =
-        monthlyTotals.reduce((sum, total) => sum + total, 0) /
-        monthlyTotals.length;
-      const difference = selectedMonthTotal - avgMonthlyTotal;
-      const percentChange =
-        avgMonthlyTotal > 0 ? (difference / avgMonthlyTotal) * 100 : 0;
-
-      // Count collections for selected month
-      const selectedMonthCollections = collections.filter(
-        (c) => {
-          if (c.hostName !== hostName || !c.collectionDate) {
-            return false;
-          }
-
-          const date = parseCollectionDate(c.collectionDate);
-          if (Number.isNaN(date.getTime())) {
-            return false;
-          }
-          return date.getFullYear() === selectedYear && date.getMonth() === selectedMonth;
-      }
-      ).length;
-
-      // Calculate average monthly collections for this host using month keys
-      const monthlyCollectionCounts = otherMonths.map((month) => {
-        const yearMonth = `${month.year}-${String(new Date(month.month + ' 1, ' + month.year).getMonth() + 1).padStart(2, '0')}`;
-        return collections.filter(
-          (c) =>
-            c.hostName === hostName &&
-            c.collectionDate &&
-            c.collectionDate.startsWith(yearMonth)
-        ).length;
-      });
-
-      const avgMonthlyCollections =
-        monthlyCollectionCounts.length > 0
-          ? monthlyCollectionCounts.reduce((sum, count) => sum + count, 0) /
-            monthlyCollectionCounts.length
-          : 0;
-
-      comparisons.push({
-        hostName,
-        augustTotal: selectedMonthTotal,
-        avgMonthlyTotal: Math.round(avgMonthlyTotal),
-        difference: Math.round(difference),
-        percentChange: Math.round(percentChange),
-        augustCollections: selectedMonthCollections,
-        avgMonthlyCollections: Math.round(avgMonthlyCollections),
-      });
-    });
-
-    return comparisons
-      .filter((c) => c.avgMonthlyTotal > 100) // Focus on significant hosts
-      .sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
-  }, [monthlyAnalytics, selectedMonthAnalysis, collections, selectedMonth, selectedYear]);
 
   // Monthly trends chart data
   const monthlyTrends = useMemo(() => {
@@ -1507,16 +1410,6 @@ export default function MonthlyComparisonAnalytics() {
                   </p>
                 </div>
 
-                <div className="p-3 rounded bg-gray-50 border border-gray-200">
-                  <h4 className="font-semibold mb-1 text-gray-800">
-                    Host Participation
-                  </h4>
-                  <p className="text-sm text-gray-700">
-                    {hostComparison.filter((h) => h.percentChange < -20).length} hosts with significant declines (&gt;20%),
-                    {' '}{hostComparison.filter((h) => h.percentChange > 20).length} hosts with strong growth (&gt;20%).
-                  </p>
-                </div>
-
                 {(() => {
                   const holidays = getHolidaysForMonth(selectedMonth, selectedYear);
                   if (holidays.length > 0) {
@@ -1547,30 +1440,6 @@ export default function MonthlyComparisonAnalytics() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {hostComparison.filter((h) => h.percentChange < -20).length > 0 && (
-                  <div className="p-3 bg-orange-50 rounded">
-                    <h4 className="font-semibold text-orange-800 mb-1">
-                      Re-engage Underperforming Hosts
-                    </h4>
-                    <p className="text-sm text-orange-700">
-                      Reach out to {hostComparison.filter((h) => h.percentChange < -20).length} hosts with significant declines.
-                      Schedule check-ins to understand barriers and provide support.
-                    </p>
-                  </div>
-                )}
-
-                {hostComparison.filter((h) => h.percentChange > 20).length > 0 && (
-                  <div className="p-3 bg-brand-primary-lighter rounded border border-brand-primary-border">
-                    <h4 className="font-semibold text-brand-primary-dark mb-1">
-                      Amplify Success Stories
-                    </h4>
-                    <p className="text-sm text-brand-primary">
-                      {hostComparison.filter((h) => h.percentChange > 20).length} hosts showed exceptional growth.
-                      Share their strategies with other hosts to drive broader impact.
-                    </p>
-                  </div>
-                )}
-
                 <div className="p-3 bg-brand-primary-lighter rounded">
                   <h4 className="font-semibold text-brand-primary-dark mb-1">
                     Plan Ahead for Next Month
@@ -1584,57 +1453,6 @@ export default function MonthlyComparisonAnalytics() {
             </Card>
           </div>
 
-          {/* High Performers */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-brand-primary">
-                <TrendingUp className="h-5 w-5" />
-                Top Performing Hosts in {selectedMonthName}
-              </CardTitle>
-              <CardDescription>
-                Hosts who exceeded their average by 20%+ - learn from their success
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {hostComparison
-                  .filter((h) => h.percentChange > 20)
-                  .slice(0, 6)
-                  .map((host, index) => (
-                    <div
-                      key={host.hostName}
-                      className="p-4 bg-brand-primary-lighter rounded-lg border border-brand-primary-border"
-                    >
-                      <h4
-                        className="font-semibold text-brand-primary-dark mb-2"
-                        data-testid={`success-host-${index}`}
-                      >
-                        {host.hostName.length > 20
-                          ? host.hostName.substring(0, 20) + '...'
-                          : host.hostName}
-                      </h4>
-                      <div
-                        className="text-2xl font-bold text-brand-primary"
-                        data-testid={`success-total-${index}`}
-                      >
-                        {host.augustTotal.toLocaleString()}
-                      </div>
-                      <div
-                        className="text-sm text-brand-primary-muted"
-                        data-testid={`success-change-${index}`}
-                      >
-                        +{host.percentChange}% vs their average
-                      </div>
-                    </div>
-                  ))}
-                {hostComparison.filter((h) => h.percentChange > 20).length === 0 && (
-                  <div className="col-span-3 text-center py-8 text-gray-500">
-                    No hosts exceeded their average by 20%+ this month.
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

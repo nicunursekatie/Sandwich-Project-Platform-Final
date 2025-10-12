@@ -121,10 +121,6 @@ export default function AnalyticsDashboard() {
       {} as Record<string, { total: number; collections: number }>
     );
 
-    const topPerformer = Object.entries(hostStats).sort(
-      ([, a], [, b]) => b.total - a.total
-    )[0];
-
     // ===============================
     // BULLETPROOF ANALYTICS FIX v5 - FINAL COMPREHENSIVE SOLUTION
     // ===============================
@@ -275,16 +271,6 @@ export default function AnalyticsDashboard() {
       }));
     }
 
-    // Top performing hosts
-    const topHosts = Object.entries(hostStats)
-      .sort(([, a], [, b]) => b.total - a.total)
-      .slice(0, 10)
-      .map(([name, stats]) => ({
-        name: name.length > 20 ? name.substring(0, 20) + '...' : name,
-        total: stats.total,
-        collections: stats.collections,
-      }));
-
     return {
       totalSandwiches,
       totalCollections: collections.length,
@@ -292,12 +278,8 @@ export default function AnalyticsDashboard() {
       totalHosts,
       activeHosts,
       avgWeekly: calculateActualWeeklyAverage(collections), // Calculate actual weekly average from real weekly buckets
-      topPerformer: topPerformer
-        ? { name: topPerformer[0], total: topPerformer[1].total }
-        : null,
       recordWeek: getRecordWeek(collections), // Get actual best performing week
       trendData,
-      topHosts,
     };
   }, [collections, statsData, hostsData]);
 
