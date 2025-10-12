@@ -127,7 +127,7 @@ export default function SandwichCollectionLog() {
   // Check user permissions for creating collections (automatically grants edit/delete of own)
   const canCreateCollections =
     hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-    hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT);
+    hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_OWN);
   const canEditAllCollections = hasPermission(
     user,
     PERMISSIONS.COLLECTIONS_EDIT_ALL
@@ -348,7 +348,7 @@ export default function SandwichCollectionLog() {
           'Fetching all data for filtering with filters:',
           debouncedSearchFilters
         );
-        const response = await fetch('/api/sandwich-collections?limit=10000');
+        const response = await fetch('/api/sandwich-collections?limit=1000');
         if (!response.ok) throw new Error('Failed to fetch collections');
         const data = await response.json();
 
@@ -602,105 +602,12 @@ export default function SandwichCollectionLog() {
     (v) => v && v.trim() !== ''
   );
 
-  // Get all filtered collections when filters are active for statistics calculation
-  const { data: allFilteredData } = useQuery({
-    queryKey: [
-      '/api/sandwich-collections',
-      'all-for-stats',
-      debouncedSearchFilters,
-    ],
-    queryFn: async () => {
-      if (!hasActiveFilters) return { collections: [] };
-
-      const response = await fetch('/api/sandwich-collections?limit=10000');
-      if (!response.ok) throw new Error('Failed to fetch collections');
-      const data = await response.json();
-
-      let filteredCollections = data.collections || [];
-
-      // Apply the same filters as in the main query
-      if (debouncedSearchFilters.hostName) {
-        const searchTerm = debouncedSearchFilters.hostName.toLowerCase();
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) =>
-            c.hostName?.toLowerCase().includes(searchTerm)
-        );
-      }
-
-      if (debouncedSearchFilters.collectionDateFrom) {
-        const fromDate = new Date(debouncedSearchFilters.collectionDateFrom);
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => new Date(c.collectionDate) >= fromDate
-        );
-      }
-
-      if (debouncedSearchFilters.collectionDateTo) {
-        const toDate = new Date(debouncedSearchFilters.collectionDateTo);
-        toDate.setHours(23, 59, 59, 999);
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => new Date(c.collectionDate) <= toDate
-        );
-      }
-
-      if (debouncedSearchFilters.createdAtFrom) {
-        const fromDate = new Date(debouncedSearchFilters.createdAtFrom);
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => new Date(c.submittedAt) >= fromDate
-        );
-      }
-
-      if (debouncedSearchFilters.createdAtTo) {
-        const toDate = new Date(debouncedSearchFilters.createdAtTo);
-        toDate.setHours(23, 59, 59, 999);
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => new Date(c.submittedAt) <= toDate
-        );
-      }
-
-      if (debouncedSearchFilters.globalSearch) {
-        const searchTerm = debouncedSearchFilters.globalSearch.toLowerCase();
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => {
-            const hostNameMatch = c.hostName
-              ?.toLowerCase()
-              .includes(searchTerm);
-            const groupData = getGroupCollections(c);
-            const groupNameMatch = groupData.some((group) =>
-              group.groupName?.toLowerCase().includes(searchTerm)
-            );
-            const formattedDate = formatDate(c.collectionDate);
-            const dateMatch = formattedDate.toLowerCase().includes(searchTerm);
-            return hostNameMatch || groupNameMatch || dateMatch;
-          }
-        );
-      }
-
-      if (debouncedSearchFilters.groupName) {
-        const searchTerm = debouncedSearchFilters.groupName.toLowerCase();
-        filteredCollections = filteredCollections.filter(
-          (c: SandwichCollection) => {
-            const groupData = getGroupCollections(c);
-            return groupData.some((group) =>
-              group.groupName?.toLowerCase().includes(searchTerm)
-            );
-          }
-        );
-      }
-
-      return { collections: filteredCollections };
-    },
-    enabled: hasActiveFilters,
-  });
-
   // Calculate current statistics to display
-  // When filters are active, always calculate from filtered data (never use global stats)
-  // Priority: allFilteredData > current collections > global stats (only when no filters)
+  // Priority: filtered collections from main query > global stats (only when no filters)
   const currentStats = (() => {
-    // When filters are active, always prioritize filtered data calculations
+    // When filters are active, calculate from the filtered collections
     if (hasActiveFilters) {
-      if (allFilteredData?.collections) {
-        return calculateFilteredStats(allFilteredData.collections);
-      } else if (collections.length > 0) {
+      if (collections.length > 0) {
         return calculateFilteredStats(collections);
       } else {
         // Even with filters active, if no data is available, show zero stats
@@ -1599,7 +1506,7 @@ export default function SandwichCollectionLog() {
 
     // Convert editGroupCollections to new schema format
     const validGroups = editGroupCollections.filter(
-      (g) => g.groupName.trim() && g.sandwichCount > 0
+      (g) => g.groupName.trim() && (g.sandwichCount ?? 0) > 0
     );
 
     // Prepare groupCollections array for unlimited groups with type breakdown
@@ -1802,7 +1709,9 @@ export default function SandwichCollectionLog() {
 
   const handleClearFilters = () => {
     const emptyFilters = {
+      globalSearch: '',
       hostName: '',
+      groupName: '',
       collectionDateFrom: '',
       collectionDateTo: '',
       createdAtFrom: '',
@@ -2418,10 +2327,10 @@ export default function SandwichCollectionLog() {
                         if (hasTypes) {
                           return (
                             <div className="space-y-0.5">
-                              {collection.individualTurkey > 0 && <div>{collection.individualTurkey} Turkey</div>}
-                              {collection.individualHam > 0 && <div>{collection.individualHam} Ham</div>}
-                              {collection.individualDeli > 0 && <div>{collection.individualDeli} Deli</div>}
-                              {collection.individualPbj > 0 && <div>{collection.individualPbj} PB&J</div>}
+                              {(collection.individualTurkey ?? 0) > 0 && <div>{collection.individualTurkey} Turkey</div>}
+                              {(collection.individualHam ?? 0) > 0 && <div>{collection.individualHam} Ham</div>}
+                              {(collection.individualDeli ?? 0) > 0 && <div>{collection.individualDeli} Deli</div>}
+                              {(collection.individualPbj ?? 0) > 0 && <div>{collection.individualPbj} PB&J</div>}
                             </div>
                           );
                         }
@@ -2444,8 +2353,8 @@ export default function SandwichCollectionLog() {
                           if (hasTypes) {
                             return (
                               <div>
-                                <div className="text-xs text-slate-500 font-normal mb-0.5">{group.groupName}</div>
-                                <div className="space-y-0.5">
+                                <div className="font-bold mb-1">{group.groupName}</div>
+                                <div className="space-y-0.5 font-normal text-sm">
                                   {group.turkey > 0 && <div>{group.turkey} Turkey</div>}
                                   {group.ham > 0 && <div>{group.ham} Ham</div>}
                                   {group.deli > 0 && <div>{group.deli} Deli</div>}
