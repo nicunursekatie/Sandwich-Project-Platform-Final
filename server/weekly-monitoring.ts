@@ -19,12 +19,24 @@ const EXPECTED_HOST_LOCATIONS = [
   'East Cobb/Roswell',
   'Dunwoody/PTC',
   'Alpharetta',
-  'Sandy Springs',
-  'Intown/Druid Hills',
+  'Sandy Springs/Chastain',
+  'Intown/Druid Hills/Oak Grove/Chamblee/Brookhaven/Buckhead',
   'Dacula',
   'Flowery Branch',
-  'Collective Learning',
+  'UGA',
 ];
+
+// Fallback email mapping for specific locations (when database lookup fails or for spam prevention)
+const LOCATION_CONTACT_EMAILS: Record<string, string> = {
+  'Alpharetta': 'atlantamillers@comcast.net', // Nancy Miller
+  'East Cobb/Roswell': 'vickib@aol.com', // Vicki Tropauer
+  'Intown/Druid Hills': 'lzauderer@yahoo.com', // Laura Baldwin
+  'Intown/Druid Hills/Oak Grove/Chamblee/Brookhaven/Buckhead': 'lzauderer@yahoo.com', // Laura Baldwin
+  'Flowery Branch': 'kristinamday@yahoo.com', // Kristina McCarthney
+  'Sandy Springs': 'jenmcohen@gmail.com', // Jen Cohen
+  'Sandy Springs/Chastain': 'jenmcohen@gmail.com', // Jen Cohen
+  'Dunwoody/PTC': 'mdlouza@gmail.com', // Marcy Louza (primary)
+};
 
 // Admin email to receive notifications
 const ADMIN_EMAIL = 'katielong2316@gmail.com';
@@ -707,57 +719,66 @@ export async function sendEmailReminder(
     }
 
     // Standard logic for other locations
-    // Get host contact information for this location
-    // First find the host by name
-    const hostRecord = await db
-      .select()
-      .from(hosts)
-      .where(eq(hosts.name, location))
-      .limit(1);
+    // Try to get email from fallback mapping first (more reliable)
+    let contactEmail = LOCATION_CONTACT_EMAILS[location];
+    let contactName = location; // Default to location name
+    
+    // If no fallback mapping, try database lookup
+    if (!contactEmail) {
+      // Get host contact information for this location
+      // First find the host by name
+      const hostRecord = await db
+        .select()
+        .from(hosts)
+        .where(eq(hosts.name, location))
+        .limit(1);
 
-    if (hostRecord.length === 0) {
-      return {
-        success: false,
-        message: `No host found for location: ${location}`,
-      };
-    }
+      if (hostRecord.length === 0) {
+        return {
+          success: false,
+          message: `No host found for location: ${location} and no fallback email configured`,
+        };
+      }
 
-    // Then get the primary contact for this host
-    const contacts = await db
-      .select()
-      .from(hostContacts)
-      .where(
-        and(
-          eq(hostContacts.hostId, hostRecord[0].id),
-          eq(hostContacts.isPrimary, true)
-        )
-      )
-      .limit(1);
-
-    // If no primary contact, get any contact with an email
-    let contact = contacts[0];
-    if (!contact) {
-      const allContacts = await db
+      // Then get the primary contact for this host
+      const contacts = await db
         .select()
         .from(hostContacts)
-        .where(eq(hostContacts.hostId, hostRecord[0].id));
+        .where(
+          and(
+            eq(hostContacts.hostId, hostRecord[0].id),
+            eq(hostContacts.isPrimary, true)
+          )
+        )
+        .limit(1);
 
-      contact = allContacts.find((c) => c.email) || allContacts[0];
-    }
+      // If no primary contact, get any contact with an email
+      let contact = contacts[0];
+      if (!contact) {
+        const allContacts = await db
+          .select()
+          .from(hostContacts)
+          .where(eq(hostContacts.hostId, hostRecord[0].id));
 
-    if (!contact) {
-      return {
-        success: false,
-        message: `No contact person found for location: ${location}`,
-      };
-    }
+        contact = allContacts.find((c) => c.email) || allContacts[0];
+      }
 
-    const contactEmail = contact.email;
-    if (!contactEmail) {
-      return {
-        success: false,
-        message: `No email address found for ${location} contact: ${contact.name}`,
-      };
+      if (!contact) {
+        return {
+          success: false,
+          message: `No contact person found for location: ${location}`,
+        };
+      }
+
+      contactEmail = contact.email;
+      contactName = contact.name || location;
+      
+      if (!contactEmail) {
+        return {
+          success: false,
+          message: `No email address found for ${location} contact: ${contactName}`,
+        };
+      }
     }
 
     const loginUrl =
@@ -773,7 +794,7 @@ export async function sendEmailReminder(
 
     const emailSubject = `🥪 Friendly Reminder: Weekly Sandwich Collection Numbers`;
 
-    const emailText = `Hi ${contact.name || 'there'}!
+    const emailText = `Hi ${contactName || 'there'}!
 
 Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for ${weekLabel} yet.
 
@@ -798,7 +819,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
           
           <div style="margin-bottom: 25px;">
             <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hi ${
-              contact.name || 'there'
+              contactName || 'there'
             }!</p>
             
             <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet.</p>
@@ -841,7 +862,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
     return {
       success: true,
       message: `Email reminder sent successfully to ${
-        contact.name || location
+        contactName || location
       } at ${contactEmail}`,
     };
   } catch (error) {
