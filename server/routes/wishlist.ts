@@ -23,11 +23,13 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Input validation schemas
-const createSuggestionSchema = insertWishlistSuggestionSchema.extend({
-  item: z.string().min(1, 'Item name is required').max(500, 'Item name too long'),
-  reason: z.string().optional(),
-  priority: z.enum(['high', 'medium', 'low']).default('medium'),
-});
+const createSuggestionSchema = insertWishlistSuggestionSchema
+  .omit({ suggestedBy: true, reviewedBy: true })
+  .extend({
+    item: z.string().min(1, 'Item name is required').max(500, 'Item name too long'),
+    reason: z.string().optional(),
+    priority: z.enum(['high', 'medium', 'low']).default('medium'),
+  });
 
 const updateSuggestionSchema = z.object({
   status: z.enum(['pending', 'approved', 'rejected', 'added']),
