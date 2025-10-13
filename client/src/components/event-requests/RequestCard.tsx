@@ -1960,7 +1960,7 @@ export default function RequestCard({
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[#236383] text-base font-semibold">Sandwiches:</span>
-                          <span className="font-bold text-[#236383] text-lg text-right">
+                          <span className="font-bold text-[#FBAD3F] text-3xl text-right">
                             {(() => {
                               // getSandwichTypesSummary handles string parsing internally
                               const summary = getSandwichTypesSummary(request);
@@ -1973,7 +1973,7 @@ export default function RequestCard({
                             })()}
                           </span>
                         </div>
-                        
+
                         <div className="flex justify-between items-center">
                           <span className="text-[#236383] text-base font-semibold">Destination:</span>
                           <span className="font-bold text-[#236383] text-base text-right">
