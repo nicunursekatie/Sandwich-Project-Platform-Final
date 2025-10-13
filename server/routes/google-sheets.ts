@@ -277,7 +277,7 @@ router.post('/sync/export', isAuthenticated, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Google Sheets export failed',
-      error: error.message,
+      error: (error as any).message,
     });
   }
 });
@@ -319,7 +319,7 @@ router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
     console.error('Error fetching sync status:', error);
     res.status(500).json({
       error: 'Failed to fetch sync status',
-      message: error.message,
+      message: (error as any).message,
     });
   }
 });
@@ -332,7 +332,7 @@ router.post('/projects/sync/to-sheets', isAuthenticated, async (req, res) => {
     );
     const { storage } = await import('../storage-wrapper');
 
-    const syncService = getGoogleSheetsSyncService(storage);
+    const syncService = getGoogleSheetsSyncService(storage as any);
     const result = await syncService.syncToGoogleSheets();
 
     if (result.success) {
@@ -352,7 +352,7 @@ router.post('/projects/sync/to-sheets', isAuthenticated, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to sync to Google Sheets',
-      message: error.message,
+      message: (error as any).message,
     });
   }
 });
@@ -365,7 +365,7 @@ router.post('/projects/sync/from-sheets', isAuthenticated, async (req, res) => {
     );
     const { storage } = await import('../storage-wrapper');
 
-    const syncService = getGoogleSheetsSyncService(storage);
+    const syncService = getGoogleSheetsSyncService(storage as any);
     const result = await syncService.syncFromGoogleSheets();
 
     if (result.success) {

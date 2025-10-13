@@ -822,27 +822,39 @@ export default function EventRequestsManagement({
   const [inlineTotalCount, setInlineTotalCount] = useState(0);
   const [inlineSandwichTypes, setInlineSandwichTypes] = useState<Array<{type: string, quantity: number}>>([]);
 
+  // Inline recipient editing state
+  const [inlineRecipientIds, setInlineRecipientIds] = useState<string[]>([]);
+
   // Helper functions for inline editing
   const startEditing = (id: number, field: string, currentValue: string) => {
     setEditingScheduledId(id);
     setEditingField(field);
     setEditingValue(currentValue || '');
-    
+
     // Special handling for sandwich types
     if (field === 'sandwichTypes') {
       const eventRequest = eventRequests.find(req => req.id === id);
       if (eventRequest) {
         // Initialize sandwich editing state based on current data
-        const existingSandwichTypes = eventRequest.sandwichTypes ? 
-          (typeof eventRequest.sandwichTypes === 'string' ? 
+        const existingSandwichTypes = eventRequest.sandwichTypes ?
+          (typeof eventRequest.sandwichTypes === 'string' ?
             JSON.parse(eventRequest.sandwichTypes) : eventRequest.sandwichTypes) : [];
-        
+
         const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
         const totalCount = eventRequest.estimatedSandwichCount || 0;
-        
+
         setInlineSandwichMode(hasTypesData ? 'types' : 'total');
         setInlineTotalCount(totalCount);
         setInlineSandwichTypes(hasTypesData ? existingSandwichTypes : []);
+      }
+    }
+
+    // Special handling for assigned recipients
+    if (field === 'assignedRecipientIds') {
+      const eventRequest = eventRequests.find(req => req.id === id);
+      if (eventRequest) {
+        const existingRecipients = (eventRequest as any).assignedRecipientIds || [];
+        setInlineRecipientIds(Array.isArray(existingRecipients) ? existingRecipients : []);
       }
     }
   };
@@ -863,7 +875,7 @@ export default function EventRequestsManagement({
       // Special handling for sandwich types
       if (editingField === 'sandwichTypes') {
         const updateData: any = {};
-        
+
         if (inlineSandwichMode === 'total') {
           updateData.estimatedSandwichCount = inlineTotalCount;
           updateData.sandwichTypes = null; // Clear specific types
@@ -871,11 +883,17 @@ export default function EventRequestsManagement({
           updateData.sandwichTypes = JSON.stringify(inlineSandwichTypes);
           updateData.estimatedSandwichCount = inlineSandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
         }
-        
+
         // Use the regular update mutation with multiple fields
         updateEventRequestMutation.mutate({
           id: editingScheduledId,
           data: updateData,
+        });
+      } else if (editingField === 'assignedRecipientIds') {
+        // Special handling for assigned recipients - save as array
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: { assignedRecipientIds: inlineRecipientIds },
         });
       } else if (editingField === 'hasRefrigeration') {
         // Special handling for refrigeration - convert string to boolean/null
@@ -1142,6 +1160,8 @@ export default function EventRequestsManagement({
             setInlineTotalCount={setInlineTotalCount}
             inlineSandwichTypes={inlineSandwichTypes}
             setInlineSandwichTypes={setInlineSandwichTypes}
+            inlineRecipientIds={inlineRecipientIds}
+            setInlineRecipientIds={setInlineRecipientIds}
             onEdit={(request) => {
               setSelectedEventRequest(request);
               setIsEditing(true);

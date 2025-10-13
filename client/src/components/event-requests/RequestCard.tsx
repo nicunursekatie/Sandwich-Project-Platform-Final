@@ -41,6 +41,7 @@ import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { apiRequest } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import {
   SANDWICH_TYPES,
   statusColors,
@@ -72,7 +73,9 @@ interface RequestCardProps {
   setInlineTotalCount: (count: number) => void;
   inlineSandwichTypes: Array<{type: string, quantity: number}>;
   setInlineSandwichTypes: (types: Array<{type: string, quantity: number}>) => void;
-  
+  inlineRecipientIds: string[];
+  setInlineRecipientIds: (ids: string[]) => void;
+
   // Callback functions
   onEdit: (request: EventRequest) => void;
   onDelete: (id: number) => void;
@@ -126,6 +129,8 @@ export default function RequestCard({
   setInlineTotalCount,
   inlineSandwichTypes,
   setInlineSandwichTypes,
+  inlineRecipientIds,
+  setInlineRecipientIds,
   onEdit,
   onDelete,
   onSchedule,
