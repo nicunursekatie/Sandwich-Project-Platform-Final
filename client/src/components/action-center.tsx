@@ -111,7 +111,19 @@ export default function ActionCenter() {
 
     const actions: ActionItem[] = [];
 
-    // Look ahead at next 4 weeks and forecast based on scheduled events
+    // Calculate average collections by day of week for forecasting
+    const dayOfWeekTotals = new Map<number, { total: number; count: number }>();
+    collections.forEach((c) => {
+      const date = parseCollectionDate(c.collectionDate);
+      const dow = date.getDay();
+      const current = dayOfWeekTotals.get(dow) || { total: 0, count: 0 };
+      dayOfWeekTotals.set(dow, {
+        total: current.total + calculateTotalSandwiches(c),
+        count: current.count + 1,
+      });
+    });
+
+    // Look ahead at next 4 weeks and forecast based on scheduled events + expected individual donations
     for (let weekOffset = 0; weekOffset < 4; weekOffset++) {
       const weekStart = new Date(currentWeekStart);
       weekStart.setDate(currentWeekStart.getDate() + (weekOffset * 7));
@@ -119,6 +131,10 @@ export default function ActionCenter() {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
+
+      // For current week, only calculate expected donations for remaining days
+      const isCurrentWeek = weekOffset === 0;
+      const startDay = isCurrentWeek ? today : weekStart;
 
       // Get scheduled events for this week
       const scheduledThisWeek = (eventRequests || []).filter((event) => {
@@ -134,18 +150,33 @@ export default function ActionCenter() {
         0
       );
 
-      // Get historical average for same week of month
-      const weekOfMonth = Math.ceil(weekStart.getDate() / 7);
+      // Calculate expected individual donations for the week (or remaining days)
+      let expectedIndividualDonations = 0;
+      const currentDate = new Date(startDay);
+      while (currentDate <= weekEnd) {
+        const dow = currentDate.getDay();
+        const dayData = dayOfWeekTotals.get(dow);
+        if (dayData && dayData.count > 0) {
+          expectedIndividualDonations += dayData.total / dayData.count;
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Total forecast = scheduled events + expected individual donations + already collected (if current week)
+      const alreadyCollected = isCurrentWeek ? currentWeekTotal : 0;
+      const totalForecast = alreadyCollected + scheduledTotal + Math.round(expectedIndividualDonations);
+
+      // Get historical average for comparison
       const historicalWeeks = Array.from(weekMap.values());
       const avgForWeek = historicalWeeks.length > 0
         ? historicalWeeks.reduce((a, b) => a + b, 0) / historicalWeeks.length
         : avgWeekly;
 
-      // Flag if scheduled events are significantly below average
-      const gap = avgForWeek - scheduledTotal;
+      // Flag if total forecast is significantly below average
+      const gap = avgForWeek - totalForecast;
       const percentBelow = avgForWeek > 0 ? (gap / avgForWeek) * 100 : 0;
 
-      if (gap > 500 && percentBelow > 30) {
+      if (gap > 500 && percentBelow > 20) {
         const weekLabel = weekOffset === 0 ? 'This Week' :
                          weekOffset === 1 ? 'Next Week' :
                          `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
@@ -155,10 +186,10 @@ export default function ActionCenter() {
           priority: weekOffset === 0 ? 'high' : weekOffset === 1 ? 'high' : 'medium',
           category: 'volunteer-recruitment',
           title: `${weekLabel}: Forecasted Below Average`,
-          description: `Only ${scheduledTotal.toLocaleString()} sandwiches scheduled vs ${Math.round(avgForWeek).toLocaleString()} average`,
+          description: `Forecast ${totalForecast.toLocaleString()} sandwiches vs ${Math.round(avgForWeek).toLocaleString()} average`,
           impact: `Need ${Math.round(gap).toLocaleString()} more sandwiches to reach typical week`,
           action: `Recruit volunteers for collections during ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
-          data: { weekStart, weekEnd, scheduledTotal, avgForWeek, gap, scheduledEventCount: scheduledThisWeek.length },
+          data: { weekStart, weekEnd, totalForecast, scheduledTotal, expectedIndividualDonations: Math.round(expectedIndividualDonations), avgForWeek, gap, scheduledEventCount: scheduledThisWeek.length },
         });
       }
     }
