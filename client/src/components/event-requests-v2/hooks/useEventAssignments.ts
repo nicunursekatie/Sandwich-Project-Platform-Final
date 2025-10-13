@@ -8,7 +8,7 @@ import type { EventRequest } from '@shared/schema';
 export const useEventAssignments = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { users, usersForAssignments, recipients, drivers, volunteers } = useEventQueries();
+  const { users, usersForAssignments, recipients, drivers, volunteers, hostsWithContacts } = useEventQueries();
   
   // Use usersForAssignments for TSP contact resolution (no special permissions required)
   const allUsers = users.length > 0 ? users : usersForAssignments;
@@ -80,6 +80,38 @@ export const useEventAssignments = () => {
         if (user) {
           return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User';
         }
+      }
+
+      // Handle host-contact- prefixed IDs (e.g., "host-contact-16")
+      if (userIdOrName.startsWith('host-contact-')) {
+        const contactId = userIdOrName.replace('host-contact-', '');
+        const numericContactId = parseInt(contactId);
+        
+        // Find the contact in hostsWithContacts
+        for (const host of hostsWithContacts) {
+          const contact = host.contacts?.find((c: any) => c.id === numericContactId);
+          if (contact) {
+            return contact.name || contact.email || `Contact #${contactId}`;
+          }
+        }
+        
+        // If not found, return a readable fallback
+        console.warn(`Host contact not found: ${userIdOrName}`);
+        return `Contact #${contactId}`;
+      }
+
+      // Handle volunteer- prefixed IDs (e.g., "volunteer-123")
+      if (userIdOrName.startsWith('volunteer-')) {
+        const volunteerId = userIdOrName.replace('volunteer-', '');
+        const numericVolunteerId = parseInt(volunteerId);
+        
+        const volunteer = volunteers.find((v) => v && v.id === numericVolunteerId);
+        if (volunteer) {
+          return `${volunteer.firstName || ''} ${volunteer.lastName || ''}`.trim() || volunteer.name || `Volunteer #${volunteerId}`;
+        }
+        
+        console.warn(`Volunteer not found: ${userIdOrName}`);
+        return `Volunteer #${volunteerId}`;
       }
 
       // Handle numeric IDs (could be drivers, volunteers, or speakers)
