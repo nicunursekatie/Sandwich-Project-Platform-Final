@@ -279,30 +279,29 @@ export default function SandwichForecastWidget() {
     return day !== 2 && day !== 3 && day !== 4;
   };
 
-  const distributionEvents = (currentWeek?.events || []).filter(e => {
-    if (!e.desiredEventDate) return false;
-    const isDistribution = isDistributionEvent(e.desiredEventDate);
+  const distributionEvents = (currentWeek?.events || [])
+    .filter(e => {
+      if (!e.desiredEventDate) return false;
+      return isDistributionEvent(e.desiredEventDate);
+    })
+    .sort((a, b) => {
+      // Sort by date (earliest first)
+      const dateA = parseEventDate(a.desiredEventDate!).getTime();
+      const dateB = parseEventDate(b.desiredEventDate!).getTime();
+      return dateA - dateB;
+    });
 
-    // Debug log to check date parsing
-    const eventDate = parseEventDate(e.desiredEventDate);
-    const dayOfWeek = eventDate.getDay();
-    if (e.desiredEventDate.includes('10-17')) {
-      console.log('🔍 Oct 17 Event Classification:', {
-        org: e.organizationName,
-        dateString: e.desiredEventDate,
-        parsedDate: eventDate.toDateString(),
-        dayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek],
-        isDistribution,
-        currentWeekThursday: currentWeek?.distributionDate
-      });
-    }
-
-    return isDistribution;
-  });
-  const otherEvents = (currentWeek?.events || []).filter(e => {
-    if (!e.desiredEventDate) return false;
-    return isOtherEvent(e.desiredEventDate);
-  });
+  const otherEvents = (currentWeek?.events || [])
+    .filter(e => {
+      if (!e.desiredEventDate) return false;
+      return isOtherEvent(e.desiredEventDate);
+    })
+    .sort((a, b) => {
+      // Sort by date (earliest first)
+      const dateA = parseEventDate(a.desiredEventDate!).getTime();
+      const dateB = parseEventDate(b.desiredEventDate!).getTime();
+      return dateA - dateB;
+    });
 
   // Totals - use actual count for completed events, estimated for others
   const getSandwichCount = (event: EventRequest) => {
