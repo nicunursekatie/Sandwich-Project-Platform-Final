@@ -1223,14 +1223,47 @@ export default function RequestCard({
                             </div>
                           )}
                         </div>
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#236383] text-base font-semibold">Recipients:</span>
-                          <span className="font-bold text-[#236383] text-base text-right">
-                            {formatRecipientNames((request as any).assignedRecipientIds)}
-                          </span>
+
+                        {/* Recipients Field - Inline Editable */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-start">
+                            <span className="text-[#236383] text-base font-semibold">Recipients:</span>
+                            {editingScheduledId === request.id && editingField === 'assignedRecipientIds' ? (
+                              <div className="flex-1 ml-2">
+                                <MultiRecipientSelector
+                                  value={inlineRecipientIds}
+                                  onChange={(ids) => setInlineRecipientIds(ids)}
+                                  placeholder="Select recipients..."
+                                />
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
+                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                    Save
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
+                                    <X className="w-4 h-4 mr-1" />
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-1 flex-1 justify-end">
+                                <span className="font-bold text-[#236383] text-base text-right">
+                                  {formatRecipientNames((request as any).assignedRecipientIds)}
+                                </span>
+                                {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
+                                  <Button size="sm" variant="ghost" onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(request.id, 'assignedRecipientIds', '');
+                                  }} className="h-4 w-4 p-0">
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        
+
                         <div className="flex justify-between items-center">
                           <span className="text-[#47B3CB] text-base font-semibold">Refrigeration:</span>
                           {editingScheduledId === request.id && editingField === 'hasRefrigeration' ? (
