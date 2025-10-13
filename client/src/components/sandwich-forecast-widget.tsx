@@ -255,11 +255,16 @@ export default function SandwichForecastWidget() {
 
   // Helper to parse dates consistently (avoid timezone issues)
   const parseEventDate = (dateStr: string) => {
-    // Parse as YYYY-MM-DD in local time, not UTC
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      return new Date(`${dateStr}T00:00:00`);
+    // Extract YYYY-MM-DD from any format
+    let datePart = dateStr;
+    if (dateStr.includes('T')) {
+      datePart = dateStr.split('T')[0]; // Get YYYY-MM-DD
     }
-    return new Date(dateStr);
+
+    // Parse explicitly using Date constructor with year, month, day
+    const [year, month, day] = datePart.split('-').map(Number);
+    // Month is 0-indexed in JavaScript Date constructor
+    return new Date(year, month - 1, day, 0, 0, 0, 0);
   };
 
   // New logic for distribution events (Tue/Wed/Thu) and other events
