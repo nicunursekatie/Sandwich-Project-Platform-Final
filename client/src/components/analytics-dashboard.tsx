@@ -326,10 +326,10 @@ export default function AnalyticsDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 lg:space-y-8 min-w-0 overflow-hidden">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-brand-primary mb-2">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-brand-primary mb-2">
           ANALYTICS DASHBOARD
         </h1>
         <p className="text-lg text-[#646464]">
@@ -366,55 +366,55 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <Trophy className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-brand-primary/10 text-brand-primary text-sm">
               500K Goal
             </Badge>
           </div>
-          <div className="text-3xl font-bold text-brand-primary mb-2">
+          <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
             {(analyticsData.totalSandwiches / 1000000).toFixed(2)}M
           </div>
           <p className="text-[#646464] font-medium">Total Impact</p>
           <p className="text-sm text-brand-primary mt-2">2025 Goal: 15K of 500K</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <TrendingUp className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-brand-primary-light text-brand-primary text-sm">
               Weekly Avg
             </Badge>
           </div>
-          <div className="text-3xl font-bold text-brand-primary mb-2">
+          <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
             {analyticsData.avgWeekly.toLocaleString()}
           </div>
           <p className="text-[#646464] font-medium">Per Week</p>
           <p className="text-sm text-green-600 mt-2">↑ vs last month</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <Award className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-brand-orange/20 text-brand-orange text-sm">
               Record
             </Badge>
           </div>
-          <div className="text-3xl font-bold text-brand-primary mb-2">
+          <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
             {analyticsData.recordWeek.total.toLocaleString()}
           </div>
           <p className="text-[#646464] font-medium">Best Week</p>
           <p className="text-sm text-[#646464] mt-2">11/14/2023</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <Users2 className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-teal-100 text-teal-700 text-sm">Network</Badge>
           </div>
-          <div className="text-3xl font-bold text-brand-primary mb-2">
+          <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
             {analyticsData.totalHosts}
           </div>
           <p className="text-[#646464] font-medium">Total Hosts</p>
@@ -484,19 +484,28 @@ export default function AnalyticsDashboard() {
               Debug: {debugKey} | Data points: {analyticsData?.trendData?.length || 0}
             </p>
           </div>
-          <CardContent className="p-6">
-            <div className="h-96">
+          <CardContent className="p-4 lg:p-6">
+            <div className="h-64 sm:h-80 lg:h-96 xl:h-[28rem]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={analyticsData.trendData}>
+                <LineChart data={analyticsData.trendData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke="var(--color-brand-primary)"
                     opacity={0.2}
                   />
-                  <XAxis dataKey="month" stroke="var(--color-brand-primary)" fontSize={12} />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="var(--color-brand-primary)" 
+                    fontSize={10}
+                    className="text-xs"
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
                   <YAxis
                     stroke="var(--color-brand-primary)"
-                    fontSize={12}
+                    fontSize={10}
+                    width={40}
                     tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
                   />
                   <Tooltip
