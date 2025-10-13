@@ -196,7 +196,7 @@ router.get('/sync/analyze', async (req, res) => {
     const syncService = new GoogleSheetsSyncService(storage as any);
 
     const sheetName = (req.query.sheet as string) || 'Sheet1';
-    const analysis = await syncService.analyzeSheetStructure(sheetName);
+    const analysis = await (syncService as any).analyzeSheetStructure(sheetName);
 
     res.json({
       success: true,
@@ -209,7 +209,7 @@ router.get('/sync/analyze', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Google Sheets analysis failed. Please check API credentials.',
-      error: error.message,
+      error: (error as any).message,
     });
   }
 });
@@ -219,7 +219,7 @@ router.post('/sync/import', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
-    const syncService = new GoogleSheetsSyncService(storage);
+    const syncService = new GoogleSheetsSyncService(storage as any);
 
     const {
       sheetName = 'Sheet1',
@@ -231,7 +231,7 @@ router.post('/sync/import', isAuthenticated, async (req, res) => {
       dryRun = false,
     } = req.body;
 
-    const result = await syncService.importFromGoogleSheet(sheetName, {
+    const result = await (syncService as any).importFromGoogleSheet(sheetName, {
       dateColumn,
       hostColumn,
       sandwichColumn,
@@ -252,7 +252,7 @@ router.post('/sync/import', isAuthenticated, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Google Sheets import failed',
-      error: error.message,
+      error: (error as any).message,
     });
   }
 });
@@ -262,10 +262,10 @@ router.post('/sync/export', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
-    const syncService = new GoogleSheetsSyncService(storage);
+    const syncService = new GoogleSheetsSyncService(storage as any);
 
     const { sheetName = 'Database_Export' } = req.body;
-    const result = await syncService.exportToGoogleSheet(sheetName);
+    const result = await (syncService as any).exportToGoogleSheet(sheetName);
 
     res.json({
       success: true,

@@ -2356,9 +2356,20 @@ export default function SandwichCollectionLog() {
                             <div className="space-y-2">
                               {groupData.map((group: any, index: number) => {
                                 const hasTypes = group.deli || group.turkey || group.ham || group.pbj;
+                                const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
+                                const colorIndex = index % colors.length;
+                                const borderColor = colors[colorIndex];
+                                const bgColor = `${borderColor}10`; // 10% opacity
                                 return (
-                                  <div key={index}>
-                                    <div className="mb-1">{group.groupName}</div>
+                                  <div
+                                    key={index}
+                                    className="p-2 rounded"
+                                    style={{
+                                      backgroundColor: bgColor,
+                                      borderLeft: `3px solid ${borderColor}`
+                                    }}
+                                  >
+                                    <div className="mb-1 font-semibold">{group.groupName}</div>
                                     {hasTypes ? (
                                       <div className="space-y-0.5 text-sm">
                                         {(group.turkey ?? 0) > 0 && <div>{group.turkey} Turkey</div>}
