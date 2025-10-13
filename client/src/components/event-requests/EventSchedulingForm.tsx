@@ -89,6 +89,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     planningNotes: '',
     totalSandwichCount: 0,
     volunteerCount: 0,
+    adultCount: 0,
+    childrenCount: 0,
     status: 'new',
     toolkitSent: false,
     toolkitSentDate: '',
@@ -122,6 +124,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'types'>('total');
   const [actualSandwichMode, setActualSandwichMode] = useState<'total' | 'types'>('total');
+  const [attendeeMode, setAttendeeMode] = useState<'total' | 'breakdown'>('total');
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showCompletedDetails, setShowCompletedDetails] = useState(false);
   const [showDateConfirmation, setShowDateConfirmation] = useState(false);
@@ -277,6 +280,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         planningNotes: (eventRequest as any)?.planningNotes || '',
         totalSandwichCount: totalCount,
         volunteerCount: (eventRequest as any)?.volunteerCount || 0,
+        adultCount: (eventRequest as any)?.adultCount || 0,
+        childrenCount: (eventRequest as any)?.childrenCount || 0,
         // Contact information fields
         firstName: eventRequest?.firstName || '',
         lastName: eventRequest?.lastName || '',
@@ -315,7 +320,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // Set mode based on existing data
       setSandwichMode(hasTypesData ? 'types' : 'total');
       setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
-      
+
+      // Set attendee mode based on whether adult/children breakdown exists
+      const hasAttendeeBreakdown = ((eventRequest as any)?.adultCount || 0) > 0 || ((eventRequest as any)?.childrenCount || 0) > 0;
+      setAttendeeMode(hasAttendeeBreakdown ? 'breakdown' : 'total');
+
       // Auto-expand Completed Event Details section if event is completed
       setShowCompletedDetails(eventRequest?.status === 'completed');
     }
@@ -451,8 +460,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
     }
 
-    // Include volunteer count
+    // Include volunteer/attendee counts
     eventData.volunteerCount = formData.volunteerCount || 0;
+    eventData.adultCount = formData.adultCount || 0;
+    eventData.childrenCount = formData.childrenCount || 0;
 
     // Include completed event tracking fields
     eventData.socialMediaPostRequested = formData.socialMediaPostRequested;
@@ -921,21 +932,99 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             )}
           </div>
 
-          {/* Volunteer Count (Optional) */}
-          <div>
-            <Label htmlFor="volunteerCount"># of Volunteers (Optional)</Label>
-            <Input
-              id="volunteerCount"
-              type="number"
-              value={formData.volunteerCount}
-              onChange={(e) => setFormData(prev => ({ ...prev, volunteerCount: parseInt(e.target.value) || 0 }))}
-              placeholder="Enter expected number of volunteers"
-              min="0"
-              className="w-40"
-              data-testid="input-volunteer-count"
-            />
+          {/* Volunteer/Attendee Count (Optional) */}
+          <div className="space-y-3">
+            <Label># of Attendees (Optional)</Label>
+
+            {/* Mode Selector */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={attendeeMode === 'total' ? 'default' : 'outline'}
+                onClick={() => setAttendeeMode('total')}
+                className="text-xs"
+              >
+                Total Count
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={attendeeMode === 'breakdown' ? 'default' : 'outline'}
+                onClick={() => setAttendeeMode('breakdown')}
+                className="text-xs"
+              >
+                Adults & Children
+              </Button>
+            </div>
+
+            {/* Total Count Mode */}
+            {attendeeMode === 'total' && (
+              <div>
+                <Label htmlFor="volunteerCount">Total Attendees</Label>
+                <Input
+                  id="volunteerCount"
+                  type="number"
+                  value={formData.volunteerCount}
+                  onChange={(e) => setFormData(prev => ({ ...prev, volunteerCount: parseInt(e.target.value) || 0, adultCount: 0, childrenCount: 0 }))}
+                  placeholder="Enter total number of attendees"
+                  min="0"
+                  className="w-40"
+                  data-testid="input-volunteer-count"
+                />
+              </div>
+            )}
+
+            {/* Breakdown Mode */}
+            {attendeeMode === 'breakdown' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="adultCount">Adults</Label>
+                  <Input
+                    id="adultCount"
+                    type="number"
+                    value={formData.adultCount || 0}
+                    onChange={(e) => {
+                      const adults = parseInt(e.target.value) || 0;
+                      const children = formData.childrenCount || 0;
+                      setFormData(prev => ({
+                        ...prev,
+                        adultCount: adults,
+                        volunteerCount: adults + children
+                      }));
+                    }}
+                    placeholder="# of adults"
+                    min="0"
+                    className="w-32"
+                    data-testid="input-adult-count"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="childrenCount">Children</Label>
+                  <Input
+                    id="childrenCount"
+                    type="number"
+                    value={formData.childrenCount || 0}
+                    onChange={(e) => {
+                      const children = parseInt(e.target.value) || 0;
+                      const adults = formData.adultCount || 0;
+                      setFormData(prev => ({
+                        ...prev,
+                        childrenCount: children,
+                        volunteerCount: adults + children
+                      }));
+                    }}
+                    placeholder="# of children"
+                    min="0"
+                    className="w-32"
+                    data-testid="input-children-count"
+                  />
+                </div>
+              </div>
+            )}
+
             <p className="text-sm text-[#236383]">
-              Optional: Estimate how many volunteers will participate in this event.
+              Optional: Estimate how many people will attend this event.
             </p>
           </div>
 

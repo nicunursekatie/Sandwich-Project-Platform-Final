@@ -1446,39 +1446,27 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
             {/* Sandwiches Delivered Section */}
             <div className="text-center">
-              <Package className="w-5 h-5 text-[#D68319] mx-auto mb-2" />
+              <Package className="w-5 h-5 text-[#FBAD3F] mx-auto mb-2" />
               <p className="text-sm text-gray-600 font-medium">Sandwiches Delivered</p>
-              <p className="font-semibold text-[#D68319] mt-1">
-                {request.actualSandwichCount ? (
-                  <>
-                    <span className="text-lg">{request.actualSandwichCount}</span>
-                    {request.estimatedSandwichCount && (
-                      <span className="text-xs text-gray-500 block">
-                        (Planned: {request.estimatedSandwichCount})
-                      </span>
-                    )}
-                  </>
-                ) : request.estimatedSandwichCount ? (
-                  <>
-                    <span className="text-lg">{request.estimatedSandwichCount}</span>
-                    <span className="text-xs text-gray-500 block">(Planned)</span>
-                  </>
-                ) : (
-                  <span className="text-gray-400 italic">Not recorded</span>
-                )}
+              <p className="font-semibold text-[#FBAD3F] text-2xl mt-1">
+                {(() => {
+                  const count = request.actualSandwichCount || request.estimatedSandwichCount;
+                  const types = request.actualSandwichTypes || request.sandwichTypes;
+
+                  if (!count) {
+                    return <span className="text-gray-400 italic text-base">Not recorded</span>;
+                  }
+
+                  // If we have types, show count with type
+                  if (types && Array.isArray(types) && types.length > 0) {
+                    const typeDisplay = formatSandwichTypesDisplay(types);
+                    return `${count} ${typeDisplay}`;
+                  }
+
+                  // Otherwise just show count
+                  return count;
+                })()}
               </p>
-              {/* Display sandwich types - use actual if available, otherwise fall back to planned */}
-              {(() => {
-                const types = request.actualSandwichTypes || request.sandwichTypes;
-                if (types && Array.isArray(types) && types.length > 0) {
-                  return (
-                    <p className="text-xs text-gray-600 mt-1">
-                      {formatSandwichTypesDisplay(types)}
-                    </p>
-                  );
-                }
-                return null;
-              })()}
             </div>
 
             {/* Social Media Status Section */}
