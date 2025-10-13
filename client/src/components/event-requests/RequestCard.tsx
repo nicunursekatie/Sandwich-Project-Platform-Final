@@ -1959,16 +1959,18 @@ export default function RequestCard({
                       
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-[#236383] text-base font-semibold">Total:</span>
-                          <span className="font-bold text-[#236383] text-base">
-                            {request.actualSandwichCount || request.estimatedSandwichCount || (request as any).sandwichCount || 0} sandwiches
-                          </span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#236383] text-base font-semibold">Types:</span>
-                          <span className="font-bold text-[#236383] text-base text-right">
-                            {request.sandwichTypes ? getSandwichTypesSummary(request).breakdown : 'Not specified'}
+                          <span className="text-[#236383] text-base font-semibold">Sandwiches:</span>
+                          <span className="font-bold text-[#236383] text-lg text-right">
+                            {(() => {
+                              // getSandwichTypesSummary handles string parsing internally
+                              const summary = getSandwichTypesSummary(request);
+                              // If we have type breakdown, show that instead of just total
+                              if (summary.hasBreakdown) {
+                                return summary.breakdown;
+                              }
+                              // Fallback to just total if no types
+                              return `${request.actualSandwichCount || request.estimatedSandwichCount || (request as any).sandwichCount || 0} sandwiches`;
+                            })()}
                           </span>
                         </div>
                         
