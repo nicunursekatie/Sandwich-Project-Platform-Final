@@ -125,15 +125,18 @@ export default function SandwichForecastWidget() {
         }
 
         weeklyData[weekKey].events.push(request);
-        weeklyData[weekKey].totalEstimated +=
-          request.estimatedSandwichCount || 0;
+        
+        // Use actual count for completed events, estimated for others
+        const sandwichCount = request.status === 'completed' && request.actualSandwichCount 
+          ? request.actualSandwichCount 
+          : request.estimatedSandwichCount || 0;
+        
+        weeklyData[weekKey].totalEstimated += sandwichCount;
 
         if (request.status === 'completed' || request.status === 'scheduled') {
-          weeklyData[weekKey].confirmedCount +=
-            request.estimatedSandwichCount || 0;
+          weeklyData[weekKey].confirmedCount += sandwichCount;
         } else {
-          weeklyData[weekKey].pendingCount +=
-            request.estimatedSandwichCount || 0;
+          weeklyData[weekKey].pendingCount += sandwichCount;
         }
       } catch (error) {
         console.warn('Error processing event date:', request.desiredEventDate);
@@ -247,9 +250,15 @@ export default function SandwichForecastWidget() {
     return isOtherEvent(new Date(e.desiredEventDate));
   });
 
-  // Totals
-  const thursdayTotal = distributionEvents.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
-  const weekTotal = (currentWeek?.events || []).reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
+  // Totals - use actual count for completed events, estimated for others
+  const getSandwichCount = (event: EventRequest) => {
+    return event.status === 'completed' && event.actualSandwichCount 
+      ? event.actualSandwichCount 
+      : event.estimatedSandwichCount || 0;
+  };
+  
+  const thursdayTotal = distributionEvents.reduce((sum, e) => sum + getSandwichCount(e), 0);
+  const weekTotal = (currentWeek?.events || []).reduce((sum, e) => sum + getSandwichCount(e), 0);
 
   if (isLoading) {
     return (
@@ -407,9 +416,11 @@ export default function SandwichForecastWidget() {
                         );
                       })()}
                       <div className="font-semibold text-brand-primary">
-                        {(event.estimatedSandwichCount || 0).toLocaleString()}
+                        {getSandwichCount(event).toLocaleString()}
                       </div>
-                      <div className="text-xs text-gray-500">sandwiches</div>
+                      <div className="text-xs text-gray-500">
+                        {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
+                      </div>
                     </div>
                   </div>
                 );
@@ -464,9 +475,11 @@ export default function SandwichForecastWidget() {
                         );
                       })()}
                       <div className="font-semibold text-brand-primary">
-                        {(event.estimatedSandwichCount || 0).toLocaleString()}
+                        {getSandwichCount(event).toLocaleString()}
                       </div>
-                      <div className="text-xs text-gray-500">sandwiches</div>
+                      <div className="text-xs text-gray-500">
+                        {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
+                      </div>
                     </div>
                   </div>
                 );
