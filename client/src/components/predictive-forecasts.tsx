@@ -83,7 +83,8 @@ export default function PredictiveForecasts() {
 
     const scheduledThisWeek = (eventRequests || []).filter((event) => {
       if (!event.desiredEventDate) return false;
-      if (!['in_process', 'scheduled'].includes(event.status)) return false;
+      // Include in_process, scheduled, AND completed events for accurate weekly totals
+      if (!['in_process', 'scheduled', 'completed'].includes(event.status)) return false;
 
       const eventDate = new Date(event.desiredEventDate);
       return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
