@@ -106,6 +106,17 @@ export default function SandwichForecastWidget() {
         const weekKey = distributionThursday.toISOString().split('T')[0];
         const weekComplete = isWeekComplete(distributionThursday);
 
+        // Debug logging for event grouping
+        if (eventDate.getDay() === 5) { // Friday
+          console.log('🔍 Friday Event Grouping:', {
+            org: request.organizationName,
+            eventDate: eventDate.toDateString(),
+            eventDayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][eventDate.getDay()],
+            assignedThursday: distributionThursday.toDateString(),
+            weekKey
+          });
+        }
+
         // Calculate Tuesday (2 days before Thursday) as the start of the distribution window
         const tuesdayStart = new Date(distributionThursday);
         tuesdayStart.setDate(distributionThursday.getDate() - 2);
