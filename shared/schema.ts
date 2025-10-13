@@ -1520,7 +1520,9 @@ export const eventRequests = pgTable(
     contactCompletionNotes: text('contact_completion_notes'), // Free text notes from the contact
     eventAddress: text('event_address'), // Event location address collected
     estimatedSandwichCount: integer('estimated_sandwich_count'), // Number of sandwiches planned
-    volunteerCount: integer('volunteer_count'), // Number of volunteers expected to participate
+    volunteerCount: integer('volunteer_count'), // Number of attendees expected (general total, or can use adult/children breakdown)
+    adultCount: integer('adult_count'), // Number of adults (optional breakdown)
+    childrenCount: integer('children_count'), // Number of children (optional breakdown)
     hasRefrigeration: boolean('has_refrigeration'), // Whether site has refrigeration
     completedByUserId: varchar('completed_by_user_id'), // User ID who completed the contact
 
