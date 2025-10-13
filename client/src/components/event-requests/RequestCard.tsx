@@ -157,7 +157,19 @@ export default function RequestCard({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-  
+
+  // Fetch recipients for display
+  const { data: recipients = [] } = useQuery<Array<{id: number; name: string}>>({
+    queryKey: ['/api/recipients'],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Fetch hosts for display
+  const { data: hosts = [] } = useQuery<Array<{id: number; name: string}>>({
+    queryKey: ['/api/hosts'],
+    staleTime: 10 * 60 * 1000,
+  });
+
   // State for managing original message collapsed/expanded state
   const [isOriginalMessageExpanded, setIsOriginalMessageExpanded] = useState(false);
   
@@ -206,6 +218,39 @@ export default function RequestCard({
   const handleCancelTspContactEdit = () => {
     setIsEditingTspContact(false);
     setSelectedTspContact(request.tspContact || '');
+  };
+
+  // Helper function to format recipient names from IDs
+  const formatRecipientNames = (recipientIds: string[] | null | undefined): string => {
+    if (!recipientIds || recipientIds.length === 0) {
+      return 'Not specified';
+    }
+
+    const names = recipientIds.map(id => {
+      // Parse the ID format (host:5, recipient:10, or custom:text)
+      if (id.startsWith('host:')) {
+        const hostId = parseInt(id.replace('host:', ''));
+        const host = hosts.find(h => h.id === hostId);
+        return host?.name || `Unknown Host (${hostId})`;
+      } else if (id.startsWith('recipient:')) {
+        const recipientId = parseInt(id.replace('recipient:', ''));
+        const recipient = recipients.find(r => r.id === recipientId);
+        return recipient?.name || `Unknown Recipient (${recipientId})`;
+      } else if (id.startsWith('custom:')) {
+        return id.replace('custom:', '');
+      }
+
+      // Fallback for legacy numeric IDs (treat as recipient)
+      const numId = parseInt(id);
+      if (!isNaN(numId)) {
+        const recipient = recipients.find(r => r.id === numId);
+        return recipient?.name || `Unknown (${id})`;
+      }
+
+      return id;
+    });
+
+    return names.join(', ');
   };
 
   // Calculate if follow-up is needed (events in "in_process" status for >1 week)
@@ -1175,38 +1220,10 @@ export default function RequestCard({
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <span className="text-[#236383] text-base font-semibold">Destination:</span>
-                          {editingScheduledId === request.id && editingField === 'deliveryDestination' ? (
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                type="text"
-                                value={editingValue}
-                                onChange={(e) => setEditingValue(e.target.value)}
-                                className="w-40 h-7 text-sm"
-                                placeholder="Enter destination"
-                              />
-                              <Button size="sm" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center space-x-1">
-                              <span className="font-bold text-[#236383] text-base text-right">
-                                {request.deliveryDestination || 'Not specified'}
-                              </span>
-                              {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT) && (
-                                <Button size="sm" variant="ghost" onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditing(request.id, 'deliveryDestination', request.deliveryDestination || '');
-                                }} className="h-4 w-4 p-0">
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          )}
+                          <span className="text-[#236383] text-base font-semibold">Recipients:</span>
+                          <span className="font-bold text-[#236383] text-base text-right">
+                            {formatRecipientNames((request as any).assignedRecipientIds)}
+                          </span>
                         </div>
                         
                         <div className="flex justify-between items-center">
@@ -1975,9 +1992,9 @@ export default function RequestCard({
                         </div>
 
                         <div className="flex justify-between items-center">
-                          <span className="text-[#236383] text-base font-semibold">Destination:</span>
+                          <span className="text-[#236383] text-base font-semibold">Recipients:</span>
                           <span className="font-bold text-[#236383] text-base text-right">
-                            {request.deliveryDestination || 'Not specified'}
+                            {formatRecipientNames((request as any).assignedRecipientIds)}
                           </span>
                         </div>
                       </div>

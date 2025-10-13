@@ -302,8 +302,8 @@ router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
         .filter((p) => p.lastSyncedAt)
         .sort(
           (a, b) =>
-            new Date(b.lastSyncedAt).getTime() -
-            new Date(a.lastSyncedAt).getTime()
+            new Date(b.lastSyncedAt!).getTime() -
+            new Date(a.lastSyncedAt!).getTime()
         )[0]?.lastSyncedAt,
       projects: projects.map((p) => ({
         id: p.id,

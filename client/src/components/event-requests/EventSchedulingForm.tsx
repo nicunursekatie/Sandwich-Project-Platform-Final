@@ -810,18 +810,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               )}
             </div>
 
-            {/* Final Delivery Destination */}
+            {/* Final Delivery Destination - Multiple Recipients */}
             <div>
               <Label htmlFor="deliveryDestination">
-                {formData.overnightHoldingLocation ? '📍 Final Delivery Destination' : '📍 Delivery Destination'}
+                {formData.overnightHoldingLocation ? '📍 Final Delivery Destinations' : '📍 Delivery Destinations'}
               </Label>
-              <RecipientSelector
-                value={formData.deliveryDestination}
-                onChange={(value) => setFormData(prev => ({ ...prev, deliveryDestination: value }))}
+              <p className="text-sm text-gray-500 mb-2">
+                Select one or more recipient organizations where the sandwiches will be delivered
+              </p>
+              <MultiRecipientSelector
+                value={formData.assignedRecipientIds}
+                onChange={(ids) => setFormData(prev => ({ ...prev, assignedRecipientIds: ids }))}
                 placeholder={formData.overnightHoldingLocation
-                  ? "Final destination after overnight hold (organization, address, etc.)"
-                  : "Where should the sandwiches be delivered? (organization, address, etc.)"}
-                data-testid="delivery-destination-selector"
+                  ? "Select recipient organizations for final delivery..."
+                  : "Select recipient organizations..."}
+                data-testid="delivery-destination-multi-selector"
               />
             </div>
           </div>
@@ -1572,23 +1575,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     </div>
                   </div>
 
-                  {/* Recipient Assignment Section */}
-                  <div className="space-y-4">
-                    <h4 className="text-md font-semibold text-[#236383]">Recipient Assignment</h4>
-                    <div className="space-y-2">
-                      <Label>Recipient Organizations</Label>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Track which recipient organizations actually received the sandwiches from this event
-                      </p>
-                      <MultiRecipientSelector
-                        value={formData.assignedRecipientIds}
-                        onChange={(ids) => setFormData(prev => ({ ...prev, assignedRecipientIds: ids }))}
-                        placeholder="Select recipient organizations..."
-                        data-testid="multi-recipient-selector"
-                      />
-                    </div>
-                  </div>
-                  
                 </div>
               )}
             </div>

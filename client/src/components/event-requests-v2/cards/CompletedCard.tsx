@@ -1283,11 +1283,6 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   // Allow assignment editing when assignment functions are provided
   const canEditAssignments = !!(openAssignmentDialog && handleRemoveAssignment);
 
-  // Extract deliveryDestination as string to avoid 'unknown' type error
-  const deliveryDestination = request.deliveryDestination
-    ? String(request.deliveryDestination)
-    : null;
-
   // Fetch recipients and hosts for name lookup
   const { data: recipients = [] } = useQuery<{ id: number; name: string }[]>({
     queryKey: ['/api/recipients'],
@@ -1460,7 +1455,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   // If we have types, show count with type
                   if (types && Array.isArray(types) && types.length > 0) {
                     const typeDisplay = formatSandwichTypesDisplay(types);
-                    return `${count} ${typeDisplay}`;
+                    return typeDisplay;
                   }
 
                   // Otherwise just show count
@@ -1554,17 +1549,6 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         {/* Event Summary */}
         <div className="space-y-2 mb-3">
           <div className="bg-white rounded-lg p-2 space-y-2">
-            {/* Delivery Destination */}
-            {typeof deliveryDestination === 'string' && deliveryDestination.trim() !== '' ? (
-              <div className="bg-brand-primary-lighter rounded-lg p-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-brand-primary-muted" />
-                  <span className="font-medium">Delivery Destination:</span>
-                  <span>{deliveryDestination}</span>
-                </div>
-              </div>
-            ) : null}
-
             {/* Assigned Recipients */}
             {assignedRecipientInfo.length > 0 && (
               <div className="bg-[#e6f2f5] rounded-lg p-3">
