@@ -69,17 +69,20 @@ export default function PredictiveForecasts() {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const monthProgress = dayOfMonth / daysInMonth;
 
-    // Calculate scheduled events for current week (Wed-Tue)
-    // Week runs Wednesday to Tuesday
+    // Calculate scheduled events for current week (Fri-Thu)
+    // Week runs Friday to Thursday (distribution day)
     const currentWeekStart = new Date(today);
-    const dayOfWeek = today.getDay(); // 0=Sun, 3=Wed
-    const daysFromWednesday = (dayOfWeek + 4) % 7; // Days since last Wednesday
-    currentWeekStart.setDate(today.getDate() - daysFromWednesday);
+    const dayOfWeek = today.getDay(); // 0=Sun, 5=Fri
+    const daysFromFriday = (dayOfWeek + 2) % 7; // Days since last Friday
+    currentWeekStart.setDate(today.getDate() - daysFromFriday);
     currentWeekStart.setHours(0, 0, 0, 0);
 
     const currentWeekEnd = new Date(currentWeekStart);
-    currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // Wed + 6 = Tue
+    currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // Fri + 6 = Thu
     currentWeekEnd.setHours(23, 59, 59, 999);
+
+    // Check if current week is complete (past Thursday)
+    const isCurrentWeekComplete = today > currentWeekEnd;
 
     const scheduledThisWeek = (eventRequests || []).filter((event) => {
       if (!event.desiredEventDate) return false;
@@ -310,6 +313,9 @@ export default function PredictiveForecasts() {
         vsAvg: weeklyVsAvg,
         dayOfWeek: todayDayOfWeek,
         daysRemaining: 7 - daysElapsedInWeek,
+        isComplete: isCurrentWeekComplete,
+        weekStart: formatDate(currentWeekStart),
+        weekEnd: formatDate(currentWeekEnd),
       },
       monthly: {
         current: currentMonthTotal,
@@ -340,20 +346,7 @@ export default function PredictiveForecasts() {
   const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentDayName = weekdays[forecasts.weekly.dayOfWeek];
 
-  // Calculate week date range
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const daysFromWednesday = (dayOfWeek + 4) % 7;
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - daysFromWednesday);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  const currentMonth = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
     <div className="space-y-6">
@@ -361,7 +354,7 @@ export default function PredictiveForecasts() {
       <div>
         <h2 className="text-3xl font-bold text-brand-primary">Predictive Forecasts</h2>
         <p className="text-gray-600 mt-2">
-          Projections based on current pace and historical patterns • Week runs Wed-Tue
+          Projections based on current pace and historical patterns • Week runs Fri-Thu
         </p>
       </div>
 
@@ -370,9 +363,16 @@ export default function PredictiveForecasts() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl">Weekly Forecast</CardTitle>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                Weekly Forecast
+                {!forecasts.weekly.isComplete && (
+                  <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                    Week in Progress
+                  </Badge>
+                )}
+              </CardTitle>
               <CardDescription>
-                {formatDate(weekStart)} - {formatDate(weekEnd)} • Currently {currentDayName}
+                {forecasts.weekly.weekStart} - {forecasts.weekly.weekEnd} • Currently {currentDayName}
               </CardDescription>
             </div>
             <Calendar className="h-8 w-8 text-brand-primary" />

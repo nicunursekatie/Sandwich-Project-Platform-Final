@@ -78,20 +78,71 @@ export function calculateTotalSandwiches(
 }
 
 /**
- * Calculate weekly data buckets from collections for accurate weekly analytics
+ * Calculate the Friday start of the week for a given date.
+ * Weeks run Friday to Thursday (with Thursday being distribution day).
+ *
+ * @param date - Any date within the week
+ * @returns The Friday that starts that week
+ */
+export function getWeekStartFriday(date: Date): Date {
+  const weekStart = new Date(date);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const day = weekStart.getDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
+
+  // Calculate days to subtract to get to the previous or current Friday
+  // Friday=0 days, Saturday=1 day, Sunday=2 days, Monday=3 days, ..., Thursday=6 days
+  const daysFromFriday = (day + 2) % 7; // Convert to days since last Friday
+
+  weekStart.setDate(weekStart.getDate() - daysFromFriday);
+  return weekStart;
+}
+
+/**
+ * Calculate the Thursday end of the week for a given Friday start date.
+ *
+ * @param fridayStart - The Friday start of the week
+ * @returns The Thursday that ends that week
+ */
+export function getWeekEndThursday(fridayStart: Date): Date {
+  const weekEnd = new Date(fridayStart);
+  weekEnd.setDate(weekEnd.getDate() + 6); // Friday + 6 days = Thursday
+  weekEnd.setHours(23, 59, 59, 999);
+  return weekEnd;
+}
+
+/**
+ * Check if a week is complete (we've passed Thursday).
+ *
+ * @param fridayStart - The Friday start of the week
+ * @param referenceDate - The current date (defaults to now)
+ * @returns true if the week is complete (past Thursday), false if in progress
+ */
+export function isWeekComplete(fridayStart: Date, referenceDate: Date = new Date()): boolean {
+  const thursday = getWeekEndThursday(fridayStart);
+  return referenceDate > thursday;
+}
+
+/**
+ * Calculate weekly data buckets from collections for accurate weekly analytics.
+ * Weeks run Friday to Thursday (with Thursday being distribution day).
  */
 export function calculateWeeklyData(collections: SandwichCollection[]): Array<{
   weekStartDate: string;
+  weekEndDate: string;
   weekLabel: string;
   totalSandwiches: number;
   totalCollections: number;
   uniqueHosts: number;
+  isComplete: boolean;
 }> {
   const weeklyData: Record<
     string,
     {
       weekStartDate: string;
+      weekEndDate: string;
       weekLabel: string;
+      fridayStart: Date;
       totalSandwiches: number;
       totalCollections: number;
       hosts: Set<string>;
@@ -103,19 +154,19 @@ export function calculateWeeklyData(collections: SandwichCollection[]): Array<{
 
     const date = parseCollectionDate(collection.collectionDate);
 
-    // Calculate week start (Monday)
-    const weekStart = new Date(date);
-    const day = weekStart.getDay();
-    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
-    weekStart.setDate(diff);
+    // Calculate week start (Friday)
+    const fridayStart = getWeekStartFriday(date);
+    const thursdayEnd = getWeekEndThursday(fridayStart);
 
-    const weekKey = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD format
-    const weekLabel = `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    const weekKey = fridayStart.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const weekLabel = `${fridayStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${thursdayEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
     if (!weeklyData[weekKey]) {
       weeklyData[weekKey] = {
         weekStartDate: weekKey,
+        weekEndDate: thursdayEnd.toISOString().split('T')[0],
         weekLabel,
+        fridayStart,
         totalSandwiches: 0,
         totalCollections: 0,
         hosts: new Set(),
@@ -133,8 +184,13 @@ export function calculateWeeklyData(collections: SandwichCollection[]): Array<{
 
   return Object.values(weeklyData)
     .map((week) => ({
-      ...week,
+      weekStartDate: week.weekStartDate,
+      weekEndDate: week.weekEndDate,
+      weekLabel: week.weekLabel,
+      totalSandwiches: week.totalSandwiches,
+      totalCollections: week.totalCollections,
       uniqueHosts: week.hosts.size,
+      isComplete: isWeekComplete(week.fridayStart),
     }))
     .sort((a, b) => a.weekStartDate.localeCompare(b.weekStartDate));
 }
@@ -163,20 +219,24 @@ export function getRecordWeek(collections: SandwichCollection[]): {
 }
 
 /**
- * Calculate actual average weekly sandwiches from collections data
+ * Calculate actual average weekly sandwiches from collections data.
+ * Only includes complete weeks (past Thursday) to avoid skewing the average.
  */
 export function calculateActualWeeklyAverage(
   collections: SandwichCollection[]
 ): number {
   const weeklyData = calculateWeeklyData(collections);
 
-  if (weeklyData.length === 0) return 0;
+  // Filter to only complete weeks to avoid skewing average with partial data
+  const completeWeeks = weeklyData.filter(week => week.isComplete);
 
-  const totalSandwiches = weeklyData.reduce(
+  if (completeWeeks.length === 0) return 0;
+
+  const totalSandwiches = completeWeeks.reduce(
     (sum, week) => sum + week.totalSandwiches,
     0
   );
-  return Math.round(totalSandwiches / weeklyData.length);
+  return Math.round(totalSandwiches / completeWeeks.length);
 }
 
 // ============================================================================

@@ -35,7 +35,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function AnalyticsDashboard() {
   // Get authenticated user - CRITICAL for API calls
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   
   // Force complete cache busting and debugging
   const [debugKey] = useState(() => `analytics-v4-${Date.now()}-${Math.random()}`);
@@ -424,7 +424,7 @@ export default function AnalyticsDashboard() {
       {/* Period Summary Section */}
       <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all mt-8">
         <h2 className="text-2xl font-bold text-brand-primary mb-4">
-          {periodLabels[selectedPeriod] || 'Period Summary'}
+          {(periodLabels as any)[selectedPeriod] || 'Period Summary'}
         </h2>
         <div className="space-y-4">
               <div className="bg-brand-orange/10 p-4 rounded-lg border border-brand-orange/30">

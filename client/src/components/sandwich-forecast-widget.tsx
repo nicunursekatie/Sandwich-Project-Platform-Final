@@ -23,6 +23,8 @@ export default function SandwichForecastWidget() {
       {
         weekStartDate: string;
         weekEndDate: string;
+        distributionDate?: string;
+        isComplete: boolean;
         events: EventRequest[];
         totalEstimated: number;
         confirmedCount: number;
@@ -30,29 +32,31 @@ export default function SandwichForecastWidget() {
       }
     > = {};
 
-    // Helper function to get the Thursday of a given week (distribution day)
-    const getDistributionThursday = (date: Date) => {
+    // Helper function to get the Friday start of the week (Friday-Thursday weeks)
+    const getWeekStartFriday = (date: Date) => {
       const d = new Date(date);
-      const day = d.getDay(); // 0 = Sunday, 4 = Thursday
-      const daysToThursday = (4 - day + 7) % 7; // Days until next Thursday
-
-      // If it's already Thursday or later in the week, get this week's Thursday
-      // Otherwise get next week's Thursday
-      if (day <= 4) {
-        d.setDate(d.getDate() + daysToThursday);
-      } else {
-        d.setDate(d.getDate() + (7 - day + 4)); // Next Thursday
-      }
-
       d.setHours(0, 0, 0, 0);
+
+      const day = d.getDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
+      // Calculate days to subtract to get to the previous or current Friday
+      const daysFromFriday = (day + 2) % 7;
+
+      d.setDate(d.getDate() - daysFromFriday);
       return d;
     };
 
-    // Helper function to get Wednesday (prep day) before Thursday
-    const getPrepWednesday = (thursday: Date) => {
-      const d = new Date(thursday);
-      d.setDate(d.getDate() - 1); // Day before Thursday
-      return d;
+    // Helper function to get the Thursday of a given week (distribution day)
+    const getDistributionThursday = (fridayStart: Date) => {
+      const thursday = new Date(fridayStart);
+      thursday.setDate(thursday.getDate() + 6); // Friday + 6 days = Thursday
+      thursday.setHours(0, 0, 0, 0);
+      return thursday;
+    };
+
+    // Helper function to check if a week is complete
+    const isWeekComplete = (thursdayEnd: Date) => {
+      const now = new Date();
+      return now > thursdayEnd;
     };
 
     // Get current date for filtering events
@@ -96,13 +100,14 @@ export default function SandwichForecastWidget() {
     relevantEvents.forEach((request) => {
       try {
         const eventDate = new Date(request.desiredEventDate!);
-        const distributionThursday = getDistributionThursday(eventDate);
-        const prepWednesday = getPrepWednesday(distributionThursday);
-        const weekKey = distributionThursday.toISOString().split('T')[0];
+        const fridayStart = getWeekStartFriday(eventDate);
+        const distributionThursday = getDistributionThursday(fridayStart);
+        const weekKey = fridayStart.toISOString().split('T')[0];
+        const weekComplete = isWeekComplete(distributionThursday);
 
         if (!weeklyData[weekKey]) {
           weeklyData[weekKey] = {
-            weekStartDate: prepWednesday.toLocaleDateString('en-US', {
+            weekStartDate: fridayStart.toLocaleDateString('en-US', {
               weekday: 'short',
               month: 'short',
               day: 'numeric',
@@ -117,6 +122,7 @@ export default function SandwichForecastWidget() {
               month: 'long',
               day: 'numeric',
             }),
+            isComplete: weekComplete,
             events: [],
             totalEstimated: 0,
             confirmedCount: 0,
@@ -286,10 +292,10 @@ export default function SandwichForecastWidget() {
           Weekly Sandwich Planning
         </CardTitle>
         <p className="text-sm text-[#646464] mt-1">
-          This view helps you plan for Thursday group distributions and see all sandwich events for the week.
+          This view helps you plan for Thursday group distributions and see all sandwich events for the week (Friday-Thursday).
         </p>
         <p className="text-xs text-brand-primary mt-1 font-medium">
-          📅 Individual makers prep Wednesdays • Group distributions Thursdays
+          📅 Week runs Fri-Thu • Individual makers prep Wed • Group distributions Thu
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -303,8 +309,15 @@ export default function SandwichForecastWidget() {
           >
             Previous Week
           </Button>
-          <div className="font-bold text-lg text-brand-primary">
-            {currentWeek?.distributionDate || 'No week selected'}
+          <div className="flex flex-col items-center">
+            <div className="font-bold text-lg text-brand-primary">
+              {currentWeek?.distributionDate || 'No week selected'}
+            </div>
+            {currentWeek && !currentWeek.isComplete && (
+              <Badge className="bg-yellow-100 text-yellow-800 text-xs mt-1">
+                Week in Progress
+              </Badge>
+            )}
           </div>
           <Button
             variant="outline"

@@ -105,6 +105,13 @@ export default function HostChat() {
   >(null);
   const displayedMessages = optimisticMessages || messages;
 
+  // Auto-mark messages as read when viewing host chat
+  useAutoMarkAsRead(
+    selectedHost ? `host-${selectedHost.id}` : '',
+    messages as any,
+    !!selectedHost
+  );
+
   useEffect(() => {
     setOptimisticMessages(null);
     if (hostConversation?.id) {
@@ -113,13 +120,6 @@ export default function HostChat() {
       });
     }
   }, [hostConversation?.id]);
-
-  // Auto-mark messages as read when viewing host chat
-  useAutoMarkAsRead(
-    selectedHost ? `host-${selectedHost.id}` : '',
-    messages,
-    !!selectedHost
-  );
 
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { content: string }) => {
@@ -317,7 +317,7 @@ export default function HostChat() {
                         {message.sender}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {new Date(message.timestamp).toLocaleTimeString()}
+                        {new Date((message as any).timestamp || message.createdAt || new Date()).toLocaleTimeString()}
                       </span>
                     </div>
                     {/* Show delete button for message owners or super admins */}
