@@ -368,18 +368,16 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                       info.types.slice(0, 2).map((type, typeIdx) => {
                                         // Process sandwich type name
                                         let displayType = type.type.toLowerCase().replace('sandwiches', '').trim();
-                                        
-                                        // Handle deli with meat specification in parentheses
-                                        const deliMatch = displayType.match(/deli\s*\(([^)]+)\)/);
-                                        if (deliMatch) {
-                                          const meat = deliMatch[1].trim();
-                                          // If meat is specified and not "general", use the meat name
-                                          if (meat && meat !== 'general') {
-                                            displayType = meat;
-                                          } else {
-                                            // For "general" or empty, just use "deli"
-                                            displayType = 'deli';
-                                          }
+
+                                        // Handle deli_turkey, deli_ham formats
+                                        if (displayType === 'deli_turkey' || displayType === 'deli (turkey)') {
+                                          displayType = 'turkey';
+                                        } else if (displayType === 'deli_ham' || displayType === 'deli (ham)') {
+                                          displayType = 'ham';
+                                        } else if (displayType === 'deli_general' || displayType === 'deli (general)' || displayType === 'deli') {
+                                          displayType = 'deli';
+                                        } else if (displayType === 'pbj' || displayType === 'pb&j') {
+                                          displayType = 'PB&J';
                                         }
                                         
                                         return (
