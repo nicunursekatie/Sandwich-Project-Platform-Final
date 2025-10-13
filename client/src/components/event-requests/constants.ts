@@ -9,9 +9,9 @@ import {
 // Standardized sandwich types - only these 5 options allowed
 export const SANDWICH_TYPES = [
   { value: 'pbj', label: 'PB&J' },
-  { value: 'deli', label: 'Deli (General)' },
-  { value: 'deli_turkey', label: 'Deli (Turkey)' },
-  { value: 'deli_ham', label: 'Deli (Ham)' },
+  { value: 'deli', label: 'Deli' },
+  { value: 'deli_turkey', label: 'Turkey' },
+  { value: 'deli_ham', label: 'Ham' },
   { value: 'unknown', label: 'Unknown' },
 ] as const;
 
