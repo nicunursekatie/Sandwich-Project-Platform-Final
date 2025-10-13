@@ -76,9 +76,14 @@ export default function ActionCenter() {
     currentWeekStart.setDate(today.getDate() - daysFromWednesday);
     currentWeekStart.setHours(0, 0, 0, 0);
 
+    const currentWeekEnd = new Date(currentWeekStart);
+    currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+    currentWeekEnd.setHours(23, 59, 59, 999);
+
+    // Get ALL collections for current week (past AND future dates)
     const currentWeekCollections = collections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
-      return date >= currentWeekStart && date <= today;
+      return date >= currentWeekStart && date <= currentWeekEnd;
     });
 
     const currentWeekTotal = currentWeekCollections.reduce(

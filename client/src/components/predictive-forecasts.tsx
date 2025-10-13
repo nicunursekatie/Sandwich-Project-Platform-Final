@@ -58,6 +58,11 @@ export default function PredictiveForecasts() {
     if (!collections.length) return null;
 
     const today = new Date();
+
+    // Helper function for consistent date formatting
+    const formatDate = (date: Date) => {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
     const dayOfMonth = today.getDate();
@@ -197,26 +202,48 @@ export default function PredictiveForecasts() {
 
     // Debug logging
     console.log('=== WEEKLY FORECAST DEBUG ===');
+    console.log('Week range:', formatDate(currentWeekStart), 'to', formatDate(currentWeekEnd));
+    console.log('Today:', today.toLocaleDateString());
+    console.log('Current day of week:', todayDayOfWeek, '(0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)');
+    console.log('---');
     console.log('Completed this week (past dates):', completedTotal);
     console.log('Planned collections this week (future dates):', plannedTotal);
-    console.log('Planned collections:', plannedThisWeek.map(c => ({
+    console.log('Planned collections detail:', plannedThisWeek.map(c => ({
       date: c.collectionDate,
       total: calculateTotalSandwiches(c),
-      groups: c.groupCollections
+      individual: c.individualCount || 0,
+      groups: c.groupCollections || []
     })));
+    console.log('---');
     console.log('Scheduled events total:', scheduledWeeklyTotal);
     console.log('Scheduled events count:', scheduledThisWeek.length);
-    console.log('Scheduled events:', scheduledThisWeek.map(e => ({
+    console.log('Scheduled events detail:', scheduledThisWeek.map(e => ({
       org: e.organizationName,
       date: e.desiredEventDate,
       count: e.estimatedSandwichCount,
       status: e.status
     })));
+    console.log('---');
     console.log('Expected remaining individual donations:', Math.round(expectedRemainingDays));
     console.log('Days elapsed in week:', daysElapsedInWeek);
     console.log('Days remaining in week:', 7 - daysElapsedInWeek);
-    console.log('Total (completed + planned + scheduled + expected individual):', weeklyProjected);
-    console.log('Average weekly:', Math.round(avgWeekly));
+    console.log('---');
+    console.log('📊 TOTAL PROJECTED:', weeklyProjected);
+    console.log('📈 Average weekly:', Math.round(avgWeekly));
+    console.log('Difference:', weeklyProjected - avgWeekly);
+
+    // Also log ALL collections with future dates to help find the missing 2900
+    const allFutureCollections = collections.filter((c) => {
+      const date = parseCollectionDate(c.collectionDate);
+      return date > today;
+    }).slice(0, 20); // First 20 to not spam console
+    console.log('---');
+    console.log('🔍 ALL future collections (first 20):', allFutureCollections.map(c => ({
+      date: c.collectionDate,
+      total: calculateTotalSandwiches(c),
+      host: c.hostName || 'Unknown',
+      groups: c.groupCollections || []
+    })));
 
     const weeklyVsAvg = avgWeekly > 0 ? ((weeklyProjected - avgWeekly) / avgWeekly) * 100 : 0;
 
