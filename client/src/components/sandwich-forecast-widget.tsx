@@ -253,23 +253,50 @@ export default function SandwichForecastWidget() {
     return count + Math.max(0, needed - assigned);
   }, 0) || 0;
 
+  // Helper to parse dates consistently (avoid timezone issues)
+  const parseEventDate = (dateStr: string) => {
+    // Parse as YYYY-MM-DD in local time, not UTC
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return new Date(`${dateStr}T00:00:00`);
+    }
+    return new Date(dateStr);
+  };
+
   // New logic for distribution events (Tue/Wed/Thu) and other events
-  const isDistributionEvent = (date: Date) => {
+  const isDistributionEvent = (dateStr: string) => {
+    const date = parseEventDate(dateStr);
     const day = date.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu
     return day === 2 || day === 3 || day === 4; // Tue, Wed, Thu
   };
-  const isOtherEvent = (date: Date) => {
+  const isOtherEvent = (dateStr: string) => {
+    const date = parseEventDate(dateStr);
     const day = date.getDay();
     return day !== 2 && day !== 3 && day !== 4;
   };
 
   const distributionEvents = (currentWeek?.events || []).filter(e => {
     if (!e.desiredEventDate) return false;
-    return isDistributionEvent(new Date(e.desiredEventDate));
+    const isDistribution = isDistributionEvent(e.desiredEventDate);
+
+    // Debug log to check date parsing
+    const eventDate = parseEventDate(e.desiredEventDate);
+    const dayOfWeek = eventDate.getDay();
+    if (e.desiredEventDate.includes('10-17')) {
+      console.log('🔍 Oct 17 Event Classification:', {
+        org: e.organizationName,
+        dateString: e.desiredEventDate,
+        parsedDate: eventDate.toDateString(),
+        dayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek],
+        isDistribution,
+        currentWeekThursday: currentWeek?.distributionDate
+      });
+    }
+
+    return isDistribution;
   });
   const otherEvents = (currentWeek?.events || []).filter(e => {
     if (!e.desiredEventDate) return false;
-    return isOtherEvent(new Date(e.desiredEventDate));
+    return isOtherEvent(e.desiredEventDate);
   });
 
   // Totals - use actual count for completed events, estimated for others
