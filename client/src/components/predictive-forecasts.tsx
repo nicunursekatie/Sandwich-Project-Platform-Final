@@ -89,6 +89,20 @@ export default function PredictiveForecasts() {
       return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
     });
 
+    // Debug: Show ALL events in the current week range regardless of status
+    const allEventsThisWeek = (eventRequests || []).filter((event) => {
+      if (!event.desiredEventDate) return false;
+      const eventDate = new Date(event.desiredEventDate);
+      return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
+    });
+
+    console.log('🔍 ALL events this week (any status):', allEventsThisWeek.map(e => ({
+      org: e.organizationName,
+      date: e.desiredEventDate,
+      count: e.estimatedSandwichCount,
+      status: e.status
+    })));
+
     const scheduledWeeklyTotal = scheduledThisWeek.reduce(
       (sum, event) => sum + (event.estimatedSandwichCount || 0),
       0
