@@ -89,13 +89,34 @@ export default function PredictiveForecasts() {
       0
     );
 
-    // Get current week collections (already completed)
+    // Get current week collections (already completed AND planned for future dates this week)
     const currentWeekCollections = collections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
-      return date >= currentWeekStart && date <= today;
+      return date >= currentWeekStart && date <= currentWeekEnd;
+    });
+
+    // Split into completed (past) and planned (future)
+    const completedThisWeek = currentWeekCollections.filter((c) => {
+      const date = parseCollectionDate(c.collectionDate);
+      return date <= today;
+    });
+
+    const plannedThisWeek = currentWeekCollections.filter((c) => {
+      const date = parseCollectionDate(c.collectionDate);
+      return date > today;
     });
 
     const currentWeekTotal = currentWeekCollections.reduce(
+      (sum, c) => sum + calculateTotalSandwiches(c),
+      0
+    );
+
+    const completedTotal = completedThisWeek.reduce(
+      (sum, c) => sum + calculateTotalSandwiches(c),
+      0
+    );
+
+    const plannedTotal = plannedThisWeek.reduce(
       (sum, c) => sum + calculateTotalSandwiches(c),
       0
     );
@@ -174,6 +195,29 @@ export default function PredictiveForecasts() {
     // Combined projection: Already collected + Scheduled events + Expected remaining individual donations
     const weeklyProjected = currentWeekTotal + scheduledWeeklyTotal + Math.round(expectedRemainingDays);
 
+    // Debug logging
+    console.log('=== WEEKLY FORECAST DEBUG ===');
+    console.log('Completed this week (past dates):', completedTotal);
+    console.log('Planned collections this week (future dates):', plannedTotal);
+    console.log('Planned collections:', plannedThisWeek.map(c => ({
+      date: c.collectionDate,
+      total: calculateTotalSandwiches(c),
+      groups: c.groupCollections
+    })));
+    console.log('Scheduled events total:', scheduledWeeklyTotal);
+    console.log('Scheduled events count:', scheduledThisWeek.length);
+    console.log('Scheduled events:', scheduledThisWeek.map(e => ({
+      org: e.organizationName,
+      date: e.desiredEventDate,
+      count: e.estimatedSandwichCount,
+      status: e.status
+    })));
+    console.log('Expected remaining individual donations:', Math.round(expectedRemainingDays));
+    console.log('Days elapsed in week:', daysElapsedInWeek);
+    console.log('Days remaining in week:', 7 - daysElapsedInWeek);
+    console.log('Total (completed + planned + scheduled + expected individual):', weeklyProjected);
+    console.log('Average weekly:', Math.round(avgWeekly));
+
     const weeklyVsAvg = avgWeekly > 0 ? ((weeklyProjected - avgWeekly) / avgWeekly) * 100 : 0;
 
     // Monthly projection
@@ -214,6 +258,8 @@ export default function PredictiveForecasts() {
     return {
       weekly: {
         current: currentWeekTotal,
+        completed: completedTotal,
+        planned: plannedTotal,
         projected: weeklyProjected,
         scheduled: scheduledWeeklyTotal,
         scheduledEventCount: scheduledThisWeek.length,
@@ -318,15 +364,18 @@ export default function PredictiveForecasts() {
                 {forecasts.weekly.projected.toLocaleString()}
               </p>
               <div className="text-xs text-gray-700 mt-2 space-y-0.5">
-                <div>{forecasts.weekly.current.toLocaleString()} already collected</div>
+                <div>{forecasts.weekly.completed.toLocaleString()} completed (past)</div>
+                {forecasts.weekly.planned > 0 && (
+                  <div>+ {forecasts.weekly.planned.toLocaleString()} planned group collections</div>
+                )}
                 {forecasts.weekly.scheduled > 0 && (
                   <div>+ {forecasts.weekly.scheduledEventCount} scheduled event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})</div>
                 )}
                 {forecasts.weekly.expectedIndividual > 0 && (
-                  <div>+ Expected individual donations ({forecasts.weekly.expectedIndividual.toLocaleString()})</div>
+                  <div>+ {forecasts.weekly.expectedIndividual.toLocaleString()} expected individual</div>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-2 italic">Event requests + historical avg by day</p>
+              <p className="text-xs text-gray-500 mt-2 italic">Collections log + events + historical avg</p>
 
               {/* Clear status indicator */}
               <div className={`mt-3 px-3 py-2 rounded-md font-semibold text-sm ${

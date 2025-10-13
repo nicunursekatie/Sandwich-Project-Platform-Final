@@ -90,11 +90,16 @@ export default function HostChat() {
   });
 
   // Fetch messages for host conversation
-  const { data: messages = [] } = useQuery<Message[]>({
+  const { data: rawMessages = [] } = useQuery({
     queryKey: ['/api/conversations', hostConversation?.id, 'messages'],
     enabled: !!hostConversation,
     refetchInterval: 3000,
   });
+  
+  const messages = (rawMessages as any[]).map(msg => ({
+    ...msg,
+    timestamp: msg.createdAt || new Date().toISOString()
+  })) as Message[];
   const [optimisticMessages, setOptimisticMessages] = useState<
     Message[] | null
   >(null);

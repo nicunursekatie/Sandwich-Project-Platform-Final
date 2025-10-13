@@ -465,7 +465,7 @@ router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
     const { getGoogleSheetsService } = await import('../google-sheets-service');
 
     const config = {
-      spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID,
+      spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID!,
       worksheetName: process.env.GOOGLE_WORKSHEET_NAME || 'Sheet1',
     };
 
