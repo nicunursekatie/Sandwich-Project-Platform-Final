@@ -116,6 +116,200 @@ export default function ActionCenter() {
 
     const actions: ActionItem[] = [];
 
+    // ============================================================
+    // CATEGORY 1: FOLLOW-UP & ENGAGEMENT
+    // ============================================================
+
+    // Find completed events needing 1-day follow-up
+    const completedEventsNeeding1Day = (eventRequests || []).filter((event) => {
+      if (event.status !== 'completed') return false;
+      if (!event.desiredEventDate) return false;
+      if (event.followUpOneDayCompleted) return false;
+
+      const eventDate = new Date(event.desiredEventDate);
+      const oneDayAgo = new Date(today);
+      oneDayAgo.setDate(today.getDate() - 1);
+
+      // Flag events from yesterday or earlier that need 1-day follow-up
+      return eventDate <= oneDayAgo;
+    });
+
+    if (completedEventsNeeding1Day.length > 0) {
+      actions.push({
+        id: 'followup-1day-needed',
+        priority: 'high',
+        category: 'recognition',
+        title: `${completedEventsNeeding1Day.length} Event${completedEventsNeeding1Day.length !== 1 ? 's' : ''} Need 1-Day Follow-Up`,
+        description: `Completed events waiting for immediate post-event feedback`,
+        impact: `Timely follow-up improves retention and captures fresh feedback`,
+        action: `Contact ${completedEventsNeeding1Day.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Day.length > 3 ? ` and ${completedEventsNeeding1Day.length - 3} more` : ''}`,
+        data: { events: completedEventsNeeding1Day },
+      });
+    }
+
+    // Find completed events needing 1-month follow-up (events 30+ days ago)
+    const oneMonthAgo = new Date(today);
+    oneMonthAgo.setDate(today.getDate() - 30);
+
+    const completedEventsNeeding1Month = (eventRequests || []).filter((event) => {
+      if (event.status !== 'completed') return false;
+      if (!event.desiredEventDate) return false;
+      if (event.followUpOneMonthCompleted) return false;
+
+      const eventDate = new Date(event.desiredEventDate);
+      return eventDate <= oneMonthAgo;
+    });
+
+    if (completedEventsNeeding1Month.length > 0) {
+      actions.push({
+        id: 'followup-1month-needed',
+        priority: 'medium',
+        category: 'recognition',
+        title: `${completedEventsNeeding1Month.length} Event${completedEventsNeeding1Month.length !== 1 ? 's' : ''} Need 1-Month Follow-Up`,
+        description: `Events from 30+ days ago waiting for long-term feedback`,
+        impact: `Monthly follow-ups help assess long-term impact and build relationships`,
+        action: `Schedule follow-up calls with ${completedEventsNeeding1Month.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Month.length > 3 ? ` and ${completedEventsNeeding1Month.length - 3} more` : ''}`,
+        data: { events: completedEventsNeeding1Month },
+      });
+    }
+
+    // Find inactive hosts (haven't collected in 30+ days)
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    const recentHostNames = new Set(
+      collections
+        .filter((c) => {
+          const date = parseCollectionDate(c.collectionDate);
+          return date >= thirtyDaysAgo;
+        })
+        .map((c) => c.hostName)
+    );
+
+    const olderCollections = collections.filter((c) => {
+      const date = parseCollectionDate(c.collectionDate);
+      return date < thirtyDaysAgo;
+    });
+
+    const inactiveHosts = new Set<string>();
+    olderCollections.forEach((c) => {
+      if (c.hostName && !recentHostNames.has(c.hostName)) {
+        inactiveHosts.add(c.hostName);
+      }
+    });
+
+    if (inactiveHosts.size > 0 && inactiveHosts.size <= 10) {
+      actions.push({
+        id: 'inactive-hosts',
+        priority: 'medium',
+        category: 'volunteer-recruitment',
+        title: `${inactiveHosts.size} Host${inactiveHosts.size !== 1 ? 's' : ''} Inactive for 30+ Days`,
+        description: `Previously active collection hosts haven't reported recently`,
+        impact: `Re-engaging ${inactiveHosts.size} hosts could add ${Math.round((inactiveHosts.size * avgWeekly) / recentHostNames.size / 4)} sandwiches/week`,
+        action: `Reach out to check in: ${Array.from(inactiveHosts).slice(0, 3).join(', ')}${inactiveHosts.size > 3 ? ` and ${inactiveHosts.size - 3} more` : ''}`,
+        data: { hosts: Array.from(inactiveHosts) },
+      });
+    }
+
+    // ============================================================
+    // CATEGORY 2: PLANNING & LOGISTICS
+    // ============================================================
+
+    // Find upcoming events (next 14 days) missing driver assignments
+    const twoWeeksFromNow = new Date(today);
+    twoWeeksFromNow.setDate(today.getDate() + 14);
+
+    const upcomingEventsMissingDrivers = (eventRequests || []).filter((event) => {
+      if (!['in_process', 'scheduled'].includes(event.status)) return false;
+      if (!event.desiredEventDate) return false;
+      if ((event.driversNeeded || 0) === 0) return false; // No drivers needed
+
+      const eventDate = new Date(event.desiredEventDate);
+      if (eventDate < today || eventDate > twoWeeksFromNow) return false;
+
+      // Check if drivers are assigned
+      const assignedDrivers = event.assignedDriverIds || [];
+      const driversNeeded = event.driversNeeded || 0;
+
+      return assignedDrivers.length < driversNeeded;
+    });
+
+    if (upcomingEventsMissingDrivers.length > 0) {
+      const totalDriversNeeded = upcomingEventsMissingDrivers.reduce((sum, e) => {
+        const assigned = (e.assignedDriverIds || []).length;
+        const needed = e.driversNeeded || 0;
+        return sum + (needed - assigned);
+      }, 0);
+
+      actions.push({
+        id: 'missing-drivers',
+        priority: 'high',
+        category: 'scheduling',
+        title: `${upcomingEventsMissingDrivers.length} Upcoming Event${upcomingEventsMissingDrivers.length !== 1 ? 's' : ''} Need Driver${totalDriversNeeded !== 1 ? 's' : ''}`,
+        description: `Events in next 2 weeks need ${totalDriversNeeded} more driver${totalDriversNeeded !== 1 ? 's' : ''}`,
+        impact: `Transportation is critical - events can't happen without drivers`,
+        action: `Assign drivers for ${upcomingEventsMissingDrivers.slice(0, 3).map(e => e.organizationName).join(', ')}${upcomingEventsMissingDrivers.length > 3 ? ` and ${upcomingEventsMissingDrivers.length - 3} more` : ''}`,
+        data: { events: upcomingEventsMissingDrivers, driversNeeded: totalDriversNeeded },
+      });
+    }
+
+    // Find upcoming events missing speaker assignments
+    const upcomingEventsMissingSpeakers = (eventRequests || []).filter((event) => {
+      if (!['in_process', 'scheduled'].includes(event.status)) return false;
+      if (!event.desiredEventDate) return false;
+      if ((event.speakersNeeded || 0) === 0) return false;
+
+      const eventDate = new Date(event.desiredEventDate);
+      if (eventDate < today || eventDate > twoWeeksFromNow) return false;
+
+      const assignedSpeakers = event.assignedSpeakerIds || [];
+      const speakersNeeded = event.speakersNeeded || 0;
+
+      return assignedSpeakers.length < speakersNeeded;
+    });
+
+    if (upcomingEventsMissingSpeakers.length > 0) {
+      const totalSpeakersNeeded = upcomingEventsMissingSpeakers.reduce((sum, e) => {
+        const assigned = (e.assignedSpeakerIds || []).length;
+        const needed = e.speakersNeeded || 0;
+        return sum + (needed - assigned);
+      }, 0);
+
+      actions.push({
+        id: 'missing-speakers',
+        priority: 'medium',
+        category: 'scheduling',
+        title: `${upcomingEventsMissingSpeakers.length} Upcoming Event${upcomingEventsMissingSpeakers.length !== 1 ? 's' : ''} Need Speaker${totalSpeakersNeeded !== 1 ? 's' : ''}`,
+        description: `Events in next 2 weeks need ${totalSpeakersNeeded} more speaker${totalSpeakersNeeded !== 1 ? 's' : ''}`,
+        impact: `Speakers help share the mission and recruit future volunteers`,
+        action: `Assign speakers for ${upcomingEventsMissingSpeakers.slice(0, 3).map(e => e.organizationName).join(', ')}${upcomingEventsMissingSpeakers.length > 3 ? ` and ${upcomingEventsMissingSpeakers.length - 3} more` : ''}`,
+        data: { events: upcomingEventsMissingSpeakers, speakersNeeded: totalSpeakersNeeded },
+      });
+    }
+
+    // Find large upcoming events (500+ sandwiches) that might need extra support
+    const largeUpcomingEvents = (eventRequests || []).filter((event) => {
+      if (!['in_process', 'scheduled'].includes(event.status)) return false;
+      if (!event.desiredEventDate) return false;
+      if ((event.estimatedSandwichCount || 0) < 500) return false;
+
+      const eventDate = new Date(event.desiredEventDate);
+      return eventDate >= today && eventDate <= twoWeeksFromNow;
+    });
+
+    if (largeUpcomingEvents.length > 0) {
+      actions.push({
+        id: 'large-events-support',
+        priority: 'medium',
+        category: 'planning',
+        title: `${largeUpcomingEvents.length} Large Event${largeUpcomingEvents.length !== 1 ? 's' : ''} Coming Up`,
+        description: `Events with 500+ sandwiches in next 2 weeks may need extra coordination`,
+        impact: `Large events require additional volunteers and planning`,
+        action: `Review logistics for ${largeUpcomingEvents.map(e => `${e.organizationName} (${e.estimatedSandwichCount})`).join(', ')}`,
+        data: { events: largeUpcomingEvents },
+      });
+    }
+
     // Calculate average collections by day of week for forecasting
     const dayOfWeekTotals = new Map<number, { total: number; count: number }>();
     collections.forEach((c) => {
@@ -226,6 +420,101 @@ export default function ActionCenter() {
         impact: `Need ~${Math.round(weeklyGap)} more sandwiches to reach average week`,
         action: 'Recruit volunteers for end-of-week collections',
         data: { currentWeekTotal, projectedWeekTotal, avgWeekly, gap: weeklyGap },
+      });
+    }
+
+    // ============================================================
+    // CATEGORY 3: GROWTH OPPORTUNITIES
+    // ============================================================
+
+    // Compare current month to same month last year
+    const lastYearMonth = currentMonth;
+    const lastYear = currentYear - 1;
+
+    const currentMonthCollections = collections.filter((c) => {
+      const date = parseCollectionDate(c.collectionDate);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    });
+
+    const lastYearSameMonthCollections = collections.filter((c) => {
+      const date = parseCollectionDate(c.collectionDate);
+      return date.getMonth() === lastYearMonth && date.getFullYear() === lastYear;
+    });
+
+    const currentMonthTotal = currentMonthCollections.reduce(
+      (sum, c) => sum + calculateTotalSandwiches(c),
+      0
+    );
+
+    const lastYearSameMonthTotal = lastYearSameMonthCollections.reduce(
+      (sum, c) => sum + calculateTotalSandwiches(c),
+      0
+    );
+
+    // Only flag if we have data from last year and we're significantly behind
+    if (lastYearSameMonthTotal > 0) {
+      const yearOverYearGap = lastYearSameMonthTotal - currentMonthTotal;
+      const percentBehind = (yearOverYearGap / lastYearSameMonthTotal) * 100;
+
+      if (yearOverYearGap > 1000 && percentBehind > 15) {
+        const monthName = today.toLocaleDateString('en-US', { month: 'long' });
+        actions.push({
+          id: 'year-over-year-decline',
+          priority: 'medium',
+          category: 'planning',
+          title: `${monthName} Tracking Behind Last Year`,
+          description: `${Math.round(percentBehind)}% below ${monthName} ${lastYear} (${yearOverYearGap.toLocaleString()} fewer sandwiches)`,
+          impact: `Identifying growth opportunities could restore momentum`,
+          action: `Review what worked well in ${monthName} ${lastYear} and replicate those strategies`,
+          data: { currentMonthTotal, lastYearSameMonthTotal, gap: yearOverYearGap, percentBehind },
+        });
+      }
+    }
+
+    // Find organizations with repeat events that could go larger
+    const completedEventsLastYear = (eventRequests || []).filter((event) => {
+      if (event.status !== 'completed') return false;
+      if (!event.desiredEventDate) return false;
+
+      const eventDate = new Date(event.desiredEventDate);
+      return eventDate.getFullYear() === lastYear;
+    });
+
+    const orgEventCounts = new Map<string, { count: number; avgSize: number }>();
+
+    completedEventsLastYear.forEach((event) => {
+      if (!event.organizationName) return;
+      const current = orgEventCounts.get(event.organizationName) || { count: 0, avgSize: 0 };
+      current.count += 1;
+      current.avgSize += (event.actualSandwichCount || event.estimatedSandwichCount || 0);
+      orgEventCounts.set(event.organizationName, current);
+    });
+
+    // Find repeat organizations (2+ events) with small-medium events (< 300 sandwiches avg)
+    const growthOpportunityOrgs: Array<{ org: string; eventCount: number; avgSize: number }> = [];
+
+    orgEventCounts.forEach((data, org) => {
+      if (data.count >= 2) {
+        const avgSize = data.avgSize / data.count;
+        if (avgSize > 0 && avgSize < 300) {
+          growthOpportunityOrgs.push({ org, eventCount: data.count, avgSize: Math.round(avgSize) });
+        }
+      }
+    });
+
+    if (growthOpportunityOrgs.length > 0) {
+      growthOpportunityOrgs.sort((a, b) => b.eventCount - a.eventCount);
+      const topOrgs = growthOpportunityOrgs.slice(0, 3);
+
+      actions.push({
+        id: 'growth-opportunities',
+        priority: 'low',
+        category: 'planning',
+        title: `${growthOpportunityOrgs.length} Partner${growthOpportunityOrgs.length !== 1 ? 's' : ''} Could Scale Up Events`,
+        description: `Organizations with multiple small events could potentially host larger ones`,
+        impact: `Growing event sizes with proven partners is easier than recruiting new ones`,
+        action: `Explore expansion with ${topOrgs.map(o => `${o.org} (${o.eventCount} events, avg ${o.avgSize})`).join(', ')}`,
+        data: { organizations: growthOpportunityOrgs },
       });
     }
 
