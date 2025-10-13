@@ -181,6 +181,19 @@ export default function ActionCenter() {
       const gap = avgForWeek - totalForecast;
       const percentBelow = avgForWeek > 0 ? (gap / avgForWeek) * 100 : 0;
 
+      // Debug logging for action center
+      if (weekOffset === 0) {
+        console.log('=== ACTION CENTER DEBUG (Current Week) ===');
+        console.log('Total forecast:', totalForecast);
+        console.log('Already collected:', alreadyCollected);
+        console.log('Scheduled events total:', scheduledTotal);
+        console.log('Expected individual donations:', Math.round(expectedIndividualDonations));
+        console.log('Average weekly:', avgForWeek);
+        console.log('Gap:', gap);
+        console.log('Percent below:', percentBelow.toFixed(1) + '%');
+        console.log('Would flag?', gap > 500 && percentBelow > 20);
+      }
+
       if (gap > 500 && percentBelow > 20) {
         const weekLabel = weekOffset === 0 ? 'This Week' :
                          weekOffset === 1 ? 'Next Week' :
