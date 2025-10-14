@@ -4,18 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-22_11"
-packages = [
-  "chromium",
-  "glib",
-  "glibcLocales",
-  "gtk3",
-  "jq",
-  "killall",
-  "nss",
-  "tree",
-  "nano",
-  "sqlite-interactive",
-]
+packages = ["chromium", "glib", "glibcLocales", "gtk3", "jq", "killall", "nss", "tree", "nano", "sqlite-interactive", "zip"]
 
 [deployment]
 deploymentTarget = "autoscale"
