@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   Select,
   SelectContent,
@@ -106,6 +107,7 @@ export default function WeeklyMonitoringDashboard() {
   );
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
+  const { trackReportGeneration, trackCommunication, trackButtonClick } = useAnalytics();
 
   // Get monitoring status for selected week
   const {
@@ -163,6 +165,9 @@ export default function WeeklyMonitoringDashboard() {
   const sendSMSRemindersMutation = useMutation({
     mutationFn: (data: { missingLocations: string[]; appUrl?: string }) =>
       apiRequest('POST', '/api/monitoring/send-sms-reminders', data),
+    onSuccess: (data, variables) => {
+      trackCommunication('sms', `bulk - ${variables.missingLocations.length} locations`);
+    },
   });
 
   const sendSingleSMSMutation = useMutation({
@@ -176,6 +181,9 @@ export default function WeeklyMonitoringDashboard() {
       ),
     onMutate: (data) => {
       setSmsingLocation(data.location);
+    },
+    onSuccess: (data, variables) => {
+      trackCommunication('sms', variables.location);
     },
     onSettled: () => {
       setSmsingLocation(null);
@@ -200,6 +208,9 @@ export default function WeeklyMonitoringDashboard() {
 
     const currentDate = new Date();
     const weekLabel = getWeekLabel(selectedWeek);
+
+    // Track report generation
+    trackReportGeneration('weekly_monitoring_report', 'html');
 
     // Create HTML content for the export
     const htmlContent = `
@@ -513,6 +524,9 @@ export default function WeeklyMonitoringDashboard() {
       ),
     onMutate: (data) => {
       setEmailingSingleLocation(data.location);
+    },
+    onSuccess: (data, variables) => {
+      trackCommunication('email', variables.location);
     },
     onSettled: () => {
       setEmailingSingleLocation(null);

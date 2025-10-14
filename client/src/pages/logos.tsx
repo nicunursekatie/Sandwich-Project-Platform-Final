@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 // Logo files information
 const logoFiles = [
@@ -69,6 +70,7 @@ export default function LogosPage() {
   const [selectedLogo, setSelectedLogo] = useState<
     (typeof logoFiles)[0] | null
   >(null);
+  const { trackDownload, trackButtonClick } = useAnalytics();
 
   const handleDownload = async (filename: string, displayName: string) => {
     try {
@@ -85,6 +87,9 @@ export default function LogosPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+
+      // Track the download
+      trackDownload(displayName, 'logo');
     } catch (error) {
       console.error('Download failed:', error);
       alert('Failed to download logo. Please try again.');
@@ -93,6 +98,7 @@ export default function LogosPage() {
 
   const handlePreview = (logo: (typeof logoFiles)[0]) => {
     setSelectedLogo(logo);
+    trackButtonClick('preview_logo', `logos_page - ${logo.name}`);
   };
 
   return (
