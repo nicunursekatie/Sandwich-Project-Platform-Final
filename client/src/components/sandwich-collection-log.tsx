@@ -2273,56 +2273,59 @@ export default function SandwichCollectionLog() {
                       : ''
                 }`}
               >
-                {/* Single horizontal row layout */}
-                <div className="flex items-center gap-4">
-                  {/* Checkbox */}
-                  {(canEditAllCollections ||
-                    canEditCollection(user, collection)) && (
-                    <button
-                      onClick={() =>
-                        handleSelectCollection(collection.id, !isSelected)
-                      }
-                      className="flex items-center shrink-0"
-                    >
-                      {isSelected ? (
-                        <CheckSquare className="w-5 h-5 text-brand-primary" />
-                      ) : (
-                        <Square className="w-5 h-5 text-slate-400 hover:text-slate-600" />
-                      )}
-                    </button>
-                  )}
+                {/* Responsive layout: vertical on mobile, horizontal on desktop */}
+                <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+                  {/* Mobile: Date, Host, and Checkbox row */}
+                  <div className="flex items-center gap-3 lg:contents">
+                    {/* Checkbox */}
+                    {(canEditAllCollections ||
+                      canEditCollection(user, collection)) && (
+                      <button
+                        onClick={() =>
+                          handleSelectCollection(collection.id, !isSelected)
+                        }
+                        className="flex items-center shrink-0"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-5 h-5 text-brand-primary" />
+                        ) : (
+                          <Square className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                        )}
+                      </button>
+                    )}
 
-                  {/* Date - American format (Oct 1, 2025) */}
-                  <div className="w-32 shrink-0">
-                    <span className="text-base font-semibold text-slate-700">
-                      {formatDate(collection.collectionDate)}
-                    </span>
-                  </div>
-
-                  {/* Location/Host */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-medium text-slate-900 break-words">
-                        {collection.hostName}
+                    {/* Date - American format (Oct 1, 2025) */}
+                    <div className="lg:w-32 shrink-0">
+                      <span className="text-sm lg:text-base font-semibold text-slate-700">
+                        {formatDate(collection.collectionDate)}
                       </span>
-                      {collection.hostName === 'OG Sandwich Project' && (
-                        <span className="text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-1 rounded-full font-medium border border-amber-300 shrink-0">
-                          👑
+                    </div>
+
+                    {/* Location/Host */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm lg:text-base font-medium text-slate-900 break-words">
+                          {collection.hostName}
                         </span>
-                      )}
-                      {isInactiveHost && (
-                        <span className="text-xs bg-gray-300 text-gray-800 px-2 py-1 rounded-full font-medium shrink-0">
-                          INACTIVE
-                        </span>
-                      )}
+                        {collection.hostName === 'OG Sandwich Project' && (
+                          <span className="text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-1 rounded-full font-medium border border-amber-300 shrink-0">
+                            👑
+                          </span>
+                        )}
+                        {isInactiveHost && (
+                          <span className="text-xs bg-gray-300 text-gray-800 px-2 py-1 rounded-full font-medium shrink-0">
+                            INACTIVE
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Individual - with inline type breakdown when available */}
                   {collection.individualSandwiches > 0 && (
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-slate-500 mb-0.5">Individual</div>
-                      <div className="text-base font-bold">
+                    <div className="flex-1 min-w-0 lg:max-w-[200px]">
+                      <div className="text-xs text-slate-500 mb-0.5 font-semibold">Individual</div>
+                      <div className="text-sm lg:text-base font-bold">
                         {(() => {
                           const hasTypes = collection.individualDeli || collection.individualTurkey || collection.individualHam || collection.individualPbj;
                           if (hasTypes) {
@@ -2343,9 +2346,9 @@ export default function SandwichCollectionLog() {
 
                   {/* Groups - inline breakdown when available */}
                   {calculateGroupTotal(collection) > 0 && (
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-slate-500 mb-0.5">Groups</div>
-                      <div className="text-base font-bold">
+                    <div className="flex-1 min-w-0 lg:max-w-[250px]">
+                      <div className="text-xs text-slate-500 mb-0.5 font-semibold">Groups</div>
+                      <div className="text-sm lg:text-base font-bold">
                         {(() => {
                           if (groupData.length === 0) {
                             return null;
@@ -2391,13 +2394,13 @@ export default function SandwichCollectionLog() {
                   )}
 
                   {/* Total */}
-                  <div className="w-20 shrink-0 text-right">
-                    <div className="text-xs text-slate-500 mb-0.5">Total</div>
-                    <div className="text-2xl font-bold">{totalSandwiches}</div>
+                  <div className="w-full lg:w-20 shrink-0 lg:text-right flex lg:block items-center gap-2 lg:gap-0">
+                    <div className="text-xs text-slate-500 mb-0 lg:mb-0.5 font-semibold">Total:</div>
+                    <div className="text-xl lg:text-2xl font-bold">{totalSandwiches}</div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0 lg:ml-auto">
                     {collection.createdBy &&
                       collection.createdByName && (
                         <SendKudosButton
