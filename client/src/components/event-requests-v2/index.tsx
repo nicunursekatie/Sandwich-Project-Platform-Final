@@ -39,6 +39,7 @@ import { useEventQueries } from './hooks/useEventQueries';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 // Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
@@ -137,6 +138,7 @@ const EventRequestsManagementContent: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { trackButtonClick, trackFormSubmit } = useAnalytics();
 
   const handleScheduleCall = () => {
     if (!selectedEventRequest || !scheduleCallDate || !scheduleCallTime) return;
@@ -145,6 +147,7 @@ const EventRequestsManagementContent: React.FC = () => {
       `${scheduleCallDate}T${scheduleCallTime}`
     ).toISOString();
 
+    trackButtonClick('schedule_call', 'event_requests');
     scheduleCallMutation.mutate({
       id: selectedEventRequest.id,
       scheduledCallDate: combinedDateTime,
@@ -340,6 +343,7 @@ const EventRequestsManagementContent: React.FC = () => {
             }}
             onToolkitSent={(details: any) => {
               if (toolkitEventRequest) {
+                trackButtonClick('mark_toolkit_sent', 'event_requests');
                 markToolkitSentMutation.mutate({
                   id: toolkitEventRequest.id,
                   toolkitSentDate: details.toolkitSentDate,
@@ -370,6 +374,7 @@ const EventRequestsManagementContent: React.FC = () => {
           eventRequest={selectedEventRequest}
           onFollowUpCompleted={(notes) => {
             if (selectedEventRequest) {
+              trackButtonClick('1day_followup', 'event_requests');
               oneDayFollowUpMutation.mutate({
                 id: selectedEventRequest.id,
                 notes,
@@ -389,6 +394,7 @@ const EventRequestsManagementContent: React.FC = () => {
           eventRequest={selectedEventRequest}
           onFollowUpCompleted={(notes) => {
             if (selectedEventRequest) {
+              trackButtonClick('1month_followup', 'event_requests');
               oneMonthFollowUpMutation.mutate({
                 id: selectedEventRequest.id,
                 notes,

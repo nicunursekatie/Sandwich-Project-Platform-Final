@@ -328,8 +328,8 @@ export default function SandwichCollectionLog() {
     () => [
       '/api/sandwich-collections',
       needsAllData ? 'all' : currentPage,
-      needsAllData ? 'all' : itemsPerPage,
       currentPage, // Always include current page for proper cache keying
+      itemsPerPage, // Always include to trigger refetch when items per page changes
       debouncedSearchFilters,
       sortConfig,
     ],
@@ -480,6 +480,57 @@ export default function SandwichCollectionLog() {
           resultCount: paginatedResults.length,
         });
 
+        // Calculate stats from ALL filtered collections for accurate totals
+        let individualTotal = 0;
+        let groupTotal = 0;
+        const dates: string[] = [];
+        const hostNames = new Set<string>();
+
+        filteredCollections.forEach((collection: any) => {
+          individualTotal += collection.individualSandwiches || 0;
+          // Calculate group total
+          if (collection.groupCollections) {
+            collection.groupCollections.forEach((group: any) => {
+              const count = group.count || group.sandwichCount || 0;
+              groupTotal += count;
+            });
+          }
+          if (collection.collectionDate) {
+            dates.push(collection.collectionDate);
+          }
+          if (collection.hostName) {
+            hostNames.add(collection.hostName);
+          }
+        });
+
+        let dateRange = null;
+        if (dates.length > 0) {
+          dates.sort();
+          const earliestDate = new Date(dates[0]);
+          const latestDate = new Date(dates[dates.length - 1]);
+          dateRange = {
+            earliest: earliestDate.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
+            latest: latestDate.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
+          };
+        }
+
+        const filteredStats = {
+          totalEntries: filteredCollections.length,
+          individualSandwiches: individualTotal,
+          groupSandwiches: groupTotal,
+          completeTotalSandwiches: individualTotal + groupTotal,
+          hostName: hostNames.size === 1 ? Array.from(hostNames)[0] : null,
+          dateRange,
+        };
+
         return {
           collections: paginatedResults,
           pagination: {
@@ -488,6 +539,7 @@ export default function SandwichCollectionLog() {
             totalItems: filteredCollections.length,
             itemsPerPage,
           },
+          filteredStats, // Include stats calculated from all filtered data
         };
       } else {
         const sortParam = `&sort=${sortConfig.field}&order=${sortConfig.direction}`;
@@ -516,6 +568,7 @@ export default function SandwichCollectionLog() {
 
   const collections = collectionsResponse?.collections || [];
   const pagination = collectionsResponse?.pagination;
+  const filteredStatsFromResponse = collectionsResponse?.filteredStats;
 
   // Extract pagination info - handle both client-side and server-side pagination responses
   const totalItems = pagination?.totalItems || pagination?.total || 0;
@@ -607,9 +660,12 @@ export default function SandwichCollectionLog() {
   // Calculate current statistics to display
   // Priority: filtered collections from main query > global stats (only when no filters)
   const currentStats = (() => {
-    // When filters are active, calculate from the filtered collections
+    // When filters are active, use pre-calculated stats from response (for all filtered data)
+    // or calculate from current page if pre-calculated stats aren't available
     if (hasActiveFilters) {
-      if (collections.length > 0) {
+      if (filteredStatsFromResponse) {
+        return filteredStatsFromResponse;
+      } else if (collections.length > 0) {
         return calculateFilteredStats(collections);
       } else {
         // Even with filters active, if no data is available, show zero stats
@@ -873,6 +929,7 @@ export default function SandwichCollectionLog() {
   // Mutations for update and delete
   const updateMutation = useMutation({
     mutationFn: async (data: { id: number; updates: any }) => {
+      trackDataEntry('sandwich_collection_edit', 'collections_log');
       return await apiRequest(
         'PATCH',
         `/api/sandwich-collections/${data.id}`,
@@ -905,6 +962,7 @@ export default function SandwichCollectionLog() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
+      trackButtonClick('delete_collection', 'collections_log');
       const result = await apiRequest(
         'DELETE',
         `/api/sandwich-collections/${id}`
@@ -961,6 +1019,7 @@ export default function SandwichCollectionLog() {
     mutationFn: async (data: any) => {
       console.log('=== CLIENT MUTATION DEBUG ===');
       console.log('Submitting data:', JSON.stringify(data, null, 2));
+      trackDataEntry('sandwich_collection', 'collections_log');
       try {
         const result = await apiRequest(
           'POST',
