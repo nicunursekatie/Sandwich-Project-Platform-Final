@@ -67,6 +67,7 @@ import { queryClient } from '@/lib/queryClient';
 import SimpleNav from '@/components/simple-nav';
 import { NAV_ITEMS } from '@/nav.config';
 import AnnouncementBanner from '@/components/announcement-banner';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import MessageNotifications from '@/components/message-notifications';
 import EnhancedNotifications from '@/components/enhanced-notifications';
 import WorkLogPage from '@/pages/work-log';
@@ -180,6 +181,7 @@ export default function Dashboard({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user, isLoading } = useAuth();
+  const { trackNavigation, trackButtonClick } = useAnalytics();
 
   // Make setActiveSection available globally for project detail navigation
   React.useEffect(() => {
@@ -553,6 +555,7 @@ export default function Dashboard({
               <button
                 onClick={() => {
                   console.log('Messages button clicked');
+                  trackButtonClick('messages', 'dashboard_header');
                   setActiveSection('messages');
                   setIsMobileMenuOpen(false);
                 }}
@@ -580,6 +583,7 @@ export default function Dashboard({
                     'Profile button clicked, current section:',
                     activeSection
                   );
+                  trackButtonClick('profile', 'dashboard_header');
                   setActiveSection('profile');
                   window.history.pushState(
                     {},
@@ -603,6 +607,7 @@ export default function Dashboard({
               <button
                 onClick={async () => {
                   try {
+                    trackButtonClick('logout', 'dashboard_header');
                     await fetch('/api/auth/logout', {
                       method: 'POST',
                       credentials: 'include',
@@ -682,14 +687,17 @@ export default function Dashboard({
                     'Dashboard setActiveSection called with:',
                     section
                   );
-                  
+
+                  // Track navigation
+                  trackNavigation(section, activeSection);
+
                   // Handle standalone routes (navigate away from dashboard)
                   if (section === 'help') {
                     setLocation('/help');
                     setIsMobileMenuOpen(false);
                     return;
                   }
-                  
+
                   setActiveSection(section);
                   // Close mobile menu when navigation item is clicked
                   setIsMobileMenuOpen(false);

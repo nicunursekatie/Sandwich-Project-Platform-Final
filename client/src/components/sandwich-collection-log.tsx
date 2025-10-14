@@ -58,6 +58,7 @@ import CollectionFormSelector from '@/components/collection-form-selector';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   hasPermission,
   PERMISSIONS,
@@ -123,6 +124,7 @@ export default function SandwichCollectionLog() {
   const { toast } = useToast();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { trackDataEntry, trackButtonClick, trackDownload } = useAnalytics();
 
   // Check user permissions for creating collections (automatically grants edit/delete of own)
   const canCreateCollections =
