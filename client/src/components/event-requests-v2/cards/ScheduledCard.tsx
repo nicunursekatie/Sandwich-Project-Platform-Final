@@ -451,10 +451,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       return (
         <div className="flex items-center gap-2 group">
           <Package className="w-4 h-4 text-amber-600" />
-          <span className="text-base font-medium text-gray-600">
+          <span className="text-sm sm:text-base md:text-lg font-medium text-gray-600">
             Sandwiches:
           </span>
-          <span className="text-base font-semibold">{sandwichInfo}</span>
+          <span className="text-sm sm:text-base md:text-lg font-semibold break-words">{sandwichInfo}</span>
           {canEdit && (
             <Button
               size="sm"
@@ -570,11 +570,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h3
-              className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-[#236383] flex items-center gap-2 mb-3`}
+              className={`${isMobile ? 'text-base sm:text-lg md:text-xl' : 'text-base sm:text-lg md:text-xl lg:text-2xl'} font-bold text-[#236383] flex items-center gap-2 mb-3 break-words`}
             >
               {request.organizationName}
               {request.department && (
-                <span className="text-lg font-normal text-[#646464]">
+                <span className="text-sm sm:text-base md:text-lg font-normal text-[#646464] break-words">
                   &bull; {request.department}
                 </span>
               )}
@@ -662,7 +662,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-2 group">
-                    <span className="text-base font-bold">
+                    <span className="text-sm sm:text-base md:text-lg font-bold break-words">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </span>
                     {canEdit && (
@@ -697,7 +697,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium hover:underline block break-words text-center"
+                    className="text-xs sm:text-sm md:text-base font-medium hover:underline block break-words text-center"
                     title={request.eventAddress}
                   >
                     {request.eventAddress}
@@ -749,7 +749,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  <span className="font-semibold text-base">Event Times</span>
+                  <span className="font-semibold text-sm sm:text-base md:text-lg">Event Times</span>
                 </div>
                 {canEdit && (
                   <Dialog>
@@ -785,8 +785,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <div className="space-y-2">
                     {request.eventStartTime && (
                       <div className="flex items-center gap-1 group">
-                        <span className="text-base font-medium">Start:</span>
-                        <span className="text-base">
+                        <span className="text-sm sm:text-base md:text-lg font-medium">Start:</span>
+                        <span className="text-sm sm:text-base md:text-lg">
                           {formatTime12Hour(request.eventStartTime)}
                         </span>
                         {canEdit && (
@@ -808,8 +808,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )}
                     {request.eventEndTime && (
                       <div className="flex items-center gap-1 group">
-                        <span className="text-base font-medium">End:</span>
-                        <span className="text-base">
+                        <span className="text-sm sm:text-base md:text-lg font-medium">End:</span>
+                        <span className="text-sm sm:text-base md:text-lg">
                           {formatTime12Hour(request.eventEndTime)}
                         </span>
                         {canEdit && (
@@ -831,8 +831,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )}
                     {(request.pickupDateTime || request.pickupTime) && (
                       <div className="flex items-center gap-1 group">
-                        <span className="text-base font-medium">Pickup:</span>
-                        <span className="text-base">
+                        <span className="text-sm sm:text-base md:text-lg font-medium">Pickup:</span>
+                        <span className="text-sm sm:text-base md:text-lg">
                           {request.pickupDateTime
                             ? (() => {
                                 const date = new Date(request.pickupDateTime);
@@ -931,7 +931,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="text-base italic">
+                  <div className="text-sm sm:text-base md:text-lg italic">
                     No times set yet. Click "Add Times" to add event times.
                   </div>
                 )}
@@ -942,7 +942,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="bg-[#FBAD3F] text-white rounded-lg p-3 shadow-md">
               <div className="flex items-center gap-2 mb-2">
                 <Package className="w-4 h-4" />
-                <span className="font-semibold text-base">
+                <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Sandwich Details
                 </span>
               </div>
@@ -954,7 +954,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
-                  <span className="font-semibold text-base">
+                  <span className="font-semibold text-sm sm:text-base md:text-lg">
                     Delivery Logistics
                   </span>
                 </div>
@@ -963,7 +963,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {/* Overnight holding field - show value when populated, show add button when empty */}
                 {request.overnightHoldingLocation ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-base font-medium">
+                    <span className="text-sm sm:text-base md:text-lg font-medium">
                       Overnight Holding:
                     </span>
                     {isEditingThisCard &&
@@ -985,7 +985,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1 group">
-                        <span className="text-base">
+                        <span className="text-sm sm:text-base md:text-lg break-words">
                           {request.overnightHoldingLocation}
                         </span>
                         {canEdit && (
@@ -1065,7 +1065,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     />
                   ) : (
                     <div className="flex items-center gap-1 group">
-                      <span className="text-base">
+                      <span className="text-sm sm:text-base md:text-lg break-words">
                         {request.deliveryDestination || 'Not specified'}
                       </span>
                       {canEdit && (
@@ -1096,13 +1096,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="bg-[#236383] text-white rounded-lg p-3 shadow-md">
               <div className="flex items-center gap-2 mb-2">
                 <Users className="w-4 h-4" />
-                <span className="font-semibold text-base">
+                <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Contact Information
                 </span>
               </div>
               <div className="flex items-center gap-6">
                 <div className="flex flex-col gap-1">
-                  <span className="font-medium text-base">
+                  <span className="font-medium text-sm sm:text-base md:text-lg break-words">
                     {request.firstName} {request.lastName}
                   </span>
                   {request.email && (
@@ -1110,7 +1110,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Mail className="w-4 h-4" />
                       <a
                         href={`mailto:${request.email}`}
-                        className="text-base hover:underline"
+                        className="text-sm sm:text-base md:text-lg hover:underline break-words"
                       >
                         {request.email}
                       </a>
@@ -1121,7 +1121,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Phone className="w-4 h-4" />
                       <a
                         href={`tel:${request.phone}`}
-                        className="text-base hover:underline"
+                        className="text-sm sm:text-base md:text-lg hover:underline break-words"
                       >
                         {request.phone}
                       </a>
@@ -1146,7 +1146,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           </Button>
                         )}
                       </div>
-                      <span className="text-base font-medium">
+                      <span className="text-sm sm:text-base md:text-lg font-medium break-words">
                         {request.customTspContact || resolveUserName(request.tspContact || '')}
                       </span>
                     </div>
@@ -1158,11 +1158,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {/* Team Assignments */}
             <div className="bg-[#A31C41] text-white rounded-lg p-3 shadow-md">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-base">
+                <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Team Assignments
                 </span>
                 <span
-                  className={`text-base font-bold px-2 py-1 rounded-full ${
+                  className={`text-sm sm:text-base md:text-lg font-bold px-2 py-1 rounded-full ${
                     staffingComplete
                       ? 'bg-white/20 text-white'
                       : 'bg-white/20 text-white'
@@ -1234,7 +1234,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                                 key={driverId}
                                 className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
                               >
-                                <span className="text-base font-medium">
+                                <span className="text-sm sm:text-base md:text-lg font-medium break-words">
                                   {name}
                                 </span>
                                 {canEdit && (
@@ -1256,9 +1256,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         {/* Van Driver in Drivers List */}
                         {request.assignedVanDriverId && (
                           <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                            <span className="text-base font-medium">
+                            <span className="text-sm sm:text-base md:text-lg font-medium break-words">
                               {resolveUserName(request.assignedVanDriverId)}
-                              <span className="ml-2 text-xs text-[#A31C41]">
+                              <span className="ml-2 text-xs sm:text-sm text-[#A31C41]">
                                 (van driver, counts as driver)
                               </span>
                             </span>
@@ -1281,7 +1281,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         )}
                       </div>
                     ) : (
-                      <div className="text-base italic">
+                      <div className="text-sm sm:text-base md:text-lg italic">
                         No drivers assigned
                       </div>
                     )}
@@ -1348,7 +1348,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                                 key={speakerId}
                                 className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
                               >
-                                <span className="text-base font-medium">
+                                <span className="text-sm sm:text-base md:text-lg font-medium break-words">
                                   {name}
                                 </span>
                                 {canEdit && (
@@ -1372,7 +1372,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         )}
                       </div>
                     ) : (
-                      <div className="text-base italic">
+                      <div className="text-sm sm:text-base md:text-lg italic">
                         No speakers assigned
                       </div>
                     )}
@@ -1428,7 +1428,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                                 key={volunteerId}
                                 className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
                               >
-                                <span className="text-base font-medium">
+                                <span className="text-sm sm:text-base md:text-lg font-medium break-words">
                                   {name}
                                 </span>
                                 {canEdit && (
@@ -1452,7 +1452,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         )}
                       </div>
                     ) : (
-                      <div className="text-base italic">
+                      <div className="text-sm sm:text-base md:text-lg italic">
                         No volunteers assigned
                       </div>
                     )}

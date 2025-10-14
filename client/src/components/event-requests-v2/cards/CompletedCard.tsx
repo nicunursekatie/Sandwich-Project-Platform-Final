@@ -195,7 +195,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2 group">
-                <h3 className="font-semibold text-lg text-[#1A2332]">
+                <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#1A2332] break-words">
                   {request.organizationName}
                 </h3>
                 {canEditOrgDetails && startEditing && (
@@ -316,9 +316,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
-                  <span data-testid="text-date-label" className="text-[16px]">
+                  <span data-testid="text-date-label" className="text-sm sm:text-base md:text-lg">
                     {dateLabel}: {' '}
-                    <strong className="text-[16px]" data-testid="text-date-value">
+                    <strong className="text-sm sm:text-base md:text-lg break-words" data-testid="text-date-value">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </strong>
                     {displayDate && getRelativeTime(displayDate.toString()) && (
@@ -1443,7 +1443,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             <div className="text-center">
               <Package className="w-5 h-5 text-[#FBAD3F] mx-auto mb-2" />
               <p className="text-sm text-gray-600 font-medium">Sandwiches Delivered</p>
-              <p className="font-semibold text-[#FBAD3F] text-2xl mt-1">
+              <p className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl md:text-3xl mt-1 break-words">
                 {(() => {
                   const count = request.actualSandwichCount || request.estimatedSandwichCount;
                   const types = request.actualSandwichTypes || request.sandwichTypes;

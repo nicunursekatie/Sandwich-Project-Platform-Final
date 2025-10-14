@@ -229,10 +229,10 @@ export default function Dashboard({
                 <Clock className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">
                   Weekly Monitoring
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600 break-words">
                   Track weekly submission status and send email notifications
                   for missing data
                 </p>
@@ -272,8 +272,8 @@ export default function Dashboard({
                 <MessageCircle className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
-                <p className="text-gray-600">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Team Chat</h1>
+                <p className="text-sm sm:text-base text-gray-600 break-words">
                   Real-time communication with your team across different
                   channels
                 </p>
@@ -292,8 +292,8 @@ export default function Dashboard({
                 <Trophy className="w-6 h-6 text-yellow-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Your Kudos</h1>
-                <p className="text-gray-600">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Your Kudos</h1>
+                <p className="text-sm sm:text-base text-gray-600 break-words">
                   Recognition received for your great work
                 </p>
               </div>
@@ -354,10 +354,10 @@ export default function Dashboard({
         return (
           <div className="p-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-main-heading text-primary">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-main-heading text-primary break-words">
                 Impact & Analytics Dashboard
               </h1>
-              <p className="font-body text-muted-foreground">
+              <p className="text-sm sm:text-base font-body text-muted-foreground break-words">
                 Track community impact, collection trends, and host performance
               </p>
             </div>
@@ -415,10 +415,10 @@ export default function Dashboard({
                 />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">
                   Committee Communications
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600 break-words">
                   Internal committee discussions and collaboration
                 </p>
               </div>

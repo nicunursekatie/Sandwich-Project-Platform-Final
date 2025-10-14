@@ -462,10 +462,10 @@ export default function RequestCard({
                   <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-3'}`}>
                     <div className={`${isMobile ? 'flex items-center space-x-3' : ''}`}>
                       <StatusIcon className="w-7 h-7 text-brand-primary flex-shrink-0" />
-                      <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-brand-primary leading-tight flex items-center gap-2`}>
+                      <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-brand-primary leading-tight flex items-center gap-2 break-words">
                       {request.organizationName}
                       {request.department && (
-                        <span className="text-lg font-normal text-gray-500">&bull; {request.department}</span>
+                        <span className="text-sm sm:text-base md:text-lg font-normal text-gray-500 break-words">&bull; {request.department}</span>
                       )}
                     </h2>
                   </div>
@@ -2013,8 +2013,8 @@ export default function RequestCard({
                       
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-[#236383] text-base font-semibold">Sandwiches:</span>
-                          <span className="font-bold text-[#FBAD3F] text-3xl text-right">
+                          <span className="text-[#236383] text-sm sm:text-base font-semibold">Sandwiches:</span>
+                          <span className="font-bold text-[#FBAD3F] text-xl sm:text-2xl md:text-3xl text-right break-words">
                             {(() => {
                               // getSandwichTypesSummary handles string parsing internally
                               const summary = getSandwichTypesSummary(request);

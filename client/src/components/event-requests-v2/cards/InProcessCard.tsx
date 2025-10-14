@@ -153,10 +153,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
     <div className="flex items-start justify-between mb-6">
       <div className="flex-1">
         <div className="flex items-center gap-3 mb-4">
-          <h3 className="text-2xl font-bold text-[#236383] flex items-center gap-2">
+          <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-[#236383] flex items-center gap-2 break-words">
             {request.organizationName}
             {request.department && (
-              <span className="text-lg font-normal text-[#646464]">
+              <span className="text-sm sm:text-base md:text-lg font-normal text-[#646464] break-words">
                 &bull; {request.department}
               </span>
             )}
@@ -212,7 +212,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-2 group">
-              <span className="text-lg font-bold" data-testid="text-date-value">
+              <span className="text-sm sm:text-base md:text-lg font-bold break-words" data-testid="text-date-value">
                 {displayDate && dateInfo ? dateInfo.text : 'No date set'}
               </span>
               {displayDate && getRelativeTime(displayDate.toString()) && (
@@ -263,18 +263,18 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-[16px]">
+            <span className="font-medium text-sm sm:text-base md:text-lg break-words">
               {request.firstName} {request.lastName}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Mail className="w-4 h-4 text-gray-400" />
-            <span className="text-[16px]">{request.email}</span>
+            <span className="text-sm sm:text-base md:text-lg break-words">{request.email}</span>
           </div>
           {request.phone && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Phone className="w-4 h-4 text-gray-400" />
-              <span className="text-[16px]">{request.phone}</span>
+              <span className="text-sm sm:text-base md:text-lg break-words">{request.phone}</span>
             </div>
           )}
         </div>
@@ -381,7 +381,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[16px] font-semibold text-[#236383]">
+              <p className="text-sm sm:text-base md:text-lg font-semibold text-[#236383]">
                 Preferred Time
               </p>
               <p className="font-medium">
@@ -559,10 +559,10 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 <Building className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
-                <div className="text-lg font-bold text-[#D68319] mb-1">
+                <div className="text-sm sm:text-base md:text-lg font-bold text-[#D68319] mb-1">
                   TSP Contact
                 </div>
-                <div className="text-xl font-semibold text-[#236383]">
+                <div className="text-base sm:text-lg md:text-xl font-semibold text-[#236383] break-words">
                   {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
                 </div>
                 {request.tspContactAssignedDate && (
