@@ -754,11 +754,12 @@ export function NotesTab({
                         variant="outline"
                         size="sm"
                         onClick={() => handleUseInAgenda(note)}
-                        className="text-teal-600 border-teal-200 hover:bg-teal-50"
+                        className="text-teal-600 border-teal-200 hover:bg-teal-50 text-xs sm:text-sm whitespace-nowrap"
                         data-testid={`button-use-in-agenda-${note.id}`}
                       >
-                        <ArrowRight className="w-4 h-4 mr-1" />
-                        Use in Next Agenda
+                        <ArrowRight className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden xs:inline">Use in Next Agenda</span>
+                        <span className="xs:hidden">Next Agenda</span>
                       </Button>
                     )}
                   </div>
