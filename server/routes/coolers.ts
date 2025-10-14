@@ -196,8 +196,8 @@ coolerInventoryRouter.get('/summary', async (req: AuthenticatedRequest, res: Res
       .select({
         coolerTypeId: coolerTypes.id,
         coolerTypeName: coolerTypes.name,
-        totalQuantity: sql<number>`COALESCE(SUM(${coolerInventory.quantity}), 0)`,
-        locationCount: sql<number>`COUNT(DISTINCT ${coolerInventory.hostHomeId})`,
+        totalQuantity: sql<number>`COALESCE(SUM(${coolerInventory.quantity})::integer, 0)`,
+        locationCount: sql<number>`COUNT(DISTINCT ${coolerInventory.hostHomeId})::integer`,
       })
       .from(coolerTypes)
       .leftJoin(
