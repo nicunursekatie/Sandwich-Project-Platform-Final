@@ -4,6 +4,7 @@ import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { ScheduledCard } from '../cards/ScheduledCard';
 import { RescheduleDialog } from '../dialogs/RescheduleDialog';
 import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
@@ -11,6 +12,7 @@ import type { EventRequest } from '@shared/schema';
 
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
 
@@ -163,7 +165,6 @@ export const ScheduledTab: React.FC = () => {
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile) {
       window.location.href = `tel:${phoneNumber}`;

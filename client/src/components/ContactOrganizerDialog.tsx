@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { EventRequest } from '@shared/schema';
 
 interface ContactOrganizerDialogProps {
@@ -36,6 +37,7 @@ export default function ContactOrganizerDialog({
   eventRequest,
 }: ContactOrganizerDialogProps) {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [copyStates, setCopyStates] = useState<CopyState>({});
 
   // Helper function to handle copying text to clipboard
@@ -85,8 +87,6 @@ export default function ContactOrganizerDialog({
   const handlePhone = () => {
     if (!eventRequest?.phone) return;
 
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
     if (isMobile) {
       window.location.href = `tel:${eventRequest.phone}`;
     } else {
@@ -114,7 +114,6 @@ export default function ContactOrganizerDialog({
   if (!eventRequest) return null;
 
   const contactName = `${eventRequest.firstName} ${eventRequest.lastName}`;
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

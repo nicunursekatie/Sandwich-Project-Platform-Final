@@ -551,8 +551,7 @@ export default function RequestCard({
                           onClick={(e) => {
                             e.stopPropagation();
                             const phoneNumber = request.phone;
-                            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                            
+
                             if (isMobile) {
                               window.location.href = `tel:${phoneNumber}`;
                             } else {
@@ -573,7 +572,7 @@ export default function RequestCard({
                           className="h-6 px-2 text-xs"
                           data-testid={`button-phone-${request.id}`}
                         >
-                          {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Call' : 'Copy'}
+                          {isMobile ? 'Call' : 'Copy'}
                         </Button>
                       </div>
                     </div>

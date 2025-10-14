@@ -4,10 +4,12 @@ import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { InProcessCard } from '../cards/InProcessCard';
 
 export const InProcessTab: React.FC = () => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation } = useEventMutations();
   const { handleStatusChange, resolveUserName } = useEventAssignments();
@@ -31,7 +33,6 @@ export const InProcessTab: React.FC = () => {
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile) {
       window.location.href = `tel:${phoneNumber}`;

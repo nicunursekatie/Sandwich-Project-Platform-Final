@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { EventEmailComposer } from '@/components/event-email-composer';
 import type { EventRequest } from '@shared/schema';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // ToolkitSentDialog Component - handles marking toolkit as sent and optionally sending email
 interface ToolkitSentDialogProps {
@@ -35,6 +36,7 @@ const ToolkitSentDialog = ({
   onToolkitSent,
   isLoading,
 }: ToolkitSentDialogProps) => {
+  const isMobile = useIsMobile();
   const [toolkitSentDate, setToolkitSentDate] = useState('');
   const [toolkitSentTime, setToolkitSentTime] = useState('');
   const [showEmailComposer, setShowEmailComposer] = useState(false);
@@ -166,10 +168,7 @@ const ToolkitSentDialog = ({
                     variant="outline"
                     onClick={() => {
                       const phoneNumber = eventRequest.phone;
-                      
-                      // Check if on mobile device
-                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                      
+
                       if (isMobile) {
                         // On mobile, open the dialer
                         window.location.href = `tel:${phoneNumber}`;

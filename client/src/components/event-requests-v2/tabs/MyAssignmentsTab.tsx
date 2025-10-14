@@ -4,6 +4,7 @@ import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { NewRequestCard } from '../cards/NewRequestCard';
 import { ScheduledCard } from '../cards/ScheduledCard';
 import { CompletedCard } from '../cards/CompletedCard';
@@ -12,6 +13,7 @@ import { DeclinedCard } from '../cards/DeclinedCard';
 
 export const MyAssignmentsTab: React.FC = () => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation } = useEventMutations();
   const { 
@@ -69,7 +71,6 @@ export const MyAssignmentsTab: React.FC = () => {
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile) {
       window.location.href = `tel:${phoneNumber}`;

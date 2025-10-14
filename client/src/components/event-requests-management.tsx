@@ -640,8 +640,7 @@ const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
                     variant="outline"
                     onClick={() => {
                       const phoneNumber = eventRequest.phone;
-                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                      
+
                       if (isMobile) {
                         window.location.href = `tel:${phoneNumber}`;
                       } else {
@@ -650,7 +649,7 @@ const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
                     }}
                     className="ml-auto text-xs"
                   >
-                    {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Call' : 'Copy'}
+                    {isMobile ? 'Call' : 'Copy'}
                   </Button>
                 </div>
               )}
@@ -767,6 +766,9 @@ export default function EventRequestsManagement({
 
   // Schedule call dialog state
   const [showScheduleCallDialog, setShowScheduleCallDialog] = useState(false);
+
+  // Mobile detection hook
+  const isMobile = useIsMobile();
   const [scheduleCallDate, setScheduleCallDate] = useState('');
   const [scheduleCallTime, setScheduleCallTime] = useState('');
 
@@ -1174,8 +1176,7 @@ export default function EventRequestsManagement({
             }}
             onCall={(request) => {
               const phoneNumber = request.phone;
-              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-              
+
               if (isMobile) {
                 window.location.href = `tel:${phoneNumber}`;
               } else {

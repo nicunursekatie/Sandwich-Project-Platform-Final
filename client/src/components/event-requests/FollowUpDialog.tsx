@@ -14,6 +14,7 @@ import {
   Phone,
   Clock,
 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { EventRequest } from '@shared/schema';
 
 // Follow-up Dialog Component
@@ -38,6 +39,8 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
   notes,
   setNotes,
 }) => {
+  const isMobile = useIsMobile();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onFollowUpCompleted(notes);
@@ -101,8 +104,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                     variant="outline"
                     onClick={() => {
                       const phoneNumber = eventRequest.phone;
-                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                      
+
                       if (isMobile) {
                         window.location.href = `tel:${phoneNumber}`;
                       } else {
@@ -111,7 +113,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                     }}
                     className="ml-auto text-xs"
                   >
-                    {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Call' : 'Copy'}
+                    {isMobile ? 'Call' : 'Copy'}
                   </Button>
                 </div>
               )}
