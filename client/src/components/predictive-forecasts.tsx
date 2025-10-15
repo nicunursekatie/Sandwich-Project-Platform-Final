@@ -215,8 +215,11 @@ export default function PredictiveForecasts() {
       }
     }
 
-    // Combined projection: Already collected + Scheduled events + Expected remaining individual donations
-    const weeklyProjected = currentWeekTotal + scheduledWeeklyTotal + Math.round(expectedRemainingDays);
+    // Baseline expectation for individual donations per week (5k sandwiches)
+    const baselineIndividualExpectation = 5000;
+
+    // Combined projection: Already collected + Scheduled events + Baseline individual expectation
+    const weeklyProjected = currentWeekTotal + scheduledWeeklyTotal + baselineIndividualExpectation;
 
     // Debug logging
     console.log('=== WEEKLY FORECAST DEBUG ===');
@@ -308,7 +311,7 @@ export default function PredictiveForecasts() {
         projected: weeklyProjected,
         scheduled: scheduledWeeklyTotal,
         scheduledEventCount: scheduledThisWeek.length,
-        expectedIndividual: Math.round(expectedRemainingDays),
+        expectedIndividual: baselineIndividualExpectation,
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
         dayOfWeek: todayDayOfWeek,
