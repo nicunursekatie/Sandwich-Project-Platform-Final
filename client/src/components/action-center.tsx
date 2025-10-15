@@ -388,7 +388,11 @@ export default function ActionCenter() {
         console.log('Would flag?', gap > 500 && percentBelow > 20);
       }
 
-      if (gap > 500 && percentBelow > 20) {
+      // Only show "below average" warnings if we're past Wednesday (day 3) OR if it's a future week
+      // Early in the week, we'll show planned group collections instead
+      const shouldShowBelowAverageWarning = weekOffset > 0 || dayOfWeek >= 3;
+
+      if (gap > 500 && percentBelow > 20 && shouldShowBelowAverageWarning) {
         const weekLabel = weekOffset === 0 ? 'This Week' :
                          weekOffset === 1 ? 'Next Week' :
                          `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
@@ -406,21 +410,82 @@ export default function ActionCenter() {
       }
     }
 
-    // MEDIUM: Current week falling behind pace (only if not already flagged above)
-    const weeklyGap = avgWeekly - projectedWeekTotal;
+    // Early in the week (Sun-Tue, days 0-2): Show helpful info about planned group collections
+    // Later in the week (Wed+, days 3+): Show pace warnings if behind
     const alreadyFlaggedThisWeek = actions.some(a => a.id === 'low-forecast-week-0');
 
-    if (!alreadyFlaggedThisWeek && weeklyGap > 500 && dayOfWeek >= 3) {
-      actions.push({
-        id: 'weekly-pace',
-        priority: 'high',
-        category: 'volunteer-recruitment',
-        title: 'Weekly Collections Below Average Pace',
-        description: `Currently tracking ${Math.abs(Math.round((weeklyGap / avgWeekly) * 100))}% below typical weekly collections`,
-        impact: `Need ~${Math.round(weeklyGap)} more sandwiches to reach average week`,
-        action: 'Recruit volunteers for end-of-week collections',
-        data: { currentWeekTotal, projectedWeekTotal, avgWeekly, gap: weeklyGap },
+    if (dayOfWeek < 3 && !alreadyFlaggedThisWeek) {
+      // Early week: Show planned group collections to help prioritize individual recruitment
+      const plannedCollectionsThisWeek = currentWeekCollections.filter((c) => {
+        const date = parseCollectionDate(c.collectionDate);
+        return date > today;
       });
+
+      const plannedGroupTotal = plannedCollectionsThisWeek.reduce((sum, c) => {
+        // Count group collections only (exclude individual)
+        const groupTotal = (c.groupCollections || []).reduce((gsum, g) => gsum + (g.sandwichCount || 0), 0);
+        return sum + groupTotal;
+      }, 0);
+
+      // Get scheduled events for this week
+      const scheduledThisWeek = (eventRequests || []).filter((event) => {
+        if (!event.desiredEventDate) return false;
+        if (!['in_process', 'scheduled', 'completed'].includes(event.status)) return false;
+        const eventDate = new Date(event.desiredEventDate);
+        return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
+      });
+
+      const scheduledEventTotal = scheduledThisWeek.reduce(
+        (sum, event) => sum + (event.estimatedSandwichCount || 0),
+        0
+      );
+
+      const totalPlanned = plannedGroupTotal + scheduledEventTotal;
+      const needFromIndividual = Math.max(0, Math.round(avgWeekly - currentWeekTotal - totalPlanned));
+
+      // Show this insight if we have meaningful data
+      if (totalPlanned > 0 || needFromIndividual > 0) {
+        const weekdays = ['Sunday', 'Monday', 'Tuesday'];
+        const dayName = weekdays[dayOfWeek];
+
+        actions.push({
+          id: 'early-week-planning',
+          priority: needFromIndividual > 2000 ? 'high' : 'medium',
+          category: 'planning',
+          title: `Week Outlook (${dayName})`,
+          description: `${totalPlanned.toLocaleString()} sandwiches from ${plannedCollectionsThisWeek.length + scheduledThisWeek.length} planned group collections/events`,
+          impact: `Need ~${needFromIndividual.toLocaleString()} from individual collections to reach weekly average (${Math.round(avgWeekly).toLocaleString()})`,
+          action: needFromIndividual > 2000
+            ? 'High individual recruitment priority this week'
+            : 'Moderate individual recruitment needed this week',
+          data: {
+            currentWeekTotal,
+            plannedGroupTotal,
+            scheduledEventTotal,
+            totalPlanned,
+            avgWeekly,
+            needFromIndividual,
+            plannedCollectionsCount: plannedCollectionsThisWeek.length,
+            scheduledEventCount: scheduledThisWeek.length
+          },
+        });
+      }
+    } else if (dayOfWeek >= 3 && !alreadyFlaggedThisWeek) {
+      // Later in week: Show pace warnings if behind
+      const weeklyGap = avgWeekly - projectedWeekTotal;
+
+      if (weeklyGap > 500) {
+        actions.push({
+          id: 'weekly-pace',
+          priority: 'high',
+          category: 'volunteer-recruitment',
+          title: 'Weekly Collections Below Average Pace',
+          description: `Currently tracking ${Math.abs(Math.round((weeklyGap / avgWeekly) * 100))}% below typical weekly collections`,
+          impact: `Need ~${Math.round(weeklyGap)} more sandwiches to reach average week`,
+          action: 'Recruit volunteers for end-of-week collections',
+          data: { currentWeekTotal, projectedWeekTotal, avgWeekly, gap: weeklyGap },
+        });
+      }
     }
 
     // ============================================================
