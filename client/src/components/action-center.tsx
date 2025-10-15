@@ -389,9 +389,10 @@ export default function ActionCenter() {
         console.log('Would flag?', gap > 500 && percentBelow > 20);
       }
 
-      // Only show "below average" warnings if we're past Sunday (days 1-4 = Mon-Thu) OR if it's a future week
-      // Early in the week (Fri-Sun, days 5,6,0), we'll show planned group collections instead
-      const shouldShowBelowAverageWarning = weekOffset > 0 || (dayOfWeek >= 1 && dayOfWeek <= 4);
+      // Only show "below average" warnings later in the week (Fri-Tue, days 5,6,0,1,2) OR if it's a future week
+      // Early in the week (Wed-Thu, days 3-4), we'll show planned group collections instead
+      const isLaterInWeek = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0 || dayOfWeek === 1 || dayOfWeek === 2;
+      const shouldShowBelowAverageWarning = weekOffset > 0 || isLaterInWeek;
 
       if (gap > 500 && percentBelow > 20 && shouldShowBelowAverageWarning) {
         const weekLabel = weekOffset === 0 ? 'This Week' :
@@ -411,10 +412,10 @@ export default function ActionCenter() {
       }
     }
 
-    // Early in the week (Fri-Sun, days 5,6,0): Show helpful info about planned group collections
-    // Later in the week (Mon-Thu, days 1-4): Show pace warnings if behind
+    // Early in the week (Wed-Thu, days 3-4): Show helpful info about planned group collections
+    // Later in the week (Fri-Tue, days 5,6,0,1,2): Show pace warnings if behind
     const alreadyFlaggedThisWeek = actions.some(a => a.id === 'low-forecast-week-0');
-    const isEarlyWeek = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0; // Fri, Sat, Sun
+    const isEarlyWeek = dayOfWeek === 3 || dayOfWeek === 4; // Wed, Thu
 
     if (isEarlyWeek && !alreadyFlaggedThisWeek) {
       // Early week: Show planned group collections to help prioritize individual recruitment
@@ -473,7 +474,7 @@ export default function ActionCenter() {
         });
       }
     } else if (!isEarlyWeek && !alreadyFlaggedThisWeek) {
-      // Later in week (Mon-Thu): Show pace warnings if behind
+      // Later in week (Fri-Tue): Show pace warnings if behind
       const weeklyGap = avgWeekly - projectedWeekTotal;
 
       if (weeklyGap > 500) {
