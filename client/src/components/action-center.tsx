@@ -70,10 +70,10 @@ export default function ActionCenter() {
     const currentYear = today.getFullYear();
     const dayOfWeek = today.getDay();
 
-    // Current week analysis (Wed-Tue)
+    // Current week analysis (Fri-Thu)
     const currentWeekStart = new Date(today);
-    const daysFromWednesday = (dayOfWeek + 4) % 7;
-    currentWeekStart.setDate(today.getDate() - daysFromWednesday);
+    const daysFromFriday = (dayOfWeek + 2) % 7; // Days since last Friday
+    currentWeekStart.setDate(today.getDate() - daysFromFriday);
     currentWeekStart.setHours(0, 0, 0, 0);
 
     const currentWeekEnd = new Date(currentWeekStart);
@@ -91,14 +91,14 @@ export default function ActionCenter() {
       0
     );
 
-    // Calculate weekly average (Wed-Tue weeks)
+    // Calculate weekly average (Fri-Thu weeks)
     const weekMap = new Map<string, number>();
     collections.forEach((c) => {
       const date = parseCollectionDate(c.collectionDate);
       const weekStart = new Date(date);
       const collectionDayOfWeek = date.getDay();
-      const daysFromWed = (collectionDayOfWeek + 4) % 7;
-      weekStart.setDate(date.getDate() - daysFromWed);
+      const daysFromFri = (collectionDayOfWeek + 2) % 7; // Days since last Friday
+      weekStart.setDate(date.getDate() - daysFromFri);
       const weekKey = weekStart.toISOString().split('T')[0];
       const current = weekMap.get(weekKey) || 0;
       weekMap.set(weekKey, current + calculateTotalSandwiches(c));
@@ -109,7 +109,8 @@ export default function ActionCenter() {
       ? weeklyTotals.reduce((a, b) => a + b, 0) / weeklyTotals.length
       : 0;
 
-    const daysElapsedInWeek = (dayOfWeek + 4) % 7 + 1;
+    // Calculate days elapsed in week (Fri=1, Sat=2, ..., Thu=7)
+    const daysElapsedInWeek = daysFromFriday + 1;
     const projectedWeekTotal = currentWeekTotal > 0
       ? Math.round((currentWeekTotal / daysElapsedInWeek) * 7)
       : currentWeekTotal;
@@ -388,9 +389,9 @@ export default function ActionCenter() {
         console.log('Would flag?', gap > 500 && percentBelow > 20);
       }
 
-      // Only show "below average" warnings if we're past Wednesday (day 3) OR if it's a future week
-      // Early in the week, we'll show planned group collections instead
-      const shouldShowBelowAverageWarning = weekOffset > 0 || dayOfWeek >= 3;
+      // Only show "below average" warnings if we're past Sunday (days 1-4 = Mon-Thu) OR if it's a future week
+      // Early in the week (Fri-Sun, days 5,6,0), we'll show planned group collections instead
+      const shouldShowBelowAverageWarning = weekOffset > 0 || (dayOfWeek >= 1 && dayOfWeek <= 4);
 
       if (gap > 500 && percentBelow > 20 && shouldShowBelowAverageWarning) {
         const weekLabel = weekOffset === 0 ? 'This Week' :
@@ -410,11 +411,12 @@ export default function ActionCenter() {
       }
     }
 
-    // Early in the week (Sun-Tue, days 0-2): Show helpful info about planned group collections
-    // Later in the week (Wed+, days 3+): Show pace warnings if behind
+    // Early in the week (Fri-Sun, days 5,6,0): Show helpful info about planned group collections
+    // Later in the week (Mon-Thu, days 1-4): Show pace warnings if behind
     const alreadyFlaggedThisWeek = actions.some(a => a.id === 'low-forecast-week-0');
+    const isEarlyWeek = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0; // Fri, Sat, Sun
 
-    if (dayOfWeek < 3 && !alreadyFlaggedThisWeek) {
+    if (isEarlyWeek && !alreadyFlaggedThisWeek) {
       // Early week: Show planned group collections to help prioritize individual recruitment
       const plannedCollectionsThisWeek = currentWeekCollections.filter((c) => {
         const date = parseCollectionDate(c.collectionDate);
@@ -445,7 +447,7 @@ export default function ActionCenter() {
 
       // Show this insight if we have meaningful data
       if (totalPlanned > 0 || needFromIndividual > 0) {
-        const weekdays = ['Sunday', 'Monday', 'Tuesday'];
+        const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayName = weekdays[dayOfWeek];
 
         actions.push({
@@ -470,8 +472,8 @@ export default function ActionCenter() {
           },
         });
       }
-    } else if (dayOfWeek >= 3 && !alreadyFlaggedThisWeek) {
-      // Later in week: Show pace warnings if behind
+    } else if (!isEarlyWeek && !alreadyFlaggedThisWeek) {
+      // Later in week (Mon-Thu): Show pace warnings if behind
       const weeklyGap = avgWeekly - projectedWeekTotal;
 
       if (weeklyGap > 500) {
