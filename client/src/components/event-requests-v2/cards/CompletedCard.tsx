@@ -1320,9 +1320,12 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         });
         return;
       }
+      
+      // Preserve existing types - only update the count
+      const currentTypes = request.actualSandwichTypes || request.sandwichTypes;
       updateSandwichCountMutation.mutate({
         actualSandwichCount: count,
-        actualSandwichTypes: null // Clear types when using simple mode
+        actualSandwichTypes: currentTypes || null
       });
     } else {
       // Detailed mode - save types and calculate total
