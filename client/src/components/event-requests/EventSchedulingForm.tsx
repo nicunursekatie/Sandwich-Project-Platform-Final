@@ -705,6 +705,55 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             )}
           </div>
 
+          {/* Status */}
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+              <SelectTrigger data-testid="select-status">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new">New Request</SelectItem>
+                <SelectItem value="in_process">In Process</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="declined">Declined</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Toolkit Status Section */}
+          <div className="space-y-4">
+            <Label className="text-lg font-semibold">Toolkit Status</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="toolkitStatus">Toolkit Status</Label>
+                <Select value={formData.toolkitStatus} onValueChange={(value) => setFormData(prev => ({ ...prev, toolkitStatus: value }))}>
+                  <SelectTrigger data-testid="select-toolkit-status">
+                    <SelectValue placeholder="Select toolkit status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_sent">Not Sent</SelectItem>
+                    <SelectItem value="sent">Sent</SelectItem>
+                    <SelectItem value="received_confirmed">Received Confirmed</SelectItem>
+                    <SelectItem value="not_needed">Not Needed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="toolkitSentDate">Toolkit Sent Date</Label>
+                <Input
+                  id="toolkitSentDate"
+                  type="date"
+                  value={formData.toolkitSentDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, toolkitSentDate: e.target.value }))}
+                  disabled={formData.toolkitStatus === 'not_sent' || formData.toolkitStatus === 'not_needed'}
+                  data-testid="input-toolkit-sent-date"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Event Schedule */}
           <div className="space-y-4">
             <Label className="text-lg font-semibold">Event Schedule</Label>
@@ -1127,56 +1176,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Status */}
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
-              <SelectTrigger data-testid="select-status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new">New Request</SelectItem>
-                <SelectItem value="in_process">In Process</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Toolkit Status Section */}
-          <div className="space-y-4">
-            <Label className="text-lg font-semibold">Toolkit Status</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="toolkitStatus">Toolkit Status</Label>
-                <Select value={formData.toolkitStatus} onValueChange={(value) => setFormData(prev => ({ ...prev, toolkitStatus: value }))}>
-                  <SelectTrigger data-testid="select-toolkit-status">
-                    <SelectValue placeholder="Select toolkit status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="not_sent">Not Sent</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="received_confirmed">Received Confirmed</SelectItem>
-                    <SelectItem value="not_needed">Not Needed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="toolkitSentDate">Toolkit Sent Date</Label>
-                <Input
-                  id="toolkitSentDate"
-                  type="date"
-                  value={formData.toolkitSentDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, toolkitSentDate: e.target.value }))}
-                  disabled={formData.toolkitStatus === 'not_sent' || formData.toolkitStatus === 'not_needed'}
-                  data-testid="input-toolkit-sent-date"
-                />
-              </div>
-            </div>
-          </div>
-
           {/* TSP Contact Assignment */}
           <div>
             <Label htmlFor="tspContact">TSP Contact Assignment</Label>
