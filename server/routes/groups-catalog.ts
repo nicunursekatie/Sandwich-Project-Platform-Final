@@ -93,7 +93,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
               ? userIdToName.get(request.assignedTo)
               : null,
             eventRequestId: request.id, // Store event request ID for tracking
-            actualEventCount: (request.status === 'completed' || request.status === 'contact_completed') ? 1 : 0, // This specific event
+            actualEventCount: 1, // Each individual event request is 1 event
           });
         }
 
