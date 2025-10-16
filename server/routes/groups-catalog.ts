@@ -86,7 +86,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             hasHostedEvent: request.status === 'completed' || request.status === 'contact_completed',
             totalSandwiches: request.estimatedSandwichCount || 0,
             actualSandwichTotal: 0,
-            actualEventCount: 0,
+            actualEventCount: 1, // Each individual event request is 1 event
             eventDate: normalizedEventDate,
             tspContact: request.tspContact || null,
             tspContactAssigned: request.tspContactAssigned || null,
@@ -95,7 +95,6 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
               ? userIdToName.get(request.assignedTo)
               : null,
             eventRequestId: request.id, // Store event request ID for tracking
-            actualEventCount: 1, // Each individual event request is 1 event
           };
           departmentsMap.set(departmentKey, newDept);
           console.log(`🔍 Created dept for ${orgName}: actualEventCount = ${newDept.actualEventCount}`);
