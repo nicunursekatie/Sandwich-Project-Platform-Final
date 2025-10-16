@@ -1160,6 +1160,18 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [editingField, setEditingField] = useState('');
   const [editingValue, setEditingValue] = useState('');
 
+  // Inline editing state for sandwich count
+  const [isEditingSandwichCount, setIsEditingSandwichCount] = useState(false);
+  const [editingSandwichCount, setEditingSandwichCount] = useState('');
+  const [editingMode, setEditingMode] = useState<'simple' | 'detailed'>('simple');
+  const [editingTypes, setEditingTypes] = useState<{
+    turkey?: number;
+    ham?: number;
+    deli?: number;
+    pbj?: number;
+    unknown?: number;
+  }>({});
+
   // Check if user has permission to edit organization details
   const canEditOrgDetails =
     user?.permissions?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS') ||
@@ -1224,6 +1236,32 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     },
   });
 
+  // Sandwich count mutation
+  const updateSandwichCountMutation = useMutation({
+    mutationFn: (data: { actualSandwichCount: number; actualSandwichTypes?: any }) =>
+      apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
+    onSuccess: () => {
+      toast({
+        title: 'Sandwich count updated',
+        description: 'The actual sandwich count has been successfully updated.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setIsEditingSandwichCount(false);
+      setEditingSandwichCount('');
+      setEditingTypes({});
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update sandwich count.',
+        variant: 'destructive',
+      });
+      setIsEditingSandwichCount(false);
+      setEditingSandwichCount('');
+      setEditingTypes({});
+    },
+  });
+
   // Handlers for inline editing
   const startEditing = (field: string, value: string) => {
     setIsEditingField(true);
@@ -1243,6 +1281,101 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     setIsEditingField(false);
     setEditingField('');
     setEditingValue('');
+  };
+
+  // Handlers for sandwich count editing
+  const startEditingSandwichCount = () => {
+    const currentCount = request.actualSandwichCount || request.estimatedSandwichCount || 0;
+    const currentTypes = request.actualSandwichTypes || request.sandwichTypes;
+
+    // Check if we have type data
+    if (currentTypes && Array.isArray(currentTypes) && currentTypes.length > 0) {
+      // Parse existing types into editing state
+      const typeMap: any = {};
+      currentTypes.forEach((item: any) => {
+        if (item.type && item.count) {
+          const typeLower = item.type.toLowerCase();
+          typeMap[typeLower] = item.count;
+        }
+      });
+      setEditingTypes(typeMap);
+      setEditingMode('detailed');
+    } else {
+      setEditingSandwichCount(currentCount.toString());
+      setEditingMode('simple');
+    }
+
+    setIsEditingSandwichCount(true);
+  };
+
+  const saveSandwichCount = () => {
+    if (editingMode === 'simple') {
+      // Simple mode - just save the total
+      const count = parseInt(editingSandwichCount, 10);
+      if (isNaN(count) || count < 0) {
+        toast({
+          title: 'Invalid count',
+          description: 'Please enter a valid positive number.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      updateSandwichCountMutation.mutate({
+        actualSandwichCount: count,
+        actualSandwichTypes: null // Clear types when using simple mode
+      });
+    } else {
+      // Detailed mode - save types and calculate total
+      const types: any[] = [];
+      let total = 0;
+
+      Object.entries(editingTypes).forEach(([type, count]) => {
+        if (count && count > 0) {
+          types.push({
+            type: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize
+            count: count
+          });
+          total += count;
+        }
+      });
+
+      if (total === 0) {
+        toast({
+          title: 'Invalid count',
+          description: 'Please enter at least one sandwich type with a count.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      updateSandwichCountMutation.mutate({
+        actualSandwichCount: total,
+        actualSandwichTypes: types
+      });
+    }
+  };
+
+  const cancelSandwichCountEdit = () => {
+    setIsEditingSandwichCount(false);
+    setEditingSandwichCount('');
+    setEditingTypes({});
+  };
+
+  const toggleEditingMode = () => {
+    if (editingMode === 'simple') {
+      // Switch to detailed - try to preserve the count
+      const simpleCount = parseInt(editingSandwichCount, 10);
+      if (!isNaN(simpleCount) && simpleCount > 0) {
+        // Put all count in "unknown" category
+        setEditingTypes({ unknown: simpleCount });
+      }
+      setEditingMode('detailed');
+    } else {
+      // Switch to simple - calculate total from types
+      const total = Object.values(editingTypes).reduce((sum, count) => sum + (count || 0), 0);
+      setEditingSandwichCount(total.toString());
+      setEditingMode('simple');
+    }
   };
 
   // Helper functions for Instagram link
@@ -1440,28 +1573,151 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             </div>
 
             {/* Sandwiches Delivered Section */}
-            <div className="text-center">
+            <div className="text-center group relative">
               <Package className="w-5 h-5 text-[#FBAD3F] mx-auto mb-2" />
               <p className="text-sm text-gray-600 font-medium">Sandwiches Delivered</p>
-              <p className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl md:text-3xl mt-1 break-words">
-                {(() => {
-                  const count = request.actualSandwichCount || request.estimatedSandwichCount;
-                  const types = request.actualSandwichTypes || request.sandwichTypes;
+              {isEditingSandwichCount ? (
+                <div className="flex flex-col items-center gap-2 mt-1 min-w-[200px]">
+                  {editingMode === 'simple' ? (
+                    // Simple mode - just a single total input
+                    <>
+                      <Input
+                        type="number"
+                        value={editingSandwichCount}
+                        onChange={(e) => setEditingSandwichCount(e.target.value)}
+                        className="h-10 w-32 text-center text-xl font-semibold"
+                        placeholder="Total"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveSandwichCount();
+                          if (e.key === 'Escape') cancelSandwichCountEdit();
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={toggleEditingMode}
+                        className="text-xs h-6"
+                      >
+                        Add breakdown by type
+                      </Button>
+                    </>
+                  ) : (
+                    // Detailed mode - inputs for each type
+                    <div className="space-y-2 w-full">
+                      <div className="grid grid-cols-2 gap-2 text-left">
+                        <div>
+                          <label className="text-xs text-gray-600">Turkey</label>
+                          <Input
+                            type="number"
+                            value={editingTypes.turkey || ''}
+                            onChange={(e) => setEditingTypes({ ...editingTypes, turkey: parseInt(e.target.value) || 0 })}
+                            className="h-8 text-sm"
+                            placeholder="0"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-600">Ham</label>
+                          <Input
+                            type="number"
+                            value={editingTypes.ham || ''}
+                            onChange={(e) => setEditingTypes({ ...editingTypes, ham: parseInt(e.target.value) || 0 })}
+                            className="h-8 text-sm"
+                            placeholder="0"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-600">Deli</label>
+                          <Input
+                            type="number"
+                            value={editingTypes.deli || ''}
+                            onChange={(e) => setEditingTypes({ ...editingTypes, deli: parseInt(e.target.value) || 0 })}
+                            className="h-8 text-sm"
+                            placeholder="0"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-600">PB&J</label>
+                          <Input
+                            type="number"
+                            value={editingTypes.pbj || ''}
+                            onChange={(e) => setEditingTypes({ ...editingTypes, pbj: parseInt(e.target.value) || 0 })}
+                            className="h-8 text-sm"
+                            placeholder="0"
+                            min="0"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-xs text-gray-600">Unknown</label>
+                          <Input
+                            type="number"
+                            value={editingTypes.unknown || ''}
+                            onChange={(e) => setEditingTypes({ ...editingTypes, unknown: parseInt(e.target.value) || 0 })}
+                            className="h-8 text-sm"
+                            placeholder="0"
+                            min="0"
+                          />
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-600 text-center bg-gray-50 rounded p-1">
+                        Total: <span className="font-semibold">{Object.values(editingTypes).reduce((sum, count) => sum + (count || 0), 0)}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={toggleEditingMode}
+                        className="text-xs h-6 w-full"
+                      >
+                        Switch to simple total
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex gap-1">
+                    <Button size="sm" onClick={saveSandwichCount} disabled={updateSandwichCountMutation.isPending}>
+                      <Save className="w-3 h-3 mr-1" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelSandwichCountEdit}>
+                      <X className="w-3 h-3 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <p className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl md:text-3xl mt-1 break-words">
+                    {(() => {
+                      const count = request.actualSandwichCount || request.estimatedSandwichCount;
+                      const types = request.actualSandwichTypes || request.sandwichTypes;
 
-                  if (!count) {
-                    return <span className="text-gray-400 italic text-base">Not recorded</span>;
-                  }
+                      if (!count) {
+                        return <span className="text-gray-400 italic text-base">Not recorded</span>;
+                      }
 
-                  // If we have types, show count with type
-                  if (types && Array.isArray(types) && types.length > 0) {
-                    const typeDisplay = formatSandwichTypesDisplay(types);
-                    return typeDisplay;
-                  }
+                      // If we have types, show count with type
+                      if (types && Array.isArray(types) && types.length > 0) {
+                        const typeDisplay = formatSandwichTypesDisplay(types);
+                        return typeDisplay;
+                      }
 
-                  // Otherwise just show count
-                  return count;
-                })()}
-              </p>
+                      // Otherwise just show count
+                      return count;
+                    })()}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={startEditingSandwichCount}
+                    className="absolute -top-1 -right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                    title="Edit sandwich count"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Social Media Status Section */}
