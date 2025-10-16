@@ -229,7 +229,7 @@ export default function RequestFilters({
                     onValueChange={(value: any) => onSortByChange(value)}
                   >
                     <SelectTrigger className="w-full sm:w-48 md:w-56" data-testid="sort-select-trigger">
-                      <SelectValue />
+                      <SelectValue placeholder="Sort by..." />
                     </SelectTrigger>
                     <SelectContent className="z-[100]" position="popper" sideOffset={5}>
                       <SelectItem value="created_date_desc">
@@ -333,7 +333,7 @@ export default function RequestFilters({
               onValueChange={(value: any) => onSortByChange(value)}
             >
               <SelectTrigger className="w-full mobile-select" data-testid="sort-select-trigger">
-                <SelectValue />
+                <SelectValue placeholder="Sort by..." />
               </SelectTrigger>
               <SelectContent className="z-[100]" position="popper" sideOffset={5}>
                 <SelectItem value="created_date_desc">
