@@ -1855,23 +1855,18 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             )}
           </div>
 
-          {/* Assignments Summary - Only show if there are assignments or edit capability */}
-          {(request.assignedDriverIds?.length > 0 || 
-            request.speakerDetails || 
-            request.assignedVolunteerIds?.length > 0 || 
-            canEditAssignments) && (
-            <CardAssignments
-              request={request}
-              resolveUserName={resolveUserName}
-              canEdit={canEditAssignments}
-              onAssign={openAssignmentDialog}
-              onEditAssignment={openEditAssignmentDialog}
-              onRemoveAssignment={handleRemoveAssignment}
-              onSelfSignup={handleSelfSignup}
-              canSelfSignup={canSelfSignup}
-              isUserSignedUp={isUserSignedUp}
-            />
-          )}
+          {/* Assignments Summary - Always show so staff can be added to completed events */}
+          <CardAssignments
+            request={request}
+            resolveUserName={resolveUserName}
+            canEdit={canEditAssignments}
+            onAssign={openAssignmentDialog}
+            onEditAssignment={openEditAssignmentDialog}
+            onRemoveAssignment={handleRemoveAssignment}
+            onSelfSignup={handleSelfSignup}
+            canSelfSignup={canSelfSignup}
+            isUserSignedUp={isUserSignedUp}
+          />
         </div>
 
         {/* Action Buttons */}
