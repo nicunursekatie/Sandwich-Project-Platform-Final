@@ -42,6 +42,8 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       // Create a map to aggregate data by organization and department
       const departmentsMap = new Map();
 
+      console.log(`🔍 Total event requests loaded: ${allEventRequests.length}`);
+      
       allEventRequests.forEach((request) => {
         const orgName = request.organizationName;
         const department = request.department || '';
@@ -73,7 +75,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             }
           }
 
-          departmentsMap.set(departmentKey, {
+          const newDept = {
             organizationName: orgName, // Preserve original display name
             canonicalName: canonicalOrgName, // Store canonical for matching
             department: department,
@@ -94,7 +96,9 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
               : null,
             eventRequestId: request.id, // Store event request ID for tracking
             actualEventCount: 1, // Each individual event request is 1 event
-          });
+          };
+          departmentsMap.set(departmentKey, newDept);
+          console.log(`🔍 Created dept for ${orgName}: actualEventCount = ${newDept.actualEventCount}`);
         }
 
         const dept = departmentsMap.get(departmentKey);
@@ -400,6 +404,16 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         // Choose the most "complete" name as display name (longest non-empty name)
         if (dept.organizationName.length > org.displayName.length) {
           org.displayName = dept.organizationName;
+        }
+
+        // Debug first 3 departments
+        if (org.departments.length < 3) {
+          console.log('🔍 Department debug:', {
+            orgName: org.displayName,
+            actualEventCount: dept.actualEventCount,
+            hasHostedEvent: dept.hasHostedEvent,
+            status: dept.latestStatus
+          });
         }
 
         org.departments.push({
