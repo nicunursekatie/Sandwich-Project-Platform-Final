@@ -54,9 +54,9 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         if (!orgName || !contactName) return;
 
         // Create a unique key using canonical name for matching
-        // Group by organization + department/contact for proper aggregation
+        // Each event request gets its own card (use request.id for uniqueness)
         const canonicalOrgName = canonicalizeOrgName(orgName);
-        const departmentKey = `${canonicalOrgName}|${department}|${contactName}`;
+        const departmentKey = `${canonicalOrgName}|${department}|${contactName}|${request.id}`;
 
         // Track department-level aggregation
         if (!departmentsMap.has(departmentKey)) {
@@ -92,6 +92,8 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             assignedToName: request.assignedTo && userIdToName.has(request.assignedTo)
               ? userIdToName.get(request.assignedTo)
               : null,
+            eventRequestId: request.id, // Store event request ID for tracking
+            actualEventCount: (request.status === 'completed' || request.status === 'contact_completed') ? 1 : 0, // This specific event
           });
         }
 
@@ -306,7 +308,8 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           if (dept.canonicalName === canonicalOrgName) {
             foundExisting = true;
             dept.actualSandwichTotal = orgData.totalSandwiches;
-            dept.actualEventCount = orgData.eventCount;
+            // Keep actualEventCount at event level (1 for completed, 0 for pending)
+            // Don't overwrite with org-level counts for individual event cards
             dept.eventFrequency = calculateEventFrequency(orgData.eventDates);
             dept.hasHostedEvent = true;
 
