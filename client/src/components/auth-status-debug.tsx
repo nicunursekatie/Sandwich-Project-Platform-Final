@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,7 +51,7 @@ export default function AuthStatusDebug() {
       refetchAuth();
     },
     onError: (error) => {
-      logger.error('Login error:', error);
+      console.error('Login error:', error);
       setLoginStatus('error');
     },
   });

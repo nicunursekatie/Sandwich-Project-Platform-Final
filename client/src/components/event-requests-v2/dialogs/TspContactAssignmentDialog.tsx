@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,7 +134,7 @@ export const TspContactAssignmentDialog: React.FC<TspContactAssignmentDialogProp
       });
       onClose();
     } catch (error) {
-      logger.error('Failed to assign TSP contact:', error);
+      console.error('Failed to assign TSP contact:', error);
     } finally {
       setIsSubmitting(false);
     }

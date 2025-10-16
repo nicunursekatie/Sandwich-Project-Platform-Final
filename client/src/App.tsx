@@ -1,7 +1,6 @@
 import { Switch, Route } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, lazy } from 'react';
-import { logger } from '@/lib/logger';
 
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,7 +41,7 @@ function Router() {
 
   // Enhanced error handling for authentication issues
   if (error && error.message && !error.message.includes('401')) {
-    logger.error('[App] Authentication error:', error);
+    console.error('[App] Authentication error:', error);
     // For non-401 errors, show error state
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -257,7 +256,7 @@ function App() {
   useEffect(() => {
     // Verify required environment variable is present
     if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
-      logger.warn(
+      console.warn(
         'Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID'
       );
     } else {

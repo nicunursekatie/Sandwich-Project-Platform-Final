@@ -13,7 +13,7 @@ export const logger = {
    */
   log: (...args: any[]) => {
     if (isDevelopment) {
-      logger.log(...args);
+      console.log(...args);
     }
   },
 
@@ -22,7 +22,7 @@ export const logger = {
    */
   warn: (...args: any[]) => {
     if (isDevelopment) {
-      logger.warn(...args);
+      console.warn(...args);
     }
   },
 
@@ -30,7 +30,7 @@ export const logger = {
    * Error-level logging - always logged
    */
   error: (...args: any[]) => {
-    logger.error(...args);
+    console.error(...args);
   },
 
   /**
@@ -38,7 +38,7 @@ export const logger = {
    */
   info: (...args: any[]) => {
     if (isDevelopment) {
-      logger.info(...args);
+      console.info(...args);
     }
   },
 

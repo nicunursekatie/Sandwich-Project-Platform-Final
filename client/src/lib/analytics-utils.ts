@@ -1,5 +1,4 @@
 import type { SandwichCollection } from '@shared/schema';
-import { logger } from '@/lib/logger';
 
 /**
  * Parse a collection date string and ensure YYYY-MM-DD values are treated as local time.
@@ -56,7 +55,7 @@ export function calculateGroupSandwiches(
         }, 0);
       }
     } catch (e) {
-      logger.log('Error parsing groupCollections JSON:', e);
+      console.log('Error parsing groupCollections JSON:', e);
       // Fall through to legacy calculation
     }
   }
@@ -338,7 +337,7 @@ export function calculateGroupTypeBreakdown(
         });
       }
     } catch (e) {
-      logger.log('Error parsing groupCollections JSON for type breakdown:', e);
+      console.log('Error parsing groupCollections JSON for type breakdown:', e);
       // Return zeros on error
     }
   }

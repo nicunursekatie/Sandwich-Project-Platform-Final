@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { logger } from '@/lib/logger';
 import { CalendarIcon, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -49,7 +48,7 @@ export function DateTimePicker({
           setSelectedTime(`${hours}:${minutes}`);
         }
       } catch (error) {
-        logger.warn('Invalid datetime value:', value);
+        console.warn('Invalid datetime value:', value);
       }
     } else {
       // If no value but we have a default event date, use that for the date
@@ -60,7 +59,7 @@ export function DateTimePicker({
             setSelectedDate(defaultDate);
           }
         } catch (error) {
-          logger.warn('Invalid default event date:', defaultToEventDate);
+          console.warn('Invalid default event date:', defaultToEventDate);
         }
       }
     }

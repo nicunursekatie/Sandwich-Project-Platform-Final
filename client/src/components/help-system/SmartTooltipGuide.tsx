@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { logger } from '@/lib/logger';
 import {
   HelpCircle,
   Lightbulb,
@@ -141,7 +140,7 @@ const createGuideSequences = (context: UserContext): GuideSequence[] => {
           actions: {
             primary: {
               label: 'Try It Now',
-              action: () => logger.log('Navigate to collections'),
+              action: () => console.log('Navigate to collections'),
             },
           },
         },

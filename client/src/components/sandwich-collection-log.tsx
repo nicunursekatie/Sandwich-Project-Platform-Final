@@ -1,5 +1,4 @@
 import React, {
-import { logger } from '@/lib/logger';
   useState,
   useRef,
   useMemo,
@@ -247,7 +246,7 @@ export default function SandwichCollectionLog() {
   // Debounce search filters to prevent excessive queries
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      logger.log('Setting debounced filters:', searchFilters);
+      console.log('Setting debounced filters:', searchFilters);
       setDebouncedSearchFilters(searchFilters);
     }, 500); // Wait 500ms after user stops typing
 
@@ -347,7 +346,7 @@ export default function SandwichCollectionLog() {
     queryKey,
     queryFn: useCallback(async () => {
       if (needsAllData) {
-        logger.log(
+        console.log(
           'Fetching all data for filtering with filters:',
           debouncedSearchFilters
         );
@@ -356,7 +355,7 @@ export default function SandwichCollectionLog() {
         const data = await response.json();
 
         let filteredCollections = data.collections || [];
-        logger.log('Initial collections count:', filteredCollections.length);
+        console.log('Initial collections count:', filteredCollections.length);
 
         // Apply filters using debounced values
         if (debouncedSearchFilters.hostName) {
@@ -365,7 +364,7 @@ export default function SandwichCollectionLog() {
             (c: SandwichCollection) =>
               c.hostName?.toLowerCase().includes(searchTerm)
           );
-          logger.log(
+          console.log(
             `Host name filter '${searchTerm}' applied: ${filteredCollections.length} results`
           );
         }
@@ -375,7 +374,7 @@ export default function SandwichCollectionLog() {
           filteredCollections = filteredCollections.filter(
             (c: SandwichCollection) => new Date(c.collectionDate) >= fromDate
           );
-          logger.log(
+          console.log(
             `Date from filter '${debouncedSearchFilters.collectionDateFrom}' applied: ${filteredCollections.length} results`
           );
         }
@@ -430,7 +429,7 @@ export default function SandwichCollectionLog() {
               return hostNameMatch || groupNameMatch || dateMatch;
             }
           );
-          logger.log(
+          console.log(
             `Global search filter '${searchTerm}' applied: ${filteredCollections.length} results`
           );
         }
@@ -446,7 +445,7 @@ export default function SandwichCollectionLog() {
               );
             }
           );
-          logger.log(
+          console.log(
             `Group name filter '${searchTerm}' applied: ${filteredCollections.length} results`
           );
         }
@@ -472,7 +471,7 @@ export default function SandwichCollectionLog() {
           endIndex
         );
 
-        logger.log('Pagination debug:', {
+        console.log('Pagination debug:', {
           currentPage,
           itemsPerPage,
           startIndex,
@@ -545,14 +544,14 @@ export default function SandwichCollectionLog() {
       } else {
         const sortParam = `&sort=${sortConfig.field}&order=${sortConfig.direction}`;
         const url = `/api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam}`;
-        logger.log('Fetching paginated collections:', url);
+        console.log('Fetching paginated collections:', url);
         const response = await fetch(url);
         if (!response.ok) {
-          logger.error('Failed to fetch collections:', response.status, response.statusText);
+          console.error('Failed to fetch collections:', response.status, response.statusText);
           throw new Error('Failed to fetch collections');
         }
         const data = await response.json();
-        logger.log('Paginated collections response:', {
+        console.log('Paginated collections response:', {
           collectionsCount: data.collections?.length || 0,
           pagination: data.pagination
         });
@@ -985,7 +984,7 @@ export default function SandwichCollectionLog() {
       });
     },
     onError: (error: any) => {
-      logger.error('Delete collection error:', error);
+      console.error('Delete collection error:', error);
 
       // Check if it's just an auth error but the deletion might have worked
       // We'll refresh the data to see if it actually got deleted
@@ -1018,8 +1017,8 @@ export default function SandwichCollectionLog() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      logger.log('=== CLIENT MUTATION DEBUG ===');
-      logger.log('Submitting data:', JSON.stringify(data, null, 2));
+      console.log('=== CLIENT MUTATION DEBUG ===');
+      console.log('Submitting data:', JSON.stringify(data, null, 2));
       trackDataEntry('sandwich_collection', 'collections_log');
       try {
         const result = await apiRequest(
@@ -1027,10 +1026,10 @@ export default function SandwichCollectionLog() {
           '/api/sandwich-collections',
           data
         );
-        logger.log('API call successful, result:', result);
+        console.log('API call successful, result:', result);
         return result;
       } catch (error) {
-        logger.error('API call failed:', error);
+        console.error('API call failed:', error);
         throw error;
       }
     },
@@ -1098,7 +1097,7 @@ export default function SandwichCollectionLog() {
         description: `Successfully imported ${result.successCount} of ${result.totalRecords} records.`,
       });
       if (result.errorCount > 0) {
-        logger.log('Import errors:', result.errors);
+        console.log('Import errors:', result.errors);
       }
       // Reset file input
       if (fileInputRef.current) {
@@ -1209,7 +1208,7 @@ export default function SandwichCollectionLog() {
       ids: number[];
       updates: Partial<SandwichCollection>;
     }) => {
-      logger.log('Batch edit request:', data);
+      console.log('Batch edit request:', data);
       const response = await fetch('/api/sandwich-collections/batch-edit', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -1218,12 +1217,12 @@ export default function SandwichCollectionLog() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        logger.error('Batch edit error response:', errorData);
+        console.error('Batch edit error response:', errorData);
         throw new Error(errorData.message || 'Failed to update collections');
       }
 
       const result = await response.json();
-      logger.log('Batch edit success response:', result);
+      console.log('Batch edit success response:', result);
       return result;
     },
     onSuccess: (result: any) => {
@@ -1239,7 +1238,7 @@ export default function SandwichCollectionLog() {
       });
     },
     onError: (error: any) => {
-      logger.error('Batch edit mutation error:', error);
+      console.error('Batch edit mutation error:', error);
       toast({
         title: 'Batch edit failed',
         description:
@@ -1332,7 +1331,7 @@ export default function SandwichCollectionLog() {
         description: `All ${allCollections.length} collections exported to CSV with complete data including group totals.`,
       });
     } catch (error) {
-      logger.error('CSV Export Error:', error);
+      console.error('CSV Export Error:', error);
       toast({
         title: 'Export failed',
         description: 'Failed to export collections data. Please try again.',
@@ -1415,18 +1414,18 @@ export default function SandwichCollectionLog() {
   };
 
   const submitBatchEdit = () => {
-    logger.log('submitBatchEdit called with batchEditData:', batchEditData);
-    logger.log('selectedCollections:', Array.from(selectedCollections));
+    console.log('submitBatchEdit called with batchEditData:', batchEditData);
+    console.log('selectedCollections:', Array.from(selectedCollections));
 
     const updates: Partial<SandwichCollection> = {};
     if (batchEditData.hostName) updates.hostName = batchEditData.hostName;
     if (batchEditData.collectionDate)
       updates.collectionDate = batchEditData.collectionDate;
 
-    logger.log('Prepared updates:', updates);
+    console.log('Prepared updates:', updates);
 
     if (Object.keys(updates).length === 0) {
-      logger.log('No updates to apply');
+      console.log('No updates to apply');
       toast({
         title: 'No changes specified',
         description: 'Please specify at least one field to update.',
@@ -1435,7 +1434,7 @@ export default function SandwichCollectionLog() {
       return;
     }
 
-    logger.log('Submitting batch edit with:', {
+    console.log('Submitting batch edit with:', {
       ids: Array.from(selectedCollections),
       updates,
     });
@@ -1760,10 +1759,10 @@ export default function SandwichCollectionLog() {
   };
 
   const handleFilterChange = (filterUpdates: Partial<typeof searchFilters>) => {
-    logger.log('Filter change:', filterUpdates);
+    console.log('Filter change:', filterUpdates);
     setSearchFilters((prev) => {
       const newFilters = { ...prev, ...filterUpdates };
-      logger.log('New search filters:', newFilters);
+      console.log('New search filters:', newFilters);
       return newFilters;
     });
     setCurrentPage(1);

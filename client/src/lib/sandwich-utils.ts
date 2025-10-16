@@ -81,13 +81,13 @@ export function stringifySandwichTypes(sandwichTypes: SandwichType[] | null): st
     );
 
     if (!valid) {
-      logger.warn('Invalid sandwich types data:', sandwichTypes);
+      console.warn('Invalid sandwich types data:', sandwichTypes);
       return null;
     }
 
     return JSON.stringify(sandwichTypes);
   } catch (error) {
-    logger.error('Error stringifying sandwich types:', error);
+    console.error('Error stringifying sandwich types:', error);
     return null;
   }
 }

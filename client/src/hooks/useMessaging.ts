@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from './useAuth';
@@ -137,7 +136,7 @@ export function useMessaging() {
           task: (contextCounts && contextCounts.task) || 0,
         };
       } catch (error) {
-        logger.warn('Unread counts fetch failed:', error);
+        console.warn('Unread counts fetch failed:', error);
         return {
           general: 0,
           committee: 0,
@@ -220,7 +219,7 @@ export function useMessaging() {
   // Listen for notification refresh events (from chat mark-as-read)
   useEffect(() => {
     const handleNotificationRefresh = () => {
-      logger.log(
+      console.log(
         'Notification refresh event received in useMessaging hook - refetching counts'
       );
       refetchUnreadCounts();
@@ -240,7 +239,7 @@ export function useMessaging() {
   useEffect(() => {
     if (!isValidUser(user)) return;
 
-    logger.log('Setting up messaging WebSocket for user:', user.id);
+    console.log('Setting up messaging WebSocket for user:', user.id);
     
     const { cleanup } = createWebSocketConnection(
       {
@@ -250,7 +249,7 @@ export function useMessaging() {
       },
       {
         onOpen: (ws) => {
-          logger.log('Messaging WebSocket connected successfully');
+          console.log('Messaging WebSocket connected successfully');
           // Identify user
           ws.send(JSON.stringify({ type: 'identify', userId: user.id }));
           setWsConnection(ws);
@@ -277,20 +276,20 @@ export function useMessaging() {
               queryClient.invalidateQueries({ queryKey: ['/api/messaging'] });
             }
           } catch (error) {
-            logger.error('Failed to parse WebSocket message:', error);
+            console.error('Failed to parse WebSocket message:', error);
           }
         },
         onError: (error) => {
-          logger.error('Messaging WebSocket error:', error);
+          console.error('Messaging WebSocket error:', error);
           setWsConnection(null);
         },
         onClose: (event) => {
-          logger.log('Messaging WebSocket disconnected:', event.code, event.reason);
+          console.log('Messaging WebSocket disconnected:', event.code, event.reason);
           setWsConnection(null);
 
           // Only log warning for unexpected closures
           if (event.code !== 1000 && event.code !== 1001) {
-            logger.warn(
+            console.warn(
               'WebSocket closed unexpectedly:',
               event.code,
               event.reason
@@ -353,7 +352,7 @@ export function useMessaging() {
         );
         return response.messages || [];
       } catch (error) {
-        logger.error('Failed to fetch context messages:', error);
+        console.error('Failed to fetch context messages:', error);
         return [];
       }
     },

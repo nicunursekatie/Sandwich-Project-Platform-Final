@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Card,
@@ -91,7 +90,7 @@ export default function RecipientChat() {
       );
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error('Failed to fetch Recipient messages:', errorText);
+        console.error('Failed to fetch Recipient messages:', errorText);
         throw new Error(`Failed to fetch messages: ${response.statusText}`);
       }
       const data = await response.json();
@@ -125,7 +124,7 @@ export default function RecipientChat() {
       });
     },
     onError: (error) => {
-      logger.error('Failed to post message:', error);
+      console.error('Failed to post message:', error);
       toast({
         title: 'Failed to send message',
         description:

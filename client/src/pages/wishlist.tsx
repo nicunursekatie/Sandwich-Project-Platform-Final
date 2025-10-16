@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,7 +80,7 @@ export default function WishlistPage() {
       });
     },
     onError: (error) => {
-      logger.error('Wishlist submission error:', error);
+      console.error('Wishlist submission error:', error);
       toast({
         title: 'Submission Failed',
         description:
@@ -118,7 +117,7 @@ export default function WishlistPage() {
       });
     },
     onError: (error) => {
-      logger.error('Review error:', error);
+      console.error('Review error:', error);
       toast({
         title: 'Review Failed',
         description: 'There was an error updating the suggestion',
@@ -143,7 +142,7 @@ export default function WishlistPage() {
       });
     },
     onError: (error) => {
-      logger.error('Delete error:', error);
+      console.error('Delete error:', error);
       toast({
         title: 'Delete Failed',
         description: 'There was an error deleting the suggestion',

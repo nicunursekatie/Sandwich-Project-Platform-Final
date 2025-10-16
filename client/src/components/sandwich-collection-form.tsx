@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Calculator } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -388,7 +387,7 @@ export default function SandwichCollectionForm({
           metadata: { hostName: finalLocation },
         });
       } catch (error) {
-        logger.error('Failed to create new host:', error);
+        console.error('Failed to create new host:', error);
 
         // Track failed host creation
         trackActivity({

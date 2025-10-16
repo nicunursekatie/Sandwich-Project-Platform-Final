@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import {
@@ -145,7 +144,7 @@ export default function ProjectList() {
         riskAssessment: projectData.riskAssessment || null,
         successCriteria: projectData.successCriteria || null,
       };
-      logger.log('Sending project data:', transformedData);
+      console.log('Sending project data:', transformedData);
       const response = await apiRequest(
         'POST',
         '/api/projects',
@@ -153,7 +152,7 @@ export default function ProjectList() {
       );
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error('API Error:', response.status, errorText);
+        console.error('API Error:', response.status, errorText);
         throw new Error(`API Error: ${response.status} ${errorText}`);
       }
       return response.json();
@@ -188,7 +187,7 @@ export default function ProjectList() {
       });
     },
     onError: (error) => {
-      logger.error('Project creation error:', error);
+      console.error('Project creation error:', error);
       toast({
         title: 'Failed to create project',
         description: 'Please check your input and try again.',

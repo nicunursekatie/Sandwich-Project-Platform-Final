@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -92,7 +91,7 @@ export default function LogosPage() {
       // Track the download
       trackDownload(displayName, 'logo');
     } catch (error) {
-      logger.error('Download failed:', error);
+      console.error('Download failed:', error);
       alert('Failed to download logo. Please try again.');
     }
   };

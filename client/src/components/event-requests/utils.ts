@@ -1,5 +1,4 @@
 import { SANDWICH_TYPES } from './constants';
-import { logger } from '@/lib/logger';
 
 // Utility function to convert 24-hour time to 12-hour format
 export const formatTime12Hour = (time24: string): string => {
@@ -39,7 +38,7 @@ export const getSandwichTypesSummary = (request: any) => {
     try {
       sandwichTypes = JSON.parse(sandwichTypes);
     } catch (e) {
-      logger.warn('Failed to parse sandwich types JSON:', sandwichTypes);
+      console.warn('Failed to parse sandwich types JSON:', sandwichTypes);
       sandwichTypes = null;
     }
   }
@@ -187,7 +186,7 @@ export const formatDateForInput = (dateString: string | null | undefined): strin
 
     return `${year}-${month}-${day}`;
   } catch (error) {
-    logger.warn('Error formatting date:', error);
+    console.warn('Error formatting date:', error);
     return '';
   }
 };
@@ -248,7 +247,7 @@ export const formatToolkitDate = (dateString: string | null | undefined): string
       year: 'numeric' 
     });
   } catch (error) {
-    logger.warn('Error formatting toolkit date:', error);
+    console.warn('Error formatting toolkit date:', error);
     return 'Invalid date';
   }
 };
@@ -308,7 +307,7 @@ export const formatPickupDateTime = (
           });
         }
       } catch (error) {
-        logger.warn('Error combining pickupTime with eventDate:', error);
+        console.warn('Error combining pickupTime with eventDate:', error);
       }
     }
 
@@ -319,7 +318,7 @@ export const formatPickupDateTime = (
 
     return 'Not set';
   } catch (error) {
-    logger.warn('Error formatting pickup datetime:', error);
+    console.warn('Error formatting pickup datetime:', error);
     return pickupTime ? `${formatTime12Hour(pickupTime)} (time only)` : 'Not set';
   }
 };
@@ -389,7 +388,7 @@ export const formatPickupTimeDisplay = (
           }
         }
       } catch (error) {
-        logger.warn('Error combining pickupTime with eventDate:', error);
+        console.warn('Error combining pickupTime with eventDate:', error);
       }
     }
 
@@ -400,7 +399,7 @@ export const formatPickupTimeDisplay = (
 
     return 'Not set';
   } catch (error) {
-    logger.warn('Error formatting pickup time display:', error);
+    console.warn('Error formatting pickup time display:', error);
     return pickupTime ? formatTime12Hour(pickupTime) : 'Not set';
   }
 };
@@ -440,13 +439,13 @@ export const getPickupDateTimeForInput = (
           return combinedDateTime.toISOString().slice(0, 16);
         }
       } catch (error) {
-        logger.warn('Error combining pickupTime with eventDate for input:', error);
+        console.warn('Error combining pickupTime with eventDate for input:', error);
       }
     }
 
     return '';
   } catch (error) {
-    logger.warn('Error getting pickup datetime for input:', error);
+    console.warn('Error getting pickup datetime for input:', error);
     return '';
   }
 };

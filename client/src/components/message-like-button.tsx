@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,7 +35,7 @@ export function MessageLikeButton({
   const numericMessageId = Number(messageId);
 
   // Debug logging
-  logger.log('MessageLikeButton rendered:', {
+  console.log('MessageLikeButton rendered:', {
     messageId,
     numericMessageId,
     user: user?.id,
@@ -70,7 +69,7 @@ export function MessageLikeButton({
       });
     },
     onError: (error) => {
-      logger.error('Error toggling message like:', error);
+      console.error('Error toggling message like:', error);
     },
   });
 

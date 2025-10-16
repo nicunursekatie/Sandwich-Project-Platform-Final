@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -110,7 +109,7 @@ export function ObjectUploader({
 
       onComplete?.(uploadedFiles);
     } catch (error) {
-      logger.error('Upload error:', error);
+      console.error('Upload error:', error);
       toast({
         title: 'Upload failed',
         description:

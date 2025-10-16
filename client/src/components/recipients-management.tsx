@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
@@ -1435,7 +1434,7 @@ export default function RecipientsManagement() {
             recipient.id === 19 ||
             recipient.id === 36
           ) {
-            logger.log('Recipients Debug - Rendering:', {
+            console.log('Recipients Debug - Rendering:', {
               id: recipient.id,
               name: recipient.name,
               isBoysAndGirls: recipient.name.includes('Boys'),

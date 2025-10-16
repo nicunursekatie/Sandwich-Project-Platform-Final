@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
@@ -505,7 +504,7 @@ export default function HostsManagementConsolidated() {
 
   const updateContactMutation = useMutation({
     mutationFn: async (data: { id: number; updates: Partial<HostContact> }) => {
-      logger.log('PATCH request data:', data);
+      console.log('PATCH request data:', data);
       return await apiRequest(
         'PATCH',
         `/api/host-contacts/${data.id}`,
@@ -742,7 +741,7 @@ export default function HostsManagementConsolidated() {
   const handleUpdateContact = () => {
     if (!editingContact) return;
 
-    logger.log('Updating contact:', editingContact.id, editingContact);
+    console.log('Updating contact:', editingContact.id, editingContact);
 
     // Clean the updates object to only include valid HostContact fields - exclude timestamps and IDs
     const updates = {
@@ -2068,7 +2067,7 @@ export default function HostsManagementConsolidated() {
                                 size="sm"
                                 disabled={!canEdit}
                                 onClick={async () => {
-                                  logger.log(
+                                  console.log(
                                     'Edit button clicked for contact:',
                                     contact.id,
                                     contact.name
@@ -2090,7 +2089,7 @@ export default function HostsManagementConsolidated() {
                                       (c) => c.id === contact.id
                                     );
 
-                                  logger.log(
+                                  console.log(
                                     'Fresh contact found:',
                                     freshContact
                                   );
@@ -2098,7 +2097,7 @@ export default function HostsManagementConsolidated() {
                                   if (freshContact) {
                                     setEditingContact(freshContact);
                                   } else {
-                                    logger.error(
+                                    console.error(
                                       'Could not find fresh contact data for ID:',
                                       contact.id,
                                       'Contact:',

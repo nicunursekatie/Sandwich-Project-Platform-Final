@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   MessageCircle,
@@ -119,9 +118,9 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (data: MessageFormData) => {
-      logger.log('=== FRONTEND: Sending message ===');
-      logger.log('Message data being sent:', data);
-      logger.log('API endpoint: POST /api/messages');
+      console.log('=== FRONTEND: Sending message ===');
+      console.log('Message data being sent:', data);
+      console.log('API endpoint: POST /api/messages');
 
       // Prepare the message data in the format expected by the backend
       const messageData = {
@@ -129,15 +128,15 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
         sender: userName || user?.firstName || user?.email || 'Anonymous User',
       };
 
-      logger.log('Formatted message data:', messageData);
+      console.log('Formatted message data:', messageData);
 
       try {
         const result = await apiRequest('POST', '/api/messages', messageData);
-        logger.log('API response received:', result);
+        console.log('API response received:', result);
         return result;
       } catch (error) {
-        logger.error('API request failed:', error);
-        logger.error('Error details:', {
+        console.error('API request failed:', error);
+        console.error('Error details:', {
           message: error.message,
           status: error.status,
           response: error.response,
@@ -146,7 +145,7 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
       }
     },
     onSuccess: (data) => {
-      logger.log('Message sent successfully:', data);
+      console.log('Message sent successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
       form.reset({
         content: '',
@@ -158,7 +157,7 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
       });
     },
     onError: (error) => {
-      logger.error('Message sending failed:', error);
+      console.error('Message sending failed:', error);
       toast({
         title: 'Error',
         description: `Failed to send message: ${error.message || 'Unknown error'}`,
@@ -199,10 +198,10 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
   });
 
   const onSubmit = (data: MessageFormData) => {
-    logger.log('=== FORM SUBMIT ===');
-    logger.log('Form data received:', data);
-    logger.log('Current userName:', userName);
-    logger.log('Is replying to:', replyingTo);
+    console.log('=== FORM SUBMIT ===');
+    console.log('Form data received:', data);
+    console.log('Current userName:', userName);
+    console.log('Is replying to:', replyingTo);
 
     if (!user?.id) {
       toast({
@@ -221,7 +220,7 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
 
     if (replyingTo) {
       // For replies, we need to handle this differently since we're using the new system
-      logger.log(
+      console.log(
         'Reply functionality needs to be updated for new messaging system'
       );
       toast({
@@ -233,8 +232,8 @@ export default function MessageLog({ chatType }: MessageLogProps = {}) {
       return;
     }
 
-    logger.log('Final message data to send:', JSON.stringify(messageData));
-    logger.log('About to call sendMessageMutation.mutate...');
+    console.log('Final message data to send:', JSON.stringify(messageData));
+    console.log('About to call sendMessageMutation.mutate...');
 
     sendMessageMutation.mutate(messageData);
   };

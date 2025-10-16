@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { logger } from '@/lib/logger';
 import {
   HelpCircle,
   X,
@@ -62,7 +61,7 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
       try {
         setCompletedTours(JSON.parse(stored));
       } catch (e) {
-        logger.error('Failed to load completed tours:', e);
+        console.error('Failed to load completed tours:', e);
       }
     }
   }, []);

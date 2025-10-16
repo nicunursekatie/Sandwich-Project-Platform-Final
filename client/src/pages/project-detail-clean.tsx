@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
 import * as React from 'react';
 import { useParams, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -141,7 +140,7 @@ export default function ProjectDetailClean({
       });
     },
     onError: (error) => {
-      logger.error('Error saving meeting notes:', error);
+      console.error('Error saving meeting notes:', error);
       toast({
         title: 'Error',
         description: 'Failed to save meeting notes',
@@ -166,7 +165,7 @@ export default function ProjectDetailClean({
       });
     },
     onError: (error) => {
-      logger.error('Error saving milestone:', error);
+      console.error('Error saving milestone:', error);
       toast({
         title: 'Error',
         description: 'Failed to update milestone',
@@ -225,7 +224,7 @@ export default function ProjectDetailClean({
           : 'Project removed from meeting agenda',
       });
     } catch (error) {
-      logger.error('Error updating meeting review status:', error);
+      console.error('Error updating meeting review status:', error);
       toast({
         title: 'Error',
         description: 'Failed to update meeting review status',
@@ -299,7 +298,7 @@ export default function ProjectDetailClean({
         try {
           // Validate assignee data before sending
           if (!assignee.id || !assignee.id.trim()) {
-            logger.warn(
+            console.warn(
               `Skipping kudos for ${assignee.name}: empty recipient ID`
             );
             continue;
@@ -314,9 +313,9 @@ export default function ProjectDetailClean({
             customMessage: `🎉 Congratulations on completing "${projectTitle}"! Amazing work!`,
           });
 
-          logger.log(`Kudos sent to ${assignee.name} for project completion`);
+          console.log(`Kudos sent to ${assignee.name} for project completion`);
         } catch (error) {
-          logger.error(`Failed to send kudos to ${assignee.name}:`, error);
+          console.error(`Failed to send kudos to ${assignee.name}:`, error);
         }
       }
 
@@ -331,7 +330,7 @@ export default function ProjectDetailClean({
         });
       }
     } catch (error) {
-      logger.error('Failed to send project completion kudos:', error);
+      console.error('Failed to send project completion kudos:', error);
     }
   };
 
@@ -409,7 +408,7 @@ export default function ProjectDetailClean({
       toast({ description: 'Task added successfully' });
     },
     onError: (error: any) => {
-      logger.error('Task creation failed:', error);
+      console.error('Task creation failed:', error);
       toast({
         description: 'Failed to add task',
         variant: 'destructive',
@@ -445,7 +444,7 @@ export default function ProjectDetailClean({
         queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
         queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       } catch (error) {
-        logger.error('Failed to auto-complete project:', error);
+        console.error('Failed to auto-complete project:', error);
       }
     }
   };
@@ -491,7 +490,7 @@ export default function ProjectDetailClean({
       toast({ description: 'Task deleted successfully' });
     },
     onError: (error: any) => {
-      logger.error('Task deletion failed:', error);
+      console.error('Task deletion failed:', error);
       toast({
         description: 'Failed to delete task',
         variant: 'destructive',
@@ -668,7 +667,7 @@ export default function ProjectDetailClean({
   }
 
   if (projectError) {
-    logger.error('Project query error:', projectError);
+    console.error('Project query error:', projectError);
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg text-red-600">Error loading project: {(projectError as Error).message}</div>
@@ -708,7 +707,7 @@ export default function ProjectDetailClean({
             variant="ghost"
             size="sm"
             onClick={() => {
-              logger.log('Back to Projects clicked - navigating to projects');
+              console.log('Back to Projects clicked - navigating to projects');
               if ((window as any).dashboardSetActiveSection) {
                 (window as any).dashboardSetActiveSection('projects');
               } else {

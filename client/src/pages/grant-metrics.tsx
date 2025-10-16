@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { useState } from 'react';
 import {
   Card,
@@ -534,16 +533,16 @@ export default function GrantMetrics() {
   ).sort((a: any, b: any) => b - a);
 
   // Debug peak month calculation
-  logger.log('=== PEAK MONTH DEBUG ===');
-  logger.log('Peak Month:', metrics.peakMonth);
-  logger.log('All Monthly Totals:', metrics.monthlyData);
+  console.log('=== PEAK MONTH DEBUG ===');
+  console.log('Peak Month:', metrics.peakMonth);
+  console.log('All Monthly Totals:', metrics.monthlyData);
 
   const november2023Collections = collections.filter((c: any) =>
     c.collectionDate && c.collectionDate.startsWith('2023-11')
   );
 
-  logger.log('November 2023 Collections Count:', november2023Collections.length);
-  logger.log('ALL November 2023 Collections:', november2023Collections.map((c: any) => ({
+  console.log('November 2023 Collections Count:', november2023Collections.length);
+  console.log('ALL November 2023 Collections:', november2023Collections.map((c: any) => ({
     id: c.id,
     date: c.collectionDate,
     individual: c.individualSandwiches,
@@ -557,13 +556,13 @@ export default function GrantMetrics() {
   const november2023Total = november2023Collections.reduce((sum: number, c: any) =>
     sum + calculateTotalSandwiches(c), 0
   );
-  logger.log('November 2023 Manually Calculated Total:', november2023Total);
+  console.log('November 2023 Manually Calculated Total:', november2023Total);
 
   // Check for duplicate IDs
   const novemberIds = november2023Collections.map((c: any) => c.id);
   const duplicateIds = novemberIds.filter((id: any, index: number) => novemberIds.indexOf(id) !== index);
-  logger.log('Duplicate IDs in November 2023:', duplicateIds.length > 0 ? duplicateIds : 'None');
-  logger.log('=======================');
+  console.log('Duplicate IDs in November 2023:', duplicateIds.length > 0 ? duplicateIds : 'None');
+  console.log('=======================');
 
   // Prepare year-over-year chart data - ONLY COMPLETE YEARS
   const currentYear = new Date().getFullYear();

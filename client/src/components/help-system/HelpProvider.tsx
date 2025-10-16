@@ -1,5 +1,4 @@
 import React, {
-import { logger } from '@/lib/logger';
   createContext,
   useContext,
   useState,
@@ -47,11 +46,11 @@ export function HelpProvider({ children }: HelpProviderProps) {
 
   const showHelp = useCallback((content: HelpContent) => {
     // This would be used for programmatic help display
-    logger.log('Showing help:', content);
+    console.log('Showing help:', content);
   }, []);
 
   const hideHelp = useCallback((id: string) => {
-    logger.log('Hiding help:', id);
+    console.log('Hiding help:', id);
   }, []);
 
   const toggleHelpMode = useCallback(() => {
@@ -220,7 +219,7 @@ export function HelpProvider({ children }: HelpProviderProps) {
             {
               label: 'Take a Quick Tour',
               action: () => {
-                logger.log('Starting tour');
+                console.log('Starting tour');
                 // Mark onboarding as complete when starting tour
                 localStorage.setItem('onboarding-complete', 'true');
                 localStorage.setItem('help-first-time-user-seen', 'true');
@@ -230,7 +229,7 @@ export function HelpProvider({ children }: HelpProviderProps) {
             {
               label: "I'll Explore on My Own",
               action: () => {
-                logger.log('Self exploration');
+                console.log('Self exploration');
                 // Mark onboarding as complete and help as seen when skipping
                 localStorage.setItem('onboarding-complete', 'true');
                 localStorage.setItem('help-first-time-user-seen', 'true');

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,12 +130,12 @@ export default function EmailStyleMessaging() {
   // Send message mutation - Use messaging API for internal messages with graceful SendGrid handling
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: any) => {
-      logger.log('Sending message data:', messageData);
+      console.log('Sending message data:', messageData);
 
       // Find recipient user by email
       const recipientUser = users.find((u: any) => u.email === messageData.to);
       if (!recipientUser) {
-        logger.warn('Recipient not found in user list:', messageData.to);
+        console.warn('Recipient not found in user list:', messageData.to);
         throw new Error(
           `Recipient ${messageData.to} not found. Please make sure the email address is correct and the user exists in the system.`
         );
@@ -154,7 +153,7 @@ export default function EmailStyleMessaging() {
         '/api/messaging',
         messagingData
       );
-      logger.log('Send message response:', response);
+      console.log('Send message response:', response);
       return response;
     },
     onSuccess: () => {
@@ -170,7 +169,7 @@ export default function EmailStyleMessaging() {
       setComposeData({ to: '', subject: '', content: '' });
     },
     onError: (error) => {
-      logger.error('Send message error:', error);
+      console.error('Send message error:', error);
       // More detailed error handling
       let errorMessage = 'Failed to send message. Please try again.';
       if (error.message?.includes('401')) {

@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -57,7 +56,7 @@ export function KudosLoginNotifier() {
       });
     },
     onError: (error) => {
-      logger.error('Failed to mark kudos as initially notified:', error);
+      console.error('Failed to mark kudos as initially notified:', error);
     },
   });
 

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import {
   Card,
   CardContent,
@@ -393,7 +392,7 @@ export default function ImportantDocuments() {
         description: `${displayName} has been downloaded successfully.`,
       });
     } catch (error) {
-      logger.error('Download failed:', error);
+      console.error('Download failed:', error);
       toast({
         title: 'Download Failed',
         description: 'Failed to download logo. Please try again.',
@@ -418,7 +417,7 @@ export default function ImportantDocuments() {
         });
       } catch (error: any) {
         if (error.name !== 'AbortError') {
-          logger.error('Share failed:', error);
+          console.error('Share failed:', error);
           toast({
             title: 'Share Failed',
             description:
@@ -451,7 +450,7 @@ export default function ImportantDocuments() {
         description: `${displayName} has been copied to clipboard.`,
       });
     } catch (error) {
-      logger.error('Copy failed:', error);
+      console.error('Copy failed:', error);
       // Fallback to copying the URL
       const logoUrl = `${window.location.origin}/attached_assets/LOGOS/${filename}`;
       await navigator.clipboard.writeText(logoUrl);

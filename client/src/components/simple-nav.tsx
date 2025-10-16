@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { logger } from '@/lib/logger';
 import { Badge } from '@/components/ui/badge';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,7 +35,7 @@ export default function SimpleNav({
           const response = await apiRequest('GET', '/api/emails/unread-count');
           return typeof response?.count === 'number' ? response.count : 0;
         } catch (error) {
-          logger.warn('Gmail unread count fetch failed:', error);
+          console.warn('Gmail unread count fetch failed:', error);
           return 0;
         }
       },
@@ -54,7 +53,7 @@ export default function SimpleNav({
           const response = await apiRequest('GET', '/api/event-reminders/count');
           return typeof response?.count === 'number' ? response.count : 0;
         } catch (error) {
-          logger.warn('Event reminders count fetch failed:', error);
+          console.warn('Event reminders count fetch failed:', error);
           return 0;
         }
       },
@@ -168,7 +167,7 @@ export default function SimpleNav({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                logger.log('Navigation click:', item.href);
+                console.log('Navigation click:', item.href);
                 onSectionChange(item.href);
               }}
               title={isCollapsed ? item.label : undefined}
@@ -210,7 +209,7 @@ export default function SimpleNav({
       </nav>
     );
   } catch (error) {
-    logger.error('SimpleNav rendering error:', error);
+    console.error('SimpleNav rendering error:', error);
     return (
       <nav className="flex flex-col gap-1 p-2">
         <div className="text-sm text-red-500">Navigation error</div>

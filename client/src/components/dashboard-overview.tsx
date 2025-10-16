@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -130,7 +129,7 @@ export default function DashboardOverview({
           'The inventory calculator link has been copied to your clipboard.',
       });
     } catch (error) {
-      logger.error('Failed to copy link:', error);
+      console.error('Failed to copy link:', error);
       toast({
         title: 'Error',
         description: 'Failed to copy link to clipboard.',

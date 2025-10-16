@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,7 +59,7 @@ export default function UserActivityAnalytics() {
         throw new Error(`Failed to fetch activity summary: ${res.status}`);
       }
       const data = await res.json();
-      logger.log('Activity summary data:', data);
+      console.log('Activity summary data:', data);
       // Ensure we return an array
       return Array.isArray(data) ? data : [];
     },

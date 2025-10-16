@@ -1,5 +1,4 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useEffect } from 'react';
@@ -50,7 +49,7 @@ export function KudosInbox() {
       refetch();
     },
     onError: (error) => {
-      logger.error('Failed to mark kudos as read:', error);
+      console.error('Failed to mark kudos as read:', error);
     },
   });
 

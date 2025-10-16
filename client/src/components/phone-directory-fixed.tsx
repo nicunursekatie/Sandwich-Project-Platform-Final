@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Card,
@@ -425,7 +424,7 @@ function PhoneDirectoryFixed() {
         deduplicatedAll.push(contact);
       } else {
         // If duplicate found, log it for debugging
-        logger.log(
+        console.log(
           `Duplicate contact found and removed: ${contact.name} (${contact.phone}) - ${contact.source}`
         );
       }
@@ -1131,7 +1130,7 @@ function PhoneDirectoryFixed() {
                                         variant="outline"
                                         size="sm"
                                         onClick={() =>
-                                          logger.log('Edit contact:', contact)
+                                          console.log('Edit contact:', contact)
                                         }
                                       >
                                         <Edit className="w-4 h-4" />
@@ -1145,7 +1144,7 @@ function PhoneDirectoryFixed() {
                                               `Delete contact ${contact.name}?`
                                             )
                                           ) {
-                                            logger.log(
+                                            console.log(
                                               'Delete contact:',
                                               contact
                                             );

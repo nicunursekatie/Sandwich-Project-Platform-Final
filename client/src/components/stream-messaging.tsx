@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
 import {
   Chat,
   Channel,
@@ -148,7 +147,7 @@ export default function StreamMessaging() {
 
         setClient(chatClient);
       } catch (error) {
-        logger.error('Failed to initialize Stream Chat:', error);
+        console.error('Failed to initialize Stream Chat:', error);
         toast({
           title: 'Stream Chat Setup Required',
           description:
@@ -251,7 +250,7 @@ export default function StreamMessaging() {
         description: 'Your message has been delivered.',
       });
     } catch (error) {
-      logger.error('Failed to send message:', error);
+      console.error('Failed to send message:', error);
       toast({
         title: 'Failed to send',
         description: 'There was an error sending your message.',

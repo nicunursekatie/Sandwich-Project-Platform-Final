@@ -1,5 +1,4 @@
 import React from 'react';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -251,7 +250,7 @@ export function AgendaPlanningTab({
       });
     },
     onError: (error: any) => {
-      logger.error('Delete project error:', error);
+      console.error('Delete project error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to delete project.',
@@ -273,7 +272,7 @@ export function AgendaPlanningTab({
       });
     },
     onError: (error: any) => {
-      logger.error('Archive project error:', error);
+      console.error('Archive project error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to archive project.',
@@ -327,12 +326,12 @@ export function AgendaPlanningTab({
               content: JSON.stringify(noteContent),
               status: 'active' as const,
             };
-            logger.log('Creating note for project:', project.title, noteData);
+            console.log('Creating note for project:', project.title, noteData);
             await createNoteMutation.mutateAsync(noteData);
             notesCreated++;
-            logger.log('Successfully created note for:', project.title);
+            console.log('Successfully created note for:', project.title);
           } catch (error) {
-            logger.error('Failed to save notes for', project.title, error);
+            console.error('Failed to save notes for', project.title, error);
             errors.push(`Failed to save notes for ${project.title}`);
           }
         }
@@ -419,7 +418,7 @@ export function AgendaPlanningTab({
               meetingDecisionItems: '',
             });
           } catch (error) {
-            logger.warn(`Failed to clear text for project ${project.id}:`, error);
+            console.warn(`Failed to clear text for project ${project.id}:`, error);
           }
         });
 
@@ -431,7 +430,7 @@ export function AgendaPlanningTab({
               meetingDecisionItems: '',
             });
           } catch (error) {
-            logger.warn(`Failed to clear text for tabled project ${project.id}:`, error);
+            console.warn(`Failed to clear text for tabled project ${project.id}:`, error);
           }
         });
 
@@ -1451,10 +1450,10 @@ export function AgendaPlanningTab({
               onClick={async () => {
                 if (editingProject) {
                   try {
-                    logger.log('=== SUPPORT PEOPLE UPDATE DEBUG ===');
-                    logger.log('Project ID:', editingProject);
-                    logger.log('Support People Value:', editSupportPeople);
-                    logger.log(
+                    console.log('=== SUPPORT PEOPLE UPDATE DEBUG ===');
+                    console.log('Project ID:', editingProject);
+                    console.log('Support People Value:', editSupportPeople);
+                    console.log(
                       'Support People Length:',
                       editSupportPeople?.length
                     );
@@ -1468,7 +1467,7 @@ export function AgendaPlanningTab({
                       }
                     );
 
-                    logger.log('API Response:', response);
+                    console.log('API Response:', response);
                     queryClient.invalidateQueries({
                       queryKey: ['/api/projects'],
                     });
@@ -1479,10 +1478,10 @@ export function AgendaPlanningTab({
                     });
                     setShowEditPeopleDialog(false);
                   } catch (error: any) {
-                    logger.error('=== SUPPORT PEOPLE ERROR ===');
-                    logger.error('Error details:', error);
-                    logger.error('Error message:', error?.message);
-                    logger.error('Error response:', error?.response);
+                    console.error('=== SUPPORT PEOPLE ERROR ===');
+                    console.error('Error details:', error);
+                    console.error('Error message:', error?.message);
+                    console.error('Error response:', error?.response);
 
                     toast({
                       title: 'Error',
@@ -1538,9 +1537,9 @@ export function AgendaPlanningTab({
               onClick={async () => {
                 if (editingProject) {
                   try {
-                    logger.log('=== PROJECT OWNER UPDATE DEBUG ===');
-                    logger.log('Project ID:', editingProject);
-                    logger.log('Project Owner Value:', editProjectOwner);
+                    console.log('=== PROJECT OWNER UPDATE DEBUG ===');
+                    console.log('Project ID:', editingProject);
+                    console.log('Project Owner Value:', editProjectOwner);
 
                     const response = await apiRequest(
                       'PATCH',
@@ -1551,7 +1550,7 @@ export function AgendaPlanningTab({
                       }
                     );
 
-                    logger.log('API Response:', response);
+                    console.log('API Response:', response);
                     queryClient.invalidateQueries({
                       queryKey: ['/api/projects'],
                     });
@@ -1562,10 +1561,10 @@ export function AgendaPlanningTab({
                     });
                     setShowEditOwnerDialog(false);
                   } catch (error: any) {
-                    logger.error('=== PROJECT OWNER ERROR ===');
-                    logger.error('Error details:', error);
-                    logger.error('Error message:', error?.message);
-                    logger.error('Error response:', error?.response);
+                    console.error('=== PROJECT OWNER ERROR ===');
+                    console.error('Error details:', error);
+                    console.error('Error message:', error?.message);
+                    console.error('Error response:', error?.response);
 
                     toast({
                       title: 'Error',

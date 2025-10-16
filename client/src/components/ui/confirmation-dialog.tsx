@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,7 +42,7 @@ export function ConfirmationDialog({
       await onConfirm();
       setOpen(false);
     } catch (error) {
-      logger.error('Confirmation action failed:', error);
+      console.error('Confirmation action failed:', error);
     } finally {
       setIsLoading(false);
     }

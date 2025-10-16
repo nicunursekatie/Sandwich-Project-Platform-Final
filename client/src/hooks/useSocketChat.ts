@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from 'react';
-import { logger } from '@/lib/logger';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 // Remove getUserPermissions import as it doesn't exist
@@ -41,7 +40,7 @@ export function useSocketChat() {
 
     // Use current origin for Socket.IO connection
     const socketUrl = window.location.origin;
-    logger.log('Connecting to Socket.IO at:', socketUrl);
+    console.log('Connecting to Socket.IO at:', socketUrl);
 
     const newSocket = io(socketUrl, {
       path: '/socket.io/',
@@ -54,7 +53,7 @@ export function useSocketChat() {
 
     newSocket.on('connect', () => {
       setConnected(true);
-      logger.log('Socket.io connected');
+      console.log('Socket.io connected');
 
       // Get available rooms first
       newSocket.emit('get-rooms');
@@ -62,12 +61,12 @@ export function useSocketChat() {
 
     newSocket.on('disconnect', () => {
       setConnected(false);
-      logger.log('Socket.io disconnected');
+      console.log('Socket.io disconnected');
     });
 
     newSocket.on('rooms', ({ available }) => {
       setRooms(available || []);
-      logger.log('Received rooms:', available);
+      console.log('Received rooms:', available);
 
       // Request message history for all rooms to populate "no messages yet" correctly
       (available || []).forEach((room: ChatRoom) => {
@@ -88,7 +87,7 @@ export function useSocketChat() {
 
       // Trigger notification refresh for new messages
       window.dispatchEvent(new CustomEvent('refreshNotifications'));
-      logger.log('New message received, triggering notification refresh');
+      console.log('New message received, triggering notification refresh');
     });
 
     newSocket.on(
@@ -99,7 +98,7 @@ export function useSocketChat() {
           ...prev,
           [room]: roomMessages || [],
         }));
-        logger.log(
+        console.log(
           `Received message history for ${room}:`,
           roomMessages?.length || 0,
           'messages'
@@ -108,7 +107,7 @@ export function useSocketChat() {
     );
 
     newSocket.on('joined-channel', ({ channel }) => {
-      logger.log(`Successfully joined channel: ${channel}`);
+      console.log(`Successfully joined channel: ${channel}`);
     });
 
     newSocket.on('user_joined', ({ userId, username, room }) => {
@@ -129,7 +128,7 @@ export function useSocketChat() {
     });
 
     newSocket.on('error', ({ message }) => {
-      logger.error('Socket.io error:', message);
+      console.error('Socket.io error:', message);
     });
 
     setSocket(newSocket);

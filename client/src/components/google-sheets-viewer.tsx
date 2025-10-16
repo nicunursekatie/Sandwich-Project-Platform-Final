@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,7 +58,7 @@ export function GoogleSheetsViewer({
       const response = await apiRequest('GET', '/api/project-data/status');
       setFallbackFileStatus(response);
     } catch (error) {
-      logger.error('Failed to check fallback status:', error);
+      console.error('Failed to check fallback status:', error);
     }
   };
 

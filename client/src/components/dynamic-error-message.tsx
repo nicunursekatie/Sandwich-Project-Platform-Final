@@ -1,5 +1,4 @@
 import React from 'react';
-import { logger } from '@/lib/logger';
 import {
   AlertTriangle,
   RefreshCw,
@@ -73,7 +72,7 @@ export function DynamicErrorMessageDisplay({
         break;
       case 'custom':
         // Custom actions should be handled by the parent component
-        logger.warn(
+        console.warn(
           'Custom action needs to be handled by parent component:',
           action.target
         );
@@ -305,7 +304,7 @@ export function useDynamicError() {
           .catch(() => alert('Network connection appears to be down.'));
         break;
       default:
-        logger.warn('Unhandled custom action:', action.target);
+        console.warn('Unhandled custom action:', action.target);
     }
   }, []);
 
@@ -339,7 +338,7 @@ export class DynamicErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    logger.error('Error caught by boundary:', error, errorInfo);
+    console.error('Error caught by boundary:', error, errorInfo);
   }
 
   render() {

@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -192,7 +191,7 @@ export default function StaffingForecastWidget() {
         week.unfulfilled.vanDrivers += Math.max(0, vanDriversNeeded - vanDriversAssigned);
 
       } catch (error) {
-        logger.warn('Error processing event date:', request.desiredEventDate);
+        console.warn('Error processing event date:', request.desiredEventDate);
       }
     });
 

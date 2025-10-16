@@ -1,5 +1,4 @@
 import { useMemo, useEffect } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -109,7 +108,7 @@ export default function SandwichForecastWidget() {
 
         // Debug logging for event grouping
         if (eventDate.getDay() === 5) { // Friday
-          logger.log('🔍 Friday Event Grouping:', {
+          console.log('🔍 Friday Event Grouping:', {
             org: request.organizationName,
             eventDate: eventDate.toDateString(),
             eventDayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][eventDate.getDay()],
@@ -162,7 +161,7 @@ export default function SandwichForecastWidget() {
           weeklyData[weekKey].pendingCount += sandwichCount;
         }
       } catch (error) {
-        logger.warn('Error processing event date:', request.desiredEventDate);
+        console.warn('Error processing event date:', request.desiredEventDate);
       }
     });
 

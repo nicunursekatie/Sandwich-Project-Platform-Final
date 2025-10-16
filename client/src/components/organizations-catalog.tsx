@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -121,11 +120,11 @@ export default function GroupCatalog({
   } = useQuery({
     queryKey: ['/api/groups-catalog'],
     queryFn: async () => {
-      logger.log('🔄 Groups catalog fetching data from API...');
+      console.log('🔄 Groups catalog fetching data from API...');
       const response = await fetch('/api/groups-catalog');
       if (!response.ok) throw new Error('Failed to fetch groups');
       const data = await response.json();
-      logger.log('✅ Groups catalog received data:', data);
+      console.log('✅ Groups catalog received data:', data);
       return data;
     },
     staleTime: 0, // Always consider data stale so it refetches when invalidated
@@ -147,7 +146,7 @@ export default function GroupCatalog({
       const details = await response.json();
       setEventDetails(details);
     } catch (error) {
-      logger.error('Error fetching event details:', error);
+      console.error('Error fetching event details:', error);
       setEventDetails(null);
     } finally {
       setLoadingEventDetails(false);
@@ -168,7 +167,7 @@ export default function GroupCatalog({
       setOrganizationDetails(details);
       setShowEventDetailsDialog(true);
     } catch (error) {
-      logger.error('Error fetching organization details:', error);
+      console.error('Error fetching organization details:', error);
       setOrganizationDetails(null);
     } finally {
       setLoadingOrganizationDetails(false);
@@ -426,7 +425,7 @@ export default function GroupCatalog({
   const totalActivePages = Math.ceil(totalActiveItems / itemsPerPage);
   
   // Debug logging
-  logger.log('🔍 Pagination Debug:', {
+  console.log('🔍 Pagination Debug:', {
     totalActiveItems,
     totalActivePages,
     itemsPerPage,

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,9 +38,9 @@ export default function WorkLogPage() {
   } = useQuery({
     queryKey: ['/api/work-logs'],
     queryFn: async () => {
-      logger.log('🚀 Work logs query function called');
+      console.log('🚀 Work logs query function called');
       const data = await apiRequest('GET', '/api/work-logs');
-      logger.log('🚀 Work logs API response data:', data);
+      console.log('🚀 Work logs API response data:', data);
       return data;
     },
     enabled: !!user, // Only fetch when user is authenticated

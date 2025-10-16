@@ -20,7 +20,7 @@ export function getWebSocketUrl(config: WebSocketConfig): string {
   const hostname = window.location.hostname;
   const port = window.location.port;
 
-  logger.log('WebSocket URL Construction Debug:', {
+  console.log('WebSocket URL Construction Debug:', {
     hostname,
     port,
     protocol,
@@ -35,24 +35,24 @@ export function getWebSocketUrl(config: WebSocketConfig): string {
   if (hostname.includes('replit.dev') || hostname.includes('replit.com') || hostname.includes('replit.app') || hostname.includes('spock.replit.dev')) {
     // In Replit development, always use port 5000
     host = `${hostname}:5000`;
-    logger.log('Detected Replit environment, using host with port:', host);
+    console.log('Detected Replit environment, using host with port:', host);
   } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development - force port 5000 if no port specified
     const resolvedPort = port || '5000';
     host = `${hostname}:${resolvedPort}`;
-    logger.log('Detected localhost environment, using host:', host);
+    console.log('Detected localhost environment, using host:', host);
   } else if (hostname) {
     // Other deployments - use hostname with port if available
     host = port ? `${hostname}:${port}` : hostname;
-    logger.log('Detected other environment, using host:', host);
+    console.log('Detected other environment, using host:', host);
   } else {
     // Fallback
     host = 'localhost:5000';
-    logger.warn('Unable to detect hostname, using fallback:', host);
+    console.warn('Unable to detect hostname, using fallback:', host);
   }
 
   const url = `${protocol}//${host}${path}`;
-  logger.log('Final WebSocket URL:', url);
+  console.log('Final WebSocket URL:', url);
 
   return url;
 }
@@ -78,12 +78,12 @@ export function createWebSocketConnection(
 
     try {
       const url = getWebSocketUrl(config);
-      logger.log(`Attempting WebSocket connection to: ${url}`);
+      console.log(`Attempting WebSocket connection to: ${url}`);
 
       ws = new WebSocket(url);
 
       ws.onopen = (event) => {
-        logger.log('WebSocket connected successfully');
+        console.log('WebSocket connected successfully');
         reconnectAttempts = 0;
         onOpen?.(ws!);
       };
@@ -93,12 +93,12 @@ export function createWebSocketConnection(
       };
 
       ws.onerror = (event) => {
-        logger.error('WebSocket error:', event);
+        console.error('WebSocket error:', event);
         onError?.(event);
       };
 
       ws.onclose = (event) => {
-        logger.log('WebSocket closed:', event.code, event.reason);
+        console.log('WebSocket closed:', event.code, event.reason);
         onClose?.(event);
 
         // Auto-reconnect if not a normal closure and not cleaned up
@@ -107,17 +107,17 @@ export function createWebSocketConnection(
           if (reconnectAttempts < maxRetries) {
             reconnectAttempts++;
             const delay = (config.retryDelay || 5000) * reconnectAttempts;
-            logger.log(`Attempting reconnect ${reconnectAttempts}/${maxRetries} in ${delay}ms`);
+            console.log(`Attempting reconnect ${reconnectAttempts}/${maxRetries} in ${delay}ms`);
 
             reconnectTimeout = setTimeout(connect, delay);
           } else {
-            logger.error('Max reconnection attempts reached');
+            console.error('Max reconnection attempts reached');
           }
         }
       };
 
     } catch (error) {
-      logger.error('Failed to create WebSocket:', error);
+      console.error('Failed to create WebSocket:', error);
       onError?.(new Event('error'));
     }
   };

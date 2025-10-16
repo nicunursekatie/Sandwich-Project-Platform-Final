@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -143,12 +142,12 @@ export function NotesTab({
 
   // Debug logging for notes
   React.useEffect(() => {
-    logger.log('[NotesTab] Current filters:', filters);
-    logger.log('[NotesTab] Notes received from hook:', notes.length, 'notes');
+    console.log('[NotesTab] Current filters:', filters);
+    console.log('[NotesTab] Notes received from hook:', notes.length, 'notes');
     if (notes.length > 0) {
-      logger.log('[NotesTab] Sample notes (first 3):');
+      console.log('[NotesTab] Sample notes (first 3):');
       notes.slice(0, 3).forEach(note => {
-        logger.log({
+        console.log({
           id: note.id,
           projectId: note.projectId,
           meetingId: note.meetingId,

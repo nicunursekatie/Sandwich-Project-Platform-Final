@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -71,7 +70,7 @@ const SandwichTypesSelector = ({
           }
         }
       } catch (error) {
-        logger.warn('Error parsing sandwich types:', error);
+        console.warn('Error parsing sandwich types:', error);
       }
     }
   }, [defaultValue]);
