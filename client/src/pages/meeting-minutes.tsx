@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import {
   Card,
   CardContent,
@@ -329,7 +331,7 @@ export default function MeetingMinutes({
 
       toast({ title: 'File downloaded successfully' });
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       toast({
         title: 'Download failed',
         description:

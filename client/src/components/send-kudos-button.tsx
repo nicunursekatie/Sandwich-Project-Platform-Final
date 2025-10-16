@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useMutation } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -63,7 +65,7 @@ export default function SendKudosButton({
 
   // Don't render if recipientId is empty or invalid
   if (!recipientId || !recipientId.trim()) {
-    console.warn('SendKudosButton: Not rendering due to empty recipientId', {
+    logger.warn('SendKudosButton: Not rendering due to empty recipientId', {
       recipientId,
       recipientName,
       contextType,
@@ -80,7 +82,7 @@ export default function SendKudosButton({
 
   // Don't render if user doesn't have permission to send kudos
   if (!hasPermission(user, PERMISSIONS.SEND_KUDOS)) {
-    console.warn('SendKudosButton: User lacks SEND_KUDOS permission', {
+    logger.warn('SendKudosButton: User lacks SEND_KUDOS permission', {
       user: user ? { id: (user as any).id, email: (user as any).email } : null,
       hasPermission: hasPermission(user, PERMISSIONS.SEND_KUDOS),
       SEND_KUDOS: PERMISSIONS.SEND_KUDOS,
@@ -97,7 +99,7 @@ export default function SendKudosButton({
       );
 
       // Debug logging
-      console.log('SendKudosButton mutation data:', {
+      logger.log('SendKudosButton mutation data:', {
         recipientId,
         recipientName,
         contextType,
@@ -107,7 +109,7 @@ export default function SendKudosButton({
       });
 
       if (!recipientId || !recipientId.trim()) {
-        console.error('SendKudosButton: Empty recipientId detected', {
+        logger.error('SendKudosButton: Empty recipientId detected', {
           recipientId,
           recipientName,
           contextType,

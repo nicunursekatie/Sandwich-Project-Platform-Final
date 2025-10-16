@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -141,7 +143,7 @@ export default function BulkDataManager({
       });
     },
     onError: (error) => {
-      console.error('Data fix failed:', error);
+      logger.error('Data fix failed:', error);
       toast({
         title: 'Fix Failed',
         description: 'There was an error fixing data issues. Please try again.',

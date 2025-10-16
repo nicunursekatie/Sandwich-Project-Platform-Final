@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { logger } from '@/lib/logger';
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,7 +102,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
   const { data: groups = [], isLoading: groupsLoading, error: groupsError } = useQuery<GroupWithMembers[]>({
     queryKey: ["/api/conversations/groups"],
     queryFn: async () => {
-      console.log("🔍 Fetching groups from API...");
+      logger.log("🔍 Fetching groups from API...");
       const response = await fetch('/api/conversations?type=group', {
         credentials: 'include'
       });
@@ -110,7 +112,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
       }
       
       const data = await response.json();
-      console.log("🔍 Raw API response:", data);
+      logger.log("🔍 Raw API response:", data);
       
       const mappedGroups = (data || []).map((conv: any) => ({
         id: conv.id,
@@ -122,7 +124,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
         createdAt: conv.createdAt,
         createdBy: conv.createdBy || "system"
       }));
-      console.log("🔍 Mapped groups:", mappedGroups);
+      logger.log("🔍 Mapped groups:", mappedGroups);
       return mappedGroups;
     },
     refetchOnMount: true,
@@ -227,7 +229,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
           message: `🎉 You've successfully created the "${newGroup.name}" group. Start collaborating with your team members!`,
           data: { groupId: newGroup.id, action: "group_created" }
         }),
-      }).catch(err => console.log("Notification failed:", err));
+      }).catch(err => logger.log("Notification failed:", err));
       
       // Also send a welcome message to the group
       fetch("/api/messages", {
@@ -238,7 +240,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
           committee: `group_${newGroup.id}`,
           sender: "System"
         }),
-      }).catch(err => console.log("Welcome message failed:", err));
+      }).catch(err => logger.log("Welcome message failed:", err));
     },
   });
 

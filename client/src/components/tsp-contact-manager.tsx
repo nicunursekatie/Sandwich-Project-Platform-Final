@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Plus, Edit2, Trash2, User, ExternalLink, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,7 +86,7 @@ export default function TSPContactManager({
   }, [recipientId, refetch]);
 
   // Debug logging
-  console.log('TSP Contact Manager Debug:', {
+  logger.log('TSP Contact Manager Debug:', {
     recipientId,
     recipientName,
     tspContactsLength: tspContacts.length,

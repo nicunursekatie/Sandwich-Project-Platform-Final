@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -1179,7 +1181,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     user?.role === 'admin';
 
   // Debug: log permission check
-  console.log('CompletedCard org details edit permission:', {
+  logger.log('CompletedCard org details edit permission:', {
     userId: user?.id,
     userRole: user?.role,
     hasPermission: user?.permissions?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS'),

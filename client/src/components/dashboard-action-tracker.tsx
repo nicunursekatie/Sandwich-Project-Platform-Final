@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -106,7 +108,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
   };
 
   const handleNavigation = (linkPath: string) => {
-    console.log('🔗 Action Tracker handleNavigation called with:', linkPath);
+    logger.log('🔗 Action Tracker handleNavigation called with:', linkPath);
     
     // Honor full linkPath for deep-linking to detail views
     // Extract the path and query parameters
@@ -115,13 +117,13 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       const queryString = linkPath.substring('/dashboard?'.length);
       const urlParams = new URLSearchParams(queryString);
       
-      console.log('📋 Parsed query string:', queryString);
-      console.log('🔍 URL params:', Object.fromEntries(urlParams.entries()));
+      logger.log('📋 Parsed query string:', queryString);
+      logger.log('🔍 URL params:', Object.fromEntries(urlParams.entries()));
       
       // Check if this is a project detail view
       if (urlParams.get('section') === 'projects' && urlParams.get('view') === 'detail' && urlParams.get('id')) {
         const projectId = urlParams.get('id');
-        console.log('🎯 Navigating to project detail:', projectId);
+        logger.log('🎯 Navigating to project detail:', projectId);
         // Navigate to project detail using the project-{id} format
         onNavigate(`project-${projectId}`);
         return;
@@ -130,7 +132,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       // Check if this is an event detail view
       if (urlParams.get('section') === 'event-requests' && urlParams.get('eventId')) {
         const eventId = urlParams.get('eventId');
-        console.log('🎯 Navigating to event detail:', eventId);
+        logger.log('🎯 Navigating to event detail:', eventId);
         // Navigate to event requests with the specific event
         onNavigate(`event-requests?eventId=${eventId}`);
         return;
@@ -139,19 +141,19 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       // If we have other specific item parameters, navigate with full context
       if (urlParams.get('id') || urlParams.get('eventId') || urlParams.get('view') || urlParams.get('tab')) {
         // Pass the full query string to enable deep-linking
-        console.log('🎯 Navigating with full query string:', queryString);
+        logger.log('🎯 Navigating with full query string:', queryString);
         onNavigate(queryString);
       } else {
         // Fallback to just section if no specific parameters
         const section = urlParams.get('section') || 'dashboard';
-        console.log('🎯 Navigating to section:', section);
+        logger.log('🎯 Navigating to section:', section);
         onNavigate(section);
       }
     } else {
       // For non-dashboard paths, extract section as before
       const urlParams = new URLSearchParams(linkPath.split('?')[1] || '');
       const section = urlParams.get('section') || 'dashboard';
-      console.log('🎯 Navigating to non-dashboard section:', section);
+      logger.log('🎯 Navigating to non-dashboard section:', section);
       onNavigate(section);
     }
   };

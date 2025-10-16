@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import {
   Card,
   CardContent,
@@ -116,7 +118,7 @@ export default function ProjectCongratulations({
       setIsOpen(false);
       refetch();
     } catch (error) {
-      console.error('Error sending congratulations:', error);
+      logger.error('Error sending congratulations:', error);
       toast({
         title: 'Error sending congratulations',
         description: 'Please try again',

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import {
   Send,
   Crown,
@@ -109,18 +111,18 @@ export default function CoreTeamChat() {
   } = useQuery<ChatMessage[]>({
     queryKey: ['/api/team-chat/core-team/messages'],
     queryFn: async () => {
-      console.log('[DEBUG] Core Team Chat: Fetching from team chat API...');
+      logger.log('[DEBUG] Core Team Chat: Fetching from team chat API...');
       const data = await apiRequest('GET', '/api/team-chat/core-team/messages');
-      console.log('Core Team messages response:', data);
+      logger.log('Core Team messages response:', data);
       return Array.isArray(data) ? data : [];
     },
     enabled: !!user && hasCoreTeamAccess,
     refetchInterval: 3000,
   });
 
-  console.log('[DEBUG] Core Team Chat: Messages loading:', messagesLoading);
-  console.log('[DEBUG] Core Team Chat: Messages error:', messagesError);
-  console.log('[DEBUG] Core Team Chat: Messages count:', messages.length);
+  logger.log('[DEBUG] Core Team Chat: Messages loading:', messagesLoading);
+  logger.log('[DEBUG] Core Team Chat: Messages error:', messagesError);
+  logger.log('[DEBUG] Core Team Chat: Messages count:', messages.length);
   const [optimisticMessages, setOptimisticMessages] = useState<
     ChatMessage[] | null
   >(null);
@@ -131,11 +133,11 @@ export default function CoreTeamChat() {
     (msg) => msg && msg.content && msg.content.trim() !== ''
   );
 
-  console.log('🔧 DEBUG Filtering:');
-  console.log('Raw messages count:', rawMessages?.length);
-  console.log('Displayed messages count:', displayedMessages?.length);
-  console.log('Sample raw message:', rawMessages?.[0]);
-  console.log('Sample displayed message:', displayedMessages?.[0]);
+  logger.log('🔧 DEBUG Filtering:');
+  logger.log('Raw messages count:', rawMessages?.length);
+  logger.log('Displayed messages count:', displayedMessages?.length);
+  logger.log('Sample raw message:', rawMessages?.[0]);
+  logger.log('Sample displayed message:', displayedMessages?.[0]);
 
   // Auto-mark messages as read when viewing this chat
   useAutoMarkAsRead('core-team', messages as any[], hasCoreTeamAccess);
@@ -153,7 +155,7 @@ export default function CoreTeamChat() {
   // Send message mutation - uses team chat system
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      console.log('[DEBUG] Core Team Chat: Sending message via team chat API');
+      logger.log('[DEBUG] Core Team Chat: Sending message via team chat API');
       return await apiRequest('POST', '/api/team-chat/core-team/messages', {
         content,
       });
@@ -214,7 +216,7 @@ export default function CoreTeamChat() {
   useEffect(() => {
     setOptimisticMessages(null);
     // Reset optimistic messages when component mounts
-    console.log('🔥 INVALIDATING Core Team messages cache');
+    logger.log('🔥 INVALIDATING Core Team messages cache');
     queryClient.invalidateQueries({
       queryKey: ['/api/team-chat/core-team/messages'],
     });

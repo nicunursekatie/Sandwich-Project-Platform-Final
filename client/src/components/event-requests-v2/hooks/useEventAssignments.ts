@@ -1,5 +1,7 @@
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/lib/logger';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventMutations } from './useEventMutations';
 import { useEventQueries } from './useEventQueries';
@@ -70,7 +72,7 @@ export const useEventAssignments = () => {
           return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.displayName || user.email || 'Unknown User';
         }
         // If user not found in users array, return a more readable format
-        console.warn(`TSP Contact user not found: ${userIdOrName}`);
+        logger.warn(`TSP Contact user not found: ${userIdOrName}`);
         return `User (${userIdOrName.slice(-8)})`;
       }
 
@@ -96,7 +98,7 @@ export const useEventAssignments = () => {
         }
         
         // If not found, return a readable fallback
-        console.warn(`Host contact not found: ${userIdOrName}`);
+        logger.warn(`Host contact not found: ${userIdOrName}`);
         return `Contact #${contactId}`;
       }
 
@@ -110,7 +112,7 @@ export const useEventAssignments = () => {
           return `${volunteer.firstName || ''} ${volunteer.lastName || ''}`.trim() || volunteer.name || `Volunteer #${volunteerId}`;
         }
         
-        console.warn(`Volunteer not found: ${userIdOrName}`);
+        logger.warn(`Volunteer not found: ${userIdOrName}`);
         return `Volunteer #${volunteerId}`;
       }
 
@@ -121,25 +123,25 @@ export const useEventAssignments = () => {
         // First try drivers - ensure driver object exists and has required fields
         const driver = drivers.find((d) => d && (d.id === numericId || d.id?.toString() === userIdOrName));
         if (driver && driver.name) {
-          console.log(`Resolved driver: ID=${userIdOrName} => Name=${driver.name}`);
+          logger.log(`Resolved driver: ID=${userIdOrName} => Name=${driver.name}`);
           return driver.name;
         }
         
         // Then try volunteers (speakers are volunteers) - ensure volunteer object exists
         const volunteer = volunteers.find((v) => v && (v.id === numericId || v.id?.toString() === userIdOrName));
         if (volunteer && volunteer.name) {
-          console.log(`Resolved volunteer/speaker: ID=${userIdOrName} => Name=${volunteer.name}`);
+          logger.log(`Resolved volunteer/speaker: ID=${userIdOrName} => Name=${volunteer.name}`);
           return volunteer.name;
         }
         
         // If not found, return a generic placeholder
-        console.warn(`Person not found in resolveUserName: ID=${userIdOrName}`);
+        logger.warn(`Person not found in resolveUserName: ID=${userIdOrName}`);
         return `Person #${userIdOrName}`;
       }
 
       return userIdOrName;
     } catch (error) {
-      console.error('Error in resolveUserName:', error, 'Input:', userIdOrName);
+      logger.error('Error in resolveUserName:', error, 'Input:', userIdOrName);
       return `Error: ${userIdOrName}`;
     }
   };
@@ -240,7 +242,7 @@ export const useEventAssignments = () => {
         description: `Person has been removed from ${type} assignments`,
       });
     } catch (error) {
-      console.error('Failed to remove assignment:', error);
+      logger.error('Failed to remove assignment:', error);
       toast({
         title: 'Removal failed',
         description: 'Failed to remove assignment. Please try again.',
@@ -398,7 +400,7 @@ export const useEventAssignments = () => {
         description: `You have been signed up as a ${type} for this event`,
       });
     } catch (error) {
-      console.error('Failed to self-signup:', error);
+      logger.error('Failed to self-signup:', error);
       toast({
         title: 'Signup failed',
         description: 'Failed to sign up. Please try again.',

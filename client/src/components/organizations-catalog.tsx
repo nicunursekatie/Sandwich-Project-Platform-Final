@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { useLocation } from 'wouter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -120,11 +122,11 @@ export default function GroupCatalog({
   } = useQuery({
     queryKey: ['/api/groups-catalog'],
     queryFn: async () => {
-      console.log('🔄 Groups catalog fetching data from API...');
+      logger.log('🔄 Groups catalog fetching data from API...');
       const response = await fetch('/api/groups-catalog');
       if (!response.ok) throw new Error('Failed to fetch groups');
       const data = await response.json();
-      console.log('✅ Groups catalog received data:', data);
+      logger.log('✅ Groups catalog received data:', data);
       return data;
     },
     staleTime: 0, // Always consider data stale so it refetches when invalidated
@@ -146,7 +148,7 @@ export default function GroupCatalog({
       const details = await response.json();
       setEventDetails(details);
     } catch (error) {
-      console.error('Error fetching event details:', error);
+      logger.error('Error fetching event details:', error);
       setEventDetails(null);
     } finally {
       setLoadingEventDetails(false);
@@ -167,7 +169,7 @@ export default function GroupCatalog({
       setOrganizationDetails(details);
       setShowEventDetailsDialog(true);
     } catch (error) {
-      console.error('Error fetching organization details:', error);
+      logger.error('Error fetching organization details:', error);
       setOrganizationDetails(null);
     } finally {
       setLoadingOrganizationDetails(false);
@@ -425,7 +427,7 @@ export default function GroupCatalog({
   const totalActivePages = Math.ceil(totalActiveItems / itemsPerPage);
   
   // Debug logging
-  console.log('🔍 Pagination Debug:', {
+  logger.log('🔍 Pagination Debug:', {
     totalActiveItems,
     totalActivePages,
     itemsPerPage,

@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import {
+import { logger } from '@/lib/logger';
   Card,
   CardContent,
   CardDescription,
@@ -245,7 +247,7 @@ export function DevelopmentDocuments() {
           'The inventory calculator link has been copied to your clipboard.',
       });
     } catch (error) {
-      console.error('Failed to copy link:', error);
+      logger.error('Failed to copy link:', error);
       toast({
         title: 'Error',
         description: 'Failed to copy link to clipboard.',

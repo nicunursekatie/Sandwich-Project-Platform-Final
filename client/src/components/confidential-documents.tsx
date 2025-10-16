@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import {
   Card,
   CardContent,
@@ -101,7 +103,7 @@ export function ConfidentialDocuments() {
       setAllowedEmails('');
     },
     onError: (error) => {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast({
         title: 'Upload Failed',
         description:
@@ -127,7 +129,7 @@ export function ConfidentialDocuments() {
       });
     },
     onError: (error) => {
-      console.error('Delete error:', error);
+      logger.error('Delete error:', error);
       toast({
         title: 'Delete Failed',
         description:
@@ -250,7 +252,7 @@ export function ConfidentialDocuments() {
         description: `${doc.originalName} has been downloaded successfully.`,
       });
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       toast({
         title: 'Download Failed',
         description:

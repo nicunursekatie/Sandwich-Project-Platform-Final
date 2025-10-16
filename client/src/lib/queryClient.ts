@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -35,9 +36,9 @@ export async function apiRequest(
   body?: any,
   timeoutMs: number = 30000 // 30 second default timeout
 ): Promise<any> {
-  console.log(`🔵 [apiRequest] ${method} ${url}`);
+  logger.log(`🔵 [apiRequest] ${method} ${url}`);
   if (body) {
-    console.log('📦 [apiRequest] Body:', JSON.stringify(body).substring(0, 200));
+    logger.log('📦 [apiRequest] Body:', JSON.stringify(body).substring(0, 200));
   }
   
   const isFormData = body instanceof FormData;
@@ -47,7 +48,7 @@ export async function apiRequest(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    console.log('🚀 [apiRequest] Sending fetch request...');
+    logger.log('🚀 [apiRequest] Sending fetch request...');
     const res = await fetch(url, {
       method,
       headers: isFormData
@@ -60,7 +61,7 @@ export async function apiRequest(
       signal: controller.signal,
     });
 
-    console.log(`✅ [apiRequest] Response received: ${res.status} ${res.statusText}`);
+    logger.log(`✅ [apiRequest] Response received: ${res.status} ${res.statusText}`);
     
     // Clear the timeout since the request completed
     clearTimeout(timeoutId);
@@ -72,21 +73,21 @@ export async function apiRequest(
     if (contentType && contentType.includes('application/json')) {
       try {
         const jsonData = await res.json();
-        console.log(`📥 [apiRequest] JSON response:`, jsonData);
+        logger.log(`📥 [apiRequest] JSON response:`, jsonData);
         // Ensure we return a valid object, not null/undefined
         return jsonData ?? {};
       } catch (parseError) {
-        console.warn('Failed to parse JSON response:', parseError);
+        logger.warn('Failed to parse JSON response:', parseError);
         return {};
       }
     }
 
-    console.log('📭 [apiRequest] No JSON content, returning empty object');
+    logger.log('📭 [apiRequest] No JSON content, returning empty object');
     // For empty responses (like 204), return empty object instead of null
     // This prevents "null is not an object" errors when accessing properties
     return {};
   } catch (error: any) {
-    console.error(`❌ [apiRequest] Error:`, error);
+    logger.error(`❌ [apiRequest] Error:`, error);
     // Clear timeout on error
     clearTimeout(timeoutId);
     
@@ -120,7 +121,7 @@ export const getQueryFn: <T>(options: {
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
       const preview = await res.text().catch(() => '');
-      console.warn('DATA_LOADING_ERROR: Non-JSON API response', { 
+      logger.warn('DATA_LOADING_ERROR: Non-JSON API response', { 
         url: res.url, 
         status: res.status, 
         contentType, 
@@ -136,7 +137,7 @@ export const getQueryFn: <T>(options: {
     } catch (parseError) {
       // Get a preview of the actual response to debug HTML vs JSON issues
       const preview = await res.clone().text().catch(() => '');
-      console.warn('DEBUGGING: Failed to parse JSON response', { 
+      logger.warn('DEBUGGING: Failed to parse JSON response', { 
         url: res.url, 
         status: res.status, 
         contentType: res.headers.get('content-type'),

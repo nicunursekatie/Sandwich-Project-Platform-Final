@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/lib/logger';
 
 export interface UserContext {
   role: string;
@@ -38,7 +40,7 @@ export function useSmartGuide(): UseSmartGuideReturn {
       try {
         setRecentActivity(JSON.parse(savedActivity));
       } catch (error) {
-        console.error('Failed to parse activity log:', error);
+        logger.error('Failed to parse activity log:', error);
       }
     }
 

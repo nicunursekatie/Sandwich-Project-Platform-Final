@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -136,7 +138,7 @@ export default function DriversManagement() {
       toast({ title: 'Driver added successfully' });
     },
     onError: (error) => {
-      console.error('Driver addition error:', error);
+      logger.error('Driver addition error:', error);
       toast({ title: 'Error adding driver', variant: 'destructive' });
     },
   });
@@ -158,7 +160,7 @@ export default function DriversManagement() {
       toast({ title: 'Driver updated successfully' });
     },
     onError: (error) => {
-      console.error('Driver update error:', error);
+      logger.error('Driver update error:', error);
       toast({ title: 'Error updating driver', variant: 'destructive' });
     },
   });
@@ -171,7 +173,7 @@ export default function DriversManagement() {
       toast({ title: 'Driver deleted successfully' });
     },
     onError: (error) => {
-      console.error('Driver delete error:', error);
+      logger.error('Driver delete error:', error);
       toast({ title: 'Error deleting driver', variant: 'destructive' });
     },
   });

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -94,7 +96,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
         description: 'Sandwich destination has been updated successfully.',
       });
     } catch (error) {
-      console.error('Error updating destination:', error);
+      logger.error('Error updating destination:', error);
       toast({
         title: 'Update Failed',
         description: 'Failed to update sandwich destination.',

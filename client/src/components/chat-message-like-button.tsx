@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Heart } from 'lucide-react';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -35,7 +37,7 @@ export function ChatMessageLikeButton({
   const numericMessageId = Number(messageId);
 
   // Debug logging
-  console.log('ChatMessageLikeButton rendered:', {
+  logger.log('ChatMessageLikeButton rendered:', {
     messageId,
     numericMessageId,
     user: user?.id,
@@ -81,7 +83,7 @@ export function ChatMessageLikeButton({
       });
     },
     onError: (error) => {
-      console.error('Error toggling chat message like:', error);
+      logger.error('Error toggling chat message like:', error);
     },
   });
 

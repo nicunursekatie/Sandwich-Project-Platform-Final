@@ -1,5 +1,7 @@
 import React from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { getTodayString } from '@/lib/date-utils';
@@ -121,7 +123,7 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
           description: 'New project has been created and synced to Google Sheets',
         });
       } catch (syncError) {
-        console.warn('Project created but sync to Google Sheets failed:', syncError);
+        logger.warn('Project created but sync to Google Sheets failed:', syncError);
         toast({
           title: 'Project Created',
           description: 'New project has been created. Note: Sync to Google Sheets failed - you can sync manually later.',
@@ -336,7 +338,7 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
       });
     },
     onError: (error: any) => {
-      console.error('Failed to create meeting notes:', error);
+      logger.error('Failed to create meeting notes:', error);
       toast({
         title: 'Error Saving Notes',
         description: error?.message || 'Failed to save meeting notes',
@@ -448,7 +450,7 @@ export function useProjects(projectAgendaStatus?: Record<number, 'none' | 'agend
       });
     },
     onError: (error: any) => {
-      console.error('Failed to reset agenda planning:', error);
+      logger.error('Failed to reset agenda planning:', error);
       toast({
         title: 'Reset Failed',
         description: error?.message || 'Failed to complete agenda planning reset',

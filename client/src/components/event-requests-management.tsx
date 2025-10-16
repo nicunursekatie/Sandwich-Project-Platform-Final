@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -1085,7 +1087,7 @@ export default function EventRequestsManagement({
         description: `Person has been removed from ${type} assignments`,
       });
     } catch (error) {
-      console.error('Failed to remove assignment:', error);
+      logger.error('Failed to remove assignment:', error);
       toast({
         title: 'Removal failed',
         description: 'Failed to remove assignment. Please try again.',
@@ -1389,7 +1391,7 @@ export default function EventRequestsManagement({
         description: `${personName} has been assigned as ${assignmentType}`,
       });
     } catch (error) {
-      console.error('Failed to assign person:', error);
+      logger.error('Failed to assign person:', error);
       toast({
         title: 'Assignment failed',
         description: 'Failed to assign person. Please try again.',
@@ -1438,7 +1440,7 @@ export default function EventRequestsManagement({
       });
 
     } catch (error) {
-      console.error('Assignment error:', error);
+      logger.error('Assignment error:', error);
       toast({
         title: 'Assignment failed',
         description: 'Failed to assign people. Please try again.',
@@ -1612,7 +1614,7 @@ export default function EventRequestsManagement({
         description: `You have been signed up as a ${type} for this event`,
       });
     } catch (error) {
-      console.error('Failed to self-signup:', error);
+      logger.error('Failed to self-signup:', error);
       toast({
         title: 'Signup failed',
         description: 'Failed to sign up. Please try again.',
@@ -1873,7 +1875,7 @@ export default function EventRequestsManagement({
       setIsEditing(false);
     },
     onError: (error: any) => {
-      console.error('Update event request error:', error);
+      logger.error('Update event request error:', error);
       toast({
         title: 'Update Failed',
         description:
@@ -1910,7 +1912,7 @@ export default function EventRequestsManagement({
       setIsEditing(false);
     },
     onError: (error: any) => {
-      console.error('Create event request error:', error);
+      logger.error('Create event request error:', error);
       toast({
         title: 'Creation Failed',
         description:
@@ -1946,7 +1948,7 @@ export default function EventRequestsManagement({
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after toolkit sent:', error);
+          logger.error('Failed to fetch updated event data after toolkit sent:', error);
         }
       }
       
@@ -1986,7 +1988,7 @@ export default function EventRequestsManagement({
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after call scheduled:', error);
+          logger.error('Failed to fetch updated event data after call scheduled:', error);
         }
       }
       
@@ -2027,7 +2029,7 @@ export default function EventRequestsManagement({
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after field update:', error);
+          logger.error('Failed to fetch updated event data after field update:', error);
         }
       }
       
@@ -2065,7 +2067,7 @@ export default function EventRequestsManagement({
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after 1-day follow-up:', error);
+          logger.error('Failed to fetch updated event data after 1-day follow-up:', error);
         }
       }
       
@@ -2101,7 +2103,7 @@ export default function EventRequestsManagement({
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after 1-month follow-up:', error);
+          logger.error('Failed to fetch updated event data after 1-month follow-up:', error);
         }
       }
       
@@ -2221,14 +2223,14 @@ export default function EventRequestsManagement({
           if (request.driverDetails) {
             const detailsStr = JSON.stringify(request.driverDetails).toLowerCase();
             if (detailsStr.includes(searchLower)) {
-              console.log(`Found match for "${searchQuery}" in driver details JSON`);
+              logger.log(`Found match for "${searchQuery}" in driver details JSON`);
               return true;
             }
           }
           
           return false;
         } catch (error) {
-          console.error('Error in driverDetailsMatch:', error);
+          logger.error('Error in driverDetailsMatch:', error);
           return false;
         }
       };
@@ -2307,7 +2309,7 @@ export default function EventRequestsManagement({
           
           return false;
         } catch (error) {
-          console.error('Error in volunteerDetailsMatch:', error);
+          logger.error('Error in volunteerDetailsMatch:', error);
           return false;
         }
       };

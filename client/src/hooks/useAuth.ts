@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { getQueryFn } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 import type { User } from '@shared/schema';
 
 export function useAuth() {
@@ -29,7 +31,7 @@ export function useAuth() {
     // Only log mobile authentication issues if there's an actual error AND not loading
     // This prevents false positives during normal loading states
     if (isMobile && error && !isLoading) {
-      console.log('[useAuth] Mobile authentication issue detected:', {
+      logger.log('[useAuth] Mobile authentication issue detected:', {
         error: error?.message,
         user: !!user,
         isLoading,
@@ -40,7 +42,7 @@ export function useAuth() {
 
     // Handle server restart - if we get auth error, try to login via temporary auth
     if (error && error.message?.includes('401') && !user && !isLoading) {
-      console.log(
+      logger.log(
         '[useAuth] Authentication expired, attempting to restore session'
       );
       // Don't redirect immediately - let the user handle authentication manually

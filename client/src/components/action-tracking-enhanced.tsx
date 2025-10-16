@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -176,7 +178,7 @@ const ActionTracking = () => {
       refetchEvents();
     },
     onError: (error) => {
-      console.error('Error marking follow-up complete:', error);
+      logger.error('Error marking follow-up complete:', error);
       toast({
         title: 'Error',
         description: 'Failed to mark follow-up as complete. Please try again.',

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import {
+import { logger } from '@/lib/logger';
   Dialog,
   DialogContent,
   DialogDescription,
@@ -46,7 +48,7 @@ export const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
       await onReschedule(request.id, selectedDate);
       onClose();
     } catch (error) {
-      console.error('Failed to reschedule event:', error);
+      logger.error('Failed to reschedule event:', error);
     } finally {
       setIsSubmitting(false);
     }

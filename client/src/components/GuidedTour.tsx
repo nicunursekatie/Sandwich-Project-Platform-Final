@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { logger } from '@/lib/logger';
 import {
+import { logger } from '@/lib/logger';
   HelpCircle,
   X,
   ChevronRight,
@@ -61,7 +63,7 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
       try {
         setCompletedTours(JSON.parse(stored));
       } catch (e) {
-        console.error('Failed to load completed tours:', e);
+        logger.error('Failed to load completed tours:', e);
       }
     }
   }, []);

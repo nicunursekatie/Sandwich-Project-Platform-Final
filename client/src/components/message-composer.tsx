@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,7 +44,7 @@ export function MessageComposer({
         const response = await apiRequest('GET', '/api/users');
         return Array.isArray(response) ? response : [];
       } catch (error) {
-        console.error('Error fetching users:', error);
+        logger.error('Error fetching users:', error);
         return [];
       }
     },
@@ -68,7 +70,7 @@ export function MessageComposer({
       return;
     }
 
-    console.log('Sending message:', {
+    logger.log('Sending message:', {
       recipientIds: selectedRecipients,
       content: content.trim(),
       contextType,
@@ -93,7 +95,7 @@ export function MessageComposer({
       });
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] }); // Refresh messages
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
       toast({
         title: 'Failed to send message',
         description:

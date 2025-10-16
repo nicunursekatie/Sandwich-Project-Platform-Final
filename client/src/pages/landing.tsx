@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/logger';
 import {
+import { logger } from '@/lib/logger';
   Card,
   CardContent,
   CardDescription,
@@ -102,7 +104,7 @@ export default function Landing() {
               variant="outline"
               size="lg"
               onClick={() => {
-                console.log(
+                logger.log(
                   'Toolkit button clicked, current state:',
                   showToolkit
                 );

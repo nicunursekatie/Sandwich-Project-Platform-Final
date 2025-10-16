@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient as baseQueryClient, apiRequest } from '@/lib/queryClient';
 import {
@@ -250,7 +252,7 @@ export default function EnhancedMeetingDashboard() {
         const sortedPlanning = planningMeetings.sort((a, b) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
-        console.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
+        logger.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
         setSelectedMeeting(sortedPlanning[0]);
         return;
       }
@@ -259,7 +261,7 @@ export default function EnhancedMeetingDashboard() {
       const sortedMeetings = safeMeetings.sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      console.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
+      logger.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
       setSelectedMeeting(sortedMeetings[0]);
     }
   }, [safeMeetings, selectedMeeting]);
@@ -336,7 +338,7 @@ export default function EnhancedMeetingDashboard() {
   const handleSendToAgenda = useCallback(
     (projectId: number) => {
       // Debug logging for Christine's issue
-      console.log('🔍 Send to Agenda Debug Info:', {
+      logger.log('🔍 Send to Agenda Debug Info:', {
         user: user?.email,
         role: user?.role,
         permissions: Array.isArray(user?.permissions) ? user.permissions.length : 0,
@@ -410,11 +412,11 @@ export default function EnhancedMeetingDashboard() {
 
       await generateAgendaPDF(projectAgendaStatus);
     } catch (error) {
-      console.error('=== PDF GENERATION CLIENT ERROR ===');
-      console.error('Error details:', error);
-      console.error('User permissions:', user?.permissions);
-      console.error('User email:', user?.email);
-      console.error('====================================');
+      logger.error('=== PDF GENERATION CLIENT ERROR ===');
+      logger.error('Error details:', error);
+      logger.error('User permissions:', user?.permissions);
+      logger.error('User email:', user?.email);
+      logger.error('====================================');
 
       let errorMessage = 'Failed to generate agenda PDF';
       const errorObj = error as { message?: string } | undefined;

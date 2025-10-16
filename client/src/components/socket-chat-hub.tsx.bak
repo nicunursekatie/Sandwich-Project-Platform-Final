@@ -1,0 +1,678 @@
+import { useState, useEffect, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSocketChat, ChatMessage, ChatRoom } from '@/hooks/useSocketChat';
+import { useAuth } from '@/hooks/useAuth';
+import { ChatMessageLikeButton } from './chat-message-like-button';
+import { MentionInput, MessageWithMentions } from '@/components/mention-input';
+import {
+  MessageSquare,
+  Send,
+  Users,
+  Building2,
+  Truck,
+  Heart,
+  Shield,
+  Hash,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+  Menu,
+  Grid3X3,
+} from 'lucide-react';
+
+const getRoomIcon = (roomId: string) => {
+  switch (roomId) {
+    case 'general':
+      return <Hash className="h-4 w-4" />;
+    case 'core-team':
+      return <Shield className="h-4 w-4" />;
+    case 'grants-committee':
+      return <Users className="h-4 w-4" />;
+    case 'events-committee':
+      return <Users className="h-4 w-4" />;
+    case 'board-chat':
+      return <Users className="h-4 w-4" />;
+    case 'web-committee':
+      return <Users className="h-4 w-4" />;
+    case 'volunteer-management':
+      return <Users className="h-4 w-4" />;
+    case 'host':
+      return <Heart className="h-4 w-4" />;
+    case 'driver':
+      return <Truck className="h-4 w-4" />;
+    case 'recipient':
+      return <MessageSquare className="h-4 w-4" />;
+    default:
+      return <Hash className="h-4 w-4" />;
+  }
+};
+
+const getRoomColor = (roomId: string) => {
+  switch (roomId) {
+    case 'general':
+      return 'bg-brand-primary-light text-brand-primary-dark';
+    case 'core-team':
+      return 'bg-red-100 text-red-800';
+    case 'grants-committee':
+      return 'bg-purple-100 text-purple-800';
+    case 'events-committee':
+      return 'bg-purple-100 text-purple-800';
+    case 'board-chat':
+      return 'bg-purple-100 text-purple-800';
+    case 'web-committee':
+      return 'bg-purple-100 text-purple-800';
+    case 'volunteer-management':
+      return 'bg-purple-100 text-purple-800';
+    case 'host':
+      return 'bg-green-100 text-green-800';
+    case 'driver':
+      return 'bg-orange-100 text-orange-800';
+    case 'recipient':
+      return 'bg-pink-100 text-pink-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+// Helper function to get required permission for each room
+const getRoomPermission = (roomId: string): string | null => {
+  switch (roomId) {
+    case 'general':
+      return 'CHAT_GENERAL';
+    case 'core-team':
+      return 'CHAT_CORE_TEAM';
+    case 'grants-committee':
+      return 'CHAT_GRANTS_COMMITTEE';
+    case 'events-committee':
+      return 'CHAT_EVENTS_COMMITTEE';
+    case 'board-chat':
+      return 'CHAT_BOARD';
+    case 'web-committee':
+      return 'CHAT_WEB_COMMITTEE';
+    case 'volunteer-management':
+      return 'CHAT_VOLUNTEER_MANAGEMENT';
+    case 'host':
+      return 'CHAT_HOST';
+    case 'driver':
+      return 'CHAT_DRIVER';
+    case 'recipient':
+      return 'CHAT_RECIPIENT';
+    default:
+      return null;
+  }
+};
+
+export default function SocketChatHub() {
+  const { user } = useAuth();
+  const {
+    connected,
+    rooms,
+    messages,
+    activeUsers,
+    currentRoom,
+    sendMessage,
+    joinRoom,
+    setCurrentRoom,
+  } = useSocketChat();
+
+  const [newMessage, setNewMessage] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Track if user is near bottom of scroll area
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+
+  // Only auto-scroll if user is near bottom or it's a new message they sent
+  useEffect(() => {
+    if (!hasInitiallyLoaded) {
+      // Don't auto-scroll on initial load to prevent jumping to bottom
+      setHasInitiallyLoaded(true);
+      return;
+    }
+
+    // Only auto-scroll if user is near the bottom (actively reading)
+    if (isNearBottom) {
+      scrollToBottom();
+    }
+  }, [messages[currentRoom], hasInitiallyLoaded, isNearBottom]);
+
+  // Handle mobile detection and responsive behavior
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setShowSidebar(false); // Always show sidebar on desktop
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    if (currentRoom) {
+      joinRoom(currentRoom);
+    }
+  }, [currentRoom, joinRoom]);
+
+  const handleSendMessage = () => {
+    if (newMessage.trim() && currentRoom) {
+      sendMessage(currentRoom, newMessage.trim());
+      setNewMessage('');
+    }
+  };
+
+  const handleRoomSelect = (roomId: string) => {
+    setCurrentRoom(roomId);
+    if (isMobile) {
+      setShowSidebar(false); // Hide sidebar on mobile after selection
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const formatTime = (timestamp: Date) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60)
+    );
+
+    // Show "now" for very recent messages
+    if (diffInMinutes < 1) return 'now';
+
+    // Show relative time for very recent messages
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+    // Check if it's today
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) {
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    // Check if it's yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+    if (isYesterday) {
+      return `Yesterday ${date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`;
+    }
+
+    // Check if it's this week
+    const weekAgo = new Date(now);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    if (date > weekAgo) {
+      return `${date.toLocaleDateString([], {
+        weekday: 'short',
+      })} ${date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`;
+    }
+
+    // For older messages, show full date and time
+    return `${date.toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+    })} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  const getInitials = (name: string | undefined) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getRelativeTimeLabel = (timestamp: Date) => {
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    // Less than 1 minute
+    if (diffInMinutes < 1) return 'now';
+
+    // Less than 1 hour - show minutes
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+    // Less than 24 hours - show hours
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+
+    // Yesterday
+    if (diffInDays === 1) return 'Yesterday';
+
+    // Today (should not happen given the logic above, but safety check)
+    if (date.toDateString() === now.toDateString()) return 'Today';
+
+    // Less than a week - show day name
+    if (diffInDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'long' });
+    }
+
+    // More than a week - show date
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  // Group messages by relative time periods
+  const groupMessagesByTime = (messages: ChatMessage[]) => {
+    return messages.reduce(
+      (groups: { [key: string]: ChatMessage[] }, message) => {
+        const timeLabel = getRelativeTimeLabel(message.timestamp);
+        if (!groups[timeLabel]) {
+          groups[timeLabel] = [];
+        }
+        groups[timeLabel].push(message);
+        return groups;
+      },
+      {}
+    );
+  };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Please log in to access chat</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex bg-white relative ${
+        isMobile ? 'overflow-hidden h-[calc(100vh-200px)]' : 'h-full'
+      }`}
+    >
+      {/* Mobile Overlay */}
+      {isMobile && showSidebar && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-10"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
+
+      {/* Left Sidebar - Channels */}
+      <div
+        className={`
+        ${
+          isMobile
+            ? `fixed left-0 top-0 h-full w-80 z-20 transform transition-transform duration-300 ${
+                showSidebar ? 'translate-x-0' : '-translate-x-full'
+              }`
+            : 'w-72 relative h-full'
+        } bg-gray-50 border-r border-gray-200 flex flex-col
+      `}
+      >
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-1">
+                Channels
+              </h2>
+              <p className="text-sm text-gray-600">Team communication</p>
+            </div>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSidebar(false)}
+                className="md:hidden"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+          {rooms
+            .filter((room) => {
+              const requiredPermission = getRoomPermission(room.id);
+              if (!requiredPermission) return true; // Allow access if no specific permission required
+              if (!user || !(user as any)?.permissions) return false;
+              const userPermissions = Array.isArray((user as any).permissions)
+                ? (user as any).permissions
+                : [];
+              return userPermissions.includes(requiredPermission);
+            })
+            .map((room) => (
+              <div
+                key={room.id}
+                className={`rounded border ${
+                  currentRoom === room.id
+                    ? 'bg-brand-primary border-brand-primary'
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                } transition-colors`}
+              >
+                <button
+                  className="w-full text-left p-3"
+                  onClick={() => handleRoomSelect(room.id)}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={
+                          currentRoom === room.id
+                            ? 'text-white'
+                            : 'text-brand-primary'
+                        }
+                      >
+                        {getRoomIcon(room.id)}
+                      </span>
+                      <span
+                        className={`font-medium text-sm ${
+                          currentRoom === room.id
+                            ? 'text-white'
+                            : 'text-gray-900'
+                        }`}
+                      >
+                        {room.name}
+                      </span>
+                    </div>
+                    {(messages[room.id] || []).length > 0 && (
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${
+                          currentRoom === room.id
+                            ? 'border-white/30 text-white/90'
+                            : 'border-gray-300 text-gray-500'
+                        }`}
+                      >
+                        {(messages[room.id] || []).length}
+                      </Badge>
+                    )}
+                  </div>
+                  <p
+                    className={`text-xs leading-tight ${
+                      currentRoom === room.id
+                        ? 'text-blue-100'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {(() => {
+                      const roomMessages = messages[room.id] || [];
+                      if (roomMessages.length === 0) {
+                        return 'No messages yet • Click to start the conversation';
+                      }
+                      const lastMessage = roomMessages[roomMessages.length - 1];
+                      const preview =
+                        lastMessage.content.length > 40
+                          ? lastMessage.content.substring(0, 40) + '...'
+                          : lastMessage.content;
+                      return `${lastMessage.userName}: ${preview}`;
+                    })()}
+                  </p>
+                </button>
+              </div>
+            ))}
+        </div>
+      </div>
+
+      {/* Main Chat Area - Fixed Layout */}
+      <div
+        className={`flex-1 flex flex-col ${isMobile ? 'h-full' : 'min-h-0'}`}
+      >
+        {currentRoom ? (
+          <>
+            {/* Chat Header - Always Fixed at Top */}
+            <div className="flex-shrink-0 px-4 md:px-6 py-4 bg-brand-primary text-white border-b border-brand-primary-dark">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSidebar(true)}
+                      className="text-white hover:bg-white/10 p-2 rounded-lg"
+                      title="Switch Channels"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  )}
+                  <span className="text-white">{getRoomIcon(currentRoom)}</span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-semibold truncate">
+                      {rooms.find((r) => r.id === currentRoom)?.name ||
+                        'Unknown Room'}
+                    </h3>
+                    <p className="text-blue-100 text-sm truncate hidden sm:block">
+                      {currentRoom === 'general' &&
+                        'Open discussion for all team members'}
+                      {currentRoom === 'core-team' && 'Core team coordination'}
+                      {currentRoom === 'grants-committee' &&
+                        'Grants and funding discussions'}
+                      {currentRoom === 'events-committee' &&
+                        'Event planning and coordination'}
+                      {currentRoom === 'board-chat' &&
+                        'Board member governance'}
+                      {currentRoom === 'web-committee' &&
+                        'Website and digital strategy'}
+                      {currentRoom === 'volunteer-management' &&
+                        'Volunteer coordination'}
+                      {currentRoom === 'host' && 'Host coordination'}
+                      {currentRoom === 'driver' && 'Driver coordination'}
+                      {currentRoom === 'recipient' && 'Recipient communication'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowSidebar(true)}
+                      className="text-white hover:bg-white/10 p-2 rounded-lg"
+                      title="Switch Channels"
+                    >
+                      <Grid3X3 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Badge className="bg-green-500 text-white border-green-400 hidden sm:block">
+                    {connected ? 'Connected' : 'Disconnected'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Messages - Scrollable Middle Section */}
+            <div
+              className={`flex-1 bg-white ${
+                isMobile ? 'overflow-hidden' : 'min-h-0'
+              }`}
+            >
+              <ScrollArea
+                className={`${
+                  isMobile ? 'h-full' : 'h-full'
+                } px-2 md:px-4 py-2 md:py-3`}
+                onScroll={(e) => {
+                  const target = e.target as HTMLDivElement;
+                  const { scrollTop, scrollHeight, clientHeight } = target;
+                  // Consider "near bottom" if within 100px of bottom
+                  setIsNearBottom(
+                    scrollHeight - scrollTop - clientHeight < 100
+                  );
+                }}
+              >
+                <div className={isMobile ? 'space-y-0' : 'space-y-1'}>
+                  {(() => {
+                    const currentMessages = messages[currentRoom] || [];
+                    const groupedMessages =
+                      groupMessagesByTime(currentMessages);
+
+                    return Object.entries(groupedMessages).map(
+                      ([timeLabel, timeMessages]) => (
+                        <div
+                          key={timeLabel}
+                          className={isMobile ? 'mb-3' : 'mb-6'}
+                        >
+                          {/* Time separator - iMessage style */}
+                          <div
+                            className={`flex items-center justify-end ${
+                              isMobile ? 'mb-2' : 'mb-4'
+                            }`}
+                          >
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 md:px-3 py-1 rounded-full">
+                              {timeLabel}
+                            </span>
+                          </div>
+
+                          {/* Messages for this time period */}
+                          {timeMessages.map((message: ChatMessage, index) => {
+                            console.log(
+                              'Rendering socket chat message:',
+                              message
+                            );
+
+                            // Generate consistent colors based on user name
+                            const getAvatarColor = (userName: string) => {
+                              const colors = [
+                                'bg-brand-primary',
+                                'bg-green-500',
+                                'bg-purple-500',
+                                'bg-orange-500',
+                                'bg-pink-500',
+                                'bg-indigo-500',
+                                'bg-red-500',
+                                'bg-teal-500',
+                              ];
+                              const hash = userName.split('').reduce((a, b) => {
+                                a = (a << 5) - a + b.charCodeAt(0);
+                                return a & a;
+                              }, 0);
+                              return colors[Math.abs(hash) % colors.length];
+                            };
+
+                            return (
+                              <div
+                                key={message.id}
+                                className={`flex gap-2 group ${
+                                  isMobile ? 'py-0.5 mb-1' : 'py-1'
+                                }`}
+                              >
+                                <Avatar className="h-6 w-6 md:h-7 md:w-7 flex-shrink-0">
+                                  <AvatarFallback
+                                    className={`text-xs font-medium text-white ${getAvatarColor(
+                                      message.userName
+                                    )}`}
+                                  >
+                                    {getInitials(message.userName)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-baseline gap-2 mb-0 flex-wrap">
+                                    <span className="font-medium text-gray-900 text-sm break-words">
+                                      {message.userName}
+                                    </span>
+                                    <span className="text-xs text-gray-500 flex-shrink-0">
+                                      {formatTime(message.timestamp)}
+                                    </span>
+                                  </div>
+                                  <p
+                                    className={`text-gray-800 text-sm break-words ${
+                                      isMobile
+                                        ? 'leading-snug'
+                                        : 'leading-tight'
+                                    }`}
+                                  >
+                                    <MessageWithMentions
+                                      content={message.content}
+                                    />
+                                  </p>
+                                </div>
+                                {/* Message actions - moved to right side */}
+                                <div className="flex items-start mt-0 ml-2 flex-shrink-0">
+                                  <ChatMessageLikeButton
+                                    messageId={message.id}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )
+                    );
+                  })()}
+                  {/* Auto-scroll anchor */}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Message Input - Always Fixed at Bottom */}
+            <div className="flex-shrink-0 px-2 md:px-4 py-2 md:py-3 bg-gray-50 border-t border-gray-200">
+              <MentionInput
+                value={newMessage}
+                onChange={setNewMessage}
+                onSend={handleSendMessage}
+                placeholder={`Message ${
+                  rooms.find((r) => r.id === currentRoom)?.name || 'General'
+                }...`}
+                disabled={!connected}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="text-center">
+              <Hash className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">
+                Select a room to start chatting
+              </p>
+              {isMobile && (
+                <Button
+                  onClick={() => setShowSidebar(true)}
+                  className="bg-brand-primary hover:bg-brand-primary-dark"
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Choose Channel
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Floating Action Button for Channel Switching - Mobile Only */}
+        {isMobile && currentRoom && (
+          <Button
+            onClick={() => setShowSidebar(true)}
+            className="fixed bottom-6 right-4 z-30 h-14 w-14 rounded-full bg-brand-primary hover:bg-brand-primary-dark shadow-lg"
+            size="icon"
+            title="Switch Channels"
+          >
+            <Menu className="h-6 w-6 text-white" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}

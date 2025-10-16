@@ -1,5 +1,7 @@
 import { useMemo, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, TrendingUp, Users, AlertTriangle, Info } from 'lucide-react';
@@ -108,7 +110,7 @@ export default function SandwichForecastWidget() {
 
         // Debug logging for event grouping
         if (eventDate.getDay() === 5) { // Friday
-          console.log('🔍 Friday Event Grouping:', {
+          logger.log('🔍 Friday Event Grouping:', {
             org: request.organizationName,
             eventDate: eventDate.toDateString(),
             eventDayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][eventDate.getDay()],
@@ -161,7 +163,7 @@ export default function SandwichForecastWidget() {
           weeklyData[weekKey].pendingCount += sandwichCount;
         }
       } catch (error) {
-        console.warn('Error processing event date:', request.desiredEventDate);
+        logger.warn('Error processing event date:', request.desiredEventDate);
       }
     });
 

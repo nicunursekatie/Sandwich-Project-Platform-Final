@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { logger } from '@/lib/logger';
 import { io, Socket } from 'socket.io-client';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,7 +55,7 @@ export default function SimpleChat({ channel, title, icon }: SimpleChatProps) {
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {
-      console.log('Connected to Socket.IO chat server');
+      logger.log('Connected to Socket.IO chat server');
       setIsConnected(true);
       // Send user info when joining a channel
       socketInstance.emit('join-channel', {
@@ -64,14 +66,14 @@ export default function SimpleChat({ channel, title, icon }: SimpleChatProps) {
     });
 
     socketInstance.on('disconnect', () => {
-      console.log('Disconnected from Socket.IO chat server');
+      logger.log('Disconnected from Socket.IO chat server');
       setIsConnected(false);
     });
 
     socketInstance.on(
       'joined-channel',
       ({ channel: joinedChannel, userName }) => {
-        console.log(`Joined channel: ${joinedChannel} as ${userName}`);
+        logger.log(`Joined channel: ${joinedChannel} as ${userName}`);
       }
     );
 
@@ -80,7 +82,7 @@ export default function SimpleChat({ channel, title, icon }: SimpleChatProps) {
     });
 
     socketInstance.on('message-history', (history: ChatMessage[]) => {
-      console.log(`Loaded ${history.length} messages from history`);
+      logger.log(`Loaded ${history.length} messages from history`);
       setMessages((prev) => {
         // Merge history with any existing messages, avoiding duplicates
         const existingIds = new Set(prev.map((m) => m.id));

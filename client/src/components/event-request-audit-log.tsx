@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { queryClient } from '@/lib/queryClient';
 import {
   Card,
@@ -627,7 +629,7 @@ export function EventRequestAuditLog({
         }
       }
     } catch (error) {
-      console.warn('Failed to parse structured audit metadata:', error);
+      logger.warn('Failed to parse structured audit metadata:', error);
     }
 
     // Fallback: If we have a changeDescription from the enhanced AuditLogger but no structured data
@@ -673,7 +675,7 @@ export function EventRequestAuditLog({
   };
 
   const handleRefresh = async () => {
-    console.log('🔄 Refresh button clicked');
+    logger.log('🔄 Refresh button clicked');
     trackClick(
       'Refresh Audit Log',
       'Audit',
@@ -681,12 +683,12 @@ export function EventRequestAuditLog({
       'Manual refresh of audit log data'
     );
     try {
-      console.log('📡 Triggering refetch...');
+      logger.log('📡 Triggering refetch...');
       // Use refetch directly from the query hook
       await refetch();
-      console.log('✅ Refetch complete');
+      logger.log('✅ Refetch complete');
     } catch (error) {
-      console.error('❌ Refetch error:', error);
+      logger.error('❌ Refetch error:', error);
     }
   };
 
@@ -947,7 +949,7 @@ export function EventRequestAuditLog({
                               followUpContext = newDataParsed?._auditActionContext || {};
                             }
                           } catch (error) {
-                            console.warn('Failed to parse audit action context:', error);
+                            logger.warn('Failed to parse audit action context:', error);
                           }
                           
                           const hasFollowUpData = log.statusChange || log.followUpMethod || followUpContext.followUpMethod;

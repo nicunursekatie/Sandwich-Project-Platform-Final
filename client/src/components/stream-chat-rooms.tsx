@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import {
+import { logger } from '@/lib/logger';
   Chat,
   Channel,
   ChannelList,
@@ -96,7 +98,7 @@ export default function StreamChatRooms() {
             const channel = chatClient.channel('team', room.id);
             await channel.watch();
           } catch (error) {
-            console.error(`Failed to join channel ${room.id}:`, error);
+            logger.error(`Failed to join channel ${room.id}:`, error);
           }
         }
 
@@ -108,7 +110,7 @@ export default function StreamChatRooms() {
         }
 
       } catch (error) {
-        console.error('Failed to initialize Stream Chat:', error);
+        logger.error('Failed to initialize Stream Chat:', error);
         toast({
           title: 'Chat Initialization Failed',
           description: 'Unable to connect to chat service. Please try refreshing.',
@@ -187,7 +189,7 @@ export default function StreamChatRooms() {
                       await channel.watch();
                       setActiveChannel(channel);
                     } catch (error) {
-                      console.error(`Failed to switch to channel ${room.id}:`, error);
+                      logger.error(`Failed to switch to channel ${room.id}:`, error);
                     }
                   }}
                 >

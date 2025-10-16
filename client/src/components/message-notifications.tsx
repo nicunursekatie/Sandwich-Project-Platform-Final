@@ -1,5 +1,7 @@
 import { useState, useEffect, memo } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Bell, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,7 +60,7 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
     if (!user) return;
 
     const handleRefreshNotifications = () => {
-      console.log('Refreshing notification counts after chat read');
+      logger.log('Refreshing notification counts after chat read');
       refetch();
     };
 
@@ -78,7 +80,7 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
       return;
     }
 
-    console.log('Setting up notification WebSocket for user:', user.id);
+    logger.log('Setting up notification WebSocket for user:', user.id);
 
     const { cleanup } = createWebSocketConnection(
       {
@@ -88,7 +90,7 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
       },
       {
         onOpen: (ws) => {
-          console.log('Notification WebSocket connected successfully');
+          logger.log('Notification WebSocket connected successfully');
           // Send identification message
           ws.send(
             JSON.stringify({
@@ -100,7 +102,7 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
         onMessage: (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log('WebSocket notification received:', data);
+            logger.log('WebSocket notification received:', data);
 
             // Refresh counts when notifications are received
             if (data.type === 'notification') {
@@ -108,14 +110,14 @@ function MessageNotifications({ user }: MessageNotificationsProps) {
               setLastCheck(Date.now());
             }
           } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
+            logger.error('Error parsing WebSocket message:', error);
           }
         },
         onError: (error) => {
-          console.error('Notification WebSocket error:', error);
+          logger.error('Notification WebSocket error:', error);
         },
         onClose: (event) => {
-          console.log(
+          logger.log(
             'Notification WebSocket connection closed:',
             event.code,
             event.reason

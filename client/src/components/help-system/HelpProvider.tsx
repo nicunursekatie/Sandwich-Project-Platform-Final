@@ -1,4 +1,5 @@
 import React, {
+import { logger } from '@/lib/logger';
   createContext,
   useContext,
   useState,
@@ -6,6 +7,7 @@ import React, {
   useEffect,
 } from 'react';
 import { HelpContent } from './HelpBubble';
+import { logger } from '@/lib/logger';
 
 interface HelpContextType {
   showHelp: (content: HelpContent) => void;
@@ -46,11 +48,11 @@ export function HelpProvider({ children }: HelpProviderProps) {
 
   const showHelp = useCallback((content: HelpContent) => {
     // This would be used for programmatic help display
-    console.log('Showing help:', content);
+    logger.log('Showing help:', content);
   }, []);
 
   const hideHelp = useCallback((id: string) => {
-    console.log('Hiding help:', id);
+    logger.log('Hiding help:', id);
   }, []);
 
   const toggleHelpMode = useCallback(() => {
@@ -219,7 +221,7 @@ export function HelpProvider({ children }: HelpProviderProps) {
             {
               label: 'Take a Quick Tour',
               action: () => {
-                console.log('Starting tour');
+                logger.log('Starting tour');
                 // Mark onboarding as complete when starting tour
                 localStorage.setItem('onboarding-complete', 'true');
                 localStorage.setItem('help-first-time-user-seen', 'true');
@@ -229,7 +231,7 @@ export function HelpProvider({ children }: HelpProviderProps) {
             {
               label: "I'll Explore on My Own",
               action: () => {
-                console.log('Self exploration');
+                logger.log('Self exploration');
                 // Mark onboarding as complete and help as seen when skipping
                 localStorage.setItem('onboarding-complete', 'true');
                 localStorage.setItem('help-first-time-user-seen', 'true');

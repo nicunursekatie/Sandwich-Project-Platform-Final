@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useMutation } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from './useAuth';
 
@@ -38,7 +40,7 @@ export function useMessageReads() {
       });
     },
     onError: (error) => {
-      console.error('Failed to mark messages as read:', error);
+      logger.error('Failed to mark messages as read:', error);
     },
   });
 

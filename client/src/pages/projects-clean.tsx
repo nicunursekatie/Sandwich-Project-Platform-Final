@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -341,9 +343,9 @@ export default function ProjectsClean() {
       key={project.id}
       className="hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-200 bg-white"
       onClick={() => {
-        console.log('🎯 Project card clicked:', project.id, project.title);
+        logger.log('🎯 Project card clicked:', project.id, project.title);
         setLocation(`/projects/${project.id}`);
-        console.log('🚀 setLocation called with:', `/projects/${project.id}`);
+        logger.log('🚀 setLocation called with:', `/projects/${project.id}`);
       }}
     >
       <CardContent className="p-4">

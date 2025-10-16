@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { logger } from '@/lib/logger';
 import {
+import { logger } from '@/lib/logger';
   Card,
   CardContent,
   CardDescription,
@@ -51,7 +53,7 @@ export function GoogleSheetsIntegration() {
         description: `Found ${response.analysis.totalRows} rows with ${response.analysis.headers.length} columns`,
       });
     } catch (error) {
-      console.error('Analysis failed:', error);
+      logger.error('Analysis failed:', error);
       toast({
         title: 'Analysis Failed',
         description:
@@ -91,7 +93,7 @@ export function GoogleSheetsIntegration() {
         });
       }
     } catch (error) {
-      console.error('Import failed:', error);
+      logger.error('Import failed:', error);
       toast({
         title: 'Import Failed',
         description: 'Unable to import data from Google Sheets',
@@ -118,7 +120,7 @@ export function GoogleSheetsIntegration() {
         description: `Exported ${response.result.exported} records to Google Sheets`,
       });
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       toast({
         title: 'Export Failed',
         description: 'Unable to export data to Google Sheets',

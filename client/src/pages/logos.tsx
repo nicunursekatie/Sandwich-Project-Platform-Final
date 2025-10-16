@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Eye, FileImage, Palette, ImageIcon } from 'lucide-react';
@@ -91,7 +93,7 @@ export default function LogosPage() {
       // Track the download
       trackDownload(displayName, 'logo');
     } catch (error) {
-      console.error('Download failed:', error);
+      logger.error('Download failed:', error);
       alert('Failed to download logo. Please try again.');
     }
   };

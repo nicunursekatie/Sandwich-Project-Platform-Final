@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -548,7 +550,7 @@ export default function SocketChatHub() {
 
                           {/* Messages for this time period */}
                           {timeMessages.map((message: ChatMessage, index) => {
-                            console.log(
+                            logger.log(
                               'Rendering socket chat message:',
                               message
                             );

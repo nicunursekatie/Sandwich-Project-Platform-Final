@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useMutation } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import {
   DynamicErrorManager,
   DynamicErrorMessage,
@@ -34,7 +36,7 @@ export function useErrorHandler() {
     },
     onError: (error) => {
       // Silent fail for error logging - don't create infinite loops
-      console.warn('Failed to log error to server:', error);
+      logger.warn('Failed to log error to server:', error);
     },
   });
 
@@ -85,9 +87,9 @@ export function useErrorHandler() {
       // Console log for development
       if (import.meta.env.DEV) {
         console.group('🚨 Dynamic Error Handler');
-        console.log('Error:', error);
-        console.log('Context:', enhancedContext);
-        console.log('Generated Message:', errorMessage);
+        logger.log('Error:', error);
+        logger.log('Context:', enhancedContext);
+        logger.log('Generated Message:', errorMessage);
         console.groupEnd();
       }
     },
@@ -272,7 +274,7 @@ export function useErrorHandler() {
           break;
 
         default:
-          console.warn('Unhandled custom error action:', action.target);
+          logger.warn('Unhandled custom error action:', action.target);
           break;
       }
     },

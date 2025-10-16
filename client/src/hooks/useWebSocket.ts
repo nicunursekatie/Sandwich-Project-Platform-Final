@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { logger } from '@/lib/logger';
 import { useAuth } from './useAuth';
+import { logger } from '@/lib/logger';
 
 export function useWebSocket() {
   const { user } = useAuth();
@@ -15,7 +17,7 @@ export function useWebSocket() {
   const sendMessage = (message: any) => {
     // Messages are sent via API, not WebSocket
     // WebSocket is only used for receiving notifications
-    console.log('WebSocket message would be sent:', message);
+    logger.log('WebSocket message would be sent:', message);
   };
 
   return {

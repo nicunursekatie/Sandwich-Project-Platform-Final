@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import {
   Card,
   CardContent,
@@ -246,7 +248,7 @@ export default function SuggestionsPortal() {
       });
     },
     onError: (error) => {
-      console.error('Failed to delete suggestion:', error);
+      logger.error('Failed to delete suggestion:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete suggestion. Please try again.',

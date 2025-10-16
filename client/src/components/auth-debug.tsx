@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import {
+import { logger } from '@/lib/logger';
   Card,
   CardContent,
   CardDescription,
@@ -62,7 +64,7 @@ export default function AuthDebug() {
       }
     } catch (err) {
       setError('Failed to fetch debug information');
-      console.error('Debug fetch error:', err);
+      logger.error('Debug fetch error:', err);
     } finally {
       setLoading(false);
     }

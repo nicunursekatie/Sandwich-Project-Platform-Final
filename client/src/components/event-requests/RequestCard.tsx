@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
+import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -204,7 +206,7 @@ export default function RequestCard({
       });
     },
     onError: (error: any) => {
-      console.error('Failed to update TSP contact:', error);
+      logger.error('Failed to update TSP contact:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to update TSP contact. Please try again.',
@@ -301,7 +303,7 @@ export default function RequestCard({
           });
         }
       } catch (error) {
-        console.warn('Invalid toolkitSentDate:', request.toolkitSentDate);
+        logger.warn('Invalid toolkitSentDate:', request.toolkitSentDate);
       }
     }
 
@@ -319,7 +321,7 @@ export default function RequestCard({
           });
         }
       } catch (error) {
-        console.warn('Invalid followUpDate:', request.followUpDate);
+        logger.warn('Invalid followUpDate:', request.followUpDate);
       }
     }
 
@@ -337,7 +339,7 @@ export default function RequestCard({
           });
         }
       } catch (error) {
-        console.warn('Invalid contactedAt:', request.contactedAt);
+        logger.warn('Invalid contactedAt:', request.contactedAt);
       }
     }
 
@@ -355,7 +357,7 @@ export default function RequestCard({
           });
         }
       } catch (error) {
-        console.warn('Invalid tspContactAssignedDate:', request.tspContactAssignedDate);
+        logger.warn('Invalid tspContactAssignedDate:', request.tspContactAssignedDate);
       }
     }
 
@@ -405,7 +407,7 @@ export default function RequestCard({
         priority: 999
       };
     } catch (error) {
-      console.warn('Invalid statusChangedAt:', request.statusChangedAt);
+      logger.warn('Invalid statusChangedAt:', request.statusChangedAt);
       return null; // Return null if even the fallback fails
     }
   }, [request.status, request.statusChangedAt, request.toolkitSentDate, request.toolkitSentBy, request.followUpDate, request.contactedAt, request.completedByUserId, request.tspContactAssignedDate]);
@@ -623,7 +625,7 @@ export default function RequestCard({
                             </>
                           );
                         } catch (error) {
-                          console.warn('Error formatting action date:', error);
+                          logger.warn('Error formatting action date:', error);
                           return (
                             <>
                               <ActionIcon className="w-5 h-5 text-[#A31C41] flex-shrink-0" />
