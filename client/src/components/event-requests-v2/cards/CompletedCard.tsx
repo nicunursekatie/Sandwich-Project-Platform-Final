@@ -1707,15 +1707,18 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                       return count;
                     })()}
                   </p>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={startEditingSandwichCount}
-                    className="absolute -top-1 -right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                    title="Edit sandwich count"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </Button>
+                  <div className="flex justify-center mt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={startEditingSandwichCount}
+                      className="h-7 px-3 text-xs opacity-60 group-hover:opacity-100 transition-opacity bg-white/80 hover:bg-white border-[#FBAD3F]/30 hover:border-[#FBAD3F]"
+                      title="Edit sandwich count"
+                    >
+                      <Edit2 className="w-3 h-3 mr-1" />
+                      Edit Count
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
