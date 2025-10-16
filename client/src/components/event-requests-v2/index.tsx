@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   EventRequestProvider,
   useEventRequestContext,
@@ -139,6 +139,11 @@ const EventRequestsManagementContent: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { trackButtonClick, trackFormSubmit } = useAnalytics();
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const handleScheduleCall = () => {
     if (!selectedEventRequest || !scheduleCallDate || !scheduleCallTime) return;
