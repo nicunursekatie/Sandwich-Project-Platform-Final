@@ -2139,16 +2139,16 @@ export default function EventRequestsManagement({
       
       const searchLower = searchQuery.toLowerCase();
       
-      // Format date in various ways to match user input
+      // Format date in various ways to match user input - ALWAYS use UTC to prevent timezone bugs
       const formats = [
         dateStr.toLowerCase(), // Original format
-        date.toLocaleDateString(), // MM/DD/YYYY
-        date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }), // MM/DD/YYYY
-        date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), // Sep 18, 2025
-        date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }), // September 18, 2025
+        date.toLocaleDateString('en-US', { timeZone: 'UTC' }), // MM/DD/YYYY
+        date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC' }), // MM/DD/YYYY
+        date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }), // Sep 18, 2025
+        date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }), // September 18, 2025
         date.toISOString().split('T')[0], // YYYY-MM-DD
-        `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`, // M/D/YYYY
-        `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`, // MM/DD/YYYY
+        `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}`, // M/D/YYYY (UTC)
+        `${(date.getUTCMonth() + 1).toString().padStart(2, '0')}/${date.getUTCDate().toString().padStart(2, '0')}/${date.getUTCFullYear()}`, // MM/DD/YYYY (UTC)
       ];
       
       return formats.some(format => format.toLowerCase().includes(searchLower));
