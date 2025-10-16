@@ -96,6 +96,15 @@ interface CardHeaderProps {
   setEditingValue?: (value: string) => void;
   resolveUserName?: (id: string) => string;
   canEditOrgDetails?: boolean;
+  // TSP Contact editing
+  isEditingTspContact?: boolean;
+  editingTspContactId?: number | null;
+  startEditingTspContact?: () => void;
+  saveTspContact?: () => void;
+  cancelTspContactEdit?: () => void;
+  setEditingTspContactId?: (id: number) => void;
+  users?: { id: number; name: string; email: string }[];
+  updateTspContactMutation?: any;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -110,7 +119,16 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   cancelEdit,
   setEditingValue,
   resolveUserName,
-  canEditOrgDetails = false
+  canEditOrgDetails = false,
+  // TSP Contact editing
+  isEditingTspContact = false,
+  editingTspContactId = null,
+  startEditingTspContact,
+  saveTspContact,
+  cancelTspContactEdit,
+  setEditingTspContactId,
+  users = [],
+  updateTspContactMutation
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -1678,6 +1696,14 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           saveEdit={saveEdit}
           cancelEdit={cancelEdit}
           setEditingValue={setEditingValue}
+          isEditingTspContact={isEditingTspContact}
+          editingTspContactId={editingTspContactId}
+          startEditingTspContact={startEditingTspContact}
+          saveTspContact={saveTspContact}
+          cancelTspContactEdit={cancelTspContactEdit}
+          setEditingTspContactId={setEditingTspContactId}
+          users={users}
+          updateTspContactMutation={updateTspContactMutation}
         />
 
         {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}
