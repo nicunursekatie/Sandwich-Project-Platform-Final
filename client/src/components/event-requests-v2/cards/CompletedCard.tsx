@@ -1293,9 +1293,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       // Parse existing types into editing state
       const typeMap: any = {};
       currentTypes.forEach((item: any) => {
-        if (item.type && item.count) {
+        if (item.type && item.quantity) {
           const typeLower = item.type.toLowerCase();
-          typeMap[typeLower] = item.count;
+          typeMap[typeLower] = item.quantity;
         }
       });
       setEditingTypes(typeMap);
@@ -1333,7 +1333,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         if (count && count > 0) {
           types.push({
             type: type.charAt(0).toUpperCase() + type.slice(1), // Capitalize
-            count: count
+            quantity: count
           });
           total += count;
         }
