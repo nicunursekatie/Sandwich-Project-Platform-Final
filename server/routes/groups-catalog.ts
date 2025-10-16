@@ -83,6 +83,8 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             latestRequestDate: request.createdAt || new Date(),
             hasHostedEvent: request.status === 'completed' || request.status === 'contact_completed',
             totalSandwiches: request.estimatedSandwichCount || 0,
+            actualSandwichTotal: 0,
+            actualEventCount: 0,
             eventDate: normalizedEventDate,
             tspContact: request.tspContact || null,
             tspContactAssigned: request.tspContactAssigned || null,
