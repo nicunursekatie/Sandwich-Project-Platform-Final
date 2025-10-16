@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { logger } from '@/lib/logger';
 import { useMutation } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import {
   DynamicErrorManager,
   DynamicErrorMessage,

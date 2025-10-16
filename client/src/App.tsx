@@ -1,8 +1,7 @@
 import { Switch, Route } from 'wouter';
-import { logger } from '@/lib/logger';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { useEffect, lazy } from 'react';
+import { logger } from '@/lib/logger';
 
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';

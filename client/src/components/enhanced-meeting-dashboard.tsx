@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
-import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient as baseQueryClient, apiRequest } from '@/lib/queryClient';
 import {

@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';

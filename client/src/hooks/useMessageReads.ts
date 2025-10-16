@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useMutation } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from './useAuth';
 

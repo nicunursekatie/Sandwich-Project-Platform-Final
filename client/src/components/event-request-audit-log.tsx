@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { queryClient } from '@/lib/queryClient';
 import {
   Card,

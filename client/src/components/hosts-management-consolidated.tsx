@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import {
   Users,
   Plus,

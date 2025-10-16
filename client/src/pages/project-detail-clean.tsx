@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import * as React from 'react';
-import { logger } from '@/lib/logger';
 import { useParams, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {

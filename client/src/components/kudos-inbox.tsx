@@ -1,7 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
-import { logger } from '@/lib/logger';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

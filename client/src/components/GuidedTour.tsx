@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { logger } from '@/lib/logger';
 import {
-import { logger } from '@/lib/logger';
   HelpCircle,
   X,
   ChevronRight,

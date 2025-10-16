@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
-import { logger } from '@/lib/logger';
 
 export interface UserContext {
   role: string;

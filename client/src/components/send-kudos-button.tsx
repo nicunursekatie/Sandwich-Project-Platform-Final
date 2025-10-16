@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useMutation } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { Plus, Edit2, Trash2, User, ExternalLink, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

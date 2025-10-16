@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { logger } from '@/lib/logger';
 import { CalendarIcon, Clock } from 'lucide-react';
-import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';

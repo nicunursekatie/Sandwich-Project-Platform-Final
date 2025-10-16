@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { logger } from '@/lib/logger';
 import { Badge } from '@/components/ui/badge';
-import { logger } from '@/lib/logger';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/auth-utils';

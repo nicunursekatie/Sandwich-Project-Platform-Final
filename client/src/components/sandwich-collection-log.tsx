@@ -7,7 +7,6 @@ import { logger } from '@/lib/logger';
   useEffect,
 } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import {
   Sandwich,
   Calendar,

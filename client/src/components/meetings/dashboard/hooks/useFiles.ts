@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
-import { logger } from '@/lib/logger';
 import { apiRequest } from '@/lib/queryClient';
 
 // Interfaces

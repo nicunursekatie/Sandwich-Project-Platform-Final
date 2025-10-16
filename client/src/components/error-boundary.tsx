@@ -1,7 +1,6 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { logger } from '@/lib/logger';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import {
   Card,

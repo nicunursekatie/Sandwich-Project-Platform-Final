@@ -1,7 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { Bell, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

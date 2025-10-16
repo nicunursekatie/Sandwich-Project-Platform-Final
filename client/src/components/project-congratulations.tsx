@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import {
   Card,
   CardContent,

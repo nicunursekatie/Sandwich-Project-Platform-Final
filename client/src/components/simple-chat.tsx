@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { logger } from '@/lib/logger';
 import { io, Socket } from 'socket.io-client';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

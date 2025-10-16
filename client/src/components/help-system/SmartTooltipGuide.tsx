@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { logger } from '@/lib/logger';
 import {
-import { logger } from '@/lib/logger';
   HelpCircle,
   Lightbulb,
   Target,

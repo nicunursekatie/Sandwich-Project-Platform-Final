@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { logger } from '@/lib/logger';
 import { useAuth } from './useAuth';
-import { logger } from '@/lib/logger';
 
 export function useWebSocket() {
   const { user } = useAuth();

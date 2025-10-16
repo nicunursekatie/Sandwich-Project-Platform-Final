@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
 import * as React from 'react';
-import { logger } from '@/lib/logger';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,

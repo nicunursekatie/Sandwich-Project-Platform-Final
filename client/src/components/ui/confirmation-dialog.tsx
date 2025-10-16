@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
 import {
-import { logger } from '@/lib/logger';
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,

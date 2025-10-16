@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
 import type { ReactNode } from 'react';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, Loader2 } from 'lucide-react';

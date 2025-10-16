@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { Heart } from 'lucide-react';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,

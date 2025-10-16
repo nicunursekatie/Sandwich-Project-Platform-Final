@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import {
   Card,

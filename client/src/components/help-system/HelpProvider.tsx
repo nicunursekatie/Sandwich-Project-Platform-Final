@@ -7,7 +7,6 @@ import { logger } from '@/lib/logger';
   useEffect,
 } from 'react';
 import { HelpContent } from './HelpBubble';
-import { logger } from '@/lib/logger';
 
 interface HelpContextType {
   showHelp: (content: HelpContent) => void;

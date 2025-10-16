@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
-import { logger } from '@/lib/logger';
 import { apiRequest } from '@/lib/queryClient';
 import { formatDateForInput } from '@/lib/date-utils';
 

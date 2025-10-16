@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import { apiRequest } from '@/lib/queryClient';
-import { logger } from '@/lib/logger';
 
 interface ActivityData {
   action: string;

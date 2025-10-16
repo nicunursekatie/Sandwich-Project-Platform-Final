@@ -1,7 +1,6 @@
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
-import { logger } from '@/lib/logger';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventMutations } from './useEventMutations';
 import { useEventQueries } from './useEventQueries';

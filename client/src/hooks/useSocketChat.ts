@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import { io, Socket } from 'socket.io-client';
-import { logger } from '@/lib/logger';
 import { useAuth } from './useAuth';
 // Remove getUserPermissions import as it doesn't exist
 

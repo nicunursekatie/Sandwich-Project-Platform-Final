@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useQuery } from '@tanstack/react-query';
-import { logger } from '@/lib/logger';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';

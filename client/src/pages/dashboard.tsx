@@ -28,7 +28,6 @@ import { logger } from '@/lib/logger';
   FileImage,
 } from 'lucide-react';
 import { useLocation, useRoute } from 'wouter';
-import { logger } from '@/lib/logger';
 // Using optimized SVG for faster loading
 const sandwichLogo = '/sandwich-icon-optimized.svg';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
