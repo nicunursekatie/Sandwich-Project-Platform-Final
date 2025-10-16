@@ -99,10 +99,14 @@ interface CardHeaderProps {
   // TSP Contact editing
   isEditingTspContact?: boolean;
   editingTspContactId?: number | null;
+  editingCustomTspContact?: string;
+  tspContactInputMode?: 'dropdown' | 'text';
   startEditingTspContact?: () => void;
   saveTspContact?: () => void;
   cancelTspContactEdit?: () => void;
   setEditingTspContactId?: (id: number) => void;
+  setEditingCustomTspContact?: (value: string) => void;
+  setTspContactInputMode?: (mode: 'dropdown' | 'text') => void;
   users?: { id: number; name: string; email: string }[];
   updateTspContactMutation?: any;
 }
@@ -123,10 +127,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   // TSP Contact editing
   isEditingTspContact = false,
   editingTspContactId = null,
+  editingCustomTspContact = '',
+  tspContactInputMode = 'dropdown',
   startEditingTspContact,
   saveTspContact,
   cancelTspContactEdit,
   setEditingTspContactId,
+  setEditingCustomTspContact,
+  setTspContactInputMode,
   users = [],
   updateTspContactMutation
 }) => {
@@ -309,23 +317,55 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             <div className="text-sm text-[#D68319] mb-2 group relative">
               <span className="font-medium">TSP Contact: </span>
               {isEditingTspContact ? (
-                <div className="inline-flex items-center gap-2 ml-2">
-                  <Select
-                    value={editingTspContactId?.toString() || ''}
-                    onValueChange={(value) => setEditingTspContactId(parseInt(value))}
-                  >
-                    <SelectTrigger className="h-8 w-48">
-                      <SelectValue placeholder="Select TSP Contact..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
-                          {user.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button size="sm" onClick={saveTspContact} disabled={updateTspContactMutation.isPending} className="h-7 px-2">
+                <div className="inline-flex items-center gap-2 ml-2 flex-wrap">
+                  {tspContactInputMode === 'dropdown' ? (
+                    <>
+                      <Select
+                        value={editingTspContactId?.toString() || ''}
+                        onValueChange={(value) => setEditingTspContactId?.(parseInt(value))}
+                      >
+                        <SelectTrigger className="h-8 w-48">
+                          <SelectValue placeholder="Select user..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map((user) => (
+                            <SelectItem key={user.id} value={user.id.toString()}>
+                              {user.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => setTspContactInputMode?.('text')}
+                        className="h-7 px-2 text-xs"
+                        title="Switch to custom name"
+                      >
+                        or enter name
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Input
+                        value={editingCustomTspContact}
+                        onChange={(e) => setEditingCustomTspContact?.(e.target.value)}
+                        placeholder="Enter TSP contact name..."
+                        className="h-8 w-48"
+                        autoFocus
+                      />
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => setTspContactInputMode?.('dropdown')}
+                        className="h-7 px-2 text-xs"
+                        title="Switch to user dropdown"
+                      >
+                        or select user
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" onClick={saveTspContact} disabled={updateTspContactMutation?.isPending} className="h-7 px-2">
                     <Save className="w-3 h-3" />
                   </Button>
                   <Button size="sm" variant="ghost" onClick={cancelTspContactEdit} className="h-7 px-2">
@@ -1248,6 +1288,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   // Inline editing state for TSP contact
   const [isEditingTspContact, setIsEditingTspContact] = useState(false);
   const [editingTspContactId, setEditingTspContactId] = useState<number | null>(null);
+  const [editingCustomTspContact, setEditingCustomTspContact] = useState('');
+  const [tspContactInputMode, setTspContactInputMode] = useState<'dropdown' | 'text'>('dropdown');
 
   // Check if user has permission to edit organization details
   const canEditOrgDetails =
@@ -1341,7 +1383,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // TSP contact mutation
   const updateTspContactMutation = useMutation({
-    mutationFn: (data: { tspContact: number; tspContactAssignedDate: string }) =>
+    mutationFn: (data: { tspContact?: number | null; customTspContact?: string | null; tspContactAssignedDate: string }) =>
       apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
     onSuccess: () => {
       toast({
@@ -1351,6 +1393,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       setIsEditingTspContact(false);
       setEditingTspContactId(null);
+      setEditingCustomTspContact('');
     },
     onError: () => {
       toast({
@@ -1360,6 +1403,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       });
       setIsEditingTspContact(false);
       setEditingTspContactId(null);
+      setEditingCustomTspContact('');
     },
   });
 
@@ -1484,29 +1528,55 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Handlers for TSP contact editing
   const startEditingTspContact = () => {
-    setEditingTspContactId(request.tspContact || null);
+    // Initialize based on existing data
+    if (request.customTspContact) {
+      setTspContactInputMode('text');
+      setEditingCustomTspContact(request.customTspContact);
+    } else {
+      setTspContactInputMode('dropdown');
+      setEditingTspContactId(request.tspContact || null);
+    }
     setIsEditingTspContact(true);
   };
 
   const saveTspContact = () => {
-    if (!editingTspContactId) {
-      toast({
-        title: 'Invalid selection',
-        description: 'Please select a TSP contact.',
-        variant: 'destructive',
-      });
-      return;
-    }
     const todayDate = new Date().toISOString();
-    updateTspContactMutation.mutate({
-      tspContact: editingTspContactId,
-      tspContactAssignedDate: todayDate
-    });
+    
+    if (tspContactInputMode === 'dropdown') {
+      if (!editingTspContactId) {
+        toast({
+          title: 'Invalid selection',
+          description: 'Please select a TSP contact.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      updateTspContactMutation.mutate({
+        tspContact: editingTspContactId,
+        customTspContact: null, // Clear custom text when using dropdown
+        tspContactAssignedDate: todayDate
+      });
+    } else {
+      if (!editingCustomTspContact.trim()) {
+        toast({
+          title: 'Invalid input',
+          description: 'Please enter a TSP contact name.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      updateTspContactMutation.mutate({
+        tspContact: null, // Clear user ID when using custom text
+        customTspContact: editingCustomTspContact.trim(),
+        tspContactAssignedDate: todayDate
+      });
+    }
   };
 
   const cancelTspContactEdit = () => {
     setIsEditingTspContact(false);
     setEditingTspContactId(null);
+    setEditingCustomTspContact('');
   };
 
   // Helper functions for Instagram link
@@ -1560,7 +1630,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Fetch users for TSP contact assignment
   const { data: users = [] } = useQuery<{ id: number; name: string; email: string }[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/basic'],
     staleTime: 10 * 60 * 1000,
   });
 
@@ -1698,10 +1768,14 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           setEditingValue={setEditingValue}
           isEditingTspContact={isEditingTspContact}
           editingTspContactId={editingTspContactId}
+          editingCustomTspContact={editingCustomTspContact}
+          tspContactInputMode={tspContactInputMode}
           startEditingTspContact={startEditingTspContact}
           saveTspContact={saveTspContact}
           cancelTspContactEdit={cancelTspContactEdit}
           setEditingTspContactId={setEditingTspContactId}
+          setEditingCustomTspContact={setEditingCustomTspContact}
+          setTspContactInputMode={setTspContactInputMode}
           users={users}
           updateTspContactMutation={updateTspContactMutation}
         />
