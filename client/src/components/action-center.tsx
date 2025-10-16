@@ -25,6 +25,7 @@ import {
   calculateTotalSandwiches,
   parseCollectionDate,
 } from '@/lib/analytics-utils';
+import { logger } from '@/lib/logger';
 
 interface ActionItem {
   id: string;
@@ -378,15 +379,15 @@ export default function ActionCenter() {
 
       // Debug logging for action center
       if (weekOffset === 0) {
-        console.log('=== ACTION CENTER DEBUG (Current Week) ===');
-        console.log('Total forecast:', totalForecast);
-        console.log('Already collected:', alreadyCollected);
-        console.log('Scheduled events total:', scheduledTotal);
-        console.log('Expected individual donations:', Math.round(expectedIndividualDonations));
-        console.log('Average weekly:', avgForWeek);
-        console.log('Gap:', gap);
-        console.log('Percent below:', percentBelow.toFixed(1) + '%');
-        console.log('Would flag?', gap > 500 && percentBelow > 20);
+        logger.log('=== ACTION CENTER DEBUG (Current Week) ===');
+        logger.log('Total forecast:', totalForecast);
+        logger.log('Already collected:', alreadyCollected);
+        logger.log('Scheduled events total:', scheduledTotal);
+        logger.log('Expected individual donations:', Math.round(expectedIndividualDonations));
+        logger.log('Average weekly:', avgForWeek);
+        logger.log('Gap:', gap);
+        logger.log('Percent below:', percentBelow.toFixed(1) + '%');
+        logger.log('Would flag?', gap > 500 && percentBelow > 20);
       }
 
       // Only show "below average" warnings later in the week (Fri-Tue, days 5,6,0,1,2) OR if it's a future week
