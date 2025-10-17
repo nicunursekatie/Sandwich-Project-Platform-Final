@@ -56,13 +56,35 @@ export const useEventAssignments = () => {
   const resolveUserName = (userIdOrName: string | undefined): string => {
     if (!userIdOrName) return 'Not assigned';
 
-    // Ensure we have loaded data before proceeding
-    if (!allUsers || !drivers || !volunteers) {
-      // Return user ID as fallback if data not loaded, but make it more readable
-      return userIdOrName.length > 20 ? `User ID: ${userIdOrName.slice(-8)}` : userIdOrName;
-    }
-
     try {
+      // Handle host-contact- prefixed IDs FIRST (before checking if data is loaded)
+      // This is critical for driver assignments
+      if (userIdOrName.startsWith('host-contact-')) {
+        const contactId = userIdOrName.replace('host-contact-', '');
+        const numericContactId = parseInt(contactId);
+        
+        // Check if hostsWithContacts is loaded and not empty
+        if (hostsWithContacts && hostsWithContacts.length > 0) {
+          // Find the contact in hostsWithContacts
+          for (const host of hostsWithContacts) {
+            const contact = host.contacts?.find((c: any) => c.id === numericContactId);
+            if (contact) {
+              return contact.name || contact.email || `Contact #${contactId}`;
+            }
+          }
+        }
+        
+        // If hostsWithContacts not loaded yet, show loading state instead of raw ID
+        console.warn(`Host contact data not loaded or contact not found: ${userIdOrName}`);
+        return 'Loading...';
+      }
+
+      // Ensure we have loaded data before proceeding for other types
+      if (!allUsers || !drivers || !volunteers) {
+        // Return user ID as fallback if data not loaded, but make it more readable
+        return userIdOrName.length > 20 ? `User ID: ${userIdOrName.slice(-8)}` : userIdOrName;
+      }
+
       // Handle user IDs (format: user_xxxx_xxxxx, admin_xxxx, or committee_xxxx)
       if (userIdOrName.includes('_') && (userIdOrName.startsWith('user_') || userIdOrName.startsWith('admin_') || userIdOrName.startsWith('committee_'))) {
         const user = allUsers.find((u) => u?.id === userIdOrName);
@@ -80,24 +102,6 @@ export const useEventAssignments = () => {
         if (user) {
           return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User';
         }
-      }
-
-      // Handle host-contact- prefixed IDs (e.g., "host-contact-16")
-      if (userIdOrName.startsWith('host-contact-')) {
-        const contactId = userIdOrName.replace('host-contact-', '');
-        const numericContactId = parseInt(contactId);
-        
-        // Find the contact in hostsWithContacts
-        for (const host of hostsWithContacts) {
-          const contact = host.contacts?.find((c: any) => c.id === numericContactId);
-          if (contact) {
-            return contact.name || contact.email || `Contact #${contactId}`;
-          }
-        }
-        
-        // If not found, return a readable fallback
-        console.warn(`Host contact not found: ${userIdOrName}`);
-        return `Contact #${contactId}`;
       }
 
       // Handle volunteer- prefixed IDs (e.g., "volunteer-123")

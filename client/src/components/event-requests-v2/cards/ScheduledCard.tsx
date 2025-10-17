@@ -762,7 +762,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         Add
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Add Event Times</DialogTitle>
                       </DialogHeader>
