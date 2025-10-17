@@ -151,7 +151,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   router.post('/logout', async (req: any, res) => {
     try {
       // Determine if we're in production (same logic as session setup)
-      const isProduction = !!process.env.PRODUCTION_DATABASE_URL;
+      const isProduction = process.env.NODE_ENV === 'production';
       
       // Destroy the session
       req.session.destroy((err: any) => {

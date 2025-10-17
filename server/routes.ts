@@ -24,8 +24,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   logCorsConfig(); // Log configuration for debugging
   app.use(createCorsMiddleware());
 
-  // Determine if we're in production (deployed) or development environment
-  const isProduction = !!process.env.PRODUCTION_DATABASE_URL;
+  // Determine if we're in production based on NODE_ENV, not database URL
+  // (PRODUCTION_DATABASE_URL can be set even in development for testing)
+  const isProduction = process.env.NODE_ENV === 'production';
   
   // Add session middleware with enhanced security and mobile compatibility
   app.use(
