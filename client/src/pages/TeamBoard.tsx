@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, CheckCircle2, Clock, Lightbulb, ClipboardList, StickyNote, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useUser } from '@/hooks/use-user';
+import { useAuth } from '@/hooks/useAuth';
 
 type BoardItemType = 'task' | 'note' | 'idea' | 'reminder';
 type BoardItemStatus = 'open' | 'claimed' | 'done';
@@ -28,7 +28,7 @@ interface TeamBoardItem {
 
 export default function TeamBoard() {
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user } = useAuth();
   const [newItemContent, setNewItemContent] = useState('');
   const [newItemType, setNewItemType] = useState<BoardItemType>('note');
 

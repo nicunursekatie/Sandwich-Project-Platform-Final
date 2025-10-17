@@ -33,8 +33,8 @@ const createItemSchema = insertTeamBoardItemSchema
 
 const updateItemSchema = z.object({
   status: z.enum(['open', 'claimed', 'done']).optional(),
-  assignedTo: z.string().optional(),
-  assignedToName: z.string().optional(),
+  assignedTo: z.string().nullable().optional(),
+  assignedToName: z.string().nullable().optional(),
   completedAt: z.string().datetime().optional().nullable(),
 });
 
