@@ -1432,6 +1432,28 @@ export type InsertWishlistSuggestion = z.infer<
   typeof insertWishlistSuggestionSchema
 >;
 
+// Team Bulletin Board - simple board for tasks, notes, ideas, anything team wants to share
+export const teamBoardItems = pgTable('team_board_items', {
+  id: serial('id').primaryKey(),
+  content: text('content').notNull(), // The actual task/note/idea - can be anything
+  type: varchar('type').default('note'), // 'task', 'note', 'idea', 'reminder' - optional categorization
+  createdBy: varchar('created_by').notNull(), // User ID who posted it
+  createdByName: varchar('created_by_name').notNull(), // Display name of poster
+  assignedTo: varchar('assigned_to'), // User ID if someone claimed it (optional)
+  assignedToName: varchar('assigned_to_name'), // Display name of assignee (optional)
+  status: varchar('status').notNull().default('open'), // 'open', 'claimed', 'done'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'), // When marked as done
+});
+
+export const insertTeamBoardItemSchema = createInsertSchema(teamBoardItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type TeamBoardItem = typeof teamBoardItems.$inferSelect;
+export type InsertTeamBoardItem = z.infer<typeof insertTeamBoardItemSchema>;
+
 // Cooler Types table for defining types of coolers
 export const coolerTypes = pgTable('cooler_types', {
   id: serial('id').primaryKey(),
