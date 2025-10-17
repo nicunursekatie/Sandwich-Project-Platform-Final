@@ -40,12 +40,16 @@ export default function SandwichForecastWidget() {
 
       const day = d.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 
-      // Events on Tue/Wed/Thu go to that week's Thursday
-      // Events on Fri/Sat/Sun/Mon go to the next Thursday
-      if (day >= 2 && day <= 4) {
-        // It's Tue/Wed/Thu - find this week's Thursday
-        const daysToThursday = 4 - day;
-        d.setDate(d.getDate() + daysToThursday);
+      // Events on Wed/Thu need sandwiches made on the weekend AFTER
+      // So they go to the NEXT Thursday (following week)
+      // Events on Fri/Sat/Sun/Mon/Tue go to this week's Thursday
+      if (day === 3 || day === 4) {
+        // It's Wed/Thu - find NEXT week's Thursday
+        const daysToNextThursday = 7 + (4 - day);
+        d.setDate(d.getDate() + daysToNextThursday);
+      } else if (day === 2) {
+        // It's Tuesday - find this week's Thursday
+        d.setDate(d.getDate() + 2);
       } else {
         // It's Fri/Sat/Sun/Mon - find next Thursday
         const daysToNextThursday = (11 - day) % 7;
@@ -267,16 +271,17 @@ export default function SandwichForecastWidget() {
     return new Date(year, month - 1, day, 0, 0, 0, 0);
   };
 
-  // New logic for distribution events (Tue/Wed/Thu) and other events
+  // New logic for distribution events (Wed/Thu) and other events
+  // Wed/Thu events use sandwiches made on the weekend AFTER
   const isDistributionEvent = (dateStr: string) => {
     const date = parseEventDate(dateStr);
     const day = date.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu
-    return day === 2 || day === 3 || day === 4; // Tue, Wed, Thu
+    return day === 3 || day === 4; // Wed, Thu
   };
   const isOtherEvent = (dateStr: string) => {
     const date = parseEventDate(dateStr);
     const day = date.getDay();
-    return day !== 2 && day !== 3 && day !== 4;
+    return day !== 3 && day !== 4;
   };
 
   const distributionEvents = (currentWeek?.events || [])
