@@ -34,7 +34,7 @@ export default function CompactCollectionForm({
   const [date, setDate] = useState(localDate.toISOString().split('T')[0]);
   const [location, setLocation] = useState('');
   const [groupCollections, setGroupCollections] = useState<
-    Array<{ name: string; count: number; deli?: number; turkey?: number; ham?: number; pbj?: number; other?: number }>
+    Array<{ name: string; count: number; deli?: number; pbj?: number; other?: number }>
   >([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupCount, setNewGroupCount] = useState(0);
@@ -43,8 +43,6 @@ export default function CompactCollectionForm({
   const [totalMode, setTotalMode] = useState<'simple' | 'detailed'>('simple');
   const [simpleTotal, setSimpleTotal] = useState('');
   const [details, setDetails] = useState({
-    ham: '',
-    turkey: '',
     deli: '',
     pbj: '',
     other: ''
@@ -53,8 +51,6 @@ export default function CompactCollectionForm({
   // Group breakdown state
   const [showGroupBreakdown, setShowGroupBreakdown] = useState(false);
   const [newGroupDeli, setNewGroupDeli] = useState(0);
-  const [newGroupTurkey, setNewGroupTurkey] = useState(0);
-  const [newGroupHam, setNewGroupHam] = useState(0);
   const [newGroupPbj, setNewGroupPbj] = useState(0);
   const [newGroupOther, setNewGroupOther] = useState(0);
 
@@ -101,7 +97,7 @@ export default function CompactCollectionForm({
     setSimpleTotal(value);
     if (value && totalMode === 'detailed') {
       setTotalMode('simple');
-      setDetails({ ham: '', turkey: '', deli: '', pbj: '', other: '' }); // Clear details
+      setDetails({ deli: '', pbj: '', other: '' }); // Clear details
     }
   };
 
@@ -126,7 +122,7 @@ export default function CompactCollectionForm({
       onSuccess?.();
       // Reset form
       setSimpleTotal('');
-      setDetails({ ham: '', turkey: '', deli: '', pbj: '', other: '' });
+      setDetails({ deli: '', pbj: '', other: '' });
       setTotalMode('simple');
       setGroupCollections([]);
       setLocation('');
@@ -141,7 +137,7 @@ export default function CompactCollectionForm({
     groupCollections.reduce((sum, group) => sum + group.count, 0);
 
   // Calculate breakdown sum for groups
-  const groupBreakdownSum = newGroupDeli + newGroupTurkey + newGroupHam + newGroupPbj + newGroupOther;
+  const groupBreakdownSum = newGroupDeli + newGroupPbj + newGroupOther;
 
   // Validation for group breakdown
   useEffect(() => {
@@ -150,7 +146,7 @@ export default function CompactCollectionForm({
       return;
     }
 
-    const hasAnyValue = newGroupDeli > 0 || newGroupTurkey > 0 || newGroupHam > 0 || newGroupPbj > 0 || newGroupOther > 0;
+    const hasAnyValue = newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0;
 
     if (!hasAnyValue) {
       // Allow empty breakdown (optional)
@@ -164,7 +160,7 @@ export default function CompactCollectionForm({
     } else {
       setGroupBreakdownError('');
     }
-  }, [showGroupBreakdown, newGroupDeli, newGroupTurkey, newGroupHam, newGroupPbj, newGroupOther, newGroupCount, groupBreakdownSum]);
+  }, [showGroupBreakdown, newGroupDeli, newGroupPbj, newGroupOther, newGroupCount, groupBreakdownSum]);
 
   const addGroup = () => {
     // Prevent adding if there's a validation error
@@ -178,16 +174,14 @@ export default function CompactCollectionForm({
     }
 
     if (newGroupName && newGroupCount > 0) {
-      const newGroup: { name: string; count: number; deli?: number; turkey?: number; ham?: number; pbj?: number; other?: number } = {
+      const newGroup: { name: string; count: number; deli?: number; pbj?: number; other?: number } = {
         name: newGroupName,
         count: Number(newGroupCount),
       };
 
       // Only include breakdown if provided
-      if (showGroupBreakdown && (newGroupDeli > 0 || newGroupTurkey > 0 || newGroupHam > 0 || newGroupPbj > 0 || newGroupOther > 0)) {
+      if (showGroupBreakdown && (newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0)) {
         newGroup.deli = newGroupDeli;
-        newGroup.turkey = newGroupTurkey;
-        newGroup.ham = newGroupHam;
         newGroup.pbj = newGroupPbj;
         newGroup.other = newGroupOther;
       }
@@ -196,8 +190,6 @@ export default function CompactCollectionForm({
       setNewGroupName('');
       setNewGroupCount(0);
       setNewGroupDeli(0);
-      setNewGroupTurkey(0);
-      setNewGroupHam(0);
       setNewGroupPbj(0);
       setNewGroupOther(0);
       setShowGroupBreakdown(false);
@@ -232,8 +224,6 @@ export default function CompactCollectionForm({
     // Include individual sandwich type breakdown if provided (detailed mode)
     if (totalMode === 'detailed' && hasDetails) {
       if (details.deli) submissionData.individualDeli = parseInt(details.deli);
-      if (details.turkey) submissionData.individualTurkey = parseInt(details.turkey);
-      if (details.ham) submissionData.individualHam = parseInt(details.ham);
       if (details.pbj) submissionData.individualPbj = parseInt(details.pbj);
       if (details.other) submissionData.individualOther = parseInt(details.other);
     }
@@ -514,8 +504,6 @@ export default function CompactCollectionForm({
             <div className={`transition-opacity ${totalMode === 'simple' && !hasDetails ? 'opacity-60' : ''}`}>
               <div className="flex flex-wrap justify-center items-center gap-3">
                 {[
-                  { key: 'ham' as const, label: 'Ham', color: 'focus:border-red-400' },
-                  { key: 'turkey' as const, label: 'Turkey', color: 'focus:border-amber-400' },
                   { key: 'deli' as const, label: 'Deli', color: 'focus:border-green-400' },
                   { key: 'pbj' as const, label: 'PB&J', color: 'focus:border-purple-400' },
                   { key: 'other' as const, label: 'Other', color: 'focus:border-gray-400' }
@@ -611,37 +599,7 @@ export default function CompactCollectionForm({
                           const value = parseInt(e.target.value) || 0;
                           setNewGroupDeli(value);
                           // Auto-calculate total
-                          setNewGroupCount(value + newGroupTurkey + newGroupHam + newGroupPbj + newGroupOther);
-                        }}
-                        className="h-10 text-base"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-gray-700">Turkey</label>
-                      <Input
-                        type="number"
-                        value={newGroupTurkey || ''}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value) || 0;
-                          setNewGroupTurkey(value);
-                          // Auto-calculate total
-                          setNewGroupCount(newGroupDeli + value + newGroupHam + newGroupPbj + newGroupOther);
-                        }}
-                        className="h-10 text-base"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-gray-700">Ham</label>
-                      <Input
-                        type="number"
-                        value={newGroupHam || ''}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value) || 0;
-                          setNewGroupHam(value);
-                          // Auto-calculate total
-                          setNewGroupCount(newGroupDeli + newGroupTurkey + value + newGroupPbj + newGroupOther);
+                          setNewGroupCount(value + newGroupPbj + newGroupOther);
                         }}
                         className="h-10 text-base"
                         placeholder="0"
@@ -656,7 +614,7 @@ export default function CompactCollectionForm({
                           const value = parseInt(e.target.value) || 0;
                           setNewGroupPbj(value);
                           // Auto-calculate total
-                          setNewGroupCount(newGroupDeli + newGroupTurkey + newGroupHam + value + newGroupOther);
+                          setNewGroupCount(newGroupDeli + value + newGroupOther);
                         }}
                         className="h-10 text-base"
                         placeholder="0"
@@ -671,14 +629,14 @@ export default function CompactCollectionForm({
                           const value = parseInt(e.target.value) || 0;
                           setNewGroupOther(value);
                           // Auto-calculate total
-                          setNewGroupCount(newGroupDeli + newGroupTurkey + newGroupHam + newGroupPbj + value);
+                          setNewGroupCount(newGroupDeli + newGroupPbj + value);
                         }}
                         className="h-10 text-base"
                         placeholder="0"
                       />
                     </div>
                   </div>
-                  {(newGroupDeli > 0 || newGroupTurkey > 0 || newGroupHam > 0 || newGroupPbj > 0 || newGroupOther > 0) && (
+                  {(newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0) && (
                     <div className={`text-center text-xs rounded p-2 border-2 ${
                       groupBreakdownError 
                         ? 'bg-red-50 border-red-400 text-red-800' 
@@ -754,6 +712,9 @@ export default function CompactCollectionForm({
                     onClick={() => {
                       setNewGroupName('');
                       setNewGroupCount(0);
+                      setNewGroupDeli(0);
+                      setNewGroupPbj(0);
+                      setNewGroupOther(0);
                     }}
                     variant="outline"
                     className="h-12 md:h-10 px-3 md:px-2"
@@ -801,12 +762,10 @@ export default function CompactCollectionForm({
                     <div className="text-3xl md:text-2xl font-bold text-gray-800">
                       {group.count}
                     </div>
-                    {(group.deli || group.turkey || group.ham || group.pbj || group.other) && (
+                    {(group.deli || group.pbj || group.other) && (
                       <div className="text-xs text-gray-600 mt-1">
                         {[
                           group.deli && `Deli: ${group.deli}`,
-                          group.turkey && `Turkey: ${group.turkey}`,
-                          group.ham && `Ham: ${group.ham}`,
                           group.pbj && `PBJ: ${group.pbj}`,
                           group.other && `Other: ${group.other}`
                         ].filter(Boolean).join(' • ')}
