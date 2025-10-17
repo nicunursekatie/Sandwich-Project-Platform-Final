@@ -25,7 +25,10 @@ The application uses a React 18 frontend with TypeScript, Vite, TanStack Query, 
 
 **Authentication System**: The official authentication system is implemented in `server/temp-auth.ts`, handling login/registration, session management via express-session with PostgreSQL storage, role-based access control, password resets via SendGrid, and profile management. The `isAuthenticated` middleware validates sessions and refreshes user permissions from the database on each request.
 
-**CRITICAL - Mobile Login Configuration**: Session cookies in `server/routes.ts` MUST be configured with `secure: true` and `sameSite: 'none'` for mobile browser compatibility. Mobile browsers (especially iOS Safari) block `sameSite: 'lax'` cookies. Replit supports HTTPS, so secure cookies work correctly. Configuration: `{ secure: true, httpOnly: true, maxAge: 30 days, sameSite: 'none' }`.
+**CRITICAL - Environment-Aware Session Cookie Configuration**: Session cookies in `server/routes.ts` use environment-aware settings to support both development and production environments. The configuration detects Replit development mode by checking for `REPL_ID` or `REPLIT_DB_URL` environment variables and adjusts cookie security accordingly:
+- **Development Mode** (Replit workspace): `secure: false`, `sameSite: 'lax'` - Works with HTTP, allows browser to store cookies in development
+- **Production Mode** (deployed app with HTTPS): `secure: true`, `sameSite: 'none'` - Required for mobile browser compatibility (especially iOS Safari)
+- **Implementation**: `const useSecureCookies = isProduction && !isReplitDev;` ensures cookies work in both environments. Fixed October 2025.
 
 **CRITICAL - Login Page Fetch Credentials**: All fetch() requests in `server/temp-auth.ts` (login, register, forgot password forms) MUST include `credentials: 'include'` to ensure session cookies are properly stored and sent by the browser. Without this, login succeeds on the backend but the browser doesn't store the session cookie, causing the user to remain on the login page. Fixed October 2025.
 
