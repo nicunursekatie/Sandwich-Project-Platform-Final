@@ -68,7 +68,9 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         console.log('Session saved successfully for user:', sessionUser.email);
         console.log('Session ID:', req.sessionID);
         console.log('Session data:', req.session);
-        res.json({ success: true, user: sessionUser });
+
+        // Redirect to dashboard after successful login
+        res.redirect('/');
       });
     } catch (error) {
       console.error('Login error:', error);
