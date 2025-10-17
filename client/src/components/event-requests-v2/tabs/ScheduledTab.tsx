@@ -277,6 +277,7 @@ export const ScheduledTab: React.FC = () => {
                 handleSelfSignup={(type) => handleSelfSignup(request.id, type)}
                 canSelfSignup={canSelfSignup}
                 isUserSignedUp={isUserSignedUp}
+                canEdit={true}
               />
             </div>
           ))}

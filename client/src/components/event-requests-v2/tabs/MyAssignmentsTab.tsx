@@ -176,6 +176,9 @@ export const MyAssignmentsTab: React.FC = () => {
             inlineSandwichMode={inlineSandwichMode}
             inlineTotalCount={inlineTotalCount}
             inlineSandwichTypes={inlineSandwichTypes}
+            inlineRangeMin={0}
+            inlineRangeMax={0}
+            inlineRangeType=""
             onStatusChange={(status) => handleStatusChange(request.id, status)}
             onFollowUp={() => {
               setSelectedEventRequest(request);
@@ -214,6 +217,9 @@ export const MyAssignmentsTab: React.FC = () => {
             setEditingValue={setEditingValue}
             setInlineSandwichMode={setInlineSandwichMode}
             setInlineTotalCount={setInlineTotalCount}
+            setInlineRangeMin={() => {}}
+            setInlineRangeMax={() => {}}
+            setInlineRangeType={() => {}}
             addInlineSandwichType={() => {
               setInlineSandwichTypes(prev => [...prev, { type: 'turkey', quantity: 0 }]);
             }}
@@ -232,6 +238,7 @@ export const MyAssignmentsTab: React.FC = () => {
             handleSelfSignup={(type) => handleSelfSignup(request.id, type)}
             canSelfSignup={canSelfSignup}
             isUserSignedUp={isUserSignedUp}
+            canEdit={true}
           />
         );
 
