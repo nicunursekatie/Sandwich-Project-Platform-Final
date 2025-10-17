@@ -25,6 +25,8 @@ The application uses a React 18 frontend with TypeScript, Vite, TanStack Query, 
 
 **Authentication System**: The official authentication system is implemented in `server/temp-auth.ts`, handling login/registration, session management via express-session with PostgreSQL storage, role-based access control, password resets via SendGrid, and profile management. The `isAuthenticated` middleware validates sessions and refreshes user permissions from the database on each request.
 
+**CRITICAL - Mobile Login Configuration**: Session cookies in `server/routes.ts` MUST be configured with `secure: true` and `sameSite: 'none'` for mobile browser compatibility. Mobile browsers (especially iOS Safari) block `sameSite: 'lax'` cookies. Replit supports HTTPS, so secure cookies work correctly. Configuration: `{ secure: true, httpOnly: true, maxAge: 30 days, sameSite: 'none' }`.
+
 The backend employs a modular router architecture with a central router, middleware, and dedicated feature modules. UI/UX design adheres to The Sandwich Project's official color palette and Roboto typography, prioritizing clarity, responsiveness, and visual hierarchy with card-based dashboards.
 
 Key technical implementations include:
