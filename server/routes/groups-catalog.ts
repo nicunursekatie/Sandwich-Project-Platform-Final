@@ -42,8 +42,6 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       // Create a map to aggregate data by organization and department
       const departmentsMap = new Map();
 
-      console.log(`🔍 Total event requests loaded: ${allEventRequests.length}`);
-      
       allEventRequests.forEach((request) => {
         const orgName = request.organizationName;
         const department = request.department || '';
@@ -97,7 +95,6 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             eventRequestId: request.id, // Store event request ID for tracking
           };
           departmentsMap.set(departmentKey, newDept);
-          console.log(`🔍 Created dept for ${orgName}: actualEventCount = ${newDept.actualEventCount}`);
         }
 
         const dept = departmentsMap.get(departmentKey);
@@ -377,15 +374,6 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       departmentsMap.forEach((dept) => {
         const canonicalKey = dept.canonicalName;
 
-        // Debug logging for Atlanta International School
-        if (canonicalKey === 'atlantainternationalschool') {
-          console.log('🔍 Atlanta International School department entry:', {
-            dept: dept.department,
-            contacts: dept.contacts.length,
-            contactName: dept.contacts[0]?.name
-          });
-        }
-
         if (!organizationsMap.has(canonicalKey)) {
           organizationsMap.set(canonicalKey, {
             canonicalName: canonicalKey,
@@ -403,16 +391,6 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         // Choose the most "complete" name as display name (longest non-empty name)
         if (dept.organizationName.length > org.displayName.length) {
           org.displayName = dept.organizationName;
-        }
-
-        // Debug first 3 departments
-        if (org.departments.length < 3) {
-          console.log('🔍 Department debug:', {
-            orgName: org.displayName,
-            actualEventCount: dept.actualEventCount,
-            hasHostedEvent: dept.hasHostedEvent,
-            status: dept.latestStatus
-          });
         }
 
         org.departments.push({
