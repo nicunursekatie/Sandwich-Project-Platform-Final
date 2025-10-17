@@ -514,11 +514,23 @@ export default function SandwichForecastWidget() {
                           </>
                         );
                       })()}
-                      <div className="font-semibold text-brand-primary">
-                        {getSandwichCount(event).toLocaleString()}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
+                      <div className="text-right">
+                        <div className="font-semibold text-brand-primary">
+                          {getSandwichCount(event).toLocaleString()}
+                        </div>
+                        {event.sandwichTypes && Array.isArray(event.sandwichTypes) && event.sandwichTypes.length > 0 && (
+                          <div className="text-xs text-gray-600">
+                            {event.sandwichTypes.map((st: any, idx: number) => (
+                              <span key={idx}>
+                                {st.quantity} {st.type}
+                                {idx < event.sandwichTypes.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500">
+                          {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -573,11 +585,23 @@ export default function SandwichForecastWidget() {
                           </>
                         );
                       })()}
-                      <div className="font-semibold text-brand-primary">
-                        {getSandwichCount(event).toLocaleString()}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
+                      <div className="text-right">
+                        <div className="font-semibold text-brand-primary">
+                          {getSandwichCount(event).toLocaleString()}
+                        </div>
+                        {event.sandwichTypes && Array.isArray(event.sandwichTypes) && event.sandwichTypes.length > 0 && (
+                          <div className="text-xs text-gray-600">
+                            {event.sandwichTypes.map((st: any, idx: number) => (
+                              <span key={idx}>
+                                {st.quantity} {st.type}
+                                {idx < event.sandwichTypes.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500">
+                          {event.status === 'completed' && event.actualSandwichCount ? 'actual' : 'estimated'}
+                        </div>
                       </div>
                     </div>
                   </div>
