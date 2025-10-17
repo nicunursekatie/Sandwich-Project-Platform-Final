@@ -1522,6 +1522,7 @@ export const eventRequests = pgTable(
     estimatedSandwichCount: integer('estimated_sandwich_count'), // Number of sandwiches planned
     estimatedSandwichCountMin: integer('estimated_sandwich_count_min'), // Minimum sandwiches in range (optional)
     estimatedSandwichCountMax: integer('estimated_sandwich_count_max'), // Maximum sandwiches in range (optional)
+    estimatedSandwichRangeType: varchar('estimated_sandwich_range_type'), // Type for sandwich range (e.g., 'turkey', 'ham')
     volunteerCount: integer('volunteer_count'), // Number of attendees expected (general total, or can use adult/children breakdown)
     adultCount: integer('adult_count'), // Number of adults (optional breakdown)
     childrenCount: integer('children_count'), // Number of children (optional breakdown)
@@ -1826,6 +1827,7 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     estimatedSandwichCount: z.number().nullable().optional(),
     estimatedSandwichCountMin: z.number().nullable().optional(),
     estimatedSandwichCountMax: z.number().nullable().optional(),
+    estimatedSandwichRangeType: z.string().nullable().optional(),
     // Attendance tracking fields
     actualAttendance: z.number().nullable().optional(),
     estimatedAttendance: z.number().nullable().optional(),

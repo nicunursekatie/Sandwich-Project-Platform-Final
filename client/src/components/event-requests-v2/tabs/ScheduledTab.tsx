@@ -59,6 +59,12 @@ export const ScheduledTab: React.FC = () => {
     setInlineTotalCount,
     inlineSandwichTypes,
     setInlineSandwichTypes,
+    inlineRangeMin,
+    setInlineRangeMin,
+    inlineRangeMax,
+    setInlineRangeMax,
+    inlineRangeType,
+    setInlineRangeType,
   } = useEventRequestContext();
 
   const scheduledRequests = filterRequestsByStatus('scheduled');
@@ -105,9 +111,21 @@ export const ScheduledTab: React.FC = () => {
         if (inlineSandwichMode === 'total') {
           updateData.estimatedSandwichCount = inlineTotalCount;
           updateData.sandwichTypes = null;
+          updateData.estimatedSandwichCountMin = null;
+          updateData.estimatedSandwichCountMax = null;
+          updateData.estimatedSandwichRangeType = null;
+        } else if (inlineSandwichMode === 'range') {
+          updateData.estimatedSandwichCountMin = inlineRangeMin;
+          updateData.estimatedSandwichCountMax = inlineRangeMax;
+          updateData.estimatedSandwichRangeType = inlineRangeType || null;
+          updateData.estimatedSandwichCount = null;
+          updateData.sandwichTypes = null;
         } else {
           updateData.sandwichTypes = stringifySandwichTypes(inlineSandwichTypes);
           updateData.estimatedSandwichCount = inlineSandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+          updateData.estimatedSandwichCountMin = null;
+          updateData.estimatedSandwichCountMax = null;
+          updateData.estimatedSandwichRangeType = null;
         }
 
         updateEventRequestMutation.mutate({
@@ -213,6 +231,9 @@ export const ScheduledTab: React.FC = () => {
                 inlineSandwichMode={inlineSandwichMode}
                 inlineTotalCount={inlineTotalCount}
                 inlineSandwichTypes={inlineSandwichTypes}
+                inlineRangeMin={inlineRangeMin}
+                inlineRangeMax={inlineRangeMax}
+                inlineRangeType={inlineRangeType}
                 onEdit={() => {
                   setSelectedEventRequest(request);
                   setIsEditing(true);
@@ -243,6 +264,9 @@ export const ScheduledTab: React.FC = () => {
                 setEditingValue={setEditingValue}
                 setInlineSandwichMode={setInlineSandwichMode}
                 setInlineTotalCount={setInlineTotalCount}
+                setInlineRangeMin={setInlineRangeMin}
+                setInlineRangeMax={setInlineRangeMax}
+                setInlineRangeType={setInlineRangeType}
                 addInlineSandwichType={addInlineSandwichType}
                 updateInlineSandwichType={updateInlineSandwichType}
                 removeInlineSandwichType={removeInlineSandwichType}

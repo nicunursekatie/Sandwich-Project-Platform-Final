@@ -90,6 +90,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     totalSandwichCount: 0,
     estimatedSandwichCountMin: 0,
     estimatedSandwichCountMax: 0,
+    rangeSandwichType: '',
     volunteerCount: 0,
     adultCount: 0,
     childrenCount: 0,
@@ -283,6 +284,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         totalSandwichCount: totalCount,
         estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
         estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
+        rangeSandwichType: (eventRequest as any)?.estimatedSandwichRangeType || '',
         volunteerCount: (eventRequest as any)?.volunteerCount || 0,
         adultCount: (eventRequest as any)?.adultCount || 0,
         childrenCount: (eventRequest as any)?.childrenCount || 0,
@@ -464,6 +466,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     } else if (sandwichMode === 'range') {
       eventData.estimatedSandwichCountMin = formData.estimatedSandwichCountMin || null;
       eventData.estimatedSandwichCountMax = formData.estimatedSandwichCountMax || null;
+      eventData.estimatedSandwichRangeType = formData.rangeSandwichType || null;
       eventData.estimatedSandwichCount = null; // Clear exact count when using range
       eventData.sandwichTypes = null;
     } else {
@@ -947,31 +950,52 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
             {/* Range Mode */}
             {sandwichMode === 'range' && (
-              <div className="space-y-2">
-                <Label>Estimated Sandwich Range</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="sandwichCountMin"
-                    type="number"
-                    value={formData.estimatedSandwichCountMin || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMin: parseInt(e.target.value) || 0 }))}
-                    placeholder="Min (e.g., 500)"
-                    min="0"
-                    className="w-32"
-                  />
-                  <span className="text-gray-500">to</span>
-                  <Input
-                    id="sandwichCountMax"
-                    type="number"
-                    value={formData.estimatedSandwichCountMax || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMax: parseInt(e.target.value) || 0 }))}
-                    placeholder="Max (e.g., 700)"
-                    min="0"
-                    className="w-32"
-                  />
+              <div className="space-y-3">
+                <div>
+                  <Label>Estimated Sandwich Range</Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Input
+                      id="sandwichCountMin"
+                      type="number"
+                      value={formData.estimatedSandwichCountMin || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMin: parseInt(e.target.value) || 0 }))}
+                      placeholder="Min (e.g., 500)"
+                      min="0"
+                      className="w-32"
+                    />
+                    <span className="text-gray-500">to</span>
+                    <Input
+                      id="sandwichCountMax"
+                      type="number"
+                      value={formData.estimatedSandwichCountMax || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMax: parseInt(e.target.value) || 0 }))}
+                      placeholder="Max (e.g., 700)"
+                      min="0"
+                      className="w-32"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="rangeSandwichType">Type (Optional)</Label>
+                  <Select
+                    value={formData.rangeSandwichType || ''}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, rangeSandwichType: value }))}
+                  >
+                    <SelectTrigger id="rangeSandwichType" className="w-48">
+                      <SelectValue placeholder="Select type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No specific type</SelectItem>
+                      {SANDWICH_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <p className="text-sm text-[#236383]">
-                  Use this when the final count isn't confirmed yet (e.g., 500-700 sandwiches).
+                  Use this when the final count isn't confirmed yet (e.g., 500-700 turkey sandwiches).
                 </p>
               </div>
             )}

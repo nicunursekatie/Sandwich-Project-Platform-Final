@@ -166,9 +166,12 @@ interface ScheduledCardProps {
   editingField: string | null;
   editingValue: string;
   isEditingThisCard: boolean;
-  inlineSandwichMode: 'total' | 'types';
+  inlineSandwichMode: 'total' | 'types' | 'range';
   inlineTotalCount: number;
   inlineSandwichTypes: Array<{ type: string; quantity: number }>;
+  inlineRangeMin: number;
+  inlineRangeMax: number;
+  inlineRangeType: string;
 
   // Actions
   onEdit: () => void;
@@ -185,8 +188,11 @@ interface ScheduledCardProps {
   saveEdit: () => void;
   cancelEdit: () => void;
   setEditingValue: (value: string) => void;
-  setInlineSandwichMode: (mode: 'total' | 'types') => void;
+  setInlineSandwichMode: (mode: 'total' | 'types' | 'range') => void;
   setInlineTotalCount: (count: number) => void;
+  setInlineRangeMin: (count: number) => void;
+  setInlineRangeMax: (count: number) => void;
+  setInlineRangeType: (type: string) => void;
   addInlineSandwichType: () => void;
   updateInlineSandwichType: (
     index: number,
@@ -227,6 +233,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   inlineSandwichMode,
   inlineTotalCount,
   inlineSandwichTypes,
+  inlineRangeMin,
+  inlineRangeMax,
+  inlineRangeType,
   onEdit,
   onDelete,
   onContact,
@@ -241,6 +250,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   setEditingValue,
   setInlineSandwichMode,
   setInlineTotalCount,
+  setInlineRangeMin,
+  setInlineRangeMax,
+  setInlineRangeType,
   addInlineSandwichType,
   updateInlineSandwichType,
   removeInlineSandwichType,
@@ -449,7 +461,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
       let sandwichInfo;
       if (hasRange) {
-        sandwichInfo = `${request.estimatedSandwichCountMin}-${request.estimatedSandwichCountMax} (estimated range)`;
+        const rangeType = request.estimatedSandwichRangeType;
+        const typeLabel = rangeType ? SANDWICH_TYPES.find(t => t.value === rangeType)?.label : null;
+        sandwichInfo = `${request.estimatedSandwichCountMin}-${request.estimatedSandwichCountMax}${typeLabel ? ` ${typeLabel}` : ''} (estimated range)`;
       } else {
         sandwichInfo = formatSandwichTypesDisplay(
           request.sandwichTypes,
@@ -499,7 +513,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
             onClick={() => setInlineSandwichMode('total')}
           >
-            Total Count
+            Exact Count
+          </Button>
+          <Button
+            size="sm"
+            variant={inlineSandwichMode === 'range' ? 'default' : 'outline'}
+            onClick={() => setInlineSandwichMode('range')}
+          >
+            Range
           </Button>
           <Button
             size="sm"
@@ -518,6 +539,42 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             placeholder="Total sandwich count"
             className="text-gray-900 bg-white"
           />
+        ) : inlineSandwichMode === 'range' ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={inlineRangeMin}
+                onChange={(e) => setInlineRangeMin(parseInt(e.target.value) || 0)}
+                placeholder="Min (e.g., 500)"
+                className="w-32 text-gray-900 bg-white"
+              />
+              <span>to</span>
+              <Input
+                type="number"
+                value={inlineRangeMax}
+                onChange={(e) => setInlineRangeMax(parseInt(e.target.value) || 0)}
+                placeholder="Max (e.g., 700)"
+                className="w-32 text-gray-900 bg-white"
+              />
+            </div>
+            <Select
+              value={inlineRangeType}
+              onValueChange={setInlineRangeType}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Type (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No specific type</SelectItem>
+                {SANDWICH_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         ) : (
           <div className="space-y-2">
             {inlineSandwichTypes.map((item, index) => (

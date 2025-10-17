@@ -237,9 +237,12 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [editingValue, setEditingValue] = useState<string>('');
 
   // Inline sandwich editing
-  const [inlineSandwichMode, setInlineSandwichMode] = useState<'total' | 'types'>('total');
+  const [inlineSandwichMode, setInlineSandwichMode] = useState<'total' | 'types' | 'range'>('total');
   const [inlineTotalCount, setInlineTotalCount] = useState(0);
   const [inlineSandwichTypes, setInlineSandwichTypes] = useState<Array<{type: string, quantity: number}>>([]);
+  const [inlineRangeMin, setInlineRangeMin] = useState(0);
+  const [inlineRangeMax, setInlineRangeMax] = useState(0);
+  const [inlineRangeType, setInlineRangeType] = useState('');
 
   // Modal sandwich editing
   const [modalSandwichMode, setModalSandwichMode] = useState<'total' | 'types'>('total');
@@ -519,6 +522,12 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setInlineTotalCount,
     inlineSandwichTypes,
     setInlineSandwichTypes,
+    inlineRangeMin,
+    setInlineRangeMin,
+    inlineRangeMax,
+    setInlineRangeMax,
+    inlineRangeType,
+    setInlineRangeType,
     modalSandwichMode,
     setModalSandwichMode,
     modalTotalCount,
