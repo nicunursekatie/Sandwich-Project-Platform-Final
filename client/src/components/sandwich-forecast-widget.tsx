@@ -14,6 +14,9 @@ export default function SandwichForecastWidget() {
     queryKey: ['/api/event-requests?all=true'],
   });
 
+  // Add state for weekend preference (after vs before)
+  const [useWeekendAfter, setUseWeekendAfter] = useState(true);
+
   // Weekly sandwich prediction calculator
   const weeklySandwichForecast = useMemo(() => {
     if (!eventRequests) return [];
@@ -40,13 +43,17 @@ export default function SandwichForecastWidget() {
 
       const day = d.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 
-      // Events on Wed/Thu need sandwiches made on the weekend AFTER
-      // So they go to the NEXT Thursday (following week)
-      // Events on Fri/Sat/Sun/Mon/Tue go to this week's Thursday
+      // Handle Wed/Thu based on user preference
       if (day === 3 || day === 4) {
-        // It's Wed/Thu - find NEXT week's Thursday
-        const daysToNextThursday = 7 + (4 - day);
-        d.setDate(d.getDate() + daysToNextThursday);
+        if (useWeekendAfter) {
+          // Weekend AFTER: find NEXT week's Thursday
+          const daysToNextThursday = 7 + (4 - day);
+          d.setDate(d.getDate() + daysToNextThursday);
+        } else {
+          // Weekend BEFORE: find this week's Thursday
+          const daysToThursday = 4 - day;
+          d.setDate(d.getDate() + daysToThursday);
+        }
       } else if (day === 2) {
         // It's Tuesday - find this week's Thursday
         d.setDate(d.getDate() + 2);
@@ -176,7 +183,7 @@ export default function SandwichForecastWidget() {
         ...data,
       }))
       .sort((a, b) => a.weekKey.localeCompare(b.weekKey)); // Show all weeks in range
-  }, [eventRequests]);
+  }, [eventRequests, useWeekendAfter]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -339,16 +346,43 @@ export default function SandwichForecastWidget() {
   return (
     <Card className="border-2 border-brand-primary/20">
       <CardHeader className="pb-3">
-        <CardTitle className="text-brand-primary flex items-center gap-2">
-          <TrendingUp className="h-5 w-5" />
-          Weekly Sandwich Planning
-        </CardTitle>
-        <p className="text-sm text-[#646464] mt-1">
-          Events grouped by Thursday distribution date. Tue/Wed/Thu events feed into that Thursday's distribution.
-        </p>
-        <p className="text-xs text-brand-primary mt-1 font-medium">
-          📅 Distribution window: Tue-Thu • Individual makers prep Wed • Group distributions Thu
-        </p>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-brand-primary flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Weekly Sandwich Planning
+            </CardTitle>
+            <p className="text-sm text-[#646464] mt-1">
+              Events grouped by Thursday distribution date. {useWeekendAfter ? 'Wed/Thu events use weekend AFTER.' : 'Tue/Wed/Thu events use same week.'}
+            </p>
+            <p className="text-xs text-brand-primary mt-1 font-medium">
+              📅 Distribution window: Tue-Thu • Individual makers prep Wed • Group distributions Thu
+            </p>
+          </div>
+          <div className="flex flex-col gap-1 items-end ml-4">
+            <label className="text-xs font-medium text-[#646464]">Wed/Thu Sandwiches</label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={useWeekendAfter ? 'outline' : 'default'}
+                onClick={() => setUseWeekendAfter(false)}
+                className="text-xs h-7"
+              >
+                Weekend Before
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={useWeekendAfter ? 'default' : 'outline'}
+                onClick={() => setUseWeekendAfter(true)}
+                className="text-xs h-7"
+              >
+                Weekend After
+              </Button>
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Week Navigation */}
@@ -395,7 +429,7 @@ export default function SandwichForecastWidget() {
                   <Info className="w-4 h-4 text-[#007E8C] cursor-pointer ml-1" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  Sandwiches needed for Thursday group distribution (includes events on Tuesday, Wednesday, and Thursday).
+                  Sandwiches needed for Thursday group distribution ({useWeekendAfter ? 'includes events on Tuesday only; Wed/Thu use following weekend' : 'includes events on Tuesday, Wednesday, and Thursday'}).
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
