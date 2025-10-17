@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { neon } from '@neondatabase/serverless';
-import { isAuthenticated, requirePermission } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/auth.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Run sandwich range fields migration
-router.post('/sandwich-range-fields', isAuthenticated, requirePermission('ADMIN'), async (req: any, res: any) => {
+router.post('/sandwich-range-fields', requirePermission('ADMIN'), async (req: any, res: any) => {
   try {
     const DATABASE_URL = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
 

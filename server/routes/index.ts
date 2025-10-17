@@ -31,6 +31,7 @@ import enhancedActivityRouter from './enhanced-user-activity';
 import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
+import teamBoardRouter from './team-board';
 import migrationsRouter from './migrations';
 
 // Import centralized middleware
@@ -333,6 +334,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     wishlistActivityRouter
   );
   router.use('/api/wishlist-activity', createErrorHandler('wishlist-activity'));
+
+  // Team board routes
+  router.use(
+    '/api/team-board',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    teamBoardRouter
+  );
+  router.use('/api/team-board', createErrorHandler('team-board'));
 
   // Cooler tracking routes
   router.use(
