@@ -150,6 +150,9 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   // Logout endpoint
   router.post('/logout', async (req: any, res) => {
     try {
+      // Determine if we're in production (same logic as session setup)
+      const isProduction = !!process.env.PRODUCTION_DATABASE_URL;
+      
       // Destroy the session
       req.session.destroy((err: any) => {
         if (err) {
@@ -160,12 +163,12 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
           });
         }
         
-        // Clear the session cookie with matching options
+        // Clear the session cookie with matching options (must match session cookie config)
         res.clearCookie('tsp.session', {
           path: '/',
           httpOnly: true,
-          secure: true,
-          sameSite: 'none'
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax'
         });
         res.json({ 
           success: true, 

@@ -24,6 +24,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   logCorsConfig(); // Log configuration for debugging
   app.use(createCorsMiddleware());
 
+  // Determine if we're in production (deployed) or development environment
+  const isProduction = !!process.env.PRODUCTION_DATABASE_URL;
+  
   // Add session middleware with enhanced security and mobile compatibility
   app.use(
     session({
@@ -32,10 +35,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       resave: false, // Only save session when modified - prevents unnecessary DB writes
       saveUninitialized: false,
       cookie: {
-        secure: true, // Replit supports HTTPS - required for mobile browsers
+        secure: isProduction, // Only require HTTPS in production (deployed app)
         httpOnly: true, // Prevent XSS attacks by blocking client-side access
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for extended user sessions
-        sameSite: 'none', // Required for mobile browsers (especially iOS Safari)
+        sameSite: isProduction ? 'none' : 'lax', // 'none' for production mobile, 'lax' for development
         domain: undefined, // Let Express auto-detect domain for Replit
       },
       name: 'tsp.session', // Custom session name
