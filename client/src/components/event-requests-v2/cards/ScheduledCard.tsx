@@ -58,6 +58,7 @@ import {
 import type { EventRequest } from '@shared/schema';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
+import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TimeDialogContentProps {
@@ -1050,32 +1051,54 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </div>
                   )
                 )}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
                   <span className="text-sm font-medium">Recipients:</span>
                   {isEditingThisCard &&
-                  editingField === 'deliveryDestination' ? (
-                    <RecipientSelector
-                      value={editingValue}
-                      onChange={setEditingValue}
-                      isInlineEditing={true}
-                      onSave={saveEdit}
-                      onCancel={cancelEdit}
-                      autoFocus={true}
-                      data-testid="delivery-destination-editor"
+                  editingField === 'assignedRecipientIds' ? (
+                    <MultiRecipientSelector
+                      value={editingValue ? JSON.parse(editingValue) : []}
+                      onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                      placeholder="Select recipient organizations..."
+                      data-testid="assigned-recipients-editor"
                     />
                   ) : (
-                    <div className="flex items-center gap-1 group">
-                      <span className="text-sm sm:text-base md:text-lg break-words">
-                        {request.deliveryDestination || 'Not specified'}
-                      </span>
+                    <div className="flex items-start gap-2 group">
+                      <div className="flex flex-wrap gap-1">
+                        {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+                          request.assignedRecipientIds.map((recipientId, index) => {
+                            // Parse the ID to get type and name
+                            const [type, ...rest] = recipientId.split(':');
+                            const displayName = rest.join(':'); // In case name has colons
+
+                            return (
+                              <Badge
+                                key={index}
+                                variant="secondary"
+                                className="text-xs bg-white/20 text-white border-white/40"
+                              >
+                                {type === 'recipient' && '🏢 '}
+                                {type === 'host' && '🏠 '}
+                                {type === 'custom' && '📝 '}
+                                {displayName}
+                              </Badge>
+                            );
+                          })
+                        ) : request.deliveryDestination ? (
+                          <span className="text-sm sm:text-base md:text-lg break-words">
+                            {request.deliveryDestination}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-300 italic">Not specified</span>
+                        )}
+                      </div>
                       {canEdit && (
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() =>
                             startEditing(
-                              'deliveryDestination',
-                              request.deliveryDestination || ''
+                              'assignedRecipientIds',
+                              request.assignedRecipientIds ? JSON.stringify(request.assignedRecipientIds) : '[]'
                             )
                           }
                           className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
