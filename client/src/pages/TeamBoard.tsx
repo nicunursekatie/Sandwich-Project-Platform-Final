@@ -95,10 +95,7 @@ export default function TeamBoard() {
   // Create item mutation
   const createItemMutation = useMutation({
     mutationFn: async (data: { content: string; type: BoardItemType }) => {
-      return await apiRequest('/api/team-board', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return await apiRequest('POST', '/api/team-board', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -131,10 +128,7 @@ export default function TeamBoard() {
         completedAt?: string | null;
       };
     }) => {
-      return await apiRequest(`/api/team-board/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(updates),
-      });
+      return await apiRequest('PATCH', `/api/team-board/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -151,9 +145,7 @@ export default function TeamBoard() {
   // Delete item mutation
   const deleteItemMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/team-board/${id}`, {
-        method: 'DELETE',
-      });
+      return await apiRequest('DELETE', `/api/team-board/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
