@@ -559,14 +559,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               />
             </div>
             <Select
-              value={inlineRangeType}
-              onValueChange={setInlineRangeType}
+              value={inlineRangeType || undefined}
+              onValueChange={(value) => setInlineRangeType(value === 'none' ? '' : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Type (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No specific type</SelectItem>
+                <SelectItem value="none">No specific type</SelectItem>
                 {SANDWICH_TYPES.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}

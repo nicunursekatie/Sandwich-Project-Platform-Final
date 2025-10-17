@@ -978,14 +978,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 <div>
                   <Label htmlFor="rangeSandwichType">Type (Optional)</Label>
                   <Select
-                    value={formData.rangeSandwichType || ''}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, rangeSandwichType: value }))}
+                    value={formData.rangeSandwichType || undefined}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, rangeSandwichType: value === 'none' ? '' : value }))}
                   >
                     <SelectTrigger id="rangeSandwichType" className="w-48">
                       <SelectValue placeholder="Select type..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No specific type</SelectItem>
+                      <SelectItem value="none">No specific type</SelectItem>
                       {SANDWICH_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
