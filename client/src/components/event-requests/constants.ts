@@ -6,12 +6,10 @@ import {
   XCircle,
 } from 'lucide-react';
 
-// Standardized sandwich types - only these 5 options allowed
+// Standardized sandwich types - only these 3 options allowed
 export const SANDWICH_TYPES = [
   { value: 'pbj', label: 'PB&J' },
   { value: 'deli', label: 'Deli' },
-  { value: 'deli_turkey', label: 'Turkey' },
-  { value: 'deli_ham', label: 'Ham' },
   { value: 'unknown', label: 'Unknown' },
 ] as const;
 
