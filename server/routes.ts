@@ -11,7 +11,8 @@ import { createCorsMiddleware, logCorsConfig } from './config/cors';
 export async function registerRoutes(app: Express): Promise<void> {
   // Use database-backed session store for deployment persistence
   // Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
-  const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+  const databaseUrl =
+    process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
   const PgSession = connectPg(session);
   const sessionStore = new PgSession({
     conString: databaseUrl,
@@ -27,7 +28,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Determine if we're in production based on NODE_ENV, not database URL
   // (PRODUCTION_DATABASE_URL can be set even in development for testing)
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   // Add session middleware with enhanced security and mobile compatibility
   app.use(
     session({
@@ -49,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Import authentication middleware for legacy routes that still need it
   const { isAuthenticated, setupTempAuth } = await import('./temp-auth');
-  
+
   // Setup temp auth routes (including login page)
   setupTempAuth(app);
 
@@ -58,7 +59,10 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Disable caching for all API routes to prevent development issues
   app.use('/api', (req, res, next) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, private'
+    );
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     next();
@@ -128,7 +132,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.use('/api/stream', isAuthenticated, streamRoutes);
 
   // Message notifications routes
-  const { registerMessageNotificationRoutes } = await import('./routes/message-notifications');
+  const { registerMessageNotificationRoutes } = await import(
+    './routes/message-notifications'
+  );
   registerMessageNotificationRoutes(app);
 
   // Announcements routes
@@ -167,10 +173,10 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.use('/api', (req, res, next) => {
     // Only catch unmatched API routes, not the root path or static files
     if (req.path.startsWith('/api/') && !res.headersSent) {
-      res.status(404).json({ 
+      res.status(404).json({
         error: 'API endpoint not found',
         path: req.path,
-        method: req.method 
+        method: req.method,
       });
     } else {
       next();
