@@ -1,12 +1,26 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, CheckCircle2, Clock, Lightbulb, ClipboardList, StickyNote, Trash2 } from 'lucide-react';
+import { 
+  Loader2, 
+  Plus, 
+  CheckCircle2, 
+  Clock, 
+  Lightbulb, 
+  ClipboardList, 
+  StickyNote, 
+  Trash2,
+  Search,
+  X,
+  User
+} from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -26,16 +40,57 @@ interface TeamBoardItem {
   createdAt: Date;
 }
 
+// Helper to get initials from name
+const getInitials = (name: string) => {
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
+// Helper to get consistent avatar color based on name
+const getAvatarColor = (name: string) => {
+  const colors = [
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-indigo-500',
+    'bg-yellow-500',
+    'bg-red-500',
+    'bg-teal-500',
+  ];
+  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+  return colors[index];
+};
+
 export default function TeamBoard() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [newItemContent, setNewItemContent] = useState('');
-  const [newItemType, setNewItemType] = useState<BoardItemType>('note');
+  const [newItemType, setNewItemType] = useState<BoardItemType>('task');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<BoardItemType | 'all'>('all');
 
   // Fetch board items
   const { data: items = [], isLoading } = useQuery<TeamBoardItem[]>({
     queryKey: ['/api/team-board'],
   });
+
+  // Filter items based on search and type
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      const matchesSearch = !searchQuery || 
+        item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.createdByName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.assignedToName?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesType = filterType === 'all' || item.type === filterType;
+      
+      return matchesSearch && matchesType;
+    });
+  }, [items, searchQuery, filterType]);
 
   // Create item mutation
   const createItemMutation = useMutation({
@@ -48,7 +103,6 @@ export default function TeamBoard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
       setNewItemContent('');
-      setNewItemType('note');
       toast({
         title: 'Posted!',
         description: 'Your item has been added to the board',
@@ -63,7 +117,7 @@ export default function TeamBoard() {
     },
   });
 
-  // Update item mutation (claim, complete)
+  // Update item mutation
   const updateItemMutation = useMutation({
     mutationFn: async ({ 
       id, 
@@ -72,8 +126,8 @@ export default function TeamBoard() {
       id: number; 
       updates: {
         status?: BoardItemStatus;
-        assignedTo?: string;
-        assignedToName?: string;
+        assignedTo?: string | null;
+        assignedToName?: string | null;
         completedAt?: string | null;
       };
     }) => {
@@ -184,51 +238,52 @@ export default function TeamBoard() {
     }
   };
 
-  const getStatusBadge = (status: BoardItemStatus) => {
-    switch (status) {
-      case 'claimed':
-        return <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300">In Progress</Badge>;
-      case 'done':
-        return <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300">Done</Badge>;
+  const getTypeColor = (type: BoardItemType) => {
+    switch (type) {
+      case 'task':
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300';
+      case 'idea':
+        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300';
+      case 'reminder':
+        return 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300';
+      case 'note':
       default:
-        return <Badge variant="outline" className="bg-gray-50 dark:bg-gray-800">Open</Badge>;
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
     }
   };
 
   // Group items by status
-  const openItems = items.filter(item => item.status === 'open');
-  const claimedItems = items.filter(item => item.status === 'claimed');
-  const doneItems = items.filter(item => item.status === 'done');
+  const openItems = filteredItems.filter(item => item.status === 'open');
+  const claimedItems = filteredItems.filter(item => item.status === 'claimed');
+  const doneItems = filteredItems.filter(item => item.status === 'done');
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+    <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
           Team Board
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Share tasks, ideas, notes, and reminders with the team
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+          Share tasks, ideas, and updates with the team
         </p>
       </div>
 
       {/* Quick Add Form */}
-      <Card className="mb-8 border-teal-200 dark:border-teal-800">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Post to Board</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="mb-6 border-teal-200 dark:border-teal-800 shadow-sm">
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Select
                 value={newItemType}
                 onValueChange={(value: BoardItemType) => setNewItemType(value)}
               >
-                <SelectTrigger className="w-[140px]" data-testid="select-type">
+                <SelectTrigger className="w-full sm:w-[140px]" data-testid="select-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="note">Note</SelectItem>
                   <SelectItem value="task">Task</SelectItem>
+                  <SelectItem value="note">Note</SelectItem>
                   <SelectItem value="idea">Idea</SelectItem>
                   <SelectItem value="reminder">Reminder</SelectItem>
                 </SelectContent>
@@ -237,8 +292,8 @@ export default function TeamBoard() {
               <Textarea
                 value={newItemContent}
                 onChange={(e) => setNewItemContent(e.target.value)}
-                placeholder="Type anything - a task someone can claim, a note, an idea, a reminder..."
-                className="flex-1 min-h-[80px]"
+                placeholder="What's on your mind? Type a task, idea, note, or reminder..."
+                className="flex-1 min-h-[60px] resize-none"
                 data-testid="input-content"
               />
             </div>
@@ -262,121 +317,206 @@ export default function TeamBoard() {
         </CardContent>
       </Card>
 
+      {/* Search and Filter */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Search items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+            data-testid="input-search"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <Select
+          value={filterType}
+          onValueChange={(value: BoardItemType | 'all') => setFilterType(value)}
+        >
+          <SelectTrigger className="w-full sm:w-[160px]" data-testid="select-filter">
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="task">Tasks</SelectItem>
+            <SelectItem value="note">Notes</SelectItem>
+            <SelectItem value="idea">Ideas</SelectItem>
+            <SelectItem value="reminder">Reminders</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Board Items */}
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
         </div>
+      ) : filteredItems.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <StickyNote className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 text-center">
+              {searchQuery || filterType !== 'all' 
+                ? 'No items match your search'
+                : 'No items yet. Post the first one!'}
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-3">
-          {/* Open Items */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              Open ({openItems.length})
-            </h2>
+          {/* Open Items Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                Open
+                <span className="text-sm font-normal text-gray-500">({openItems.length})</span>
+              </h2>
+            </div>
             <div className="space-y-3">
               {openItems.map((item) => (
-                <Card key={item.id} className="hover:shadow-md transition-shadow" data-testid={`card-item-${item.id}`}>
+                <Card 
+                  key={item.id} 
+                  className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-gray-400" 
+                  data-testid={`card-item-${item.id}`}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className={`capitalize ${getTypeColor(item.type)} flex items-center gap-1`}>
                         {getTypeIcon(item.type)}
-                        <Badge variant="secondary" className="capitalize">{item.type}</Badge>
-                      </div>
+                        {item.type}
+                      </Badge>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(item.id)}
-                        className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                        className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
                         data-testid={`button-delete-${item.id}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                     
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap leading-relaxed">
                       {item.content}
                     </p>
                     
-                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      <span>{item.createdByName}</span>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-3">
+                      <Avatar className={`h-6 w-6 ${getAvatarColor(item.createdByName)}`}>
+                        <AvatarFallback className="text-white text-xs">
+                          {getInitials(item.createdByName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{item.createdByName}</span>
+                      <span>•</span>
                       <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                     </div>
 
                     <Button
                       onClick={() => handleClaim(item)}
                       disabled={updateItemMutation.isPending}
-                      className="w-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
+                      className="w-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600 text-sm"
                       size="sm"
                       data-testid={`button-claim-${item.id}`}
                     >
+                      <User className="h-3.5 w-3.5 mr-1.5" />
                       I'll Handle This
                     </Button>
                   </CardContent>
                 </Card>
               ))}
               {openItems.length === 0 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
                   No open items
-                </p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Claimed Items */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              In Progress ({claimedItems.length})
-            </h2>
+          {/* In Progress Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                In Progress
+                <span className="text-sm font-normal text-gray-500">({claimedItems.length})</span>
+              </h2>
+            </div>
             <div className="space-y-3">
               {claimedItems.map((item) => (
-                <Card key={item.id} className="border-blue-200 dark:border-blue-800 hover:shadow-md transition-shadow" data-testid={`card-item-${item.id}`}>
+                <Card 
+                  key={item.id} 
+                  className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500" 
+                  data-testid={`card-item-${item.id}`}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className={`capitalize ${getTypeColor(item.type)} flex items-center gap-1`}>
                         {getTypeIcon(item.type)}
-                        {getStatusBadge(item.status)}
-                      </div>
+                        {item.type}
+                      </Badge>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(item.id)}
-                        className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                        className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
                         data-testid={`button-delete-${item.id}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                     
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap leading-relaxed">
                       {item.content}
                     </p>
                     
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      <div className="flex justify-between">
-                        <span>Posted by: {item.createdByName}</span>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <Avatar className={`h-6 w-6 ${getAvatarColor(item.createdByName)}`}>
+                          <AvatarFallback className="text-white text-xs">
+                            {getInitials(item.createdByName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>Posted by <span className="font-medium">{item.createdByName}</span></span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Claimed by: {item.assignedToName}</span>
-                      </div>
+                      {item.assignedToName && (
+                        <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                          <Avatar className={`h-6 w-6 ${getAvatarColor(item.assignedToName)}`}>
+                            <AvatarFallback className="text-white text-xs">
+                              {getInitials(item.assignedToName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>Working on it: <span className="font-medium">{item.assignedToName}</span></span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-2">
                       <Button
                         onClick={() => handleComplete(item)}
                         disabled={updateItemMutation.isPending}
-                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-sm"
                         size="sm"
                         data-testid={`button-complete-${item.id}`}
                       >
-                        <CheckCircle2 className="h-4 w-4 mr-1" />
-                        Done
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                        Mark Done
                       </Button>
                       <Button
                         onClick={() => handleReopen(item)}
                         disabled={updateItemMutation.isPending}
                         variant="outline"
                         size="sm"
+                        className="text-sm"
                         data-testid={`button-reopen-${item.id}`}
                       >
                         Reopen
@@ -386,49 +526,73 @@ export default function TeamBoard() {
                 </Card>
               ))}
               {claimedItems.length === 0 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
                   No items in progress
-                </p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Done Items */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              Done ({doneItems.length})
-            </h2>
+          {/* Done Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                Done
+                <span className="text-sm font-normal text-gray-500">({doneItems.length})</span>
+              </h2>
+            </div>
             <div className="space-y-3">
               {doneItems.map((item) => (
-                <Card key={item.id} className="border-green-200 dark:border-green-800 opacity-75 hover:opacity-100 transition-opacity" data-testid={`card-item-${item.id}`}>
+                <Card 
+                  key={item.id} 
+                  className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500 opacity-90" 
+                  data-testid={`card-item-${item.id}`}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className={`capitalize ${getTypeColor(item.type)} flex items-center gap-1`}>
                         {getTypeIcon(item.type)}
-                        {getStatusBadge(item.status)}
-                      </div>
+                        {item.type}
+                      </Badge>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(item.id)}
-                        className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                        className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
                         data-testid={`button-delete-${item.id}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                     
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap line-through">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 whitespace-pre-wrap leading-relaxed line-through">
                       {item.content}
                     </p>
                     
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      <div>Posted by: {item.createdByName}</div>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <Avatar className={`h-6 w-6 ${getAvatarColor(item.createdByName)}`}>
+                          <AvatarFallback className="text-white text-xs">
+                            {getInitials(item.createdByName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>Posted by <span className="font-medium">{item.createdByName}</span></span>
+                      </div>
                       {item.assignedToName && (
-                        <div>Completed by: {item.assignedToName}</div>
+                        <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                          <Avatar className={`h-6 w-6 ${getAvatarColor(item.assignedToName)}`}>
+                            <AvatarFallback className="text-white text-xs">
+                              {getInitials(item.assignedToName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>Completed by <span className="font-medium">{item.assignedToName}</span></span>
+                        </div>
                       )}
                       {item.completedAt && (
-                        <div>Done: {new Date(item.completedAt).toLocaleDateString()}</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">
+                          Done: {new Date(item.completedAt).toLocaleDateString()}
+                        </div>
                       )}
                     </div>
 
@@ -437,7 +601,7 @@ export default function TeamBoard() {
                       disabled={updateItemMutation.isPending}
                       variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full text-sm"
                       data-testid={`button-reopen-${item.id}`}
                     >
                       Reopen
@@ -446,9 +610,9 @@ export default function TeamBoard() {
                 </Card>
               ))}
               {doneItems.length === 0 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
                   No completed items
-                </p>
+                </div>
               )}
             </div>
           </div>
