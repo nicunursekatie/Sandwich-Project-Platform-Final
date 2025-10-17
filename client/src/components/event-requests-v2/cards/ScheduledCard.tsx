@@ -444,10 +444,18 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   const renderSandwichEdit = () => {
     if (!(isEditingThisCard && editingField === 'sandwichTypes')) {
-      const sandwichInfo = formatSandwichTypesDisplay(
-        request.sandwichTypes,
-        request.estimatedSandwichCount ?? undefined
-      );
+      // Check if there's a range instead of exact count
+      const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
+
+      let sandwichInfo;
+      if (hasRange) {
+        sandwichInfo = `${request.estimatedSandwichCountMin}-${request.estimatedSandwichCountMax} (estimated range)`;
+      } else {
+        sandwichInfo = formatSandwichTypesDisplay(
+          request.sandwichTypes,
+          request.estimatedSandwichCount ?? undefined
+        );
+      }
 
       return (
         <div className="flex items-center gap-2 group">

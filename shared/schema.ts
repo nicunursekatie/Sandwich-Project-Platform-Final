@@ -1520,6 +1520,8 @@ export const eventRequests = pgTable(
     contactCompletionNotes: text('contact_completion_notes'), // Free text notes from the contact
     eventAddress: text('event_address'), // Event location address collected
     estimatedSandwichCount: integer('estimated_sandwich_count'), // Number of sandwiches planned
+    estimatedSandwichCountMin: integer('estimated_sandwich_count_min'), // Minimum sandwiches in range (optional)
+    estimatedSandwichCountMax: integer('estimated_sandwich_count_max'), // Maximum sandwiches in range (optional)
     volunteerCount: integer('volunteer_count'), // Number of attendees expected (general total, or can use adult/children breakdown)
     adultCount: integer('adult_count'), // Number of adults (optional breakdown)
     childrenCount: integer('children_count'), // Number of children (optional breakdown)
@@ -1822,6 +1824,8 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     overnightHoldingLocation: z.string().nullable().optional(),
     overnightPickupTime: z.string().nullable().optional(),
     estimatedSandwichCount: z.number().nullable().optional(),
+    estimatedSandwichCountMin: z.number().nullable().optional(),
+    estimatedSandwichCountMax: z.number().nullable().optional(),
     // Attendance tracking fields
     actualAttendance: z.number().nullable().optional(),
     estimatedAttendance: z.number().nullable().optional(),

@@ -88,6 +88,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     schedulingNotes: '',
     planningNotes: '',
     totalSandwichCount: 0,
+    estimatedSandwichCountMin: 0,
+    estimatedSandwichCountMax: 0,
     volunteerCount: 0,
     adultCount: 0,
     childrenCount: 0,
@@ -279,6 +281,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
         planningNotes: (eventRequest as any)?.planningNotes || '',
         totalSandwichCount: totalCount,
+        estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
+        estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
         volunteerCount: (eventRequest as any)?.volunteerCount || 0,
         adultCount: (eventRequest as any)?.adultCount || 0,
         childrenCount: (eventRequest as any)?.childrenCount || 0,
@@ -455,9 +459,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     if (sandwichMode === 'total') {
       eventData.estimatedSandwichCount = formData.totalSandwichCount;
       eventData.sandwichTypes = null; // Clear specific types when using total mode
+      eventData.estimatedSandwichCountMin = null;
+      eventData.estimatedSandwichCountMax = null;
+    } else if (sandwichMode === 'range') {
+      eventData.estimatedSandwichCountMin = formData.estimatedSandwichCountMin || null;
+      eventData.estimatedSandwichCountMax = formData.estimatedSandwichCountMax || null;
+      eventData.estimatedSandwichCount = null; // Clear exact count when using range
+      eventData.sandwichTypes = null;
     } else {
       eventData.sandwichTypes = JSON.stringify(formData.sandwichTypes);
       eventData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+      eventData.estimatedSandwichCountMin = null;
+      eventData.estimatedSandwichCountMax = null;
     }
 
     // Include volunteer/attendee counts
@@ -891,7 +904,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 onClick={() => setSandwichMode('total')}
                 className="text-xs"
               >
-                Total Count Only
+                Exact Count
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={sandwichMode === 'range' ? 'default' : 'outline'}
+                onClick={() => setSandwichMode('range')}
+                className="text-xs"
+              >
+                Range
               </Button>
               <Button
                 type="button"
@@ -913,12 +935,43 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   type="number"
                   value={formData.totalSandwichCount}
                   onChange={(e) => setFormData(prev => ({ ...prev, totalSandwichCount: parseInt(e.target.value) || 0 }))}
-                  placeholder="Enter total sandwich count"
+                  placeholder="Enter exact count (e.g., 550)"
                   min="0"
                   className="w-40"
                 />
                 <p className="text-sm text-[#236383]">
-                  Use this when you know the total count but types will be determined later.
+                  Use this when you know the exact count.
+                </p>
+              </div>
+            )}
+
+            {/* Range Mode */}
+            {sandwichMode === 'range' && (
+              <div className="space-y-2">
+                <Label>Estimated Sandwich Range</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="sandwichCountMin"
+                    type="number"
+                    value={formData.estimatedSandwichCountMin || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMin: parseInt(e.target.value) || 0 }))}
+                    placeholder="Min (e.g., 500)"
+                    min="0"
+                    className="w-32"
+                  />
+                  <span className="text-gray-500">to</span>
+                  <Input
+                    id="sandwichCountMax"
+                    type="number"
+                    value={formData.estimatedSandwichCountMax || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMax: parseInt(e.target.value) || 0 }))}
+                    placeholder="Max (e.g., 700)"
+                    min="0"
+                    className="w-32"
+                  />
+                </div>
+                <p className="text-sm text-[#236383]">
+                  Use this when the final count isn't confirmed yet (e.g., 500-700 sandwiches).
                 </p>
               </div>
             )}
