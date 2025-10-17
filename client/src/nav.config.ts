@@ -30,6 +30,7 @@ import {
   FileSpreadsheet,
   Package,
   HelpCircle,
+  StickyNote,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -117,6 +118,13 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Lightbulb,
     href: 'suggestions',
     permission: PERMISSIONS.NAV_SUGGESTIONS,
+    group: 'communication',
+  },
+  {
+    id: 'team-board',
+    label: 'Team Board',
+    icon: StickyNote,
+    href: 'team-board',
     group: 'communication',
   },
 

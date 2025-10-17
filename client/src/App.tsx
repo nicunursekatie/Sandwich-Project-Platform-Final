@@ -211,6 +211,9 @@ function Router() {
       <Route path="/wishlist">
         {() => <Dashboard initialSection="wishlist" />}
       </Route>
+      <Route path="/team-board">
+        {() => <Dashboard initialSection="team-board" />}
+      </Route>
       <Route path="/cooler-tracking">
         {() => <Dashboard initialSection="cooler-tracking" />}
       </Route>
