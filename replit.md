@@ -27,6 +27,8 @@ The application uses a React 18 frontend with TypeScript, Vite, TanStack Query, 
 
 **CRITICAL - Mobile Login Configuration**: Session cookies in `server/routes.ts` MUST be configured with `secure: true` and `sameSite: 'none'` for mobile browser compatibility. Mobile browsers (especially iOS Safari) block `sameSite: 'lax'` cookies. Replit supports HTTPS, so secure cookies work correctly. Configuration: `{ secure: true, httpOnly: true, maxAge: 30 days, sameSite: 'none' }`.
 
+**CRITICAL - Login Page Fetch Credentials**: All fetch() requests in `server/temp-auth.ts` (login, register, forgot password forms) MUST include `credentials: 'include'` to ensure session cookies are properly stored and sent by the browser. Without this, login succeeds on the backend but the browser doesn't store the session cookie, causing the user to remain on the login page. Fixed October 2025.
+
 The backend employs a modular router architecture with a central router, middleware, and dedicated feature modules. UI/UX design adheres to The Sandwich Project's official color palette and Roboto typography, prioritizing clarity, responsiveness, and visual hierarchy with card-based dashboards.
 
 Key technical implementations include:
