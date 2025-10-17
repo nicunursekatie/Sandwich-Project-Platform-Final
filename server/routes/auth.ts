@@ -158,8 +158,13 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
           });
         }
         
-        // Clear the session cookie (using actual session name from routes.ts)
-        res.clearCookie('tsp.session');
+        // Clear the session cookie with matching options
+        res.clearCookie('tsp.session', {
+          path: '/',
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none'
+        });
         res.json({ 
           success: true, 
           message: 'Logged out successfully' 
@@ -177,10 +182,20 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   // Get current authenticated user
   router.get('/user', async (req: any, res) => {
     try {
+      // Debug logging
+      console.log('🔍 /api/auth/user Debug:', {
+        hasSession: !!req.session,
+        sessionID: req.sessionID,
+        hasSessionUser: !!req.session?.user,
+        hasReqUser: !!req.user,
+        cookies: req.headers.cookie
+      });
+
       // Get user from session (temp auth) or req.user (Replit auth)
       const user = req.session?.user || req.user;
 
       if (!user) {
+        console.log('❌ No user found in session');
         return res.status(401).json({ message: 'No user in session' });
       }
 
