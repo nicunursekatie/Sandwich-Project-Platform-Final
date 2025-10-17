@@ -63,19 +63,29 @@ export const useEventAssignments = () => {
         const contactId = userIdOrName.replace('host-contact-', '');
         const numericContactId = parseInt(contactId);
         
+        console.log('🔍 RESOLVING HOST CONTACT:', { 
+          userIdOrName, 
+          contactId, 
+          numericContactId,
+          hostsWithContactsLoaded: !!hostsWithContacts,
+          hostsWithContactsCount: hostsWithContacts?.length || 0
+        });
+        
         // Check if hostsWithContacts is loaded and not empty
         if (hostsWithContacts && hostsWithContacts.length > 0) {
           // Find the contact in hostsWithContacts
           for (const host of hostsWithContacts) {
+            console.log('🔍 Checking host:', host.name, 'contacts:', host.contacts?.length || 0);
             const contact = host.contacts?.find((c: any) => c.id === numericContactId);
             if (contact) {
+              console.log('✅ FOUND HOST CONTACT:', contact.name);
               return contact.name || contact.email || `Contact #${contactId}`;
             }
           }
         }
         
         // If hostsWithContacts not loaded yet, show loading state instead of raw ID
-        console.warn(`Host contact data not loaded or contact not found: ${userIdOrName}`);
+        console.warn(`❌ Host contact data not loaded or contact not found: ${userIdOrName}`);
         return 'Loading...';
       }
 
