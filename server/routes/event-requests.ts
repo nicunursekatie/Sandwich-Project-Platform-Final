@@ -1654,9 +1654,11 @@ router.put(
           'driversNeeded',
           'speakersNeeded',
           'estimatedSandwichCount',
+          'estimatedSandwichCountMin',
+          'estimatedSandwichCountMax',
         ];
         numericFields.forEach((field) => {
-          if (processedUpdates[field] !== undefined) {
+          if (processedUpdates[field] !== undefined && processedUpdates[field] !== null) {
             processedUpdates[field] = parseInt(processedUpdates[field]) || 0;
           }
         });

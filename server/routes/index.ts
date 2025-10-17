@@ -31,6 +31,7 @@ import enhancedActivityRouter from './enhanced-user-activity';
 import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
+import migrationsRouter from './migrations';
 
 // Import centralized middleware
 import {
@@ -397,6 +398,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     shoutoutsRouter
   );
   router.use('/api/shoutouts', createErrorHandler('shoutouts'));
+
+  // Database migrations (admin only)
+  router.use(
+    '/api/migrations',
+    deps.isAuthenticated,
+    migrationsRouter
+  );
+  router.use('/api/migrations', createErrorHandler('migrations'));
 
   return router;
 }
