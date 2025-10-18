@@ -33,10 +33,13 @@ import CleanPermissionsEditor from '@/components/clean-permissions-editor';
 import TeamBoard from '@/pages/TeamBoard';
 import MyAvailability from '@/pages/my-availability';
 import TeamAvailability from '@/pages/team-availability';
+import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
 import RouteMapView from '@/pages/route-map';
 import CoolerTrackingPage from '@/pages/cooler-tracking';
 import { PasswordDialog } from './PasswordDialog';
 import { SMSDialog } from './SMSDialog';
+import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ComprehensiveUserDialogProps {
   mode: 'add' | 'edit';
@@ -72,10 +75,19 @@ export function ComprehensiveUserDialog({
   onManageSMS,
   isPending = false,
 }: ComprehensiveUserDialogProps) {
+  const { user: currentUser } = useAuth();
   const [formData, setFormData] = useState<UserFormData>(defaultFormData);
   const [activeTab, setActiveTab] = useState('profile');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showSMSDialog, setShowSMSDialog] = useState(false);
+
+  // Check permissions for tabs
+  const canViewMyAvailability = hasPermission(currentUser, PERMISSIONS.NAV_MY_AVAILABILITY);
+  const canViewTeamAvailability = hasPermission(currentUser, PERMISSIONS.NAV_TEAM_AVAILABILITY);
+  const canViewVolunteerCalendar = hasPermission(currentUser, PERMISSIONS.NAV_VOLUNTEER_CALENDAR);
+  const canViewTeamBoard = true; // Team board doesn't have a specific permission yet
+  const canViewCoolers = true; // Cooler tracking doesn't have a specific permission yet
+  const canViewLocations = true; // Route map doesn't have a specific permission yet
 
   useEffect(() => {
     if (mode === 'edit' && user) {
@@ -245,7 +257,7 @@ export function ComprehensiveUserDialog({
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid grid-cols-8 w-full">
+            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${2 + (canViewMyAvailability ? 1 : 0) + (canViewTeamAvailability ? 1 : 0) + (canViewVolunteerCalendar ? 1 : 0) + (canViewTeamBoard ? 1 : 0) + (canViewLocations ? 1 : 0) + (canViewCoolers ? 1 : 0) + 1}, minmax(0, 1fr))` }}>
               <TabsTrigger value="profile" className="flex items-center gap-1 text-xs">
                 <UserIcon className="h-3 w-3" />
                 Profile
@@ -254,26 +266,42 @@ export function ComprehensiveUserDialog({
                 <Shield className="h-3 w-3" />
                 Permissions
               </TabsTrigger>
-              <TabsTrigger value="my-availability" className="flex items-center gap-1 text-xs">
-                <Calendar className="h-3 w-3" />
-                My Availability
-              </TabsTrigger>
-              <TabsTrigger value="team-board" className="flex items-center gap-1 text-xs">
-                <ClipboardList className="h-3 w-3" />
-                Team Board
-              </TabsTrigger>
-              <TabsTrigger value="team-availability" className="flex items-center gap-1 text-xs">
-                <Users className="h-3 w-3" />
-                Team Availability
-              </TabsTrigger>
-              <TabsTrigger value="locations" className="flex items-center gap-1 text-xs">
-                <MapPin className="h-3 w-3" />
-                Host Locations
-              </TabsTrigger>
-              <TabsTrigger value="coolers" className="flex items-center gap-1 text-xs">
-                <Package className="h-3 w-3" />
-                Coolers
-              </TabsTrigger>
+              {canViewMyAvailability && (
+                <TabsTrigger value="my-availability" className="flex items-center gap-1 text-xs">
+                  <Calendar className="h-3 w-3" />
+                  My Availability
+                </TabsTrigger>
+              )}
+              {canViewTeamAvailability && (
+                <TabsTrigger value="team-availability" className="flex items-center gap-1 text-xs">
+                  <Users className="h-3 w-3" />
+                  Team Availability
+                </TabsTrigger>
+              )}
+              {canViewVolunteerCalendar && (
+                <TabsTrigger value="volunteer-calendar" className="flex items-center gap-1 text-xs">
+                  <Calendar className="h-3 w-3" />
+                  Volunteer Calendar
+                </TabsTrigger>
+              )}
+              {canViewTeamBoard && (
+                <TabsTrigger value="team-board" className="flex items-center gap-1 text-xs">
+                  <ClipboardList className="h-3 w-3" />
+                  Team Board
+                </TabsTrigger>
+              )}
+              {canViewLocations && (
+                <TabsTrigger value="locations" className="flex items-center gap-1 text-xs">
+                  <MapPin className="h-3 w-3" />
+                  Host Locations
+                </TabsTrigger>
+              )}
+              {canViewCoolers && (
+                <TabsTrigger value="coolers" className="flex items-center gap-1 text-xs">
+                  <Package className="h-3 w-3" />
+                  Coolers
+                </TabsTrigger>
+              )}
               <TabsTrigger value="activity" className="flex items-center gap-1 text-xs">
                 <BarChart3 className="h-3 w-3" />
                 Activity
@@ -458,79 +486,106 @@ export function ComprehensiveUserDialog({
             </TabsContent>
 
             {/* My Availability Tab */}
-            <TabsContent value="my-availability" className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium">My Availability</h3>
-                  <p className="text-sm text-gray-600">
-                    View and manage availability for {user?.firstName} {user?.lastName}
-                  </p>
+            {canViewMyAvailability && (
+              <TabsContent value="my-availability" className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">My Availability</h3>
+                    <p className="text-sm text-gray-600">
+                      View and manage availability for {user?.firstName} {user?.lastName}
+                    </p>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <MyAvailability />
+                  </div>
                 </div>
-                <div className="border rounded-lg overflow-hidden">
-                  <MyAvailability />
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Team Board Tab */}
-            <TabsContent value="team-board" className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium">Team Board</h3>
-                  <p className="text-sm text-gray-600">
-                    Collaborative team board for tasks, notes, and ideas
-                  </p>
-                </div>
-                <div className="border rounded-lg overflow-hidden">
-                  <TeamBoard />
-                </div>
-              </div>
-            </TabsContent>
+              </TabsContent>
+            )}
 
             {/* Team Availability Tab */}
-            <TabsContent value="team-availability" className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium">Team Availability</h3>
-                  <p className="text-sm text-gray-600">
-                    View availability across the entire team
-                  </p>
+            {canViewTeamAvailability && (
+              <TabsContent value="team-availability" className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Team Availability</h3>
+                    <p className="text-sm text-gray-600">
+                      View availability across the entire team
+                    </p>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <TeamAvailability />
+                  </div>
                 </div>
-                <div className="border rounded-lg overflow-hidden">
-                  <TeamAvailability />
+              </TabsContent>
+            )}
+
+            {/* Volunteer Calendar Tab */}
+            {canViewVolunteerCalendar && (
+              <TabsContent value="volunteer-calendar" className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Volunteer Calendar</h3>
+                    <p className="text-sm text-gray-600">
+                      TSP volunteer availability calendar
+                    </p>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <GoogleCalendarAvailability />
+                  </div>
                 </div>
-              </div>
-            </TabsContent>
+              </TabsContent>
+            )}
+
+            {/* Team Board Tab */}
+            {canViewTeamBoard && (
+              <TabsContent value="team-board" className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Team Board</h3>
+                    <p className="text-sm text-gray-600">
+                      Collaborative team board for tasks, notes, and ideas
+                    </p>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <TeamBoard />
+                  </div>
+                </div>
+              </TabsContent>
+            )}
 
             {/* Host Locations Map Tab */}
-            <TabsContent value="locations" className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium">Host Locations Map</h3>
-                  <p className="text-sm text-gray-600">
-                    Interactive map showing all host locations
-                  </p>
+            {canViewLocations && (
+              <TabsContent value="locations" className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Host Locations Map</h3>
+                    <p className="text-sm text-gray-600">
+                      Interactive map showing all host locations
+                    </p>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden h-[600px]">
+                    <RouteMapView />
+                  </div>
                 </div>
-                <div className="border rounded-lg overflow-hidden h-[600px]">
-                  <RouteMapView />
-                </div>
-              </div>
-            </TabsContent>
+              </TabsContent>
+            )}
 
             {/* Cooler Tracking Tab */}
-            <TabsContent value="coolers" className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium">Cooler Tracking</h3>
-                  <p className="text-sm text-gray-600">
-                    Track and manage cooler inventory and locations
-                  </p>
+            {canViewCoolers && (
+              <TabsContent value="coolers" className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Cooler Tracking</h3>
+                    <p className="text-sm text-gray-600">
+                      Track and manage cooler inventory and locations
+                    </p>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <CoolerTrackingPage />
+                  </div>
                 </div>
-                <div className="border rounded-lg overflow-hidden">
-                  <CoolerTrackingPage />
-                </div>
-              </div>
-            </TabsContent>
+              </TabsContent>
+            )}
 
             {/* Activity Tab */}
             <TabsContent value="activity" className="flex-1 overflow-y-auto p-4">
