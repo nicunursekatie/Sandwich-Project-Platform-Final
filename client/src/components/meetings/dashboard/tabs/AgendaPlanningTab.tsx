@@ -59,6 +59,7 @@ import type { ToastActionElement } from '@/components/ui/toast';
 import type { Meeting } from '../hooks/useMeetings';
 import type { Project, NewProjectData } from '../hooks/useProjects';
 import type { AgendaItem } from '../hooks/useAgenda';
+import { ProjectNotesHistory } from '../components/ProjectNotesHistory';
 
 // Toast function type based on the useToast hook
 type ToastFunction = (props: {
@@ -1097,6 +1098,12 @@ export function AgendaPlanningTab({
                                 />
                               </div>
                             </div>
+
+                            {/* Past Notes History for this Project */}
+                            <ProjectNotesHistory 
+                              projectId={project.id}
+                              projectTitle={project.title}
+                            />
 
                             {/* Agenda Actions */}
                             <div className="pt-4 space-y-4">
