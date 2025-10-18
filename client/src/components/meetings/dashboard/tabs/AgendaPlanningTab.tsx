@@ -49,6 +49,7 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronUp,
+  MessageSquare,
 } from 'lucide-react';
 import type { UseMutationResult, QueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
@@ -1020,6 +1021,23 @@ export function AgendaPlanningTab({
                           <Separator />
 
                           <CardContent className="pt-4 space-y-4">
+                            {/* Visual indicator for notes from previous meetings */}
+                            {(project.meetingDiscussionPoints || project.meetingDecisionItems) && (
+                              <div className="bg-gradient-to-r from-[#47B3CB]/10 to-[#007E8C]/10 border-l-4 border-[#007E8C] p-3 rounded-r-lg">
+                                <div className="flex items-center gap-2">
+                                  <MessageSquare className="w-4 h-4 text-[#007E8C] flex-shrink-0" />
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-[#007E8C]">
+                                      📋 Notes from Previous Meeting
+                                    </p>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                      These discussion points were added from past meeting notes. You can edit them below.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Discussion Notes */}
                             <div className="space-y-4">
                               <div className="space-y-2">
