@@ -394,10 +394,22 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           org.displayName = dept.organizationName;
         }
 
+        // Determine contact name label
+        let contactNameLabel = 'Historical Organization';
+        if (!dept.contacts || dept.contacts.length === 0) {
+          // Check if latest collection date is in 2025 or later
+          if (dept.latestCollectionDate) {
+            const collectionYear = new Date(dept.latestCollectionDate).getFullYear();
+            if (collectionYear >= 2025) {
+              contactNameLabel = 'Collection Logged Only';
+            }
+          }
+        }
+
         org.departments.push({
           organizationName: org.displayName, // Use unified display name
           department: dept.department,
-          contactName: dept.contacts[0]?.name || 'Historical Organization',
+          contactName: dept.contacts[0]?.name || contactNameLabel,
           email: dept.contacts[0]?.email || '',
           phone: dept.contacts[0]?.phone || '',
           allContacts: dept.contacts,

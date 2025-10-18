@@ -256,7 +256,7 @@ export default function GroupCatalog({
       (org.department && org.department.toLowerCase().includes(searchTerm.toLowerCase()));
 
     // For organizations without email/status (from collections only), only apply search filter
-    if (!org.email || org.contactName === 'Historical Organization') {
+    if (!org.email || org.contactName === 'Historical Organization' || org.contactName === 'Collection Logged Only') {
       return matchesSearch;
     }
 
