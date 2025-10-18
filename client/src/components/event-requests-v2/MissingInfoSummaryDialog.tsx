@@ -43,9 +43,17 @@ export function MissingInfoSummaryDialog() {
       return b.missingItems.length - a.missingItems.length;
     });
 
-  const formatEventDate = (dateString: string | null) => {
-    if (!dateString) return 'No date';
-    const date = new Date(dateString + 'T00:00:00');
+  const formatEventDate = (dateValue: string | Date | null) => {
+    if (!dateValue) return 'No date';
+    
+    // Handle both Date objects and string dates
+    const date = typeof dateValue === 'string' 
+      ? new Date(dateValue + 'T00:00:00')
+      : new Date(dateValue);
+    
+    // Check for invalid dates
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    
     return date.toLocaleDateString('en-US', {
       timeZone: 'UTC',
       month: 'short',
