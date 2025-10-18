@@ -1,0 +1,190 @@
+import { PERMISSIONS } from './auth-utils';
+
+/**
+ * Permission Groups for UI Organization
+ * Groups permissions by resource/feature area
+ */
+export const PERMISSION_GROUPS = {
+  ADMIN: {
+    label: 'Administration',
+    permissions: [
+      PERMISSIONS.ADMIN_ACCESS,
+      PERMISSIONS.MANAGE_ANNOUNCEMENTS,
+    ],
+  },
+  USERS: {
+    label: 'User Management',
+    permissions: [
+      PERMISSIONS.USERS_VIEW,
+      PERMISSIONS.USERS_ADD,
+      PERMISSIONS.USERS_EDIT,
+      PERMISSIONS.USERS_DELETE,
+    ],
+  },
+  HOSTS: {
+    label: 'Host Locations',
+    permissions: [
+      PERMISSIONS.HOSTS_VIEW,
+      PERMISSIONS.HOSTS_ADD,
+      PERMISSIONS.HOSTS_EDIT,
+      PERMISSIONS.HOSTS_DELETE,
+    ],
+  },
+  RECIPIENTS: {
+    label: 'Recipient Organizations',
+    permissions: [
+      PERMISSIONS.RECIPIENTS_VIEW,
+      PERMISSIONS.RECIPIENTS_ADD,
+      PERMISSIONS.RECIPIENTS_EDIT,
+      PERMISSIONS.RECIPIENTS_DELETE,
+    ],
+  },
+  DRIVERS: {
+    label: 'Drivers',
+    permissions: [
+      PERMISSIONS.DRIVERS_VIEW,
+      PERMISSIONS.DRIVERS_ADD,
+      PERMISSIONS.DRIVERS_EDIT,
+      PERMISSIONS.DRIVERS_DELETE,
+    ],
+  },
+  VOLUNTEERS: {
+    label: 'Volunteers',
+    permissions: [
+      PERMISSIONS.VOLUNTEERS_VIEW,
+      PERMISSIONS.VOLUNTEERS_ADD,
+      PERMISSIONS.VOLUNTEERS_EDIT,
+      PERMISSIONS.VOLUNTEERS_DELETE,
+    ],
+  },
+  COLLECTIONS: {
+    label: 'Sandwich Collections',
+    permissions: [
+      PERMISSIONS.COLLECTIONS_VIEW,
+      PERMISSIONS.COLLECTIONS_ADD,
+      PERMISSIONS.COLLECTIONS_EDIT_OWN,
+      PERMISSIONS.COLLECTIONS_EDIT_ALL,
+      PERMISSIONS.COLLECTIONS_DELETE_OWN,
+      PERMISSIONS.COLLECTIONS_DELETE_ALL,
+      PERMISSIONS.COLLECTIONS_WALKTHROUGH,
+    ],
+  },
+  PROJECTS: {
+    label: 'Projects',
+    permissions: [
+      PERMISSIONS.PROJECTS_VIEW,
+      PERMISSIONS.PROJECTS_ADD,
+      PERMISSIONS.PROJECTS_EDIT_OWN,
+      PERMISSIONS.PROJECTS_EDIT_ALL,
+      PERMISSIONS.PROJECTS_DELETE_OWN,
+      PERMISSIONS.PROJECTS_DELETE_ALL,
+    ],
+  },
+  EVENT_REQUESTS: {
+    label: 'Event Requests',
+    permissions: [
+      PERMISSIONS.EVENT_REQUESTS_VIEW,
+      PERMISSIONS.EVENT_REQUESTS_ADD,
+      PERMISSIONS.EVENT_REQUESTS_EDIT,
+      PERMISSIONS.EVENT_REQUESTS_DELETE,
+      PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP,
+      PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS,
+      PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT,
+      PERMISSIONS.EVENT_REQUESTS_FOLLOW_UP,
+    ],
+  },
+  MESSAGES: {
+    label: 'Messaging',
+    permissions: [
+      PERMISSIONS.MESSAGES_VIEW,
+      PERMISSIONS.MESSAGES_SEND,
+      PERMISSIONS.MESSAGES_EDIT,
+      PERMISSIONS.MESSAGES_DELETE,
+      PERMISSIONS.MESSAGES_MODERATE,
+    ],
+  },
+  WORK_LOGS: {
+    label: 'Work Logs',
+    permissions: [
+      PERMISSIONS.WORK_LOGS_VIEW,
+      PERMISSIONS.WORK_LOGS_VIEW_ALL,
+      PERMISSIONS.WORK_LOGS_ADD,
+      PERMISSIONS.WORK_LOGS_EDIT_OWN,
+      PERMISSIONS.WORK_LOGS_EDIT_ALL,
+      PERMISSIONS.WORK_LOGS_DELETE_OWN,
+      PERMISSIONS.WORK_LOGS_DELETE_ALL,
+    ],
+  },
+  SUGGESTIONS: {
+    label: 'Suggestions',
+    permissions: [
+      PERMISSIONS.SUGGESTIONS_VIEW,
+      PERMISSIONS.SUGGESTIONS_ADD,
+      PERMISSIONS.SUGGESTIONS_EDIT_OWN,
+      PERMISSIONS.SUGGESTIONS_EDIT_ALL,
+      PERMISSIONS.SUGGESTIONS_DELETE_OWN,
+      PERMISSIONS.SUGGESTIONS_DELETE_ALL,
+      PERMISSIONS.SUGGESTIONS_MANAGE,
+    ],
+  },
+  AVAILABILITY: {
+    label: 'Availability',
+    permissions: [
+      PERMISSIONS.AVAILABILITY_VIEW,
+      PERMISSIONS.AVAILABILITY_ADD,
+      PERMISSIONS.AVAILABILITY_EDIT_OWN,
+      PERMISSIONS.AVAILABILITY_EDIT_ALL,
+      PERMISSIONS.AVAILABILITY_DELETE_OWN,
+      PERMISSIONS.AVAILABILITY_DELETE_ALL,
+    ],
+  },
+  NAVIGATION: {
+    label: 'Navigation Tabs',
+    permissions: [
+      PERMISSIONS.NAV_DASHBOARD,
+      PERMISSIONS.NAV_MY_ACTIONS,
+      PERMISSIONS.NAV_SUGGESTIONS,
+      PERMISSIONS.NAV_MY_AVAILABILITY,
+      PERMISSIONS.NAV_TEAM_AVAILABILITY,
+      PERMISSIONS.NAV_VOLUNTEER_CALENDAR,
+      PERMISSIONS.NAV_COLLECTIONS_LOG,
+      PERMISSIONS.NAV_HOSTS,
+      PERMISSIONS.NAV_DRIVERS,
+      PERMISSIONS.NAV_VOLUNTEERS,
+      PERMISSIONS.NAV_RECIPIENTS,
+      PERMISSIONS.NAV_PROJECTS,
+      PERMISSIONS.NAV_EVENTS_GOOGLE_SHEET,
+      PERMISSIONS.NAV_EVENT_REMINDERS,
+      PERMISSIONS.NAV_IMPORTANT_DOCUMENTS,
+      PERMISSIONS.NAV_IMPORTANT_LINKS,
+      PERMISSIONS.NAV_MEETINGS,
+      PERMISSIONS.NAV_ANALYTICS,
+      PERMISSIONS.NAV_TOOLKIT,
+    ],
+  },
+} as const;
+
+/**
+ * Get human-readable label for a permission
+ */
+export function getPermissionLabel(permission: string): string {
+  // Convert SNAKE_CASE to Title Case
+  return permission
+    .split('_')
+    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
+ * Get permission description (optional - can be enhanced later)
+ */
+export function getPermissionDescription(permission: string): string {
+  const descriptions: Record<string, string> = {
+    [PERMISSIONS.ADMIN_ACCESS]: 'Full administrative access to the platform',
+    [PERMISSIONS.USERS_EDIT]: 'Edit user accounts and permissions',
+    [PERMISSIONS.HOSTS_VIEW]: 'View host location directory',
+    [PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS]: 'Assign team members to events',
+    // Add more as needed...
+  };
+  return descriptions[permission] || getPermissionLabel(permission);
+}
