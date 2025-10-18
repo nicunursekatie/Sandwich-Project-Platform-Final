@@ -87,9 +87,9 @@ export function ComprehensiveUserDialog({
   const canViewTeamAvailability = hasPermission(currentUser, PERMISSIONS.NAV_TEAM_AVAILABILITY);
   const canViewVolunteerCalendar = hasPermission(currentUser, PERMISSIONS.NAV_VOLUNTEER_CALENDAR);
   const canViewEventRequests = hasPermission(currentUser, PERMISSIONS.NAV_EVENT_PLANNING) || hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW);
-  const canViewTeamBoard = true; // Team board doesn't have a specific permission yet
-  const canViewCoolers = true; // Cooler tracking doesn't have a specific permission yet
-  const canViewLocations = true; // Route map doesn't have a specific permission yet
+  const canViewTeamBoard = hasPermission(currentUser, PERMISSIONS.NAV_TEAM_BOARD);
+  const canViewCoolers = hasPermission(currentUser, PERMISSIONS.NAV_COOLER_TRACKING);
+  const canViewLocations = hasPermission(currentUser, PERMISSIONS.NAV_ROUTE_MAP);
 
   useEffect(() => {
     if (mode === 'edit' && user) {

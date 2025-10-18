@@ -203,6 +203,15 @@ export const PERMISSIONS = {
   NAV_MY_AVAILABILITY: 'NAV_MY_AVAILABILITY', // Access to My Availability tab
   NAV_TEAM_AVAILABILITY: 'NAV_TEAM_AVAILABILITY', // Access to Team Availability tab
   NAV_VOLUNTEER_CALENDAR: 'NAV_VOLUNTEER_CALENDAR', // Access to Volunteer Calendar tab
+  NAV_GRANT_METRICS: 'NAV_GRANT_METRICS', // Access to Grant Metrics tab
+  NAV_SIGNUP_GENIUS: 'NAV_SIGNUP_GENIUS', // Access to Sign Up Genius tab
+  NAV_WISHLIST: 'NAV_WISHLIST', // Access to Amazon Wishlist tab
+  NAV_COOLER_TRACKING: 'NAV_COOLER_TRACKING', // Access to Cooler Tracking tab
+  NAV_ROUTE_MAP: 'NAV_ROUTE_MAP', // Access to Host Locations/Route Map tab
+  NAV_HISTORICAL_IMPORT: 'NAV_HISTORICAL_IMPORT', // Access to Historical Import tab
+  NAV_HELP: 'NAV_HELP', // Access to Help tab
+  NAV_USER_MANAGEMENT: 'NAV_USER_MANAGEMENT', // Access to User Management tab
+  NAV_TEAM_BOARD: 'NAV_TEAM_BOARD', // Access to Team Board tab
 
   // ADMIN - Administrative access
   ADMIN_PANEL_ACCESS: 'ADMIN_PANEL_ACCESS', // Access to admin panel/user management
