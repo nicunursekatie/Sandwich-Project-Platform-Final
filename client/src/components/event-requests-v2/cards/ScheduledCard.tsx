@@ -659,38 +659,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 const missingInfo = getMissingIntakeInfo(request);
                 if (missingInfo.length === 0) return null;
                 
-                // On mobile (or when >2 items), show collapsed badge
-                if (isMobile || missingInfo.length > 2) {
-                  return (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Badge 
-                          variant="outline"
-                          className="bg-red-50 text-red-700 border-red-300 px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:bg-red-100"
-                          data-testid="badge-missing-info"
-                        >
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          {missingInfo.length} Missing Item{missingInfo.length > 1 ? 's' : ''}
-                        </Badge>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Missing Intake Information</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-2">
-                          <p className="text-sm text-gray-600">The following information is incomplete:</p>
-                          <ul className="list-disc list-inside space-y-1">
-                            {missingInfo.map((item) => (
-                              <li key={item} className="text-sm font-medium text-red-700">{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  );
-                }
-                
-                // On desktop with 1-2 items, show individual badges
+                // Always show individual badges listing each missing item
                 return missingInfo.map((item) => (
                   <Badge 
                     key={item}
