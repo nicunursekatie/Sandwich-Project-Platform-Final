@@ -225,6 +225,36 @@ interface ScheduledCardProps {
   canEdit?: boolean;
 }
 
+// Validation function to check for missing critical intake information
+const getMissingIntakeInfo = (request: EventRequest): string[] => {
+  const missing: string[] = [];
+  
+  // Check for contact info (email OR phone)
+  if (!request.email && !request.phone) {
+    missing.push('Contact Info');
+  }
+  
+  // Check for sandwich estimate (count and types)
+  const hasSandwichCount = (request.estimatedSandwichCount && request.estimatedSandwichCount > 0) ||
+                          (request.estimatedSandwichCountMin && request.estimatedSandwichCountMin > 0) ||
+                          (request.estimatedSandwichCountMax && request.estimatedSandwichCountMax > 0);
+  
+  const hasSandwichTypes = request.sandwichTypes && 
+                          Array.isArray(request.sandwichTypes) && 
+                          request.sandwichTypes.length > 0;
+  
+  if (!hasSandwichCount || !hasSandwichTypes) {
+    missing.push('Sandwich Info');
+  }
+  
+  // Check for address
+  if (!request.eventAddress || request.eventAddress.trim() === '') {
+    missing.push('Address');
+  }
+  
+  return missing;
+};
+
 export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   request,
   editingField,
@@ -651,6 +681,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {getStatusLabel(request.status)}
               </Badge>
+              
+              {/* Validation badges for missing intake info */}
+              {(() => {
+                const missingInfo = getMissingIntakeInfo(request);
+                return missingInfo.map((item) => (
+                  <Badge 
+                    key={item}
+                    variant="outline"
+                    className="bg-red-50 text-red-700 border-red-300 px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center"
+                    data-testid={`badge-missing-${item.toLowerCase().replace(' ', '-')}`}
+                  >
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Missing: {item}
+                  </Badge>
+                ));
+              })()}
 
               {/* Sandwich Count Badge */}
               <Badge className="bg-[#FBAD3F] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
