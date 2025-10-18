@@ -188,10 +188,7 @@ export default function RequestCard({
   // TSP Contact Update Mutation
   const updateTspContactMutation = useMutation({
     mutationFn: async (tspContact: string | null) => {
-      return await apiRequest(`/api/event-requests/${request.id}/tsp-contact`, {
-        method: 'PATCH',
-        body: { tspContact },
-      });
+      return await apiRequest('PATCH', `/api/event-requests/${request.id}/tsp-contact`, { tspContact });
     },
     onSuccess: () => {
       setIsEditingTspContact(false);
@@ -912,7 +909,11 @@ export default function RequestCard({
                           {request.toolkitSentDate && (
                             <span className="text-sm text-green-600">
                               on{' '}
-                              {formatToolkitDate(request.toolkitSentDate)}
+                              {formatToolkitDate(
+                                typeof request.toolkitSentDate === 'string' 
+                                  ? request.toolkitSentDate 
+                                  : request.toolkitSentDate.toISOString()
+                              )}
                             </span>
                           )}
                         </div>
@@ -1048,7 +1049,7 @@ export default function RequestCard({
                                 {formatPickupTimeDisplay(
                                   (request as any).pickupDateTime,
                                   request.pickupTime,
-                                  request.desiredEventDate || request.scheduledEventDate
+                                  (request.desiredEventDate || request.scheduledEventDate)?.toString() || null
                                 )}
                               </span>
                               {hasPermission(user, PERMISSIONS.EVENT_REQUESTS_INLINE_EDIT_TIMES) && (

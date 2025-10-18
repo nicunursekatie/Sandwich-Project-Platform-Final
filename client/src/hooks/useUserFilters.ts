@@ -1,0 +1,36 @@
+import { useMemo, useState } from 'react';
+
+interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+}
+
+export function useUserFilters(users: User[]) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((user: User) => {
+      const matchesSearch =
+        user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+
+      return matchesSearch && matchesRole;
+    });
+  }, [users, searchQuery, roleFilter]);
+
+  return {
+    searchQuery,
+    setSearchQuery,
+    roleFilter,
+    setRoleFilter,
+    filteredUsers,
+  };
+}

@@ -125,7 +125,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     schoolClassification: '',
   });
 
-  const [sandwichMode, setSandwichMode] = useState<'total' | 'types'>('total');
+  const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
   const [actualSandwichMode, setActualSandwichMode] = useState<'total' | 'types'>('total');
   const [attendeeMode, setAttendeeMode] = useState<'total' | 'breakdown'>('total');
   const [showContactInfo, setShowContactInfo] = useState(false);
