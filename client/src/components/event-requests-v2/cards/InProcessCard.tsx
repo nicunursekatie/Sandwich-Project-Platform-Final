@@ -3,6 +3,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   Calendar,
   Clock,
   Package,
@@ -23,6 +30,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   formatTime12Hour,
   formatEventDate,
@@ -38,6 +46,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -55,36 +64,6 @@ interface InProcessCardProps {
   canEdit?: boolean;
   canDelete?: boolean;
 }
-
-// Validation function to check for missing critical intake information
-const getMissingIntakeInfo = (request: EventRequest): string[] => {
-  const missing: string[] = [];
-  
-  // Check for contact info (email OR phone)
-  if (!request.email && !request.phone) {
-    missing.push('Contact Info');
-  }
-  
-  // Check for sandwich estimate (count and types)
-  const hasSandwichCount = (request.estimatedSandwichCount && request.estimatedSandwichCount > 0) ||
-                          (request.estimatedSandwichCountMin && request.estimatedSandwichCountMin > 0) ||
-                          (request.estimatedSandwichCountMax && request.estimatedSandwichCountMax > 0);
-  
-  const hasSandwichTypes = request.sandwichTypes && 
-                          Array.isArray(request.sandwichTypes) && 
-                          request.sandwichTypes.length > 0;
-  
-  if (!hasSandwichCount || !hasSandwichTypes) {
-    missing.push('Sandwich Info');
-  }
-  
-  // Check for address
-  if (!request.eventAddress || request.eventAddress.trim() === '') {
-    missing.push('Address');
-  }
-  
-  return missing;
-};
 
 // CardHeader component - copied from shared
 interface CardHeaderProps {
@@ -114,6 +93,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   cancelEdit,
   setEditingValue,
 }) => {
+  const isMobile = useIsMobile();
   const StatusIcon =
     statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
 
@@ -208,6 +188,40 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           {/* Validation badges for missing intake info */}
           {(() => {
             const missingInfo = getMissingIntakeInfo(request);
+            if (missingInfo.length === 0) return null;
+            
+            // On mobile (or when >2 items), show collapsed badge
+            if (isMobile || missingInfo.length > 2) {
+              return (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Badge 
+                      variant="outline"
+                      className="bg-red-50 text-red-700 border-red-300 px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:bg-red-100"
+                      data-testid="badge-missing-info"
+                    >
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      {missingInfo.length} Missing Item{missingInfo.length > 1 ? 's' : ''}
+                    </Badge>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Missing Intake Information</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-600">The following information is incomplete:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {missingInfo.map((item) => (
+                          <li key={item} className="text-sm font-medium text-red-700">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              );
+            }
+            
+            // On desktop with 1-2 items, show individual badges
             return missingInfo.map((item) => (
               <Badge 
                 key={item}
