@@ -110,7 +110,6 @@ export default function GroupCatalog({
   const [organizationDetails, setOrganizationDetails] = useState<any>(null);
   const [loadingOrganizationDetails, setLoadingOrganizationDetails] =
     useState(false);
-  const [showHistoricalOrganizations, setShowHistoricalOrganizations] = useState(false);
 
   // Fetch groups data
   const {
@@ -248,23 +247,20 @@ export default function GroupCatalog({
 
   const allOrganizations: OrganizationContact[] = Array.from(uniqueOrganizationsMap.values());
 
-  // Separate active organizations (with event requests) from historical ones (sandwich collections only)
-  const activeOrganizations = allOrganizations.filter(
-    (org) => org.email && org.contactName !== 'Historical Organization'
-  );
-
-  const historicalOrganizations = allOrganizations.filter(
-    (org) => !org.email || org.contactName === 'Historical Organization'
-  );
-
-  // Filter active organizations
-  const filteredActiveGroups = activeOrganizations.filter((org) => {
+  // Filter all organizations uniformly (no separation between active/historical)
+  const filteredActiveGroups = allOrganizations.filter((org) => {
     const matchesSearch =
       (org.organizationName && org.organizationName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (org.contactName && org.contactName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (org.email && org.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (org.department && org.department.toLowerCase().includes(searchTerm.toLowerCase()));
 
+    // For organizations without email/status (from collections only), only apply search filter
+    if (!org.email || org.contactName === 'Historical Organization') {
+      return matchesSearch;
+    }
+
+    // For organizations with event requests, apply all filters
     const matchesStatus = statusFilter === 'all' || org.status === statusFilter;
 
     // Use event date for filtering (when the event actually happened), not activity date (when it was created)
@@ -273,14 +269,6 @@ export default function GroupCatalog({
     const matchesDateEnd = !dateFilterEnd || !eventDate || eventDate <= new Date(dateFilterEnd + 'T23:59:59');
 
     return matchesSearch && matchesStatus && matchesDateStart && matchesDateEnd;
-  });
-
-  // Filter historical organizations (simpler filtering since they don't have emails/status)
-  const filteredHistoricalGroups = historicalOrganizations.filter((org) => {
-    return (
-      (org.organizationName && org.organizationName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (org.contactName && org.contactName.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
   });
 
   // Group entries by group name
@@ -336,34 +324,7 @@ export default function GroupCatalog({
       .values()
   );
 
-  // Process historical organizations into groups
-  const historicalGroupInfo: GroupInfo[] = Array.from(
-    filteredHistoricalGroups
-      .reduce((groups: Map<string, GroupInfo>, org) => {
-        const orgName = org.organizationName || 'Unknown Organization';
-
-        if (!groups.has(orgName)) {
-          groups.set(orgName, {
-            groupName: orgName,
-            departments: [],
-            totalRequests: 0,
-            totalDepartments: 0,
-            hasHostedEvent: org.hasHostedEvent,
-            latestRequestDate: org.latestRequestDate,
-            latestActivityDate: org.latestActivityDate,
-          });
-        }
-
-        const group = groups.get(orgName)!;
-        group.departments.push(org);
-        group.hasHostedEvent = group.hasHostedEvent || org.hasHostedEvent;
-
-        return groups;
-      }, new Map())
-      .values()
-  );
-
-  // Sort active groups by organization name or latest activity date
+  // Sort groups by organization name or latest activity date
   const sortedActiveGroups = activeGroupInfo.sort((a, b) => {
     if (sortBy === 'groupName') {
       const aName = a.groupName || '';
@@ -379,14 +340,7 @@ export default function GroupCatalog({
     return sortOrder === 'desc' ? bDate - aDate : aDate - bDate;
   });
 
-  // Sort historical groups by organization name
-  const sortedHistoricalGroups = historicalGroupInfo.sort((a, b) => {
-    const aName = a.groupName || '';
-    const bName = b.groupName || '';
-    return aName.localeCompare(bName);
-  });
-
-  // Sort departments within each active group
+  // Sort departments within each group
   sortedActiveGroups.forEach((group) => {
     group.departments.sort((a, b) => {
       if (sortBy === 'eventDate') {
@@ -437,9 +391,6 @@ export default function GroupCatalog({
   const paginatedActiveGroups = Array.isArray(sortedActiveGroups)
     ? sortedActiveGroups.slice(activeStartIndex, activeEndIndex)
     : [];
-
-  // Historical groups don't need pagination initially - show all
-  const paginatedHistoricalGroups = sortedHistoricalGroups;
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -688,7 +639,6 @@ export default function GroupCatalog({
           <small className="text-gray-600">
             Showing {activeStartIndex + 1}-
             {Math.min(activeEndIndex, totalActiveItems)} of {totalActiveItems}{' '}
-            active groups • {paginatedHistoricalGroups.length} historical
             organizations
           </small>
           <div className="flex items-center gap-2">
@@ -711,8 +661,8 @@ export default function GroupCatalog({
         </div>
       </div>
 
-      {/* Organizations Display - Separated by Active and Historical */}
-      {totalActiveItems === 0 && paginatedHistoricalGroups.length === 0 ? (
+      {/* Organizations Display */}
+      {totalActiveItems === 0 ? (
         <div className="text-center py-12">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600">No organizations found</p>
@@ -1381,72 +1331,6 @@ export default function GroupCatalog({
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          )}
-
-          {/* Historical Organizations Section - Collapsible */}
-          {paginatedHistoricalGroups.length > 0 && (
-            <div className="mt-12">
-              <div 
-                className="flex items-center space-x-3 mb-6 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
-                onClick={() => setShowHistoricalOrganizations(!showHistoricalOrganizations)}
-              >
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-gray-100 to-slate-200">
-                  <Building className="w-5 h-5 text-gray-700" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Historical Organizations
-                </h2>
-                <Badge className="bg-gray-100 text-gray-700">
-                  {paginatedHistoricalGroups.length} organizations
-                </Badge>
-                <span className="text-sm text-gray-600">
-                  (from sandwich collections only)
-                </span>
-                <ChevronDown 
-                  className={`w-5 h-5 text-gray-500 transition-transform ${
-                    showHistoricalOrganizations ? 'rotate-180' : ''
-                  }`} 
-                />
-              </div>
-
-              {showHistoricalOrganizations && (
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {paginatedHistoricalGroups.map((group, groupIndex) => (
-                  <Card
-                    key={`historical-${group.groupName}-${groupIndex}`}
-                    className="bg-gradient-to-br from-gray-50 to-slate-100 border border-gray-200 hover:shadow-lg transition-all duration-300"
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg text-gray-800 flex items-center space-x-2">
-                        <Building className="w-5 h-5 text-gray-600" />
-                        <span>{group.groupName}</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Users className="w-4 h-4 mr-2" />
-                          <span>Historical host location</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <span className="w-4 h-4 text-orange-600 mr-2">
-                            🥪
-                          </span>
-                          <span>Sandwich collection host</span>
-                        </div>
-                        <div className="pt-2 mt-3 border-t">
-                          <small className="text-gray-500">
-                            From sandwich collections records
-                          </small>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              )}
             </div>
           )}
         </div>
