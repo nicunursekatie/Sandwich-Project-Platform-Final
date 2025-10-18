@@ -81,7 +81,7 @@ interface NotesTabProps {
   allProjects: Project[];
   
   // Handlers (for agenda integration)
-  handleSendToAgenda?: (projectId: number) => void;
+  handleSendToAgenda?: (projectId: number, noteContent?: string) => void;
   
   // Dependencies
   queryClient: QueryClient;
@@ -323,10 +323,12 @@ export function NotesTab({
 
   const handleUseInAgenda = (note: MeetingNote) => {
     if (handleSendToAgenda) {
-      handleSendToAgenda(note.projectId);
+      // Pass both projectId and note content so the discussion/decision points
+      // from past meetings are copied into the project's agenda fields
+      handleSendToAgenda(note.projectId, note.content);
       toast({
         title: 'Added to Agenda',
-        description: `Note for "${note.projectTitle}" has been added to agenda planning.`,
+        description: `Note for "${note.projectTitle}" has been added to agenda planning with past discussion content.`,
       });
     }
   };
