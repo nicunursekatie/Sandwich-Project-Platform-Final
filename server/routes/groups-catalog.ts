@@ -48,10 +48,11 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         const contactName =
           request.firstName && request.lastName
             ? `${request.firstName} ${request.lastName}`.trim()
-            : request.firstName || request.lastName || '';
+            : request.firstName || request.lastName || 'Contact Not Yet Assigned';
         const contactEmail = request.email;
 
-        if (!orgName || !contactName) return;
+        // Only skip if organization name is missing - contact name is optional
+        if (!orgName) return;
 
         // Create a unique key using canonical name for matching
         // Each event request gets its own card (use request.id for uniqueness)
