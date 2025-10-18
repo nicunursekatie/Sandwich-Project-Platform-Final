@@ -105,6 +105,7 @@ export class GoogleSheetsSyncService {
 
       // Get all projects once to track which ones should be archived
       const existingProjects = await this.storage.getAllProjects();
+      const archivedProjects = await this.storage.getArchivedProjects();
       const sheetProjectTitles = new Set(
         sheetRows
           .filter(row => row.project)
@@ -125,6 +126,18 @@ export class GoogleSheetsSyncService {
             p.googleSheetRowId === row.rowIndex?.toString() ||
             p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
         );
+
+        // Check if this project was previously archived - if so, skip re-creating it
+        const wasArchived = archivedProjects.find(
+          (p) =>
+            p.originalProjectId?.toString() === row.rowIndex?.toString() ||
+            p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
+        );
+
+        if (wasArchived && !existingProject) {
+          console.log(`⏭️  Skipping archived project "${row.project}" - previously archived, not re-creating`);
+          continue;
+        }
 
         const projectData = this.sheetRowToProject(row);
 
