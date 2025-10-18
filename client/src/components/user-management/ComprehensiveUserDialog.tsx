@@ -79,7 +79,16 @@ export function ComprehensiveUserDialog({
 
   useEffect(() => {
     if (mode === 'edit' && user) {
-      setFormData(user);
+      setFormData({
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phoneNumber: user.phoneNumber || '',
+        preferredEmail: user.preferredEmail || '',
+        role: user.role || 'volunteer',
+        isActive: user.isActive ?? true,
+        password: '',
+      });
     } else {
       setFormData(defaultFormData);
     }

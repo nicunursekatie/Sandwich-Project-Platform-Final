@@ -51,7 +51,7 @@ import {
 import { PERMISSIONS, USER_ROLES, getRoleDisplayName } from '@shared/auth-utils';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import ModernPermissionsEditor from '@/components/modern-permissions-editor';
+import CleanPermissionsEditor from '@/components/clean-permissions-editor';
 
 interface User {
   id: string;
@@ -588,7 +588,7 @@ export default function BulkPermissionsManager() {
       )}
 
       {/* Individual User Permissions Editor */}
-      <ModernPermissionsEditor
+      <CleanPermissionsEditor
         user={selectedUser}
         open={!!selectedUser}
         onOpenChange={(open) => {
