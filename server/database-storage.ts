@@ -341,18 +341,19 @@ export class DatabaseStorage implements IStorage {
     }
 
     try {
-      console.log(`[Database] Updating project ${id} with data:`, JSON.stringify(updateData, null, 2));
-      
-      // Build the update object using proper Drizzle column references
-      // This ensures camelCase field names are properly mapped to snake_case columns
-      const dbUpdate: Record<string, any> = {
-        updatedAt: new Date()
+      // Drizzle doesn't auto-convert camelCase to snake_case in dynamic .set() objects
+      // We need to manually map field names to database column names
+      const toSnakeCase = (str: string): string => {
+        return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       };
       
-      // Map each camelCase field to its snake_case database column
+      const dbUpdate: Record<string, any> = { updated_at: new Date() };
+      
       for (const [key, value] of Object.entries(updateData)) {
         if (value !== undefined && key !== 'id') {
-          dbUpdate[key] = value;
+          // Convert camelCase to snake_case for database columns
+          const dbColumnName = toSnakeCase(key);
+          dbUpdate[dbColumnName] = value;
         }
       }
       
@@ -362,10 +363,6 @@ export class DatabaseStorage implements IStorage {
         .where(eq(projects.id, id))
         .returning();
         
-      console.log(`[Database] Update result for project ${id}:`, project ? 'SUCCESS' : 'NO RESULT');
-      if (!project) {
-        console.warn(`[Database] Update returned no result for project ${id}`);
-      }
       return project || undefined;
     } catch (error) {
       console.error(`[Database] Failed to update project ${id}:`, error);
