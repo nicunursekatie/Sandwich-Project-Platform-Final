@@ -216,14 +216,18 @@ export class ProjectService implements IProjectService {
       );
     }
 
-    // Check if project exists and is completed
+    // Check if project exists
     const project = await this.storage.getProject(id);
     if (!project) {
       throw new Error('Project not found');
     }
 
+    // If project is not completed, mark it as completed first
     if (project.status !== 'completed') {
-      throw new Error('Only completed projects can be archived');
+      await this.storage.updateProject(id, { 
+        status: 'completed',
+        completionDate: new Date().toISOString()
+      });
     }
 
     const userFullName =
