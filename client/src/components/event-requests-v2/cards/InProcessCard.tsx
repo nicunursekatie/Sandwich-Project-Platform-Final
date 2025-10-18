@@ -386,6 +386,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
   return (
     <Card
+      id={`event-card-${request.id}`}
       className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#FBAD3F] ${
         isStale
           ? 'bg-gradient-to-br from-[#FBAD3F]/30 via-[#FBAD3F]/20 to-[#FFF4E6] border border-[#FBAD3F]/50'

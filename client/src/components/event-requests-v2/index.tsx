@@ -44,6 +44,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 // Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
 import { AssignmentDialog } from './dialogs/AssignmentDialog';
+import { MissingInfoSummaryDialog } from './MissingInfoSummaryDialog';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -197,7 +198,8 @@ const EventRequestsManagementContent: React.FC = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 {isMobile ? 'Add Event' : 'Add Manual Event Request'}
               </Button>
-              <div className={`${isMobile ? 'flex space-x-2' : 'flex items-center space-x-2'}`}>
+              <div className={`${isMobile ? 'flex flex-wrap gap-2' : 'flex items-center space-x-2'}`}>
+                <MissingInfoSummaryDialog />
                 <Button
                   onClick={() => setShowSandwichPlanningModal(true)}
                   variant="outline"
