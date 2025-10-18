@@ -38,6 +38,7 @@ interface CleanPermissionsEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (userId: string, role: string, permissions: string[]) => void;
+  embedded?: boolean; // If true, renders without Dialog wrapper
 }
 
 // Commonly adjusted permissions (show these prominently)
@@ -57,6 +58,7 @@ export default function CleanPermissionsEditor({
   open,
   onOpenChange,
   onSave,
+  embedded = false,
 }: CleanPermissionsEditorProps) {
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
@@ -158,20 +160,9 @@ export default function CleanPermissionsEditor({
   // Auto-expand groups when searching
   const groupsToShow = searchQuery ? new Set(filteredGroups.map(([key]) => key)) : expandedGroups;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-brand-primary" />
-            Permissions for {user.firstName} {user.lastName}
-          </DialogTitle>
-          <DialogDescription>
-            Choose a role template or customize specific permissions
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
+  // Shared content component
+  const permissionsContent = (
+    <div className="space-y-4">
           {/* Role Template Selector - PROMINENT */}
           <Card className="border-2 border-brand-primary/20">
             <CardHeader className="pb-3">
@@ -358,26 +349,59 @@ export default function CleanPermissionsEditor({
             </CardContent>
           </Card>
         </div>
+  );
+
+  const saveButton = (
+    <div className="flex items-center justify-between w-full pt-4 border-t">
+      <span className="text-sm text-gray-500">
+        {selectedPermissions.size} permissions selected
+      </span>
+      <div className="flex gap-2">
+        {!embedded && (
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+        )}
+        <Button
+          onClick={handleSave}
+          disabled={!hasChanges}
+          className="bg-brand-primary hover:bg-brand-primary-dark"
+        >
+          <Check className="h-4 w-4 mr-2" />
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  );
+
+  // If embedded, render without Dialog wrapper
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        {permissionsContent}
+        {saveButton}
+      </div>
+    );
+  }
+
+  // Default: render with Dialog wrapper
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-brand-primary" />
+            Permissions for {user.firstName} {user.lastName}
+          </DialogTitle>
+          <DialogDescription>
+            Choose a role template or customize specific permissions
+          </DialogDescription>
+        </DialogHeader>
+
+        {permissionsContent}
 
         <DialogFooter>
-          <div className="flex items-center justify-between w-full">
-            <span className="text-sm text-gray-500">
-              {selectedPermissions.size} permissions selected
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges}
-                className="bg-brand-primary hover:bg-brand-primary-dark"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
-            </div>
-          </div>
+          {saveButton}
         </DialogFooter>
       </DialogContent>
     </Dialog>

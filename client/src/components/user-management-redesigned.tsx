@@ -42,7 +42,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // Import streamlined components
 import { UserAvatar } from '@/components/user-management';
-import { UserFormDialog } from '@/components/user-management/UserFormDialog';
+import { ComprehensiveUserDialog } from '@/components/user-management/ComprehensiveUserDialog';
 import { PasswordDialog } from '@/components/user-management/PasswordDialog';
 import { SMSDialog } from '@/components/user-management/SMSDialog';
 import { SimplifiedUserTableRow } from '@/components/user-management/SimplifiedUserTableRow';
@@ -444,7 +444,7 @@ export default function UserManagementFinal() {
       </Tabs>
 
       {/* Dialogs */}
-      <UserFormDialog
+      <ComprehensiveUserDialog
         mode="add"
         open={showAddUserDialog}
         onOpenChange={setShowAddUserDialog}
@@ -452,12 +452,36 @@ export default function UserManagementFinal() {
         isPending={addUserMutation.isPending}
       />
 
-      <UserFormDialog
+      <ComprehensiveUserDialog
         mode="edit"
         user={editUser || undefined}
         open={showEditUserDialog}
         onOpenChange={setShowEditDialog}
         onSubmit={handleEditUserSubmit}
+        onUpdatePermissions={(userId, role, permissions) => {
+          updateUserMutation.mutate(
+            { userId, role, permissions },
+            {
+              onSuccess: () => {
+                triggerCelebration('User permissions updated!');
+              },
+            }
+          );
+        }}
+        onSetPassword={(userId, password) => {
+          setPasswordMutation.mutate(
+            { userId, password },
+            {
+              onSuccess: () => {
+                triggerCelebration('Password set successfully!');
+              },
+            }
+          );
+        }}
+        onManageSMS={(user) => {
+          setSmsUser(user);
+          setShowSMSDialog(true);
+        }}
         isPending={editUserMutation.isPending}
       />
 
