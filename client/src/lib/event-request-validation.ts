@@ -20,11 +20,12 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
     (request.estimatedSandwichCountMin && request.estimatedSandwichCountMin > 0) ||
     (request.estimatedSandwichCountMax && request.estimatedSandwichCountMax > 0);
   
-  // Check sandwich types in sandwichTypes array or structured sandwich details
+  // Check sandwich types in sandwichTypes array, structured sandwich details, or range type
   const hasSandwichTypes = 
     (request.sandwichTypes && 
       ((Array.isArray(request.sandwichTypes) && request.sandwichTypes.length > 0) ||
-       (typeof request.sandwichTypes === 'object' && !Array.isArray(request.sandwichTypes) && Object.keys(request.sandwichTypes).length > 0)));
+       (typeof request.sandwichTypes === 'object' && !Array.isArray(request.sandwichTypes) && Object.keys(request.sandwichTypes).length > 0))) ||
+    (request.estimatedSandwichRangeType && request.estimatedSandwichRangeType.trim() !== '');
   
   if (!hasSandwichCount || !hasSandwichTypes) {
     missing.push('Sandwich Info');
