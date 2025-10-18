@@ -114,17 +114,19 @@ export const useProjectMutations = () => {
     },
   });
 
-  // Archive project mutation
+  // Archive project mutation - FIXED: Use proper POST /archive endpoint
   const archiveProjectMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest('PATCH', `/api/projects/${id}`, { status: 'archived' });
+      return await apiRequest('POST', `/api/projects/${id}/archive`);
     },
-    onSuccess: (data: Project) => {
+    onSuccess: () => {
+      // Invalidate all project-related queries to ensure UI refreshes
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects/archived'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
       toast({
         title: 'Project archived',
-        description: `"${data.title}" has been moved to archives.`,
+        description: 'Project has been moved to archives and removed from active projects.',
       });
     },
     onError: (error: any) => {

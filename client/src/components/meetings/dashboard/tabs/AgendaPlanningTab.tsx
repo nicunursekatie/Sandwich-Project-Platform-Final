@@ -260,16 +260,19 @@ export function AgendaPlanningTab({
     },
   });
 
-  // Archive project mutation
+  // Archive project mutation - uses proper /archive endpoint
   const archiveProjectMutation = useMutation({
     mutationFn: async (id: number) => {
       return await apiRequest('POST', `/api/projects/${id}/archive`);
     },
     onSuccess: () => {
+      // Invalidate both active and archived project queries
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/archived'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
       toast({
         title: 'Project archived successfully!',
-        description: 'The project has been moved to the archive.',
+        description: 'The project has been moved to the archive and removed from active projects.',
       });
     },
     onError: (error: any) => {
