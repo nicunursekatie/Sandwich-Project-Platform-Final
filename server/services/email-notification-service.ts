@@ -301,6 +301,138 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
   }
 
   /**
+   * Send 24-hour reminder email to volunteers assigned to an event
+   */
+  static async sendVolunteerReminderNotification(
+    volunteerEmail: string,
+    volunteerName: string,
+    eventId: number,
+    organizationName: string,
+    eventDate: Date | string,
+    role: string
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      console.log('SendGrid not configured - skipping volunteer reminder notification');
+      return false;
+    }
+
+    try {
+      // Format event date and time
+      const eventDateTime = new Date(eventDate);
+      const formattedDate = eventDateTime.toLocaleDateString('en-US', { 
+        timeZone: 'UTC',
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      const formattedTime = eventDateTime.toLocaleTimeString('en-US', {
+        timeZone: 'UTC',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      // Format role for display
+      const roleDisplay = role === 'driver' ? 'Driver' 
+                        : role === 'speaker' ? 'Speaker' 
+                        : 'Volunteer';
+
+      // Generate event URL
+      const eventUrl = this.getEventUrl(eventId);
+
+      const msg = {
+        to: volunteerEmail,
+        from: 'noreply@sandwichproject.org',
+        subject: `Reminder: Event tomorrow at ${organizationName} - The Sandwich Project`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: #236383; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+              .event-details { background: white; padding: 15px; border-left: 4px solid #DE7C3A; margin: 15px 0; }
+              .highlight { background: #FFF9E6; padding: 10px; border-radius: 5px; margin: 15px 0; }
+              .btn { display: inline-block; background: #DE7C3A; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 15px 0; }
+              .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🔔 Event Reminder - Tomorrow!</h1>
+              </div>
+              <div class="content">
+                <p>Hello ${volunteerName}!</p>
+                <p>This is a friendly reminder that you're scheduled to volunteer tomorrow as a <strong>${roleDisplay}</strong>:</p>
+                
+                <div class="event-details">
+                  <strong>Organization:</strong> ${organizationName}<br>
+                  <strong>Date:</strong> ${formattedDate}<br>
+                  <strong>Time:</strong> ${formattedTime}<br>
+                  <strong>Your Role:</strong> ${roleDisplay}
+                </div>
+                
+                <div class="highlight">
+                  <strong>📋 What to bring:</strong><br>
+                  ${role === 'driver' ? '• Valid driver\'s license<br>• Your vehicle ready for pickup/delivery' 
+                    : role === 'speaker' ? '• Any presentation materials<br>• Your enthusiasm for The Sandwich Project!' 
+                    : '• Your enthusiasm and willingness to help!'}
+                </div>
+                
+                <p>If you have any questions or need to make changes to your commitment, please contact us as soon as possible.</p>
+                
+                <p>Click the button below to view the full event details:</p>
+                <a href="${eventUrl}" class="btn">View Event Details</a>
+                
+                <p style="margin-top: 20px;"><strong>Thank you for your commitment to fighting food insecurity!</strong></p>
+                
+                ${EMAIL_FOOTER_HTML}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `
+Hello ${volunteerName}!
+
+This is a friendly reminder that you're scheduled to volunteer tomorrow as a ${roleDisplay}:
+
+Organization: ${organizationName}
+Date: ${formattedDate}
+Time: ${formattedTime}
+Your Role: ${roleDisplay}
+
+${role === 'driver' ? 'What to bring:\n• Valid driver\'s license\n• Your vehicle ready for pickup/delivery' 
+  : role === 'speaker' ? 'What to bring:\n• Any presentation materials\n• Your enthusiasm for The Sandwich Project!' 
+  : 'What to bring:\n• Your enthusiasm and willingness to help!'}
+
+If you have any questions or need to make changes to your commitment, please contact us as soon as possible.
+
+View event details: ${eventUrl}
+
+Thank you for your commitment to fighting food insecurity!
+
+---
+The Sandwich Project - Fighting food insecurity one sandwich at a time
+
+To unsubscribe from these emails, please contact us at katie@thesandwichproject.org or reply STOP.
+        `.trim(),
+      };
+
+      await sgMail.send(msg);
+      console.log(`24-hour volunteer reminder sent to ${volunteerEmail} for event ${eventId}`);
+      return true;
+    } catch (error) {
+      console.error('Error sending volunteer reminder notification:', error);
+      return false;
+    }
+  }
+
+  /**
    * Process a chat message for mentions and send notifications
    */
   static async processChatMessage(
