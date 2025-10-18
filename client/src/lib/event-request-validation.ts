@@ -39,6 +39,39 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
   if (!hasAddress) {
     missing.push('Address');
   }
-  
+
+  // Conditional field validation: If drivers needed, check for pickup details
+  if (request.driversNeeded && request.driversNeeded > 0) {
+    if (!request.pickupTimeWindow) {
+      missing.push('Pickup Time Window');
+    }
+    if (!request.pickupPersonResponsible) {
+      missing.push('Pickup Contact Person');
+    }
+  }
+
+  // Conditional field validation: If speakers needed, check for speaker details
+  if (request.speakersNeeded && request.speakersNeeded > 0) {
+    if (!request.eventStartTime) {
+      missing.push('Event Start Time');
+    }
+    if (!request.speakerAudienceType) {
+      missing.push('Speaker Audience Type');
+    }
+    if (!request.speakerDuration) {
+      missing.push('Speaker Duration');
+    }
+  }
+
+  // Conditional field validation: If overnight holding is set, check for delivery details
+  if (request.overnightHoldingLocation && request.overnightHoldingLocation.trim() !== '') {
+    if (!request.deliveryTimeWindow) {
+      missing.push('Delivery Time Window');
+    }
+    if (!request.deliveryParkingAccess) {
+      missing.push('Delivery Parking/Access Info');
+    }
+  }
+
   return missing;
 }

@@ -1567,6 +1567,8 @@ export const eventRequests = pgTable(
     eventEndTime: varchar('event_end_time'), // Event end time
     pickupTime: varchar('pickup_time'), // Driver pickup time for sandwiches
     pickupDateTime: timestamp('pickup_date_time'), // Full datetime for pickup time with date and time selection
+    pickupTimeWindow: text('pickup_time_window'), // Time window for pickup (e.g., "2:00 PM - 3:00 PM")
+    pickupPersonResponsible: text('pickup_person_responsible'), // Contact person who will pick up the sandwiches
     additionalRequirements: text('additional_requirements'), // Special requirements or notes
     planningNotes: text('planning_notes'), // General planning notes
     schedulingNotes: text('scheduling_notes'), // Scheduling notes and instructions
@@ -1661,6 +1663,10 @@ export const eventRequests = pgTable(
     lastSyncedAt: timestamp('last_synced_at'), // When this record was last synced with Google Sheets
     driverDetails: jsonb('driver_details'), // Additional driver assignment details
     speakerDetails: jsonb('speaker_details'), // Additional speaker assignment details
+    speakerAudienceType: text('speaker_audience_type'), // Type of audience for speaker (e.g., "Elementary School", "Adults", "Mixed")
+    speakerDuration: text('speaker_duration'), // Duration of speaker session (e.g., "30 minutes", "1 hour")
+    deliveryTimeWindow: text('delivery_time_window'), // Time window for next-day delivery after overnight storage
+    deliveryParkingAccess: text('delivery_parking_access'), // Parking/access details for delivery location
 
     // Audit tracking
     createdAt: timestamp('created_at').defaultNow().notNull(),

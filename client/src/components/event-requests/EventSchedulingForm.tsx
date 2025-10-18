@@ -72,16 +72,22 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventEndTime: '',
     pickupTime: '',
     pickupDateTime: '',
+    pickupTimeWindow: '',
+    pickupPersonResponsible: '',
     eventAddress: '',
     deliveryDestination: '',
     overnightHoldingLocation: '',
     overnightPickupTime: '',
+    deliveryTimeWindow: '',
+    deliveryParkingAccess: '',
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
     hasRefrigeration: '',
     driversNeeded: 0,
     vanDriverNeeded: false,
     assignedVanDriverId: '',
     speakersNeeded: 0,
+    speakerAudienceType: '',
+    speakerDuration: '',
     volunteersNeeded: 0,
     tspContact: '',
     message: '',
@@ -267,15 +273,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
         pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
+        pickupTimeWindow: (eventRequest as any)?.pickupTimeWindow || '',
+        pickupPersonResponsible: (eventRequest as any)?.pickupPersonResponsible || '',
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
         overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
         overnightPickupTime: eventRequest?.overnightPickupTime || '',
+        deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
+        deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
         sandwichTypes: existingSandwichTypes,
         hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
         driversNeeded: eventRequest?.driversNeeded || 0,
         vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
         speakersNeeded: eventRequest?.speakersNeeded || 0,
+        speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
+        speakerDuration: (eventRequest as any)?.speakerDuration || '',
         volunteersNeeded: eventRequest?.volunteersNeeded || 0,
         tspContact: eventRequest?.tspContact || '',
         message: (eventRequest as any)?.message || '',
@@ -427,15 +439,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventEndTime: formData.eventEndTime || null,
       pickupTime: formData.pickupTime || null,
       pickupDateTime: formData.pickupDateTime || null,
+      pickupTimeWindow: formData.pickupTimeWindow || null,
+      pickupPersonResponsible: formData.pickupPersonResponsible || null,
       eventAddress: formData.eventAddress || null,
       deliveryDestination: formData.deliveryDestination || null,
       overnightHoldingLocation: formData.overnightHoldingLocation || null,
       overnightPickupTime: formData.overnightPickupTime || null,
+      deliveryTimeWindow: formData.deliveryTimeWindow || null,
+      deliveryParkingAccess: formData.deliveryParkingAccess || null,
       hasRefrigeration: formData.hasRefrigeration === 'true' ? true : 
                         formData.hasRefrigeration === 'false' ? false : null,
       driversNeeded: parseInt(formData.driversNeeded?.toString() || '0') || 0,
       vanDriverNeeded: formData.vanDriverNeeded || false,
       speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
+      speakerAudienceType: formData.speakerAudienceType || null,
+      speakerDuration: formData.speakerDuration || null,
       volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
       tspContact: formData.tspContact || null,
       message: formData.message || null,
@@ -863,14 +881,37 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 placeholder="Location where sandwiches will be stored overnight (e.g., church, community center)"
               />
               {formData.overnightHoldingLocation && (
-                <div className="ml-4 mt-2">
-                  <Label htmlFor="overnightPickupTime">Pickup Time from Overnight Location</Label>
-                  <Input
-                    id="overnightPickupTime"
-                    type="time"
-                    value={formData.overnightPickupTime}
-                    onChange={(e) => setFormData(prev => ({ ...prev, overnightPickupTime: e.target.value }))}
-                  />
+                <div className="ml-4 mt-2 space-y-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-medium text-green-900">Next-Day Delivery Details</h4>
+                  <div>
+                    <Label htmlFor="overnightPickupTime">Pickup Time from Overnight Location</Label>
+                    <Input
+                      id="overnightPickupTime"
+                      type="time"
+                      value={formData.overnightPickupTime}
+                      onChange={(e) => setFormData(prev => ({ ...prev, overnightPickupTime: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="deliveryTimeWindow">Delivery Time Window</Label>
+                    <Input
+                      id="deliveryTimeWindow"
+                      type="text"
+                      value={formData.deliveryTimeWindow || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, deliveryTimeWindow: e.target.value }))}
+                      placeholder="e.g., 11:00 AM - 12:00 PM"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="deliveryParkingAccess">Parking/Access Details</Label>
+                    <Textarea
+                      id="deliveryParkingAccess"
+                      value={formData.deliveryParkingAccess || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, deliveryParkingAccess: e.target.value }))}
+                      placeholder="e.g., Park in rear lot, use loading dock entrance"
+                      rows={2}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -1202,8 +1243,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 {formData.vanDriverNeeded && (
                   <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                     <Label htmlFor="assignedVanDriver">Select Van Driver (Optional)</Label>
-                    <Select 
-                      value={formData.assignedVanDriverId || ''} 
+                    <Select
+                      value={formData.assignedVanDriverId || ''}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, assignedVanDriverId: value }))}
                     >
                       <SelectTrigger>
@@ -1223,6 +1264,33 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     </p>
                   </div>
                 )}
+
+                {/* Pickup Details - Only show when drivers are needed */}
+                {formData.driversNeeded > 0 && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                    <h4 className="font-medium text-blue-900">Pickup Details</h4>
+                    <div>
+                      <Label htmlFor="pickupTimeWindow">Pickup Time Window</Label>
+                      <Input
+                        id="pickupTimeWindow"
+                        type="text"
+                        value={formData.pickupTimeWindow || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, pickupTimeWindow: e.target.value }))}
+                        placeholder="e.g., 2:00 PM - 3:00 PM"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pickupPersonResponsible">Who will pick up?</Label>
+                      <Input
+                        id="pickupPersonResponsible"
+                        type="text"
+                        value={formData.pickupPersonResponsible || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, pickupPersonResponsible: e.target.value }))}
+                        placeholder="Contact person name"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1240,6 +1308,34 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     min="0"
                   />
                 </div>
+
+                {/* Speaker Details - Only show when speakers are needed */}
+                {formData.speakersNeeded > 0 && (
+                  <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
+                    <h4 className="font-medium text-purple-900">Speaker Details</h4>
+                    <div>
+                      <Label htmlFor="speakerAudienceType">Audience Type</Label>
+                      <Input
+                        id="speakerAudienceType"
+                        type="text"
+                        value={formData.speakerAudienceType || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, speakerAudienceType: e.target.value }))}
+                        placeholder="e.g., Elementary School, Adults, Mixed"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="speakerDuration">Duration</Label>
+                      <Input
+                        id="speakerDuration"
+                        type="text"
+                        value={formData.speakerDuration || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, speakerDuration: e.target.value }))}
+                        placeholder="e.g., 30 minutes, 1 hour"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <Label htmlFor="volunteersNeeded">How many volunteers needed?</Label>
                   <Input

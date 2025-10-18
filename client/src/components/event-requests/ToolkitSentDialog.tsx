@@ -234,8 +234,12 @@ const ToolkitSentDialog = ({
             <EventEmailComposer
               eventRequest={{
                 ...eventRequest,
+                firstName: eventRequest.firstName || '',
+                lastName: eventRequest.lastName || '',
+                organizationName: eventRequest.organizationName || '',
+                email: eventRequest.email || '',
                 phone: eventRequest.phone || undefined,
-              }}
+              } as any}
               onEmailSent={handleEmailSent}
               isOpen={showEmailComposer}
               onClose={() => setShowEmailComposer(false)}

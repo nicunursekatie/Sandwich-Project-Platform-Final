@@ -504,7 +504,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   const getDrivers = () => {
     const regularDrivers = parsePostgresArray(request.assignedDriverIds);
     const drivers: { id: string; name: string }[] = regularDrivers.map(id => {
-      const detailName = request.driverDetails?.[id]?.name;
+      const detailName = (request.driverDetails as any)?.[id]?.name;
       let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
       if (name.startsWith('custom-')) {
         name = extractNameFromCustomId(name);
@@ -527,7 +527,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   const getSpeakers = () => {
     const speakerIds = Object.keys(request.speakerDetails || {});
     return speakerIds.map(id => {
-      const detailName = request.speakerDetails?.[id]?.name;
+      const detailName = (request.speakerDetails as any)?.[id]?.name;
       let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
       if (name.startsWith('custom-')) {
         name = extractNameFromCustomId(name);
@@ -750,7 +750,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
   
   // State for post link editing
   const [editingPostLink, setEditingPostLink] = useState(false);
-  const [postLink, setPostLink] = useState(request.socialMediaPostLink || '');
+  const [postLink, setPostLink] = useState((request as any).socialMediaPostLink || '');
   
   // State for Instagram link
   const [showInstagramDialog, setShowInstagramDialog] = useState(false);
@@ -1098,7 +1098,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
               )}
 
               {/* Compact Post Link */}
-              {(request.socialMediaPostLink || editingPostLink) && (
+              {((request as any).socialMediaPostLink || editingPostLink) && (
                 <div className="text-xs">
                   {editingPostLink ? (
                     <div className="flex flex-col gap-1">
@@ -1112,7 +1112,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleUpdatePostLink();
                           if (e.key === 'Escape') {
-                            setPostLink(request.socialMediaPostLink || '');
+                            setPostLink((request as any).socialMediaPostLink || '');
                             setEditingPostLink(false);
                           }
                         }}
@@ -1130,7 +1130,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                           size="sm"
                           variant="ghost"
                           onClick={() => {
-                            setPostLink(request.socialMediaPostLink || '');
+                            setPostLink((request as any).socialMediaPostLink || '');
                             setEditingPostLink(false);
                           }}
                           className="text-xs px-2 py-1 h-6"
@@ -1143,13 +1143,13 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                   ) : (
                     <div
                       onClick={() => {
-                        setPostLink(request.socialMediaPostLink || '');
+                        setPostLink((request as any).socialMediaPostLink || '');
                         setEditingPostLink(true);
                       }}
                       className="p-1 rounded border border-[#47b3cb]/30 bg-white/50 cursor-pointer hover:bg-white/70 transition-colors truncate"
                     >
-                      {request.socialMediaPostLink ? (
-                        <a href={request.socialMediaPostLink} target="_blank" rel="noopener noreferrer" className="text-[#007e8c] underline text-xs">
+                      {(request as any).socialMediaPostLink ? (
+                        <a href={(request as any).socialMediaPostLink} target="_blank" rel="noopener noreferrer" className="text-[#007e8c] underline text-xs">
                           View post
                         </a>
                       ) : (
@@ -1161,7 +1161,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
               )}
               
               {/* Add link button if no link exists */}
-              {!request.socialMediaPostLink && !editingPostLink && (
+              {!(request as any).socialMediaPostLink && !editingPostLink && (
                 <Button
                   onClick={() => setEditingPostLink(true)}
                   className="bg-[#47b3cb]/20 hover:bg-[#47b3cb]/30 text-[#236383] text-xs px-2 py-1 h-6 w-full"
