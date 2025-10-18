@@ -178,6 +178,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'groups-catalog',
     permission: PERMISSIONS.NAV_GROUPS_CATALOG,
     group: 'operations',
+    highlighted: true,
   },
   {
     id: 'donation-tracking',
