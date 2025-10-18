@@ -80,6 +80,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'google-calendar-availability',
     permission: PERMISSIONS.NAV_VOLUNTEER_CALENDAR,
     group: 'dashboard',
+    highlighted: true,
   },
 
   // COLLECTIONS LOG
@@ -126,6 +127,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: StickyNote,
     href: 'team-board',
     group: 'communication',
+    highlighted: true,
   },
 
   // OPERATIONS (the weekly flow)
