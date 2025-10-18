@@ -306,7 +306,7 @@ export class DatabaseStorage implements IStorage {
     if (!currentProject) return undefined;
 
     // Auto-update status based on assignee changes
-    const updateData = { ...updates, updatedAt: new Date() };
+    const updateData: Partial<Project> = { ...updates };
     const statusWasProvided = Object.prototype.hasOwnProperty.call(updates, 'status');
     const assigneeWasProvided = Object.prototype.hasOwnProperty.call(
       updates,
@@ -340,12 +340,34 @@ export class DatabaseStorage implements IStorage {
       updateData.status = currentProject.reviewInNextMeeting ? 'tabled' : 'waiting';
     }
 
-    const [project] = await db
-      .update(projects)
-      .set(updateData)
-      .where(eq(projects.id, id))
-      .returning();
-    return project || undefined;
+    try {
+      // Drizzle doesn't auto-convert camelCase to snake_case in dynamic .set() objects
+      // We need to manually map field names to database column names
+      const toSnakeCase = (str: string): string => {
+        return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      };
+      
+      const dbUpdate: Record<string, any> = { updated_at: new Date() };
+      
+      for (const [key, value] of Object.entries(updateData)) {
+        if (value !== undefined && key !== 'id') {
+          // Convert camelCase to snake_case for database columns
+          const dbColumnName = toSnakeCase(key);
+          dbUpdate[dbColumnName] = value;
+        }
+      }
+      
+      const [project] = await db
+        .update(projects)
+        .set(dbUpdate)
+        .where(eq(projects.id, id))
+        .returning();
+        
+      return project || undefined;
+    } catch (error) {
+      console.error(`[Database] Failed to update project ${id}:`, error);
+      throw error;
+    }
   }
 
   async deleteProject(id: number): Promise<boolean> {
