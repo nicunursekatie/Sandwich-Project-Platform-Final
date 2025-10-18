@@ -317,17 +317,17 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     }
 
     try {
-      // Format event date and time
+      // Format event date and time in organization's timezone (America/New_York)
       const eventDateTime = new Date(eventDate);
       const formattedDate = eventDateTime.toLocaleDateString('en-US', { 
-        timeZone: 'UTC',
+        timeZone: 'America/New_York',
         weekday: 'long', 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric' 
       });
       const formattedTime = eventDateTime.toLocaleTimeString('en-US', {
-        timeZone: 'UTC',
+        timeZone: 'America/New_York',
         hour: 'numeric',
         minute: '2-digit',
         hour12: true

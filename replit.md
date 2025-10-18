@@ -48,6 +48,8 @@ Key technical implementations include:
 - **Groups Catalog Individual Event Display**: Each event request displays as its own card within organization groups, using an aggregation key including `request.id` to ensure accurate per-event tracking.
 - **Sandwich Type Display Bug Fix**: Corrected mapping for sandwich type display (e.g., 'deli_turkey' now correctly maps to 'Turkey').
 - **Event Times Dialog Scrolling Fix**: Implemented scrolling for the "Add Event Times" dialog to ensure the Save button remains accessible when the date/time picker expands.
+- **24-Hour Volunteer Reminder System**: Automated email reminder system that sends volunteers a reminder 24 hours before their assigned events. Runs twice daily (9 AM and 3 PM ET) via cron job, queries events in the 20-28 hour window, sends branded reminder emails with role-specific instructions, and tracks `reminderSentAt` in `eventVolunteers` table to prevent duplicates. Times are displayed in America/New_York timezone for accuracy.
+- **Project Archiving Fix**: Corrected archive mutations to use proper `POST /api/projects/:id/archive` endpoint instead of just setting status field. This ensures projects are properly copied to `archived_projects` table and deleted from active `projects` table, with full cache invalidation across all project queries.
 
 ## External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
