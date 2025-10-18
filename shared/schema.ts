@@ -1740,6 +1740,7 @@ export const eventVolunteers = pgTable(
     assignedBy: varchar('assigned_by'), // User ID who assigned this volunteer
     signedUpAt: timestamp('signed_up_at').defaultNow().notNull(),
     confirmedAt: timestamp('confirmed_at'),
+    reminderSentAt: timestamp('reminder_sent_at'), // When 24-hour reminder email was sent
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
