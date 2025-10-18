@@ -332,23 +332,47 @@ export default function EnhancedMeetingDashboard() {
     [localProjectText]
   );
 
-  // Handler for agenda actions
+  // Handler for agenda actions - with optional note content transfer
   const handleSendToAgenda = useCallback(
-    (projectId: number) => {
+    (projectId: number, noteContent?: string) => {
       // Debug logging for Christine's issue
       console.log('🔍 Send to Agenda Debug Info:', {
         user: user?.email,
         role: user?.role,
         permissions: Array.isArray(user?.permissions) ? user.permissions.length : 0,
         projectId,
+        hasNoteContent: !!noteContent,
         timestamp: new Date().toISOString(),
       });
 
       setProjectAgendaStatus((prev) => ({ ...prev, [projectId]: 'agenda' }));
       setMinimizedProjects((prev) => new Set([...Array.from(prev), projectId]));
+      
+      // Prepare updates object
+      const updates: {
+        reviewInNextMeeting: boolean;
+        meetingDiscussionPoints?: string;
+        meetingDecisionItems?: string;
+      } = { reviewInNextMeeting: true };
+      
+      // If note content is provided, parse it and copy to project fields
+      if (noteContent) {
+        try {
+          const parsed = JSON.parse(noteContent);
+          if (parsed.discussionPoints) {
+            updates.meetingDiscussionPoints = parsed.discussionPoints;
+          }
+          if (parsed.decisionItems) {
+            updates.meetingDecisionItems = parsed.decisionItems;
+          }
+        } catch (error) {
+          console.warn('Failed to parse note content:', error);
+        }
+      }
+      
       updateProjectDiscussionMutation.mutate({
         projectId,
-        updates: { reviewInNextMeeting: true },
+        updates,
       });
       toast({
         title: 'Added to Agenda',
