@@ -1,13 +1,5 @@
 import { useMemo, useState } from 'react';
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-}
+import type { User } from '@/types/user';
 
 export function useUserFilters(users: User[]) {
   const [searchQuery, setSearchQuery] = useState('');

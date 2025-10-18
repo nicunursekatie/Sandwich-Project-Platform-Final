@@ -16,21 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-interface UserFormData {
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  preferredEmail?: string;
-  role: string;
-  isActive: boolean;
-  password?: string;
-}
+import type { User, UserFormData } from '@/types/user';
 
 interface UserFormDialogProps {
   mode: 'add' | 'edit';
-  user?: UserFormData & { id?: string };
+  user?: Partial<User>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: UserFormData & { id?: string }) => void;

@@ -9,12 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-}
+import type { User } from '@/types/user';
 
 interface PasswordDialogProps {
   user: User | null;

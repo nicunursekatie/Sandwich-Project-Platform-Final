@@ -25,26 +25,7 @@ import { RoleBadge } from './RoleBadge';
 import { StatusBadge } from './StatusBadge';
 import { SMSBadge } from './SMSBadge';
 import { formatLastLogin } from '@/lib/userHelpers';
-
-interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  permissions: string[];
-  permissionsModifiedAt?: string | null;
-  permissionsModifiedBy?: string | null;
-  isActive: boolean;
-  lastLoginAt: string | null;
-  metadata?: {
-    smsConsent?: {
-      enabled: boolean;
-      phoneNumber?: string;
-      displayPhone?: string;
-    };
-  };
-}
+import type { User } from '@/types/user';
 
 interface UserTableRowProps {
   user: User;

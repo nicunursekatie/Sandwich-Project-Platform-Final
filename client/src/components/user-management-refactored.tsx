@@ -65,31 +65,7 @@ import { useUserManagement } from '@/hooks/useUserManagement';
 import { useUserFilters } from '@/hooks/useUserFilters';
 import { useUserStats } from '@/hooks/useUserStats';
 import { formatLastLogin } from '@/lib/userHelpers';
-
-interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string | null;
-  preferredEmail?: string | null;
-  role: string;
-  permissions: string[];
-  permissionsModifiedAt?: string | null;
-  permissionsModifiedBy?: string | null;
-  isActive: boolean;
-  lastLoginAt: string | null;
-  createdAt: string;
-  metadata?: {
-    smsConsent?: {
-      enabled: boolean;
-      phoneNumber?: string;
-      displayPhone?: string;
-      optInDate?: string;
-      optOutDate?: string;
-    };
-  };
-}
+import type { User } from '@/types/user';
 
 export default function UserManagementRefactored() {
   const { user: currentUser } = useAuth();

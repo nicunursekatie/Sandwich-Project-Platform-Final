@@ -1,11 +1,6 @@
 import { useMemo } from 'react';
 import { USER_ROLES } from '@shared/auth-utils';
-
-interface User {
-  id: string;
-  role: string;
-  isActive: boolean;
-}
+import type { User } from '@/types/user';
 
 export function useUserStats(users: User[]) {
   const userStats = useMemo(() => {

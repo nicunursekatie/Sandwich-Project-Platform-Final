@@ -1449,7 +1449,7 @@ export default function RequestCard({
                                         variant="ghost"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          openEditAssignmentDialog(request.id, 'driver', request.assignedVanDriverId);
+                                          openEditAssignmentDialog(request.id, 'driver', request.assignedVanDriverId!);
                                         }}
                                         className="h-6 w-6 p-0 text-[#236383] hover:text-[#1A2332]"
                                       >
@@ -1460,7 +1460,7 @@ export default function RequestCard({
                                         variant="ghost"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleRemoveAssignment(request.assignedVanDriverId, 'driver', request.id);
+                                          handleRemoveAssignment(request.assignedVanDriverId!, 'driver', request.id);
                                         }}
                                         className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
                                       >
