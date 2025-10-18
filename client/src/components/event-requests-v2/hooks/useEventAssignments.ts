@@ -78,8 +78,9 @@ export const useEventAssignments = () => {
             console.log('🔍 Checking host:', host.name, 'contacts:', host.contacts?.length || 0);
             const contact = host.contacts?.find((c: any) => c.id === numericContactId);
             if (contact) {
-              console.log('✅ FOUND HOST CONTACT:', contact.name);
-              return contact.name || contact.email || `Contact #${contactId}`;
+              const contactName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.name || contact.email;
+              console.log('✅ FOUND HOST CONTACT:', contactName);
+              return contactName || `Contact #${contactId}`;
             }
           }
         }
