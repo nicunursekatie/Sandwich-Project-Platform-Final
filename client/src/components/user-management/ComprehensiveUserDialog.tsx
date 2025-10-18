@@ -36,6 +36,7 @@ import TeamAvailability from '@/pages/team-availability';
 import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
 import RouteMapView from '@/pages/route-map';
 import CoolerTrackingPage from '@/pages/cooler-tracking';
+import EventRequestsManagementV2 from '@/components/event-requests-v2';
 import { PasswordDialog } from './PasswordDialog';
 import { SMSDialog } from './SMSDialog';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
@@ -85,6 +86,7 @@ export function ComprehensiveUserDialog({
   const canViewMyAvailability = hasPermission(currentUser, PERMISSIONS.NAV_MY_AVAILABILITY);
   const canViewTeamAvailability = hasPermission(currentUser, PERMISSIONS.NAV_TEAM_AVAILABILITY);
   const canViewVolunteerCalendar = hasPermission(currentUser, PERMISSIONS.NAV_VOLUNTEER_CALENDAR);
+  const canViewEventRequests = hasPermission(currentUser, PERMISSIONS.NAV_EVENT_PLANNING) || hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW);
   const canViewTeamBoard = true; // Team board doesn't have a specific permission yet
   const canViewCoolers = true; // Cooler tracking doesn't have a specific permission yet
   const canViewLocations = true; // Route map doesn't have a specific permission yet
@@ -257,7 +259,7 @@ export function ComprehensiveUserDialog({
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${2 + (canViewMyAvailability ? 1 : 0) + (canViewTeamAvailability ? 1 : 0) + (canViewVolunteerCalendar ? 1 : 0) + (canViewTeamBoard ? 1 : 0) + (canViewLocations ? 1 : 0) + (canViewCoolers ? 1 : 0) + 1}, minmax(0, 1fr))` }}>
+            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${2 + (canViewEventRequests ? 1 : 0) + (canViewMyAvailability ? 1 : 0) + (canViewTeamAvailability ? 1 : 0) + (canViewVolunteerCalendar ? 1 : 0) + (canViewTeamBoard ? 1 : 0) + (canViewLocations ? 1 : 0) + (canViewCoolers ? 1 : 0) + 1}, minmax(0, 1fr))` }}>
               <TabsTrigger value="profile" className="flex items-center gap-1 text-xs">
                 <UserIcon className="h-3 w-3" />
                 Profile
@@ -266,6 +268,12 @@ export function ComprehensiveUserDialog({
                 <Shield className="h-3 w-3" />
                 Permissions
               </TabsTrigger>
+              {canViewEventRequests && (
+                <TabsTrigger value="event-requests" className="flex items-center gap-1 text-xs">
+                  <Calendar className="h-3 w-3" />
+                  Event Requests
+                </TabsTrigger>
+              )}
               {canViewMyAvailability && (
                 <TabsTrigger value="my-availability" className="flex items-center gap-1 text-xs">
                   <Calendar className="h-3 w-3" />
@@ -484,6 +492,23 @@ export function ComprehensiveUserDialog({
                 </div>
               )}
             </TabsContent>
+
+            {/* Event Requests Tab */}
+            {canViewEventRequests && (
+              <TabsContent value="event-requests" className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Event Requests</h3>
+                    <p className="text-sm text-gray-600">
+                      View and manage event planning requests
+                    </p>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <EventRequestsManagementV2 />
+                  </div>
+                </div>
+              </TabsContent>
+            )}
 
             {/* My Availability Tab */}
             {canViewMyAvailability && (
