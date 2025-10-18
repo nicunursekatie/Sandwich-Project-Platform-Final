@@ -43,7 +43,9 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
 
   // Conditional field validation: If drivers needed, check for pickup details
   if (request.driversNeeded && request.driversNeeded > 0) {
-    if (!request.pickupTimeWindow) {
+    // Pickup time window is not missing if there's an event end time, pickup time, or pickup date/time
+    const hasPickupTiming = request.eventEndTime || request.pickupTime || request.pickupDateTime;
+    if (!request.pickupTimeWindow && !hasPickupTiming) {
       missing.push('Pickup Time Window');
     }
     if (!request.pickupPersonResponsible) {
