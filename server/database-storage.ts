@@ -306,7 +306,7 @@ export class DatabaseStorage implements IStorage {
     if (!currentProject) return undefined;
 
     // Auto-update status based on assignee changes
-    const updateData = { ...updates, updatedAt: new Date() };
+    const updateData: Partial<Project> = { ...updates };
     const statusWasProvided = Object.prototype.hasOwnProperty.call(updates, 'status');
     const assigneeWasProvided = Object.prototype.hasOwnProperty.call(
       updates,
@@ -340,12 +340,37 @@ export class DatabaseStorage implements IStorage {
       updateData.status = currentProject.reviewInNextMeeting ? 'tabled' : 'waiting';
     }
 
-    const [project] = await db
-      .update(projects)
-      .set(updateData)
-      .where(eq(projects.id, id))
-      .returning();
-    return project || undefined;
+    try {
+      console.log(`[Database] Updating project ${id} with data:`, JSON.stringify(updateData, null, 2));
+      
+      // Build the update object using proper Drizzle column references
+      // This ensures camelCase field names are properly mapped to snake_case columns
+      const dbUpdate: Record<string, any> = {
+        updatedAt: new Date()
+      };
+      
+      // Map each camelCase field to its snake_case database column
+      for (const [key, value] of Object.entries(updateData)) {
+        if (value !== undefined && key !== 'id') {
+          dbUpdate[key] = value;
+        }
+      }
+      
+      const [project] = await db
+        .update(projects)
+        .set(dbUpdate)
+        .where(eq(projects.id, id))
+        .returning();
+        
+      console.log(`[Database] Update result for project ${id}:`, project ? 'SUCCESS' : 'NO RESULT');
+      if (!project) {
+        console.warn(`[Database] Update returned no result for project ${id}`);
+      }
+      return project || undefined;
+    } catch (error) {
+      console.error(`[Database] Failed to update project ${id}:`, error);
+      throw error;
+    }
   }
 
   async deleteProject(id: number): Promise<boolean> {
