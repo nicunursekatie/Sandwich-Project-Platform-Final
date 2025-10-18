@@ -80,10 +80,7 @@ export default function MyAvailability() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data: Omit<FormData, 'userId'>) =>
-      apiRequest('/api/availability', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
+      apiRequest('POST', '/api/availability', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/availability'] });
       setDialogOpen(false);
@@ -94,10 +91,7 @@ export default function MyAvailability() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<FormData> }) =>
-      apiRequest(`/api/availability/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }),
+      apiRequest('PUT', `/api/availability/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/availability'] });
       setDialogOpen(false);
@@ -109,9 +103,7 @@ export default function MyAvailability() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: number) =>
-      apiRequest(`/api/availability/${id}`, {
-        method: 'DELETE',
-      }),
+      apiRequest('DELETE', `/api/availability/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/availability'] });
     },
