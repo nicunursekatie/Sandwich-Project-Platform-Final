@@ -34,18 +34,6 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
     missing.push('Address');
   }
 
-  // Conditional field validation: If drivers needed, check for pickup details
-  if (request.driversNeeded && request.driversNeeded > 0) {
-    // Pickup time window is not missing if there's an event end time, pickup time, or pickup date/time
-    const hasPickupTiming = request.eventEndTime || request.pickupTime || request.pickupDateTime;
-    if (!request.pickupTimeWindow && !hasPickupTiming) {
-      missing.push('Pickup Time Window');
-    }
-    if (!request.pickupPersonResponsible) {
-      missing.push('Pickup Contact Person');
-    }
-  }
-
   // Conditional field validation: If speakers needed, check for speaker details
   if (request.speakersNeeded && request.speakersNeeded > 0) {
     if (!request.eventStartTime) {
