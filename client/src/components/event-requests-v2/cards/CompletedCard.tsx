@@ -423,22 +423,37 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {isEditingDate ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{dateLabel}:</span>
-                  <Input
-                    type="date"
-                    value={formatDateForInput(editingValue)}
-                    onChange={(e) => setEditingValue?.(e.target.value)}
-                    className="h-8 w-40"
-                    autoFocus
-                    data-testid="input-date"
-                  />
-                  <Button size="sm" onClick={saveEdit} data-testid="button-save-date">
-                    <Save className="w-3 h-3" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-date">
-                    <X className="w-3 h-3" />
-                  </Button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{dateLabel}:</span>
+                    <Input
+                      type="date"
+                      value={formatDateForInput(editingValue)}
+                      onChange={(e) => setEditingValue?.(e.target.value)}
+                      className="h-8 w-40"
+                      autoFocus
+                      data-testid="input-date"
+                    />
+                    <Button size="sm" onClick={saveEdit} data-testid="button-save-date">
+                      <Save className="w-3 h-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-date">
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2">
+                    <Checkbox
+                      id="confirm-date-checkbox"
+                      checked={tempIsConfirmed}
+                      onCheckedChange={(checked) => setTempIsConfirmed(!!checked)}
+                    />
+                    <label
+                      htmlFor="confirm-date-checkbox"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Mark as confirmed by our team
+                    </label>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
@@ -1281,6 +1296,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [showInstagramDialog, setShowInstagramDialog] = useState(false);
   const [instagramLink, setInstagramLink] = useState('');
 
+  // Confirmation checkbox state for date editing
+  const [tempIsConfirmed, setTempIsConfirmed] = useState(request.isConfirmed || false);
+
   // Inline editing state for organization and department
   const [isEditingField, setIsEditingField] = useState(false);
   const [editingField, setEditingField] = useState('');
@@ -1425,6 +1443,11 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     setIsEditingField(true);
     setEditingField(field);
     setEditingValue(value);
+
+    // When starting to edit a date, also load the current confirmation status
+    if (field === 'desiredEventDate' || field === 'scheduledEventDate') {
+      setTempIsConfirmed(request.isConfirmed || false);
+    }
   };
 
   const saveEdit = () => {
@@ -1434,6 +1457,12 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       updateOrgDetailsMutation.mutate({ department: editingValue });
     } else if (editingField === 'eventAddress') {
       updateOrgDetailsMutation.mutate({ eventAddress: editingValue });
+    } else if (editingField === 'desiredEventDate' || editingField === 'scheduledEventDate') {
+      // When saving a date, also save the confirmation status
+      updateOrgDetailsMutation.mutate({
+        [editingField]: editingValue,
+        isConfirmed: tempIsConfirmed
+      });
     }
   };
 
