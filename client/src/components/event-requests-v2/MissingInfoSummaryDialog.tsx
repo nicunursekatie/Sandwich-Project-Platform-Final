@@ -43,16 +43,35 @@ export function MissingInfoSummaryDialog() {
       return b.missingItems.length - a.missingItems.length;
     });
 
-  const formatEventDate = (dateValue: string | Date | null) => {
+  const formatEventDate = (dateValue: string | Date | null | undefined) => {
     if (!dateValue) return 'No date';
     
-    // Handle both Date objects and string dates
-    const date = typeof dateValue === 'string' 
-      ? new Date(dateValue + 'T00:00:00')
-      : new Date(dateValue);
+    console.log('formatEventDate input:', dateValue, 'type:', typeof dateValue);
+    
+    let date: Date;
+    
+    // Handle Date objects
+    if (dateValue instanceof Date) {
+      date = dateValue;
+    }
+    // Handle string dates
+    else if (typeof dateValue === 'string') {
+      date = new Date(dateValue);
+    }
+    // Handle timestamp objects (PostgreSQL timestamp format)
+    else if (typeof dateValue === 'object' && dateValue !== null) {
+      date = new Date(dateValue as any);
+    }
+    else {
+      console.error('Unexpected date format:', dateValue);
+      return 'Invalid Date';
+    }
     
     // Check for invalid dates
-    if (isNaN(date.getTime())) return 'Invalid Date';
+    if (isNaN(date.getTime())) {
+      console.error('Failed to parse date:', dateValue);
+      return 'Invalid Date';
+    }
     
     return date.toLocaleDateString('en-US', {
       timeZone: 'UTC',
