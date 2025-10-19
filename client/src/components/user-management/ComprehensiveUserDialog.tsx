@@ -35,7 +35,6 @@ import MyAvailability from '@/pages/my-availability';
 import TeamAvailability from '@/pages/team-availability';
 import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
 import RouteMapView from '@/pages/route-map';
-import CoolerTrackingPage from '@/pages/cooler-tracking';
 import EventRequestsManagementV2 from '@/components/event-requests-v2';
 import { PasswordDialog } from './PasswordDialog';
 import { SMSDialog } from './SMSDialog';
@@ -88,7 +87,6 @@ export function ComprehensiveUserDialog({
   const canViewVolunteerCalendar = hasPermission(currentUser, PERMISSIONS.NAV_VOLUNTEER_CALENDAR);
   const canViewEventRequests = hasPermission(currentUser, PERMISSIONS.NAV_EVENT_PLANNING) || hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW);
   const canViewTeamBoard = hasPermission(currentUser, PERMISSIONS.NAV_TEAM_BOARD);
-  const canViewCoolers = hasPermission(currentUser, PERMISSIONS.NAV_COOLER_TRACKING);
   const canViewLocations = hasPermission(currentUser, PERMISSIONS.NAV_ROUTE_MAP);
 
   useEffect(() => {
@@ -259,7 +257,7 @@ export function ComprehensiveUserDialog({
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${2 + (canViewEventRequests ? 1 : 0) + (canViewMyAvailability ? 1 : 0) + (canViewTeamAvailability ? 1 : 0) + (canViewVolunteerCalendar ? 1 : 0) + (canViewTeamBoard ? 1 : 0) + (canViewLocations ? 1 : 0) + (canViewCoolers ? 1 : 0) + 1}, minmax(0, 1fr))` }}>
+            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${2 + (canViewEventRequests ? 1 : 0) + (canViewMyAvailability ? 1 : 0) + (canViewTeamAvailability ? 1 : 0) + (canViewVolunteerCalendar ? 1 : 0) + (canViewTeamBoard ? 1 : 0) + (canViewLocations ? 1 : 0) + 1}, minmax(0, 1fr))` }}>
               <TabsTrigger value="profile" className="flex items-center gap-1 text-xs">
                 <UserIcon className="h-3 w-3" />
                 Profile
@@ -302,12 +300,6 @@ export function ComprehensiveUserDialog({
                 <TabsTrigger value="locations" className="flex items-center gap-1 text-xs">
                   <MapPin className="h-3 w-3" />
                   Host Locations
-                </TabsTrigger>
-              )}
-              {canViewCoolers && (
-                <TabsTrigger value="coolers" className="flex items-center gap-1 text-xs">
-                  <Package className="h-3 w-3" />
-                  Coolers
                 </TabsTrigger>
               )}
               <TabsTrigger value="activity" className="flex items-center gap-1 text-xs">
@@ -590,23 +582,6 @@ export function ComprehensiveUserDialog({
                   </div>
                   <div className="border rounded-lg overflow-hidden h-[600px]">
                     <RouteMapView />
-                  </div>
-                </div>
-              </TabsContent>
-            )}
-
-            {/* Cooler Tracking Tab */}
-            {canViewCoolers && (
-              <TabsContent value="coolers" className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-medium">Cooler Tracking</h3>
-                    <p className="text-sm text-gray-600">
-                      Track and manage cooler inventory and locations
-                    </p>
-                  </div>
-                  <div className="border rounded-lg overflow-hidden">
-                    <CoolerTrackingPage />
                   </div>
                 </div>
               </TabsContent>
