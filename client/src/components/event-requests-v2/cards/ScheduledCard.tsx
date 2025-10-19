@@ -729,6 +729,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {request.isConfirmed ? '✓ Date Confirmed' : 'Date Requested'}
               </Badge>
 
+              {/* Manual Entry Badge - for events not from Google Sheets */}
+              {request.externalId && request.externalId.startsWith('manual-') && (
+                <Badge className="bg-purple-600 text-white px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center">
+                  <FileText className="w-3 h-3 mr-1" />
+                  Manual Entry
+                </Badge>
+              )}
+
               {/* Validation badges for missing intake info */}
               {(() => {
                 const missingInfo = getMissingIntakeInfo(request);
