@@ -29,6 +29,7 @@ import {
   ChevronUp,
   Share2,
   Instagram,
+  Home,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
