@@ -18,29 +18,71 @@ interface EventWithMissingInfo {
   missingItems: string[];
 }
 
+type DateRangeFilter = '1month' | '2months' | 'all';
+
 export function MissingInfoSummaryDialog() {
   const [open, setOpen] = useState(false);
+  const [dateFilter, setDateFilter] = useState<DateRangeFilter>('1month');
 
   const { data: allRequests = [] } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
   });
 
+  // Helper to get the event date for filtering and sorting
+  const getEventDate = (request: EventRequest): Date | null => {
+    const dateValue = request.scheduledEventDate || request.desiredEventDate;
+    if (!dateValue) return null;
+    try {
+      const date = new Date(dateValue);
+      return isNaN(date.getTime()) ? null : date;
+    } catch {
+      return null;
+    }
+  };
+
+  // Calculate date cutoffs
+  const now = new Date();
+  const oneMonthFromNow = new Date(now);
+  oneMonthFromNow.setMonth(now.getMonth() + 1);
+  const twoMonthsFromNow = new Date(now);
+  twoMonthsFromNow.setMonth(now.getMonth() + 2);
+
   const eventsWithMissingInfo: EventWithMissingInfo[] = allRequests
-    .filter(
-      (request) =>
-        (request.status === 'in_process' || request.status === 'scheduled') &&
-        getMissingIntakeInfo(request).length > 0
-    )
+    .filter((request) => {
+      // Must be in-process or scheduled with missing info
+      if (
+        (request.status !== 'in_process' && request.status !== 'scheduled') ||
+        getMissingIntakeInfo(request).length === 0
+      ) {
+        return false;
+      }
+
+      // Apply date filter
+      const eventDate = getEventDate(request);
+      if (!eventDate) return true; // Include events with no date
+
+      if (dateFilter === '1month') {
+        return eventDate <= oneMonthFromNow;
+      } else if (dateFilter === '2months') {
+        return eventDate <= twoMonthsFromNow;
+      }
+      return true; // 'all' includes everything
+    })
     .map((request) => ({
       event: request,
       missingItems: getMissingIntakeInfo(request),
     }))
     .sort((a, b) => {
-      if (a.event.status === 'scheduled' && b.event.status !== 'scheduled')
-        return -1;
-      if (a.event.status !== 'scheduled' && b.event.status === 'scheduled')
-        return 1;
-      return b.missingItems.length - a.missingItems.length;
+      // Sort by date - soonest first
+      const dateA = getEventDate(a.event);
+      const dateB = getEventDate(b.event);
+      
+      // Events without dates go to the end
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      
+      return dateA.getTime() - dateB.getTime();
     });
 
   const formatEventDate = (dateValue: any) => {
@@ -98,6 +140,39 @@ export function MissingInfoSummaryDialog() {
             Events with Missing Intake Information
           </DialogTitle>
         </DialogHeader>
+
+        <div className="flex items-center gap-2 border-b pb-3">
+          <span className="text-sm font-medium text-gray-700">Show:</span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={dateFilter === '1month' ? 'default' : 'outline'}
+              onClick={() => setDateFilter('1month')}
+              className={dateFilter === '1month' ? 'bg-teal-600 hover:bg-teal-700' : ''}
+              data-testid="filter-1month"
+            >
+              Next 30 Days
+            </Button>
+            <Button
+              size="sm"
+              variant={dateFilter === '2months' ? 'default' : 'outline'}
+              onClick={() => setDateFilter('2months')}
+              className={dateFilter === '2months' ? 'bg-teal-600 hover:bg-teal-700' : ''}
+              data-testid="filter-2months"
+            >
+              Next 60 Days
+            </Button>
+            <Button
+              size="sm"
+              variant={dateFilter === 'all' ? 'default' : 'outline'}
+              onClick={() => setDateFilter('all')}
+              className={dateFilter === 'all' ? 'bg-teal-600 hover:bg-teal-700' : ''}
+              data-testid="filter-all"
+            >
+              All Upcoming
+            </Button>
+          </div>
+        </div>
 
         {eventsWithMissingInfo.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
