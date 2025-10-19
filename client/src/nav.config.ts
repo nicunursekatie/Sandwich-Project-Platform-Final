@@ -277,7 +277,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Grant Metrics',
     icon: Trophy,
     href: 'grant-metrics',
-    permission: PERMISSIONS.ANALYTICS_VIEW,
+    permission: PERMISSIONS.NAV_GRANT_METRICS,
     group: 'planning',
   },
   {
@@ -310,6 +310,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Help',
     icon: HelpCircle,
     href: 'help',
+    permission: PERMISSIONS.NAV_HELP,
     group: 'documentation',
   },
   {
@@ -317,6 +318,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Amazon Wishlist',
     icon: Gift,
     href: 'wishlist',
+    permission: PERMISSIONS.NAV_WISHLIST,
     group: 'documentation',
   },
   {
@@ -324,6 +326,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Cooler Tracking',
     icon: Package,
     href: 'cooler-tracking',
+    permission: PERMISSIONS.NAV_COOLER_TRACKING,
     group: 'operations',
   },
   {
