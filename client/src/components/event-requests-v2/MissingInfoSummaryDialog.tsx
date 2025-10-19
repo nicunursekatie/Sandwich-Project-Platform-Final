@@ -43,42 +43,28 @@ export function MissingInfoSummaryDialog() {
       return b.missingItems.length - a.missingItems.length;
     });
 
-  const formatEventDate = (dateValue: string | Date | null | undefined) => {
+  const formatEventDate = (dateValue: any) => {
     if (!dateValue) return 'No date';
     
-    console.log('formatEventDate input:', dateValue, 'type:', typeof dateValue);
-    
-    let date: Date;
-    
-    // Handle Date objects
-    if (dateValue instanceof Date) {
-      date = dateValue;
+    try {
+      // Create a Date object from whatever value we receive
+      const date = new Date(dateValue);
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return 'No date';
+      }
+      
+      // Format using UTC to prevent timezone conversion
+      return date.toLocaleDateString('en-US', {
+        timeZone: 'UTC',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch (error) {
+      return 'No date';
     }
-    // Handle string dates
-    else if (typeof dateValue === 'string') {
-      date = new Date(dateValue);
-    }
-    // Handle timestamp objects (PostgreSQL timestamp format)
-    else if (typeof dateValue === 'object' && dateValue !== null) {
-      date = new Date(dateValue as any);
-    }
-    else {
-      console.error('Unexpected date format:', dateValue);
-      return 'Invalid Date';
-    }
-    
-    // Check for invalid dates
-    if (isNaN(date.getTime())) {
-      console.error('Failed to parse date:', dateValue);
-      return 'Invalid Date';
-    }
-    
-    return date.toLocaleDateString('en-US', {
-      timeZone: 'UTC',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   };
 
   const scrollToEvent = (eventId: number) => {
