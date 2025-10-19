@@ -629,8 +629,11 @@ export function setupTempAuth(app: Express) {
         });
       }
 
+      // Trim email to handle mobile keyboard whitespace
+      const trimmedEmail = email.trim().toLowerCase();
+
       // Find user by email
-      const user = await storage.getUserByEmail(email);
+      const user = await storage.getUserByEmail(trimmedEmail);
       if (!user || !user.isActive) {
         return res.status(401).json({
           success: false,
@@ -640,7 +643,11 @@ export function setupTempAuth(app: Express) {
 
       // Check password (stored in metadata for now)
       const storedPassword = (user.metadata as any)?.password;
-      if (storedPassword !== password) {
+      // Trim both passwords to handle mobile keyboard whitespace issues
+      const trimmedStoredPassword = String(storedPassword || '').trim();
+      const trimmedInputPassword = String(password || '').trim();
+      
+      if (trimmedStoredPassword !== trimmedInputPassword) {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password',
