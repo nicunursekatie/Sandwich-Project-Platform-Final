@@ -120,10 +120,13 @@ export const useEventFilters = () => {
       const matchesStatus =
         statusFilter === 'all' || request.status === statusFilter;
 
+      // Completed events are always considered confirmed
+      const isEventConfirmed = request.status === 'completed' || request.isConfirmed;
+
       const matchesConfirmation =
         confirmationFilter === 'all' ||
-        (confirmationFilter === 'confirmed' && request.isConfirmed) ||
-        (confirmationFilter === 'requested' && !request.isConfirmed);
+        (confirmationFilter === 'confirmed' && isEventConfirmed) ||
+        (confirmationFilter === 'requested' && !isEventConfirmed);
 
       return matchesSearch && matchesStatus && matchesConfirmation;
     });
@@ -210,10 +213,13 @@ export const useEventFilters = () => {
           (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
           dateMatchesSearch(request.desiredEventDate, searchQuery);
 
+        // Completed events are always considered confirmed
+        const isEventConfirmed = request.status === 'completed' || request.isConfirmed;
+
         const matchesConfirmation =
           confirmationFilter === 'all' ||
-          (confirmationFilter === 'confirmed' && request.isConfirmed) ||
-          (confirmationFilter === 'requested' && !request.isConfirmed);
+          (confirmationFilter === 'confirmed' && isEventConfirmed) ||
+          (confirmationFilter === 'requested' && !isEventConfirmed);
 
         return matchesStatus && matchesSearch && matchesConfirmation;
       })

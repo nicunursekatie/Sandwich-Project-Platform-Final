@@ -296,17 +296,17 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}
             </Badge>
-            {/* Confirmation Status Badge - Click to toggle */}
+            {/* Confirmation Status Badge - Completed events are always confirmed */}
             <Badge
-              onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
-              className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
-                request.isConfirmed
+              onClick={() => request.status !== 'completed' && startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
+              className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center ${
+                request.status === 'completed' || request.isConfirmed
                   ? 'bg-green-600 text-white'
                   : 'bg-gray-400 text-white'
-              }`}
-              title="Click to toggle confirmation status"
+              } ${request.status !== 'completed' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+              title={request.status === 'completed' ? 'Completed events are always confirmed' : 'Click to toggle confirmation status'}
             >
-              {request.isConfirmed ? '✓ Confirmed' : 'Requested'}
+              {request.status === 'completed' || request.isConfirmed ? '✓ Confirmed' : 'Requested'}
             </Badge>
             {isInProcessStale && (
               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
@@ -441,19 +441,22 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       <X className="w-3 h-3" />
                     </Button>
                   </div>
-                  <div className="flex items-center gap-2 ml-2">
-                    <Checkbox
-                      id="confirm-date-checkbox"
-                      checked={tempIsConfirmed}
-                      onCheckedChange={(checked) => setTempIsConfirmed(!!checked)}
-                    />
-                    <label
-                      htmlFor="confirm-date-checkbox"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      Mark as confirmed by our team
-                    </label>
-                  </div>
+                  {/* Don't show confirmation checkbox for completed events - they're always confirmed */}
+                  {request.status !== 'completed' && (
+                    <div className="flex items-center gap-2 ml-2">
+                      <Checkbox
+                        id="confirm-date-checkbox"
+                        checked={tempIsConfirmed}
+                        onCheckedChange={(checked) => setTempIsConfirmed(!!checked)}
+                      />
+                      <label
+                        htmlFor="confirm-date-checkbox"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        Mark as confirmed by our team
+                      </label>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
@@ -1459,9 +1462,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       updateOrgDetailsMutation.mutate({ eventAddress: editingValue });
     } else if (editingField === 'desiredEventDate' || editingField === 'scheduledEventDate') {
       // When saving a date, also save the confirmation status
+      // Completed events are always confirmed
       updateOrgDetailsMutation.mutate({
         [editingField]: editingValue,
-        isConfirmed: tempIsConfirmed
+        isConfirmed: request.status === 'completed' ? true : tempIsConfirmed
       });
     }
   };

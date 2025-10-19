@@ -160,11 +160,15 @@ export const ScheduledTab: React.FC = () => {
         });
       } else if (editingField === 'desiredEventDate' || editingField === 'scheduledEventDate') {
         // When saving a date field, also save the confirmation status
+        // Completed events are always confirmed
+        const eventRequest = eventRequests.find(r => r.id === editingScheduledId);
+        const isCompleted = eventRequest?.status === 'completed';
+
         updateEventRequestMutation.mutate({
           id: editingScheduledId,
           data: {
             [editingField]: editingValue,
-            isConfirmed: tempIsConfirmed
+            isConfirmed: isCompleted ? true : tempIsConfirmed
           },
         });
       } else {

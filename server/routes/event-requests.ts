@@ -1291,6 +1291,12 @@ router.patch(
         console.log(
           `🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`
         );
+
+        // If status is changing to 'completed', auto-confirm the event
+        if (processedUpdates.status === 'completed') {
+          processedUpdates.isConfirmed = true;
+          console.log('✅ Auto-setting isConfirmed = true (status changed to completed)');
+        }
       }
 
       // Automatically set isConfirmed = true when scheduledEventDate is set
@@ -1298,9 +1304,15 @@ router.patch(
         processedUpdates.isConfirmed = true;
         console.log('✅ Auto-setting isConfirmed = true (scheduledEventDate was set)');
       }
+
       // Allow manual override: if isConfirmed is explicitly provided, respect it
+      // Exception: completed events are always confirmed
       if (processedUpdates.isConfirmed !== undefined) {
         console.log(`📝 isConfirmed explicitly set to: ${processedUpdates.isConfirmed}`);
+      }
+      if (processedUpdates.status === 'completed' || originalEvent.status === 'completed') {
+        processedUpdates.isConfirmed = true;
+        console.log('✅ Ensuring isConfirmed = true (event is/was completed)');
       }
 
       // Automatically assign the current user as TSP contact if toolkit is being marked as sent
