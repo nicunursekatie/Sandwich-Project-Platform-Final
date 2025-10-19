@@ -726,7 +726,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 }`}
                 title="Click to toggle confirmation status"
               >
-                {request.isConfirmed ? '✓ Confirmed' : 'Requested'}
+                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Requested'}
               </Badge>
 
               {/* Validation badges for missing intake info */}
