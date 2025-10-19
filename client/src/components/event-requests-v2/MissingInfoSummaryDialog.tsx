@@ -19,10 +19,12 @@ interface EventWithMissingInfo {
 }
 
 type DateRangeFilter = '1month' | '2months' | 'all';
+type StatusFilter = 'both' | 'in_process' | 'scheduled';
 
 export function MissingInfoSummaryDialog() {
   const [open, setOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateRangeFilter>('1month');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('both');
 
   const { data: allRequests = [] } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
@@ -49,11 +51,20 @@ export function MissingInfoSummaryDialog() {
 
   const eventsWithMissingInfo: EventWithMissingInfo[] = allRequests
     .filter((request) => {
-      // Must be in-process or scheduled with missing info
-      if (
-        (request.status !== 'in_process' && request.status !== 'scheduled') ||
-        getMissingIntakeInfo(request).length === 0
-      ) {
+      // Must have missing info
+      if (getMissingIntakeInfo(request).length === 0) {
+        return false;
+      }
+
+      // Apply status filter
+      if (statusFilter === 'in_process' && request.status !== 'in_process') {
+        return false;
+      }
+      if (statusFilter === 'scheduled' && request.status !== 'scheduled') {
+        return false;
+      }
+      // For 'both', include both in_process and scheduled
+      if (statusFilter === 'both' && request.status !== 'in_process' && request.status !== 'scheduled') {
         return false;
       }
 
@@ -141,36 +152,71 @@ export function MissingInfoSummaryDialog() {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-2 border-b pb-3">
-          <span className="text-sm font-medium text-gray-700">Show:</span>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={dateFilter === '1month' ? 'default' : 'outline'}
-              onClick={() => setDateFilter('1month')}
-              className={dateFilter === '1month' ? 'bg-teal-600 hover:bg-teal-700' : ''}
-              data-testid="filter-1month"
-            >
-              Next 30 Days
-            </Button>
-            <Button
-              size="sm"
-              variant={dateFilter === '2months' ? 'default' : 'outline'}
-              onClick={() => setDateFilter('2months')}
-              className={dateFilter === '2months' ? 'bg-teal-600 hover:bg-teal-700' : ''}
-              data-testid="filter-2months"
-            >
-              Next 60 Days
-            </Button>
-            <Button
-              size="sm"
-              variant={dateFilter === 'all' ? 'default' : 'outline'}
-              onClick={() => setDateFilter('all')}
-              className={dateFilter === 'all' ? 'bg-teal-600 hover:bg-teal-700' : ''}
-              data-testid="filter-all"
-            >
-              All Upcoming
-            </Button>
+        <div className="space-y-3 border-b pb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Status:</span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={statusFilter === 'both' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('both')}
+                className={statusFilter === 'both' ? 'bg-teal-600 hover:bg-teal-700' : ''}
+                data-testid="filter-status-both"
+              >
+                Both
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'in_process' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('in_process')}
+                className={statusFilter === 'in_process' ? 'bg-amber-600 hover:bg-amber-700' : ''}
+                data-testid="filter-status-in-process"
+              >
+                In Process
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'scheduled' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('scheduled')}
+                className={statusFilter === 'scheduled' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                data-testid="filter-status-scheduled"
+              >
+                Scheduled
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Date Range:</span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={dateFilter === '1month' ? 'default' : 'outline'}
+                onClick={() => setDateFilter('1month')}
+                className={dateFilter === '1month' ? 'bg-teal-600 hover:bg-teal-700' : ''}
+                data-testid="filter-1month"
+              >
+                Next 30 Days
+              </Button>
+              <Button
+                size="sm"
+                variant={dateFilter === '2months' ? 'default' : 'outline'}
+                onClick={() => setDateFilter('2months')}
+                className={dateFilter === '2months' ? 'bg-teal-600 hover:bg-teal-700' : ''}
+                data-testid="filter-2months"
+              >
+                Next 60 Days
+              </Button>
+              <Button
+                size="sm"
+                variant={dateFilter === 'all' ? 'default' : 'outline'}
+                onClick={() => setDateFilter('all')}
+                className={dateFilter === 'all' ? 'bg-teal-600 hover:bg-teal-700' : ''}
+                data-testid="filter-all"
+              >
+                All Upcoming
+              </Button>
+            </div>
           </div>
         </div>
 
