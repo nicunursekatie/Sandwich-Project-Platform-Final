@@ -141,11 +141,19 @@ export function MissingInfoSummaryDialog() {
                         </Badge>
                       </div>
 
-                      <div className="text-sm text-gray-600 mb-2">
-                        <span className="font-medium">Date:</span>{' '}
-                        {formatEventDate(
-                          event.scheduledEventDate || event.desiredEventDate
+                      <div className="text-sm text-gray-600 mb-2 space-y-1">
+                        {event.departmentName && (
+                          <div>
+                            <span className="font-medium">Department:</span>{' '}
+                            {event.departmentName}
+                          </div>
                         )}
+                        <div>
+                          <span className="font-medium">Date:</span>{' '}
+                          {formatEventDate(
+                            event.scheduledEventDate || event.desiredEventDate
+                          )}
+                        </div>
                       </div>
 
                       <div className="space-y-1">
