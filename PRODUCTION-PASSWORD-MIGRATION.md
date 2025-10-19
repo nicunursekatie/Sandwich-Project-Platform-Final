@@ -14,7 +14,7 @@
 ### Solution:
 1. **Migrated all passwords** to the proper `password` column
 2. **Updated authentication code** to use `password` column with whitespace trimming
-3. **Generated temporary passwords** for 9 users who had none
+3. **Assigned temporary password "sandwich123"** to 9 users who had none
 
 ---
 
@@ -23,7 +23,7 @@
 ✅ **Successfully migrated: 29/29 users**
 
 - **20 users** - Passwords moved from metadata to password column
-- **9 users** - Assigned temporary password `TempPass123!`
+- **9 users** - Assigned temporary password `sandwich123`
 
 ### Users with Temporary Passwords:
 These users need to set new passwords via User Management > Set Password:

@@ -74,7 +74,7 @@ async function migratePasswords(): Promise<PasswordMigrationResult[]> {
       
       // 3. Generate temporary password if none found
       if (!finalPassword) {
-        finalPassword = 'TempPass123!'; // Simple temporary password
+        finalPassword = 'sandwich123'; // Standard temporary password
         source = 'generated';
         console.log(`  ⚠️  No password found - generating temporary: "${finalPassword}"`);
       }
