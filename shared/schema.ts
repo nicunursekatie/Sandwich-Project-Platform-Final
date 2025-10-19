@@ -1516,6 +1516,7 @@ export const eventRequests = pgTable(
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
     scheduledEventDate: timestamp('scheduled_event_date'), // Actual scheduled date (may differ from requested)
+    isConfirmed: boolean('is_confirmed').notNull().default(false), // Whether event is confirmed by our team (separate from status workflow)
     message: text('message'), // Other relevant info about the group
 
     // Previous hosting experience

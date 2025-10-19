@@ -1293,6 +1293,16 @@ router.patch(
         );
       }
 
+      // Automatically set isConfirmed = true when scheduledEventDate is set
+      if (processedUpdates.scheduledEventDate && !originalEvent.scheduledEventDate) {
+        processedUpdates.isConfirmed = true;
+        console.log('✅ Auto-setting isConfirmed = true (scheduledEventDate was set)');
+      }
+      // Allow manual override: if isConfirmed is explicitly provided, respect it
+      if (processedUpdates.isConfirmed !== undefined) {
+        console.log(`📝 isConfirmed explicitly set to: ${processedUpdates.isConfirmed}`);
+      }
+
       // Automatically assign the current user as TSP contact if toolkit is being marked as sent
       // This auto-assignment happens silently (no email) since toolkit sending happens later in workflow
       if ((processedUpdates.toolkitSent === true || processedUpdates.toolkitStatus === 'sent') &&

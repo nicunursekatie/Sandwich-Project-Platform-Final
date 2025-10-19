@@ -9,6 +9,7 @@ export const useEventFilters = () => {
     eventRequests,
     searchQuery,
     statusFilter,
+    confirmationFilter,
     sortBy,
     currentPage,
     itemsPerPage,
@@ -119,7 +120,12 @@ export const useEventFilters = () => {
       const matchesStatus =
         statusFilter === 'all' || request.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      const matchesConfirmation =
+        confirmationFilter === 'all' ||
+        (confirmationFilter === 'confirmed' && request.isConfirmed) ||
+        (confirmationFilter === 'requested' && !request.isConfirmed);
+
+      return matchesSearch && matchesStatus && matchesConfirmation;
     });
 
     // Sort the filtered results
@@ -204,7 +210,12 @@ export const useEventFilters = () => {
           (request.eventAddress && request.eventAddress.toLowerCase().includes(searchQuery.toLowerCase())) ||
           dateMatchesSearch(request.desiredEventDate, searchQuery);
 
-        return matchesStatus && matchesSearch;
+        const matchesConfirmation =
+          confirmationFilter === 'all' ||
+          (confirmationFilter === 'confirmed' && request.isConfirmed) ||
+          (confirmationFilter === 'requested' && !request.isConfirmed);
+
+        return matchesStatus && matchesSearch && matchesConfirmation;
       })
       .sort((a: EventRequest, b: EventRequest) => {
         switch (sortBy) {

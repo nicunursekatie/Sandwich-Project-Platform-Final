@@ -8,6 +8,13 @@
       "when": 1760404013501,
       "tag": "0000_naive_wolfpack",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1760843088346,
+      "tag": "0001_aberrant_whiplash",
+      "breakpoints": true
     }
   ]
 }

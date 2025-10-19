@@ -166,6 +166,18 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}
             </Badge>
+            {/* Confirmation Status Badge - Click to toggle */}
+            <Badge
+              onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
+              className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
+                request.isConfirmed
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-400 text-white'
+              }`}
+              title="Click to toggle confirmation status"
+            >
+              {request.isConfirmed ? '✓ Confirmed' : 'Requested'}
+            </Badge>
             {isInProcessStale && (
               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
                 <AlertTriangle className="w-3 h-3 mr-1" />

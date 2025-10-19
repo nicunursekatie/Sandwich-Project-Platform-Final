@@ -59,6 +59,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setSearchQuery,
     statusFilter,
     setStatusFilter,
+    confirmationFilter,
+    setConfirmationFilter,
     sortBy,
     setSortBy,
     currentPage,
@@ -269,6 +271,8 @@ const EventRequestsManagementContent: React.FC = () => {
             onSearchChange={setSearchQuery}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
+            confirmationFilter={confirmationFilter}
+            onConfirmationFilterChange={setConfirmationFilter}
             sortBy={sortBy}
             onSortByChange={setSortBy}
             activeTab={activeTab}

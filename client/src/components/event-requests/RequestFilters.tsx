@@ -28,6 +28,8 @@ interface RequestFiltersProps {
   onSearchChange: (query: string) => void;
   statusFilter: string;
   onStatusFilterChange: (filter: string) => void;
+  confirmationFilter: 'all' | 'confirmed' | 'requested';
+  onConfirmationFilterChange: (filter: 'all' | 'confirmed' | 'requested') => void;
   sortBy: 'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc';
   onSortByChange: (sort: 'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc') => void;
   
@@ -71,6 +73,8 @@ export default function RequestFilters({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  confirmationFilter,
+  onConfirmationFilterChange,
   sortBy,
   onSortByChange,
   activeTab,
@@ -252,6 +256,19 @@ export default function RequestFilters({
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  <Select
+                    value={confirmationFilter}
+                    onValueChange={(value: any) => onConfirmationFilterChange(value)}
+                  >
+                    <SelectTrigger className="w-full sm:w-40 md:w-44">
+                      <SelectValue placeholder="Filter by..." />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]" position="popper" sideOffset={5}>
+                      <SelectItem value="all">All Events</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="requested">Requested</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Tab Content */}
@@ -354,6 +371,19 @@ export default function RequestFilters({
                 <SelectItem value="organization_desc">
                   Org Z-A
                 </SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={confirmationFilter}
+              onValueChange={(value: any) => onConfirmationFilterChange(value)}
+            >
+              <SelectTrigger className="w-full mobile-select">
+                <SelectValue placeholder="Filter by..." />
+              </SelectTrigger>
+              <SelectContent className="z-[100]" position="popper" sideOffset={5}>
+                <SelectItem value="all">All Events</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="requested">Requested</SelectItem>
               </SelectContent>
             </Select>
           </div>

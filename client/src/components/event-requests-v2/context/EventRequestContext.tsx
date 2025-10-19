@@ -17,6 +17,8 @@ interface EventRequestContextType {
   setSearchQuery: (query: string) => void;
   statusFilter: string;
   setStatusFilter: (status: string) => void;
+  confirmationFilter: 'all' | 'confirmed' | 'requested';
+  setConfirmationFilter: (filter: 'all' | 'confirmed' | 'requested') => void;
   sortBy: 'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc';
   setSortBy: (sort: any) => void;
 
@@ -186,6 +188,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [activeTab, setActiveTab] = useState(initialTab || 'new');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [confirmationFilter, setConfirmationFilter] = useState<'all' | 'confirmed' | 'requested'>('all');
   const [sortBy, setSortBy] = useState<'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc'>('event_date_desc');
 
   // Pagination
@@ -432,6 +435,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setSearchQuery,
     statusFilter,
     setStatusFilter,
+    confirmationFilter,
+    setConfirmationFilter,
     sortBy,
     setSortBy,
 
