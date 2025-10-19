@@ -19,27 +19,14 @@ import {
 import {
   User as UserIcon,
   Shield,
-  Calendar,
-  ClipboardList,
-  Users,
-  MapPin,
-  Package,
   Phone,
   KeyRound,
   BarChart3,
 } from 'lucide-react';
 import type { User, UserFormData } from '@/types/user';
 import CleanPermissionsEditor from '@/components/clean-permissions-editor';
-import TeamBoard from '@/pages/TeamBoard';
-import MyAvailability from '@/pages/my-availability';
-import TeamAvailability from '@/pages/team-availability';
-import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
-import RouteMapView from '@/pages/route-map';
-import EventRequestsManagementV2 from '@/components/event-requests-v2';
 import { PasswordDialog } from './PasswordDialog';
 import { SMSDialog } from './SMSDialog';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
-import { useAuth } from '@/hooks/useAuth';
 
 interface ComprehensiveUserDialogProps {
   mode: 'add' | 'edit';
@@ -75,19 +62,10 @@ export function ComprehensiveUserDialog({
   onManageSMS,
   isPending = false,
 }: ComprehensiveUserDialogProps) {
-  const { user: currentUser } = useAuth();
   const [formData, setFormData] = useState<UserFormData>(defaultFormData);
   const [activeTab, setActiveTab] = useState('profile');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showSMSDialog, setShowSMSDialog] = useState(false);
-
-  // Check permissions for tabs
-  const canViewMyAvailability = hasPermission(currentUser, PERMISSIONS.NAV_MY_AVAILABILITY);
-  const canViewTeamAvailability = hasPermission(currentUser, PERMISSIONS.NAV_TEAM_AVAILABILITY);
-  const canViewVolunteerCalendar = hasPermission(currentUser, PERMISSIONS.NAV_VOLUNTEER_CALENDAR);
-  const canViewEventRequests = hasPermission(currentUser, PERMISSIONS.NAV_EVENT_PLANNING) || hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW);
-  const canViewTeamBoard = hasPermission(currentUser, PERMISSIONS.NAV_TEAM_BOARD);
-  const canViewLocations = hasPermission(currentUser, PERMISSIONS.NAV_ROUTE_MAP);
 
   useEffect(() => {
     if (mode === 'edit' && user) {
@@ -257,7 +235,7 @@ export function ComprehensiveUserDialog({
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${2 + (canViewEventRequests ? 1 : 0) + (canViewMyAvailability ? 1 : 0) + (canViewTeamAvailability ? 1 : 0) + (canViewVolunteerCalendar ? 1 : 0) + (canViewTeamBoard ? 1 : 0) + (canViewLocations ? 1 : 0) + 1}, minmax(0, 1fr))` }}>
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="profile" className="flex items-center gap-1 text-xs">
                 <UserIcon className="h-3 w-3" />
                 Profile
@@ -266,42 +244,6 @@ export function ComprehensiveUserDialog({
                 <Shield className="h-3 w-3" />
                 Permissions
               </TabsTrigger>
-              {canViewEventRequests && (
-                <TabsTrigger value="event-requests" className="flex items-center gap-1 text-xs">
-                  <Calendar className="h-3 w-3" />
-                  Event Requests
-                </TabsTrigger>
-              )}
-              {canViewMyAvailability && (
-                <TabsTrigger value="my-availability" className="flex items-center gap-1 text-xs">
-                  <Calendar className="h-3 w-3" />
-                  My Availability
-                </TabsTrigger>
-              )}
-              {canViewTeamAvailability && (
-                <TabsTrigger value="team-availability" className="flex items-center gap-1 text-xs">
-                  <Users className="h-3 w-3" />
-                  Team Availability
-                </TabsTrigger>
-              )}
-              {canViewVolunteerCalendar && (
-                <TabsTrigger value="volunteer-calendar" className="flex items-center gap-1 text-xs">
-                  <Calendar className="h-3 w-3" />
-                  Volunteer Calendar
-                </TabsTrigger>
-              )}
-              {canViewTeamBoard && (
-                <TabsTrigger value="team-board" className="flex items-center gap-1 text-xs">
-                  <ClipboardList className="h-3 w-3" />
-                  Team Board
-                </TabsTrigger>
-              )}
-              {canViewLocations && (
-                <TabsTrigger value="locations" className="flex items-center gap-1 text-xs">
-                  <MapPin className="h-3 w-3" />
-                  Host Locations
-                </TabsTrigger>
-              )}
               <TabsTrigger value="activity" className="flex items-center gap-1 text-xs">
                 <BarChart3 className="h-3 w-3" />
                 Activity
@@ -484,108 +426,6 @@ export function ComprehensiveUserDialog({
                 </div>
               )}
             </TabsContent>
-
-            {/* Event Requests Tab */}
-            {canViewEventRequests && (
-              <TabsContent value="event-requests" className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-medium">Event Requests</h3>
-                    <p className="text-sm text-gray-600">
-                      View and manage event planning requests
-                    </p>
-                  </div>
-                  <div className="border rounded-lg overflow-hidden">
-                    <EventRequestsManagementV2 />
-                  </div>
-                </div>
-              </TabsContent>
-            )}
-
-            {/* My Availability Tab */}
-            {canViewMyAvailability && (
-              <TabsContent value="my-availability" className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-medium">My Availability</h3>
-                    <p className="text-sm text-gray-600">
-                      View and manage availability for {user?.firstName} {user?.lastName}
-                    </p>
-                  </div>
-                  <div className="border rounded-lg overflow-hidden">
-                    <MyAvailability />
-                  </div>
-                </div>
-              </TabsContent>
-            )}
-
-            {/* Team Availability Tab */}
-            {canViewTeamAvailability && (
-              <TabsContent value="team-availability" className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-medium">Team Availability</h3>
-                    <p className="text-sm text-gray-600">
-                      View availability across the entire team
-                    </p>
-                  </div>
-                  <div className="border rounded-lg overflow-hidden">
-                    <TeamAvailability />
-                  </div>
-                </div>
-              </TabsContent>
-            )}
-
-            {/* Volunteer Calendar Tab */}
-            {canViewVolunteerCalendar && (
-              <TabsContent value="volunteer-calendar" className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-medium">Volunteer Calendar</h3>
-                    <p className="text-sm text-gray-600">
-                      TSP volunteer availability calendar
-                    </p>
-                  </div>
-                  <div className="border rounded-lg overflow-hidden">
-                    <GoogleCalendarAvailability />
-                  </div>
-                </div>
-              </TabsContent>
-            )}
-
-            {/* Team Board Tab */}
-            {canViewTeamBoard && (
-              <TabsContent value="team-board" className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-medium">Team Board</h3>
-                    <p className="text-sm text-gray-600">
-                      Collaborative team board for tasks, notes, and ideas
-                    </p>
-                  </div>
-                  <div className="border rounded-lg overflow-hidden">
-                    <TeamBoard />
-                  </div>
-                </div>
-              </TabsContent>
-            )}
-
-            {/* Host Locations Map Tab */}
-            {canViewLocations && (
-              <TabsContent value="locations" className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-medium">Host Locations Map</h3>
-                    <p className="text-sm text-gray-600">
-                      Interactive map showing all host locations
-                    </p>
-                  </div>
-                  <div className="border rounded-lg overflow-hidden h-[600px]">
-                    <RouteMapView />
-                  </div>
-                </div>
-              </TabsContent>
-            )}
 
             {/* Activity Tab */}
             <TabsContent value="activity" className="flex-1 overflow-y-auto p-4">
