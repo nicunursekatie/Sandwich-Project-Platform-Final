@@ -41,17 +41,13 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
     }
   }
 
-  // Conditional field validation: If speakers needed, check for speaker details
+  // Conditional field validation: If speakers needed, check for event start time
   if (request.speakersNeeded && request.speakersNeeded > 0) {
     if (!request.eventStartTime) {
       missing.push('Event Start Time');
     }
-    if (!request.speakerAudienceType) {
-      missing.push('Speaker Audience Type');
-    }
-    if (!request.speakerDuration) {
-      missing.push('Speaker Duration');
-    }
+    // Note: speakerAudienceType and speakerDuration are planning details filled in later,
+    // not critical intake information
   }
 
   // Conditional field validation: If overnight holding is set, check for delivery details
