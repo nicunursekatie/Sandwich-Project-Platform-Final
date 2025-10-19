@@ -798,29 +798,45 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </span>
                 </div>
                 {isEditingThisCard && editingField === dateFieldToEdit ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="date"
-                      value={formatDateForInput(editingValue)}
-                      onChange={(e) => setEditingValue(e.target.value)}
-                      className="h-8 w-full text-gray-900 bg-white"
-                      autoFocus
-                    />
-                    <Button
-                      size="sm"
-                      onClick={saveEdit}
-                      className="bg-[#FBAD3F] hover:bg-[#e89a2d]"
-                    >
-                      <Save className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={cancelEdit}
-                      className="text-white hover:bg-white/20"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="date"
+                        value={formatDateForInput(editingValue)}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="h-8 w-full text-gray-900 bg-white"
+                        autoFocus
+                      />
+                      <Button
+                        size="sm"
+                        onClick={saveEdit}
+                        className="bg-[#FBAD3F] hover:bg-[#e89a2d]"
+                      >
+                        <Save className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={cancelEdit}
+                        className="text-white hover:bg-white/20"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      <Checkbox
+                        id={`confirm-date-checkbox-${dateFieldToEdit}`}
+                        checked={tempIsConfirmed}
+                        onCheckedChange={(checked) => setTempIsConfirmed(!!checked)}
+                        className="border-white data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                      />
+                      <label
+                        htmlFor={`confirm-date-checkbox-${dateFieldToEdit}`}
+                        className="text-sm font-medium leading-none cursor-pointer select-none"
+                      >
+                        Mark as confirmed by our team
+                      </label>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-2 group">
