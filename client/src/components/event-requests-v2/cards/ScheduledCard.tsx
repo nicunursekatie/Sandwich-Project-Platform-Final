@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -189,6 +190,8 @@ interface ScheduledCardProps {
   saveEdit: () => void;
   cancelEdit: () => void;
   setEditingValue: (value: string) => void;
+  tempIsConfirmed: boolean;
+  setTempIsConfirmed: (value: boolean) => void;
   setInlineSandwichMode: (mode: 'total' | 'types' | 'range') => void;
   setInlineTotalCount: (count: number) => void;
   setInlineRangeMin: (count: number) => void;
@@ -249,6 +252,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   saveEdit,
   cancelEdit,
   setEditingValue,
+  tempIsConfirmed,
+  setTempIsConfirmed,
   setInlineSandwichMode,
   setInlineTotalCount,
   setInlineRangeMin,
@@ -362,6 +367,63 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     dateLabel =
       request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
   }
+
+  // Special renderer for date fields with confirmation checkbox
+  const renderEditableDateField = (field: string, value: any, label: string) => {
+    const isEditing = isEditingThisCard && editingField === field;
+
+    if (isEditing) {
+      return (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Input
+              type="date"
+              value={editingValue}
+              onChange={(e) => setEditingValue(e.target.value)}
+              className="h-8 w-40 text-gray-900 bg-white"
+              autoFocus
+            />
+            <Button size="sm" onClick={saveEdit}>
+              <Save className="w-3 h-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit}>
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 ml-2">
+            <Checkbox
+              id={`confirm-date-checkbox-${field}`}
+              checked={tempIsConfirmed}
+              onCheckedChange={(checked) => setTempIsConfirmed(!!checked)}
+            />
+            <label
+              htmlFor={`confirm-date-checkbox-${field}`}
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              Mark as confirmed by our team
+            </label>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2 group">
+        <span className="text-base font-medium text-gray-600">{label}:</span>
+        <span className="text-base">{value || 'Not set'}</span>
+        {canEdit && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => startEditing(field, value?.toString() || '')}
+            className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <Edit2 className="w-3 h-3" />
+          </Button>
+        )}
+      </div>
+    );
+  };
 
   const renderEditableField = (
     field: string,

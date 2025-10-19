@@ -16,6 +16,9 @@ export const ScheduledTab: React.FC = () => {
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
 
+  // State for confirmation checkbox when editing dates
+  const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
+
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation, rescheduleEventMutation } = useEventMutations();
   const {
@@ -74,6 +77,14 @@ export const ScheduledTab: React.FC = () => {
     setEditingScheduledId(id);
     setEditingField(field);
     setEditingValue(currentValue || '');
+
+    // When editing a date field, also load the current confirmation status
+    if (field === 'desiredEventDate' || field === 'scheduledEventDate') {
+      const eventRequest = eventRequests.find(req => req.id === id);
+      if (eventRequest) {
+        setTempIsConfirmed(eventRequest.isConfirmed || false);
+      }
+    }
 
     // Special handling for sandwich types
     if (field === 'sandwichTypes') {
@@ -146,6 +157,15 @@ export const ScheduledTab: React.FC = () => {
         updateEventRequestMutation.mutate({
           id: editingScheduledId,
           data: { hasRefrigeration: refrigerationValue },
+        });
+      } else if (editingField === 'desiredEventDate' || editingField === 'scheduledEventDate') {
+        // When saving a date field, also save the confirmation status
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: {
+            [editingField]: editingValue,
+            isConfirmed: tempIsConfirmed
+          },
         });
       } else {
         // Regular field update
@@ -262,6 +282,8 @@ export const ScheduledTab: React.FC = () => {
                 saveEdit={saveEdit}
                 cancelEdit={cancelEdit}
                 setEditingValue={setEditingValue}
+                tempIsConfirmed={tempIsConfirmed}
+                setTempIsConfirmed={setTempIsConfirmed}
                 setInlineSandwichMode={setInlineSandwichMode}
                 setInlineTotalCount={setInlineTotalCount}
                 setInlineRangeMin={setInlineRangeMin}
