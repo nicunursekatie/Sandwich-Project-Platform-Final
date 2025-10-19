@@ -142,10 +142,10 @@ export function MissingInfoSummaryDialog() {
                       </div>
 
                       <div className="text-sm text-gray-600 mb-2 space-y-1">
-                        {event.departmentName && (
+                        {event.department && (
                           <div>
                             <span className="font-medium">Department:</span>{' '}
-                            {event.departmentName}
+                            {event.department}
                           </div>
                         )}
                         <div>
