@@ -25,13 +25,20 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
   }
   
   // Check for address (event address, delivery destination, or overnight holding location)
-  const hasAddress = 
-    (request.eventAddress && request.eventAddress.trim() !== '') ||
-    (request.deliveryDestination && request.deliveryDestination.trim() !== '') ||
-    (request.overnightHoldingLocation && request.overnightHoldingLocation.trim() !== '');
+  // Skip address requirement if organization is delivering themselves (no drivers/van driver needed)
+  const organizationDelivering = 
+    (!request.driversNeeded || request.driversNeeded === 0) && 
+    !request.vanDriverNeeded;
   
-  if (!hasAddress) {
-    missing.push('Address');
+  if (!organizationDelivering) {
+    const hasAddress = 
+      (request.eventAddress && request.eventAddress.trim() !== '') ||
+      (request.deliveryDestination && request.deliveryDestination.trim() !== '') ||
+      (request.overnightHoldingLocation && request.overnightHoldingLocation.trim() !== '');
+    
+    if (!hasAddress) {
+      missing.push('Address');
+    }
   }
 
   // Conditional field validation: If speakers needed, check for speaker details

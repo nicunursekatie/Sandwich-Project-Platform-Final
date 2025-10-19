@@ -1331,12 +1331,12 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Organization details mutation
   const updateOrgDetailsMutation = useMutation({
-    mutationFn: (data: { organizationName?: string; department?: string }) =>
+    mutationFn: (data: { organizationName?: string; department?: string; eventAddress?: string }) =>
       apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
     onSuccess: () => {
       toast({
-        title: 'Organization details updated',
-        description: 'Organization name or department has been successfully updated.',
+        title: 'Event details updated',
+        description: 'Event information has been successfully updated.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       setIsEditingField(false);
@@ -1419,6 +1419,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       updateOrgDetailsMutation.mutate({ organizationName: editingValue });
     } else if (editingField === 'department') {
       updateOrgDetailsMutation.mutate({ department: editingValue });
+    } else if (editingField === 'eventAddress') {
+      updateOrgDetailsMutation.mutate({ eventAddress: editingValue });
     }
   };
 
@@ -2047,6 +2049,60 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                         </Badge>
                       ))}
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Event Address - with inline editing */}
+            {(request.eventAddress || isEditingField && editingField === 'eventAddress' || canEditOrgDetails) && (
+              <div className="bg-[#e6f2f5] rounded-lg p-3">
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin className="w-4 h-4 text-[#236383] mt-0.5" />
+                  <div className="flex-1">
+                    {isEditingField && editingField === 'eventAddress' ? (
+                      <div className="flex flex-col gap-2">
+                        <Textarea
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="min-h-[60px]"
+                          placeholder="Enter event address"
+                          autoFocus
+                          data-testid="input-event-address"
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit} data-testid="button-save-event-address">
+                            <Save className="w-3 h-3 mr-1" />
+                            Save
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-event-address">
+                            <X className="w-3 h-3 mr-1" />
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start justify-between gap-2 group">
+                        <div className="flex-1">
+                          <span className="font-medium text-[#236383]">Event Address:</span>
+                          <p className="text-gray-700 mt-1">
+                            {request.eventAddress || <span className="text-gray-400 italic">No address provided</span>}
+                          </p>
+                        </div>
+                        {canEditOrgDetails && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('eventAddress', request.eventAddress || '')}
+                            className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                            title={request.eventAddress ? "Edit address" : "Add address"}
+                            data-testid="button-edit-event-address"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
