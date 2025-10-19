@@ -1454,6 +1454,24 @@ export const insertTeamBoardItemSchema = createInsertSchema(teamBoardItems).omit
 export type TeamBoardItem = typeof teamBoardItems.$inferSelect;
 export type InsertTeamBoardItem = z.infer<typeof insertTeamBoardItemSchema>;
 
+// Team Board Comments - allow discussion on team board items
+export const teamBoardComments = pgTable('team_board_comments', {
+  id: serial('id').primaryKey(),
+  itemId: integer('item_id').notNull().references(() => teamBoardItems.id, { onDelete: 'cascade' }),
+  userId: varchar('user_id').notNull(),
+  userName: varchar('user_name').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const insertTeamBoardCommentSchema = createInsertSchema(teamBoardComments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type TeamBoardComment = typeof teamBoardComments.$inferSelect;
+export type InsertTeamBoardComment = z.infer<typeof insertTeamBoardCommentSchema>;
+
 // Cooler Types table for defining types of coolers
 export const coolerTypes = pgTable('cooler_types', {
   id: serial('id').primaryKey(),

@@ -1,12 +1,16 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray, count } from 'drizzle-orm';
 import { db } from '../db';
 import { 
   teamBoardItems, 
   insertTeamBoardItemSchema,
   type TeamBoardItem,
-  type InsertTeamBoardItem 
+  type InsertTeamBoardItem,
+  teamBoardComments,
+  insertTeamBoardCommentSchema,
+  type TeamBoardComment,
+  type InsertTeamBoardComment
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
 
@@ -38,10 +42,16 @@ const updateItemSchema = z.object({
   completedAt: z.string().datetime().optional().nullable(),
 });
 
+const createCommentSchema = insertTeamBoardCommentSchema
+  .omit({ userId: true, userName: true })
+  .extend({
+    content: z.string().min(1, 'Comment cannot be empty').max(1000, 'Comment too long'),
+  });
+
 // Create team board router
 export const teamBoardRouter = Router();
 
-// GET /api/team-board - Get all board items
+// GET /api/team-board - Get all board items with comment counts
 teamBoardRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -56,8 +66,30 @@ teamBoardRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
       .from(teamBoardItems)
       .orderBy(desc(teamBoardItems.createdAt));
 
+    // Get comment counts for all items
+    const itemIds = items.map(item => item.id);
+    const commentCounts = itemIds.length > 0 
+      ? await db
+          .select({
+            itemId: teamBoardComments.itemId,
+            count: count(teamBoardComments.id),
+          })
+          .from(teamBoardComments)
+          .where(inArray(teamBoardComments.itemId, itemIds))
+          .groupBy(teamBoardComments.itemId)
+      : [];
+
+    // Create a map of itemId -> comment count
+    const countMap = new Map(commentCounts.map(c => [c.itemId, Number(c.count)]));
+
+    // Add comment counts to items
+    const itemsWithCounts = items.map(item => ({
+      ...item,
+      commentCount: countMap.get(item.id) || 0,
+    }));
+
     // Sort: open/claimed items first, then done items
-    const sortedItems = items.sort((a, b) => {
+    const sortedItems = itemsWithCounts.sort((a, b) => {
       if (a.status === 'done' && b.status !== 'done') return 1;
       if (a.status !== 'done' && b.status === 'done') return -1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -232,6 +264,163 @@ teamBoardRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response) 
     res.status(500).json({ 
       error: 'Failed to delete item',
       message: 'An error occurred while deleting the item' 
+    });
+  }
+});
+
+// GET /api/team-board/:id/comments - Get all comments for a board item
+teamBoardRouter.get('/:id/comments', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const itemId = parseInt(req.params.id);
+    if (isNaN(itemId)) {
+      return res.status(400).json({ error: 'Invalid item ID' });
+    }
+
+    logger.info('Fetching comments for team board item', { 
+      itemId,
+      userId: req.user.id 
+    });
+
+    // Fetch all comments for this item, ordered by creation date (oldest first for chronological reading)
+    const comments = await db
+      .select()
+      .from(teamBoardComments)
+      .where(eq(teamBoardComments.itemId, itemId))
+      .orderBy(teamBoardComments.createdAt);
+
+    logger.info('Successfully fetched comments', { 
+      itemId,
+      count: comments.length,
+      userId: req.user.id 
+    });
+
+    res.json(comments);
+  } catch (error) {
+    logger.error('Failed to fetch comments', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch comments',
+      message: 'An error occurred while retrieving comments' 
+    });
+  }
+});
+
+// POST /api/team-board/:id/comments - Create a new comment
+teamBoardRouter.post('/:id/comments', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const itemId = parseInt(req.params.id);
+    if (isNaN(itemId)) {
+      return res.status(400).json({ error: 'Invalid item ID' });
+    }
+
+    // Validate input data
+    const validation = createCommentSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Invalid comment data',
+        details: validation.error.issues
+      });
+    }
+
+    const commentData = validation.data;
+
+    logger.info('Creating comment on team board item', { 
+      itemId,
+      userId: req.user.id 
+    });
+
+    const displayName = req.user.displayName || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email;
+
+    // Prepare the comment data for insertion
+    const newComment: InsertTeamBoardComment = {
+      itemId,
+      userId: req.user.id,
+      userName: displayName,
+      content: commentData.content,
+    };
+
+    // Insert the new comment
+    const [createdComment] = await db
+      .insert(teamBoardComments)
+      .values(newComment)
+      .returning();
+
+    logger.info('Successfully created comment', { 
+      commentId: createdComment.id,
+      itemId,
+      userId: req.user.id 
+    });
+
+    res.status(201).json(createdComment);
+  } catch (error) {
+    logger.error('Failed to create comment', error);
+    res.status(500).json({ 
+      error: 'Failed to create comment',
+      message: 'An error occurred while creating the comment' 
+    });
+  }
+});
+
+// DELETE /api/team-board/comments/:commentId - Delete a comment
+teamBoardRouter.delete('/comments/:commentId', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const commentId = parseInt(req.params.commentId);
+    if (isNaN(commentId)) {
+      return res.status(400).json({ error: 'Invalid comment ID' });
+    }
+
+    logger.info('Deleting team board comment', { 
+      commentId,
+      userId: req.user.id 
+    });
+
+    // Check if comment exists and belongs to user (or user is admin)
+    const [comment] = await db
+      .select()
+      .from(teamBoardComments)
+      .where(eq(teamBoardComments.id, commentId));
+
+    if (!comment) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    // Only allow deletion if the user created the comment or is an admin
+    const isAdmin = req.user.permissions?.includes('ADMIN_ACCESS');
+    if (comment.userId !== req.user.id && !isAdmin) {
+      return res.status(403).json({ error: 'You can only delete your own comments' });
+    }
+
+    // Delete the comment
+    const result = await db
+      .delete(teamBoardComments)
+      .where(eq(teamBoardComments.id, commentId));
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    logger.info('Successfully deleted comment', { 
+      commentId,
+      userId: req.user.id 
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    logger.error('Failed to delete comment', error);
+    res.status(500).json({ 
+      error: 'Failed to delete comment',
+      message: 'An error occurred while deleting the comment' 
     });
   }
 });

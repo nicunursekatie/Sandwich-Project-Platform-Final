@@ -19,7 +19,11 @@ import {
   Trash2,
   Search,
   X,
-  User
+  User,
+  MessageSquare,
+  Send,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,6 +41,16 @@ interface TeamBoardItem {
   assignedTo: string | null;
   assignedToName: string | null;
   completedAt: Date | null;
+  createdAt: Date;
+  commentCount: number;
+}
+
+interface TeamBoardComment {
+  id: number;
+  itemId: number;
+  userId: string;
+  userName: string;
+  content: string;
   createdAt: Date;
 }
 
@@ -64,6 +78,179 @@ const getAvatarColor = (name: string) => {
   const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
   return colors[index];
 };
+
+// Comments component for team board items
+function ItemComments({ itemId, initialCommentCount }: { itemId: number; initialCommentCount: number }) {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [newComment, setNewComment] = useState('');
+
+  // Fetch comments for this item
+  const { data: comments = [], isLoading } = useQuery<TeamBoardComment[]>({
+    queryKey: ['/api/team-board', itemId, 'comments'],
+    queryFn: async () => {
+      const res = await fetch(`/api/team-board/${itemId}/comments`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch comments');
+      return res.json();
+    },
+    enabled: isExpanded, // Only fetch when expanded
+  });
+
+  // Create comment mutation
+  const createCommentMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return await apiRequest('POST', `/api/team-board/${itemId}/comments`, { content });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board', itemId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] }); // Refresh item list for updated counts
+      setNewComment('');
+      toast({
+        title: 'Comment posted',
+        description: 'Your comment has been added',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to post comment',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      return await apiRequest('DELETE', `/api/team-board/comments/${commentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board', itemId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] }); // Refresh item list for updated counts
+      toast({
+        title: 'Comment deleted',
+        description: 'The comment has been removed',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete comment',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    createCommentMutation.mutate(newComment.trim());
+  };
+
+  const handleDeleteComment = (commentId: number) => {
+    if (confirm('Delete this comment?')) {
+      deleteCommentMutation.mutate(commentId);
+    }
+  };
+
+  return (
+    <div className="border-t border-gray-200 dark:border-gray-700 mt-4 pt-3">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center justify-between w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+        data-testid={`button-comments-toggle-${itemId}`}
+      >
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" />
+          <span className="font-medium">
+            {initialCommentCount} {initialCommentCount === 1 ? 'Comment' : 'Comments'}
+          </span>
+        </div>
+        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+
+      {isExpanded && (
+        <div className="mt-3 space-y-3">
+          {/* Comments list */}
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+            </div>
+          ) : comments.length > 0 ? (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+                  data-testid={`comment-${comment.id}`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <Avatar className={`h-5 w-5 ${getAvatarColor(comment.userName)}`}>
+                        <AvatarFallback className="text-white text-xs">
+                          {getInitials(comment.userName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {comment.userName}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {user?.id === comment.userId && (
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                        data-testid={`button-delete-comment-${comment.id}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {comment.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-2">
+              No comments yet. Be the first to comment!
+            </p>
+          )}
+
+          {/* Add comment form */}
+          <form onSubmit={handleSubmitComment} className="flex gap-2">
+            <Input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Add a comment..."
+              className="text-sm"
+              data-testid={`input-new-comment-${itemId}`}
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!newComment.trim() || createCommentMutation.isPending}
+              className="bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
+              data-testid={`button-submit-comment-${itemId}`}
+            >
+              {createCommentMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TeamBoard() {
   const { toast } = useToast();
@@ -423,6 +610,9 @@ export default function TeamBoard() {
                       <User className="h-3.5 w-3.5 mr-1.5" />
                       I'll Handle This
                     </Button>
+
+                    {/* Comments section */}
+                    <ItemComments itemId={item.id} initialCommentCount={item.commentCount} />
                   </CardContent>
                 </Card>
               ))}
@@ -514,6 +704,9 @@ export default function TeamBoard() {
                         Reopen
                       </Button>
                     </div>
+
+                    {/* Comments section */}
+                    <ItemComments itemId={item.id} initialCommentCount={item.commentCount} />
                   </CardContent>
                 </Card>
               ))}
@@ -598,6 +791,9 @@ export default function TeamBoard() {
                     >
                       Reopen
                     </Button>
+
+                    {/* Comments section */}
+                    <ItemComments itemId={item.id} initialCommentCount={item.commentCount} />
                   </CardContent>
                 </Card>
               ))}

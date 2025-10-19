@@ -40,9 +40,20 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       to: params.to,
       from: params.from,
       subject: params.subject,
-      text: params.text || '',
-      html: params.html || '',
     };
+    
+    // Only include HTML if provided
+    if (params.html) {
+      emailData.html = params.html;
+      // Only include plain text as fallback if HTML is not provided
+      // or if specifically provided along with HTML
+      if (params.text && params.text !== params.html) {
+        emailData.text = params.text;
+      }
+    } else if (params.text) {
+      // If only text is provided (no HTML), use it
+      emailData.text = params.text;
+    }
     
     // Add Reply-To header if provided
     if (params.replyTo) {
