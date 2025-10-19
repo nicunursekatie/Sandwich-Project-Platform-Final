@@ -14,20 +14,13 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
     missing.push('Contact Info');
   }
   
-  // Check for sandwich estimate (check all possible sources including structured data)
+  // Check for sandwich count - this is the critical info we need
   const hasSandwichCount = 
     (request.estimatedSandwichCount && request.estimatedSandwichCount > 0) ||
     (request.estimatedSandwichCountMin && request.estimatedSandwichCountMin > 0) ||
     (request.estimatedSandwichCountMax && request.estimatedSandwichCountMax > 0);
   
-  // Check sandwich types in sandwichTypes array, structured sandwich details, or range type
-  const hasSandwichTypes = 
-    (request.sandwichTypes && 
-      ((Array.isArray(request.sandwichTypes) && request.sandwichTypes.length > 0) ||
-       (typeof request.sandwichTypes === 'object' && !Array.isArray(request.sandwichTypes) && Object.keys(request.sandwichTypes).length > 0))) ||
-    (request.estimatedSandwichRangeType && request.estimatedSandwichRangeType.trim() !== '');
-  
-  if (!hasSandwichCount || !hasSandwichTypes) {
+  if (!hasSandwichCount) {
     missing.push('Sandwich Info');
   }
   
