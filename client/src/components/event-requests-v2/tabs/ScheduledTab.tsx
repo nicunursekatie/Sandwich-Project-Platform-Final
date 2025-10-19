@@ -158,6 +158,13 @@ export const ScheduledTab: React.FC = () => {
           id: editingScheduledId,
           data: { hasRefrigeration: refrigerationValue },
         });
+      } else if (editingField === 'isConfirmed' || editingField === 'addedToOfficialSheet') {
+        // Special handling for boolean toggles
+        const boolValue = editingValue === 'true';
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: { [editingField]: boolValue },
+        });
       } else if (editingField === 'desiredEventDate' || editingField === 'scheduledEventDate') {
         // When saving a date field, also save the confirmation status
         // Completed events are always confirmed
@@ -203,6 +210,13 @@ export const ScheduledTab: React.FC = () => {
 
   const removeInlineSandwichType = (index: number) => {
     setInlineSandwichTypes(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet', currentValue: boolean) => {
+    updateEventRequestMutation.mutate({
+      id,
+      data: { [field]: !currentValue },
+    });
   };
 
   const handleCall = (request: any) => {
@@ -288,6 +302,7 @@ export const ScheduledTab: React.FC = () => {
                 setEditingValue={setEditingValue}
                 tempIsConfirmed={tempIsConfirmed}
                 setTempIsConfirmed={setTempIsConfirmed}
+                quickToggleBoolean={(field, value) => quickToggleBoolean(request.id, field, value)}
                 setInlineSandwichMode={setInlineSandwichMode}
                 setInlineTotalCount={setInlineTotalCount}
                 setInlineRangeMin={setInlineRangeMin}

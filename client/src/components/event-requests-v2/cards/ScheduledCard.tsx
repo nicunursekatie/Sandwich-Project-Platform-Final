@@ -192,6 +192,7 @@ interface ScheduledCardProps {
   setEditingValue: (value: string) => void;
   tempIsConfirmed: boolean;
   setTempIsConfirmed: (value: boolean) => void;
+  quickToggleBoolean: (field: 'isConfirmed' | 'addedToOfficialSheet', value: boolean) => void;
   setInlineSandwichMode: (mode: 'total' | 'types' | 'range') => void;
   setInlineTotalCount: (count: number) => void;
   setInlineRangeMin: (count: number) => void;
@@ -254,6 +255,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   setEditingValue,
   tempIsConfirmed,
   setTempIsConfirmed,
+  quickToggleBoolean,
   setInlineSandwichMode,
   setInlineTotalCount,
   setInlineRangeMin,
@@ -718,7 +720,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {/* Confirmation Status Badge - Click to toggle */}
               <Badge
-                onClick={() => startEditing('isConfirmed', (!request.isConfirmed).toString())}
+                onClick={() => quickToggleBoolean('isConfirmed', request.isConfirmed)}
                 className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
                   request.isConfirmed
                     ? 'bg-green-600 text-white'
@@ -736,6 +738,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   Manual Entry
                 </Badge>
               )}
+
+              {/* Official Sheet Status Badge - Click to toggle */}
+              <Badge
+                onClick={() => quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
+                className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
+                  request.addedToOfficialSheet
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-300 text-gray-700'
+                }`}
+                title="Click to toggle whether this event has been added to the official Google Sheet"
+              >
+                {request.addedToOfficialSheet ? '✓ On Official Sheet' : 'Not on Official Sheet'}
+              </Badge>
 
               {/* Validation badges for missing intake info */}
               {(() => {

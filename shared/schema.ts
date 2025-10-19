@@ -1535,6 +1535,7 @@ export const eventRequests = pgTable(
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
     scheduledEventDate: timestamp('scheduled_event_date'), // Actual scheduled date (may differ from requested)
     isConfirmed: boolean('is_confirmed').notNull().default(false), // Whether event is confirmed by our team (separate from status workflow)
+    addedToOfficialSheet: boolean('added_to_official_sheet').notNull().default(false), // Whether scheduled event has been manually added to the official events Google Sheet (not synced)
     message: text('message'), // Other relevant info about the group
 
     // Previous hosting experience
