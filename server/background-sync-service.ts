@@ -185,9 +185,24 @@ export class BackgroundSyncService {
       const allEventRequests = await this.storage.getAllEventRequests();
       const scheduledEvents = allEventRequests.filter(event => event.status === 'scheduled');
       
+      // Find any past-due events that should be transitioned
+      const now = new Date();
+      const pastDueScheduled = scheduledEvents.filter(e => {
+        const eventEndDate = e.scheduledEventDate || e.desiredEventDate;
+        return eventEndDate && new Date(eventEndDate) < now;
+      });
+      
       syncLogger.debug(`Auto-transition data fetch`, {
         totalEvents: allEventRequests.length,
         scheduledEvents: scheduledEvents.length,
+        pastDueScheduledCount: pastDueScheduled.length,
+        pastDueScheduledEvents: pastDueScheduled.map(e => ({
+          id: e.id,
+          org: e.organizationName,
+          desiredDate: e.desiredEventDate instanceof Date ? e.desiredEventDate.toISOString() : String(e.desiredEventDate),
+          scheduledDate: e.scheduledEventDate instanceof Date ? e.scheduledEventDate.toISOString() : String(e.scheduledEventDate),
+          status: e.status
+        })),
         firstThreeScheduled: scheduledEvents.slice(0, 3).map(e => ({
           id: e.id,
           org: e.organizationName,
@@ -200,8 +215,6 @@ export class BackgroundSyncService {
         syncLogger.debug('No scheduled events found for auto-transition');
         return;
       }
-
-      const now = new Date();
       
       syncLogger.debug(`Auto-transition check`, {
         currentTime: now.toISOString(),
