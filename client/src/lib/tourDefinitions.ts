@@ -384,8 +384,8 @@ export const TOURS: Tour[] = [
   },
   {
     id: 'dashboard-assignments',
-    title: 'Dashboard Assignments Overview',
-    description: 'Quick view of your assignments on the main dashboard',
+    title: 'My Action Tracker Overview',
+    description: 'Quick view of your assignments and action items on the dashboard',
     category: 'my-work',
     icon: 'LayoutDashboard',
     estimatedTime: '1 min',
@@ -393,7 +393,7 @@ export const TOURS: Tour[] = [
       {
         id: 'dash-assignments-intro',
         title: 'Dashboard Quick View',
-        description: 'Your dashboard shows a quick overview of all your assignments and pending tasks.',
+        description: 'Your dashboard shows a quick overview of all your assigned projects, events, tasks, and messages.',
         targetSelector: '[data-tour="navigation"]',
         position: 'right'
       },
@@ -414,18 +414,18 @@ export const TOURS: Tour[] = [
         }
       },
       {
-        id: 'dash-assignments-widget',
-        title: 'My Assignments Widget',
-        description: 'This widget displays your current assignments at a glance. See what needs your attention!',
-        targetSelector: '[data-testid="assignments-widget"], [data-testid="my-assignments"]',
+        id: 'dash-action-tracker',
+        title: 'My Action Tracker',
+        description: 'This widget shows all your assigned work and communications. It displays projects, events, tasks, and messages that need your attention.',
+        targetSelector: '[data-testid="dashboard-action-tracker"]',
         position: 'top',
         highlightPadding: 16
       },
       {
-        id: 'dash-quick-actions',
-        title: 'Quick Actions',
-        description: 'Click on any assignment to quickly jump to that task. Stay productive!',
-        targetSelector: '[data-testid="assignment-item"]:first-child',
+        id: 'dash-action-cards',
+        title: 'Action Categories',
+        description: 'Your assignments are organized into cards: Projects, Events, Tasks, and Messages. Click on any item to jump directly to it!',
+        targetSelector: '[data-testid="projects-card"], [data-testid="events-card"]',
         position: 'bottom',
         highlightPadding: 12
       }
