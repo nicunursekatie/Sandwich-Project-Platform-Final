@@ -139,18 +139,19 @@ export const TOURS: Tour[] = [
         }
       },
       {
-        id: 'signin-toolkit',
-        title: 'Access Toolkit',
-        description: 'Click the Toolkit tab to access all operational resources.',
-        targetSelector: '[data-testid="tab-toolkit"], [data-value="toolkit"]',
-        position: 'bottom'
+        id: 'signin-forms-filter',
+        title: 'Click on Forms Category',
+        description: 'In the Documents tab, click the "Forms" category button to see all available forms.',
+        targetSelector: '[data-testid="category-forms"], [data-tour="category-forms"]',
+        position: 'bottom',
+        highlightPadding: 8
       },
       {
         id: 'signin-forms-location',
-        title: 'Sign-In Forms Location',
-        description: 'Look for "SandwichSigninNoEmail.pdf" or similar sign-in form files. These are the forms used at sandwich collection events to track participants.',
-        targetSelector: '[data-testid="file-list"], [data-testid="toolkit-content"]',
-        position: 'left',
+        title: 'Sandwich Sign-In Form',
+        description: 'Look for the "Sandwich Sign-In Form" card. This form is used at sandwich collection events to track participants without requiring email addresses.',
+        targetSelector: '[data-testid="file-list"]',
+        position: 'top',
         highlightPadding: 16
       }
     ]
