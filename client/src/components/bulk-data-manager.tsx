@@ -61,17 +61,17 @@ export default function BulkDataManager({
   const [showHostRecords, setShowHostRecords] = useState(false);
 
   // Permission checks
-  const canImport = hasPermission(user, PERMISSIONS.IMPORT_DATA);
+  const canImport = hasPermission(user, PERMISSIONS.DATA_IMPORT);
   const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
 
   // Fetch collection statistics
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<any>({
     queryKey: ['/api/collection-stats'],
     refetchInterval: 120000, // Reduced from 5 seconds to 2 minutes
   });
 
   // Fetch host mapping distribution
-  const { data: mappingStats, isLoading: mappingLoading } = useQuery({
+  const { data: mappingStats, isLoading: mappingLoading } = useQuery<any>({
     queryKey: ['/api/host-mapping-stats'],
     refetchInterval: 120000, // Reduced from 5 seconds to 2 minutes
   });
