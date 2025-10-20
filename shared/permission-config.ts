@@ -162,6 +162,16 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.VOLUNTEER_CALENDAR_MANAGE,
     ],
   },
+  DOCUMENTS: {
+    label: 'Documents',
+    permissions: [
+      PERMISSIONS.DOCUMENTS_VIEW,
+      PERMISSIONS.DOCUMENTS_MANAGE,
+      PERMISSIONS.DOCUMENTS_CONFIDENTIAL,
+      PERMISSIONS.DOCUMENTS_UPLOAD,
+      PERMISSIONS.DOCUMENTS_DELETE_ALL,
+    ],
+  },
   NAVIGATION: {
     label: 'Navigation Tabs',
     permissions: [
