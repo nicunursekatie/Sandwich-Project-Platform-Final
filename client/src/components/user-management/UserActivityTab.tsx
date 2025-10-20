@@ -11,9 +11,9 @@ interface UserActivityTabProps {
 
 export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
   const { data: activityStats, isLoading } = useQuery({
-    queryKey: ['/api/user-activity/user-stats', userId],
+    queryKey: ['/api/enhanced-user-activity/user-stats', userId],
     queryFn: async () => {
-      const res = await fetch(`/api/user-activity/user-stats/${userId}?days=30`, {
+      const res = await fetch(`/api/enhanced-user-activity/user-stats/${userId}?days=30`, {
         credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to fetch activity stats');
@@ -22,9 +22,9 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
   });
 
   const { data: recentLogs } = useQuery({
-    queryKey: ['/api/user-activity/logs', userId],
+    queryKey: ['/api/enhanced-user-activity/logs', userId],
     queryFn: async () => {
-      const res = await fetch(`/api/user-activity/logs?userId=${userId}&days=7`, {
+      const res = await fetch(`/api/enhanced-user-activity/logs?userId=${userId}&days=7`, {
         credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to fetch activity logs');
