@@ -510,13 +510,14 @@ export function setupTempAuth(app: Express) {
       const newUser = await storage.createUser({
         id: userId,
         email,
+        password: password.trim(), // Store password in password column
         firstName,
         lastName,
         role: userRole,
         permissions: getDefaultPermissionsForRole(userRole),
         isActive: true,
         profileImageUrl: null,
-        metadata: { password }, // Store password in metadata for now
+        metadata: {},
       });
 
       res.json({ success: true, message: 'Registration successful' });
@@ -629,8 +630,11 @@ export function setupTempAuth(app: Express) {
         });
       }
 
+      // Trim email to handle mobile keyboard whitespace
+      const trimmedEmail = email.trim().toLowerCase();
+
       // Find user by email
-      const user = await storage.getUserByEmail(email);
+      const user = await storage.getUserByEmail(trimmedEmail);
       if (!user || !user.isActive) {
         return res.status(401).json({
           success: false,
@@ -638,9 +642,21 @@ export function setupTempAuth(app: Express) {
         });
       }
 
-      // Check password (stored in metadata for now)
-      const storedPassword = (user.metadata as any)?.password;
-      if (storedPassword !== password) {
+      // Check password (now stored in password column)
+      const storedPassword = user.password;
+      
+      if (!storedPassword) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password',
+        });
+      }
+      
+      // Trim both passwords to handle mobile keyboard whitespace issues
+      const trimmedStoredPassword = storedPassword.trim();
+      const trimmedInputPassword = String(password || '').trim();
+      
+      if (trimmedStoredPassword !== trimmedInputPassword) {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password',
@@ -887,16 +903,16 @@ export function setupTempAuth(app: Express) {
         }
 
         // Check current password
-        const storedPassword = (userData.metadata as any)?.password;
-        if (!storedPassword || storedPassword !== currentPassword) {
+        const storedPassword = userData.password;
+        if (!storedPassword || storedPassword.trim() !== currentPassword.trim()) {
           return res
             .status(400)
             .json({ message: 'Current password is incorrect' });
         }
 
-        // Update password
+        // Update password in the password column
         await storage.updateUser(userData.id, {
-          metadata: { ...(userData.metadata as any), password: newPassword },
+          password: newPassword.trim(),
           updatedAt: new Date(),
         });
 
@@ -936,9 +952,9 @@ export function setupTempAuth(app: Express) {
           return res.status(404).json({ message: 'User not found' });
         }
 
-        // Update password
+        // Update password in the password column
         await storage.updateUser(targetUser.id, {
-          metadata: { ...(targetUser.metadata as any), password: newPassword },
+          password: newPassword.trim(),
           updatedAt: new Date(),
         });
 
@@ -1011,6 +1027,16 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
         permissions: freshUser.permissions,
         isActive: freshUser.isActive,
       };
+
+      // Update lastLoginAt if it's been more than 1 hour since last update
+      // This ensures active users with persistent sessions have accurate lastLoginAt
+      const now = new Date();
+      const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      if (!freshUser.lastLoginAt || new Date(freshUser.lastLoginAt) < hourAgo) {
+        storage.updateUser(freshUser.id, { lastLoginAt: now }).catch((err) => {
+          console.error('Failed to update lastLoginAt:', err);
+        });
+      }
 
       console.log(
         `✅ Authentication successful for ${freshUser.email} (${freshUser.role})`
