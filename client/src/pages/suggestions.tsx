@@ -69,6 +69,7 @@ import {
 import { hasPermission } from '@shared/auth-utils';
 import { MessageComposer } from '@/components/message-composer';
 import { useMessaging } from '@/hooks/useMessaging';
+import { useUserActivityTracking } from '@/hooks/useUserActivityTracking';
 
 // Schema for suggestion form
 const suggestionSchema = z.object({
@@ -132,6 +133,7 @@ export default function SuggestionsPortal() {
   const [selectedPriority, setSelectedPriority] = useState('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { trackSearch, trackFormSubmit } = useUserActivityTracking();
 
   // Get current user
   const { data: currentUser } = useQuery({
@@ -174,7 +176,7 @@ export default function SuggestionsPortal() {
     mutationFn: (data: SuggestionFormData) => {
       return apiRequest('POST', '/api/suggestions', data);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/suggestions'] });
       setShowSubmissionForm(false);
       suggestionForm.reset();
@@ -182,6 +184,9 @@ export default function SuggestionsPortal() {
         title: 'Success',
         description: 'Your suggestion has been submitted successfully!',
       });
+      
+      // Track the suggestion submission
+      trackFormSubmit('user suggestion', 'Feedback & Suggestions');
     },
     onError: (error: any) => {
       toast({
