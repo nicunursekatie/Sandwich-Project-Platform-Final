@@ -49,7 +49,7 @@ import BulkDataManager from '@/components/bulk-data-manager';
 import HostAnalytics from '@/components/host-analytics';
 import EnhancedMeetingDashboard from '@/components/enhanced-meeting-dashboard';
 import RoleDemo from '@/pages/role-demo';
-import ProjectsManagementV2 from '@/components/projects-v2';
+import ProjectsManagement from '@/components/projects';
 import ProjectDetailClean from '@/pages/project-detail-clean';
 import Analytics from '@/pages/analytics';
 import ImpactDashboard from '@/pages/impact-dashboard';
@@ -89,8 +89,7 @@ import WeeklyMonitoringDashboard from '@/components/weekly-monitoring-dashboard'
 import WishlistPage from '@/pages/wishlist';
 import TeamBoard from '@/pages/TeamBoard';
 import CoolerTrackingPage from '@/pages/cooler-tracking';
-import EventRequestsManagement from '@/components/event-requests-management';
-import EventRequestsManagementV2 from '@/components/event-requests-v2';
+import EventRequestsManagement from '@/components/event-requests';
 import EventRemindersManagement from '@/components/event-reminders-management';
 import GroupCatalog from '@/components/organizations-catalog';
 import ActionTracking from '@/components/action-tracking-enhanced';
@@ -255,8 +254,8 @@ export default function Dashboard({
       case 'important-documents':
         return <ImportantDocuments />;
       case 'projects':
-        console.log('Rendering ProjectsManagementV2 component');
-        return <ProjectsManagementV2 />;
+        console.log('Rendering ProjectsManagement component');
+        return <ProjectsManagement />;
       case 'real-time-messages':
         return <RealTimeMessages />;
       case 'messages':
@@ -327,8 +326,7 @@ export default function Dashboard({
       case 'volunteers':
         return <VolunteerManagement />;
       case 'event-requests':
-        // Use v2 as the default now
-        return <EventRequestsManagementV2
+        return <EventRequestsManagement
           initialTab={urlParams.tab}
           initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
         />;
