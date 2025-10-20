@@ -20,6 +20,7 @@ export interface Tour {
   icon: string;
   steps: TourStep[];
   estimatedTime?: string;
+  afterComplete?: () => void; // Optional callback to run after tour completes
 }
 
 export type TourCategory = 
@@ -154,7 +155,16 @@ export const TOURS: Tour[] = [
         position: 'top',
         highlightPadding: 16
       }
-    ]
+    ],
+    afterComplete: () => {
+      // After tour completes, automatically open the Forms category
+      setTimeout(() => {
+        const formsButton = document.querySelector('[data-testid="category-forms"]');
+        if (formsButton instanceof HTMLElement) {
+          formsButton.click();
+        }
+      }, 300);
+    }
   },
   {
     id: 'analytics-overview',

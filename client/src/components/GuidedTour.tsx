@@ -197,6 +197,12 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
     } else {
       // Tour completed
       markTourCompleted(activeTour.id);
+      
+      // Call afterComplete callback if defined
+      if (activeTour.afterComplete) {
+        activeTour.afterComplete();
+      }
+      
       closeTour();
     }
   }, [activeTour, currentStepIndex, markTourCompleted]);
