@@ -19,6 +19,14 @@
     
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//www.googletagmanager.com">
+    
+    <!-- Google Analytics - dataLayer initialization (script loaded dynamically by app) -->
+    <script>
+      // Initialize dataLayer for Google Analytics
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      window.gtag = gtag;
+    </script>
   </head>
   <body>
     <div id="root"></div>

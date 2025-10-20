@@ -18,6 +18,10 @@ Activity Notifications UX: User activity displays must show meaningful action de
 ## System Architecture
 The application uses a React 18 frontend with TypeScript, Vite, TanStack Query, and Tailwind CSS (with shadcn/ui). The backend is built with Express.js (TypeScript), Drizzle ORM, and PostgreSQL (Neon serverless), featuring session-based authentication. Database separation for development and production is handled via environment variables. Structured logging is implemented using Winston, and security includes centralized CORS configuration.
 
+**Google Analytics Integration**: Properly configured with gtag.js dynamically loaded via `client/src/lib/analytics.ts`. The `useAnalytics` hook provides convenience methods for tracking downloads, form submissions, button clicks, navigation, searches, errors, and feature usage. Requires `VITE_GA_MEASUREMENT_ID` environment variable to be set. Events are sent to Google Analytics using the gtag API with proper event categories, actions, and labels.
+
+**User Activity Tracking System**: Dual tracking system - (1) Google Analytics for behavioral analytics and (2) Database activity logging via `useUserActivityTracking` hook for detailed user work tracking. Database tracking captures granular interactions (kudos sent, files downloaded, forms submitted) with full context in `user_activity_logs` table, displayed in User Management dialog.
+
 **Port Configuration (.replit file)**:
 - Development (popout preview): `localPort = 5000`, `externalPort = 5000`
 - Production (Autoscale deployment): `localPort = 5000`, `externalPort = 80`
