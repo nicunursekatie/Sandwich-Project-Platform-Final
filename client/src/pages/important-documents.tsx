@@ -570,10 +570,11 @@ export default function ImportantDocuments() {
             </div>
 
             {/* Documents Grid - Professional design */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-16" data-testid="file-list">
               {filteredDocuments.map((doc) => (
                 <Card
                   key={doc.id}
+                  data-testid={`document-${doc.id}`}
                   className="group transition-all duration-300 ease-in-out h-full flex flex-col bg-white border-0 shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),0_8px_24px_rgba(35,99,131,0.04)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.08),0_16px_48px_rgba(35,99,131,0.08)] hover:-translate-y-2 rounded-lg overflow-hidden"
                 >
                   <CardHeader className="pb-6 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">

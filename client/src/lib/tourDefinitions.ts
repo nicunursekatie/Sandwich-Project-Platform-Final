@@ -10,6 +10,7 @@ export interface TourStep {
   };
   highlightPadding?: number;
   beforeShow?: () => void;
+  waitForElement?: boolean; // If true, wait longer for element to load (useful after filtering/navigation)
 }
 
 export interface Tour {
@@ -154,15 +155,23 @@ export const TOURS: Tour[] = [
         description: 'In the Documents tab, click the "Forms" category button to see all available forms.',
         targetSelector: '[data-testid="category-forms"], [data-tour="category-forms"]',
         position: 'bottom',
-        highlightPadding: 8
+        highlightPadding: 8,
+        beforeShow: () => {
+          // Click Forms category and wait for it to load
+          const formsButton = document.querySelector('[data-testid="category-forms"]');
+          if (formsButton instanceof HTMLElement) {
+            formsButton.click();
+          }
+        }
       },
       {
         id: 'signin-forms-location',
         title: 'Sandwich Sign-In Form',
-        description: 'Look for the "Sandwich Sign-In Form" card. This form is used at sandwich collection events to track participants without requiring email addresses.',
-        targetSelector: '[data-testid="file-list"]',
+        description: 'Here it is! This form is used at sandwich collection events to track participants without requiring email addresses. Click Download to get it.',
+        targetSelector: '[data-testid="document-sandwich-signin-form"]',
         position: 'top',
-        highlightPadding: 16
+        highlightPadding: 16,
+        waitForElement: true // Wait for Forms category to finish loading
       }
     ],
     afterComplete: () => {

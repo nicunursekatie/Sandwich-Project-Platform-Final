@@ -131,7 +131,9 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
     }
 
     // Scroll to element first, then highlight
-    setTimeout(scrollToElement, 300);
+    // Wait longer if this step needs to wait for element to load (e.g., after filtering)
+    const initialDelay = currentStep.waitForElement ? 800 : 300;
+    setTimeout(scrollToElement, initialDelay);
     
     // Re-highlight on scroll/resize
     window.addEventListener('scroll', highlightElement, true);
