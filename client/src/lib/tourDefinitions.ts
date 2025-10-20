@@ -90,19 +90,19 @@ export const TOURS: Tour[] = [
         }
       },
       {
-        id: 'logos-toolkit-tab',
-        title: 'Open the Toolkit Tab',
-        description: 'In Important Documents, click on the "Toolkit" tab where all resources are organized.',
-        targetSelector: '[data-testid="tab-toolkit"], [data-value="toolkit"]',
+        id: 'logos-tab',
+        title: 'Click the Logos Tab',
+        description: 'In Important Documents, click on the "Logos & Branding" tab to access all TSP brand logos.',
+        targetSelector: '[data-testid="tab-logos"], [data-value="logos"]',
         position: 'bottom',
         highlightPadding: 8
       },
       {
-        id: 'logos-folder',
-        title: 'LOGOS Folder - Your Destination!',
-        description: 'Here in the Toolkit tab, you\'ll find the LOGOS folder containing all TSP brand logos in various formats. Click on it to view and download logos.',
-        targetSelector: '[data-folder="LOGOS"], [data-testid="folder-logos"]',
-        position: 'bottom',
+        id: 'logos-available',
+        title: 'All Logos Available Here!',
+        description: 'Here you\'ll find all The Sandwich Project logos in various formats - transparent backgrounds, print-ready CMYK versions, and more. Download any logo for your use.',
+        targetSelector: '[data-testid="logos-grid"], .logo-card',
+        position: 'top',
         highlightPadding: 12
       }
     ]

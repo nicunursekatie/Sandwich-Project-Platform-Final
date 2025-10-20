@@ -52,12 +52,11 @@ const HELP_TOPICS: HelpTopic[] = [
     icon: FileImage,
     tourId: 'find-logos',
     content: {
-      summary: 'The Sandwich Project logos are stored in the LOGOS folder within the Toolkit tab of Important Documents.',
+      summary: 'The Sandwich Project logos are available in the Logos & Branding tab of Important Documents.',
       steps: [
         'Navigate to "Important Documents" from the main menu',
-        'Click on the "Toolkit" tab at the top',
-        'Find and click on the "LOGOS" folder',
-        'Download logos in various formats (PNG, JPG, transparent backgrounds)',
+        'Click on the "Logos & Branding" tab at the top',
+        'Browse and download logos in various formats (PNG, JPG, transparent backgrounds)',
       ],
       tips: [
         'Use the transparent background logos for overlaying on different backgrounds',
