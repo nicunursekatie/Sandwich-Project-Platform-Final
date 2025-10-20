@@ -449,7 +449,7 @@ const ActionTracking = () => {
       </div>
 
       {/* Filter Bar */}
-      <Card className="mb-6 bg-gray-50 border-gray-200">
+      <Card className="mb-6 bg-gray-50 border-gray-200" data-testid="action-filters">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -700,12 +700,13 @@ const ActionTracking = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-4" data-testid="action-list">
                 {filteredProjects.map((project) => (
                   <Card
                     key={project.id}
                     className="hover:shadow-md transition-shadow cursor-pointer"
                     onClick={() => navigateToProject(project.id)}
+                    data-testid="task-card"
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -774,12 +775,13 @@ const ActionTracking = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-4" data-testid="task-list">
                 {filteredTasks.map((task) => (
                   <Card
                     key={task.id}
                     className="hover:shadow-md transition-shadow cursor-pointer"
                     onClick={() => navigateToProject(task.projectId)}
+                    data-testid="task-card"
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -853,7 +855,7 @@ const ActionTracking = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-4" data-testid="action-list">
                 {sortedActiveEvents.map((event) => (
                   <Card
                     key={event.id}
@@ -861,6 +863,7 @@ const ActionTracking = () => {
                       event.followUpNeeded ? 'ring-2 ring-yellow-200' : ''
                     }`}
                     onClick={() => navigateToEventPlanning(event.id)}
+                    data-testid="action-item"
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -998,12 +1001,13 @@ const ActionTracking = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-4" data-testid="action-list">
                 {sortedCompletedEvents.map((event) => (
                   <Card
                     key={event.id}
                     className="hover:shadow-md transition-shadow cursor-pointer opacity-75"
                     onClick={() => navigateToEventPlanning(event.id)}
+                    data-testid="action-item"
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
