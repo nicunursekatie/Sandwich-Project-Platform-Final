@@ -22,7 +22,7 @@ The application uses a React 18 frontend with TypeScript, Vite, TanStack Query, 
 - Production (Autoscale deployment): `localPort = 5000`, `externalPort = 80`
 - CRITICAL: Autoscale deployments fail if multiple port definitions exist - keep only ONE `[[ports]]` section.
 
-**Authentication System**: The official authentication system in `server/temp-auth.ts` handles login/registration, session management via express-session with PostgreSQL storage, role-based access control, password resets via SendGrid, and profile management. The `isAuthenticated` middleware validates sessions and refreshes user permissions from the database. Environment-aware session cookie configuration supports both development and production. All fetch() requests for login, register, and forgot password forms must include `credentials: 'include'`.
+**Authentication System**: The official authentication system in `server/temp-auth.ts` handles login/registration, session management via express-session with PostgreSQL storage, role-based access control, password resets via SendGrid, and profile management. The `isAuthenticated` middleware validates sessions, refreshes user permissions from the database, and updates `lastLoginAt` hourly for active users to track actual activity (not just login events). Environment-aware session cookie configuration supports both development and production. All fetch() requests for login, register, and forgot password forms must include `credentials: 'include'`.
 
 The backend employs a modular router architecture. UI/UX design adheres to The Sandwich Project's official color palette and Roboto typography, prioritizing clarity, responsiveness, and visual hierarchy with card-based dashboards.
 

@@ -1028,6 +1028,16 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
         isActive: freshUser.isActive,
       };
 
+      // Update lastLoginAt if it's been more than 1 hour since last update
+      // This ensures active users with persistent sessions have accurate lastLoginAt
+      const now = new Date();
+      const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      if (!freshUser.lastLoginAt || new Date(freshUser.lastLoginAt) < hourAgo) {
+        storage.updateUser(freshUser.id, { lastLoginAt: now }).catch((err) => {
+          console.error('Failed to update lastLoginAt:', err);
+        });
+      }
+
       console.log(
         `✅ Authentication successful for ${freshUser.email} (${freshUser.role})`
       );
