@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
@@ -9,6 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Search,
   Calendar,
@@ -24,8 +33,10 @@ import {
   Mic,
   UserCheck,
   Bell,
+  Filter,
+  X,
 } from 'lucide-react';
-import { format, isValid } from 'date-fns';
+import { format, isValid, subDays, subMonths } from 'date-fns';
 
 interface Project {
   id: number;
@@ -91,6 +102,21 @@ const ActionTracking = () => {
   const [activeTab, setActiveTab] = useState('projects');
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // Filter states for each tab
+  const [projectPriority, setProjectPriority] = useState<string>('all');
+  const [projectStatus, setProjectStatus] = useState<string>('all');
+  const [projectCategory, setProjectCategory] = useState<string>('all');
+  
+  const [taskPriority, setTaskPriority] = useState<string>('all');
+  const [taskStatus, setTaskStatus] = useState<string>('all');
+  
+  const [eventAssignmentType, setEventAssignmentType] = useState<string>('all');
+  const [eventFollowUpOnly, setEventFollowUpOnly] = useState<boolean>(false);
+  const [eventStatus, setEventStatus] = useState<string>('all');
+  
+  const [completedEventAssignmentType, setCompletedEventAssignmentType] = useState<string>('all');
+  const [completedEventDateRange, setCompletedEventDateRange] = useState<string>('all');
 
   // Navigation functions
   const navigateToProject = (projectId: number) => {
@@ -240,33 +266,137 @@ const ActionTracking = () => {
     }
   };
 
-  const filteredProjects = projects.filter(
-    (project) =>
-      project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Get unique values for filter dropdowns
+  const uniqueProjectCategories = useMemo(() => {
+    const categories = new Set(projects.map(p => p.category).filter(Boolean));
+    return Array.from(categories).sort();
+  }, [projects]);
 
-  const filteredTasks = tasks.filter(
-    (task) =>
+  const uniqueProjectStatuses = useMemo(() => {
+    const statuses = new Set(projects.map(p => p.status).filter(Boolean));
+    return Array.from(statuses).sort();
+  }, [projects]);
+
+  const uniqueTaskStatuses = useMemo(() => {
+    const statuses = new Set(tasks.map(t => t.status).filter(Boolean));
+    return Array.from(statuses).sort();
+  }, [tasks]);
+
+  const uniqueEventStatuses = useMemo(() => {
+    const activeEventsData = events.filter(e => e.status !== 'completed');
+    const statuses = new Set(activeEventsData.map(e => e.status).filter(Boolean));
+    return Array.from(statuses).sort();
+  }, [events]);
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setProjectPriority('all');
+    setProjectStatus('all');
+    setProjectCategory('all');
+    setTaskPriority('all');
+    setTaskStatus('all');
+    setEventAssignmentType('all');
+    setEventFollowUpOnly(false);
+    setEventStatus('all');
+    setCompletedEventAssignmentType('all');
+    setCompletedEventDateRange('all');
+  };
+
+  // Count active filters per tab
+  const activeProjectFilters = [projectPriority, projectStatus, projectCategory].filter(f => f !== 'all').length;
+  const activeTaskFilters = [taskPriority, taskStatus].filter(f => f !== 'all').length;
+  const activeEventFilters = [eventAssignmentType, eventStatus].filter(f => f !== 'all').length + (eventFollowUpOnly ? 1 : 0);
+  const activeCompletedEventFilters = [completedEventAssignmentType, completedEventDateRange].filter(f => f !== 'all').length;
+
+  // Apply search and filters to projects
+  const filteredProjects = projects.filter((project) => {
+    // Search filter
+    const matchesSearch =
+      project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Priority filter
+    const matchesPriority = projectPriority === 'all' || project.priority === projectPriority;
+    
+    // Status filter
+    const matchesStatus = projectStatus === 'all' || project.status === projectStatus;
+    
+    // Category filter
+    const matchesCategory = projectCategory === 'all' || project.category === projectCategory;
+    
+    return matchesSearch && matchesPriority && matchesStatus && matchesCategory;
+  });
+
+  // Apply search and filters to tasks
+  const filteredTasks = tasks.filter((task) => {
+    // Search filter
+    const matchesSearch =
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.project?.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      task.project?.title.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Priority filter
+    const matchesPriority = taskPriority === 'all' || task.priority === taskPriority;
+    
+    // Status filter
+    const matchesStatus = taskStatus === 'all' || task.status === taskStatus;
+    
+    return matchesSearch && matchesPriority && matchesStatus;
+  });
 
-  const filteredEvents = events.filter(
-    (event) =>
+  // Apply search and filters to events
+  const filteredEvents = events.filter((event) => {
+    // Search filter
+    const matchesSearch =
       (event.firstName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (event.lastName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (event.organizationName || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      (event.organizationName || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesSearch;
+  });
 
-  // Separate active events from completed events
-  const activeEvents = filteredEvents.filter(
-    (event) => event.status !== 'completed'
-  );
-  const completedEvents = filteredEvents.filter(
-    (event) => event.status === 'completed'
-  );
+  // Separate and filter active events
+  const activeEvents = filteredEvents.filter((event) => {
+    if (event.status === 'completed') return false;
+    
+    // Assignment Type filter
+    const matchesAssignmentType =
+      eventAssignmentType === 'all' ||
+      (event.assignmentType && event.assignmentType.includes(eventAssignmentType));
+    
+    // Follow-up Only filter
+    const matchesFollowUp = !eventFollowUpOnly || event.followUpNeeded;
+    
+    // Status filter
+    const matchesStatus = eventStatus === 'all' || event.status === eventStatus;
+    
+    return matchesAssignmentType && matchesFollowUp && matchesStatus;
+  });
+
+  // Filter completed events
+  const completedEvents = filteredEvents.filter((event) => {
+    if (event.status !== 'completed') return false;
+    
+    // Assignment Type filter
+    const matchesAssignmentType =
+      completedEventAssignmentType === 'all' ||
+      (event.assignmentType && event.assignmentType.includes(completedEventAssignmentType));
+    
+    // Date Range filter
+    let matchesDateRange = true;
+    if (completedEventDateRange !== 'all' && event.desiredEventDate) {
+      const eventDate = new Date(event.desiredEventDate);
+      const now = new Date();
+      
+      if (completedEventDateRange === '30days') {
+        matchesDateRange = eventDate >= subDays(now, 30);
+      } else if (completedEventDateRange === '3months') {
+        matchesDateRange = eventDate >= subMonths(now, 3);
+      }
+    }
+    
+    return matchesAssignmentType && matchesDateRange;
+  });
 
   // Priority order for active events (follow-ups first)
   const sortedActiveEvents = [...activeEvents].sort((a, b) => {
@@ -313,9 +443,216 @@ const ActionTracking = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
+            data-testid="input-search-actions"
           />
         </div>
       </div>
+
+      {/* Filter Bar */}
+      <Card className="mb-6 bg-gray-50 border-gray-200">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">Filters</span>
+              {(activeProjectFilters > 0 || activeTaskFilters > 0 || activeEventFilters > 0 || activeCompletedEventFilters > 0) && (
+                <Badge variant="outline" className="bg-brand-primary-light text-brand-primary-dark">
+                  {activeTab === 'projects' && activeProjectFilters > 0 && `${activeProjectFilters} active`}
+                  {activeTab === 'tasks' && activeTaskFilters > 0 && `${activeTaskFilters} active`}
+                  {activeTab === 'events' && activeEventFilters > 0 && `${activeEventFilters} active`}
+                  {activeTab === 'completed-events' && activeCompletedEventFilters > 0 && `${activeCompletedEventFilters} active`}
+                </Badge>
+              )}
+            </div>
+            {(activeProjectFilters > 0 || activeTaskFilters > 0 || activeEventFilters > 0 || activeCompletedEventFilters > 0) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-gray-600 hover:text-gray-900"
+                data-testid="button-clear-filters"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear All
+              </Button>
+            )}
+          </div>
+
+          {/* Projects Filters */}
+          {activeTab === 'projects' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="project-priority" className="text-xs text-gray-600 mb-1">Priority</Label>
+                <Select value={projectPriority} onValueChange={setProjectPriority}>
+                  <SelectTrigger id="project-priority" data-testid="select-project-priority">
+                    <SelectValue placeholder="All Priorities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Priorities</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="project-status" className="text-xs text-gray-600 mb-1">Status</Label>
+                <Select value={projectStatus} onValueChange={setProjectStatus}>
+                  <SelectTrigger id="project-status" data-testid="select-project-status">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {uniqueProjectStatuses.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.replace('_', ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="project-category" className="text-xs text-gray-600 mb-1">Category</Label>
+                <Select value={projectCategory} onValueChange={setProjectCategory}>
+                  <SelectTrigger id="project-category" data-testid="select-project-category">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {uniqueProjectCategories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Tasks Filters */}
+          {activeTab === 'tasks' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="task-priority" className="text-xs text-gray-600 mb-1">Priority</Label>
+                <Select value={taskPriority} onValueChange={setTaskPriority}>
+                  <SelectTrigger id="task-priority" data-testid="select-task-priority">
+                    <SelectValue placeholder="All Priorities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Priorities</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="task-status" className="text-xs text-gray-600 mb-1">Status</Label>
+                <Select value={taskStatus} onValueChange={setTaskStatus}>
+                  <SelectTrigger id="task-status" data-testid="select-task-status">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {uniqueTaskStatuses.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.replace('_', ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Active Events Filters */}
+          {activeTab === 'events' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="event-assignment" className="text-xs text-gray-600 mb-1">Assignment Type</Label>
+                <Select value={eventAssignmentType} onValueChange={setEventAssignmentType}>
+                  <SelectTrigger id="event-assignment" data-testid="select-event-assignment">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="Driver">Driver</SelectItem>
+                    <SelectItem value="Speaker">Speaker</SelectItem>
+                    <SelectItem value="TSP Contact">TSP Contact</SelectItem>
+                    <SelectItem value="Direct Assignment">Direct Assignment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="event-status" className="text-xs text-gray-600 mb-1">Status</Label>
+                <Select value={eventStatus} onValueChange={setEventStatus}>
+                  <SelectTrigger id="event-status" data-testid="select-event-status">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {uniqueEventStatuses.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.replace('_', ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end">
+                <div className="flex items-center space-x-2 h-10">
+                  <Switch
+                    id="follow-up-only"
+                    checked={eventFollowUpOnly}
+                    onCheckedChange={setEventFollowUpOnly}
+                    data-testid="switch-follow-up-only"
+                  />
+                  <Label htmlFor="follow-up-only" className="text-sm cursor-pointer">
+                    Follow-ups Only
+                  </Label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Completed Events Filters */}
+          {activeTab === 'completed-events' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="completed-assignment" className="text-xs text-gray-600 mb-1">Assignment Type</Label>
+                <Select value={completedEventAssignmentType} onValueChange={setCompletedEventAssignmentType}>
+                  <SelectTrigger id="completed-assignment" data-testid="select-completed-assignment">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="Driver">Driver</SelectItem>
+                    <SelectItem value="Speaker">Speaker</SelectItem>
+                    <SelectItem value="TSP Contact">TSP Contact</SelectItem>
+                    <SelectItem value="Direct Assignment">Direct Assignment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="completed-date-range" className="text-xs text-gray-600 mb-1">Date Range</Label>
+                <Select value={completedEventDateRange} onValueChange={setCompletedEventDateRange}>
+                  <SelectTrigger id="completed-date-range" data-testid="select-completed-date-range">
+                    <SelectValue placeholder="All Time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="30days">Last 30 Days</SelectItem>
+                    <SelectItem value="3months">Last 3 Months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
