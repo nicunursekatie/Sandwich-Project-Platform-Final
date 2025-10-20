@@ -856,8 +856,6 @@ router.post(
       // CRITICAL FIX: Explicitly set status to 'scheduled' when completing event details
       updates.status = 'scheduled';
       updates.scheduledAt = new Date(); // Add audit trail timestamp
-        "🎯 Status transition: Setting status to 'scheduled' for completed event details"
-      );
 
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...updates,
@@ -905,10 +903,6 @@ router.post(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-        'Original event desiredEventDate:',
-        originalEvent.desiredEventDate
-      );
-
       const updates: any = {
         followUpMethod: method,
         followUpDate: new Date(),
@@ -921,9 +915,6 @@ router.post(
       // Explicitly preserve critical fields that must not be lost during status transitions
       if (originalEvent.desiredEventDate) {
         updates.desiredEventDate = originalEvent.desiredEventDate;
-          'Explicitly preserving desiredEventDate:',
-          updates.desiredEventDate
-        );
       }
 
       if (method === 'call' && updatedEmail) {
@@ -940,15 +931,7 @@ router.post(
           : notes;
       }
 
-        'Updates object before storage call:',
-        JSON.stringify(updates, null, 2)
-      );
-
       const updatedEventRequest = await storage.updateEventRequest(id, updates);
-
-        'Updated event desiredEventDate after storage call:',
-        updatedEventRequest?.desiredEventDate
-      );
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
@@ -1099,9 +1082,6 @@ router.patch(
             scheduledCallDate: updates.scheduledCallDate,
           });
           updates.scheduledCallDate = validated.scheduledCallDate;
-            '✅ Validated scheduledCallDate:',
-            updates.scheduledCallDate
-          );
         } catch (error) {
           logger.error('❌ Invalid scheduledCallDate:', error);
           return res.status(400).json({
@@ -1144,11 +1124,6 @@ router.patch(
         'socialMediaPostCompletedDate',
       ];
       
-      timestampFields.forEach(field => {
-        if (processedUpdates[field] !== undefined) {
-        }
-      });
-
       timestampFields.forEach((field) => {
         if (
           processedUpdates[field] &&
@@ -1172,19 +1147,12 @@ router.patch(
         }
       });
 
-      timestampFields.forEach(field => {
-        if (processedUpdates[field] !== undefined) {
-        }
-      });
-
       // Check if status is changing and set statusChangedAt accordingly
       if (
         processedUpdates.status &&
         processedUpdates.status !== originalEvent.status
       ) {
         processedUpdates.statusChangedAt = new Date();
-          `🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`
-        );
 
         // If status is changing to 'completed', auto-confirm the event
         if (processedUpdates.status === 'completed') {
@@ -1199,8 +1167,6 @@ router.patch(
 
       // Allow manual override: if isConfirmed is explicitly provided, respect it
       // Exception: completed events are always confirmed
-      if (processedUpdates.isConfirmed !== undefined) {
-      }
       if (processedUpdates.status === 'completed' || originalEvent.status === 'completed') {
         processedUpdates.isConfirmed = true;
       }
@@ -1264,12 +1230,6 @@ router.patch(
       }
 
       // Always update the updatedAt timestamp
-      Object.keys(processedUpdates).forEach(key => {
-        const val = processedUpdates[key];
-        if (val && (key.toLowerCase().includes('date') || key.toLowerCase().includes('at'))) {
-        }
-      });
-
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
         updatedAt: new Date(),
@@ -1366,11 +1326,6 @@ router.put(
         'scheduledEventDate',
       ];
       
-      timestampFields.forEach(field => {
-        if (processedUpdates[field] !== undefined) {
-        }
-      });
-
       timestampFields.forEach((field) => {
         if (
           processedUpdates[field] &&
@@ -1459,9 +1414,6 @@ router.put(
         processedUpdates.status === 'scheduled' &&
         originalEvent.status !== 'scheduled'
       ) {
-          '🎯 Processing NEW scheduled status transition - validating required fields'
-        );
-
         // Check required fields for NEW scheduled events
         const requiredFields = {
           desiredEventDate:
@@ -1488,8 +1440,6 @@ router.put(
           });
         }
       } else if (processedUpdates.status === 'scheduled') {
-          '🎯 Editing existing scheduled event - allowing flexible updates'
-        );
       }
 
       // Process comprehensive scheduling data if status is scheduled
@@ -1503,21 +1453,11 @@ router.put(
                 processedUpdates.sandwichTypes
               );
             }
-              '📋 Processed sandwich types:',
-              processedUpdates.sandwichTypes
-            );
           } catch (error) {
-              '⚠️ Failed to parse sandwich types, keeping as string:',
-              error
-            );
           }
-        } else {
         }
 
         // Log sandwich count for debugging
-          '📋 Estimated sandwich count:',
-          processedUpdates.estimatedSandwichCount
-        );
 
         // Ensure numeric fields are properly typed
         const numericFields = [
@@ -1547,8 +1487,6 @@ router.put(
           }
         });
 
-          '✅ Processed comprehensive scheduling data for scheduled status'
-        );
       }
 
       // Check if status is changing and set statusChangedAt accordingly
@@ -1557,8 +1495,6 @@ router.put(
         processedUpdates.status !== originalEvent.status
       ) {
         processedUpdates.statusChangedAt = new Date();
-          `🔄 Status changing from ${originalEvent.status} → ${processedUpdates.status}, setting statusChangedAt`
-        );
       }
 
       // Validate and auto-adjust "needed" fields to prevent impossible states (PUT endpoint)
@@ -1682,9 +1618,6 @@ router.put(
         }
       );
 
-        'Updated event request:',
-        JSON.stringify(updatedEventRequest, null, 2)
-      );
       await logActivity(
         req,
         res,
@@ -1983,17 +1916,6 @@ router.get(
 router.get('/orgs-catalog-test', async (req, res) => {
   try {
     const user = req.user;
-      userExists: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      sessionExists: !!req.session,
-      sessionUser: req.session?.user?.email || 'none',
-      userPermissionsCount: user?.permissions?.length || 0,
-      hasViewOrgsPermission: user
-        ? hasPermission(user, PERMISSIONS.ORGANIZATIONS_VIEW)
-        : false,
-      permissionConstant: PERMISSIONS.ORGANIZATIONS_VIEW,
-    });
 
     // TEMP: Completely bypass auth for testing
 
@@ -2235,8 +2157,6 @@ router.get('/:eventId/volunteers', isAuthenticated, async (req, res) => {
 
     const volunteers = await storage.getEventVolunteersByEventId(eventId);
 
-      `Retrieved ${volunteers.length} volunteers for event ${eventId}`
-    );
     res.json(volunteers);
   } catch (error) {
     logger.error('Error fetching event volunteers:', error);
@@ -2458,8 +2378,6 @@ router.get('/my-volunteers', isAuthenticated, async (req, res) => {
       })
     );
 
-      `Retrieved ${userVolunteers.length} volunteer signups for user ${userId}`
-    );
     res.json(enrichedVolunteers);
   } catch (error) {
     logger.error('Error fetching user volunteers:', error);
@@ -2920,14 +2838,6 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
     const userId = req.query.userId as string;
     const eventId = req.query.eventId as string;
 
-      hours,
-      limit,
-      offset,
-      action,
-      userId,
-      eventId,
-    });
-
     // Calculate time cutoff
     const hoursAgo = new Date();
     hoursAgo.setHours(hoursAgo.getHours() - hours);
@@ -2959,9 +2869,6 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       conditions.push(eq(auditLogs.recordId, eventId));
     }
 
-      '📋 Executing audit log query with conditions:',
-      conditions.length
-    );
 
     // Execute query using Drizzle ORM
     const rawLogs = await db
@@ -3073,8 +2980,6 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       };
     });
 
-      `✅ Returning ${enrichedLogs.length} enriched audit log entries`
-    );
     
     // Debug: Log unique users in the returned logs
     const uniqueUserIds = new Set(enrichedLogs.map(log => log.userId));
@@ -3198,14 +3103,6 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
     // Determine from and reply-to addresses
     const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'katielong2316@gmail.com';
     const replyToEmail = req.user?.preferredEmail || req.user?.email || fromEmail;
-
-      eventId,
-      recipientEmail,
-      subject,
-      fromEmail,
-      replyToEmail,
-      attachmentsCount: attachments.length,
-    });
 
     // Send email via SendGrid
     const emailSent = await sendEmail({

@@ -205,10 +205,6 @@ const getUnreadCounts = async (req: Request, res: Response) => {
   }
 };
 
-// Simple in-memory storage for chat read tracking
-// In production, this should use a proper database table
-const chatReadTracker = new Map<string, Date>();
-
 // Mark chat messages as read when user views a chat channel
 const markChatMessagesRead = async (req: Request, res: Response) => {
   try {
@@ -229,17 +225,47 @@ const markChatMessagesRead = async (req: Request, res: Response) => {
 
     // If specific message IDs are provided, mark those
     if (messageIds && Array.isArray(messageIds)) {
-      // Chat read tracking disabled - no database table
-      // TODO: Implement if chat read tracking is needed
+      const { chatMessageReads } = await import('../../shared/schema');
+      
+      // Convert to integers and get message details
+      const numericIds = messageIds
+        .map(id => parseInt(String(id)))
+        .filter(id => !isNaN(id));
+
+      // Insert read tracking records for each message, ignoring duplicates
+      let markedCount = 0;
+      for (const messageId of numericIds) {
+        try {
+          const result = await db
+            .insert(chatMessageReads)
+            .values({
+              messageId,
+              userId,
+              channel,
+            })
+            .onConflictDoNothing()
+            .returning();
+          
+          // Only count if row was actually inserted (not skipped due to conflict)
+          if (result.length > 0) {
+            markedCount++;
+          }
+        } catch (err) {
+          // Silently handle duplicates - this is expected
+          console.log(`Message ${messageId} already marked as read for user ${userId}`);
+        }
+      }
 
       res.json({
         success: true,
         channel,
         userId,
-        markedRead: messageIds.length,
+        markedRead: markedCount,
       });
     } else {
       // Mark all messages in channel as read
+      const { chatMessageReads } = await import('../../shared/schema');
+      
       const channelMessages = await db
         .select({ id: chatMessages.id })
         .from(chatMessages)
@@ -250,9 +276,29 @@ const markChatMessagesRead = async (req: Request, res: Response) => {
           )
         );
 
-      // Chat read tracking disabled - no database table
-      // TODO: Implement if chat read tracking is needed
-      const markedCount = channelMessages.length;
+      // Insert read tracking records for all channel messages, ignoring duplicates
+      let markedCount = 0;
+      for (const message of channelMessages) {
+        try {
+          const result = await db
+            .insert(chatMessageReads)
+            .values({
+              messageId: message.id,
+              userId,
+              channel,
+            })
+            .onConflictDoNothing()
+            .returning();
+          
+          // Only count if row was actually inserted (not skipped due to conflict)
+          if (result.length > 0) {
+            markedCount++;
+          }
+        } catch (err) {
+          // Silently handle duplicates - this is expected
+          console.log(`Message ${message.id} already marked as read for user ${userId}`);
+        }
+      }
 
       res.json({ success: true, channel, userId, markedRead: markedCount });
     }
