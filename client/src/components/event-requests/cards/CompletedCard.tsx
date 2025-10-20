@@ -451,7 +451,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       <Checkbox
                         id="confirm-date-checkbox"
                         checked={tempIsConfirmed}
-                        onCheckedChange={(checked) => setTempIsConfirmed(!!checked)}
+                        onCheckedChange={(checked) => setTempIsConfirmed?.(!!checked)}
                       />
                       <label
                         htmlFor="confirm-date-checkbox"
@@ -1331,7 +1331,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Check if user has permission to edit organization details
   const canEditOrgDetails =
-    user?.permissions?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS') ||
+    (user?.permissions as string[] | undefined)?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS') ||
     user?.role === 'super_admin' ||
     user?.role === 'admin';
 
@@ -1339,7 +1339,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   console.log('CompletedCard org details edit permission:', {
     userId: user?.id,
     userRole: user?.role,
-    hasPermission: user?.permissions?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS'),
+    hasPermission: (user?.permissions as string[] | undefined)?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS'),
     canEditOrgDetails,
     requestId: request.id,
     orgName: request.organizationName
@@ -1369,7 +1369,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Organization details mutation
   const updateOrgDetailsMutation = useMutation({
-    mutationFn: (data: { organizationName?: string; department?: string; eventAddress?: string }) =>
+    mutationFn: (data: any) =>
       apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
     onSuccess: () => {
       toast({
@@ -1586,7 +1586,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       setEditingCustomTspContact(request.customTspContact);
     } else {
       setTspContactInputMode('dropdown');
-      setEditingTspContactId(request.tspContact || null);
+      setEditingTspContactId(request.tspContact ? parseInt(request.tspContact) : null);
     }
     setIsEditingTspContact(true);
   };
