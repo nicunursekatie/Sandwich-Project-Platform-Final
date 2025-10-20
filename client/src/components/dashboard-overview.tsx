@@ -407,11 +407,6 @@ export default function DashboardOverview({
           </div>
         )}
 
-        {/* Action Tracker Widget */}
-        <div className="mx-4 mb-8">
-          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
-        </div>
-
         {/* Hero Impact Section */}
         <div className="mx-4 mb-8 sm:mb-12">
           <div className="bg-white rounded-xl p-8 sm:p-12 text-center shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
@@ -433,6 +428,11 @@ export default function DashboardOverview({
               Real data from verified collection records
             </div>
           </div>
+        </div>
+
+        {/* Action Tracker Widget */}
+        <div className="mx-4 mb-8">
+          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
         </div>
 
         {/* Key Metrics Grid */}
