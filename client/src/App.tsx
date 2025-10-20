@@ -243,7 +243,9 @@ function Router() {
       <Route path="/profile">
         {() => <Dashboard initialSection="profile" />}
       </Route>
-      <Route path="/help" component={Help} />
+      <Route path="/help">
+        {() => <Dashboard initialSection="help" />}
+      </Route>
       <Route path="/dashboard">{() => <Dashboard />}</Route>
       <Route path="/dashboard/:section">
         {(params) => <Dashboard initialSection={params.section} />}
