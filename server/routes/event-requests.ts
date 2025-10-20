@@ -41,7 +41,7 @@ const convertTimeToDateTime = (timeStr: string, baseDate?: Date): string | null 
     
     // Create datetime with the same date but specified time
     const dateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
-    return dateTime; // Return Date object, not ISO string
+    return dateTime.toISOString(); // Return ISO string as per function signature
   } catch (error) {
     return null;
   }
