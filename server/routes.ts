@@ -136,6 +136,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   const importEventsRoutes = await import('./routes/import-events');
   app.use('/api/import', importEventsRoutes.default);
 
+  const dataManagementRoutes = await import('./routes/data-management');
+  app.use('/api', dataManagementRoutes.default);
+
   // === COMMUNICATION & EXTERNAL SERVICES ===
   const emailRoutes = await import('./routes/email-routes');
   app.use('/api/emails', emailRoutes.default);
