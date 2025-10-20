@@ -110,11 +110,12 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
     const scrollToElement = () => {
       const target = document.querySelector(currentStep.targetSelector);
       if (target) {
-        // Automatically scroll to the element
+        // Scroll element into view - use 'center' vertically to ensure visibility
+        // but 'nearest' horizontally to prevent unwanted horizontal scrolling
         target.scrollIntoView({
           behavior: 'smooth',
-          block: 'center',  // Center the element vertically
-          inline: 'center'  // Center the element horizontally
+          block: 'center',    // Center vertically for visibility on long pages
+          inline: 'nearest'   // Minimize horizontal scroll jumps
         });
         
         // Highlight after scroll completes
@@ -392,7 +393,7 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
           {/* Dark Overlay */}
           <div
             ref={overlayRef}
-            className="fixed inset-0 bg-black/60 z-[60] transition-opacity pointer-events-none"
+            className="fixed inset-0 bg-black/30 z-[60] transition-opacity pointer-events-none"
             aria-hidden="true"
           />
 
@@ -401,7 +402,7 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
             ref={spotlightRef}
             className="fixed z-[61] pointer-events-none transition-all duration-300 rounded-lg"
             style={{
-              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
+              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.3)',
               opacity: 0,
             }}
             aria-hidden="true"
