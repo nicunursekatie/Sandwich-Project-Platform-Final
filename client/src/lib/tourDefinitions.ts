@@ -477,7 +477,14 @@ export const TOURS: Tour[] = [
         description: 'Click on the Calendar tab to see events in a visual timeline.',
         targetSelector: '[data-value="calendar"], [data-testid="tab-calendar"]',
         position: 'bottom',
-        highlightPadding: 8
+        highlightPadding: 8,
+        beforeShow: () => {
+          // Click Calendar tab to switch the view
+          const calendarTab = document.querySelector('[data-value="calendar"]');
+          if (calendarTab instanceof HTMLElement) {
+            calendarTab.click();
+          }
+        }
       },
       {
         id: 'calendar-symbols',
@@ -485,7 +492,8 @@ export const TOURS: Tour[] = [
         description: 'Events are color-coded: 🟢 Confirmed, 🟡 Pending, 🔵 In Progress, ✅ Completed. Use these to quickly understand event status.',
         targetSelector: '[data-testid="calendar-legend"], [data-testid="calendar-view"]',
         position: 'top',
-        highlightPadding: 16
+        highlightPadding: 16,
+        waitForElement: true // Wait for calendar to load after tab switch
       },
       {
         id: 'calendar-interaction',
@@ -493,7 +501,8 @@ export const TOURS: Tour[] = [
         description: 'Click on any calendar event to view full details, assignments, and take actions. Navigate between months to plan ahead!',
         targetSelector: '[data-testid="calendar-event"]:first-child, [data-testid="calendar-grid"]',
         position: 'bottom',
-        highlightPadding: 12
+        highlightPadding: 12,
+        waitForElement: true // Wait for calendar events to render
       }
     ],
     afterComplete: () => {
