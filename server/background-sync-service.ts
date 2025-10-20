@@ -185,6 +185,17 @@ export class BackgroundSyncService {
       const allEventRequests = await this.storage.getAllEventRequests();
       const scheduledEvents = allEventRequests.filter(event => event.status === 'scheduled');
       
+      syncLogger.debug(`Auto-transition data fetch`, {
+        totalEvents: allEventRequests.length,
+        scheduledEvents: scheduledEvents.length,
+        firstThreeScheduled: scheduledEvents.slice(0, 3).map(e => ({
+          id: e.id,
+          org: e.organizationName,
+          date: e.desiredEventDate instanceof Date ? e.desiredEventDate.toISOString() : String(e.desiredEventDate),
+          status: e.status
+        }))
+      });
+      
       if (scheduledEvents.length === 0) {
         syncLogger.debug('No scheduled events found for auto-transition');
         return;
