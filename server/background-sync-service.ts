@@ -185,6 +185,15 @@ export class BackgroundSyncService {
       const allEventRequests = await this.storage.getAllEventRequests();
       const scheduledEvents = allEventRequests.filter(event => event.status === 'scheduled');
       
+      // Debug: Check for specific past-due events that should be transitioned
+      const targetIds = [654, 19, 57];
+      const targetEvents = allEventRequests.filter(e => targetIds.includes(e.id));
+      syncLogger.debug(`Checking for specific past-due events`, {
+        targetIds,
+        foundInAll: targetEvents.map(e => ({id: e.id, org: e.organizationName, status: e.status, desiredDate: e.desiredEventDate})),
+        foundInScheduled: scheduledEvents.filter(e => targetIds.includes(e.id)).map(e => ({id: e.id, org: e.organizationName, status: e.status}))
+      });
+      
       // Find any past-due events that should be transitioned
       const now = new Date();
       const pastDueScheduled = scheduledEvents.filter(e => {
