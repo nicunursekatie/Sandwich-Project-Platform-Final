@@ -107,13 +107,31 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
       }
     };
 
+    const scrollToElement = () => {
+      const target = document.querySelector(currentStep.targetSelector);
+      if (target) {
+        // Automatically scroll to the element
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',  // Center the element vertically
+          inline: 'center'  // Center the element horizontally
+        });
+        
+        // Highlight after scroll completes
+        setTimeout(highlightElement, 400);
+      } else {
+        // Element not found, try again after a delay
+        setTimeout(scrollToElement, 200);
+      }
+    };
+
     // Execute beforeShow action if exists
     if (currentStep.beforeShow) {
       currentStep.beforeShow();
     }
 
-    // Delay to allow DOM updates
-    setTimeout(highlightElement, 300);
+    // Scroll to element first, then highlight
+    setTimeout(scrollToElement, 300);
     
     // Re-highlight on scroll/resize
     window.addEventListener('scroll', highlightElement, true);
