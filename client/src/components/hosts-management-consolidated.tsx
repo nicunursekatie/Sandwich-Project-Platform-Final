@@ -97,6 +97,7 @@ export default function HostsManagementConsolidated() {
     new Set()
   );
   const [hideEmptyHosts, setHideEmptyHosts] = useState(false);
+  const [activeLocationTab, setActiveLocationTab] = useState<string>('active');
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -1045,6 +1046,16 @@ export default function HostsManagementConsolidated() {
       {/* Action Bar */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
+          {viewMode === 'locations' && (
+            <Button
+              onClick={() => setActiveLocationTab('map')}
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold shadow-md"
+              size="lg"
+            >
+              <MapPin className="w-5 h-5 mr-2" />
+              View Host Map
+            </Button>
+          )}
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
               <Button disabled={!canEdit}>
@@ -1761,7 +1772,7 @@ export default function HostsManagementConsolidated() {
         </div>
       ) : (
         /* Original Location-based View */
-        <Tabs defaultValue="active" className="w-full">
+        <Tabs value={activeLocationTab} onValueChange={setActiveLocationTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="active" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
