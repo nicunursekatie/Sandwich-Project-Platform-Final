@@ -192,6 +192,11 @@ export class BackgroundSyncService {
 
       const now = new Date();
       
+      syncLogger.debug(`Auto-transition check`, {
+        currentTime: now.toISOString(),
+        scheduledEventsCount: scheduledEvents.length
+      });
+      
       let transitionedCount = 0;
       
       for (const event of scheduledEvents) {
@@ -210,6 +215,15 @@ export class BackgroundSyncService {
         const eventEndDate = new Date(eventDate);
         eventEndDate.setDate(eventEndDate.getDate() + 1);
         eventEndDate.setHours(0, 0, 0, 0); // Start of the day after the event
+        
+        syncLogger.debug(`Checking event for transition`, {
+          eventId: event.id,
+          organizationName: event.organizationName,
+          eventDate: eventDate instanceof Date ? eventDate.toISOString() : String(eventDate),
+          eventEndDate: eventEndDate.toISOString(),
+          now: now.toISOString(),
+          shouldTransition: now >= eventEndDate
+        });
         
         // Only transition if we're past the end of the day after the event
         if (now >= eventEndDate) {
