@@ -27,6 +27,7 @@ import type { User, UserFormData } from '@/types/user';
 import CleanPermissionsEditor from '@/components/clean-permissions-editor';
 import { PasswordDialog } from './PasswordDialog';
 import { SMSDialog } from './SMSDialog';
+import { UserActivityTab } from './UserActivityTab';
 
 interface ComprehensiveUserDialogProps {
   mode: 'add' | 'edit';
@@ -429,18 +430,7 @@ export function ComprehensiveUserDialog({
 
             {/* Activity Tab */}
             <TabsContent value="activity" className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium">User Activity</h3>
-                  <p className="text-sm text-gray-600">
-                    Activity history and analytics for {user?.firstName} {user?.lastName}
-                  </p>
-                </div>
-                <div className="text-center py-12 text-gray-500">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p>Activity tracking coming soon</p>
-                </div>
-              </div>
+              {user && <UserActivityTab userId={user.id} userName={`${user.firstName} ${user.lastName}`} />}
             </TabsContent>
           </Tabs>
         </DialogContent>
