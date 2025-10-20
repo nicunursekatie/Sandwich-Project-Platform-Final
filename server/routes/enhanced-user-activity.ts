@@ -397,6 +397,7 @@ router.post('/track', async (req, res) => {
       section,
       feature,
       page,
+      details,
       duration,
       metadata
     } = req.body;
@@ -411,8 +412,12 @@ router.post('/track', async (req, res) => {
       section,
       feature: feature || null,
       page: page || null,
+      details: details || null,
       duration: duration || 0,
-      metadata: metadata || {}
+      metadata: metadata || {},
+      sessionId: req.sessionID || null,
+      ipAddress: req.ip || null,
+      userAgent: req.get('User-Agent') || null
     });
 
     res.json({
