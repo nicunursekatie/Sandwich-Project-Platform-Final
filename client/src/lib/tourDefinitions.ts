@@ -106,7 +106,16 @@ export const TOURS: Tour[] = [
         position: 'top',
         highlightPadding: 12
       }
-    ]
+    ],
+    afterComplete: () => {
+      // Auto-open Logos & Branding tab
+      setTimeout(() => {
+        const logosTab = document.querySelector('[data-testid="tab-logos"]');
+        if (logosTab instanceof HTMLElement) {
+          logosTab.click();
+        }
+      }, 300);
+    }
   },
   {
     id: 'sandwich-signin-forms',
@@ -221,7 +230,16 @@ export const TOURS: Tour[] = [
         position: 'top',
         highlightPadding: 16
       }
-    ]
+    ],
+    afterComplete: () => {
+      // User is already on Analytics - ensure Impact tab is selected
+      setTimeout(() => {
+        const impactTab = document.querySelector('[data-value="impact"]');
+        if (impactTab instanceof HTMLElement) {
+          impactTab.click();
+        }
+      }, 300);
+    }
   },
   {
     id: 'action-hub-guide',
@@ -278,7 +296,16 @@ export const TOURS: Tour[] = [
         position: 'bottom',
         highlightPadding: 12
       }
-    ]
+    ],
+    afterComplete: () => {
+      // User is already on My Actions - stay there
+      setTimeout(() => {
+        const navItem = document.querySelector('[data-nav-id="my-actions"]');
+        if (navItem instanceof HTMLElement) {
+          navItem.click();
+        }
+      }, 300);
+    }
   },
   {
     id: 'event-requests-assignments',
@@ -335,7 +362,16 @@ export const TOURS: Tour[] = [
         position: 'bottom',
         highlightPadding: 12
       }
-    ]
+    ],
+    afterComplete: () => {
+      // Auto-open My Assignments tab
+      setTimeout(() => {
+        const myAssignmentsTab = document.querySelector('[data-value="my-assignments"]');
+        if (myAssignmentsTab instanceof HTMLElement) {
+          myAssignmentsTab.click();
+        }
+      }, 300);
+    }
   },
   {
     id: 'dashboard-assignments',
@@ -384,7 +420,16 @@ export const TOURS: Tour[] = [
         position: 'bottom',
         highlightPadding: 12
       }
-    ]
+    ],
+    afterComplete: () => {
+      // User is already on Dashboard - stay there
+      setTimeout(() => {
+        const navItem = document.querySelector('[data-nav-id="dashboard"]');
+        if (navItem instanceof HTMLElement) {
+          navItem.click();
+        }
+      }, 300);
+    }
   },
   {
     id: 'calendar-symbols',
@@ -441,7 +486,16 @@ export const TOURS: Tour[] = [
         position: 'bottom',
         highlightPadding: 12
       }
-    ]
+    ],
+    afterComplete: () => {
+      // Auto-open Calendar tab
+      setTimeout(() => {
+        const calendarTab = document.querySelector('[data-value="calendar"]');
+        if (calendarTab instanceof HTMLElement) {
+          calendarTab.click();
+        }
+      }, 300);
+    }
   }
 ];
 
