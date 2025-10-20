@@ -2,7 +2,8 @@ import type { IStorage } from './storage';
 import { GoogleSheetsSyncService } from './google-sheets-sync';
 import { getEventRequestsGoogleSheetsService } from './google-sheets-event-requests-sync';
 import { db } from './db.js';
-import { sql } from 'drizzle-orm';
+import { sql, and, or, eq, lt, isNull, isNotNull } from 'drizzle-orm';
+import { eventRequests } from '@shared/schema';
 import { createServiceLogger } from './utils/logger.js';
 
 const syncLogger = createServiceLogger('background-sync');
@@ -176,119 +177,58 @@ export class BackgroundSyncService {
   /**
    * Auto-transition scheduled events to completed if their date has passed
    * Events only transition the night after they end, not on the day of the event
+   * 
+   * Uses direct database query to avoid storage layer mismatches
    */
   private async autoTransitionPastEvents() {
     try {
       syncLogger.info('Starting auto-transition of past events');
       
-      // Get all scheduled event requests
-      const allEventRequests = await this.storage.getAllEventRequests();
-      const scheduledEvents = allEventRequests.filter(event => event.status === 'scheduled');
-      
-      // Debug: Check for specific past-due events that should be transitioned
-      const targetIds = [654, 19, 57];
-      const targetEvents = allEventRequests.filter(e => targetIds.includes(e.id));
-      syncLogger.debug(`Checking for specific past-due events`, {
-        targetIds,
-        foundInAll: targetEvents.map(e => ({id: e.id, org: e.organizationName, status: e.status, desiredDate: e.desiredEventDate})),
-        foundInScheduled: scheduledEvents.filter(e => targetIds.includes(e.id)).map(e => ({id: e.id, org: e.organizationName, status: e.status}))
-      });
-      
-      // Find any past-due events that should be transitioned
+      // Calculate cutoff date: events should transition at start of day AFTER they occur
+      // If event is Sept 30, it transitions Oct 1 at 00:00 (start of next day)
+      // Use UTC to ensure timezone consistency with database
       const now = new Date();
-      const pastDueScheduled = scheduledEvents.filter(e => {
-        const eventEndDate = e.scheduledEventDate || e.desiredEventDate;
-        return eventEndDate && new Date(eventEndDate) < now;
+      const cutoffDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      
+      syncLogger.debug('Auto-transition cutoff calculation', {
+        now: now.toISOString(),
+        cutoffDate: cutoffDate.toISOString(),
+        cutoffUTC: `${cutoffDate.getUTCFullYear()}-${String(cutoffDate.getUTCMonth() + 1).padStart(2, '0')}-${String(cutoffDate.getUTCDate()).padStart(2, '0')}`,
+        explanation: 'Events with date < cutoffDate (strictly before today) will be transitioned to completed'
       });
       
-      syncLogger.debug(`Auto-transition data fetch`, {
-        totalEvents: allEventRequests.length,
-        scheduledEvents: scheduledEvents.length,
-        pastDueScheduledCount: pastDueScheduled.length,
-        pastDueScheduledEvents: pastDueScheduled.map(e => ({
-          id: e.id,
-          org: e.organizationName,
-          desiredDate: e.desiredEventDate instanceof Date ? e.desiredEventDate.toISOString() : String(e.desiredEventDate),
-          scheduledDate: e.scheduledEventDate instanceof Date ? e.scheduledEventDate.toISOString() : String(e.scheduledEventDate),
-          status: e.status
-        })),
-        firstThreeScheduled: scheduledEvents.slice(0, 3).map(e => ({
-          id: e.id,
-          org: e.organizationName,
-          date: e.desiredEventDate instanceof Date ? e.desiredEventDate.toISOString() : String(e.desiredEventDate),
-          status: e.status
-        }))
-      });
+      // Use direct database query to ensure we get authoritative data
+      // WHERE logic: Prefer scheduledEventDate when present, fallback to desiredEventDate
+      // This prevents premature completion of rescheduled events with old desiredEventDate
+      // Use strict lt (<) not lte (<=) to prevent same-day transitions
+      const transitionedEvents = await db
+        .update(eventRequests)
+        .set({
+          status: 'completed',
+          updatedAt: now
+        })
+        .where(
+          and(
+            eq(eventRequests.status, 'scheduled'),
+            or(
+              and(isNotNull(eventRequests.scheduledEventDate), lt(eventRequests.scheduledEventDate, cutoffDate)),
+              and(isNull(eventRequests.scheduledEventDate), lt(eventRequests.desiredEventDate, cutoffDate))
+            )
+          )
+        )
+        .returning();
       
-      if (scheduledEvents.length === 0) {
-        syncLogger.debug('No scheduled events found for auto-transition');
-        return;
-      }
-      
-      syncLogger.debug(`Auto-transition check`, {
-        currentTime: now.toISOString(),
-        scheduledEventsCount: scheduledEvents.length
-      });
-      
-      let transitionedCount = 0;
-      
-      for (const event of scheduledEvents) {
-        // Determine the actual event date: prioritize scheduledEventDate, fallback to desiredEventDate
-        const eventDate = event.scheduledEventDate || event.desiredEventDate;
-        
-        if (!eventDate) {
-          syncLogger.debug('Skipping event with no date information', {
-            eventId: event.id,
-            organizationName: event.organizationName
-          });
-          continue;
-        }
-
-        // Create the event end date by adding 1 day to account for the event lasting the full day
-        const eventEndDate = new Date(eventDate);
-        eventEndDate.setDate(eventEndDate.getDate() + 1);
-        eventEndDate.setHours(0, 0, 0, 0); // Start of the day after the event
-        
-        syncLogger.debug(`Checking event for transition`, {
-          eventId: event.id,
-          organizationName: event.organizationName,
-          eventDate: eventDate instanceof Date ? eventDate.toISOString() : String(eventDate),
-          eventEndDate: eventEndDate.toISOString(),
-          now: now.toISOString(),
-          shouldTransition: now >= eventEndDate
+      if (transitionedEvents.length > 0) {
+        console.log(`🗓️ Auto-transitioned ${transitionedEvents.length} past events from scheduled to completed`);
+        syncLogger.info('Auto-transition completed', {
+          transitionedCount: transitionedEvents.length,
+          events: transitionedEvents.map(e => ({
+            id: e.id,
+            organizationName: e.organizationName,
+            scheduledEventDate: e.scheduledEventDate,
+            desiredEventDate: e.desiredEventDate
+          }))
         });
-        
-        // Only transition if we're past the end of the day after the event
-        if (now >= eventEndDate) {
-          try {
-            await this.storage.updateEventRequest(event.id, {
-              status: 'completed',
-              updatedAt: new Date()
-            });
-            
-            transitionedCount++;
-            syncLogger.info('Auto-transitioned past event', {
-              eventId: event.id,
-              organizationName: event.organizationName,
-              originalEventDate: eventDate,
-              eventEndDate: eventEndDate,
-              scheduledEventDate: event.scheduledEventDate,
-              desiredEventDate: event.desiredEventDate,
-              fromStatus: 'scheduled',
-              toStatus: 'completed'
-            });
-          } catch (updateError) {
-            syncLogger.error('Failed to auto-transition event', {
-              eventId: event.id,
-              error: updateError
-            });
-          }
-        }
-      }
-      
-      if (transitionedCount > 0) {
-        console.log(`🗓️ Auto-transitioned ${transitionedCount} past events from scheduled to completed`);
-        syncLogger.info('Auto-transition completed', { transitionedCount });
       } else {
         syncLogger.debug('No past events found to transition');
       }
