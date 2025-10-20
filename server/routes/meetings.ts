@@ -410,15 +410,54 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
 // GET /api/meetings/:id/download-pdf - Download existing meeting PDF
 router.get('/:id/download-pdf', isAuthenticated, async (req: any, res) => {
   try {
-    const meetingId = req.params.id;
+    const meetingId = parseInt(req.params.id);
     console.log('📄 Downloading PDF for meeting:', meetingId);
     
-    // For now, return a simple text response indicating the feature is not yet implemented
-    // TODO: Implement actual PDF download functionality
-    res.status(501).json({ 
-      error: 'PDF download not yet implemented',
-      message: 'The PDF download feature is under development. Please use the export to Google Sheets functionality for now.'
-    });
+    // Fetch the meeting from storage
+    const meeting = await storage.getMeeting(meetingId);
+    
+    if (!meeting) {
+      return res.status(404).json({ 
+        error: 'Meeting not found',
+        message: `No meeting found with ID ${meetingId}`
+      });
+    }
+    
+    // Try to fetch the compiled agenda for the meeting
+    let compiledAgenda;
+    try {
+      const agendas = await storage.getCompiledAgendasByMeeting(meetingId);
+      if (agendas && agendas.length > 0) {
+        // Get the most recent compiled agenda
+        compiledAgenda = agendas[0];
+        console.log('📋 Found compiled agenda for meeting:', compiledAgenda.id);
+      }
+    } catch (err) {
+      console.log('ℹ️ No compiled agenda found for meeting, will use meeting details only');
+    }
+    
+    // Import the PDF generator
+    const { generateMeetingMinutesPDF } = await import('../meeting-minutes-pdf-generator');
+    
+    // Generate the PDF
+    const pdfBuffer = await generateMeetingMinutesPDF(meeting, compiledAgenda);
+    
+    // Create a safe filename from the meeting title and date
+    const safeTitle = meeting.title
+      .replace(/[^a-z0-9]/gi, '-')
+      .toLowerCase()
+      .substring(0, 50);
+    const meetingDate = new Date(meeting.date).toISOString().split('T')[0];
+    const filename = `meeting-minutes-${safeTitle}-${meetingDate}.pdf`;
+    
+    // Set appropriate headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Send the PDF
+    res.send(pdfBuffer);
+    console.log('✅ Meeting minutes PDF generated and sent successfully');
     
   } catch (error) {
     console.error('Error downloading meeting PDF:', error);

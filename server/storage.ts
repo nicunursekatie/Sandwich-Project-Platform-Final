@@ -319,6 +319,7 @@ export interface IStorage {
   // Meetings
   getCurrentMeeting(): Promise<Meeting | undefined>;
   getAllMeetings(): Promise<Meeting[]>;
+  getMeeting(id: number): Promise<Meeting | undefined>;
   getMeetingsByType(type: string): Promise<Meeting[]>;
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   updateMeetingAgenda(id: number, agenda: string): Promise<Meeting | undefined>;
@@ -327,6 +328,7 @@ export interface IStorage {
     updates: Partial<Meeting>
   ): Promise<Meeting | undefined>;
   deleteMeeting(id: number): Promise<boolean>;
+  getCompiledAgendasByMeeting(meetingId: number): Promise<CompiledAgenda[]>;
 
   // Meeting Notes
   getAllMeetingNotes(): Promise<MeetingNote[]>;
@@ -1615,10 +1617,18 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getMeeting(id: number): Promise<Meeting | undefined> {
+    return this.meetings.get(id);
+  }
+
   async getMeetingsByType(type: string): Promise<Meeting[]> {
     return Array.from(this.meetings.values())
       .filter((m) => m.type === type)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  async getCompiledAgendasByMeeting(meetingId: number): Promise<CompiledAgenda[]> {
+    return [];
   }
 
   async createMeeting(insertMeeting: InsertMeeting): Promise<Meeting> {
