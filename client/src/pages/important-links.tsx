@@ -27,6 +27,8 @@ export default function ImportantLinks() {
   // URLs for all the important links
   const inventoryCalculatorUrl =
     'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
+  const eventEstimatorUrl =
+    'https://nicunursekatie.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html';
 
   // Events Google Sheet (published version)
   const eventsEmbedUrl =
@@ -179,6 +181,30 @@ export default function ImportantLinks() {
                       window.open(inventoryCalculatorUrl, '_blank')
                     }
                     className="border-brand-primary text-brand-primary hover:bg-brand-primary/5 px-6 py-3 font-medium"
+                  >
+                    <ExternalLink className="w-5 h-5 mr-2" />
+                    New Tab
+                  </Button>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    size="lg"
+                    onClick={() =>
+                      window.open(eventEstimatorUrl, '_blank')
+                    }
+                    className="bg-brand-teal hover:bg-brand-primary text-white font-semibold px-8 py-3 text-base flex-1"
+                  >
+                    <Calculator className="w-5 h-5 mr-2" />
+                    Event Estimator
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() =>
+                      window.open(eventEstimatorUrl, '_blank')
+                    }
+                    className="border-brand-teal text-brand-teal hover:bg-brand-teal/5 px-6 py-3 font-medium"
                   >
                     <ExternalLink className="w-5 h-5 mr-2" />
                     New Tab

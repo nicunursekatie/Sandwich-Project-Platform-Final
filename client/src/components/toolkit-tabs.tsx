@@ -124,6 +124,14 @@ const sandwichMakingDocuments: ToolkitDocument[] = [
     description:
       'Interactive tool for calculating sandwich inventory and planning quantities for collections',
   },
+  {
+    name: 'Event Estimator',
+    path: 'https://nicunursekatie.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html',
+    type: 'link',
+    category: 'Sandwich Making',
+    description:
+      'Event planning tool for estimating sandwich quantities and resources needed for events',
+  },
 ];
 
 const getFileIcon = (type: string) => {
