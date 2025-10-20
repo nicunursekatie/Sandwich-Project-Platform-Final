@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useUserActivityTracking } from '@/hooks/useUserActivityTracking';
 import {
   Card,
   CardContent,
@@ -131,6 +132,7 @@ The Sandwich Project Development Team`,
 export default function ShoutoutSystem() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { trackEvent } = useUserActivityTracking();
   const [selectedTemplate, setSelectedTemplate] =
     useState<ShoutoutTemplate | null>(null);
   const [customSubject, setCustomSubject] = useState('');
@@ -162,13 +164,29 @@ export default function ShoutoutSystem() {
     }) => {
       return apiRequest('POST', '/api/shoutouts/send', data);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      const recipientCount = getRecipientCount();
       toast({
         title: 'Shoutout sent successfully!',
         description:
           'Your message has been delivered to the selected recipients.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/shoutouts/history'] });
+      
+      // Track the shoutout send event
+      trackEvent({
+        action: 'Send',
+        section: 'Communication',
+        feature: 'Team Shoutouts',
+        details: `Sent team shoutout to ${recipientCount} recipients${selectedTemplate ? ` using "${selectedTemplate.name}" template` : ''}`,
+        metadata: {
+          recipientGroup,
+          recipientCount,
+          templateUsed: selectedTemplate?.name || 'Custom',
+          subject: customSubject,
+        },
+      });
+      
       // Reset form
       setSelectedTemplate(null);
       setCustomSubject('');

@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { Heart, Star, Trophy, Sparkles, Target } from 'lucide-react';
+import { useUserActivityTracking } from '@/hooks/useUserActivityTracking';
 
 interface SendKudosButtonProps {
   recipientId: string;
@@ -33,6 +34,7 @@ export default function SendKudosButton({
 }: SendKudosButtonProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { trackKudosSent } = useUserActivityTracking();
   const [hasSentKudos, setHasSentKudos] = useState(false);
 
   // Check if kudos already sent when component mounts
@@ -138,6 +140,9 @@ export default function SendKudosButton({
         description: `Kudos sent to ${recipientName}!`,
         duration: 3000,
       });
+      
+      // Track the kudos send event
+      trackKudosSent(recipientName, contextTitle);
     },
     onError: (error: any) => {
       // Check if it's a 409 error (kudos already sent)
