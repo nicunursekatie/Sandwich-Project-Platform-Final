@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
@@ -19,7 +19,12 @@ import {
   X,
   CheckCircle,
   RefreshCw,
+  Package,
 } from 'lucide-react';
+
+// Lazy load map and cooler tracking components
+const HostLocationsMap = lazy(() => import('@/pages/route-map'));
+const CoolerTracking = lazy(() => import('@/pages/cooler-tracking'));
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1757,14 +1762,22 @@ export default function HostsManagementConsolidated() {
       ) : (
         /* Original Location-based View */
         <Tabs defaultValue="active" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="active" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
-              Active Locations ({activeHosts.length})
+              Active ({activeHosts.length})
             </TabsTrigger>
             <TabsTrigger value="inactive" className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
-              Inactive Locations ({inactiveHosts.length})
+              Inactive ({inactiveHosts.length})
+            </TabsTrigger>
+            <TabsTrigger value="map" className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Map
+            </TabsTrigger>
+            <TabsTrigger value="coolers" className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Coolers
             </TabsTrigger>
           </TabsList>
 
@@ -1796,6 +1809,28 @@ export default function HostsManagementConsolidated() {
             ) : (
               <HostGrid hostList={inactiveHosts} />
             )}
+          </TabsContent>
+
+          <TabsContent value="map" className="mt-6">
+            <Suspense fallback={
+              <div className="text-center py-12">
+                <RefreshCw className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-spin" />
+                <p className="text-slate-500">Loading map...</p>
+              </div>
+            }>
+              <HostLocationsMap />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="coolers" className="mt-6">
+            <Suspense fallback={
+              <div className="text-center py-12">
+                <RefreshCw className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-spin" />
+                <p className="text-slate-500">Loading cooler tracking...</p>
+              </div>
+            }>
+              <CoolerTracking />
+            </Suspense>
           </TabsContent>
         </Tabs>
       )}
