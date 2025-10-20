@@ -102,20 +102,20 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
         </Card>
       </div>
 
-      {/* Top Actions */}
-      {activityStats?.topActions && activityStats.topActions.length > 0 && (
+      {/* Most Used Features */}
+      {activityStats?.sectionBreakdown && activityStats.sectionBreakdown.length > 0 && (
         <div>
-          <h4 className="font-medium mb-3">Top Actions</h4>
+          <h4 className="font-medium mb-3">Most Used Features</h4>
           <div className="space-y-2">
-            {activityStats.topActions.map((action: any, idx: number) => (
+            {activityStats.sectionBreakdown.slice(0, 5).map((section: any, idx: number) => (
               <div
                 key={idx}
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
               >
-                <span className="text-sm font-medium capitalize">
-                  {action.action.replace(/_/g, ' ').toLowerCase()}
+                <span className="text-sm font-medium">
+                  {section.section}
                 </span>
-                <Badge variant="secondary">{action.count} times</Badge>
+                <Badge variant="secondary">{section.count} actions</Badge>
               </div>
             ))}
           </div>
@@ -137,17 +137,17 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium capitalize">
-                      {log.action?.replace(/_/g, ' ').toLowerCase() || 'Activity'}
-                    </span>
                     {log.section && (
                       <Badge variant="outline" className="text-xs">
                         {log.section}
                       </Badge>
                     )}
                   </div>
-                  {log.page && (
-                    <p className="text-xs text-gray-600 mt-1">{log.page}</p>
+                  <p className="text-sm font-medium text-gray-900 mt-1">
+                    {log.details || log.action?.replace(/_/g, ' ') || 'Activity'}
+                  </p>
+                  {log.feature && log.feature !== log.section && (
+                    <p className="text-xs text-gray-500 mt-1">{log.feature}</p>
                   )}
                 </div>
                 <span className="text-xs text-gray-500 whitespace-nowrap">

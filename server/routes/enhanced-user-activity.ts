@@ -251,6 +251,7 @@ router.get('/logs', async (req, res) => {
         section: userActivityLogs.section,
         feature: userActivityLogs.feature,
         page: userActivityLogs.page,
+        details: userActivityLogs.details,
         duration: userActivityLogs.duration,
         createdAt: sql<string>`${userActivityLogs.createdAt}::text`,
         metadata: userActivityLogs.metadata
@@ -346,7 +347,7 @@ router.get('/user-stats/:userId', async (req, res) => {
     const sectionBreakdown = await db
       .select({
         section: userActivityLogs.section,
-        actions: sql<number>`count(*)::int`,
+        count: sql<number>`count(*)::int`,
         timeSpent: sql<number>`sum(${userActivityLogs.duration})::int`
       })
       .from(userActivityLogs)
