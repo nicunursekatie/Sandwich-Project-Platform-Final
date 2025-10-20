@@ -113,7 +113,7 @@ export default function MeetingCalendar({
     return null;
   };
 
-  const { data: meetings = [], isLoading } = useQuery({
+  const { data: meetings = [], isLoading } = useQuery<Meeting[]>({
     queryKey: ['/api/meetings'],
   });
 

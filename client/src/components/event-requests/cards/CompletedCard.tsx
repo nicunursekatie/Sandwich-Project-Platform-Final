@@ -110,6 +110,8 @@ interface CardHeaderProps {
   setTspContactInputMode?: (mode: 'dropdown' | 'text') => void;
   users?: { id: number; name: string; email: string }[];
   updateTspContactMutation?: any;
+  tempIsConfirmed?: boolean;
+  setTempIsConfirmed?: (value: boolean) => void;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -137,7 +139,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   setEditingCustomTspContact,
   setTspContactInputMode,
   users = [],
-  updateTspContactMutation
+  updateTspContactMutation,
+  tempIsConfirmed = false,
+  setTempIsConfirmed
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -1826,6 +1830,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           setTspContactInputMode={setTspContactInputMode}
           users={users}
           updateTspContactMutation={updateTspContactMutation}
+          tempIsConfirmed={tempIsConfirmed}
+          setTempIsConfirmed={setTempIsConfirmed}
         />
 
         {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}
