@@ -757,12 +757,33 @@ export class EventRequestsGoogleSheetsService {
         };
 
         try {
+          // DEBUG: Log the exact external_id we're checking
+          console.log(`🔍 DEBUG: Checking for external_id: "${externalIdTrimmed}"`);
+          console.log(`🔍 DEBUG: external_id length: ${externalIdTrimmed.length}, type: ${typeof externalIdTrimmed}`);
+          
           // Check if record exists BEFORE upsert
           const existingRecord = await db
-            .select({ id: eventRequests.id, status: eventRequests.status })
+            .select({ 
+              id: eventRequests.id, 
+              status: eventRequests.status,
+              externalId: eventRequests.externalId,
+              organizationName: eventRequests.organizationName
+            })
             .from(eventRequests)
             .where(eq(eventRequests.externalId, externalIdTrimmed))
             .limit(1);
+
+          console.log(`🔍 DEBUG: Query returned ${existingRecord.length} matches`);
+          if (existingRecord.length > 0) {
+            console.log(`🔍 DEBUG: Matched record:`, {
+              id: existingRecord[0].id,
+              externalId: existingRecord[0].externalId,
+              org: existingRecord[0].organizationName,
+              status: existingRecord[0].status
+            });
+          } else {
+            console.log(`🔍 DEBUG: No existing record found - this should be an INSERT`);
+          }
 
           const recordExisted = existingRecord && existingRecord.length > 0;
 
