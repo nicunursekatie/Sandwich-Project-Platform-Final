@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
@@ -8,14 +8,15 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Loader2, 
-  Plus, 
-  CheckCircle2, 
-  Clock, 
-  Lightbulb, 
-  ClipboardList, 
-  StickyNote, 
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import {
+  Loader2,
+  Plus,
+  CheckCircle2,
+  Clock,
+  Lightbulb,
+  ClipboardList,
+  StickyNote,
   Trash2,
   Search,
   X,
@@ -255,10 +256,16 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
 export default function TeamBoard() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { track } = useOnboardingTracker();
   const [newItemContent, setNewItemContent] = useState('');
   const [newItemType, setNewItemType] = useState<BoardItemType>('task');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<BoardItemType | 'all'>('all');
+
+  // Track page visit for onboarding challenge
+  useEffect(() => {
+    track('view_team_board');
+  }, []);
 
   // Fetch board items
   const { data: items = [], isLoading } = useQuery<TeamBoardItem[]>({
@@ -291,6 +298,8 @@ export default function TeamBoard() {
         title: 'Posted!',
         description: 'Your item has been added to the board',
       });
+      // Track challenge completion
+      track('post_team_board');
     },
     onError: () => {
       toast({

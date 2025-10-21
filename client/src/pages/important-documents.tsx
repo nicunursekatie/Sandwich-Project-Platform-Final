@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -25,6 +25,7 @@ import { DocumentPreview } from '@/components/document-preview';
 import { ConfidentialDocuments } from '@/components/confidential-documents';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   Dialog,
   DialogContent,
@@ -304,12 +305,18 @@ export default function ImportantDocuments() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuth();
+  const { track } = useOnboardingTracker();
   const [previewDocument, setPreviewDocument] = useState<AdminDocument | null>(
     null
   );
 
+  // Track page visit for onboarding challenge
+  useEffect(() => {
+    track('view_important_documents');
+  }, []);
+
   // Show confidential tab only to admin users
-  const hasConfidentialAccess = !!user && !isAuthLoading && 
+  const hasConfidentialAccess = !!user && !isAuthLoading &&
     (user.email === 'admin@sandwich.project' || user.email === 'katielong2316@gmail.com');
 
   const filteredDocuments = adminDocuments.filter(

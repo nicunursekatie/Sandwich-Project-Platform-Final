@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -112,6 +113,7 @@ export default function GmailStyleInbox() {
   console.log('🔍 GmailStyleInbox component is rendering');
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { track } = useOnboardingTracker();
 
   // Add early return for loading state
   if (authLoading) {
@@ -328,6 +330,8 @@ export default function GmailStyleInbox() {
       queryClient.invalidateQueries({ queryKey: [apiBase] });
       // Also invalidate Gmail unread count to update navigation indicator
       queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
+      // Track challenge completion
+      track('inbox_send_email');
       setShowCompose(false);
       resetCompose();
       toast({ description: 'Message sent successfully' });

@@ -43,15 +43,7 @@ export function useOnboardingTracker() {
     // Show toast notification with celebration
     toast({
       title: '🎉 Challenge Completed!',
-      description: (
-        <div className="mt-2">
-          <p className="font-semibold">{message}</p>
-          <p className="text-sm text-amber-600 mt-1 flex items-center gap-1">
-            <span>+{points} points earned!</span>
-            <span className="text-2xl">✨</span>
-          </p>
-        </div>
-      ),
+      description: `${message} — +${points} points earned! ✨`,
       duration: 5000,
     });
   };

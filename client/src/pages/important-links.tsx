@@ -18,11 +18,13 @@ import {
   Link as LinkIcon,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 
 export default function ImportantLinks() {
   const [isLoading, setIsLoading] = useState(false);
   const [eventsZoomLevel, setEventsZoomLevel] = useState(85);
   const [userSheetZoomLevel, setUserSheetZoomLevel] = useState(85);
+  const { track } = useOnboardingTracker();
 
   // URLs for all the important links
   const inventoryCalculatorUrl =
@@ -43,6 +45,11 @@ export default function ImportantLinks() {
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAgug7UWU-j96KzlWYnff0oS61ezmshAvgDFugYvC-EHSeHcl5TlIKuE2dbyAJ9hz2DexSCJbf6Cpr/pubhtml';
   const userSheetEmbedUrl =
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vRAgug7UWU-j96KzlWYnff0oS61ezmshAvgDFugYvC-EHSeHcl5TlIKuE2dbyAJ9hz2DexSCJbf6Cpr/pubhtml?widget=true&headers=false';
+
+  // Track page visit for onboarding challenge
+  useEffect(() => {
+    track('view_important_links');
+  }, []);
 
   // Load user's saved zoom preferences
   useEffect(() => {
