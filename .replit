@@ -118,4 +118,4 @@ args = "npm run dev"
 defaultBucketID = "replit-objstore-a7721532-5ea7-447a-83e7-dc6cdbc3d787"
 
 [agent]
-integrations = ["javascript_sendgrid==1.0.0"]
+integrations = ["javascript_sendgrid:1.0.0", "javascript_database:1.0.0"]
