@@ -169,40 +169,69 @@ export class OnboardingService {
   /**
    * Get leaderboard - includes all active users, even those with 0 points
    */
-  async getLeaderboard(limit: number = 10): Promise<LeaderboardEntry[]> {
+  async getLeaderboard(limit: number = 50): Promise<LeaderboardEntry[]> {
     const { users } = await import('@shared/schema');
 
-    // Get all active users with their progress
-    const results = await db
+    // First get all active users
+    const allUsers = await db
       .select({
-        userId: users.id,
+        id: users.id,
         firstName: users.firstName,
         lastName: users.lastName,
-        totalPoints: sql<number>`coalesce(sum(${onboardingChallenges.points}), 0)::int`,
-        completedChallenges: sql<number>`coalesce(count(${onboardingProgress.id}), 0)::int`,
       })
       .from(users)
-      .leftJoin(
-        onboardingProgress,
-        eq(users.id, onboardingProgress.userId)
-      )
-      .leftJoin(
+      .where(eq(users.isActive, true));
+
+    // Then get progress for each user
+    const userProgress = await db
+      .select({
+        userId: onboardingProgress.userId,
+        totalPoints: sql<number>`sum(${onboardingChallenges.points})::int`,
+        completedChallenges: sql<number>`count(${onboardingProgress.id})::int`,
+      })
+      .from(onboardingProgress)
+      .innerJoin(
         onboardingChallenges,
         eq(onboardingProgress.challengeId, onboardingChallenges.id)
       )
-      .where(eq(users.isActive, true))
-      .groupBy(users.id, users.firstName, users.lastName)
-      .orderBy(
-        desc(sql`coalesce(sum(${onboardingChallenges.points}), 0)`),
-        users.firstName
-      )
-      .limit(limit);
+      .groupBy(onboardingProgress.userId);
 
-    return results.map((r, index) => ({
-      userId: r.userId,
-      userName: `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'User',
-      totalPoints: r.totalPoints,
-      completedChallenges: r.completedChallenges,
+    // Create a map of user progress
+    const progressMap = new Map(
+      userProgress.map((p) => [
+        p.userId,
+        {
+          totalPoints: p.totalPoints,
+          completedChallenges: p.completedChallenges,
+        },
+      ])
+    );
+
+    // Combine users with their progress (0 if none)
+    const leaderboardData = allUsers.map((user) => {
+      const progress = progressMap.get(user.id) || {
+        totalPoints: 0,
+        completedChallenges: 0,
+      };
+      return {
+        userId: user.id,
+        userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
+        totalPoints: progress.totalPoints,
+        completedChallenges: progress.completedChallenges,
+      };
+    });
+
+    // Sort by points (desc) then by name
+    leaderboardData.sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) {
+        return b.totalPoints - a.totalPoints;
+      }
+      return a.userName.localeCompare(b.userName);
+    });
+
+    // Apply limit and add rank
+    return leaderboardData.slice(0, limit).map((entry, index) => ({
+      ...entry,
       rank: index + 1,
     }));
   }
