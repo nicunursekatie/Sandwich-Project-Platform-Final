@@ -358,14 +358,3 @@ export function createMessageNotificationsRouter(deps: RouterDependencies) {
 
   return router;
 }
-
-  app.use('/api/message-notifications', router);
-}
-
-// Legacy export for backward compatibility
-export const messageNotificationRoutes = {
-  getUnreadCounts,
-  markMessagesRead,
-  markChatMessagesRead,
-  markAllRead,
-};
