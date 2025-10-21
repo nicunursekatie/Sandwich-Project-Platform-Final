@@ -449,7 +449,15 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
     console.log(
       `[Event Email API] Sending event email from ${user.email} to ${recipientEmail}`
     );
-    console.log(`[Event Email API] Attachments: ${attachments.join(', ')}`);
+    if (attachments.length > 0) {
+      console.log(
+        `[Event Email API] Attachments payload received: ${attachments
+          .map(att =>
+            typeof att === 'object' ? JSON.stringify(att) : String(att)
+          )
+          .join(', ')}`
+      );
+    }
 
     // Get user's complete profile data
     const fullUserData = await storage.getUser(user.id);
@@ -488,6 +496,7 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
     const { sendEmail: sendGridEmail } = await import('../sendgrid');
     const { documents } = await import('@shared/schema');
     const { inArray } = await import('drizzle-orm');
+    const path = await import('path');
 
     // Check if content is already full HTML (starts with <!DOCTYPE html>)
     const isFullHtml = content.trim().startsWith('<!DOCTYPE html>');
@@ -514,13 +523,26 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
     }
 
     // Process attachments - fetch document metadata if attachments are document IDs
-    let processedAttachments = [];
+    let processedAttachments: (string | { filePath: string; originalName?: string })[] = [];
     if (attachments && attachments.length > 0) {
-      const docIds = attachments
-        .map(a => typeof a === 'string' ? parseInt(a) : a)
-        .filter(id => !isNaN(id));
-      
-      if (docIds.length > 0) {
+      const numericIds = attachments
+        .map((attachment) => {
+          if (typeof attachment === 'number') {
+            return attachment;
+          }
+
+          if (typeof attachment === 'string') {
+            const trimmed = attachment.trim();
+            return /^\d+$/.test(trimmed) ? parseInt(trimmed, 10) : NaN;
+          }
+
+          return NaN;
+        })
+        .filter((id): id is number => !isNaN(id));
+
+      const documentMap = new Map<number, { filePath: string; originalName?: string }>();
+
+      if (numericIds.length > 0) {
         const docs = await db
           .select({
             id: documents.id,
@@ -528,14 +550,76 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
             originalName: documents.originalName,
           })
           .from(documents)
-          .where(inArray(documents.id, docIds));
-        
-        processedAttachments = docs.map(doc => ({
-          filePath: doc.filePath,
-          originalName: doc.originalName || undefined,
-        }));
+          .where(inArray(documents.id, numericIds));
+
+        docs.forEach((doc) => {
+          documentMap.set(doc.id, {
+            filePath: doc.filePath,
+            originalName: doc.originalName || undefined,
+          });
+        });
+      }
+
+      for (const attachment of attachments) {
+        if (typeof attachment === 'number') {
+          const docMeta = documentMap.get(attachment);
+          if (docMeta) {
+            processedAttachments.push(docMeta);
+          } else {
+            console.warn(
+              `[Event Email API] Attachment document ID ${attachment} not found`
+            );
+          }
+          continue;
+        }
+
+        if (typeof attachment === 'string') {
+          const trimmed = attachment.trim();
+
+          if (/^\d+$/.test(trimmed)) {
+            const docId = parseInt(trimmed, 10);
+            const docMeta = documentMap.get(docId);
+            if (docMeta) {
+              processedAttachments.push(docMeta);
+            } else {
+              console.warn(
+                `[Event Email API] Attachment document ID ${docId} not found`
+              );
+            }
+            continue;
+          }
+
+          if (trimmed.startsWith('/uploads/')) {
+            processedAttachments.push(path.join(process.cwd(), trimmed));
+          } else if (path.isAbsolute(trimmed)) {
+            processedAttachments.push(trimmed);
+          } else {
+            processedAttachments.push(path.join(process.cwd(), trimmed));
+          }
+          continue;
+        }
+
+        if (attachment && typeof attachment === 'object' && 'filePath' in attachment) {
+          const filePath = (attachment as { filePath: string }).filePath;
+          if (typeof filePath === 'string') {
+            let resolvedPath = filePath;
+
+            if (filePath.startsWith('/uploads/')) {
+              resolvedPath = path.join(process.cwd(), filePath);
+            } else if (!path.isAbsolute(filePath)) {
+              resolvedPath = path.join(process.cwd(), filePath);
+            }
+
+            processedAttachments.push({
+              ...attachment,
+              filePath: resolvedPath,
+            } as { filePath: string; originalName?: string });
+          }
+        }
       }
     }
+
+    const attachmentsForSendgrid = processedAttachments;
 
     // Send clean professional email via SendGrid
     const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
@@ -559,16 +643,37 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
       `;
     }
     
-    await sendGridEmail({
+    const fromEmail =
+      process.env.SENDGRID_FROM_EMAIL || 'katielong2316@gmail.com';
+    const bccEmail = process.env.SENDGRID_TOOLKIT_BCC || 'katielong2316@gmail.com';
+
+    const emailPayload: {
+      to: string;
+      from: string;
+      replyTo: string;
+      subject: string;
+      text: string;
+      html: string;
+      bcc?: string;
+      attachments?: (string | { filePath: string; originalName?: string })[];
+    } = {
       to: recipientEmail,
-      from: 'katie@thesandwichproject.org',
+      from: fromEmail,
       replyTo: replyToEmail,
-      bcc: 'katielong2316@gmail.com', // BCC to Katie for quality monitoring
       subject,
       text: `${textContent}\n\n${EMAIL_FOOTER_TEXT}`,
       html: finalHtml,
-      attachments: processedAttachments,
-    });
+    };
+
+    if (bccEmail) {
+      emailPayload.bcc = bccEmail;
+    }
+
+    if (attachmentsForSendgrid.length > 0) {
+      emailPayload.attachments = attachmentsForSendgrid;
+    }
+
+    await sendGridEmail(emailPayload);
 
     // Save a record in internal email system (without sending duplicate)
     const newEmail = await db.insert(emailMessages).values({
