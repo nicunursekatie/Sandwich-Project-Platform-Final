@@ -604,13 +604,41 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
                 .limit(1);
               
               if (doc.length > 0 && doc[0]) {
-                processedAttachments.push({
-                  filePath: doc[0].filePath,
-                  originalName: doc[0].originalName || undefined,
-                });
-                console.log(`[Event Email API] Resolved document hash ${hash} to ${doc[0].originalName}`);
+                // Files are in Google Cloud Storage, need to download them
+                try {
+                  const { objectStorageService } = await import('../services/core');
+                  const file = await objectStorageService.searchPublicObject(doc[0].filePath);
+                  
+                  if (file) {
+                    // Download file content as buffer
+                    const [fileContent] = await file.download();
+                    const base64Content = fileContent.toString('base64');
+                    
+                    // Get content type from file extension
+                    const ext = path.extname(doc[0].originalName || '').toLowerCase();
+                    const contentTypeMap: Record<string, string> = {
+                      '.pdf': 'application/pdf',
+                      '.doc': 'application/msword',
+                      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    };
+                    const contentType = contentTypeMap[ext] || 'application/octet-stream';
+                    
+                    processedAttachments.push({
+                      content: base64Content,
+                      filename: doc[0].originalName || `document${ext}`,
+                      type: contentType,
+                      disposition: 'attachment',
+                    } as any);
+                    
+                    console.log(`[Event Email API] Downloaded from GCS: ${doc[0].originalName}`);
+                  } else {
+                    console.warn(`[Event Email API] File not found in GCS: ${doc[0].filePath}`);
+                  }
+                } catch (gcsError) {
+                  console.error(`[Event Email API] Error downloading from GCS:`, gcsError);
+                }
               } else {
-                console.warn(`[Event Email API] Document hash not found: ${hash}`);
+                console.warn(`[Event Email API] Document hash not found in DB: ${hash}`);
               }
             }
             continue;

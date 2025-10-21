@@ -15,6 +15,13 @@ interface EmailAttachment {
   originalName?: string;
 }
 
+interface Base64Attachment {
+  content: string;
+  filename: string;
+  type: string;
+  disposition: string;
+}
+
 interface EmailParams {
   to: string;
   from: string;
@@ -23,7 +30,7 @@ interface EmailParams {
   subject: string;
   text?: string;
   html?: string;
-  attachments?: (string | EmailAttachment)[];
+  attachments?: (string | EmailAttachment | Base64Attachment)[];
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
@@ -71,6 +78,13 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       
       for (const attachment of params.attachments) {
         try {
+          // Handle base64 attachments (already processed from GCS)
+          if (attachment && typeof attachment === 'object' && 'content' in attachment && 'filename' in attachment) {
+            processedAttachments.push(attachment);
+            console.log(`Added base64 attachment: ${attachment.filename}`);
+            continue;
+          }
+          
           // Handle both string paths and attachment objects
           const filePath = typeof attachment === 'string' ? attachment : attachment.filePath;
           const originalName = typeof attachment === 'string' ? undefined : attachment.originalName;
