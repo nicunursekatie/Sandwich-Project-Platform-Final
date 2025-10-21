@@ -215,9 +215,20 @@ router.get(
       const contacts = await storage.getHostContacts(hostId);
       res.json(contacts);
     } else {
-      // Return all host contacts
+      // Return all host contacts with their host location name
       const hosts = await storage.getAllHostsWithContacts();
-      const allContacts = hosts.flatMap((host) => host.contacts);
+      const allContacts = hosts.flatMap((host) => 
+        host.contacts.map(contact => ({
+          id: contact.id,
+          name: contact.name,
+          hostLocationName: host.name,
+          displayName: `${contact.name} (${host.name})`,
+          role: contact.role,
+          email: contact.email,
+          phone: contact.phone,
+          hostId: contact.hostId,
+        }))
+      );
       res.json(allContacts);
     }
   })

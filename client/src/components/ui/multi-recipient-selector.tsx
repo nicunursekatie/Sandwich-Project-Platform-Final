@@ -17,7 +17,15 @@ export interface Recipient {
   name: string;
 }
 
-export interface Host {
+export interface HostContact {
+  id: number;
+  name: string;
+  hostLocationName: string;
+  displayName: string;
+  role: string;
+}
+
+export interface HostLocation {
   id: number;
   name: string;
 }
@@ -54,18 +62,28 @@ export const MultiRecipientSelector: React.FC<MultiRecipientSelectorProps> = ({
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Fetch hosts from the API
+  // Fetch host contacts from the API
   const {
-    data: hosts = [],
-    isLoading: isLoadingHosts,
-    error: hostsError,
-  } = useQuery<Host[]>({
+    data: hostContacts = [],
+    isLoading: isLoadingHostContacts,
+    error: hostContactsError,
+  } = useQuery<HostContact[]>({
+    queryKey: ['/api/host-contacts'],
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  // Fetch host locations for backward compatibility with legacy assignments
+  const {
+    data: hostLocations = [],
+    isLoading: isLoadingHostLocations,
+    error: hostLocationsError,
+  } = useQuery<HostLocation[]>({
     queryKey: ['/api/hosts'],
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  const isLoading = isLoadingRecipients || isLoadingHosts;
-  const error = recipientsError || hostsError;
+  const isLoading = isLoadingRecipients || isLoadingHostContacts || isLoadingHostLocations;
+  const error = recipientsError || hostContactsError || hostLocationsError;
 
   // Sync with controlled value
   useEffect(() => {
@@ -119,9 +137,30 @@ export const MultiRecipientSelector: React.FC<MultiRecipientSelectorProps> = ({
     // Parse the ID format (host:5, recipient:10, or custom:text)
     if (id.startsWith('host:')) {
       const hostId = parseInt(id.replace('host:', ''));
-      const host = hosts.find(h => h.id === hostId);
+      
+      // First try to find as a host contact
+      const hostContact = hostContacts.find(h => h.id === hostId);
+      if (hostContact) {
+        return { 
+          name: hostContact.displayName, 
+          icon: <Home className="w-3 h-3" />,
+          type: 'host'
+        };
+      }
+      
+      // Fallback: check if it's a legacy host location assignment
+      const hostLocation = hostLocations.find(h => h.id === hostId);
+      if (hostLocation) {
+        return { 
+          name: `${hostLocation.name} (Legacy - Area)`, 
+          icon: <Home className="w-3 h-3" />,
+          type: 'host-legacy'
+        };
+      }
+      
+      // Unknown
       return { 
-        name: host?.name || `Unknown Host (${hostId})`, 
+        name: `Unknown Host (${hostId})`, 
         icon: <Home className="w-3 h-3" />,
         type: 'host'
       };
@@ -156,7 +195,7 @@ export const MultiRecipientSelector: React.FC<MultiRecipientSelectorProps> = ({
   };
 
   // Get available options (not already selected)
-  const availableHosts = hosts.filter(h => !selectedIds.includes(`host:${h.id}`));
+  const availableHostContacts = hostContacts.filter(h => !selectedIds.includes(`host:${h.id}`));
   const availableRecipients = recipients.filter(r => !selectedIds.includes(`recipient:${r.id}`));
 
   return (
@@ -212,20 +251,20 @@ export const MultiRecipientSelector: React.FC<MultiRecipientSelectorProps> = ({
               </SelectItem>
             )}
             
-            {/* Hosts Section */}
-            {availableHosts.length > 0 && (
+            {/* Host Contacts Section */}
+            {availableHostContacts.length > 0 && (
               <>
                 <SelectItem value="hosts-header" disabled className="font-semibold text-[#236383]">
                   <div className="flex items-center gap-2">
                     <Home className="w-4 h-4" />
-                    <span>Hosts</span>
+                    <span>Host Contacts</span>
                   </div>
                 </SelectItem>
-                {availableHosts.map((host) => (
-                  <SelectItem key={`host-${host.id}`} value={`host:${host.id}`}>
+                {availableHostContacts.map((hostContact) => (
+                  <SelectItem key={`host-${hostContact.id}`} value={`host:${hostContact.id}`}>
                     <div className="flex items-center gap-2 pl-4">
                       <Home className="w-3 h-3 text-gray-500" />
-                      <span>{host.name}</span>
+                      <span>{hostContact.displayName}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -257,7 +296,7 @@ export const MultiRecipientSelector: React.FC<MultiRecipientSelectorProps> = ({
               Custom destination...
             </SelectItem>
             
-            {availableHosts.length === 0 && availableRecipients.length === 0 && !error && (
+            {availableHostContacts.length === 0 && availableRecipients.length === 0 && !error && (
               <SelectItem value="none" disabled>
                 {selectedIds.length > 0 ? "All options selected" : "No options available"}
               </SelectItem>
@@ -316,7 +355,7 @@ export const MultiRecipientSelector: React.FC<MultiRecipientSelectorProps> = ({
       {/* Info text */}
       {selectedIds.length === 0 && !showCustomInput && (
         <p className="text-sm text-gray-500">
-          No recipients assigned yet. Use the dropdown above to add hosts, recipient organizations, or custom destinations.
+          No recipients assigned yet. Use the dropdown above to add host contacts, recipient organizations, or custom destinations.
         </p>
       )}
     </div>
