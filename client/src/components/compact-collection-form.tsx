@@ -506,7 +506,7 @@ export default function CompactCollectionForm({
                 {[
                   { key: 'deli' as const, label: 'Deli', color: 'focus:border-green-400' },
                   { key: 'pbj' as const, label: 'PB&J', color: 'focus:border-purple-400' },
-                  { key: 'other' as const, label: 'Other', color: 'focus:border-gray-400' }
+                  { key: 'other' as const, label: 'Generic', color: 'focus:border-gray-400' }
                 ].map(({ key, label, color }) => (
                   <div key={key} className="flex flex-col items-center">
                     <label className="text-xs text-gray-600 mb-1 font-medium">{label}</label>
@@ -621,7 +621,7 @@ export default function CompactCollectionForm({
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-gray-700">Other</label>
+                      <label className="text-xs font-medium text-gray-700">Generic</label>
                       <Input
                         type="number"
                         value={newGroupOther || ''}
@@ -767,7 +767,7 @@ export default function CompactCollectionForm({
                         {[
                           group.deli && `Deli: ${group.deli}`,
                           group.pbj && `PBJ: ${group.pbj}`,
-                          group.other && `Other: ${group.other}`
+                          group.other && `Generic: ${group.other}`
                         ].filter(Boolean).join(' • ')}
                       </div>
                     )}
