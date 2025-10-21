@@ -427,7 +427,7 @@ export default function ActionCenter() {
 
       const plannedGroupTotal = plannedCollectionsThisWeek.reduce((sum, c) => {
         // Count group collections only (exclude individual)
-        const groupTotal = (c.groupCollections || []).reduce((gsum, g) => gsum + (g.sandwichCount || 0), 0);
+        const groupTotal = (Array.isArray(c.groupCollections) ? c.groupCollections : []).reduce((gsum, g) => gsum + (g.sandwichCount || 0), 0);
         return sum + groupTotal;
       }, 0);
 

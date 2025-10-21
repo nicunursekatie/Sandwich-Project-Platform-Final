@@ -430,7 +430,7 @@ export function ComprehensiveUserDialog({
 
             {/* Activity Tab */}
             <TabsContent value="activity" className="flex-1 overflow-y-auto p-4">
-              {user && <UserActivityTab userId={user.id} userName={`${user.firstName} ${user.lastName}`} />}
+              {user?.id && <UserActivityTab userId={user.id} userName={`${user.firstName} ${user.lastName}`} />}
             </TabsContent>
           </Tabs>
         </DialogContent>

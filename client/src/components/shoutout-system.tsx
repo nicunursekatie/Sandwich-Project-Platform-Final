@@ -277,7 +277,7 @@ export default function ShoutoutSystem() {
   };
 
   const getRecipientCount = () => {
-    if (!users) return 0;
+    if (!Array.isArray(users)) return 0;
     switch (recipientGroup) {
       case 'all':
         return users.length;
