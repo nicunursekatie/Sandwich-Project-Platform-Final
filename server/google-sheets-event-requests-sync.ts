@@ -4,6 +4,7 @@ import type { IStorage } from './storage';
 import { EventRequest, Organization, eventRequests } from '@shared/schema';
 import { AuditLogger } from './audit-logger';
 import { db } from './db';
+import { eq } from 'drizzle-orm';
 
 export interface EventRequestSheetRow {
   externalId: string;
@@ -691,14 +692,11 @@ export class EventRequestsGoogleSheetsService {
       const sheetRows = await this.readEventRequestsSheet();
 
       let createdCount = 0;
+      let updatedCount = 0;
       let skippedNoExternalId = 0;
-      let skippedOldCount = 0;
-      let conflictSkippedCount = 0;
-      let blacklistSkippedCount = 0;
 
       console.log(`🔍 SYNC ANALYSIS: Processing ${sheetRows.length} rows from Google Sheets`);
-      console.log(`🔍 SYNC SAFETY: Using permanent blacklist system for external_id duplicate prevention`);
-      console.log(`🛡️ BLACKLIST: Checking imported_external_ids table to prevent re-importing deleted records`);
+      console.log(`🔄 UPSERT MODE: Will insert new records and update existing ones based on external_id`);
 
       for (const row of sheetRows) {
         // UPDATED: External ID is now optional - generate one if missing
@@ -719,18 +717,7 @@ export class EventRequestsGoogleSheetsService {
           console.log(`📝 Generated STABLE external_id for row: ${row.externalId} - ${row.organizationName || 'Unknown Org'} - ${row.contactName || 'Unknown Contact'}`);
         }
 
-        // CRITICAL: Check permanent blacklist BEFORE attempting any insertion
         const externalIdTrimmed = row.externalId.trim();
-        const isBlacklisted = await this.storage.checkExternalIdExists(externalIdTrimmed, 'event_requests');
-        
-        if (isBlacklisted) {
-          blacklistSkippedCount++;
-          console.log(`🚫 BLACKLIST: External_id already imported (permanently blocked): ${externalIdTrimmed} - ${row.organizationName}`);
-          console.log(`    ↳ This external_id has been imported before and will NEVER be imported again`);
-          continue;
-        }
-
-        console.log(`✅ BLACKLIST: External_id ${externalIdTrimmed} is clear for import - ${row.organizationName || 'Unknown Org'}`);
 
         // Convert row to event request data
         const eventRequestData = this.sheetRowToEventRequest(row);
@@ -770,51 +757,50 @@ export class EventRequestsGoogleSheetsService {
         };
 
         try {
-          // SAFE INSERT: Since we've checked the blacklist, this should be a new record
-          // No need for onConflictDoNothing() since blacklist already prevents duplicates
+          // Check if record already exists to determine if this is an insert or update
+          const existing = await db
+            .select({ id: eventRequests.id })
+            .from(eventRequests)
+            .where(eq(eventRequests.externalId, externalIdTrimmed))
+            .limit(1);
+
+          // UPSERT: Insert new record or update existing one
           const result = await db
             .insert(eventRequests)
             .values(sanitizedData as any)
+            .onConflictDoUpdate({
+              target: eventRequests.externalId,
+              set: {
+                ...sanitizedData,
+                updatedAt: new Date(),
+                lastSyncedAt: new Date(),
+              }
+            })
             .returning({ id: eventRequests.id, externalId: eventRequests.externalId });
 
           if (result && result.length > 0) {
-            // Record was successfully inserted
-            console.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
-            
-            // CRITICAL: Add external_id to permanent blacklist immediately after successful insertion
-            try {
-              await this.storage.addExternalIdToBlacklist(
-                externalIdTrimmed,
-                'event_requests',
-                `Imported from Google Sheets on ${new Date().toISOString()}`
-              );
-              console.log(`🛡️ BLACKLIST: Added external_id ${externalIdTrimmed} to permanent blacklist`);
-            } catch (blacklistError) {
-              console.error(`⚠️ WARNING: Failed to add external_id ${externalIdTrimmed} to blacklist:`, blacklistError);
-              // Continue processing - the record was still inserted successfully
+            if (existing && existing.length > 0) {
+              console.log(`🔄 UPDATED existing record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
+              updatedCount++;
+            } else {
+              console.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
+              createdCount++;
             }
-            
-            createdCount++;
-          } else {
-            // This shouldn't happen since we checked the blacklist, but handle gracefully
-            console.warn(`⚠️ UNEXPECTED: Insert returned no result for external_id: ${row.externalId} - ${row.organizationName}`);
-            conflictSkippedCount++;
           }
         } catch (error) {
-          console.error(`❌ Failed to insert record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
+          console.error(`❌ Failed to upsert record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
           // Continue processing other records
         }
       }
 
-      console.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${blacklistSkippedCount} blocked by permanent blacklist, ${conflictSkippedCount} other conflicts, ${skippedOldCount} old events skipped`);
-      console.log(`🛡️ SAFETY CONFIRMATION: Permanent blacklist system ensures external_ids are NEVER imported twice`);
-      console.log(`🛡️ IMPORT ONCE GUARANTEE: ${blacklistSkippedCount} external_ids were permanently blocked from re-import`);
+      console.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${updatedCount} records updated`);
+      console.log(`✅ UPSERT SUCCESS: Total ${createdCount + updatedCount} records processed`);
 
       return {
         success: true,
-        message: `Successfully synced using permanent blacklist: ${createdCount} created, ${blacklistSkippedCount} permanently blocked`,
+        message: `Successfully synced from Google Sheets: ${createdCount} created, ${updatedCount} updated`,
         created: createdCount,
-        updated: 0, // Always 0 - we never update existing records
+        updated: updatedCount,
       };
     } catch (error) {
       console.error('Error syncing from Google Sheets:', error);
