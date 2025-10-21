@@ -161,6 +161,3 @@ export function createPerformanceRouter(deps: RouterDependencies) {
 
   return router;
 }
-
-  app.use('/api/performance', router);
-}
