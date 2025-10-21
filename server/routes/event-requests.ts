@@ -3077,47 +3077,36 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
     // Import SendGrid service and email footer
     const { sendEmail } = await import('../sendgrid');
     const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
+    const path = await import('path');
 
-    // Build email body with attachments as links
-    let emailBodyText = content;
-    let emailBodyHtml = content.replace(/\n/g, '<br>');
-
-    if (attachments.length > 0) {
-      emailBodyText += '\n\n---\n\nAttached Documents:\n';
-      emailBodyHtml += '<br><br><hr style="margin: 20px 0;"><br><strong>Attached Documents:</strong><br><ul style="margin: 10px 0;">';
-      
-      attachments.forEach((filePath: string) => {
-        const fileName = filePath.split('/').pop() || filePath;
-        const documentUrl = `${req.protocol}://${req.get('host')}${filePath}`;
-        emailBodyText += `\n• ${fileName}: ${documentUrl}`;
-        emailBodyHtml += `<li><a href="${documentUrl}" style="color: #236383;">${fileName}</a></li>`;
-      });
-      
-      emailBodyHtml += '</ul>';
-    }
-
-    // Add compliance footer
-    emailBodyText += EMAIL_FOOTER_TEXT;
-    emailBodyHtml += EMAIL_FOOTER_HTML;
+    // Use the HTML content as-is (already styled from EventEmailComposer)
+    // Only add footer to the existing content
+    const emailBodyText = content + EMAIL_FOOTER_TEXT;
+    const emailBodyHtml = content + EMAIL_FOOTER_HTML;
 
     // Determine from and reply-to addresses
     const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'katielong2316@gmail.com';
     const replyToEmail = req.user?.preferredEmail || req.user?.email || fromEmail;
 
-    // Send email via SendGrid
+    // Convert attachment paths to absolute file system paths
+    const attachmentPaths = attachments.map((filePath: string) => {
+      // If path starts with /, it's already an absolute path from /uploads
+      // Convert to filesystem path
+      if (filePath.startsWith('/uploads/')) {
+        return path.join(process.cwd(), filePath);
+      }
+      return filePath;
+    });
+
+    // Send email via SendGrid with actual file attachments
     const emailSent = await sendEmail({
       to: recipientEmail,
       from: fromEmail,
       replyTo: replyToEmail,
       subject,
       text: emailBodyText,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="margin-bottom: 20px;">
-            ${emailBodyHtml}
-          </div>
-        </div>
-      `,
+      html: emailBodyHtml, // Use the styled HTML as-is, no wrapping
+      attachments: attachmentPaths, // Pass actual file paths for attachment
     });
 
     if (!emailSent) {
