@@ -110,8 +110,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   const { hostsRoutes } = await import('./routes/hosts');
   app.use('/api', hostsRoutes);
 
-  const recipientsRoutes = await import('./routes/recipients');
-  app.use('/api/recipients', recipientsRoutes.default);
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
+  // const recipientsRoutes = await import('./routes/recipients');
+  // app.use('/api/recipients', recipientsRoutes.default);
 
   const recipientTspContactRoutes = await import(
     './routes/recipient-tsp-contacts'
@@ -119,8 +120,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.use('/api/recipient-tsp-contacts', recipientTspContactRoutes.default);
 
   // === EVENT & DATA MANAGEMENT ===
-  const eventRequestRoutes = await import('./routes/event-requests');
-  app.use('/api/event-requests', eventRequestRoutes.default);
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
+  // const eventRequestRoutes = await import('./routes/event-requests');
+  // app.use('/api/event-requests', eventRequestRoutes.default);
 
   const eventRemindersRoutes = await import('./routes/event-reminders');
   app.use(
@@ -139,16 +141,18 @@ export async function registerRoutes(app: Express): Promise<void> {
   const dataManagementRoutes = await import('./routes/data-management');
   app.use('/api', dataManagementRoutes.default);
 
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
   // Dashboard Documents Configuration
-  const dashboardDocumentsRoutes = await import('./routes/dashboard-documents');
-  app.use('/api/dashboard-documents', dashboardDocumentsRoutes.default(isAuthenticated, requirePermission, storage));
+  // const dashboardDocumentsRoutes = await import('./routes/dashboard-documents');
+  // app.use('/api/dashboard-documents', dashboardDocumentsRoutes.default(isAuthenticated, requirePermission, storage));
 
   // === COMMUNICATION & EXTERNAL SERVICES ===
   const emailRoutes = await import('./routes/email-routes');
   app.use('/api/emails', emailRoutes.default);
 
-  const { streamRoutes } = await import('./routes/stream');
-  app.use('/api/stream', isAuthenticated, streamRoutes);
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
+  // const { streamRoutes } = await import('./routes/stream');
+  // app.use('/api/stream', isAuthenticated, streamRoutes);
 
   // Onboarding challenge routes
   const onboardingRoutes = await import('./routes/onboarding');
@@ -178,14 +182,15 @@ export async function registerRoutes(app: Express): Promise<void> {
   const googleCalendarRoutes = await import('./routes/google-calendar');
   app.use('/api/google-calendar', googleCalendarRoutes.default);
 
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
   // Monitoring routes for weekly collection tracking
-  try {
-    const monitoringRoutes = await import('./routes/monitoring');
-    console.log('✅ Monitoring routes loaded successfully');
-    app.use('/api/monitoring', isAuthenticated, monitoringRoutes.default);
-  } catch (error) {
-    console.error('❌ Failed to load monitoring routes:', error);
-  }
+  // try {
+  //   const monitoringRoutes = await import('./routes/monitoring');
+  //   console.log('✅ Monitoring routes loaded successfully');
+  //   app.use('/api/monitoring', isAuthenticated, monitoringRoutes.default);
+  // } catch (error) {
+  //   console.error('❌ Failed to load monitoring routes:', error);
+  // }
 
   // Route optimization routes
   const routeOptimizationRoutes = await import('./routes/routes');
