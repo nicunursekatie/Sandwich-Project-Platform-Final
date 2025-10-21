@@ -600,9 +600,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           <Input
             type="number"
             value={inlineTotalCount}
-            onChange={(e) => setInlineTotalCount(parseInt(e.target.value) || 0)}
+            onChange={(e) => {
+              const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+              setInlineTotalCount(isNaN(val) ? 0 : val);
+            }}
             placeholder="Total sandwich count"
             className="text-gray-900 bg-white"
+            min="0"
           />
         ) : inlineSandwichMode === 'range' ? (
           <div className="space-y-2">
@@ -610,17 +614,25 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <Input
                 type="number"
                 value={inlineRangeMin}
-                onChange={(e) => setInlineRangeMin(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                  setInlineRangeMin(isNaN(val) ? 0 : val);
+                }}
                 placeholder="Min (e.g., 500)"
                 className="w-32 text-gray-900 bg-white"
+                min="0"
               />
               <span>to</span>
               <Input
                 type="number"
                 value={inlineRangeMax}
-                onChange={(e) => setInlineRangeMax(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                  setInlineRangeMax(isNaN(val) ? 0 : val);
+                }}
                 placeholder="Max (e.g., 700)"
                 className="w-32 text-gray-900 bg-white"
+                min="0"
               />
             </div>
             <Select
@@ -664,15 +676,17 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <Input
                   type="number"
                   value={item.quantity}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseInt(e.target.value);
                     updateInlineSandwichType(
                       index,
                       'quantity',
-                      parseInt(e.target.value) || 0
-                    )
-                  }
+                      isNaN(val) ? 0 : val
+                    );
+                  }}
                   placeholder="Qty"
                   className="w-24 text-gray-900 bg-white"
+                  min="0"
                 />
                 <Button
                   size="sm"
