@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import path from 'path';
+import fs from 'fs';
 import { storage } from '../storage-wrapper';
 import {
   insertEventRequestSchema,
@@ -3078,27 +3080,158 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
     const { sendEmail } = await import('../sendgrid');
     const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
 
-    // Build email body with attachments as links
-    let emailBodyText = content;
-    let emailBodyHtml = content.replace(/\n/g, '<br>');
+    const attachmentsArray: any[] = Array.isArray(attachments) ? attachments : [];
+    type ProcessedAttachment = {
+      absolutePath: string;
+      fileName: string;
+      documentUrl: string | null;
+      attachable: boolean;
+    };
 
-    if (attachments.length > 0) {
-      emailBodyText += '\n\n---\n\nAttached Documents:\n';
-      emailBodyHtml += '<br><br><hr style="margin: 20px 0;"><br><strong>Attached Documents:</strong><br><ul style="margin: 10px 0;">';
-      
-      attachments.forEach((filePath: string) => {
-        const fileName = filePath.split('/').pop() || filePath;
-        const documentUrl = `${req.protocol}://${req.get('host')}${filePath}`;
-        emailBodyText += `\n• ${fileName}: ${documentUrl}`;
-        emailBodyHtml += `<li><a href="${documentUrl}" style="color: #236383;">${fileName}</a></li>`;
-      });
-      
-      emailBodyHtml += '</ul>';
+    const publicAssetsRoot = path.join(process.cwd(), 'public');
+
+    const processedAttachments: ProcessedAttachment[] = attachmentsArray
+      .map((attachment: any) => {
+        const rawPath =
+          typeof attachment === 'string' ? attachment : attachment?.filePath;
+
+        if (!rawPath) {
+          return null;
+        }
+
+        const absolutePath = path.isAbsolute(rawPath)
+          ? rawPath
+          : path.join(process.cwd(), rawPath);
+
+        const normalizedPath = path.normalize(absolutePath);
+        const fileExists = fs.existsSync(normalizedPath);
+
+        if (!fileExists) {
+          logger.warn(`Attachment file not found on disk: ${normalizedPath}`);
+        }
+
+        const fileName =
+          (typeof attachment === 'object' && attachment?.originalName) ||
+          path.basename(normalizedPath);
+
+        let documentUrl: string | null = null;
+        if (normalizedPath.startsWith(publicAssetsRoot)) {
+          const relativePath = normalizedPath
+            .slice(publicAssetsRoot.length)
+            .replace(/\\/g, '/');
+          const urlPath = relativePath.startsWith('/')
+            ? relativePath
+            : `/${relativePath}`;
+          documentUrl = `${req.protocol}://${req.get('host')}${urlPath}`;
+        }
+
+        return {
+          absolutePath: normalizedPath,
+          fileName,
+          documentUrl,
+          attachable: fileExists,
+        } as ProcessedAttachment;
+      })
+      .filter((attachment): attachment is ProcessedAttachment => Boolean(attachment));
+
+    const attachmentsHtmlBlock =
+      processedAttachments.length > 0
+        ? `
+          <div style="margin-top: 24px;">
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;">
+            <h3 style="font-size: 16px; color: #236383; margin-bottom: 12px;">Attached Documents</h3>
+            <ul style="list-style: none; padding-left: 0; margin: 0;">
+              ${processedAttachments
+                .map((attachment) => {
+                  if (attachment.documentUrl) {
+                    return `<li style="margin: 8px 0; font-size: 14px;"><a href="${attachment.documentUrl}" style="color: #236383; text-decoration: none;">${attachment.fileName}</a></li>`;
+                  }
+                  return `<li style="margin: 8px 0; font-size: 14px; color: #333;">${attachment.fileName}</li>`;
+                })
+                .join('')}
+            </ul>
+          </div>
+        `.trim()
+        : '';
+
+    const rawContent = typeof content === 'string' ? content : '';
+    const trimmedContent = rawContent.trim();
+    const isHtmlContent =
+      /^<!DOCTYPE html/i.test(trimmedContent) ||
+      /^<html/i.test(trimmedContent) ||
+      /^<div/i.test(trimmedContent);
+
+    const convertHtmlToPlainText = (html: string) =>
+      html
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<head[\s\S]*?<\/head>/gi, '')
+        .replace(/<br\s*\/?\>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<\/(h[1-6]|div|section|tr)>/gi, '\n')
+        .replace(/<li>/gi, '• ')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+    let emailBodyHtml = isHtmlContent
+      ? trimmedContent
+      : trimmedContent.replace(/\n/g, '<br>');
+    let emailBodyText = isHtmlContent
+      ? convertHtmlToPlainText(trimmedContent)
+      : trimmedContent;
+
+    if (!emailBodyText) {
+      emailBodyText = trimmedContent.replace(/\n{3,}/g, '\n\n');
     }
 
-    // Add compliance footer
+    if (processedAttachments.length > 0) {
+      emailBodyText += '\n\n---\n\nAttached Documents:\n';
+      processedAttachments.forEach((attachment) => {
+        emailBodyText += `• ${attachment.fileName}`;
+        if (attachment.documentUrl) {
+          emailBodyText += `: ${attachment.documentUrl}`;
+        }
+        emailBodyText += '\n';
+      });
+      emailBodyText = emailBodyText.trimEnd();
+    }
+
     emailBodyText += EMAIL_FOOTER_TEXT;
-    emailBodyHtml += EMAIL_FOOTER_HTML;
+
+    if (isHtmlContent) {
+      const snippetForHtmlEmail = `${attachmentsHtmlBlock}${EMAIL_FOOTER_HTML}`;
+      if (snippetForHtmlEmail.trim().length > 0) {
+        const lowerCaseHtml = emailBodyHtml.toLowerCase();
+        const closingBodyIndex = lowerCaseHtml.lastIndexOf('</body>');
+
+        if (closingBodyIndex !== -1) {
+          emailBodyHtml =
+            emailBodyHtml.slice(0, closingBodyIndex) +
+            snippetForHtmlEmail +
+            emailBodyHtml.slice(closingBodyIndex);
+        } else {
+          emailBodyHtml += snippetForHtmlEmail;
+        }
+      }
+    } else {
+      emailBodyHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="margin-bottom: 20px;">
+            ${emailBodyHtml}
+          </div>
+          ${attachmentsHtmlBlock}
+          ${EMAIL_FOOTER_HTML}
+        </div>
+      `;
+    }
+
+    const attachmentsForSendgrid = processedAttachments
+      .filter((attachment) => attachment.attachable)
+      .map((attachment) => ({
+        filePath: attachment.absolutePath,
+        originalName: attachment.fileName,
+      }));
 
     // Determine from and reply-to addresses
     const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'katielong2316@gmail.com';
@@ -3111,13 +3244,8 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
       replyTo: replyToEmail,
       subject,
       text: emailBodyText,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="margin-bottom: 20px;">
-            ${emailBodyHtml}
-          </div>
-        </div>
-      `,
+      html: emailBodyHtml,
+      attachments: attachmentsForSendgrid,
     });
 
     if (!emailSent) {
@@ -3133,7 +3261,7 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
       { 
         recipientEmail, 
         subject, 
-        attachmentsCount: attachments.length 
+        attachmentsCount: processedAttachments.length
       }
     );
 
