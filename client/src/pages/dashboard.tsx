@@ -103,6 +103,7 @@ import TeamAvailability from '@/pages/team-availability';
 import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
 import RouteMapView from '@/pages/route-map';
 import Help from '@/pages/Help';
+import AdminSettings from '@/pages/admin-settings';
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -439,7 +440,7 @@ export default function Dashboard({
       case 'user-management':
         return <UserManagementRedesigned />;
       case 'admin':
-        return <EventRequestAuditLog showFilters data-testid="audit-log" />;
+        return <AdminSettings />;
       case 'help':
         return <Help />;
       default:
