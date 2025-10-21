@@ -93,19 +93,35 @@ const categoryIcons: Record<string, any> = {
 export default function OnboardingChallenge({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [activeTab, setActiveTab] = useState('challenges');
 
-  const { data: challenges = [], refetch: refetchChallenges } = useQuery<Challenge[]>({
+  const { data: challenges = [], isLoading: challengesLoading, error: challengesError, refetch: refetchChallenges } = useQuery<Challenge[]>({
     queryKey: ['/api/onboarding/challenges'],
     queryFn: () => apiRequest('GET', '/api/onboarding/challenges'),
+    enabled: isOpen,
   });
 
-  const { data: stats } = useQuery<UserStats>({
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<UserStats>({
     queryKey: ['/api/onboarding/stats'],
     queryFn: () => apiRequest('GET', '/api/onboarding/stats'),
+    enabled: isOpen,
   });
 
-  const { data: leaderboard = [] } = useQuery<LeaderboardEntry[]>({
+  const { data: leaderboard = [], isLoading: leaderboardLoading, error: leaderboardError } = useQuery<LeaderboardEntry[]>({
     queryKey: ['/api/onboarding/leaderboard'],
     queryFn: () => apiRequest('GET', '/api/onboarding/leaderboard?limit=10'),
+    enabled: isOpen,
+  });
+
+  // Debug logging
+  console.log('OnboardingChallenge:', {
+    challenges: challenges?.length,
+    stats,
+    leaderboard: leaderboard?.length,
+    challengesLoading,
+    statsLoading,
+    leaderboardLoading,
+    challengesError,
+    statsError,
+    leaderboardError
   });
 
   const groupedChallenges = challenges.reduce((acc, challenge) => {
@@ -153,8 +169,34 @@ export default function OnboardingChallenge({ isOpen, onClose }: { isOpen: boole
           </div>
         </DialogHeader>
 
+        {/* Loading State */}
+        {(challengesLoading || statsLoading) && (
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading challenges...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {(challengesError || statsError) && (
+          <div className="p-8 text-center">
+            <div className="text-red-500 mb-4">
+              <AlertCircle className="h-12 w-12 mx-auto mb-2" />
+              <p className="font-semibold">Unable to load challenges</p>
+              <p className="text-sm text-gray-600 mt-2">
+                {challengesError instanceof Error ? challengesError.message : 'Please try again later'}
+              </p>
+            </div>
+            <Button onClick={() => refetchChallenges()} variant="outline">
+              Retry
+            </Button>
+          </div>
+        )}
+
         {/* Stats Summary */}
-        {stats && (
+        {!challengesLoading && !statsLoading && stats && (
           <div className="grid grid-cols-3 gap-4 my-4">
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
               <CardContent className="pt-6">
@@ -206,22 +248,32 @@ export default function OnboardingChallenge({ isOpen, onClose }: { isOpen: boole
           </div>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="challenges">
-              <Zap className="h-4 w-4 mr-2" />
-              Challenges
-            </TabsTrigger>
-            <TabsTrigger value="leaderboard">
-              <Award className="h-4 w-4 mr-2" />
-              Leaderboard
-            </TabsTrigger>
-          </TabsList>
+        {!challengesLoading && !statsLoading && !challengesError && !statsError && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="challenges">
+                <Zap className="h-4 w-4 mr-2" />
+                Challenges
+              </TabsTrigger>
+              <TabsTrigger value="leaderboard">
+                <Award className="h-4 w-4 mr-2" />
+                Leaderboard
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="challenges" className="flex-1 min-h-0">
-            <ScrollArea className="h-[500px] pr-4">
-              <div className="space-y-6">
-                {Object.entries(groupedChallenges).map(([category, categoryChallenges]) => {
+            <TabsContent value="challenges" className="flex-1 min-h-0">
+              {challenges.length === 0 ? (
+                <div className="flex items-center justify-center p-8 text-gray-500">
+                  <div className="text-center">
+                    <Trophy className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p className="font-semibold">No challenges available</p>
+                    <p className="text-sm mt-2">Check back soon for new challenges!</p>
+                  </div>
+                </div>
+              ) : (
+                <ScrollArea className="h-[500px] pr-4">
+                  <div className="space-y-6">
+                    {Object.entries(groupedChallenges).map(([category, categoryChallenges]) => {
                   const CategoryIcon = categoryIcons[category] || Circle;
                   const completedCount = categoryChallenges.filter(c => c.isCompleted).length;
 
@@ -298,11 +350,12 @@ export default function OnboardingChallenge({ isOpen, onClose }: { isOpen: boole
                     </div>
                   );
                 })}
-              </div>
-            </ScrollArea>
-          </TabsContent>
+                  </div>
+                </ScrollArea>
+              )}
+            </TabsContent>
 
-          <TabsContent value="leaderboard" className="flex-1 min-h-0">
+            <TabsContent value="leaderboard" className="flex-1 min-h-0">
             <ScrollArea className="h-[500px]">
               <div className="space-y-2">
                 {leaderboard.map((entry) => (
@@ -348,9 +401,10 @@ export default function OnboardingChallenge({ isOpen, onClose }: { isOpen: boole
             </ScrollArea>
           </TabsContent>
         </Tabs>
+        )}
 
         {/* Progress Bar */}
-        {stats && (
+        {!challengesLoading && !statsLoading && stats && (
           <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">
