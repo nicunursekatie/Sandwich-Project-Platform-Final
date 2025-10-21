@@ -227,214 +227,118 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Sandwich Project - Event Information</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', Arial, sans-serif;
-            background-color: #f5f5f5;
-        }
-        
-        .email-container {
-            max-width: 600px;
-            margin: 40px auto;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #007E8C 0%, #47B3CB 100%);
-            padding: 40px 30px;
-            text-align: center;
-            color: white;
-        }
-        
-        .header h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 700;
-        }
-        
-        .content {
-            padding: 40px 30px;
-            color: #333;
-            line-height: 1.7;
-        }
-        
-        .greeting {
-            font-size: 18px;
-            margin-bottom: 20px;
-        }
-        
-        .greeting p {
-            font-size: 18px;
-        }
-        
-        .section {
-            margin: 30px 0;
-            padding: 25px;
-            background: #f9f9f9;
-            border-left: 4px solid #FBAD3F;
-            border-radius: 8px;
-        }
-        
-        .section h2 {
-            margin: 0 0 15px 0;
-            color: #236383;
-            font-size: 20px;
-            font-weight: 700;
-        }
-        
-        .section ul {
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-        
-        .section li {
-            margin: 10px 0;
-            color: #444;
-            font-size: 16px;
-        }
-        
-        .highlight-box {
-            background: linear-gradient(135deg, #236383 0%, #007E8C 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 25px 0;
-            text-align: center;
-        }
-        
-        .highlight-box p {
-            margin: 5px 0;
-            font-size: 17px;
-        }
-        
-        .cta-button {
-            display: inline-block;
-            background: #FBAD3F;
-            color: #333 !important;
-            padding: 14px 30px;
-            text-decoration: none !important;
-            border-radius: 6px;
-            font-weight: 600;
-            margin: 20px 10px;
-            transition: transform 0.2s;
-            font-size: 16px;
-        }
-        
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(251, 173, 63, 0.4);
-        }
-        
-        .cta-button.secondary {
-            background: #47B3CB;
-            color: white !important;
-        }
-        
-        .cta-button.secondary:hover {
-            box-shadow: 0 4px 12px rgba(71, 179, 203, 0.4);
-        }
-        
-        .footer {
-            background: #236383;
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .footer p {
-            margin: 5px 0;
-        }
-        
-        .footer a {
-            color: #47B3CB;
-            text-decoration: none;
-        }
-        
-        .accent-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #FBAD3F;
-            border-radius: 50%;
-            margin: 0 5px;
-        }
-    </style>
 </head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <h1>🥪 The Sandwich Project</h1>
-        </div>
-        
-        <div class="content">
-            <div class="greeting">
-                <p>Hi ${eventRequest.firstName},</p>
-                <p>Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Please visit our <strong>Event Toolkit website</strong> below to access everything you need to plan your sandwich-making event, including food safety guides, sandwich-making instructions, printable labels, and more.</p>
-            </div>
-            
-            <center>
-                <a href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html" class="cta-button secondary" target="_blank">📦 View Event Toolkit</a>
-                <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" class="cta-button secondary" target="_blank">🧮 Budget & Shopping Planner</a>
-            </center>
-            
-            <div class="section">
-                <h2>📅 Event Scheduling</h2>
-                <ul>
-                    <li><strong>Groups may host events on any day of the week</strong> if making 200+ sandwiches.</li>
-                    <li><strong>If you have flexibility with your date</strong>, let us know! We can suggest times when sandwiches are especially needed.</li>
-                    <li><strong>We appreciate at least two weeks' notice when possible</strong>—it helps us coordinate drivers and resources.</li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <h2>🚗 Transportation</h2>
-                <ul>
-                    <li>We provide transportation for <strong>200+ deli sandwiches</strong> and for larger amounts of PBJs (based on volunteer driver availability).</li>
-                    <li>If you're located outside our host home radius, we would be happy to discuss delivery options with you.</li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <h2>🧤 Food Safety Reminders</h2>
-                <ul>
-                    <li>A <strong>refrigerator is required</strong> to make deli sandwiches so that meat, cheese, and sandwiches are always cold.</li>
-                    <li>Food-safe gloves must be worn.</li>
-                    <li>Hair should be tied back or in a hairnet.</li>
-                    <li>Sandwiches must be made indoors.</li>
-                    <li>We provide food to vulnerable populations, so please read and follow all safety rules.</li>
-                </ul>
-                <p style="margin-top: 15px; padding: 15px; background: #fff7e6; border-left: 3px solid #FBAD3F; border-radius: 4px; font-size: 15px; color: #333;">
-                    <strong>📝 Labeling Tip:</strong> The printable labels in the toolkit are intended to go on the <strong>outside of each bag</strong> containing a loaf of sandwiches.
-                </p>
-            </div>
-            
-            <div class="highlight-box">
-                <p><strong>Ready to get started?</strong></p>
-                <p>Once you have reviewed everything, we would love to connect!</p>
-            </div>
-            
-            <center>
-                <a href="https://thesandwichproject.as.me/" class="cta-button" target="_blank">Schedule a Planning Call</a>
-            </center>
-            
-            <p style="margin-top: 30px; text-align: center;">We look forward to working with you!</p>
-        </div>
-        
-        <div class="footer">
-            <p><strong>Warmly,</strong></p>
-            <p><span class="accent-dot"></span></p>
-            <p><strong>${userName}</strong></p>
-            <p><a href="mailto:${userEmail}">${userEmail}</a></p>
-            ${userPhone ? `<p>${userPhone}</p>` : ''}
-        </div>
-    </div>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #007E8C; padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">🥪 The Sandwich Project</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
+                            <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
+                            <p style="font-size: 18px; margin: 0 0 30px 0;">Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Please visit our <strong>Event Toolkit website</strong> below to access everything you need to plan your sandwich-making event, including food safety guides, sandwich-making instructions, printable labels, and more.</p>
+                            
+                            <!-- CTA Buttons -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td align="center" style="padding: 20px 0;">
+                                        <a href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">📦 View Event Toolkit</a>
+                                        <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Section: Event Scheduling -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 25px; background-color: #f9f9f9; border-left: 4px solid #FBAD3F;">
+                                        <h2 style="margin: 0 0 15px 0; color: #236383; font-size: 20px; font-weight: bold;">📅 Event Scheduling</h2>
+                                        <ul style="margin: 10px 0; padding-left: 20px;">
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;"><strong>Groups may host events on any day of the week</strong> if making 200+ sandwiches.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;"><strong>If you have flexibility with your date</strong>, let us know! We can suggest times when sandwiches are especially needed.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;"><strong>We appreciate at least two weeks' notice when possible</strong>—it helps us coordinate drivers and resources.</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Section: Transportation -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 25px; background-color: #f9f9f9; border-left: 4px solid #FBAD3F;">
+                                        <h2 style="margin: 0 0 15px 0; color: #236383; font-size: 20px; font-weight: bold;">🚗 Transportation</h2>
+                                        <ul style="margin: 10px 0; padding-left: 20px;">
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">We provide transportation for <strong>200+ deli sandwiches</strong> and for larger amounts of PBJs (based on volunteer driver availability).</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">If you're located outside our host home radius, we would be happy to discuss delivery options with you.</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Section: Food Safety -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 25px; background-color: #f9f9f9; border-left: 4px solid #FBAD3F;">
+                                        <h2 style="margin: 0 0 15px 0; color: #236383; font-size: 20px; font-weight: bold;">🧤 Food Safety Reminders</h2>
+                                        <ul style="margin: 10px 0; padding-left: 20px;">
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">A <strong>refrigerator is required</strong> to make deli sandwiches so that meat, cheese, and sandwiches are always cold.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">Food-safe gloves must be worn.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">Hair should be tied back or in a hairnet.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">Sandwiches must be made indoors.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">We provide food to vulnerable populations, so please read and follow all safety rules.</li>
+                                        </ul>
+                                        <p style="margin-top: 15px; padding: 15px; background-color: #fff7e6; border-left: 3px solid #FBAD3F; font-size: 15px; color: #333333;">
+                                            <strong>📝 Labeling Tip:</strong> The printable labels in the toolkit are intended to go on the <strong>outside of each bag</strong> containing a loaf of sandwiches.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Highlight Box -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 25px 0;">
+                                <tr>
+                                    <td style="background-color: #236383; color: #ffffff; padding: 20px; text-align: center;">
+                                        <p style="margin: 5px 0; font-size: 17px;"><strong>Ready to get started?</strong></p>
+                                        <p style="margin: 5px 0; font-size: 17px;">Once you have reviewed everything, we would love to connect!</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Schedule Button -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td align="center" style="padding: 20px 0;">
+                                        <a href="https://thesandwichproject.as.me/" style="display: inline-block; background-color: #FBAD3F; color: #333333; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Schedule a Planning Call</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p style="margin-top: 30px; text-align: center; font-size: 16px;">We look forward to working with you!</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #236383; color: #ffffff; padding: 30px; text-align: center;">
+                            <p style="margin: 5px 0;"><strong>Warmly,</strong></p>
+                            <p style="margin: 10px 0;">●</p>
+                            <p style="margin: 5px 0;"><strong>${userName}</strong></p>
+                            <p style="margin: 5px 0;"><a href="mailto:${userEmail}" style="color: #47B3CB; text-decoration: none;">${userEmail}</a></p>
+                            ${userPhone ? `<p style="margin: 5px 0;">${userPhone}</p>` : ''}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>`;
 
@@ -451,210 +355,109 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Sandwich Project - Event Information</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', Arial, sans-serif;
-            background-color: #f5f5f5;
-        }
-        
-        .email-container {
-            max-width: 600px;
-            margin: 40px auto;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #007E8C 0%, #47B3CB 100%);
-            padding: 40px 30px;
-            text-align: center;
-            color: white;
-        }
-        
-        .header h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 700;
-        }
-        
-        .content {
-            padding: 40px 30px;
-            color: #333;
-            line-height: 1.7;
-        }
-        
-        .greeting {
-            font-size: 18px;
-            margin-bottom: 20px;
-        }
-        
-        .greeting p {
-            font-size: 18px;
-        }
-        
-        .section {
-            margin: 30px 0;
-            padding: 25px;
-            background: #f9f9f9;
-            border-left: 4px solid #FBAD3F;
-            border-radius: 8px;
-        }
-        
-        .section h2 {
-            margin: 0 0 15px 0;
-            color: #236383;
-            font-size: 20px;
-            font-weight: 700;
-        }
-        
-        .section ul {
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-        
-        .section li {
-            margin: 10px 0;
-            color: #444;
-            font-size: 16px;
-        }
-        
-        .highlight-box {
-            background: linear-gradient(135deg, #236383 0%, #007E8C 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 25px 0;
-            text-align: center;
-        }
-        
-        .highlight-box p {
-            margin: 5px 0;
-            font-size: 17px;
-        }
-        
-        .cta-button {
-            display: inline-block;
-            background: #FBAD3F;
-            color: #333 !important;
-            padding: 14px 30px;
-            text-decoration: none !important;
-            border-radius: 6px;
-            font-weight: 600;
-            margin: 20px 10px;
-            transition: transform 0.2s;
-            font-size: 16px;
-        }
-        
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(251, 173, 63, 0.4);
-        }
-        
-        .cta-button.secondary {
-            background: #47B3CB;
-            color: white !important;
-        }
-        
-        .cta-button.secondary:hover {
-            box-shadow: 0 4px 12px rgba(71, 179, 203, 0.4);
-        }
-        
-        .footer {
-            background: #236383;
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .footer p {
-            margin: 5px 0;
-        }
-        
-        .footer a {
-            color: #47B3CB;
-            text-decoration: none;
-        }
-        
-        .accent-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #FBAD3F;
-            border-radius: 50%;
-            margin: 0 5px;
-        }
-    </style>
 </head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <h1>🥪 The Sandwich Project</h1>
-        </div>
-        
-        <div class="content">
-            <div class="greeting">
-                <p>Hi ${eventRequest.firstName},</p>
-                <p>Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Please visit our <strong>Event Toolkit website</strong> below to access everything you need to plan your sandwich-making event, including food safety guides, sandwich-making instructions, printable labels, and more.</p>
-            </div>
-            
-            <center>
-                <a href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html" class="cta-button secondary" target="_blank">📦 View Event Toolkit</a>
-                <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" class="cta-button secondary" target="_blank">🧮 Budget & Shopping Planner</a>
-            </center>
-            
-            <div class="section">
-                <h2>📅 Event Scheduling</h2>
-                <ul>
-                    <li><strong>Groups may host events on any day of the week</strong> if making 200+ sandwiches.</li>
-                    <li><strong>If you have flexibility with your date</strong>, let us know! We can suggest times when sandwiches are especially needed.</li>
-                    <li><strong>We appreciate at least two weeks' notice when possible</strong>—it helps us coordinate drivers and resources.</li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <h2>🚗 Transportation</h2>
-                <ul>
-                    <li>We provide transportation for <strong>200+ deli sandwiches</strong> and for larger amounts of PBJs (based on volunteer driver availability).</li>
-                    <li>If you're located outside our host home radius, we would be happy to discuss delivery options with you.</li>
-                </ul>
-            </div>
-            
-            <div class="section">
-                <h2>🧤 Food Safety Reminders</h2>
-                <ul>
-                    <li>A <strong>refrigerator is required</strong> to make deli sandwiches so that meat, cheese, and sandwiches are always cold.</li>
-                    <li>Food-safe gloves must be worn.</li>
-                    <li>Hair should be tied back or in a hairnet.</li>
-                    <li>Sandwiches must be made indoors.</li>
-                    <li>We provide food to vulnerable populations, so please read and follow all safety rules.</li>
-                </ul>
-                <p style="margin-top: 15px; padding: 15px; background: #fff7e6; border-left: 3px solid #FBAD3F; border-radius: 4px; font-size: 15px; color: #333;">
-                    <strong>📝 Labeling Tip:</strong> Labels go on the <strong>outside of each bag</strong> containing a loaf of sandwiches—not on individual sandwiches.
-                </p>
-            </div>
-            
-            <div class="highlight-box">
-                <p><strong>Ready to get started?</strong></p>
-                <p>Once you have reviewed everything, please reply to this email with a few times that work for you and we'll schedule a planning call.</p>
-            </div>
-            
-            <p style="margin-top: 30px; text-align: center;">We look forward to working with you!</p>
-        </div>
-        
-        <div class="footer">
-            <p><strong>Warmly,</strong></p>
-            <p><span class="accent-dot"></span></p>
-            <p><strong>${userName}</strong></p>
-            <p><a href="mailto:${userEmail}">${userEmail}</a></p>
-            ${userPhone ? `<p>${userPhone}</p>` : ''}
-        </div>
-    </div>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #007E8C; padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">🥪 The Sandwich Project</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
+                            <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
+                            <p style="font-size: 18px; margin: 0 0 30px 0;">Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Please visit our <strong>Event Toolkit website</strong> below to access everything you need to plan your sandwich-making event, including food safety guides, sandwich-making instructions, printable labels, and more.</p>
+                            
+                            <!-- CTA Buttons -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr>
+                                    <td align="center" style="padding: 20px 0;">
+                                        <a href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">📦 View Event Toolkit</a>
+                                        <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Section: Event Scheduling -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 25px; background-color: #f9f9f9; border-left: 4px solid #FBAD3F;">
+                                        <h2 style="margin: 0 0 15px 0; color: #236383; font-size: 20px; font-weight: bold;">📅 Event Scheduling</h2>
+                                        <ul style="margin: 10px 0; padding-left: 20px;">
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;"><strong>Groups may host events on any day of the week</strong> if making 200+ sandwiches.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;"><strong>If you have flexibility with your date</strong>, let us know! We can suggest times when sandwiches are especially needed.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;"><strong>We appreciate at least two weeks' notice when possible</strong>—it helps us coordinate drivers and resources.</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Section: Transportation -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 25px; background-color: #f9f9f9; border-left: 4px solid #FBAD3F;">
+                                        <h2 style="margin: 0 0 15px 0; color: #236383; font-size: 20px; font-weight: bold;">🚗 Transportation</h2>
+                                        <ul style="margin: 10px 0; padding-left: 20px;">
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">We provide transportation for <strong>200+ deli sandwiches</strong> and for larger amounts of PBJs (based on volunteer driver availability).</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">If you're located outside our host home radius, we would be happy to discuss delivery options with you.</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Section: Food Safety -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="padding: 25px; background-color: #f9f9f9; border-left: 4px solid #FBAD3F;">
+                                        <h2 style="margin: 0 0 15px 0; color: #236383; font-size: 20px; font-weight: bold;">🧤 Food Safety Reminders</h2>
+                                        <ul style="margin: 10px 0; padding-left: 20px;">
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">A <strong>refrigerator is required</strong> to make deli sandwiches so that meat, cheese, and sandwiches are always cold.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">Food-safe gloves must be worn.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">Hair should be tied back or in a hairnet.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">Sandwiches must be made indoors.</li>
+                                            <li style="margin: 10px 0; color: #444444; font-size: 16px;">We provide food to vulnerable populations, so please read and follow all safety rules.</li>
+                                        </ul>
+                                        <p style="margin-top: 15px; padding: 15px; background-color: #fff7e6; border-left: 3px solid #FBAD3F; font-size: 15px; color: #333333;">
+                                            <strong>📝 Labeling Tip:</strong> Labels go on the <strong>outside of each bag</strong> containing a loaf of sandwiches—not on individual sandwiches.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Highlight Box -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 25px 0;">
+                                <tr>
+                                    <td style="background-color: #236383; color: #ffffff; padding: 20px; text-align: center;">
+                                        <p style="margin: 5px 0; font-size: 17px;"><strong>Ready to get started?</strong></p>
+                                        <p style="margin: 5px 0; font-size: 17px;">Once you have reviewed everything, please reply to this email with a few times that work for you and we'll schedule a planning call.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p style="margin-top: 30px; text-align: center; font-size: 16px;">We look forward to working with you!</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #236383; color: #ffffff; padding: 30px; text-align: center;">
+                            <p style="margin: 5px 0;"><strong>Warmly,</strong></p>
+                            <p style="margin: 10px 0;">●</p>
+                            <p style="margin: 5px 0;"><strong>${userName}</strong></p>
+                            <p style="margin: 5px 0;"><a href="mailto:${userEmail}" style="color: #47B3CB; text-decoration: none;">${userEmail}</a></p>
+                            ${userPhone ? `<p style="margin: 5px 0;">${userPhone}</p>` : ''}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>`;
 
