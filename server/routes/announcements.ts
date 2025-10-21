@@ -20,10 +20,3 @@ export function createAnnouncementsRouter(deps: RouterDependencies) {
 
   return router;
 }
-
-  app.use('/api/announcements', router);
-}
-
-export default {
-  getAnnouncements,
-};
