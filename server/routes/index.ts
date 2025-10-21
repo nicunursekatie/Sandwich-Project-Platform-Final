@@ -9,6 +9,7 @@ import tasksRouter from './tasks';
 import collectionsRouter from './collections';
 import recipientsRouter from './recipients';
 import createMeetingsRouter from './meetings/index';
+import meetingNotesRouter from './meeting-notes';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
 import importCollectionsRouter from './import-collections';
@@ -200,6 +201,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     meetingsRouter
   );
   router.use('/api/meetings', createErrorHandler('meetings'));
+
+  router.use(
+    '/api/meeting-notes',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    meetingNotesRouter
+  );
+  router.use('/api/meeting-notes', createErrorHandler('meeting-notes'));
 
   router.use(
     '/api/drive-links',
