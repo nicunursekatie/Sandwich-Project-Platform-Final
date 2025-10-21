@@ -4,7 +4,43 @@
 This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support organizational growth, with a vision to become a vital tool for food security initiatives by scaling operations and improving outreach to reduce food waste and hunger.
 
 ## Recent Changes
-**October 21, 2025** - Updated event email templates to link to toolkit website (https://nicunursekatie.github.io/sandwichinventory/toolkit.html) instead of attaching files. Email now includes prominent "View Event Toolkit" button for easy access to food safety guides, sandwich-making instructions, and printable labels.
+**October 21, 2025** - Fixed event email system: Configured SendGrid to send from verified domain (katie@thesandwichproject.org) instead of Gmail to prevent spam filtering. Rebuilt HTML email templates using table-based layouts with inline styles for proper rendering in all email clients (Gmail, Outlook, mobile). Templates reference attached PDF toolkit files (5 PDFs from cloud storage) plus Budget & Shopping Planner link.
+
+## Email System Configuration
+**CRITICAL: DO NOT MODIFY WITHOUT REVIEWING THIS SECTION**
+
+### SendGrid Setup
+- **From Address**: `katie@thesandwichproject.org` (configured in `SENDGRID_FROM_EMAIL` environment variable)
+- **Domain**: `thesandwichproject.org` is verified in SendGrid with SPF/DKIM records
+- **Never use Gmail addresses** (`katielong2316@gmail.com`) for organizational sending - they trigger spam filters
+
+### Email Templates (client/src/components/event-email-composer.tsx)
+**Template Structure:**
+- Uses **table-based HTML layouts** with **inline CSS styles** (NOT external stylesheets or CSS classes)
+- NO `@import` fonts, NO `linear-gradient`, NO class-based styling
+- Email clients (Gmail, Outlook) strip out `<style>` blocks and external CSS
+- All styling must be inline: `style="padding: 20px; background-color: #007E8C;"`
+
+**Template Content - MUST reference attachments:**
+- Opening: "Attached you'll find a toolkit (everything you need to plan a sandwich-making event)..."
+- Single button: "Budget & Shopping Planner" (links to inventorycalculator.html)
+- Labeling tip: "The attached PDF for labels are intended to go on the **outside of each bag**"
+- DO NOT say "Visit our Event Toolkit website" or include "View Event Toolkit" button
+- DO reference the **5 attached PDFs** from cloud storage
+
+**Attachments:**
+- Food Safety Guide for Volunteers.pdf
+- PBJ Sandwich Making 101.pdf
+- Deli Sandwich Making 101.pdf
+- Deli Sandwich Labels.pdf
+- PBJ Sandwich Labels.pdf
+- All files stored in Replit Object Storage (Google Cloud Storage backend), NOT local filesystem
+- Files pulled from cloud storage in `server/routes/email-routes.ts` and attached to SendGrid emails
+
+**Why This Matters:**
+- Modern CSS doesn't work in email clients - they strip it out leaving ugly unstyled text
+- Sending from Gmail addresses flags emails as spam
+- Referencing website instead of attachments caused hours of confusion about attachment availability
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
