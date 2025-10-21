@@ -11,7 +11,7 @@
     "check:routes": "node scripts/check-legacy-routes.js",
     "db:push": "drizzle-kit push",
     "test": "jest",
-    "test:integration": "jest --config tests/integration/jest.config.js"
+    "test:integration": "jest --config tests/integration/jest.config.cjs"
   },
   "dependencies": {
     "@esbuild/linux-x64": "^0.25.10",

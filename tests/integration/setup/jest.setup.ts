@@ -10,28 +10,16 @@ process.env.SESSION_SECRET = 'test-secret';
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/test';
 
 // Increase timeout for integration tests
-jest.setTimeout(10000);
+// jest.setTimeout(10000);  // Comment out for now - can be set in individual tests
 
 // Mock external services if needed
-beforeAll(() => {
-  // Mock SendGrid email service
-  jest.mock('@sendgrid/mail', () => ({
-    setApiKey: jest.fn(),
-    send: jest.fn().mockResolvedValue([{ statusCode: 202 }]),
-  }));
-
-  // Mock Google services if needed
-  jest.mock('googleapis', () => ({
-    google: {
-      auth: {
-        GoogleAuth: jest.fn(),
-      },
-    },
-  }));
-});
+// beforeAll(() => {
+//   // Mock SendGrid email service if needed
+//   // Mock Google services if needed
+// });
 
 // Clean up after all tests
-afterAll(async () => {
-  // Close database connections
-  // await db.end();
-});
+// afterAll(async () => {
+//   // Close database connections
+//   // await db.end();
+// });
