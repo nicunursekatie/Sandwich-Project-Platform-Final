@@ -13,6 +13,7 @@ import {
 import { StreamChat, Channel as ChannelType } from 'stream-chat';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   Hash,
   Shield,
@@ -41,6 +42,7 @@ const CHAT_ROOMS = [
 
 export default function StreamChatRooms() {
   const { user } = useAuth();
+  const { track } = useOnboardingTracker();
   const [client, setClient] = useState<StreamChat | null>(null);
   const [activeChannel, setActiveChannel] = useState<ChannelType | null>(null);
   const [userRooms, setUserRooms] = useState<typeof CHAT_ROOMS>([]);
@@ -77,6 +79,14 @@ export default function StreamChatRooms() {
           },
           userToken
         );
+
+        // Listen for new messages from this user to track challenge completion
+        chatClient.on('message.new', (event) => {
+          // Only track if it's the current user sending the message
+          if (event.user?.id === streamUserId) {
+            track('chat_first_message');
+          }
+        });
 
         setClient(chatClient);
 
