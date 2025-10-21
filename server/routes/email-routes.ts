@@ -513,27 +513,41 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
       textContent = content;
     }
 
-    // Process attachments - fetch document metadata if attachments are document IDs
+    // Process attachments - handle both document IDs and file paths
     let processedAttachments = [];
     if (attachments && attachments.length > 0) {
-      const docIds = attachments
-        .map(a => typeof a === 'string' ? parseInt(a) : a)
-        .filter(id => !isNaN(id));
+      const path = await import('path');
       
-      if (docIds.length > 0) {
-        const docs = await db
-          .select({
-            id: documents.id,
-            filePath: documents.filePath,
-            originalName: documents.originalName,
-          })
-          .from(documents)
-          .where(inArray(documents.id, docIds));
+      for (const attachment of attachments) {
+        // Check if it's a document ID (number) or file path (string)
+        const docId = typeof attachment === 'string' ? parseInt(attachment) : attachment;
         
-        processedAttachments = docs.map(doc => ({
-          filePath: doc.filePath,
-          originalName: doc.originalName || undefined,
-        }));
+        if (!isNaN(docId)) {
+          // It's a document ID - fetch from database
+          const docs = await db
+            .select({
+              id: documents.id,
+              filePath: documents.filePath,
+              originalName: documents.originalName,
+            })
+            .from(documents)
+            .where(inArray(documents.id, [docId]));
+          
+          if (docs.length > 0) {
+            processedAttachments.push({
+              filePath: docs[0].filePath,
+              originalName: docs[0].originalName || undefined,
+            });
+          }
+        } else if (typeof attachment === 'string' && attachment.startsWith('/uploads/')) {
+          // It's a file path - use directly
+          const absolutePath = path.join(process.cwd(), attachment);
+          const fileName = path.basename(attachment);
+          processedAttachments.push({
+            filePath: absolutePath,
+            originalName: fileName,
+          });
+        }
       }
     }
 
