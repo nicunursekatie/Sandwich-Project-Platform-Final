@@ -19,10 +19,11 @@ notificationsRouter.use('/smart', smartNotificationsRouter);
 // Mount analytics routes
 notificationsRouter.use('/analytics', analyticsRouter);
 
-// Mount test routes (remove in production)
+// Mount test routes (remove in production) - moved to async initialization
 if (process.env.NODE_ENV === 'development') {
-  const { testRouter } = await import('./test-endpoints');
-  notificationsRouter.use('/test', testRouter);
+  import('./test-endpoints').then(({ testRouter }) => {
+    notificationsRouter.use('/test', testRouter);
+  }).catch(err => console.error('Failed to load test endpoints:', err));
 }
 
 // Get notifications for current user
