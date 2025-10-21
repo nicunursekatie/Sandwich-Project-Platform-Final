@@ -344,7 +344,7 @@ export default function SandwichCollectionLog() {
           'Fetching all data for filtering with filters:',
           debouncedSearchFilters
         );
-        const response = await fetch('/api/sandwich-collections?limit=1000');
+        const response = await fetch('/api/sandwich-collections?limit=5000');
         if (!response.ok) throw new Error('Failed to fetch collections');
         const data = await response.json();
 
