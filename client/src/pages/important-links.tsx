@@ -29,6 +29,8 @@ export default function ImportantLinks() {
     'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
   const eventEstimatorUrl =
     'https://nicunursekatie.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html';
+  const eventToolkitUrl =
+    'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
 
   // Events Google Sheet (published version)
   const eventsEmbedUrl =
@@ -133,8 +135,11 @@ export default function ImportantLinks() {
         </p>
       </div>
 
-      <Tabs defaultValue="calculator" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="toolkit" className="flex-1 flex flex-col">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="toolkit" className="flex items-center gap-2">
+            📦 Event Toolkit
+          </TabsTrigger>
           <TabsTrigger value="calculator" className="flex items-center gap-2">
             <Calculator className="h-4 w-4" />
             Inventory Calculator
@@ -147,6 +152,74 @@ export default function ImportantLinks() {
             Historical Collections Record
           </TabsTrigger>
         </TabsList>
+
+        {/* Event Toolkit Tab */}
+        <TabsContent value="toolkit" className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                📦 Event Toolkit for Volunteers
+              </CardTitle>
+              <CardDescription>
+                Everything volunteers need to plan and host a sandwich-making event - share this with anyone making sandwiches
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+              <div className="space-y-4 flex-1 flex flex-col">
+                <div className="flex gap-3">
+                  <Button
+                    size="lg"
+                    onClick={() => window.open(eventToolkitUrl, '_blank')}
+                    className="bg-brand-orange hover:bg-orange-600 text-white font-semibold px-8 py-3 text-base flex-1"
+                  >
+                    <ExternalLink className="w-5 h-5 mr-2" />
+                    Open Event Toolkit
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(eventToolkitUrl);
+                        alert('Link copied to clipboard!');
+                      } catch (error) {
+                        console.error('Failed to copy:', error);
+                      }
+                    }}
+                    className="border-brand-orange text-brand-orange hover:bg-orange-50 px-6 py-3 font-medium"
+                  >
+                    📋 Copy Link
+                  </Button>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-900 mb-2">Shareable Link:</h3>
+                  <code className="text-sm bg-white px-3 py-2 rounded border border-blue-200 block break-all">
+                    {eventToolkitUrl}
+                  </code>
+                  <p className="text-sm text-blue-700 mt-2">
+                    Share this link with schools, churches, community groups, and individuals making sandwiches
+                  </p>
+                </div>
+
+                {/* Embedded Toolkit */}
+                <div className="border rounded-lg overflow-hidden flex-1">
+                  <iframe
+                    src={eventToolkitUrl}
+                    className="w-full h-full border-0"
+                    style={{
+                      minHeight: '800px',
+                      height: '100%',
+                    }}
+                    title="Event Toolkit"
+                    loading="eager"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Inventory Calculator Tab */}
         <TabsContent value="calculator" className="flex-1 flex flex-col">

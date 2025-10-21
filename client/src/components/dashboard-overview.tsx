@@ -120,6 +120,29 @@ export default function DashboardOverview({
     }
   };
 
+  const handleShareEventToolkit = async () => {
+    const url = 'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
+    const title = 'Event Toolkit for Volunteers';
+    const text =
+      'Everything you need to plan and host a sandwich-making event - includes safety guides, instructions, and labels';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text,
+          url,
+        });
+      } catch (error) {
+        // User cancelled the share or error occurred, fallback to clipboard
+        handleCopyLink(url);
+      }
+    } else {
+      // Fallback to clipboard for browsers that don't support Web Share API
+      handleCopyLink(url);
+    }
+  };
+
   const handleCopyLink = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
@@ -593,6 +616,47 @@ export default function DashboardOverview({
               >
                 <Share2 className="w-5 h-5 mr-2" />
                 Share Tool
+              </Button>
+            </div>
+          </div>
+
+          {/* Event Toolkit - Share with volunteers */}
+          <div className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-orange/20 mb-6">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-brand-orange rounded-lg flex items-center justify-center mr-4">
+                <span className="text-2xl">📦</span>
+              </div>
+              <div>
+                <h4 className="text-xl font-bold text-brand-orange mb-1">
+                  Event Toolkit for Volunteers
+                </h4>
+                <p className="text-gray-600">
+                  Share with anyone making sandwiches - includes guides and labels
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                size="lg"
+                onClick={() =>
+                  window.open(
+                    'https://nicunursekatie.github.io/sandwichinventory/toolkit.html',
+                    '_blank'
+                  )
+                }
+                className="bg-brand-orange hover:bg-orange-600 text-white font-semibold px-8 py-3 text-base flex-1"
+              >
+                <ExternalLink className="w-5 h-5 mr-2" />
+                Open Event Toolkit
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleShareEventToolkit}
+                className="border-brand-orange text-brand-orange hover:bg-orange-50 px-6 py-3 font-medium"
+              >
+                <Share2 className="w-5 h-5 mr-2" />
+                Share Toolkit
               </Button>
             </div>
           </div>
