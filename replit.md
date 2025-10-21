@@ -3,6 +3,9 @@
 ## Overview
 This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support organizational growth, with a vision to become a vital tool for food security initiatives by scaling operations and improving outreach to reduce food waste and hunger.
 
+## Recent Changes
+**October 21, 2025** - Updated event email templates to link to toolkit website (https://nicunursekatie.github.io/sandwichinventory/toolkit.html) instead of attaching files. Email now includes prominent "View Event Toolkit" button for easy access to food safety guides, sandwich-making instructions, and printable labels.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 UI Design: Button labels and interface text must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data".

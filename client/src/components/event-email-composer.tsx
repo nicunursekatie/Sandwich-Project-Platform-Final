@@ -203,6 +203,7 @@ https://thesandwichproject.as.me/
 
       plainTextContent += `In the meantime, here are some helpful resources:
 
+- Event Toolkit (food safety guides, labels, instructions): https://nicunursekatie.github.io/sandwichinventory/toolkit.html
 - Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
 - We typically serve groups of 50-200 people
 - Events usually last 1-2 hours
@@ -375,11 +376,12 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
         <div class="content">
             <div class="greeting">
                 <p>Hi ${eventRequest.firstName},</p>
-                <p>Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources.</p>
+                <p>Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Please visit our <strong>Event Toolkit website</strong> below to access everything you need to plan your sandwich-making event, including food safety guides, sandwich-making instructions, printable labels, and more.</p>
             </div>
             
             <center>
-                <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" class="cta-button secondary" target="_blank">Budget & Shopping Planner</a>
+                <a href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html" class="cta-button secondary" target="_blank">📦 View Event Toolkit</a>
+                <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" class="cta-button secondary" target="_blank">🧮 Budget & Shopping Planner</a>
             </center>
             
             <div class="section">
@@ -409,7 +411,7 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
                     <li>We provide food to vulnerable populations, so please read and follow all safety rules.</li>
                 </ul>
                 <p style="margin-top: 15px; padding: 15px; background: #fff7e6; border-left: 3px solid #FBAD3F; border-radius: 4px; font-size: 15px; color: #333;">
-                    <strong>📝 Labeling Tip:</strong> The attached PDF for labels are intended to go on the <strong>outside of each bag</strong> containing a loaf of sandwiches.
+                    <strong>📝 Labeling Tip:</strong> The printable labels in the toolkit are intended to go on the <strong>outside of each bag</strong> containing a loaf of sandwiches.
                 </p>
             </div>
             
@@ -598,11 +600,12 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
         <div class="content">
             <div class="greeting">
                 <p>Hi ${eventRequest.firstName},</p>
-                <p>Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources.</p>
+                <p>Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Please visit our <strong>Event Toolkit website</strong> below to access everything you need to plan your sandwich-making event, including food safety guides, sandwich-making instructions, printable labels, and more.</p>
             </div>
             
             <center>
-                <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" class="cta-button secondary" target="_blank">Budget & Shopping Planner</a>
+                <a href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html" class="cta-button secondary" target="_blank">📦 View Event Toolkit</a>
+                <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" class="cta-button secondary" target="_blank">🧮 Budget & Shopping Planner</a>
             </center>
             
             <div class="section">
