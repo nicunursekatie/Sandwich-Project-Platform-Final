@@ -26,12 +26,13 @@ router.get(
   }
 );
 
-// GET /api/recipients/export - Export recipients as CSV (MUST come before /:id route)
+// GET /api/recipients/export-csv - Export recipients as CSV (MUST come before /:id route)
 router.get(
-  '/export',
+  '/export-csv',
   requirePermission(PERMISSIONS.RECIPIENTS_VIEW),
   async (req, res) => {
     try {
+      console.log('[RECIPIENTS EXPORT] Export route hit!');
       const recipients = await storage.getAllRecipients();
 
       // CSV headers - all relevant fields
@@ -247,8 +248,10 @@ router.get(
   requirePermission(PERMISSIONS.RECIPIENTS_VIEW),
   async (req, res) => {
     try {
+      console.log('[RECIPIENTS GET BY ID] Route hit with id:', req.params.id);
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
+        console.log('[RECIPIENTS GET BY ID] Invalid ID - returning 400');
         return res.status(400).json({ error: 'Invalid recipient ID' });
       }
 
