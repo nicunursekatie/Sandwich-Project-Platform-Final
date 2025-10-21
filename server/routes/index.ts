@@ -47,6 +47,11 @@ import { createRouteOptimizationRouter } from './routes';
 import { createRecipientTspContactsRouter } from './recipient-tsp-contacts';
 import { createSandwichDistributionsRouter } from './sandwich-distributions';
 import { createImportEventsRouter } from './import-events';
+import { createDataManagementRouter } from './data-management';
+import { createPasswordResetRouter } from './password-reset';
+import { createMessageNotificationsRouter } from './message-notifications';
+import { createAnnouncementsRouter } from './announcements';
+import { createPerformanceRouter } from './performance';
 
 // Import centralized middleware
 import {
@@ -572,6 +577,52 @@ export function createMainRoutes(deps: RouterDependencies) {
     importEventsRouter
   );
   router.use('/api/import', createErrorHandler('import-events'));
+
+  // Data management (exports, bulk operations, integrity checks)
+  const dataManagementRouter = createDataManagementRouter(deps);
+  router.use(
+    '/api',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    dataManagementRouter
+  );
+
+  // Password reset
+  const passwordResetRouter = createPasswordResetRouter(deps);
+  router.use(
+    '/api',
+    ...createPublicMiddleware(),
+    passwordResetRouter
+  );
+
+  // Message notifications
+  const messageNotificationsRouter = createMessageNotificationsRouter(deps);
+  router.use(
+    '/api/message-notifications',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    messageNotificationsRouter
+  );
+  router.use('/api/message-notifications', createErrorHandler('message-notifications'));
+
+  // Announcements
+  const announcementsRouter = createAnnouncementsRouter(deps);
+  router.use(
+    '/api/announcements',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    announcementsRouter
+  );
+  router.use('/api/announcements', createErrorHandler('announcements'));
+
+  // Performance monitoring
+  const performanceRouter = createPerformanceRouter(deps);
+  router.use(
+    '/api/performance',
+    ...createStandardMiddleware(),
+    performanceRouter
+  );
+  router.use('/api/performance', createErrorHandler('performance'));
 
   return router;
 }

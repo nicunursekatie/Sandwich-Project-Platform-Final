@@ -1,10 +1,8 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { z } from 'zod';
-import { storage } from '../storage-wrapper';
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
-
-const router = Router();
 
 // Store password reset tokens temporarily (in production, use Redis or database)
 const resetTokens = new Map<
@@ -22,8 +20,12 @@ setInterval(() => {
   });
 }, 60000 * 60); // Clean up every hour
 
+export function createPasswordResetRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { storage } = deps;
+
 // Request password reset
-router.post('/forgot-password', async (req, res) => {
+  router.post('/forgot-password', async (req, res) => {
   try {
     const schema = z.object({
       email: z.string().email('Please enter a valid email address'),
@@ -211,7 +213,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
 });
 
 // Reset password with token
-router.post('/reset-password', async (req, res) => {
+  router.post('/reset-password', async (req, res) => {
   try {
     const schema = z.object({
       token: z.string().min(1, 'Reset token is required'),
@@ -284,7 +286,7 @@ router.post('/reset-password', async (req, res) => {
 });
 
 // Verify reset token (for frontend to check if token is valid)
-router.get('/verify-reset-token/:token', (req, res) => {
+  router.get('/verify-reset-token/:token', (req, res) => {
   const { token } = req.params;
   const tokenData = resetTokens.get(token);
 
@@ -301,4 +303,13 @@ router.get('/verify-reset-token/:token', (req, res) => {
   });
 });
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createPasswordResetRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

@@ -1,4 +1,5 @@
-import { Request, Response, Express } from 'express';
+import { Request, Response, Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { eq, sql, and, gt, or, isNull } from 'drizzle-orm';
 import {
   messages,
@@ -11,7 +12,6 @@ import {
   emailMessages,
 } from '../../shared/schema';
 import { db } from '../db';
-import { isAuthenticated } from '../temp-auth';
 import { hasPermission, PERMISSIONS } from '../../shared/auth-utils';
 
 // Helper function to check if user has permission for specific chat type
@@ -346,29 +346,28 @@ const markAllRead = async (req: Request, res: Response) => {
   }
 };
 
-// Register routes function
-export function registerMessageNotificationRoutes(app: Express) {
+export function createMessageNotificationsRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { isAuthenticated } = deps;
+
   // Use the proper unread counts function with the existing database schema
-  app.get(
-    '/api/message-notifications/unread-counts',
-    isAuthenticated,
-    getUnreadCounts
-  );
-  app.post(
-    '/api/message-notifications/mark-read',
-    isAuthenticated,
-    markMessagesRead
-  );
-  app.post(
-    '/api/message-notifications/mark-chat-read',
-    isAuthenticated,
-    markChatMessagesRead
-  );
-  app.post(
-    '/api/message-notifications/mark-all-read',
-    isAuthenticated,
-    markAllRead
-  );
+  router.get('/unread-counts', isAuthenticated, getUnreadCounts);
+  router.post('/mark-read', isAuthenticated, markMessagesRead);
+  router.post('/mark-chat-read', isAuthenticated, markChatMessagesRead);
+  router.post('/mark-all-read', isAuthenticated, markAllRead);
+
+  return router;
+}
+
+// Backwards compatibility export
+export function registerMessageNotificationRoutes(app: any) {
+  const router = createMessageNotificationsRouter({
+    storage: require('../storage-wrapper').storage,
+    isAuthenticated: require('../temp-auth').isAuthenticated,
+    requirePermission: require('../middleware/auth').requirePermission,
+    sessionStore: null as any,
+  });
+  app.use('/api/message-notifications', router);
 }
 
 // Legacy export for backward compatibility

@@ -1,5 +1,5 @@
-import { Request, Response, Express } from 'express';
-import { isAuthenticated } from '../temp-auth';
+import { Request, Response, Router } from 'express';
+import type { RouterDependencies } from '../types';
 
 // Get announcements
 const getAnnouncements = async (req: Request, res: Response) => {
@@ -12,9 +12,24 @@ const getAnnouncements = async (req: Request, res: Response) => {
   }
 };
 
-// Register routes
-export function registerAnnouncementRoutes(app: Express) {
-  app.get('/api/announcements', isAuthenticated, getAnnouncements);
+export function createAnnouncementsRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { isAuthenticated } = deps;
+
+  router.get('/', isAuthenticated, getAnnouncements);
+
+  return router;
+}
+
+// Backwards compatibility export
+export function registerAnnouncementRoutes(app: any) {
+  const router = createAnnouncementsRouter({
+    storage: require('../storage-wrapper').storage,
+    isAuthenticated: require('../temp-auth').isAuthenticated,
+    requirePermission: require('../middleware/auth').requirePermission,
+    sessionStore: null as any,
+  });
+  app.use('/api/announcements', router);
 }
 
 export default {

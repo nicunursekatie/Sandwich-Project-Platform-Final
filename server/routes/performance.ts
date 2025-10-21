@@ -1,10 +1,13 @@
-import type { Express } from 'express';
+import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { QueryOptimizer } from '../performance/query-optimizer';
 import { CacheManager } from '../performance/cache-manager';
 
-export function registerPerformanceRoutes(app: Express) {
+export function createPerformanceRouter(deps: RouterDependencies) {
+  const router = Router();
+
   // Performance health check endpoint
-  app.get('/api/performance/health', async (req, res) => {
+  router.get('/health', async (req, res) => {
     try {
       const health = await QueryOptimizer.performHealthCheck();
       const cacheStats = CacheManager.getStats();
@@ -24,7 +27,7 @@ export function registerPerformanceRoutes(app: Express) {
   });
 
   // Database optimization endpoint
-  app.post('/api/performance/optimize', async (req, res) => {
+  router.post('/optimize', async (req, res) => {
     try {
       const { action } = req.body;
 
@@ -56,7 +59,7 @@ export function registerPerformanceRoutes(app: Express) {
   });
 
   // Cache management endpoints
-  app.delete('/api/performance/cache/:cacheName?', (req, res) => {
+  router.delete('/cache/:cacheName?', (req, res) => {
     try {
       const { cacheName } = req.params;
       const { pattern } = req.query;
@@ -88,7 +91,7 @@ export function registerPerformanceRoutes(app: Express) {
   });
 
   // Cache warming endpoint
-  app.post('/api/performance/cache/warm', async (req, res) => {
+  router.post('/cache/warm', async (req, res) => {
     try {
       await CacheManager.warmCaches();
       res.json({
@@ -102,7 +105,7 @@ export function registerPerformanceRoutes(app: Express) {
   });
 
   // Cache maintenance endpoint
-  app.post('/api/performance/cache/maintenance', (req, res) => {
+  router.post('/cache/maintenance', (req, res) => {
     try {
       CacheManager.performMaintenance();
       const stats = CacheManager.getStats();
@@ -118,7 +121,7 @@ export function registerPerformanceRoutes(app: Express) {
   });
 
   // Performance monitoring dashboard endpoint
-  app.get('/api/performance/dashboard', async (req, res) => {
+  router.get('/dashboard', async (req, res) => {
     try {
       const [
         connectionPool,
@@ -155,4 +158,17 @@ export function registerPerformanceRoutes(app: Express) {
       });
     }
   });
+
+  return router;
+}
+
+// Backwards compatibility export
+export function registerPerformanceRoutes(app: any) {
+  const router = createPerformanceRouter({
+    storage: require('../storage-wrapper').storage,
+    isAuthenticated: require('../temp-auth').isAuthenticated,
+    requirePermission: require('../middleware/auth').requirePermission,
+    sessionStore: null as any,
+  });
+  app.use('/api/performance', router);
 }

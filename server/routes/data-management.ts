@@ -1,18 +1,20 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { DataExporter } from '../data-export';
 import { BulkOperationsManager } from '../bulk-operations';
 import { AuditLogger } from '../audit-logger';
 import { z } from 'zod';
 import { PERMISSIONS } from '@shared/auth-utils';
-import { requirePermission } from '../middleware/auth';
 import { db } from '../db';
 import { sandwichCollections, hosts } from '@shared/schema';
 import { sql, eq, desc } from 'drizzle-orm';
 
-const router = Router();
+export function createDataManagementRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { requirePermission } = deps;
 
 // Export data endpoints
-router.get(
+  router.get(
   '/export/collections',
   requirePermission(PERMISSIONS.DATA_EXPORT),
   async (req, res) => {
@@ -49,7 +51,7 @@ router.get(
   }
 );
 
-router.get(
+  router.get(
   '/export/hosts',
   requirePermission(PERMISSIONS.DATA_EXPORT),
   async (req, res) => {
@@ -77,7 +79,7 @@ router.get(
   }
 );
 
-router.get('/export/full-dataset', async (req, res) => {
+  router.get('/export/full-dataset', async (req, res) => {
   try {
     const result = await DataExporter.exportFullDataset({ format: 'json' });
 
@@ -93,7 +95,7 @@ router.get('/export/full-dataset', async (req, res) => {
   }
 });
 
-router.get('/summary', async (req, res) => {
+  router.get('/summary', async (req, res) => {
   try {
     const summary = await DataExporter.getDataSummary();
     res.json(summary);
@@ -104,7 +106,7 @@ router.get('/summary', async (req, res) => {
 });
 
 // Bulk operations endpoints
-router.post(
+  router.post(
   '/bulk/deduplicate-hosts',
   requirePermission(PERMISSIONS.ADMIN_ACCESS),
   async (req: any, res) => {
@@ -125,7 +127,7 @@ router.post(
   }
 );
 
-router.delete(
+  router.delete(
   '/bulk/collections',
   requirePermission(PERMISSIONS.ADMIN_ACCESS),
   async (req: any, res) => {
@@ -156,7 +158,7 @@ router.delete(
 );
 
 // Data integrity endpoints
-router.get('/integrity/check', async (req, res) => {
+  router.get('/integrity/check', async (req, res) => {
   try {
     const result = await BulkOperationsManager.validateDataIntegrity();
     res.json(result);
@@ -167,7 +169,7 @@ router.get('/integrity/check', async (req, res) => {
 });
 
 // Audit log endpoints
-router.get('/audit/history', async (req, res) => {
+  router.get('/audit/history', async (req, res) => {
   try {
     const {
       tableName,
@@ -193,7 +195,7 @@ router.get('/audit/history', async (req, res) => {
 });
 
 // Collection statistics endpoint
-router.get('/collection-stats', async (req, res) => {
+  router.get('/collection-stats', async (req, res) => {
   try {
     const allCollections = await db.select().from(sandwichCollections);
     const allHosts = await db.select({ name: hosts.name }).from(hosts);
@@ -220,7 +222,7 @@ router.get('/collection-stats', async (req, res) => {
 });
 
 // Host mapping distribution statistics
-router.get('/host-mapping-stats', async (req, res) => {
+  router.get('/host-mapping-stats', async (req, res) => {
   try {
     const allCollections = await db.select().from(sandwichCollections);
     const allHosts = await db.select({ name: hosts.name }).from(hosts);
@@ -258,7 +260,7 @@ router.get('/host-mapping-stats', async (req, res) => {
 });
 
 // Get collections by specific host
-router.get('/collections-by-host/:host', async (req, res) => {
+  router.get('/collections-by-host/:host', async (req, res) => {
   try {
     const { host } = req.params;
     
@@ -276,7 +278,7 @@ router.get('/collections-by-host/:host', async (req, res) => {
 });
 
 // Bulk map hosts - attempt to match collection hostNames to hosts table
-router.post('/bulk-map-hosts', async (req, res) => {
+  router.post('/bulk-map-hosts', async (req, res) => {
   try {
     const allCollections = await db.select().from(sandwichCollections);
     const allHosts = await db.select().from(hosts);
@@ -316,7 +318,7 @@ router.post('/bulk-map-hosts', async (req, res) => {
 });
 
 // Fix data corruption in sandwich collections
-router.patch('/sandwich-collections/fix-data-corruption', async (req, res) => {
+  router.patch('/sandwich-collections/fix-data-corruption', async (req, res) => {
   try {
     const allCollections = await db.select().from(sandwichCollections);
     
@@ -388,4 +390,13 @@ router.patch('/sandwich-collections/fix-data-corruption', async (req, res) => {
   }
 });
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createDataManagementRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

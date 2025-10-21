@@ -94,8 +94,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   const { signupRoutes } = await import('./routes/signup');
   app.use('/api', signupRoutes);
 
-  const passwordResetRoutes = await import('./routes/password-reset');
-  app.use('/api', passwordResetRoutes.default);
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
+  // const passwordResetRoutes = await import('./routes/password-reset');
+  // app.use('/api', passwordResetRoutes.default);
 
   // === ENTITY MANAGEMENT ROUTES ===
   // REMOVED: Duplicate routes - now handled by modular system
@@ -122,9 +123,8 @@ export async function registerRoutes(app: Express): Promise<void> {
   // app.use('/api/sandwich-distributions', sandwichDistributionsRoutes.default);
   // const importEventsRoutes = await import('./routes/import-events');
   // app.use('/api/import', importEventsRoutes.default);
-
-  const dataManagementRoutes = await import('./routes/data-management');
-  app.use('/api', dataManagementRoutes.default);
+  // const dataManagementRoutes = await import('./routes/data-management');
+  // app.use('/api', dataManagementRoutes.default);
 
   // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
   // Dashboard Documents Configuration
@@ -139,22 +139,14 @@ export async function registerRoutes(app: Express): Promise<void> {
   // app.use('/api/stream', isAuthenticated, streamRoutes);
   // const onboardingRoutes = await import('./routes/onboarding');
   // app.use('/api/onboarding', onboardingRoutes.default);
-
-  // Message notifications routes
-  const { registerMessageNotificationRoutes } = await import(
-    './routes/message-notifications'
-  );
-  registerMessageNotificationRoutes(app);
-
-  // Announcements routes
-  const { registerAnnouncementRoutes } = await import('./routes/announcements');
-  registerAnnouncementRoutes(app);
+  // const { registerMessageNotificationRoutes } = await import('./routes/message-notifications');
+  // registerMessageNotificationRoutes(app);
+  // const { registerAnnouncementRoutes } = await import('./routes/announcements');
+  // registerAnnouncementRoutes(app);
+  // const { registerPerformanceRoutes } = await import('./routes/performance');
+  // registerPerformanceRoutes(app);
 
   // User routes are now handled by the modular system in server/routes/index.ts
-
-  // Register performance optimization routes
-  const { registerPerformanceRoutes } = await import('./routes/performance');
-  registerPerformanceRoutes(app);
 
   // REMOVED: Duplicate routes - now handled by modular system in server/routes/index.ts
   // const googleSheetsRoutes = await import('./routes/google-sheets');
