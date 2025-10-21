@@ -1843,6 +1843,41 @@ class StorageWrapper implements IStorage {
       () => this.fallbackStorage.deleteConfidentialDocument(id, userEmail)
     );
   }
+
+  // Dashboard Documents Methods
+  async getDashboardDocuments() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getDashboardDocuments(),
+      () => this.fallbackStorage.getDashboardDocuments()
+    );
+  }
+
+  async addDashboardDocument(
+    documentId: string,
+    displayOrder: number,
+    userId: string
+  ) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.addDashboardDocument(documentId, displayOrder, userId),
+      () => this.fallbackStorage.addDashboardDocument(documentId, displayOrder, userId)
+    );
+  }
+
+  async removeDashboardDocument(documentId: string) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.removeDashboardDocument(documentId),
+      () => this.fallbackStorage.removeDashboardDocument(documentId)
+    );
+  }
+
+  async updateDashboardDocumentOrder(
+    updates: Array<{ documentId: string; displayOrder: number }>
+  ) {
+    return this.executeWithFallback(
+      () => this.primaryStorage.updateDashboardDocumentOrder(updates),
+      () => this.fallbackStorage.updateDashboardDocumentOrder(updates)
+    );
+  }
 }
 
 export const storage = new StorageWrapper();

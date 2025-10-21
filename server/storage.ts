@@ -3141,6 +3141,45 @@ export class MemStorage implements IStorage {
     // This prevents the "method not found" error
     return false;
   }
+
+  // Dashboard Documents Methods (fallback implementations for memory storage)
+  async getDashboardDocuments(): Promise<any[]> {
+    // For memory storage fallback, return empty array
+    // In-memory storage doesn't persist dashboard document configuration
+    return [];
+  }
+
+  async addDashboardDocument(
+    documentId: string,
+    displayOrder: number,
+    userId: string
+  ): Promise<any> {
+    // For memory storage fallback, return a mock document
+    // Data will not persist across deployments
+    return {
+      id: Date.now(),
+      documentId,
+      displayOrder,
+      isActive: true,
+      addedBy: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  async removeDashboardDocument(documentId: string): Promise<boolean> {
+    // For memory storage fallback, return true (pretend success)
+    // Data doesn't persist anyway
+    return true;
+  }
+
+  async updateDashboardDocumentOrder(
+    updates: Array<{ documentId: string; displayOrder: number }>
+  ): Promise<void> {
+    // For memory storage fallback, do nothing
+    // Data doesn't persist anyway
+    return;
+  }
 }
 
 // GoogleSheetsStorage removed completely to prevent conflicts with meeting management system

@@ -9,6 +9,7 @@ import tasksRouter from './tasks';
 import collectionsRouter from './collections';
 import recipientsRouter from './recipients';
 import createMeetingsRouter from './meetings/index';
+import meetingNotesRouter from './meeting-notes';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
 import importCollectionsRouter from './import-collections';
@@ -33,6 +34,7 @@ import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 import teamBoardRouter from './team-board';
 import migrationsRouter from './migrations';
+import { createDashboardDocumentsRoutes } from './dashboard-documents';
 
 // Import centralized middleware
 import {
@@ -136,6 +138,20 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/availability', createErrorHandler('availability'));
 
+  // Dashboard documents configuration
+  const dashboardDocumentsRouter = createDashboardDocumentsRoutes(
+    deps.isAuthenticated,
+    deps.requirePermission,
+    deps.storage
+  );
+  router.use(
+    '/api/dashboard-documents',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    dashboardDocumentsRouter
+  );
+  router.use('/api/dashboard-documents', createErrorHandler('dashboard-documents'));
+
   router.use(
     '/api/import-collections',
     deps.isAuthenticated,
@@ -185,6 +201,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     meetingsRouter
   );
   router.use('/api/meetings', createErrorHandler('meetings'));
+
+  router.use(
+    '/api/meeting-notes',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    meetingNotesRouter
+  );
+  router.use('/api/meeting-notes', createErrorHandler('meeting-notes'));
 
   router.use(
     '/api/drive-links',
