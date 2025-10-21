@@ -28,7 +28,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool.
 -   **Meeting Management**: Full-featured system with agenda compilation, project integration, PDF export, and permission-controlled notes.
 -   **Event Requests Management System**: Tracking, duplicate detection, status tracking, Google Sheets integration, van driver staffing calculations, and comprehensive intake validation.
--   **Multi-Recipient Assignment**: Events can be assigned to multiple destinations with prefixed IDs and badge-based UI.
+-   **Multi-Recipient Assignment**: Events can be assigned to multiple destinations with prefixed IDs and badge-based UI. Recipient dropdowns now show individual host contacts (e.g., "Anna Baylin (North Atlanta)") instead of host location areas, making it clear where sandwiches are being delivered. Backward compatibility maintained for legacy host location assignments (displayed as "Location (Legacy - Area)").
 -   **Google Sheets Integration**: Bidirectional automatic synchronization for project tracker and event requests.
 -   **User Activity Logging System**: Comprehensive tracking of authenticated user actions into `user_activity_logs` table via middleware, displayed in User Management.
 -   **Sandwich Type Tracking System**: Comprehensive tracking of sandwich types for individual sandwiches and group collections with real-time validation, display, and analytics.
