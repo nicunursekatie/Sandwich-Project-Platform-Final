@@ -148,7 +148,7 @@ export default function ShoutoutSystem() {
   });
 
   // Fetch shoutout history
-  const { data: shoutoutHistory } = useQuery({
+  const { data: shoutoutHistory } = useQuery<ShoutoutLog[]>({
     queryKey: ['/api/shoutouts/history'],
     staleTime: 60000, // 1 minute
   });
