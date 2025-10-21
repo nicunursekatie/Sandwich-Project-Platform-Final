@@ -268,15 +268,19 @@ export class EmailService {
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\n/g, '<br>');
           
-          // Process attachments - fetch document metadata if attachments are document IDs
-          let processedAttachments = data.attachments || [];
+          // Process attachments - handle both document IDs and file paths consistently
+          let processedAttachments: { filePath: string; originalName?: string }[] = [];
           if (data.attachments && data.attachments.length > 0) {
-            // Check if attachments are numeric IDs (documents) or file paths
-            const docIds = data.attachments
+            const path = await import('path');
+            
+            // Separate document IDs from file paths
+            const numericIds = data.attachments
               .map(a => typeof a === 'string' ? parseInt(a) : a)
               .filter(id => !isNaN(id));
             
-            if (docIds.length > 0) {
+            const documentMap = new Map<number, { filePath: string; originalName?: string }>();
+            
+            if (numericIds.length > 0) {
               // Fetch document metadata from database
               const docs = await db
                 .select({
@@ -285,13 +289,48 @@ export class EmailService {
                   originalName: documents.originalName,
                 })
                 .from(documents)
-                .where(inArray(documents.id, docIds));
+                .where(inArray(documents.id, numericIds));
               
-              // Transform to attachment metadata format
-              processedAttachments = docs.map(doc => ({
-                filePath: doc.filePath,
-                originalName: doc.originalName || undefined,
-              }));
+              docs.forEach(doc => {
+                documentMap.set(doc.id, {
+                  filePath: doc.filePath,
+                  originalName: doc.originalName || undefined,
+                });
+              });
+            }
+            
+            // Process each attachment consistently
+            for (const attachment of data.attachments) {
+              if (typeof attachment === 'string') {
+                const trimmed = attachment.trim();
+                
+                // Check if it's a numeric ID
+                if (/^\d+$/.test(trimmed)) {
+                  const docId = parseInt(trimmed, 10);
+                  const docMeta = documentMap.get(docId);
+                  if (docMeta) {
+                    processedAttachments.push(docMeta);
+                  } else {
+                    console.warn(`[Email Service] Document ID ${docId} not found`);
+                  }
+                  continue;
+                }
+                
+                // Handle file path strings - convert to object format
+                let resolvedPath: string;
+                if (trimmed.startsWith('/uploads/')) {
+                  resolvedPath = path.join(process.cwd(), trimmed.substring(1));
+                } else if (path.isAbsolute(trimmed)) {
+                  resolvedPath = trimmed;
+                } else {
+                  resolvedPath = path.join(process.cwd(), trimmed);
+                }
+                
+                processedAttachments.push({
+                  filePath: resolvedPath,
+                  originalName: path.basename(resolvedPath)
+                });
+              }
             }
           }
           
