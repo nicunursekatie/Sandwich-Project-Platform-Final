@@ -319,7 +319,7 @@ export default function ShoutoutSystem() {
   };
 
   const selectAllUsers = () => {
-    if (users) {
+    if (Array.isArray(users)) {
       setSelectedUsers(users.map((u: any) => u.id));
     }
   };
