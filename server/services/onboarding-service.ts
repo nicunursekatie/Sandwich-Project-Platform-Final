@@ -167,52 +167,40 @@ export class OnboardingService {
   }
 
   /**
-   * Get leaderboard
+   * Get leaderboard - includes all active users, even those with 0 points
    */
   async getLeaderboard(limit: number = 10): Promise<LeaderboardEntry[]> {
+    const { users } = await import('@shared/schema');
+
+    // Get all active users with their progress
     const results = await db
       .select({
-        userId: onboardingProgress.userId,
-        totalPoints: sql<number>`sum(${onboardingChallenges.points})::int`,
-        completedChallenges: sql<number>`count(${onboardingProgress.id})::int`,
+        userId: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        totalPoints: sql<number>`coalesce(sum(${onboardingChallenges.points}), 0)::int`,
+        completedChallenges: sql<number>`coalesce(count(${onboardingProgress.id}), 0)::int`,
       })
-      .from(onboardingProgress)
-      .innerJoin(
+      .from(users)
+      .leftJoin(
+        onboardingProgress,
+        eq(users.id, onboardingProgress.userId)
+      )
+      .leftJoin(
         onboardingChallenges,
         eq(onboardingProgress.challengeId, onboardingChallenges.id)
       )
-      .groupBy(onboardingProgress.userId)
-      .orderBy(desc(sql`sum(${onboardingChallenges.points})`))
+      .where(eq(users.isActive, true))
+      .groupBy(users.id, users.firstName, users.lastName)
+      .orderBy(
+        desc(sql`coalesce(sum(${onboardingChallenges.points}), 0)`),
+        users.firstName
+      )
       .limit(limit);
-
-    // Get user names
-    const { users } = await import('@shared/schema');
-    const userIds = results.map((r) => r.userId);
-
-    if (userIds.length === 0) {
-      return [];
-    }
-
-    const { inArray } = await import('drizzle-orm');
-    const userDetails = await db
-      .select({
-        id: users.id,
-        firstName: users.firstName,
-        lastName: users.lastName,
-      })
-      .from(users)
-      .where(inArray(users.id, userIds));
-
-    const userMap = new Map(
-      userDetails.map((u) => [
-        u.id,
-        `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'User',
-      ])
-    );
 
     return results.map((r, index) => ({
       userId: r.userId,
-      userName: userMap.get(r.userId) || 'User',
+      userName: `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'User',
       totalPoints: r.totalPoints,
       completedChallenges: r.completedChallenges,
       rank: index + 1,
