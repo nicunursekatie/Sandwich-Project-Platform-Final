@@ -236,3 +236,101 @@ All routes have been successfully migrated to the modular RouterDependencies sys
 ## 🎉 ROUTING CONSOLIDATION COMPLETE!
 
 All application routes now use the modern, secure, and maintainable RouterDependencies pattern. The routing architecture is clean, consistent, and ready for future development.
+
+## 🛡️ Safety Gates (Preventing Future Regressions)
+
+To prevent accidental additions to the legacy routing system, we've implemented multiple safety measures:
+
+### 1. Warning Comment Block
+[server/routes.ts](server/routes.ts) now has a prominent warning at the top:
+```typescript
+/**
+ * ⚠️  WARNING: LEGACY ROUTING SYSTEM - DO NOT ADD NEW ROUTES HERE! ⚠️
+ *
+ * This file is part of the LEGACY routing system and should NOT be used for new routes.
+ * ...
+ */
+```
+
+### 2. Automated Route Checker
+A script ([scripts/check-legacy-routes.js](scripts/check-legacy-routes.js)) detects any new route registrations in the legacy system.
+
+**Run the check:**
+```bash
+npm run check:routes
+```
+
+**What it checks:**
+- New `app.use('/api/...')` calls in server/routes.ts
+- New `const routes = await import('./routes/...')` statements
+- Uncommented baseline routes (should all be commented)
+- Direct route registrations (`app.get`, `app.post`, etc.)
+
+**Output:**
+- ✅ Green: No violations found
+- ❌ Red: New legacy routes detected (fails with exit code 1)
+- ⚠️ Yellow: Warnings about uncommented routes
+
+### 3. Recommended: Add to Pre-commit Hook
+To prevent legacy routes from being committed, add to `.husky/pre-commit` or your Git hooks:
+
+```bash
+#!/bin/sh
+npm run check:routes || exit 1
+```
+
+Or add to package.json if using lint-staged:
+```json
+{
+  "lint-staged": {
+    "server/routes.ts": ["npm run check:routes"]
+  }
+}
+```
+
+### 4. CI/CD Integration
+Add the route check to your CI pipeline:
+
+```yaml
+# .github/workflows/ci.yml
+- name: Check for legacy routes
+  run: npm run check:routes
+```
+
+## 📝 Adding New Routes (The Right Way)
+
+When you need to add a new route:
+
+1. **Create the router file**: `server/routes/my-feature.ts`
+   ```typescript
+   import { Router } from 'express';
+   import type { RouterDependencies } from '../types';
+
+   export function createMyFeatureRouter(deps: RouterDependencies) {
+     const router = Router();
+     const { storage, isAuthenticated } = deps;
+
+     router.get('/', isAuthenticated, async (req, res) => {
+       // Your route logic here
+     });
+
+     return router;
+   }
+   ```
+
+2. **Register in modular system**: Add to `server/routes/index.ts`
+   ```typescript
+   import { createMyFeatureRouter } from './my-feature';
+
+   // In createMainRoutes function:
+   const myFeatureRouter = createMyFeatureRouter(deps);
+   router.use(
+     '/api/my-feature',
+     deps.isAuthenticated,
+     ...createStandardMiddleware(),
+     myFeatureRouter
+   );
+   router.use('/api/my-feature', createErrorHandler('my-feature'));
+   ```
+
+3. **Verify**: Run `npm run check:routes` to ensure no legacy violations

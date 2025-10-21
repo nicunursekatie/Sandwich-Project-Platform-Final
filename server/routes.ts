@@ -8,6 +8,31 @@ import createMainRoutes from './routes/index';
 import { requirePermission } from './middleware/auth';
 import { createCorsMiddleware, logCorsConfig } from './config/cors';
 
+/**
+ * ⚠️  WARNING: LEGACY ROUTING SYSTEM - DO NOT ADD NEW ROUTES HERE! ⚠️
+ *
+ * This file is part of the LEGACY routing system and should NOT be used for new routes.
+ *
+ * ❌ DO NOT:
+ *   - Add new route registrations to this file
+ *   - Import new route files here
+ *   - Use app.use() or app.get/post/etc. to register routes
+ *
+ * ✅ DO INSTEAD:
+ *   - Add new routes to server/routes/index.ts using the modular system
+ *   - Use the RouterDependencies pattern for dependency injection
+ *   - Follow the example of existing routes in server/routes/
+ *
+ * 📚 DOCUMENTATION:
+ *   See ROUTING_CONSOLIDATION_PLAN.md for migration details
+ *
+ * 🔍 AUTOMATED CHECK:
+ *   Run `npm run check:routes` to verify no new legacy routes have been added
+ *
+ * This file will eventually be deprecated. All new development should use
+ * the modular routing system in server/routes/index.ts.
+ */
+
 export async function registerRoutes(app: Express): Promise<void> {
   // Use database-backed session store for deployment persistence
   // Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
