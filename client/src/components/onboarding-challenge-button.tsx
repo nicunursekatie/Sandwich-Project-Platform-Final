@@ -14,7 +14,7 @@ interface UserStats {
   completionPercentage: number;
 }
 
-export default function OnboardingChallengeButton() {
+export default function OnboardingChallengeButton({ onNavigate }: { onNavigate?: (section: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const { data: stats } = useQuery<UserStats>({
@@ -28,7 +28,7 @@ export default function OnboardingChallengeButton() {
 
   return (
     <>
-      <ButtonTooltip explanation="Complete challenges to explore the app and earn points! Compete with your team on the leaderboard.">
+      <ButtonTooltip explanation="Complete challenges to explore the app and earn points! Click on any challenge to be guided there!">
         <Button
           onClick={() => setIsOpen(true)}
           className={`relative ${
@@ -56,7 +56,11 @@ export default function OnboardingChallengeButton() {
         </Button>
       </ButtonTooltip>
 
-      <OnboardingChallenge isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <OnboardingChallenge
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onNavigate={onNavigate}
+      />
     </>
   );
 }

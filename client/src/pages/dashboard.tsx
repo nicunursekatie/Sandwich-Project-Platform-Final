@@ -582,7 +582,7 @@ export default function Dashboard({
               )}
 
               {/* Onboarding Challenge Button */}
-              <OnboardingChallengeButton />
+              <OnboardingChallengeButton onNavigate={(section) => setActiveSection(section)} />
 
               <button
                 onClick={(e) => {

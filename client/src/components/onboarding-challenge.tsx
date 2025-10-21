@@ -26,6 +26,8 @@ import {
   Award,
   Zap,
   X,
+  ArrowRight,
+  AlertCircle,
 } from 'lucide-react';
 import {
   Dialog,
@@ -34,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface Challenge {
   id: number;
@@ -90,7 +93,60 @@ const categoryIcons: Record<string, any> = {
   projects: Briefcase,
 };
 
-export default function OnboardingChallenge({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+// Navigation mapping for each challenge
+const challengeNavigation: Record<string, { section: string; instructions: string }> = {
+  chat_first_message: {
+    section: 'chat',
+    instructions: 'Open Team Chat and send a message in any channel you have access to.',
+  },
+  chat_read_messages: {
+    section: 'chat',
+    instructions: 'Open Team Chat to view messages from your team.',
+  },
+  inbox_send_email: {
+    section: 'messages',
+    instructions: 'Go to your Inbox and compose a new message to a team member.',
+  },
+  view_important_documents: {
+    section: 'important-documents',
+    instructions: 'Visit the Important Documents page to see essential files and resources.',
+  },
+  view_important_links: {
+    section: 'important-links',
+    instructions: 'Check out the Important Links page for useful tools and resources.',
+  },
+  view_team_board: {
+    section: 'team-board',
+    instructions: 'Visit the Team Board to see what your team is working on.',
+  },
+  post_team_board: {
+    section: 'team-board',
+    instructions: 'Go to the Team Board and create a new post (task, note, or idea).',
+  },
+  like_team_board_post: {
+    section: 'team-board',
+    instructions: 'Visit the Team Board and like a post from a team member.',
+  },
+  view_projects: {
+    section: 'projects',
+    instructions: 'Navigate to the Projects page to see active initiatives.',
+  },
+  view_meetings: {
+    section: 'meetings',
+    instructions: 'Check the Meetings page to view notes and agendas.',
+  },
+};
+
+export default function OnboardingChallenge({
+  isOpen,
+  onClose,
+  onNavigate,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onNavigate?: (section: string) => void;
+}) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('challenges');
 
   const { data: challenges = [], isLoading: challengesLoading, error: challengesError, refetch: refetchChallenges } = useQuery<Challenge[]>({
@@ -143,6 +199,40 @@ export default function OnboardingChallenge({ isOpen, onClose }: { isOpen: boole
     ) : (
       <Circle className="h-5 w-5 text-gray-400" />
     );
+  };
+
+  const handleChallengeClick = (challenge: Challenge) => {
+    if (challenge.isCompleted) {
+      toast({
+        title: 'Already Completed!',
+        description: `You completed this challenge on ${new Date(challenge.completedAt!).toLocaleDateString()}`,
+      });
+      return;
+    }
+
+    const nav = challengeNavigation[challenge.actionKey];
+    if (!nav) {
+      toast({
+        title: 'Challenge Info',
+        description: challenge.description || challenge.title,
+      });
+      return;
+    }
+
+    // Show instructions before navigating
+    toast({
+      title: '📍 Let\'s do it!',
+      description: nav.instructions,
+      duration: 6000,
+    });
+
+    // Navigate if callback provided
+    if (onNavigate) {
+      setTimeout(() => {
+        onNavigate(nav.section);
+        onClose(); // Close the dialog after navigating
+      }, 500);
+    }
   };
 
   return (
@@ -293,10 +383,11 @@ export default function OnboardingChallenge({ isOpen, onClose }: { isOpen: boole
                         {categoryChallenges.map((challenge) => (
                           <Card
                             key={challenge.id}
-                            className={`transition-all ${
+                            onClick={() => handleChallengeClick(challenge)}
+                            className={`transition-all cursor-pointer ${
                               challenge.isCompleted
                                 ? 'bg-green-50 border-green-200'
-                                : 'hover:shadow-md'
+                                : 'hover:shadow-md hover:border-blue-300 hover:bg-blue-50'
                             }`}
                           >
                             <CardContent className="p-4">
@@ -340,6 +431,12 @@ export default function OnboardingChallenge({ isOpen, onClose }: { isOpen: boole
                                       ✓ Completed{' '}
                                       {new Date(challenge.completedAt).toLocaleDateString()}
                                     </p>
+                                  )}
+                                  {!challenge.isCompleted && challengeNavigation[challenge.actionKey] && (
+                                    <div className="flex items-center gap-1 mt-2 text-xs text-blue-600 font-medium">
+                                      <span>Click to navigate</span>
+                                      <ArrowRight className="h-3 w-3" />
+                                    </div>
                                   )}
                                 </div>
                               </div>
