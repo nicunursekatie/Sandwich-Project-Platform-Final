@@ -59,7 +59,6 @@ import {
   createErrorHandler,
   createPublicMiddleware,
 } from '../middleware';
-import dataManagementRouter from './data-management';
 import { createErrorLogsRoutes } from './error-logs';
 import workLogsRouter from './work-logs';
 import shoutoutsRouter from './shoutouts';
@@ -414,15 +413,6 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/stream', createErrorHandler('stream'));
 
-  // Data management routes for exports, integrity checks, and bulk actions
-  router.use(
-    '/api/data-management',
-    deps.isAuthenticated,
-    ...createStandardMiddleware(),
-    dataManagementRouter
-  );
-  router.use('/api/data-management', createErrorHandler('data-management'));
-
   // Client error logging endpoint (no auth required so we can capture pre-login issues)
   const errorLogsRouter = createErrorLogsRoutes(deps.storage);
   router.use(
@@ -581,11 +571,12 @@ export function createMainRoutes(deps: RouterDependencies) {
   // Data management (exports, bulk operations, integrity checks)
   const dataManagementRouter = createDataManagementRouter(deps);
   router.use(
-    '/api',
+    '/api/data-management',
     deps.isAuthenticated,
     ...createStandardMiddleware(),
     dataManagementRouter
   );
+  router.use('/api/data-management', createErrorHandler('data-management'));
 
   // Password reset
   const passwordResetRouter = createPasswordResetRouter(deps);
