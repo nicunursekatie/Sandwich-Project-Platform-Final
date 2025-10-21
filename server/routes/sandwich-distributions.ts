@@ -1,51 +1,14 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { z } from 'zod';
-import { storage } from '../storage-wrapper';
 import { insertSandwichDistributionSchema } from '@shared/schema';
 
-const router = Router();
+export function createSandwichDistributionsRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { storage, isAuthenticated } = deps;
 
-// Authentication middleware that matches the main routes.ts authentication
-const isAuthenticated = async (req: any, res: any, next: any) => {
-  try {
-    // Get user from session or req.user (temp auth sets req.user)
-    let user = req.user || req.session?.user;
-
-    if (!user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    // Always fetch fresh user data from database to ensure permissions are current
-    if (user.email) {
-      try {
-        const freshUser = await storage.getUserByEmail(user.email);
-        if (freshUser) {
-          user = freshUser;
-          req.user = freshUser;
-        }
-      } catch (dbError) {
-        console.error(
-          'Database error in sandwich-distributions auth:',
-          dbError
-        );
-        // Continue with session user if database fails
-      }
-    }
-
-    // Ensure user is active
-    if (user.isActive === false) {
-      return res.status(401).json({ error: 'Account is inactive' });
-    }
-
-    next();
-  } catch (error) {
-    console.error('Authentication error in sandwich-distributions:', error);
-    res.status(500).json({ error: 'Authentication failed' });
-  }
-};
-
-// GET /api/sandwich-distributions - Get all distributions
-router.get('/', isAuthenticated, async (req, res) => {
+  // GET /api/sandwich-distributions - Get all distributions
+  router.get('/', isAuthenticated, async (req, res) => {
   try {
     const distributions = await storage.getAllSandwichDistributions();
     res.json(distributions);
@@ -56,7 +19,7 @@ router.get('/', isAuthenticated, async (req, res) => {
 });
 
 // GET /api/sandwich-distributions/:id - Get single distribution
-router.get('/:id', isAuthenticated, async (req, res) => {
+  router.get('/:id', isAuthenticated, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -76,7 +39,7 @@ router.get('/:id', isAuthenticated, async (req, res) => {
 });
 
 // POST /api/sandwich-distributions - Create new distribution
-router.post('/', isAuthenticated, async (req, res) => {
+  router.post('/', isAuthenticated, async (req, res) => {
   try {
     const validatedData = insertSandwichDistributionSchema.parse(req.body);
 
@@ -97,7 +60,7 @@ router.post('/', isAuthenticated, async (req, res) => {
 });
 
 // PUT /api/sandwich-distributions/:id - Update distribution
-router.put('/:id', isAuthenticated, async (req, res) => {
+  router.put('/:id', isAuthenticated, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -139,7 +102,7 @@ router.put('/:id', isAuthenticated, async (req, res) => {
 });
 
 // DELETE /api/sandwich-distributions/:id - Delete distribution
-router.delete('/:id', isAuthenticated, async (req, res) => {
+  router.delete('/:id', isAuthenticated, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -159,7 +122,7 @@ router.delete('/:id', isAuthenticated, async (req, res) => {
 });
 
 // GET /api/sandwich-distributions/by-week/:weekEnding - Get distributions by week
-router.get('/by-week/:weekEnding', isAuthenticated, async (req, res) => {
+  router.get('/by-week/:weekEnding', isAuthenticated, async (req, res) => {
   try {
     const { weekEnding } = req.params;
 
@@ -180,7 +143,7 @@ router.get('/by-week/:weekEnding', isAuthenticated, async (req, res) => {
 });
 
 // GET /api/sandwich-distributions/by-host/:hostId - Get distributions by host
-router.get('/by-host/:hostId', isAuthenticated, async (req, res) => {
+  router.get('/by-host/:hostId', isAuthenticated, async (req, res) => {
   try {
     const hostId = parseInt(req.params.hostId);
     if (isNaN(hostId)) {
@@ -196,7 +159,7 @@ router.get('/by-host/:hostId', isAuthenticated, async (req, res) => {
 });
 
 // GET /api/sandwich-distributions/by-recipient/:recipientId - Get distributions by recipient
-router.get('/by-recipient/:recipientId', isAuthenticated, async (req, res) => {
+  router.get('/by-recipient/:recipientId', isAuthenticated, async (req, res) => {
   try {
     const recipientId = parseInt(req.params.recipientId);
     if (isNaN(recipientId)) {
@@ -214,4 +177,13 @@ router.get('/by-recipient/:recipientId', isAuthenticated, async (req, res) => {
   }
 });
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createSandwichDistributionsRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

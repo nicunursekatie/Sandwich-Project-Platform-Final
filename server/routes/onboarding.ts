@@ -1,11 +1,13 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { onboardingService } from '../services/onboarding-service';
-import { isAuthenticated } from '../temp-auth';
 
-const router = Router();
+export function createOnboardingRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { isAuthenticated } = deps;
 
-// Get challenges for current user
-router.get('/challenges', isAuthenticated, async (req: any, res) => {
+  // Get challenges for current user
+  router.get('/challenges', isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -21,7 +23,7 @@ router.get('/challenges', isAuthenticated, async (req: any, res) => {
 });
 
 // Track challenge completion
-router.post('/track/:actionKey', isAuthenticated, async (req: any, res) => {
+  router.post('/track/:actionKey', isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -49,7 +51,7 @@ router.post('/track/:actionKey', isAuthenticated, async (req: any, res) => {
 });
 
 // Get user stats
-router.get('/stats', isAuthenticated, async (req: any, res) => {
+  router.get('/stats', isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -65,7 +67,7 @@ router.get('/stats', isAuthenticated, async (req: any, res) => {
 });
 
 // Get leaderboard
-router.get('/leaderboard', isAuthenticated, async (req: any, res) => {
+  router.get('/leaderboard', isAuthenticated, async (req: any, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
     const leaderboard = await onboardingService.getLeaderboard(limit);
@@ -77,7 +79,7 @@ router.get('/leaderboard', isAuthenticated, async (req: any, res) => {
 });
 
 // Admin: Initialize default challenges
-router.post('/admin/initialize', isAuthenticated, async (req: any, res) => {
+  router.post('/admin/initialize', isAuthenticated, async (req: any, res) => {
   try {
     // Check if user is admin
     if (req.user?.role !== 'admin') {
@@ -92,4 +94,13 @@ router.post('/admin/initialize', isAuthenticated, async (req: any, res) => {
   }
 });
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createOnboardingRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

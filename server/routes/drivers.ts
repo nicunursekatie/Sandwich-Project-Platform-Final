@@ -1,9 +1,10 @@
 import express from 'express';
-import type { IStorage } from '../storage';
+import type { RouterDependencies } from '../types';
 import { insertDriverSchema } from '@shared/schema';
 
-export function createDriversRoutes(isAuthenticated: any, storage: IStorage) {
+export function createDriversRouter(deps: RouterDependencies) {
   const router = express.Router();
+  const { storage, isAuthenticated } = deps;
 
   // Get all drivers
   router.get('/', isAuthenticated, async (req: any, res: any) => {
@@ -178,4 +179,5 @@ export function createDriversRoutes(isAuthenticated: any, storage: IStorage) {
   return router;
 }
 
-export default createDriversRoutes;
+// Backwards compatibility export
+export default createDriversRouter;

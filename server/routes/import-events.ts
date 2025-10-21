@@ -1,12 +1,13 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import XLSX from 'xlsx';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { isAuthenticated } from '../temp-auth';
-import { storage } from '../storage';
 import { isValid, parseISO } from 'date-fns';
 
-const router = Router();
+export function createImportEventsRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { storage, isAuthenticated } = deps;
 
 // Helper functions for pickup time data migration (same as in event-requests.ts)
 const convertTimeToDateTime = (timeStr: string, baseDate?: Date): string | null => {
@@ -88,7 +89,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Import past events that are already completed
-router.post('/import-past-events', isAuthenticated, async (req, res) => {
+  router.post('/import-past-events', isAuthenticated, async (req, res) => {
   try {
     console.log('Starting past events import...');
 
@@ -225,7 +226,7 @@ router.post('/import-past-events', isAuthenticated, async (req, res) => {
 });
 
 // Import historical 2024 events from attached Excel/CSV file
-router.post('/import-historical', isAuthenticated, async (req, res) => {
+  router.post('/import-historical', isAuthenticated, async (req, res) => {
   try {
     console.log('Starting historical 2024 event import...');
 
@@ -492,7 +493,7 @@ router.post('/import-historical', isAuthenticated, async (req, res) => {
   }
 });
 
-router.post('/import-excel', isAuthenticated, async (req, res) => {
+  router.post('/import-excel', isAuthenticated, async (req, res) => {
   try {
     console.log('Starting Excel event import...');
 
@@ -746,7 +747,7 @@ router.post('/import-excel', isAuthenticated, async (req, res) => {
 });
 
 // Sync from Google Sheets - proxy to event requests sync endpoint
-router.post('/sync-from-sheets', isAuthenticated, async (req, res) => {
+  router.post('/sync-from-sheets', isAuthenticated, async (req, res) => {
   try {
     console.log(
       '🔄 Proxying sync-from-sheets request to event-requests sync endpoint...'
@@ -795,7 +796,7 @@ router.post('/sync-from-sheets', isAuthenticated, async (req, res) => {
 });
 
 // Import 2023 historical events
-router.post('/import-2023-events', isAuthenticated, async (req, res) => {
+  router.post('/import-2023-events', isAuthenticated, async (req, res) => {
   try {
     console.log('Starting 2023 events import...');
 
@@ -1068,4 +1069,13 @@ router.post('/import-2023-events', isAuthenticated, async (req, res) => {
   }
 });
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createImportEventsRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

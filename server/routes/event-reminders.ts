@@ -1,11 +1,9 @@
 import express from 'express';
-import type { IStorage } from '../storage';
+import type { RouterDependencies } from '../types';
 
-export function createEventRemindersRoutes(
-  isAuthenticated: any,
-  storage: IStorage
-) {
+export function createEventRemindersRouter(deps: RouterDependencies) {
   const router = express.Router();
+  const { storage, isAuthenticated } = deps;
 
   // Get all event reminders
   router.get('/', isAuthenticated, async (req: any, res: any) => {
@@ -85,4 +83,5 @@ export function createEventRemindersRoutes(
   return router;
 }
 
-export default createEventRemindersRoutes;
+// Backwards compatibility export
+export default createEventRemindersRouter;

@@ -1,19 +1,20 @@
 import { Router } from 'express';
-import { storage } from '../storage-wrapper';
+import type { RouterDependencies } from '../types';
 import { PERMISSIONS } from '@shared/auth-utils';
-import { requirePermission } from '../middleware/auth';
 import { z } from 'zod';
 
-const router = Router();
+export function createRouteOptimizationRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { storage, requirePermission } = deps;
 
-// Validation schema for route optimization request
-const routeOptimizationSchema = z.object({
-  hostIds: z.array(z.number()).min(1, 'At least one host ID is required'),
-  driverId: z.string().optional(),
-});
+  // Validation schema for route optimization request
+  const routeOptimizationSchema = z.object({
+    hostIds: z.array(z.number()).min(1, 'At least one host ID is required'),
+    driverId: z.string().optional(),
+  });
 
 // Helper function to calculate distance between two coordinates (Haversine formula)
-function calculateDistance(
+  function calculateDistance(
   lat1: number,
   lon1: number,
   lat2: number,
@@ -33,7 +34,7 @@ function calculateDistance(
 }
 
 // Nearest neighbor algorithm for route optimization
-function optimizeRouteNearestNeighbor(hosts: Array<{
+  function optimizeRouteNearestNeighbor(hosts: Array<{
   id: number;
   name: string;
   latitude: string | null;
@@ -107,7 +108,7 @@ function optimizeRouteNearestNeighbor(hosts: Array<{
 }
 
 // POST /api/routes/optimize - Calculate optimized route for selected hosts
-router.post(
+  router.post(
   '/optimize',
   requirePermission(PERMISSIONS.DRIVERS_VIEW),
   async (req, res) => {
@@ -161,4 +162,13 @@ router.post(
   }
 );
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createRouteOptimizationRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

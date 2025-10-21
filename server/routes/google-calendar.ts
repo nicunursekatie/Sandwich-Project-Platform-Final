@@ -1,13 +1,15 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { GoogleCalendarService } from '../google-calendar-service';
-import { isAuthenticated } from '../temp-auth';
 
-const router = Router();
+export function createGoogleCalendarRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { isAuthenticated } = deps;
 
-// Calendar ID from environment or hardcoded
-const CALENDAR_ID = '0813cd575e262fbc020927f88f1fd5a1906f5bd9b2f27a66a4920235939e5ff4@group.calendar.google.com';
+  // Calendar ID from environment or hardcoded
+  const CALENDAR_ID = '0813cd575e262fbc020927f88f1fd5a1906f5bd9b2f27a66a4920235939e5ff4@group.calendar.google.com';
 
-router.get('/events', isAuthenticated, async (req, res) => {
+  router.get('/events', isAuthenticated, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
@@ -28,4 +30,13 @@ router.get('/events', isAuthenticated, async (req, res) => {
   }
 });
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createGoogleCalendarRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

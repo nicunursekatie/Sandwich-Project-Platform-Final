@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { storage } from '../storage-wrapper';
+import type { RouterDependencies } from '../types';
 import { sanitizeMiddleware } from '../middleware/sanitizer';
 import { insertHostSchema, insertHostContactSchema } from '@shared/schema';
 import { PERMISSIONS } from '@shared/auth-utils';
-import { requirePermission } from '../middleware/auth';
 import { scrapeHostAvailability } from '../services/host-availability-scraper';
 import {
   hostsErrorHandler,
@@ -15,16 +14,18 @@ import {
 } from './hosts/error-handler';
 import { z } from 'zod';
 
-const router = Router();
+export function createHostsRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { storage, requirePermission } = deps;
 
-// Validation schema for coordinate updates
-const coordinatesSchema = z.object({
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-});
+  // Validation schema for coordinate updates
+  const coordinatesSchema = z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+  });
 
-// Host management routes
-router.get('/hosts', 
+  // Host management routes
+  router.get('/hosts', 
   requirePermission(PERMISSIONS.HOSTS_VIEW), 
   asyncHandler(async (req, res) => {
     const hosts = await storage.getAllHosts();
@@ -32,7 +33,7 @@ router.get('/hosts',
   })
 );
 
-router.get(
+  router.get(
   '/hosts-with-contacts',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
   asyncHandler(async (req, res) => {
@@ -42,7 +43,7 @@ router.get(
 );
 
 // Map endpoint - get host contacts with valid coordinates for map display
-router.get(
+  router.get(
   '/hosts/map',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
   asyncHandler(async (req, res) => {
@@ -74,7 +75,7 @@ router.get(
   })
 );
 
-router.get(
+  router.get(
   '/hosts/:id',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
   asyncHandler(async (req, res) => {
@@ -87,7 +88,7 @@ router.get(
   })
 );
 
-router.post(
+  router.post(
   '/hosts',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
@@ -109,7 +110,7 @@ router.post(
   })
 );
 
-router.patch(
+  router.patch(
   '/hosts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
@@ -130,7 +131,7 @@ router.patch(
 );
 
 // Update host coordinates endpoint
-router.patch(
+  router.patch(
   '/hosts/:id/coordinates',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
@@ -165,7 +166,7 @@ router.patch(
   })
 );
 
-router.delete(
+  router.delete(
   '/hosts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   asyncHandler(async (req, res) => {
@@ -199,7 +200,7 @@ router.delete(
 );
 
 // Host contact routes
-router.get(
+  router.get(
   '/host-contacts',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
   asyncHandler(async (req, res) => {
@@ -234,7 +235,7 @@ router.get(
   })
 );
 
-router.post(
+  router.post(
   '/host-contacts',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
@@ -256,7 +257,7 @@ router.post(
   })
 );
 
-router.patch(
+  router.patch(
   '/host-contacts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
@@ -276,7 +277,7 @@ router.patch(
   })
 );
 
-router.delete(
+  router.delete(
   '/host-contacts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   asyncHandler(async (req, res) => {
@@ -290,7 +291,7 @@ router.delete(
 );
 
 // Weekly availability scraper endpoint
-router.post(
+  router.post(
   '/scrape-availability',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   asyncHandler(async (req, res) => {
@@ -312,7 +313,16 @@ router.post(
   })
 );
 
-// Add error handling middleware for all routes
-router.use(hostsErrorHandler());
+  // Add error handling middleware for all routes
+  router.use(hostsErrorHandler());
 
-export { router as hostsRoutes };
+  return router;
+}
+
+// Backwards compatibility export
+export const hostsRoutes = createHostsRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../middleware/auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

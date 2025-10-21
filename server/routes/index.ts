@@ -35,6 +35,18 @@ import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 import teamBoardRouter from './team-board';
 import migrationsRouter from './migrations';
 import { createDashboardDocumentsRoutes } from './dashboard-documents';
+import { createDriversRouter } from './drivers';
+import { createVolunteersRouter } from './volunteers';
+import { createHostsRouter } from './hosts';
+import { createEventRemindersRouter } from './event-reminders';
+import { createEmailRouter } from './email-routes';
+import { createOnboardingRouter } from './onboarding';
+import { createGoogleSheetsRouter } from './google-sheets';
+import { createGoogleCalendarRouter } from './google-calendar';
+import { createRouteOptimizationRouter } from './routes';
+import { createRecipientTspContactsRouter } from './recipient-tsp-contacts';
+import { createSandwichDistributionsRouter } from './sandwich-distributions';
+import { createImportEventsRouter } from './import-events';
 
 // Import centralized middleware
 import {
@@ -440,6 +452,126 @@ export function createMainRoutes(deps: RouterDependencies) {
     migrationsRouter
   );
   router.use('/api/migrations', createErrorHandler('migrations'));
+
+  // Drivers management
+  const driversRouter = createDriversRouter(deps);
+  router.use(
+    '/api/drivers',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    driversRouter
+  );
+  router.use('/api/drivers', createErrorHandler('drivers'));
+
+  // Volunteers management
+  const volunteersRouter = createVolunteersRouter(deps);
+  router.use(
+    '/api/volunteers',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    volunteersRouter
+  );
+  router.use('/api/volunteers', createErrorHandler('volunteers'));
+
+  // Hosts management
+  const hostsRouter = createHostsRouter(deps);
+  router.use(
+    '/api',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    hostsRouter
+  );
+  router.use('/api/hosts*', createErrorHandler('hosts'));
+
+  // Event reminders
+  const eventRemindersRouter = createEventRemindersRouter(deps);
+  router.use(
+    '/api/event-reminders',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventRemindersRouter
+  );
+  router.use('/api/event-reminders', createErrorHandler('event-reminders'));
+
+  // Email/inbox system
+  const emailRouter = createEmailRouter(deps);
+  router.use(
+    '/api/emails',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    emailRouter
+  );
+  router.use('/api/emails', createErrorHandler('emails'));
+
+  // Onboarding challenges
+  const onboardingRouter = createOnboardingRouter(deps);
+  router.use(
+    '/api/onboarding',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    onboardingRouter
+  );
+  router.use('/api/onboarding', createErrorHandler('onboarding'));
+
+  // Google Sheets integration
+  const googleSheetsRouter = createGoogleSheetsRouter(deps);
+  router.use(
+    '/api/google-sheets',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    googleSheetsRouter
+  );
+  router.use('/api/google-sheets', createErrorHandler('google-sheets'));
+
+  // Google Calendar integration
+  const googleCalendarRouter = createGoogleCalendarRouter(deps);
+  router.use(
+    '/api/google-calendar',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    googleCalendarRouter
+  );
+  router.use('/api/google-calendar', createErrorHandler('google-calendar'));
+
+  // Route optimization
+  const routeOptimizationRouter = createRouteOptimizationRouter(deps);
+  router.use(
+    '/api/routes',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    routeOptimizationRouter
+  );
+  router.use('/api/routes', createErrorHandler('route-optimization'));
+
+  // Recipient TSP contacts
+  const recipientTspContactsRouter = createRecipientTspContactsRouter(deps);
+  router.use(
+    '/api/recipient-tsp-contacts',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    recipientTspContactsRouter
+  );
+  router.use('/api/recipient-tsp-contacts', createErrorHandler('recipient-tsp-contacts'));
+
+  // Sandwich distributions
+  const sandwichDistributionsRouter = createSandwichDistributionsRouter(deps);
+  router.use(
+    '/api/sandwich-distributions',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    sandwichDistributionsRouter
+  );
+  router.use('/api/sandwich-distributions', createErrorHandler('sandwich-distributions'));
+
+  // Event imports
+  const importEventsRouter = createImportEventsRouter(deps);
+  router.use(
+    '/api/import',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    importEventsRouter
+  );
+  router.use('/api/import', createErrorHandler('import-events'));
 
   return router;
 }

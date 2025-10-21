@@ -86,28 +86,35 @@ For each legacy route:
 
 ## Migration Priority Order
 
-### 🔴 Critical (Do First - Duplicates)
-1. Remove duplicate `/api/recipients` from legacy
-2. Remove duplicate `/api/event-requests` from legacy
-3. Remove duplicate `/api/stream` from legacy
-4. Remove duplicate `/api/monitoring` from legacy
-5. Remove duplicate `/api/dashboard-documents` from legacy
+### 🔴 Critical (Do First - Duplicates) ✅ COMPLETED
+1. ✅ Remove duplicate `/api/recipients` from legacy
+2. ✅ Remove duplicate `/api/event-requests` from legacy
+3. ✅ Remove duplicate `/api/stream` from legacy
+4. ✅ Remove duplicate `/api/monitoring` from legacy
+5. ✅ Remove duplicate `/api/dashboard-documents` from legacy
 
-### 🟡 High (Core Entities)
-6. Migrate `/api/drivers`
-7. Migrate `/api/volunteers`
-8. Migrate `/api/hosts` (consolidate)
+### 🟡 High (Core Entities) ✅ COMPLETED
+6. ✅ Migrate `/api/drivers` - Converted to `createDriversRouter(deps)`
+7. ✅ Migrate `/api/volunteers` - Converted to `createVolunteersRouter(deps)`
+8. ✅ Migrate `/api/hosts` - Converted to `createHostsRouter(deps)`
 
-### 🟢 Medium (Features)
-9. Migrate `/api/event-reminders`
-10. Migrate `/api/onboarding`
-11. Migrate `/api/emails`
+### 🟢 Medium (Features) ✅ COMPLETED
+9. ✅ Migrate `/api/event-reminders` - Converted to `createEventRemindersRouter(deps)`
+10. ✅ Migrate `/api/onboarding` - Converted to `createOnboardingRouter(deps)`
+11. ✅ Migrate `/api/emails` - Converted to `createEmailRouter(deps)`
 
-### 🔵 Low (External/Utilities)
-12. Migrate `/api/google-sheets`
-13. Migrate `/api/google-calendar`
-14. Migrate `/api/routes` (route optimization)
-15. Migrate announcements, message-notifications, performance
+### 🔵 Low (External/Utilities) - REMAINING
+12. ⏳ Migrate `/api/google-sheets`
+13. ⏳ Migrate `/api/google-calendar`
+14. ⏳ Migrate `/api/routes` (route optimization)
+15. ⏳ Migrate `/api/recipient-tsp-contacts`
+16. ⏳ Migrate `/api/sandwich-distributions`
+17. ⏳ Migrate `/api/import` (import-events)
+18. ⏳ Migrate `/api` data-management route
+19. ⏳ Migrate message-notifications (custom registration)
+20. ⏳ Migrate announcements (custom registration)
+21. ⏳ Migrate performance routes (custom registration)
+22. ⏳ Migrate password-reset routes
 
 ## Example Migration
 
@@ -167,10 +174,34 @@ For each migrated route:
 ✅ Activity logging on all authenticated routes
 ✅ Legacy system removed from `server/routes.ts`
 
+## Progress Summary
+
+### ✅ Completed (11 routes migrated)
+- Removed 5 critical duplicate routes
+- Migrated 6 major routes to modular system:
+  1. **drivers** - Entity management with export functionality
+  2. **volunteers** - Entity management with export functionality
+  3. **hosts** - Complex entity with contact management
+  4. **event-reminders** - Event notification system
+  5. **emails** - Full inbox/email system (large file, 765+ lines)
+  6. **onboarding** - Gamification/challenge system
+
+### 🎯 Impact
+- **Security**: All migrated routes now have consistent authentication and error handling
+- **Maintainability**: RouterDependencies pattern ensures proper dependency injection
+- **Testability**: Easier to test with dependency injection
+- **Consistency**: Standardized middleware application across all routes
+
+### ⏳ Remaining Work (11 routes)
+- External integrations (Google Sheets, Google Calendar)
+- Utility routes (route optimization, imports, distributions)
+- System routes (message-notifications, announcements, performance)
+- Auth routes (password-reset)
+
 ## Timeline
 
-- **Day 1**: Remove duplicates (critical)
-- **Day 2-3**: Migrate core entities (drivers, volunteers, hosts)
-- **Day 4-5**: Migrate features (events, onboarding, emails)
-- **Day 6**: Migrate external integrations
-- **Day 7**: Final testing and cleanup
+- **Day 1**: ✅ Remove duplicates (critical) - COMPLETED
+- **Day 2-3**: ✅ Migrate core entities (drivers, volunteers, hosts) - COMPLETED
+- **Day 4-5**: ✅ Migrate features (events, onboarding, emails) - COMPLETED
+- **Day 6**: ⏳ Migrate external integrations - IN PROGRESS
+- **Day 7**: ⏳ Final testing and cleanup - PENDING

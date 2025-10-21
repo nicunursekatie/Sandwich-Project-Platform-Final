@@ -1,21 +1,23 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { z } from 'zod';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { googleSheets, insertGoogleSheetSchema } from '@shared/schema';
-import { isAuthenticated } from '../temp-auth';
 
-const router = Router();
+export function createGoogleSheetsRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { isAuthenticated } = deps;
 
-// Helper function to generate URLs from sheet ID
-function generateSheetUrls(sheetId: string) {
-  const embedUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing&widget=true&headers=false`;
-  const directUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing`;
-  return { embedUrl, directUrl };
-}
+  // Helper function to generate URLs from sheet ID
+  function generateSheetUrls(sheetId: string) {
+    const embedUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing&widget=true&headers=false`;
+    const directUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing`;
+    return { embedUrl, directUrl };
+  }
 
-// Get all Google Sheets
-router.get('/', async (req, res) => {
+  // Get all Google Sheets
+  router.get('/', async (req, res) => {
   try {
     const sheets = await (db as any).select().from(googleSheets);
 
@@ -27,7 +29,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get a specific Google Sheet
-router.get('/:id', async (req, res) => {
+  router.get('/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -51,7 +53,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create a new Google Sheet entry
-router.post('/', isAuthenticated, async (req, res) => {
+  router.post('/', isAuthenticated, async (req, res) => {
   try {
     const validatedData = insertGoogleSheetSchema.parse(req.body);
     const { embedUrl, directUrl } = generateSheetUrls(validatedData.sheetId);
@@ -84,7 +86,7 @@ router.post('/', isAuthenticated, async (req, res) => {
 });
 
 // Update a Google Sheet
-router.patch('/:id', isAuthenticated, async (req, res) => {
+  router.patch('/:id', isAuthenticated, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -129,7 +131,7 @@ router.patch('/:id', isAuthenticated, async (req, res) => {
 });
 
 // Delete a Google Sheet
-router.delete('/:id', isAuthenticated, async (req, res) => {
+  router.delete('/:id', isAuthenticated, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -153,7 +155,7 @@ router.delete('/:id', isAuthenticated, async (req, res) => {
 });
 
 // Test Google Sheet accessibility
-router.post('/:id/test', async (req, res) => {
+  router.post('/:id/test', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -189,7 +191,7 @@ router.post('/:id/test', async (req, res) => {
 });
 
 // Analyze the structure of the target Google Sheet
-router.get('/sync/analyze', async (req, res) => {
+  router.get('/sync/analyze', async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
@@ -215,7 +217,7 @@ router.get('/sync/analyze', async (req, res) => {
 });
 
 // Import data from the target Google Sheet to database
-router.post('/sync/import', isAuthenticated, async (req, res) => {
+  router.post('/sync/import', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
@@ -258,7 +260,7 @@ router.post('/sync/import', isAuthenticated, async (req, res) => {
 });
 
 // Export database data to Google Sheet
-router.post('/sync/export', isAuthenticated, async (req, res) => {
+  router.post('/sync/export', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
@@ -286,7 +288,7 @@ router.post('/sync/export', isAuthenticated, async (req, res) => {
 // ===================================
 
 // Get sync status for all projects
-router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
+  router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
   try {
     const { storage } = await import('../storage-wrapper');
     const projects = await storage.getAllProjects();
@@ -325,7 +327,7 @@ router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
 });
 
 // Sync projects TO Google Sheets
-router.post('/projects/sync/to-sheets', isAuthenticated, async (req, res) => {
+  router.post('/projects/sync/to-sheets', isAuthenticated, async (req, res) => {
   try {
     const { getGoogleSheetsSyncService } = await import(
       '../google-sheets-sync'
@@ -358,7 +360,7 @@ router.post('/projects/sync/to-sheets', isAuthenticated, async (req, res) => {
 });
 
 // Sync projects FROM Google Sheets
-router.post('/projects/sync/from-sheets', isAuthenticated, async (req, res) => {
+  router.post('/projects/sync/from-sheets', isAuthenticated, async (req, res) => {
   try {
     const { getGoogleSheetsSyncService } = await import(
       '../google-sheets-sync'
@@ -392,7 +394,7 @@ router.post('/projects/sync/from-sheets', isAuthenticated, async (req, res) => {
 });
 
 // Bidirectional project sync
-router.post(
+  router.post(
   '/projects/sync/bidirectional',
   isAuthenticated,
   async (req, res) => {
@@ -429,7 +431,7 @@ router.post(
 );
 
 // Check Google Sheets configuration
-router.get('/projects/config/check', async (req, res) => {
+  router.get('/projects/config/check', async (req, res) => {
   try {
     const requiredEnvVars = [
       'GOOGLE_PROJECT_ID',
@@ -460,7 +462,7 @@ router.get('/projects/config/check', async (req, res) => {
 });
 
 // Append-only sync (safe for formatted sheets)
-router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
+  router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
   try {
     const { getGoogleSheetsService } = await import('../google-sheets-service');
 
@@ -535,7 +537,7 @@ router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
 });
 
 // Mark project for review in next meeting
-router.post(
+  router.post(
   '/projects/:id/mark-for-review',
   isAuthenticated,
   async (req, res) => {
@@ -570,7 +572,7 @@ router.post(
 );
 
 // Bidirectional sync between database and Google Sheet
-router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
+  router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
@@ -607,7 +609,7 @@ router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
 // =======================================
 
 // Get sync status for event requests
-router.get('/event-requests/sync/status', isAuthenticated, async (req, res) => {
+  router.get('/event-requests/sync/status', isAuthenticated, async (req, res) => {
   try {
     const { getEventRequestsGoogleSheetsService } = await import(
       '../google-sheets-event-requests-sync'
@@ -647,7 +649,7 @@ router.get('/event-requests/sync/status', isAuthenticated, async (req, res) => {
 });
 
 // Sync event requests FROM Google Sheets (one-way import only)
-router.post(
+  router.post(
   '/event-requests/sync/from-sheets',
   isAuthenticated,
   async (req, res) => {
@@ -692,7 +694,7 @@ router.post(
 );
 
 // Update event request status in Google Sheets
-router.post(
+  router.post(
   '/event-requests/:id/update-status',
   isAuthenticated,
   async (req, res) => {
@@ -751,7 +753,7 @@ router.post(
 );
 
 // Check Google Sheets configuration for event requests
-router.get('/event-requests/config/check', async (req, res) => {
+  router.get('/event-requests/config/check', async (req, res) => {
   try {
     const requiredEnvVars = [
       'GOOGLE_PROJECT_ID',
@@ -782,7 +784,7 @@ router.get('/event-requests/config/check', async (req, res) => {
 });
 
 // Test endpoint using service account JSON directly
-router.post('/test-direct-auth', async (req, res) => {
+  router.post('/test-direct-auth', async (req, res) => {
   try {
     const { google } = await import('googleapis');
 
@@ -840,4 +842,13 @@ TqvVOJ0zAgMBAAECggEAGMsmlOtvscXk21FhrJ5/9F[...truncated for security...]
   }
 });
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createGoogleSheetsRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

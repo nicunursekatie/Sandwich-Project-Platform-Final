@@ -1,12 +1,10 @@
 import express from 'express';
-import type { IStorage } from '../storage';
+import type { RouterDependencies } from '../types';
 import { insertVolunteerSchema } from '@shared/schema';
 
-export function createVolunteersRoutes(
-  isAuthenticated: any,
-  storage: IStorage
-) {
+export function createVolunteersRouter(deps: RouterDependencies) {
   const router = express.Router();
+  const { storage, isAuthenticated } = deps;
 
   // Get all volunteers
   router.get('/', isAuthenticated, async (req: any, res: any) => {
@@ -139,4 +137,5 @@ export function createVolunteersRoutes(
   return router;
 }
 
-export default createVolunteersRoutes;
+// Backwards compatibility export
+export default createVolunteersRouter;

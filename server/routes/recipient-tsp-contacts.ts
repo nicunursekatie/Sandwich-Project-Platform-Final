@@ -1,20 +1,20 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { db } from '../db';
 import { recipientTspContacts, users } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { insertRecipientTspContactSchema } from '@shared/schema';
 import { z } from 'zod';
-
 import { PERMISSIONS } from '@shared/auth-utils';
-import { isAuthenticated as requireAuth } from '../temp-auth';
-import { requirePermission } from '../middleware/auth';
 
-const router = Router();
+export function createRecipientTspContactsRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { isAuthenticated, requirePermission } = deps;
 
 // Get all TSP contacts for a specific recipient
-router.get(
+  router.get(
   '/:recipientId',
-  requireAuth,
+  isAuthenticated,
   requirePermission('RECIPIENTS_VIEW'),
   async (req, res) => {
     try {
@@ -58,9 +58,9 @@ router.get(
 );
 
 // Add a new TSP contact
-router.post(
+  router.post(
   '/',
-  requireAuth,
+  isAuthenticated,
   requirePermission('RECIPIENTS_EDIT'),
   async (req, res) => {
     try {
@@ -115,9 +115,9 @@ router.post(
 );
 
 // Update a TSP contact
-router.patch(
+  router.patch(
   '/:id',
-  requireAuth,
+  isAuthenticated,
   requirePermission('RECIPIENTS_EDIT'),
   async (req, res) => {
     try {
@@ -193,9 +193,9 @@ router.patch(
 );
 
 // Delete (deactivate) a TSP contact
-router.delete(
+  router.delete(
   '/:id',
-  requireAuth,
+  isAuthenticated,
   requirePermission('RECIPIENTS_EDIT'),
   async (req, res) => {
     try {
@@ -219,4 +219,13 @@ router.delete(
   }
 );
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createRecipientTspContactsRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});

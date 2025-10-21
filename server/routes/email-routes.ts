@@ -1,15 +1,16 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { emailService } from '../services/email-service';
-import { isAuthenticated } from '../temp-auth';
 import { db } from '../db';
 import { kudosTracking, users, emailMessages } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import { storage } from '../storage-wrapper';
 
-const router = Router();
+export function createEmailRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { storage, isAuthenticated } = deps;
 
-// Get emails by folder with optional threading
-router.get('/', isAuthenticated, async (req: any, res) => {
+  // Get emails by folder with optional threading
+  router.get('/', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -58,7 +59,7 @@ router.get('/', isAuthenticated, async (req: any, res) => {
 });
 
 // Send new email
-router.post('/', isAuthenticated, async (req: any, res) => {
+  router.post('/', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -128,7 +129,7 @@ router.post('/', isAuthenticated, async (req: any, res) => {
 });
 
 // Update email status (star, archive, trash, mark read)
-router.patch('/:id', isAuthenticated, async (req: any, res) => {
+  router.patch('/:id', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -193,7 +194,7 @@ router.patch('/:id', isAuthenticated, async (req: any, res) => {
 });
 
 // Delete email
-router.delete('/:id', isAuthenticated, async (req: any, res) => {
+  router.delete('/:id', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -219,7 +220,7 @@ router.delete('/:id', isAuthenticated, async (req: any, res) => {
 });
 
 // Get unread email count
-router.get('/unread-count', isAuthenticated, async (req: any, res) => {
+  router.get('/unread-count', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -235,7 +236,7 @@ router.get('/unread-count', isAuthenticated, async (req: any, res) => {
 });
 
 // Search emails
-router.get('/search', isAuthenticated, async (req: any, res) => {
+  router.get('/search', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -258,7 +259,7 @@ router.get('/search', isAuthenticated, async (req: any, res) => {
 });
 
 // Get drafts for a specific event request
-router.get('/event/:eventRequestId/drafts', isAuthenticated, async (req: any, res) => {
+  router.get('/event/:eventRequestId/drafts', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -305,7 +306,7 @@ router.get('/event/:eventRequestId/drafts', isAuthenticated, async (req: any, re
 });
 
 // Get kudos for current user - integrates with messaging system
-router.get('/kudos', isAuthenticated, async (req: any, res) => {
+  router.get('/kudos', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -344,7 +345,7 @@ router.get('/kudos', isAuthenticated, async (req: any, res) => {
 });
 
 // Mark message as read - works for both emails and kudos
-router.post('/:messageId/read', isAuthenticated, async (req: any, res) => {
+  router.post('/:messageId/read', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -416,7 +417,7 @@ router.post('/:messageId/read', isAuthenticated, async (req: any, res) => {
 });
 
 // Event-specific email endpoint with attachment support
-router.post('/event', isAuthenticated, async (req: any, res) => {
+  router.post('/event', isAuthenticated, async (req: any, res) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -762,4 +763,13 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
   }
 });
 
-export default router;
+  return router;
+}
+
+// Backwards compatibility export
+export default createEmailRouter({
+  storage: require('../storage-wrapper').storage,
+  isAuthenticated: require('../temp-auth').isAuthenticated,
+  requirePermission: require('../middleware/auth').requirePermission,
+  sessionStore: null as any,
+});
