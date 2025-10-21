@@ -589,6 +589,33 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
             continue;
           }
 
+          // Check if it's a document hash pattern (uploads/documents/[hash])
+          if (trimmed.startsWith('uploads/documents/')) {
+            const hash = trimmed.split('/').pop();
+            if (hash) {
+              const { eq } = await import('drizzle-orm');
+              const doc = await db
+                .select({
+                  filePath: documents.filePath,
+                  originalName: documents.originalName,
+                })
+                .from(documents)
+                .where(eq(documents.fileName, hash))
+                .limit(1);
+              
+              if (doc.length > 0 && doc[0]) {
+                processedAttachments.push({
+                  filePath: doc[0].filePath,
+                  originalName: doc[0].originalName || undefined,
+                });
+                console.log(`[Event Email API] Resolved document hash ${hash} to ${doc[0].originalName}`);
+              } else {
+                console.warn(`[Event Email API] Document hash not found: ${hash}`);
+              }
+            }
+            continue;
+          }
+
           let resolvedPath: string;
           if (trimmed.startsWith('/uploads/')) {
             resolvedPath = path.join(process.cwd(), trimmed.substring(1));
