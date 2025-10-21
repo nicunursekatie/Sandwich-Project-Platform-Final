@@ -606,8 +606,9 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
               if (doc.length > 0 && doc[0]) {
                 // Files are in Google Cloud Storage, need to download them
                 try {
-                  const { objectStorageService } = await import('../services/core');
-                  const file = await objectStorageService.searchPublicObject(doc[0].filePath);
+                  const { ObjectStorageService } = await import('../objectStorage');
+                  const storageService = new ObjectStorageService();
+                  const file = await storageService.searchPublicObject(doc[0].filePath);
                   
                   if (file) {
                     // Download file content as buffer
