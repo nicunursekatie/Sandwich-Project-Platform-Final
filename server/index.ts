@@ -293,7 +293,7 @@ async function bootstrap() {
     httpServer.listen(Number(port), host, () => {
       serverLogger.info(`✅ Server listening on http://${host}:${port}`);
       serverLogger.info(
-        `WebSocket server ready on ws://${host}:${port}/notifications`
+        `WebSocket server ready at /notifications (internal: ws://${host}:${port}, external: wss:// via platform TLS)`
       );
       serverLogger.info(
         `Environment: ${process.env.NODE_ENV || 'development'}`
