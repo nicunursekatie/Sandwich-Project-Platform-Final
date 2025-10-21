@@ -589,13 +589,20 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
             continue;
           }
 
+          let resolvedPath: string;
           if (trimmed.startsWith('/uploads/')) {
-            processedAttachments.push(path.join(process.cwd(), trimmed));
+            resolvedPath = path.join(process.cwd(), trimmed.substring(1));
           } else if (path.isAbsolute(trimmed)) {
-            processedAttachments.push(trimmed);
+            resolvedPath = trimmed;
           } else {
-            processedAttachments.push(path.join(process.cwd(), trimmed));
+            resolvedPath = path.join(process.cwd(), trimmed);
           }
+          
+          // Convert string path to object with filePath and originalName
+          processedAttachments.push({
+            filePath: resolvedPath,
+            originalName: path.basename(resolvedPath)
+          });
           continue;
         }
 
