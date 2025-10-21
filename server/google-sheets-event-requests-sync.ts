@@ -764,31 +764,47 @@ export class EventRequestsGoogleSheetsService {
             .where(eq(eventRequests.externalId, externalIdTrimmed))
             .limit(1);
 
-          // UPSERT: Insert new record or update existing one
-          const result = await db
-            .insert(eventRequests)
-            .values(sanitizedData as any)
-            .onConflictDoUpdate({
-              target: eventRequests.externalId,
-              set: {
-                ...sanitizedData,
-                updatedAt: new Date(),
-                lastSyncedAt: new Date(),
-              }
-            })
-            .returning({ id: eventRequests.id, externalId: eventRequests.externalId });
+          if (existing && existing.length > 0) {
+            // EXISTING RECORD: Only update contact/organization info, NOT status or workflow fields
+            const updateData = {
+              firstName: eventRequestData.firstName,
+              lastName: eventRequestData.lastName,
+              email: eventRequestData.email,
+              phone: eventRequestData.phone,
+              organizationName: eventRequestData.organizationName,
+              department: eventRequestData.department,
+              desiredEventDate: eventRequestData.desiredEventDate,
+              message: eventRequestData.message,
+              previouslyHosted: eventRequestData.previouslyHosted,
+              organizationExists: eventRequestData.organizationExists,
+              duplicateNotes: eventRequestData.duplicateNotes,
+              googleSheetRowId: row.rowIndex?.toString(),
+              lastSyncedAt: new Date(),
+              updatedAt: new Date(),
+              // CRITICAL: DO NOT update status, createdAt, createdBy, or any workflow fields
+            };
 
-          if (result && result.length > 0) {
-            if (existing && existing.length > 0) {
-              console.log(`🔄 UPDATED existing record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
-              updatedCount++;
-            } else {
+            await db
+              .update(eventRequests)
+              .set(updateData)
+              .where(eq(eventRequests.externalId, externalIdTrimmed));
+
+            console.log(`🔄 UPDATED contact info for existing record: external_id: ${externalIdTrimmed} - ${row.organizationName} (status preserved)`);
+            updatedCount++;
+          } else {
+            // NEW RECORD: Insert with all fields including status
+            const result = await db
+              .insert(eventRequests)
+              .values(sanitizedData as any)
+              .returning({ id: eventRequests.id, externalId: eventRequests.externalId });
+
+            if (result && result.length > 0) {
               console.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
               createdCount++;
             }
           }
         } catch (error) {
-          console.error(`❌ Failed to upsert record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
+          console.error(`❌ Failed to sync record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
           // Continue processing other records
         }
       }
