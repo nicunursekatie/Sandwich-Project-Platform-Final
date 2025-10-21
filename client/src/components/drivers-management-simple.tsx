@@ -58,6 +58,7 @@ export default function DriversManagement() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [agreementFilter, setAgreementFilter] = useState<string>('all');
   const [vanFilter, setVanFilter] = useState<string>('all');
+  const [weeklyDriverFilter, setWeeklyDriverFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   const [newDriver, setNewDriver] = useState({
@@ -69,6 +70,7 @@ export default function DriversManagement() {
     availability: '',
     emailAgreementSent: false,
     vanApproved: false,
+    isWeeklyDriver: false,
     isActive: true,
   });
 
@@ -122,8 +124,15 @@ export default function DriversManagement() {
       filtered = filtered.filter((driver) => !driver.vanApproved);
     }
 
+    // Apply weekly driver filter
+    if (weeklyDriverFilter === 'weekly') {
+      filtered = filtered.filter((driver) => driver.isWeeklyDriver === true);
+    } else if (weeklyDriverFilter === 'not_weekly') {
+      filtered = filtered.filter((driver) => !driver.isWeeklyDriver);
+    }
+
     return filtered;
-  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter]);
+  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter, weeklyDriverFilter]);
 
   // Add driver mutation
   const addDriverMutation = useMutation({
@@ -389,6 +398,23 @@ export default function DriversManagement() {
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
+                        id="isWeeklyDriver"
+                        checked={newDriver.isWeeklyDriver}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            isWeeklyDriver: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="isWeeklyDriver">
+                        Weekly Driver
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
                         id="vanApproved"
                         checked={newDriver.vanApproved}
                         onChange={(e) =>
@@ -533,6 +559,22 @@ export default function DriversManagement() {
                 </Select>
               </div>
 
+              <div>
+                <Label htmlFor="weeklyFilter">Weekly Driver</Label>
+                <Select value={weeklyDriverFilter} onValueChange={setWeeklyDriverFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Drivers</SelectItem>
+                    <SelectItem value="weekly">Weekly Only</SelectItem>
+                    <SelectItem value="not_weekly">
+                      Non-Weekly Only
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-end">
                 <Button
                   variant="ghost"
@@ -542,6 +584,7 @@ export default function DriversManagement() {
                     setStatusFilter('all');
                     setAgreementFilter('all');
                     setVanFilter('all');
+                    setWeeklyDriverFilter('all');
                   }}
                   className="text-slate-500 hover:text-slate-700"
                 >
@@ -685,6 +728,21 @@ export default function DriversManagement() {
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
+                  id="edit-isWeeklyDriver"
+                  checked={editingDriver.isWeeklyDriver || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      isWeeklyDriver: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-isWeeklyDriver">Weekly Driver</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
                   id="edit-vanApproved"
                   checked={editingDriver.vanApproved || false}
                   onChange={(e) =>
@@ -780,6 +838,15 @@ export default function DriversManagement() {
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Active
                             </Badge>
+                            {driver.isWeeklyDriver && (
+                              <Badge
+                                variant="default"
+                                className="bg-purple-100 text-purple-800 border-purple-200"
+                              >
+                                <Car className="w-3 h-3 mr-1" />
+                                Weekly Driver
+                              </Badge>
+                            )}
                             {driver.emailAgreementSent ? (
                               <Badge
                                 variant="default"
@@ -823,9 +890,9 @@ export default function DriversManagement() {
                               </div>
                             )}
                           </div>
-                          {driver.hostLocation && (
+                          {(driver.hostLocation || driver.area || driver.homeAddress || driver.address) && (
                             <div className="text-xs text-gray-500 mt-1">
-                              Driver Location: {driver.hostLocation}
+                              📍 Location: {driver.hostLocation || driver.area || driver.homeAddress || driver.address}
                             </div>
                           )}
                           {driver.availability && (

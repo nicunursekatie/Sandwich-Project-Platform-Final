@@ -691,6 +691,7 @@ export const drivers = pgTable('drivers', {
   emailAgreementSent: boolean('email_agreement_sent').notNull().default(false),
   voicemailLeft: boolean('voicemail_left').notNull().default(false),
   inactiveReason: text('inactive_reason'),
+  isWeeklyDriver: boolean('is_weekly_driver').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

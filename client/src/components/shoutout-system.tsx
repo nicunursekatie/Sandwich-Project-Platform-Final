@@ -142,7 +142,7 @@ export default function ShoutoutSystem() {
   const [showUserSelection, setShowUserSelection] = useState(false);
 
   // Fetch users for recipient selection
-  const { data: users } = useQuery({
+  const { data: users } = useQuery<any[]>({
     queryKey: ['/api/users'],
     staleTime: 300000, // 5 minutes
   });
@@ -328,7 +328,7 @@ export default function ShoutoutSystem() {
     setSelectedUsers([]);
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string): React.ReactNode => {
     switch (type) {
       case 'reminder':
         return <Clock className="h-4 w-4" />;
@@ -449,32 +449,29 @@ export default function ShoutoutSystem() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">
-                    All Users ({users?.length || 0})
+                    All Users ({(users ?? []).length})
                   </SelectItem>
                   <SelectItem value="super_admins">
                     Super Administrators (
-                    {users?.filter((u: any) => u.role === 'super_admin')
-                      .length || 0}
+                    {(users ?? []).filter((u: any) => u.role === 'super_admin').length}
                     )
                   </SelectItem>
                   <SelectItem value="admins">
                     Administrators (
-                    {users?.filter((u: any) => u.role === 'admin').length || 0})
+                    {(users ?? []).filter((u: any) => u.role === 'admin').length})
                   </SelectItem>
                   <SelectItem value="hosts">
                     Hosts (
-                    {users?.filter((u: any) => u.role === 'host').length || 0})
+                    {(users ?? []).filter((u: any) => u.role === 'host').length})
                   </SelectItem>
                   <SelectItem value="volunteers">
                     Volunteers (
-                    {users?.filter((u: any) => u.role === 'volunteer').length ||
-                      0}
+                    {(users ?? []).filter((u: any) => u.role === 'volunteer').length}
                     )
                   </SelectItem>
                   <SelectItem value="committee">
                     Committee Members (
-                    {users?.filter((u: any) => u.role === 'committee_member')
-                      .length || 0}
+                    {(users ?? []).filter((u: any) => u.role === 'committee_member').length}
                     )
                   </SelectItem>
                   <SelectItem value="custom">
@@ -514,7 +511,7 @@ export default function ShoutoutSystem() {
                 </div>
 
                 <div className="max-h-60 overflow-y-auto space-y-2 border border-slate-200 rounded-md p-3 bg-white">
-                  {users?.map((user: any) => (
+                  {(users ?? []).map((user: any) => (
                     <div
                       key={user.id}
                       className={`flex items-center space-x-3 p-2 rounded-md cursor-pointer transition-colors ${
