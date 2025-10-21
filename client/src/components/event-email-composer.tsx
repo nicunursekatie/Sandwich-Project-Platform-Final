@@ -244,13 +244,12 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
                     <tr>
                         <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
                             <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
-                            <p style="font-size: 18px; margin: 0 0 30px 0;">Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Please visit our <strong>Event Toolkit website</strong> below to access everything you need to plan your sandwich-making event, including food safety guides, sandwich-making instructions, printable labels, and more.</p>
+                            <p style="font-size: 18px; margin: 0 0 30px 0;">Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources.</p>
                             
-                            <!-- CTA Buttons -->
+                            <!-- CTA Button -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td align="center" style="padding: 20px 0;">
-                                        <a href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">📦 View Event Toolkit</a>
                                         <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
                                     </td>
                                 </tr>
@@ -296,7 +295,7 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
                                             <li style="margin: 10px 0; color: #444444; font-size: 16px;">We provide food to vulnerable populations, so please read and follow all safety rules.</li>
                                         </ul>
                                         <p style="margin-top: 15px; padding: 15px; background-color: #fff7e6; border-left: 3px solid #FBAD3F; font-size: 15px; color: #333333;">
-                                            <strong>📝 Labeling Tip:</strong> The printable labels in the toolkit are intended to go on the <strong>outside of each bag</strong> containing a loaf of sandwiches.
+                                            <strong>📝 Labeling Tip:</strong> The attached PDF for labels are intended to go on the <strong>outside of each bag</strong> containing a loaf of sandwiches.
                                         </p>
                                     </td>
                                 </tr>
@@ -372,13 +371,12 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
                     <tr>
                         <td style="padding: 40px 30px; color: #333333; line-height: 1.7;">
                             <p style="font-size: 18px; margin: 0 0 15px 0;">Hi ${eventRequest.firstName},</p>
-                            <p style="font-size: 18px; margin: 0 0 30px 0;">Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Please visit our <strong>Event Toolkit website</strong> below to access everything you need to plan your sandwich-making event, including food safety guides, sandwich-making instructions, printable labels, and more.</p>
+                            <p style="font-size: 18px; margin: 0 0 30px 0;">Thank you for reaching out and for your interest in making sandwiches with us! We are so glad you want to get involved. Attached you'll find a toolkit (everything you need to plan a sandwich-making event), plus a link to our interactive planning guide with food safety tips and helpful resources.</p>
                             
-                            <!-- CTA Buttons -->
+                            <!-- CTA Button -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td align="center" style="padding: 20px 0;">
-                                        <a href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">📦 View Event Toolkit</a>
                                         <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
                                     </td>
                                 </tr>
@@ -424,7 +422,7 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
                                             <li style="margin: 10px 0; color: #444444; font-size: 16px;">We provide food to vulnerable populations, so please read and follow all safety rules.</li>
                                         </ul>
                                         <p style="margin-top: 15px; padding: 15px; background-color: #fff7e6; border-left: 3px solid #FBAD3F; font-size: 15px; color: #333333;">
-                                            <strong>📝 Labeling Tip:</strong> Labels go on the <strong>outside of each bag</strong> containing a loaf of sandwiches—not on individual sandwiches.
+                                            <strong>📝 Labeling Tip:</strong> The attached PDF for labels are intended to go on the <strong>outside of each bag</strong> containing a loaf of sandwiches.
                                         </p>
                                     </td>
                                 </tr>
