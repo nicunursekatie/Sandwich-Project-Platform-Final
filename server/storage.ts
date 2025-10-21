@@ -677,6 +677,18 @@ export interface IStorage {
     updates: Partial<InsertAvailabilitySlot>
   ): Promise<AvailabilitySlot>;
   deleteAvailabilitySlot(id: number): Promise<void>;
+
+  // Dashboard Documents (Configure which documents appear on dashboard)
+  getDashboardDocuments(): Promise<any[]>;
+  addDashboardDocument(
+    documentId: string,
+    displayOrder: number,
+    userId: string
+  ): Promise<any>;
+  removeDashboardDocument(documentId: string): Promise<boolean>;
+  updateDashboardDocumentOrder(
+    updates: Array<{ documentId: string; displayOrder: number }>
+  ): Promise<void>;
 }
 
 export class MemStorage implements IStorage {

@@ -20,9 +20,11 @@ import {
   Share2,
   Copy,
   Lock,
+  Settings,
 } from 'lucide-react';
 import { DocumentPreview } from '@/components/document-preview';
 import { ConfidentialDocuments } from '@/components/confidential-documents';
+import { DashboardDocumentSelector } from '@/components/dashboard-document-selector';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -32,8 +34,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { PERMISSIONS } from '@shared/auth-utils';
 
-interface AdminDocument {
+export interface AdminDocument {
   id: string;
   name: string;
   description: string;
@@ -45,7 +48,7 @@ interface AdminDocument {
   importance: 'critical' | 'high' | 'normal';
 }
 
-const adminDocuments: AdminDocument[] = [
+export const adminDocuments: AdminDocument[] = [
   // Legal & Tax Documents
   {
     id: 'tax-exempt-letter',
@@ -310,6 +313,10 @@ export default function ImportantDocuments() {
   // Show confidential tab only to admin users
   const hasConfidentialAccess = !!user && !isAuthLoading && 
     (user.email === 'admin@sandwich.project' || user.email === 'katielong2316@gmail.com');
+  
+  // Show dashboard configuration tab only to users with admin access
+  const hasAdminAccess = !!user && !isAuthLoading && 
+    user.permissions?.includes(PERMISSIONS.ADMIN_ACCESS);
 
   const filteredDocuments = adminDocuments.filter(
     (doc) => {
@@ -512,7 +519,7 @@ export default function ImportantDocuments() {
         </div>
 
         <Tabs defaultValue="documents" className="w-full">
-          <TabsList className={`grid w-full ${hasConfidentialAccess ? 'grid-cols-3' : 'grid-cols-2'} h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white`}>
+          <TabsList className={`grid w-full ${hasAdminAccess ? 'grid-cols-4' : hasConfidentialAccess ? 'grid-cols-3' : 'grid-cols-2'} h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white`}>
             <TabsTrigger
               value="documents"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
@@ -537,6 +544,16 @@ export default function ImportantDocuments() {
               >
                 <Lock className="h-4 w-4" />
                 Confidential
+              </TabsTrigger>
+            )}
+            {hasAdminAccess && (
+              <TabsTrigger
+                value="dashboard-config"
+                className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+                data-testid="tab-dashboard-config"
+              >
+                <Settings className="h-4 w-4" />
+                Dashboard Config
               </TabsTrigger>
             )}
           </TabsList>
@@ -815,6 +832,12 @@ export default function ImportantDocuments() {
           {hasConfidentialAccess && (
             <TabsContent value="confidential" className="space-y-8">
               <ConfidentialDocuments />
+            </TabsContent>
+          )}
+
+          {hasAdminAccess && (
+            <TabsContent value="dashboard-config" className="space-y-8">
+              <DashboardDocumentSelector adminDocuments={adminDocuments} />
             </TabsContent>
           )}
         </Tabs>

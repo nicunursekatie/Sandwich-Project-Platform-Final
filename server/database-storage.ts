@@ -46,6 +46,7 @@ import {
   meetingNotes,
   importedExternalIds,
   availabilitySlots,
+  dashboardDocuments,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -127,6 +128,8 @@ import {
   type InsertImportedExternalId,
   type AvailabilitySlot,
   type InsertAvailabilitySlot,
+  type DashboardDocument,
+  type InsertDashboardDocument,
 } from '@shared/schema';
 import { db } from './db';
 import {
@@ -4262,5 +4265,52 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAvailabilitySlot(id: number): Promise<void> {
     await db.delete(availabilitySlots).where(eq(availabilitySlots.id, id));
+  }
+
+  // Dashboard Documents
+  async getDashboardDocuments(): Promise<DashboardDocument[]> {
+    return await db
+      .select()
+      .from(dashboardDocuments)
+      .where(eq(dashboardDocuments.isActive, true))
+      .orderBy(asc(dashboardDocuments.displayOrder));
+  }
+
+  async addDashboardDocument(
+    documentId: string,
+    displayOrder: number,
+    userId: string
+  ): Promise<DashboardDocument> {
+    const [doc] = await db
+      .insert(dashboardDocuments)
+      .values({
+        documentId,
+        displayOrder,
+        addedBy: userId,
+        isActive: true,
+      })
+      .returning();
+    return doc;
+  }
+
+  async removeDashboardDocument(documentId: string): Promise<boolean> {
+    const result = await db
+      .delete(dashboardDocuments)
+      .where(eq(dashboardDocuments.documentId, documentId));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async updateDashboardDocumentOrder(
+    updates: Array<{ documentId: string; displayOrder: number }>
+  ): Promise<void> {
+    for (const update of updates) {
+      await db
+        .update(dashboardDocuments)
+        .set({ 
+          displayOrder: update.displayOrder,
+          updatedAt: new Date(),
+        })
+        .where(eq(dashboardDocuments.documentId, update.documentId));
+    }
   }
 }

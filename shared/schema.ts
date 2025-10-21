@@ -2604,3 +2604,23 @@ export const insertAvailabilitySlotSchema = createInsertSchema(availabilitySlots
 
 export type AvailabilitySlot = typeof availabilitySlots.$inferSelect;
 export type InsertAvailabilitySlot = z.infer<typeof insertAvailabilitySlotSchema>;
+
+// Dashboard document preferences - which documents appear on dashboard
+export const dashboardDocuments = pgTable('dashboard_documents', {
+  id: serial('id').primaryKey(),
+  documentId: varchar('document_id').notNull().unique(), // References the id from adminDocuments array
+  displayOrder: integer('display_order').notNull().default(0), // Order to display on dashboard
+  isActive: boolean('is_active').notNull().default(true), // Whether to show on dashboard
+  addedBy: varchar('added_by'), // User who added this document to dashboard
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertDashboardDocumentSchema = createInsertSchema(dashboardDocuments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type DashboardDocument = typeof dashboardDocuments.$inferSelect;
+export type InsertDashboardDocument = z.infer<typeof insertDashboardDocumentSchema>;

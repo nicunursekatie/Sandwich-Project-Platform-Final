@@ -39,6 +39,7 @@ import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
 import { AnimatedCounter } from '@/components/modern-dashboard/animated-counter';
 import DashboardActionTracker from '@/components/dashboard-action-tracker';
+import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
 import {
@@ -183,40 +184,34 @@ export default function DashboardOverview({
     return () => clearTimeout(timer);
   }, []);
 
-  // Key organizational documents from attached assets
-  const importantDocuments = [
-    {
-      title: 'Key Findings: Peak Collection Weeks',
-      description:
-        'Comprehensive analysis of peak performance and organizational growth',
-      category: 'Strategy',
-      path: '/attached_assets/Key Findings_ Peak Sandwich Collection Weeks_1753498455636.pdf',
-    },
-    {
-      title: 'Food Safety Guidelines',
-      description: 'Essential safety protocols for volunteers',
-      category: 'Operations',
-      path: '/attached_assets/20230525-TSP-Food Safety Volunteers_1749341933308.pdf',
-    },
-    {
-      title: 'Volunteer Driver Agreement',
-      description: 'Required agreement form for volunteer drivers',
-      category: 'Forms',
-      path: '/attached_assets/TSP Volunteer Driver Agreement (1).pdf',
-    },
-    {
-      title: 'Community Service Hours Form',
-      description: 'Form for tracking and documenting community service hours',
-      category: 'Forms',
-      path: '/attached_assets/TSP COMMUNITY SERVICE HOURS (1) (1) (1).pdf',
-    },
-    {
-      title: 'ACORD Document',
-      description: 'Official ACORD documentation for organizational reference',
-      category: 'Forms',
-      path: '/attached_assets/ACORD®_1756831296864.pdf',
-    },
-  ];
+  // Fetch dashboard documents configuration from API
+  const { data: dashboardDocumentsData } = useQuery({
+    queryKey: ['/api/dashboard-documents'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Map dashboard document IDs to full document details from adminDocuments
+  const importantDocuments = React.useMemo(() => {
+    if (!dashboardDocumentsData || !Array.isArray(dashboardDocumentsData)) {
+      // Return empty array if no documents configured
+      return [];
+    }
+
+    return dashboardDocumentsData
+      .map((dashDoc: any) => {
+        const doc = adminDocuments.find((d: any) => d.id === dashDoc.documentId);
+        if (!doc) return null;
+        
+        return {
+          title: doc.name,
+          description: doc.description,
+          category: doc.category,
+          path: doc.path,
+          type: doc.type,
+        };
+      })
+      .filter((doc: any) => doc !== null);
+  }, [dashboardDocumentsData]);
 
   // Fetch all collections for peak calculations
   const { data: allCollectionsData } = useQuery({
@@ -644,7 +639,7 @@ export default function DashboardOverview({
                     '_blank'
                   )
                 }
-                className="bg-brand-orange hover:bg-orange-600 text-white font-semibold px-8 py-3 text-base flex-1"
+                className="bg-brand-orange hover:bg-brand-orange hover:scale-105 hover:shadow-lg transition-all text-white font-semibold px-8 py-3 text-base flex-1"
               >
                 <ExternalLink className="w-5 h-5 mr-2" />
                 Open Event Toolkit
@@ -750,8 +745,23 @@ export default function DashboardOverview({
             </div>
 
             {/* Documents Grid - Compact design */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {importantDocuments.map((doc, index) => (
+            {importantDocuments.length === 0 ? (
+              <div className="text-center py-8 px-4" data-testid="no-documents-message">
+                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 mb-2">No documents configured for dashboard</p>
+                {hasPermission(user, PERMISSIONS.ADMIN_ACCESS) && (
+                  <p className="text-xs text-gray-400">
+                    Admins can configure documents in the{' '}
+                    <a href="/important-documents" className="text-brand-primary hover:underline">
+                      Important Documents
+                    </a>{' '}
+                    page
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {importantDocuments.map((doc, index) => (
                 <div
                   key={index}
                   className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all duration-200 border hover:border-brand-primary/30"
@@ -796,7 +806,8 @@ export default function DashboardOverview({
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
