@@ -2624,3 +2624,42 @@ export const insertDashboardDocumentSchema = createInsertSchema(dashboardDocumen
 
 export type DashboardDocument = typeof dashboardDocuments.$inferSelect;
 export type InsertDashboardDocument = z.infer<typeof insertDashboardDocumentSchema>;
+
+// Onboarding Challenge - Gamification for feature exploration
+export const onboardingChallenges = pgTable('onboarding_challenges', {
+  id: serial('id').primaryKey(),
+  actionKey: varchar('action_key').notNull().unique(), // e.g., 'chat_first_message', 'view_important_docs'
+  title: varchar('title').notNull(), // e.g., 'Send your first chat message'
+  description: text('description'), // Detailed description of the action
+  category: varchar('category').notNull(), // 'communication', 'documents', 'team', 'projects'
+  points: integer('points').notNull().default(10), // Points awarded for completion
+  icon: varchar('icon'), // Icon name for UI
+  order: integer('order').notNull().default(0), // Display order
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const onboardingProgress = pgTable('onboarding_progress', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull(),
+  challengeId: integer('challenge_id').notNull(),
+  completedAt: timestamp('completed_at').notNull().defaultNow(),
+  metadata: jsonb('metadata').default('{}'), // Additional context about completion
+}, (table) => [
+  unique().on(table.userId, table.challengeId), // Each user can complete each challenge once
+]);
+
+export const insertOnboardingChallengeSchema = createInsertSchema(onboardingChallenges).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertOnboardingProgressSchema = createInsertSchema(onboardingProgress).omit({
+  id: true,
+  completedAt: true,
+});
+
+export type OnboardingChallenge = typeof onboardingChallenges.$inferSelect;
+export type InsertOnboardingChallenge = z.infer<typeof insertOnboardingChallengeSchema>;
+export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
+export type InsertOnboardingProgress = z.infer<typeof insertOnboardingProgressSchema>;

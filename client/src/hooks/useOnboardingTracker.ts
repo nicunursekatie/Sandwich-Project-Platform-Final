@@ -1,0 +1,67 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+
+interface TrackResult {
+  success: boolean;
+  points?: number;
+  message?: string;
+}
+
+export function useOnboardingTracker() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const trackMutation = useMutation({
+    mutationFn: async ({
+      actionKey,
+      metadata,
+    }: {
+      actionKey: string;
+      metadata?: Record<string, any>;
+    }) => {
+      return await apiRequest<TrackResult>(
+        'POST',
+        `/api/onboarding/track/${actionKey}`,
+        { metadata }
+      );
+    },
+    onSuccess: (data) => {
+      if (data.success && data.points) {
+        // Invalidate queries to refresh stats and challenges
+        queryClient.invalidateQueries({ queryKey: ['/api/onboarding/challenges'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/onboarding/stats'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/onboarding/leaderboard'] });
+
+        // Show celebration
+        showCelebration(data.points, data.message || 'Challenge completed!');
+      }
+    },
+  });
+
+  const showCelebration = (points: number, message: string) => {
+    // Show toast notification with celebration
+    toast({
+      title: '🎉 Challenge Completed!',
+      description: (
+        <div className="mt-2">
+          <p className="font-semibold">{message}</p>
+          <p className="text-sm text-amber-600 mt-1 flex items-center gap-1">
+            <span>+{points} points earned!</span>
+            <span className="text-2xl">✨</span>
+          </p>
+        </div>
+      ),
+      duration: 5000,
+    });
+  };
+
+  const track = (actionKey: string, metadata?: Record<string, any>) => {
+    trackMutation.mutate({ actionKey, metadata });
+  };
+
+  return {
+    track,
+    isTracking: trackMutation.isPending,
+  };
+}

@@ -150,6 +150,10 @@ export async function registerRoutes(app: Express): Promise<void> {
   const { streamRoutes } = await import('./routes/stream');
   app.use('/api/stream', isAuthenticated, streamRoutes);
 
+  // Onboarding challenge routes
+  const onboardingRoutes = await import('./routes/onboarding');
+  app.use('/api/onboarding', onboardingRoutes.default);
+
   // Message notifications routes
   const { registerMessageNotificationRoutes } = await import(
     './routes/message-notifications'

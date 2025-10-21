@@ -97,6 +97,7 @@ import LogosPage from '@/pages/logos';
 import ImportantLinks from '@/pages/important-links';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import HistoricalImport from '@/pages/historical-import';
+import OnboardingChallengeButton from '@/components/onboarding-challenge-button';
 import { GuidedTour } from '@/components/GuidedTour';
 import MyAvailability from '@/pages/my-availability';
 import TeamAvailability from '@/pages/team-availability';
@@ -579,6 +580,9 @@ export default function Dashboard({
               {typeof window !== 'undefined' && (
                 <EnhancedNotifications user={user} />
               )}
+
+              {/* Onboarding Challenge Button */}
+              <OnboardingChallengeButton />
 
               <button
                 onClick={(e) => {
