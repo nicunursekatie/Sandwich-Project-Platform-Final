@@ -103,7 +103,8 @@ export class EmailService {
               and(
                 eq(emailMessages.senderId, userId),
                 eq(emailMessages.isDraft, false),
-                eq(emailMessages.isTrashed, false)
+                eq(emailMessages.isTrashed, false),
+                eq(emailMessages.isArchived, false)
               )
             );
           break;
