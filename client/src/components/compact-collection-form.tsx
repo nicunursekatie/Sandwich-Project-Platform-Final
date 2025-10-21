@@ -574,19 +574,32 @@ export default function CompactCollectionForm({
                 className="h-12 md:h-10 text-lg md:text-base"
               />
 
-              {!showGroupBreakdown ? (
-                // Simple total count input when not using breakdown
-                <Input
-                  type="number"
-                  placeholder="Enter count (e.g. 25)"
-                  value={newGroupCount || ''}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value) || 0;
-                    setNewGroupCount(value);
-                  }}
-                  className="h-12 md:h-10 text-lg md:text-base"
-                />
-              ) : (
+              {/* Simple total count input */}
+              <Input
+                type="number"
+                placeholder="Enter count (e.g. 25)"
+                value={newGroupCount || ''}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0;
+                  setNewGroupCount(value);
+                }}
+                className="h-12 md:h-10 text-lg md:text-base"
+                disabled={showGroupBreakdown}
+              />
+
+              {/* OR Divider */}
+              <div className="relative text-center my-3">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <span className="relative bg-gray-50 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  or break down by type
+                </span>
+              </div>
+
+              {/* Breakdown inputs */}
+              <div className={`transition-opacity ${!showGroupBreakdown ? 'opacity-60' : ''}`}>
+                {showGroupBreakdown ? (
                 // Breakdown inputs when specifying sandwich types
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -669,32 +682,41 @@ export default function CompactCollectionForm({
                     </div>
                   )}
                 </>
-              )}
-
-              {/* Toggle for sandwich type breakdown for groups */}
-              <div className={`border rounded p-2 ${showGroupBreakdown ? 'bg-brand-primary-lighter border-brand-primary' : 'bg-white border-gray-200'}`}>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="group-breakdown"
-                    checked={showGroupBreakdown}
-                    onChange={(e) => {
-                      setShowGroupBreakdown(e.target.checked);
-                      // Reset breakdown when hiding
-                      if (!e.target.checked) {
-                        setNewGroupDeli(0);
-                        setNewGroupTurkey(0);
-                        setNewGroupHam(0);
-                        setNewGroupPbj(0);
-                        setNewGroupOther(0);
-                      }
-                    }}
-                    className="w-3 h-3 text-brand-primary focus:ring-brand-primary"
-                  />
-                  <label htmlFor="group-breakdown" className="text-xs font-medium cursor-pointer">
-                    Specify sandwich types (Optional)
-                  </label>
-                </div>
+                ) : (
+                  // Placeholder when not using breakdown - show disabled inputs
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pointer-events-none">
+                    <div>
+                      <label className="text-xs font-medium text-gray-700">Deli</label>
+                      <Input
+                        type="number"
+                        value=""
+                        placeholder="0"
+                        disabled
+                        className="h-10 text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-700">PBJ</label>
+                      <Input
+                        type="number"
+                        value=""
+                        placeholder="0"
+                        disabled
+                        className="h-10 text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-700">Generic</label>
+                      <Input
+                        type="number"
+                        value=""
+                        placeholder="0"
+                        disabled
+                        className="h-10 text-base"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2">
