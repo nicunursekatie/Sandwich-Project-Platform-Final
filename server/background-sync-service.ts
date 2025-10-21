@@ -29,13 +29,19 @@ export class BackgroundSyncService {
     console.log('🔒 GUARANTEE: External_ids will NEVER be imported twice, even after deletion');
     this.isRunning = true;
 
-    // Run sync immediately on startup
-    this.performSync();
+    // Run sync immediately on startup with error handling
+    this.performSync().catch((error) => {
+      syncLogger.error('Initial background sync failed', { error });
+      console.error('❌ Initial background sync failed:', error);
+    });
 
     // Set up recurring sync every 5 minutes
     this.syncInterval = setInterval(
       () => {
-        this.performSync();
+        this.performSync().catch((error) => {
+          syncLogger.error('Scheduled background sync failed', { error });
+          console.error('❌ Scheduled background sync failed:', error);
+        });
       },
       5 * 60 * 1000
     ); // 5 minutes
