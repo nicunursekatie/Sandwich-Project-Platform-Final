@@ -4,7 +4,7 @@ import type { IStorage } from './storage';
 import { EventRequest, Organization, eventRequests } from '@shared/schema';
 import { AuditLogger } from './audit-logger';
 import { db } from './db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 export interface EventRequestSheetRow {
   externalId: string;
@@ -757,54 +757,57 @@ export class EventRequestsGoogleSheetsService {
         };
 
         try {
-          // Check if record already exists to determine if this is an insert or update
-          const existing = await db
-            .select({ id: eventRequests.id })
+          // Check if record exists BEFORE upsert
+          const existingRecord = await db
+            .select({ id: eventRequests.id, status: eventRequests.status })
             .from(eventRequests)
             .where(eq(eventRequests.externalId, externalIdTrimmed))
             .limit(1);
 
-          if (existing && existing.length > 0) {
-            // EXISTING RECORD: Only update contact/organization info, NOT status or workflow fields
-            const updateData = {
-              firstName: eventRequestData.firstName,
-              lastName: eventRequestData.lastName,
-              email: eventRequestData.email,
-              phone: eventRequestData.phone,
-              organizationName: eventRequestData.organizationName,
-              department: eventRequestData.department,
-              desiredEventDate: eventRequestData.desiredEventDate,
-              message: eventRequestData.message,
-              previouslyHosted: eventRequestData.previouslyHosted,
-              organizationExists: eventRequestData.organizationExists,
-              duplicateNotes: eventRequestData.duplicateNotes,
-              googleSheetRowId: row.rowIndex?.toString(),
-              lastSyncedAt: new Date(),
-              updatedAt: new Date(),
-              // CRITICAL: DO NOT update status, createdAt, createdBy, or any workflow fields
-            };
+          const recordExisted = existingRecord && existingRecord.length > 0;
 
-            await db
-              .update(eventRequests)
-              .set(updateData)
-              .where(eq(eventRequests.externalId, externalIdTrimmed));
+          // Use INSERT ON CONFLICT with selective update for existing records
+          const result = await db
+            .insert(eventRequests)
+            .values(sanitizedData as any)
+            .onConflictDoUpdate({
+              target: eventRequests.externalId,
+              set: {
+                // Only update contact/organization info, NOT status or workflow fields
+                firstName: eventRequestData.firstName,
+                lastName: eventRequestData.lastName,
+                email: eventRequestData.email,
+                phone: eventRequestData.phone,
+                organizationName: eventRequestData.organizationName,
+                department: eventRequestData.department,
+                desiredEventDate: eventRequestData.desiredEventDate,
+                message: eventRequestData.message,
+                previouslyHosted: eventRequestData.previouslyHosted,
+                organizationExists: eventRequestData.organizationExists,
+                duplicateNotes: eventRequestData.duplicateNotes,
+                googleSheetRowId: row.rowIndex?.toString(),
+                lastSyncedAt: new Date(),
+                updatedAt: new Date(),
+                // CRITICAL: DO NOT include status, createdAt, createdBy, or any workflow fields here
+              }
+            })
+            .returning({ 
+              id: eventRequests.id, 
+              externalId: eventRequests.externalId
+            });
 
-            console.log(`🔄 UPDATED contact info for existing record: external_id: ${externalIdTrimmed} - ${row.organizationName} (status preserved)`);
-            updatedCount++;
-          } else {
-            // NEW RECORD: Insert with all fields including status
-            const result = await db
-              .insert(eventRequests)
-              .values(sanitizedData as any)
-              .returning({ id: eventRequests.id, externalId: eventRequests.externalId });
-
-            if (result && result.length > 0) {
+          if (result && result.length > 0) {
+            if (recordExisted) {
+              console.log(`🔄 UPDATED contact info for existing record: external_id: ${externalIdTrimmed} - ${row.organizationName} (status preserved: ${existingRecord[0].status})`);
+              updatedCount++;
+            } else {
               console.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
               createdCount++;
             }
           }
         } catch (error) {
-          console.error(`❌ Failed to sync record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
+          console.error(`❌ Failed to upsert record for external_id: ${row.externalId} - ${row.organizationName}:`, error);
+          console.error(`❌ Error details:`, error);
           // Continue processing other records
         }
       }
