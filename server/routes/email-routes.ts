@@ -765,11 +765,3 @@ export function createEmailRouter(deps: RouterDependencies) {
 
   return router;
 }
-
-// Backwards compatibility export
-export default createEmailRouter({
-  storage: require('../storage-wrapper').storage,
-  isAuthenticated: require('../temp-auth').isAuthenticated,
-  requirePermission: require('../middleware/auth').requirePermission,
-  sessionStore: null as any,
-});

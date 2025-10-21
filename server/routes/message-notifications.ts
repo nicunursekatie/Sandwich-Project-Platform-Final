@@ -359,14 +359,6 @@ export function createMessageNotificationsRouter(deps: RouterDependencies) {
   return router;
 }
 
-// Backwards compatibility export
-export function registerMessageNotificationRoutes(app: any) {
-  const router = createMessageNotificationsRouter({
-    storage: require('../storage-wrapper').storage,
-    isAuthenticated: require('../temp-auth').isAuthenticated,
-    requirePermission: require('../middleware/auth').requirePermission,
-    sessionStore: null as any,
-  });
   app.use('/api/message-notifications', router);
 }
 

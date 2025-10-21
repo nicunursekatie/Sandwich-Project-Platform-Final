@@ -845,10 +845,3 @@ TqvVOJ0zAgMBAAECggEAGMsmlOtvscXk21FhrJ5/9F[...truncated for security...]
   return router;
 }
 
-// Backwards compatibility export
-export default createGoogleSheetsRouter({
-  storage: require('../storage-wrapper').storage,
-  isAuthenticated: require('../temp-auth').isAuthenticated,
-  requirePermission: require('../middleware/auth').requirePermission,
-  sessionStore: null as any,
-});

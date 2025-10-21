@@ -21,14 +21,6 @@ export function createAnnouncementsRouter(deps: RouterDependencies) {
   return router;
 }
 
-// Backwards compatibility export
-export function registerAnnouncementRoutes(app: any) {
-  const router = createAnnouncementsRouter({
-    storage: require('../storage-wrapper').storage,
-    isAuthenticated: require('../temp-auth').isAuthenticated,
-    requirePermission: require('../middleware/auth').requirePermission,
-    sessionStore: null as any,
-  });
   app.use('/api/announcements', router);
 }
 

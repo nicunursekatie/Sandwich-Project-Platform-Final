@@ -222,10 +222,3 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
   return router;
 }
 
-// Backwards compatibility export
-export default createRecipientTspContactsRouter({
-  storage: require('../storage-wrapper').storage,
-  isAuthenticated: require('../temp-auth').isAuthenticated,
-  requirePermission: require('../middleware/auth').requirePermission,
-  sessionStore: null as any,
-});

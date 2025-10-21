@@ -319,10 +319,3 @@ export function createHostsRouter(deps: RouterDependencies) {
   return router;
 }
 
-// Backwards compatibility export
-export const hostsRoutes = createHostsRouter({
-  storage: require('../storage-wrapper').storage,
-  isAuthenticated: require('../middleware/auth').isAuthenticated,
-  requirePermission: require('../middleware/auth').requirePermission,
-  sessionStore: null as any,
-});

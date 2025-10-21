@@ -162,13 +162,5 @@ export function createPerformanceRouter(deps: RouterDependencies) {
   return router;
 }
 
-// Backwards compatibility export
-export function registerPerformanceRoutes(app: any) {
-  const router = createPerformanceRouter({
-    storage: require('../storage-wrapper').storage,
-    isAuthenticated: require('../temp-auth').isAuthenticated,
-    requirePermission: require('../middleware/auth').requirePermission,
-    sessionStore: null as any,
-  });
   app.use('/api/performance', router);
 }

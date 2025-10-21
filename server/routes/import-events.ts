@@ -1072,10 +1072,3 @@ const __dirname = path.dirname(__filename);
   return router;
 }
 
-// Backwards compatibility export
-export default createImportEventsRouter({
-  storage: require('../storage-wrapper').storage,
-  isAuthenticated: require('../temp-auth').isAuthenticated,
-  requirePermission: require('../middleware/auth').requirePermission,
-  sessionStore: null as any,
-});

@@ -306,10 +306,3 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
   return router;
 }
 
-// Backwards compatibility export
-export default createPasswordResetRouter({
-  storage: require('../storage-wrapper').storage,
-  isAuthenticated: require('../temp-auth').isAuthenticated,
-  requirePermission: require('../middleware/auth').requirePermission,
-  sessionStore: null as any,
-});
