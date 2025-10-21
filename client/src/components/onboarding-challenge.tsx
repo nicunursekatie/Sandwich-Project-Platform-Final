@@ -163,7 +163,7 @@ export default function OnboardingChallenge({
 
   const { data: leaderboard = [], isLoading: leaderboardLoading, error: leaderboardError } = useQuery<LeaderboardEntry[]>({
     queryKey: ['/api/onboarding/leaderboard'],
-    queryFn: () => apiRequest('GET', '/api/onboarding/leaderboard?limit=10'),
+    queryFn: () => apiRequest('GET', '/api/onboarding/leaderboard?limit=100'),
     enabled: isOpen,
   });
 
