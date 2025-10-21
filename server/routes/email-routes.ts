@@ -593,53 +593,39 @@ router.post('/event', isAuthenticated, async (req: any, res) => {
           if (trimmed.startsWith('uploads/documents/')) {
             const hash = trimmed.split('/').pop();
             if (hash) {
-              const { eq } = await import('drizzle-orm');
-              const doc = await db
-                .select({
-                  filePath: documents.filePath,
-                  originalName: documents.originalName,
-                })
-                .from(documents)
-                .where(eq(documents.fileName, hash))
-                .limit(1);
-              
-              if (doc.length > 0 && doc[0]) {
-                // Files are in Google Cloud Storage, need to download them
-                try {
-                  const { ObjectStorageService } = await import('../objectStorage');
-                  const storageService = new ObjectStorageService();
-                  const file = await storageService.searchPublicObject(doc[0].filePath);
-                  
-                  if (file) {
-                    // Download file content as buffer
-                    const [fileContent] = await file.download();
-                    const base64Content = fileContent.toString('base64');
-                    
-                    // Get content type from file extension
-                    const ext = path.extname(doc[0].originalName || '').toLowerCase();
-                    const contentTypeMap: Record<string, string> = {
-                      '.pdf': 'application/pdf',
-                      '.doc': 'application/msword',
-                      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    };
-                    const contentType = contentTypeMap[ext] || 'application/octet-stream';
-                    
-                    processedAttachments.push({
-                      content: base64Content,
-                      filename: doc[0].originalName || `document${ext}`,
-                      type: contentType,
-                      disposition: 'attachment',
-                    } as any);
-                    
-                    console.log(`[Event Email API] Downloaded from GCS: ${doc[0].originalName}`);
-                  } else {
-                    console.warn(`[Event Email API] File not found in GCS: ${doc[0].filePath}`);
-                  }
-                } catch (gcsError) {
-                  console.error(`[Event Email API] Error downloading from GCS:`, gcsError);
+              // Map document hashes to attached_assets files
+              const hashToFileMap: Record<string, { file: string; name: string }> = {
+                '015b0f68ddb511633e7696caab59bfa7': {
+                  file: 'attached_assets/20230525-TSP-Food Safety Volunteers (1)_1753670644140.pdf',
+                  name: 'Food Safety Guide for Volunteers.pdf'
+                },
+                '3e375509b08b20265abdfa6afe632982': {
+                  file: 'attached_assets/20250205-TSP-PBJ Sandwich Making 101_1753670644141.pdf',
+                  name: 'PBJ Sandwich Making 101.pdf'
+                },
+                '56687eca96492549ba09d1bda0e5e6e0': {
+                  file: 'attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf',
+                  name: 'Deli Sandwich Making 101.pdf'
+                },
+                '075839360400adce8b79a6a58a96dcfc': {
+                  file: 'attached_assets/Deli Labels_1756865384146.pdf',
+                  name: 'Deli Sandwich Labels.pdf'
+                },
+                'a9458021b23fca8d76e674597c691876': {
+                  file: 'attached_assets/PBJ Labels_1756865384146.pdf',
+                  name: 'PBJ Sandwich Labels.pdf'
                 }
+              };
+              
+              const fileInfo = hashToFileMap[hash];
+              if (fileInfo) {
+                processedAttachments.push({
+                  filePath: path.join(process.cwd(), fileInfo.file),
+                  originalName: fileInfo.name
+                });
+                console.log(`[Event Email API] Mapped hash ${hash} to ${fileInfo.name}`);
               } else {
-                console.warn(`[Event Email API] Document hash not found in DB: ${hash}`);
+                console.warn(`[Event Email API] Document hash not found in mapping: ${hash}`);
               }
             }
             continue;
