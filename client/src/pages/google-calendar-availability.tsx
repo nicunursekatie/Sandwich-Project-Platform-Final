@@ -38,20 +38,7 @@ export default function GoogleCalendarAvailability() {
   const { data: events = [], isLoading } = useQuery<CalendarEvent[]>({
     queryKey: ['/api/google-calendar/events', monthStart.toISOString(), monthEnd.toISOString()],
     queryFn: async () => {
-      const data = await apiRequest('GET', `/api/google-calendar/events?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`);
-      console.log('📅 Calendar events received:', data);
-      console.log('📅 First event:', {
-        summary: data[0]?.summary,
-        colorId: data[0]?.colorId,
-        backgroundColor: data[0]?.backgroundColor,
-        foregroundColor: data[0]?.foregroundColor,
-      });
-      console.log('📅 Event summaries and colors:', data.map((e: any) => ({
-        summary: e.summary,
-        colorId: e.colorId,
-        bg: e.backgroundColor,
-      })));
-      return data;
+      return await apiRequest('GET', `/api/google-calendar/events?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`);
     },
   });
 
@@ -111,10 +98,7 @@ export default function GoogleCalendarAvailability() {
       const startDateStr = event.start.date || event.start.dateTime?.split('T')[0];
       const endDateStr = event.end.date || event.end.dateTime?.split('T')[0];
 
-      if (!startDateStr) {
-        console.log(`⚠️ Event missing start date:`, event);
-        return false;
-      }
+      if (!startDateStr) return false;
 
       // Parse start date
       const startParts = startDateStr.split('-');
@@ -146,23 +130,7 @@ export default function GoogleCalendarAvailability() {
 
       const checkDate = new Date(checkYear, checkMonth, checkDay);
 
-      const matches = checkDate >= startDate && checkDate < endDate;
-
-      // Debug logging for Katie events
-      if (event.summary?.toLowerCase().includes('katie')) {
-        console.log(`🔍 Katie event "${event.summary}" on ${checkMonth+1}/${checkDay}:`, {
-          isAllDay,
-          start: `${startMonth+1}/${startDay}/${startYear}`,
-          end: `${endMonth+1}/${endDay}/${endYear}`,
-          check: `${checkMonth+1}/${checkDay}/${checkYear}`,
-          startDate, endDate, checkDate,
-          matches,
-          'checkDate >= startDate': checkDate >= startDate,
-          'checkDate < endDate': checkDate < endDate
-        });
-      }
-
-      return matches;
+      return checkDate >= startDate && checkDate < endDate;
     });
   };
 

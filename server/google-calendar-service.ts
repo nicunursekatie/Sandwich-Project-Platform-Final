@@ -102,14 +102,11 @@ export class GoogleCalendarService {
     const response = await this.calendar.events.list(params);
     const events = response.data.items || [];
 
-    console.log(`📅 Fetched ${events.length} events from Google Calendar`);
-
     // Fetch color definitions from Google Calendar API
     const colors = await this.getColors();
-    console.log('📅 Fetched color definitions:', JSON.stringify(colors.event, null, 2));
 
     // Map events with their colors
-    // Use a hash of the event summary to assign consistent colors if no colorId is set
+    // Use a hash of the event summary to assign consistent colors
     const availableColorIds = ['1', '2', '3', '4', '5', '6', '7', '9', '10', '11']; // Skip 8 (gray)
 
     const getColorForEvent = (event: any) => {
@@ -123,19 +120,13 @@ export class GoogleCalendarService {
       }
 
       const colorIndex = Math.abs(hash) % availableColorIds.length;
-      const assignedColorId = availableColorIds[colorIndex];
-
-      console.log(`  Hash for "${summary}": ${hash} → index ${colorIndex} → colorId ${assignedColorId}`);
-
-      return assignedColorId;
+      return availableColorIds[colorIndex];
     };
 
     const mappedEvents = events.map((event: any) => {
       const colorId = getColorForEvent(event);
       const backgroundColor = colors.event?.[colorId]?.background || '#a4bdfc';
       const foregroundColor = colors.event?.[colorId]?.foreground || '#1d1d1d';
-
-      console.log(`Event: ${event.summary}, colorId: ${event.colorId || 'AUTO'}, assigned: ${colorId}, bg: ${backgroundColor}`);
 
       return {
         ...event,
