@@ -131,8 +131,11 @@ export class GoogleCalendarService {
 
     try {
       const response = await this.calendar.colors.get();
+      console.log('✅ Successfully fetched colors from Google Calendar API');
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Failed to fetch colors from Google Calendar API:', error.message);
+      console.log('📝 Using default color palette');
       // Return default Google Calendar colors if API call fails
       return {
         event: {

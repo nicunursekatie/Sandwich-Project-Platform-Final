@@ -94,26 +94,40 @@ export default function GoogleCalendarAvailability() {
     return days;
   }, [currentDate, monthStart, monthEnd]);
 
-  // Get events for a specific day (including multi-day events)
+  // Get events for a specific day (only show multi-day events on their start date)
   const getEventsForDay = (date: Date) => {
     return events.filter(event => {
       const startDateStr = event.start.date || event.start.dateTime?.split('T')[0];
-      const endDateStr = event.end.date || event.end.dateTime?.split('T')[0];
 
       if (!startDateStr) return false;
 
       const startDate = new Date(startDateStr);
-      const endDate = endDateStr ? new Date(endDateStr) : startDate;
 
       // Set time to midnight for accurate date comparison
       const checkDate = new Date(date);
       checkDate.setHours(0, 0, 0, 0);
       startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(0, 0, 0, 0);
 
-      // Check if the date falls within the event's date range
-      return checkDate >= startDate && checkDate < endDate;
+      // Only show events on their start date
+      return checkDate.getTime() === startDate.getTime();
     });
+  };
+
+  // Helper to check if an event spans multiple days
+  const isMultiDayEvent = (event: CalendarEvent) => {
+    const startDateStr = event.start.date || event.start.dateTime?.split('T')[0];
+    const endDateStr = event.end.date || event.end.dateTime?.split('T')[0];
+
+    if (!startDateStr || !endDateStr) return false;
+
+    const start = new Date(startDateStr);
+    const end = new Date(endDateStr);
+
+    // Calculate difference in days
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays > 1;
   };
 
   const monthYear = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -189,19 +203,23 @@ export default function GoogleCalendarAvailability() {
 
                   {/* Events for this day */}
                   <div className="space-y-1">
-                    {dayEvents.map((event, eventIndex) => (
-                      <div
-                        key={event.id || eventIndex}
-                        className="text-xs px-2 py-1 rounded truncate"
-                        style={{
-                          backgroundColor: event.backgroundColor || '#a4bdfc',
-                          color: event.foregroundColor || '#1d1d1d',
-                        }}
-                        title={`${event.summary}${event.description ? '\n' + event.description : ''}`}
-                      >
-                        {event.summary}
-                      </div>
-                    ))}
+                    {dayEvents.map((event, eventIndex) => {
+                      const isMultiDay = isMultiDayEvent(event);
+                      return (
+                        <div
+                          key={event.id || eventIndex}
+                          className="text-xs px-2 py-1 rounded truncate font-medium"
+                          style={{
+                            backgroundColor: event.backgroundColor || '#a4bdfc',
+                            color: event.foregroundColor || '#1d1d1d',
+                          }}
+                          title={`${event.summary}${isMultiDay ? ' (Multi-day event)' : ''}${event.description ? '\n' + event.description : ''}`}
+                        >
+                          {isMultiDay && '→ '}
+                          {event.summary}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
