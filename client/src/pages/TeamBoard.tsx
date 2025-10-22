@@ -84,6 +84,7 @@ const getAvatarColor = (name: string) => {
 function ItemComments({ itemId, initialCommentCount }: { itemId: number; initialCommentCount: number }) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { track } = useOnboardingTracker();
   const [isExpanded, setIsExpanded] = useState(false);
   const [newComment, setNewComment] = useState('');
 
@@ -113,6 +114,9 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
         title: 'Comment posted',
         description: 'Your comment has been added',
       });
+
+      // Track engagement challenge (commenting shows engagement like "liking" would)
+      track('like_team_board_post');
     },
     onError: () => {
       toast({

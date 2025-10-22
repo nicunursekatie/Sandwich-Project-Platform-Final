@@ -52,6 +52,7 @@ import { Project, InsertProject } from '@shared/schema';
 import SendKudosButton from '@/components/send-kudos-button';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 
 // Component to display assignee email
 function AssigneeEmail({ assigneeId }: { assigneeId: string | number }) {
@@ -73,6 +74,7 @@ export default function ProjectsClean() {
   const { user } = useAuth();
   const { celebration, triggerCelebration, hideCelebration } = useCelebration();
   const queryClient = useQueryClient();
+  const { track } = useOnboardingTracker();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -113,6 +115,11 @@ export default function ProjectsClean() {
   const { data: archivedProjects = [], isLoading: archiveLoading } = useQuery({
     queryKey: ['/api/projects/archived'],
   });
+
+  // Track that user has viewed projects page
+  useEffect(() => {
+    track('view_projects');
+  }, []);
 
   // Mutations
   const createProjectMutation = useMutation({
