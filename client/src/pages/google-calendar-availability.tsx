@@ -38,7 +38,10 @@ export default function GoogleCalendarAvailability() {
   const { data: events = [], isLoading } = useQuery<CalendarEvent[]>({
     queryKey: ['/api/google-calendar/events', monthStart.toISOString(), monthEnd.toISOString()],
     queryFn: async () => {
-      return apiRequest('GET', `/api/google-calendar/events?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`);
+      const data = await apiRequest('GET', `/api/google-calendar/events?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`);
+      console.log('📅 Calendar events received:', data);
+      console.log('📅 First event colors:', data[0]?.backgroundColor, data[0]?.foregroundColor);
+      return data;
     },
   });
 
@@ -91,12 +94,25 @@ export default function GoogleCalendarAvailability() {
     return days;
   }, [currentDate, monthStart, monthEnd]);
 
-  // Get events for a specific day
+  // Get events for a specific day (including multi-day events)
   const getEventsForDay = (date: Date) => {
     return events.filter(event => {
-      const eventDate = event.start.date || event.start.dateTime?.split('T')[0];
-      const dayStr = date.toISOString().split('T')[0];
-      return eventDate?.startsWith(dayStr);
+      const startDateStr = event.start.date || event.start.dateTime?.split('T')[0];
+      const endDateStr = event.end.date || event.end.dateTime?.split('T')[0];
+
+      if (!startDateStr) return false;
+
+      const startDate = new Date(startDateStr);
+      const endDate = endDateStr ? new Date(endDateStr) : startDate;
+
+      // Set time to midnight for accurate date comparison
+      const checkDate = new Date(date);
+      checkDate.setHours(0, 0, 0, 0);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+
+      // Check if the date falls within the event's date range
+      return checkDate >= startDate && checkDate < endDate;
     });
   };
 

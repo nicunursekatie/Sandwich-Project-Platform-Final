@@ -103,13 +103,25 @@ export class GoogleCalendarService {
 
     // Fetch color definitions from Google Calendar API
     const colors = await this.getColors();
+    console.log('📅 Fetched color definitions:', JSON.stringify(colors.event, null, 2));
 
     // Map events with their colors
-    return events.map((event: any) => ({
-      ...event,
-      backgroundColor: event.colorId ? colors.event[event.colorId]?.background : colors.event['1']?.background,
-      foregroundColor: event.colorId ? colors.event[event.colorId]?.foreground : colors.event['1']?.foreground,
-    }));
+    const mappedEvents = events.map((event: any) => {
+      const colorId = event.colorId || '9'; // Default to blue if no colorId
+      const backgroundColor = colors.event?.[colorId]?.background || '#a4bdfc';
+      const foregroundColor = colors.event?.[colorId]?.foreground || '#1d1d1d';
+
+      console.log(`Event: ${event.summary}, colorId: ${event.colorId}, bg: ${backgroundColor}`);
+
+      return {
+        ...event,
+        colorId,
+        backgroundColor,
+        foregroundColor,
+      };
+    });
+
+    return mappedEvents;
   }
 
   private async getColors(): Promise<any> {
