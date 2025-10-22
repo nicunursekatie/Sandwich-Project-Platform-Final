@@ -20,6 +20,9 @@ export interface CalendarEvent {
     email?: string;
     displayName?: string;
   };
+  colorId?: string;
+  backgroundColor?: string;
+  foregroundColor?: string;
 }
 
 export class GoogleCalendarService {
@@ -69,6 +72,7 @@ export class GoogleCalendarService {
       key: cleanPrivateKey,
       scopes: [
         'https://www.googleapis.com/auth/calendar.readonly',
+        'https://www.googleapis.com/auth/calendar.events.readonly',
       ],
     });
 
@@ -95,6 +99,44 @@ export class GoogleCalendarService {
     }
 
     const response = await this.calendar.events.list(params);
-    return response.data.items || [];
+    const events = response.data.items || [];
+
+    // Fetch color definitions from Google Calendar API
+    const colors = await this.getColors();
+
+    // Map events with their colors
+    return events.map((event: any) => ({
+      ...event,
+      backgroundColor: event.colorId ? colors.event[event.colorId]?.background : colors.event['1']?.background,
+      foregroundColor: event.colorId ? colors.event[event.colorId]?.foreground : colors.event['1']?.foreground,
+    }));
+  }
+
+  private async getColors(): Promise<any> {
+    if (!this.calendar) {
+      await this.initializeAuth();
+    }
+
+    try {
+      const response = await this.calendar.colors.get();
+      return response.data;
+    } catch (error) {
+      // Return default Google Calendar colors if API call fails
+      return {
+        event: {
+          '1': { background: '#a4bdfc', foreground: '#1d1d1d' },
+          '2': { background: '#7ae7bf', foreground: '#1d1d1d' },
+          '3': { background: '#dbadff', foreground: '#1d1d1d' },
+          '4': { background: '#ff887c', foreground: '#1d1d1d' },
+          '5': { background: '#fbd75b', foreground: '#1d1d1d' },
+          '6': { background: '#ffb878', foreground: '#1d1d1d' },
+          '7': { background: '#46d6db', foreground: '#1d1d1d' },
+          '8': { background: '#e1e1e1', foreground: '#1d1d1d' },
+          '9': { background: '#5484ed', foreground: '#1d1d1d' },
+          '10': { background: '#51b749', foreground: '#1d1d1d' },
+          '11': { background: '#dc2127', foreground: '#1d1d1d' },
+        },
+      };
+    }
   }
 }
