@@ -110,11 +110,8 @@ export class GoogleCalendarService {
     const availableColorIds = ['1', '2', '3', '4', '5', '6', '7', '9', '10', '11']; // Skip 8 (gray)
 
     const getColorForEvent = (event: any) => {
-      if (event.colorId) {
-        return event.colorId;
-      }
-
-      // Hash the event summary to get a consistent color
+      // ALWAYS use hash-based color assignment for better visual variety
+      // (ignoring any colorId set in Google Calendar)
       const summary = event.summary || 'Untitled';
       let hash = 0;
       for (let i = 0; i < summary.length; i++) {
@@ -123,7 +120,11 @@ export class GoogleCalendarService {
       }
 
       const colorIndex = Math.abs(hash) % availableColorIds.length;
-      return availableColorIds[colorIndex];
+      const assignedColorId = availableColorIds[colorIndex];
+
+      console.log(`  Hash for "${summary}": ${hash} → index ${colorIndex} → colorId ${assignedColorId}`);
+
+      return assignedColorId;
     };
 
     const mappedEvents = events.map((event: any) => {
@@ -156,20 +157,20 @@ export class GoogleCalendarService {
     } catch (error: any) {
       console.error('❌ Failed to fetch colors from Google Calendar API:', error.message);
       console.log('📝 Using default color palette');
-      // Return default Google Calendar colors if API call fails
+      // Return default Google Calendar colors with white text for better readability
       return {
         event: {
-          '1': { background: '#a4bdfc', foreground: '#1d1d1d' },
-          '2': { background: '#7ae7bf', foreground: '#1d1d1d' },
-          '3': { background: '#dbadff', foreground: '#1d1d1d' },
-          '4': { background: '#ff887c', foreground: '#1d1d1d' },
-          '5': { background: '#fbd75b', foreground: '#1d1d1d' },
-          '6': { background: '#ffb878', foreground: '#1d1d1d' },
-          '7': { background: '#46d6db', foreground: '#1d1d1d' },
-          '8': { background: '#e1e1e1', foreground: '#1d1d1d' },
-          '9': { background: '#5484ed', foreground: '#1d1d1d' },
-          '10': { background: '#51b749', foreground: '#1d1d1d' },
-          '11': { background: '#dc2127', foreground: '#1d1d1d' },
+          '1': { background: '#a4bdfc', foreground: '#000000' }, // Light blue - dark text
+          '2': { background: '#7ae7bf', foreground: '#000000' }, // Light green - dark text
+          '3': { background: '#dbadff', foreground: '#000000' }, // Light purple - dark text
+          '4': { background: '#ff887c', foreground: '#000000' }, // Light red - dark text
+          '5': { background: '#fbd75b', foreground: '#000000' }, // Yellow - dark text
+          '6': { background: '#ffb878', foreground: '#000000' }, // Orange - dark text
+          '7': { background: '#46d6db', foreground: '#000000' }, // Cyan - dark text
+          '8': { background: '#e1e1e1', foreground: '#000000' }, // Gray - dark text
+          '9': { background: '#5484ed', foreground: '#ffffff' }, // Dark blue - white text
+          '10': { background: '#51b749', foreground: '#ffffff' }, // Dark green - white text
+          '11': { background: '#dc2127', foreground: '#ffffff' }, // Dark red - white text
         },
       };
     }
