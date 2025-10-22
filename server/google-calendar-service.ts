@@ -88,6 +88,7 @@ export class GoogleCalendarService {
       calendarId: this.calendarId,
       singleEvents: true,
       orderBy: 'startTime',
+      maxResults: 2500, // Increase limit to fetch more events
     };
 
     if (timeMin) {
@@ -100,6 +101,8 @@ export class GoogleCalendarService {
 
     const response = await this.calendar.events.list(params);
     const events = response.data.items || [];
+
+    console.log(`📅 Fetched ${events.length} events from Google Calendar`);
 
     // Fetch color definitions from Google Calendar API
     const colors = await this.getColors();
