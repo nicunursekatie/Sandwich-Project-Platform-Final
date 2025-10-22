@@ -107,6 +107,7 @@ export default function GoogleCalendarAvailability() {
   // Get events for a specific day (including multi-day events that span this day)
   const getEventsForDay = (date: Date) => {
     return events.filter(event => {
+      const isAllDay = !!event.start.date;
       const startDateStr = event.start.date || event.start.dateTime?.split('T')[0];
       const endDateStr = event.end.date || event.end.dateTime?.split('T')[0];
 
@@ -133,24 +134,34 @@ export default function GoogleCalendarAvailability() {
 
       // Create date objects for comparison
       const startDate = new Date(startYear, startMonth, startDay);
-      const endDate = new Date(endYear, endMonth, endDay); // This is exclusive for all-day events
+      let endDate = new Date(endYear, endMonth, endDay);
+
+      // For timed events (not all-day), the end date is inclusive (same day)
+      // For all-day events, the end date is exclusive (next day)
+      if (!isAllDay) {
+        // For timed events, if start and end are on same day, still show it on that day
+        // Add 1 day to make comparison work
+        endDate = new Date(endYear, endMonth, endDay + 1);
+      }
+
       const checkDate = new Date(checkYear, checkMonth, checkDay);
 
       const matches = checkDate >= startDate && checkDate < endDate;
 
-      // Debug logging for events not showing
-      if (!matches && event.summary?.includes('Elizabeth')) {
-        console.log(`🔍 Event "${event.summary}" doesn't match ${checkMonth+1}/${checkDay}:`, {
+      // Debug logging for Katie events
+      if (event.summary?.toLowerCase().includes('katie')) {
+        console.log(`🔍 Katie event "${event.summary}" on ${checkMonth+1}/${checkDay}:`, {
+          isAllDay,
           start: `${startMonth+1}/${startDay}/${startYear}`,
           end: `${endMonth+1}/${endDay}/${endYear}`,
           check: `${checkMonth+1}/${checkDay}/${checkYear}`,
           startDate, endDate, checkDate,
+          matches,
           'checkDate >= startDate': checkDate >= startDate,
           'checkDate < endDate': checkDate < endDate
         });
       }
 
-      // Check if the date falls within the event range
       return matches;
     });
   };
