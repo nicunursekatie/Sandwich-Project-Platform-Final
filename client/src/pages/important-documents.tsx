@@ -247,7 +247,7 @@ export const adminDocuments: AdminDocument[] = [
     id: 'uploaded-document-oct-22',
     name: 'Important Document',
     description: 'Recently uploaded reference document',
-    category: 'Reference Lists',
+    category: 'Legal & Tax',
     path: '/attached_assets/900F2271-08DB-4E61-8E25-03D21F987178_1761090885143.jpeg',
     type: 'image',
     importance: 'high',
