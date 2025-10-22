@@ -110,7 +110,10 @@ export default function GoogleCalendarAvailability() {
       const startDateStr = event.start.date || event.start.dateTime?.split('T')[0];
       const endDateStr = event.end.date || event.end.dateTime?.split('T')[0];
 
-      if (!startDateStr) return false;
+      if (!startDateStr) {
+        console.log(`⚠️ Event missing start date:`, event);
+        return false;
+      }
 
       // Parse start date
       const startParts = startDateStr.split('-');
@@ -133,8 +136,22 @@ export default function GoogleCalendarAvailability() {
       const endDate = new Date(endYear, endMonth, endDay); // This is exclusive for all-day events
       const checkDate = new Date(checkYear, checkMonth, checkDay);
 
+      const matches = checkDate >= startDate && checkDate < endDate;
+
+      // Debug logging for events not showing
+      if (!matches && event.summary?.includes('Elizabeth')) {
+        console.log(`🔍 Event "${event.summary}" doesn't match ${checkMonth+1}/${checkDay}:`, {
+          start: `${startMonth+1}/${startDay}/${startYear}`,
+          end: `${endMonth+1}/${endDay}/${endYear}`,
+          check: `${checkMonth+1}/${checkDay}/${checkYear}`,
+          startDate, endDate, checkDate,
+          'checkDate >= startDate': checkDate >= startDate,
+          'checkDate < endDate': checkDate < endDate
+        });
+      }
+
       // Check if the date falls within the event range
-      return checkDate >= startDate && checkDate < endDate;
+      return matches;
     });
   };
 
