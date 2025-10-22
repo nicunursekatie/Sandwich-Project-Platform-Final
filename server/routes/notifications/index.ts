@@ -401,4 +401,57 @@ notificationsRouter.delete('/:id', async (req, res) => {
   }
 });
 
+// Admin endpoint to clean up old/stale notifications
+notificationsRouter.post('/admin/cleanup', async (req, res) => {
+  try {
+    if (!req.user?.permissions?.includes('admin')) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const {
+      olderThanDays = 30,
+      types = [],
+      deleteArchived = true,
+      deleteRead = false
+    } = req.body;
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+
+    let conditions = [sql`${notifications.createdAt} < ${cutoffDate}`];
+
+    if (deleteArchived) {
+      conditions.push(eq(notifications.isArchived, true));
+    }
+
+    if (deleteRead) {
+      conditions.push(eq(notifications.isRead, true));
+    }
+
+    if (types.length > 0) {
+      conditions.push(sql`${notifications.type} = ANY(${types})`);
+    }
+
+    const result = await db
+      .delete(notifications)
+      .where(and(...conditions))
+      .returning();
+
+    res.json({
+      success: true,
+      message: `Cleaned up ${result.length} notifications`,
+      deletedCount: result.length,
+      criteria: {
+        olderThanDays,
+        types: types.length > 0 ? types : 'all',
+        archivedOnly: deleteArchived,
+        readOnly: deleteRead,
+      },
+    });
+  } catch (error) {
+    console.error('Error cleaning up notifications:', error);
+    res.status(500).json({ error: 'Failed to clean up notifications' });
+  }
+});
+
 export default notificationsRouter;

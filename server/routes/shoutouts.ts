@@ -260,6 +260,27 @@ router.post(
         // Don't fail the request if logging fails
       }
 
+      // Create notifications for all recipients who received the kudos
+      if (successCount > 0) {
+        for (const recipient of validRecipients.slice(0, successCount)) {
+          try {
+            await storage.createNotification({
+              userId: recipient.id,
+              type: 'kudos',
+              priority: 'low',
+              title: subject,
+              message: message.substring(0, 200) + (message.length > 200 ? '...' : ''),
+              category: 'social',
+              actionUrl: '/dashboard',
+              actionText: 'View Dashboard',
+            });
+          } catch (notifError) {
+            console.error(`Failed to create notification for ${recipient.id}:`, notifError);
+            // Don't fail if notification creation fails
+          }
+        }
+      }
+
       // Return result
       if (failureCount === 0) {
         res.json({

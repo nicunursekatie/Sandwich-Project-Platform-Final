@@ -178,6 +178,49 @@ collectionsRouter.post(
       QueryOptimizer.invalidateCache('sandwich-collections');
       QueryOptimizer.invalidateCache('sandwich-collections-stats');
 
+      // Check for sandwich collection milestones
+      try {
+        const allCollections = await storage.getAllSandwichCollections();
+        const totalSandwiches = allCollections.reduce((sum, c) => {
+          return sum + (c.individualSandwiches || 0) + (c.group1Count || 0) + (c.group2Count || 0);
+        }, 0);
+
+        // Define milestones
+        const milestones = [1000, 5000, 10000, 25000, 50000, 75000, 100000];
+        const previousTotal = totalSandwiches - (collection.individualSandwiches || 0) - (collection.group1Count || 0) - (collection.group2Count || 0);
+
+        // Check if we just crossed a milestone
+        const crossedMilestone = milestones.find(m => previousTotal < m && totalSandwiches >= m);
+
+        if (crossedMilestone) {
+          // Get all admin users to notify
+          const allUsers = await storage.getAllUsers();
+          const adminUsers = allUsers.filter((u: any) =>
+            u.isActive && (u.role === 'admin' || u.role === 'super_admin')
+          );
+
+          for (const admin of adminUsers) {
+            try {
+              await storage.createNotification({
+                userId: admin.id,
+                type: 'milestone',
+                priority: 'high',
+                title: `🎉 Milestone Reached: ${crossedMilestone.toLocaleString()} Sandwiches!`,
+                message: `Congratulations! The organization has now distributed ${totalSandwiches.toLocaleString()} sandwiches this year!`,
+                category: 'updates',
+                actionUrl: '/sandwich-collections',
+                actionText: 'View Collections',
+              });
+            } catch (notifError) {
+              console.error(`Failed to create milestone notification for ${admin.id}:`, notifError);
+            }
+          }
+        }
+      } catch (milestoneError) {
+        console.error('Error checking sandwich milestones:', milestoneError);
+        // Don't fail collection creation if milestone check fails
+      }
+
       res.status(201).json(collection);
     } catch (error) {
       if (error instanceof z.ZodError) {

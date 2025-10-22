@@ -55,10 +55,14 @@ export class TaskService implements ITaskService {
         const notification = await storage.createNotification({
           userId: assigneeId,
           type: 'task_assignment',
+          priority: 'medium',
           title: 'New Task Assignment',
-          content: `You have been assigned to task: ${taskTitle}`,
+          message: `You have been assigned to task: ${taskTitle}`,
+          category: 'tasks',
           relatedType: 'task',
           relatedId: taskId,
+          actionUrl: '/tasks',
+          actionText: 'View Task',
         });
 
         // Emit WebSocket notification if available

@@ -38,6 +38,26 @@ export function createEventRemindersRouter(deps: RouterDependencies) {
         createdBy: req.user?.id,
       };
       const reminder = await storage.createEventReminder(reminderData);
+
+      // Create notification for the user
+      try {
+        await storage.createNotification({
+          userId: req.user?.id,
+          type: 'event_reminder',
+          priority: 'high',
+          title: 'Event Reminder Created',
+          message: `Reminder set for: ${reminderData.title || 'Upcoming Event'}`,
+          category: 'events',
+          relatedType: 'event_reminder',
+          relatedId: reminder.id,
+          actionUrl: '/event-requests',
+          actionText: 'View Events',
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification for event reminder:', notifError);
+        // Don't fail the reminder creation if notification fails
+      }
+
       res.status(201).json(reminder);
     } catch (error) {
       console.error('Error creating event reminder:', error);
