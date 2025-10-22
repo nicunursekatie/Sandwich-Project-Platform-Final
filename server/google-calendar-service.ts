@@ -106,12 +106,32 @@ export class GoogleCalendarService {
     console.log('📅 Fetched color definitions:', JSON.stringify(colors.event, null, 2));
 
     // Map events with their colors
+    // Use a hash of the event summary to assign consistent colors if no colorId is set
+    const availableColorIds = ['1', '2', '3', '4', '5', '6', '7', '9', '10', '11']; // Skip 8 (gray)
+
+    const getColorForEvent = (event: any) => {
+      if (event.colorId) {
+        return event.colorId;
+      }
+
+      // Hash the event summary to get a consistent color
+      const summary = event.summary || 'Untitled';
+      let hash = 0;
+      for (let i = 0; i < summary.length; i++) {
+        hash = ((hash << 5) - hash) + summary.charCodeAt(i);
+        hash = hash & hash; // Convert to 32bit integer
+      }
+
+      const colorIndex = Math.abs(hash) % availableColorIds.length;
+      return availableColorIds[colorIndex];
+    };
+
     const mappedEvents = events.map((event: any) => {
-      const colorId = event.colorId || '9'; // Default to blue if no colorId
+      const colorId = getColorForEvent(event);
       const backgroundColor = colors.event?.[colorId]?.background || '#a4bdfc';
       const foregroundColor = colors.event?.[colorId]?.foreground || '#1d1d1d';
 
-      console.log(`Event: ${event.summary}, colorId: ${event.colorId}, bg: ${backgroundColor}`);
+      console.log(`Event: ${event.summary}, colorId: ${event.colorId || 'AUTO'}, assigned: ${colorId}, bg: ${backgroundColor}`);
 
       return {
         ...event,
