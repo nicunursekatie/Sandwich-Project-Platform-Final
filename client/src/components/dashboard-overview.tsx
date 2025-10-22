@@ -144,6 +144,29 @@ export default function DashboardOverview({
     }
   };
 
+  const handleShareCollectionSites = async () => {
+    const url = 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/';
+    const title = 'Host Collection Sites Directory';
+    const text =
+      'Public-facing directory of all host collection sites - easy to share with volunteers and partners';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text,
+          url,
+        });
+      } catch (error) {
+        // User cancelled the share or error occurred, fallback to clipboard
+        handleCopyLink(url);
+      }
+    } else {
+      // Fallback to clipboard for browsers that don't support Web Share API
+      handleCopyLink(url);
+    }
+  };
+
   const handleCopyLink = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
@@ -652,6 +675,47 @@ export default function DashboardOverview({
               >
                 <Share2 className="w-5 h-5 mr-2" />
                 Share Toolkit
+              </Button>
+            </div>
+          </div>
+
+          {/* Host Collection Sites Directory */}
+          <div className="bg-white rounded-xl p-6 shadow-md border-2 border-brand-teal/20 mb-6">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mr-4">
+                <Building2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h4 className="text-xl font-bold text-brand-teal mb-1">
+                  Host Collection Sites Directory
+                </h4>
+                <p className="text-gray-600">
+                  Public directory of all collection sites - share with volunteers and partners
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                size="lg"
+                onClick={() =>
+                  window.open(
+                    'https://nicunursekatie.github.io/sandwichprojectcollectionsites/',
+                    '_blank'
+                  )
+                }
+                className="bg-brand-teal hover:bg-brand-teal hover:scale-105 hover:shadow-lg transition-all text-white font-semibold px-8 py-3 text-base flex-1"
+              >
+                <Building2 className="w-5 h-5 mr-2" />
+                View Collection Sites
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleShareCollectionSites}
+                className="border-brand-teal text-brand-teal hover:bg-teal-50 px-6 py-3 font-medium"
+              >
+                <Share2 className="w-5 h-5 mr-2" />
+                Share Directory
               </Button>
             </div>
           </div>
