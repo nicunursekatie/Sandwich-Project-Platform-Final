@@ -104,26 +104,37 @@ export default function GoogleCalendarAvailability() {
     return days;
   }, [currentDate, monthStart, monthEnd]);
 
-  // Get events for a specific day (only show multi-day events on their start date)
+  // Get events for a specific day (including multi-day events that span this day)
   const getEventsForDay = (date: Date) => {
     return events.filter(event => {
       const startDateStr = event.start.date || event.start.dateTime?.split('T')[0];
+      const endDateStr = event.end.date || event.end.dateTime?.split('T')[0];
 
       if (!startDateStr) return false;
 
-      // For all-day events (using .date), parse as local date
-      // For timed events (using .dateTime), extract just the date part
+      // Parse start date
       const startParts = startDateStr.split('-');
       const startYear = parseInt(startParts[0]);
-      const startMonth = parseInt(startParts[1]) - 1; // Month is 0-indexed
+      const startMonth = parseInt(startParts[1]) - 1;
       const startDay = parseInt(startParts[2]);
+
+      // Parse end date (if exists)
+      const endParts = endDateStr?.split('-');
+      const endYear = endParts ? parseInt(endParts[0]) : startYear;
+      const endMonth = endParts ? parseInt(endParts[1]) - 1 : startMonth;
+      const endDay = endParts ? parseInt(endParts[2]) : startDay;
 
       const checkYear = date.getFullYear();
       const checkMonth = date.getMonth();
       const checkDay = date.getDate();
 
-      // Compare year, month, and day directly
-      return checkYear === startYear && checkMonth === startMonth && checkDay === startDay;
+      // Create date objects for comparison
+      const startDate = new Date(startYear, startMonth, startDay);
+      const endDate = new Date(endYear, endMonth, endDay); // This is exclusive for all-day events
+      const checkDate = new Date(checkYear, checkMonth, checkDay);
+
+      // Check if the date falls within the event range
+      return checkDate >= startDate && checkDate < endDate;
     });
   };
 
