@@ -41,7 +41,7 @@ export interface AdminDocument {
   description: string;
   category: string;
   path: string;
-  type: 'pdf' | 'docx' | 'xlsx' | 'link';
+  type: 'pdf' | 'docx' | 'xlsx' | 'link' | 'image';
   size?: string;
   lastModified?: string;
   importance: 'critical' | 'high' | 'normal';
@@ -241,6 +241,15 @@ export const adminDocuments: AdminDocument[] = [
     category: 'Reference Lists',
     path: '/attached_assets/Unified_Schools_List_1759034641773.pdf',
     type: 'pdf',
+    importance: 'high',
+  },
+  {
+    id: 'uploaded-document-oct-22',
+    name: 'Important Document',
+    description: 'Recently uploaded reference document',
+    category: 'Legal & Tax',
+    path: '/attached_assets/900F2271-08DB-4E61-8E25-03D21F987178_1761090885143.jpeg',
+    type: 'image',
     importance: 'high',
   },
 ];
