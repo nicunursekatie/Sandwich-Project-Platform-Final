@@ -115,6 +115,9 @@ export default function StreamChatRooms() {
           const firstChannel = chatClient.channel('team', accessibleRooms[0].id);
           await firstChannel.watch();
           setActiveChannel(firstChannel);
+
+          // Track that user has viewed team chat messages
+          track('chat_read_messages');
         }
 
       } catch (error) {
