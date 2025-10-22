@@ -40,7 +40,17 @@ export default function GoogleCalendarAvailability() {
     queryFn: async () => {
       const data = await apiRequest('GET', `/api/google-calendar/events?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`);
       console.log('📅 Calendar events received:', data);
-      console.log('📅 First event colors:', data[0]?.backgroundColor, data[0]?.foregroundColor);
+      console.log('📅 First event:', {
+        summary: data[0]?.summary,
+        colorId: data[0]?.colorId,
+        backgroundColor: data[0]?.backgroundColor,
+        foregroundColor: data[0]?.foregroundColor,
+      });
+      console.log('📅 Event summaries and colors:', data.map((e: any) => ({
+        summary: e.summary,
+        colorId: e.colorId,
+        bg: e.backgroundColor,
+      })));
       return data;
     },
   });
@@ -101,15 +111,19 @@ export default function GoogleCalendarAvailability() {
 
       if (!startDateStr) return false;
 
-      const startDate = new Date(startDateStr);
+      // For all-day events (using .date), parse as local date
+      // For timed events (using .dateTime), extract just the date part
+      const startParts = startDateStr.split('-');
+      const startYear = parseInt(startParts[0]);
+      const startMonth = parseInt(startParts[1]) - 1; // Month is 0-indexed
+      const startDay = parseInt(startParts[2]);
 
-      // Set time to midnight for accurate date comparison
-      const checkDate = new Date(date);
-      checkDate.setHours(0, 0, 0, 0);
-      startDate.setHours(0, 0, 0, 0);
+      const checkYear = date.getFullYear();
+      const checkMonth = date.getMonth();
+      const checkDay = date.getDate();
 
-      // Only show events on their start date
-      return checkDate.getTime() === startDate.getTime();
+      // Compare year, month, and day directly
+      return checkYear === startYear && checkMonth === startMonth && checkDay === startDay;
     });
   };
 
@@ -120,14 +134,23 @@ export default function GoogleCalendarAvailability() {
 
     if (!startDateStr || !endDateStr) return false;
 
-    const start = new Date(startDateStr);
-    const end = new Date(endDateStr);
+    // Parse dates manually to avoid timezone issues
+    const startParts = startDateStr.split('-');
+    const endParts = endDateStr.split('-');
 
-    // Calculate difference in days
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const startYear = parseInt(startParts[0]);
+    const startMonth = parseInt(startParts[1]);
+    const startDay = parseInt(startParts[2]);
 
-    return diffDays > 1;
+    const endYear = parseInt(endParts[0]);
+    const endMonth = parseInt(endParts[1]);
+    const endDay = parseInt(endParts[2]);
+
+    // Compare dates - if end date is different from start date, it's multi-day
+    // Note: Google Calendar end dates for all-day events are exclusive (day after last day)
+    if (endYear !== startYear) return true;
+    if (endMonth !== startMonth) return true;
+    return endDay > startDay + 1; // More than 1 day difference (accounting for exclusive end)
   };
 
   const monthYear = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
