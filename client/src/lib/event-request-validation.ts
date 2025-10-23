@@ -50,15 +50,5 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
     // not critical intake information
   }
 
-  // Conditional field validation: If overnight holding is set, check for delivery details
-  if (request.overnightHoldingLocation && request.overnightHoldingLocation.trim() !== '') {
-    if (!request.deliveryTimeWindow) {
-      missing.push('Delivery Time Window');
-    }
-    if (!request.deliveryParkingAccess) {
-      missing.push('Delivery Parking/Access Info');
-    }
-  }
-
   return missing;
 }
