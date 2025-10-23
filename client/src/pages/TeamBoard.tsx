@@ -285,7 +285,7 @@ export default function TeamBoard() {
 
   // Fetch team members for assignment
   const { data: teamMembers = [] } = useQuery<TeamMember[]>({
-    queryKey: ['/api/team-board', 'users'],
+    queryKey: ['/api/team-board/users'],
   });
 
   // Filter items based on search and type
