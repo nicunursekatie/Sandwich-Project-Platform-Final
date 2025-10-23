@@ -178,6 +178,13 @@ export const ScheduledTab: React.FC = () => {
             isConfirmed: isCompleted ? true : tempIsConfirmed
           },
         });
+      } else if (editingField === 'assignedRecipientIds') {
+        // Special handling for assignedRecipientIds - parse JSON string to array
+        const recipientIds = JSON.parse(editingValue);
+        updateEventRequestMutation.mutate({
+          id: editingScheduledId,
+          data: { assignedRecipientIds: recipientIds },
+        });
       } else {
         // Regular field update
         updateScheduledFieldMutation.mutate({
