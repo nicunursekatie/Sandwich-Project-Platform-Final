@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Shield, FileText } from 'lucide-react';
+import { Settings, Shield, FileText, Trophy } from 'lucide-react';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { DashboardDocumentSelector } from '@/components/dashboard-document-selector';
+import AdminOnboardingKudos from '@/components/admin-onboarding-kudos';
 import { adminDocuments } from '@/pages/important-documents';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
@@ -66,7 +67,7 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="audit-log" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
+          <TabsList className="grid w-full grid-cols-3 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
             <TabsTrigger
               value="audit-log"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
@@ -83,6 +84,14 @@ export default function AdminSettings() {
               <FileText className="h-4 w-4" />
               Dashboard Config
             </TabsTrigger>
+            <TabsTrigger
+              value="onboarding-kudos"
+              className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+              data-testid="tab-onboarding-kudos"
+            >
+              <Trophy className="h-4 w-4" />
+              Onboarding Kudos
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="audit-log" className="space-y-6">
@@ -91,6 +100,10 @@ export default function AdminSettings() {
 
           <TabsContent value="dashboard-config" className="space-y-8">
             <DashboardDocumentSelector adminDocuments={adminDocuments} />
+          </TabsContent>
+
+          <TabsContent value="onboarding-kudos" className="space-y-8">
+            <AdminOnboardingKudos />
           </TabsContent>
         </Tabs>
       </div>
