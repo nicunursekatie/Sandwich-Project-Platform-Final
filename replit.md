@@ -4,6 +4,8 @@
 This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support organizational growth, with a vision to become a vital tool for food security initiatives by scaling operations and improving outreach to reduce food waste and hunger.
 
 ## Recent Changes
+**October 23, 2025** - Fixed mobile logout button cutoff issue: Changed mobile header from overflow-hidden to overflow-x-auto, allowing horizontal scrolling on small screens. This ensures the logout button is always accessible even when header contains many elements (messages, notifications, onboarding, profile, logout buttons).
+
 **October 23, 2025** - Added Amazon wishlist quick access widget to navigation sidebar: Created compact widget below EIN section with "View & Share" button and one-click copy functionality for main wishlist URL. Users can access full wishlist management page (with suggestion system) or quickly copy the link to share with supporters. Widget uses orange theme to stand out and includes Gift icon for visual recognition.
 
 **October 23, 2025** - Redesigned onboarding challenge progress UI: Changed from table layout to card-based grid showing actual completed challenges with green checkmarks. Removed unnecessary role column and made email subtle. Each user gets a card showing which specific challenges they've completed (e.g., "Send your first chat message", "Post to Team Board") in a responsive grid (2 cols mobile, 5 cols desktop).
