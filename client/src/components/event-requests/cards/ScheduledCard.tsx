@@ -281,13 +281,23 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
 
   // Fetch host contacts and recipients for recipient display names
-  const { data: hostContacts = [] } = useQuery<Array<{ id: number; displayName: string }>>({
+  const { data: hostContacts = [] } = useQuery<Array<{
+    id: number;
+    displayName: string;
+    name: string;
+    hostLocationName: string;
+  }>>({
     queryKey: ['/api/host-contacts'],
     staleTime: 10 * 60 * 1000,
   });
 
   const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ['/api/recipients'],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: hostLocations = [] } = useQuery<Array<{ id: number; name: string }>>({
+    queryKey: ['/api/hosts'],
     staleTime: 10 * 60 * 1000,
   });
 
@@ -304,9 +314,18 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       const numId = Number(recipientId);
 
       // Try to find in host contacts first
-      const host = hostContacts.find(h => h.id === numId);
-      if (host) {
-        return { name: host.displayName, type: 'host' };
+      const hostContact = hostContacts.find(h => h.id === numId);
+      if (hostContact) {
+        return {
+          name: hostContact.displayName || hostContact.name || hostContact.hostLocationName || `Host ${numId}`,
+          type: 'host'
+        };
+      }
+
+      // Try to find in host locations
+      const hostLocation = hostLocations.find(h => h.id === numId);
+      if (hostLocation) {
+        return { name: hostLocation.name, type: 'host' };
       }
 
       // Try to find in recipients
@@ -315,8 +334,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         return { name: recipient.name, type: 'recipient' };
       }
 
-      // Fallback if not found
-      return { name: `ID ${recipientId}`, type: 'unknown' };
+      // Fallback if not found - still loading or doesn't exist
+      return { name: `Loading... (ID ${recipientId})`, type: 'unknown' };
     }
 
     // Legacy text format
@@ -1393,7 +1412,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               <Badge
                                 key={index}
                                 variant="secondary"
-                                className="text-xs bg-white/20 text-white border-white/40"
+                                className="text-sm sm:text-base md:text-lg bg-white/20 text-white border-white/40"
                               >
                                 {type === 'recipient' && '🏢 '}
                                 {type === 'host' && '🏠 '}
