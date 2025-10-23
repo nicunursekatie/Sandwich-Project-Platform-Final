@@ -177,8 +177,11 @@ export default function OnboardingAdmin() {
           <div className="space-y-4">
             {filteredUsers.map((user) => {
               // Create a map of completed challenge IDs for quick lookup
+              const completedChallenges = Array.isArray(user.completedChallenges)
+                ? user.completedChallenges
+                : [];
               const completedChallengeIds = new Set(
-                user.completedChallenges.map(c => c.challengeId)
+                completedChallenges.map(c => c.challengeId)
               );
 
               return (
@@ -207,7 +210,7 @@ export default function OnboardingAdmin() {
 
                   {/* Challenge Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    {user.completedChallenges.map((challenge) => (
+                    {completedChallenges.map((challenge) => (
                       <div
                         key={challenge.challengeId}
                         className="flex items-center gap-2 bg-green-50 border border-green-200 rounded px-2 py-1.5"
