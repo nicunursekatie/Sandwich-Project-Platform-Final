@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -279,6 +279,49 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [showAuditLog, setShowAuditLog] = useState(false);
+
+  // Fetch host contacts and recipients for recipient display names
+  const { data: hostContacts = [] } = useQuery<Array<{ id: number; displayName: string }>>({
+    queryKey: ['/api/host-contacts'],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
+    queryKey: ['/api/recipients'],
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Helper to resolve recipient display name from ID
+  const resolveRecipientName = (recipientId: string): { name: string; type: string } => {
+    if (recipientId.includes(':')) {
+      // New format: "host:Name" or "recipient:Name" or "custom:Text"
+      const [type, ...rest] = recipientId.split(':');
+      return { name: rest.join(':'), type };
+    }
+
+    // Legacy format: just a number
+    if (!isNaN(Number(recipientId))) {
+      const numId = Number(recipientId);
+
+      // Try to find in host contacts first
+      const host = hostContacts.find(h => h.id === numId);
+      if (host) {
+        return { name: host.displayName, type: 'host' };
+      }
+
+      // Try to find in recipients
+      const recipient = recipients.find(r => r.id === numId);
+      if (recipient) {
+        return { name: recipient.name, type: 'recipient' };
+      }
+
+      // Fallback if not found
+      return { name: `ID ${recipientId}`, type: 'unknown' };
+    }
+
+    // Legacy text format
+    return { name: recipientId, type: 'custom' };
+  };
 
   // Helper functions
   const parsePostgresArray = (arr: any): string[] => {
@@ -1179,6 +1222,29 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </span>
                   </div>
                 )}
+                {((request as any).adultCount > 0 || (request as any).childrenCount > 0) && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Users className="w-3 h-3" />
+                    <span className="font-medium">Breakdown:</span>
+                    {(request as any).adultCount > 0 && (
+                      <span>{(request as any).adultCount} adults</span>
+                    )}
+                    {(request as any).adultCount > 0 && (request as any).childrenCount > 0 && (
+                      <span>, </span>
+                    )}
+                    {(request as any).childrenCount > 0 && (
+                      <span>{(request as any).childrenCount} children</span>
+                    )}
+                  </div>
+                )}
+                {(request as any).hasRefrigeration !== null && (request as any).hasRefrigeration !== undefined && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Package className="w-3 h-3" />
+                    <span className="font-medium">
+                      Refrigeration: {(request as any).hasRefrigeration ? '✓ Available' : '✗ Not available'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             {/* Delivery Logistics */}
@@ -1297,9 +1363,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <div className="flex flex-wrap gap-1">
                         {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
                           request.assignedRecipientIds.map((recipientId, index) => {
-                            // Parse the ID to get type and name
-                            const [type, ...rest] = recipientId.split(':');
-                            const displayName = rest.join(':'); // In case name has colons
+                            const { name, type } = resolveRecipientName(recipientId);
 
                             return (
                               <Badge
@@ -1310,7 +1374,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                                 {type === 'recipient' && '🏢 '}
                                 {type === 'host' && '🏠 '}
                                 {type === 'custom' && '📝 '}
-                                {displayName}
+                                {type === 'unknown' && '🔍 '}
+                                {name}
                               </Badge>
                             );
                           })
@@ -1577,6 +1642,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </Button>
                       )}
                     </div>
+                    {((request as any).speakerAudienceType || (request as any).speakerDuration) && (
+                      <div className="text-xs space-y-1 mb-2 text-white/80">
+                        {(request as any).speakerAudienceType && (
+                          <div>Audience: {(request as any).speakerAudienceType}</div>
+                        )}
+                        {(request as any).speakerDuration && (
+                          <div>Duration: {(request as any).speakerDuration}</div>
+                        )}
+                      </div>
+                    )}
                     {speakerAssigned > 0 ? (
                       <div className="space-y-1">
                         {Object.keys(request.speakerDetails || {}).map(
