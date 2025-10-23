@@ -1166,9 +1166,21 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   Sandwich Details
                 </span>
               </div>
-              <div className="space-y-2">{renderSandwichEdit()}</div>
+              <div className="space-y-2">
+                {renderSandwichEdit()}
+                {request.estimatedAttendance && request.estimatedAttendance > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="text-sm sm:text-base md:text-lg font-medium">
+                      Est. Attendance:
+                    </span>
+                    <span className="text-sm sm:text-base md:text-lg font-semibold">
+                      {request.estimatedAttendance}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-
             {/* Delivery Logistics */}
             <div className="bg-[#47B3CB] text-white rounded-lg p-3 shadow-md">
               <div className="flex items-center justify-between mb-2">

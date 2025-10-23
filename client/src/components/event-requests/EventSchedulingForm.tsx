@@ -72,22 +72,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventEndTime: '',
     pickupTime: '',
     pickupDateTime: '',
-    pickupTimeWindow: '',
-    pickupPersonResponsible: '',
     eventAddress: '',
     deliveryDestination: '',
     overnightHoldingLocation: '',
     overnightPickupTime: '',
-    deliveryTimeWindow: '',
-    deliveryParkingAccess: '',
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
     hasRefrigeration: '',
     driversNeeded: 0,
     vanDriverNeeded: false,
     assignedVanDriverId: '',
     speakersNeeded: 0,
-    speakerAudienceType: '',
-    speakerDuration: '',
     volunteersNeeded: 0,
     tspContact: '',
     message: '',
@@ -98,6 +92,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     estimatedSandwichCountMax: 0,
     rangeSandwichType: '',
     volunteerCount: 0,
+    estimatedAttendance: 0,
     adultCount: 0,
     childrenCount: 0,
     status: 'new',
@@ -273,21 +268,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
         pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
-        pickupTimeWindow: (eventRequest as any)?.pickupTimeWindow || '',
-        pickupPersonResponsible: (eventRequest as any)?.pickupPersonResponsible || '',
         eventAddress: eventRequest?.eventAddress || '',
         deliveryDestination: eventRequest?.deliveryDestination || '',
         overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
         overnightPickupTime: eventRequest?.overnightPickupTime || '',
-        deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
-        deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
         sandwichTypes: existingSandwichTypes,
         hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
         driversNeeded: eventRequest?.driversNeeded || 0,
         vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
         speakersNeeded: eventRequest?.speakersNeeded || 0,
-        speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
-        speakerDuration: (eventRequest as any)?.speakerDuration || '',
         volunteersNeeded: eventRequest?.volunteersNeeded || 0,
         tspContact: eventRequest?.tspContact || '',
         message: (eventRequest as any)?.message || '',
@@ -298,6 +287,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
         rangeSandwichType: (eventRequest as any)?.estimatedSandwichRangeType || '',
         volunteerCount: (eventRequest as any)?.volunteerCount || 0,
+        estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
         adultCount: (eventRequest as any)?.adultCount || 0,
         childrenCount: (eventRequest as any)?.childrenCount || 0,
         // Contact information fields
@@ -439,22 +429,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventEndTime: formData.eventEndTime || null,
       pickupTime: formData.pickupTime || null,
       pickupDateTime: formData.pickupDateTime || null,
-      pickupTimeWindow: formData.pickupTimeWindow || null,
-      pickupPersonResponsible: formData.pickupPersonResponsible || null,
       eventAddress: formData.eventAddress || null,
       deliveryDestination: formData.deliveryDestination || null,
       overnightHoldingLocation: formData.overnightHoldingLocation || null,
       overnightPickupTime: formData.overnightPickupTime || null,
-      deliveryTimeWindow: formData.deliveryTimeWindow || null,
-      deliveryParkingAccess: formData.deliveryParkingAccess || null,
-      hasRefrigeration: formData.hasRefrigeration === 'true' ? true : 
+      hasRefrigeration: formData.hasRefrigeration === 'true' ? true :
                         formData.hasRefrigeration === 'false' ? false : null,
       driversNeeded: parseInt(formData.driversNeeded?.toString() || '0') || 0,
       vanDriverNeeded: formData.vanDriverNeeded || false,
       speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
-      speakerAudienceType: formData.speakerAudienceType || null,
-      speakerDuration: formData.speakerDuration || null,
       volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
+      estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
       tspContact: formData.tspContact || null,
       message: formData.message || null,
       schedulingNotes: formData.schedulingNotes || null,
@@ -1131,16 +1116,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             {/* Total Count Mode */}
             {attendeeMode === 'total' && (
               <div>
-                <Label htmlFor="volunteerCount">Total Attendees</Label>
+                <Label htmlFor="estimatedAttendance">Estimated Attendance</Label>
                 <Input
-                  id="volunteerCount"
+                  id="estimatedAttendance"
                   type="number"
-                  value={formData.volunteerCount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, volunteerCount: parseInt(e.target.value) || 0, adultCount: 0, childrenCount: 0 }))}
-                  placeholder="Enter total number of attendees"
+                  value={formData.estimatedAttendance}
+                  onChange={(e) => setFormData(prev => ({ ...prev, estimatedAttendance: parseInt(e.target.value) || 0, volunteerCount: parseInt(e.target.value) || 0, adultCount: 0, childrenCount: 0 }))}
+                  placeholder="Enter estimated number of attendees"
                   min="0"
                   className="w-40"
-                  data-testid="input-volunteer-count"
+                  data-testid="input-estimated-attendance"
                 />
               </div>
             )}
@@ -1160,7 +1145,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       setFormData(prev => ({
                         ...prev,
                         adultCount: adults,
-                        volunteerCount: adults + children
+                        volunteerCount: adults + children,
+                        estimatedAttendance: adults + children
                       }));
                     }}
                     placeholder="# of adults"
@@ -1181,7 +1167,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       setFormData(prev => ({
                         ...prev,
                         childrenCount: children,
-                        volunteerCount: adults + children
+                        volunteerCount: adults + children,
+                        estimatedAttendance: adults + children
                       }));
                     }}
                     placeholder="# of children"
@@ -1265,32 +1252,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   </div>
                 )}
 
-                {/* Pickup Details - Only show when drivers are needed */}
-                {formData.driversNeeded > 0 && (
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-                    <h4 className="font-medium text-blue-900">Pickup Details</h4>
-                    <div>
-                      <Label htmlFor="pickupTimeWindow">Pickup Time Window</Label>
-                      <Input
-                        id="pickupTimeWindow"
-                        type="text"
-                        value={formData.pickupTimeWindow || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, pickupTimeWindow: e.target.value }))}
-                        placeholder="e.g., 2:00 PM - 3:00 PM"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pickupPersonResponsible">Who will pick up?</Label>
-                      <Input
-                        id="pickupPersonResponsible"
-                        type="text"
-                        value={formData.pickupPersonResponsible || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, pickupPersonResponsible: e.target.value }))}
-                        placeholder="Contact person name"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 

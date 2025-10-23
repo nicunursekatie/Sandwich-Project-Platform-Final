@@ -408,6 +408,25 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         {/* Event Details */}
         <div className="space-y-3 mb-4">
 
+          {/* Contact Attempts Info */}
+          {(request.contactAttempts || request.lastContactAttempt) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-amber-800">
+                <Phone className="w-4 h-4" />
+                {request.contactAttempts && request.contactAttempts > 0 && (
+                  <span className="text-sm font-medium">
+                    Contact attempts: {request.contactAttempts}
+                  </span>
+                )}
+                {request.lastContactAttempt && (
+                  <span className="text-xs">
+                    (Last: {new Date(request.lastContactAttempt).toLocaleDateString()})
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Scheduled Call Info */}
           {request.scheduledCallDate && (
             <div className="bg-brand-primary-lighter rounded-lg p-3">
