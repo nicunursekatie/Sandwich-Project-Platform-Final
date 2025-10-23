@@ -78,6 +78,22 @@ export function createOnboardingRouter(deps: RouterDependencies) {
   }
 });
 
+// Admin: Get all users with their onboarding challenge completion status
+router.get('/admin/users-progress', isAuthenticated, async (req: any, res) => {
+  try {
+    // Check if user is admin
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+
+    const usersProgress = await onboardingService.getAllUsersProgress();
+    res.json(usersProgress);
+  } catch (error) {
+    console.error('Error fetching users progress:', error);
+    res.status(500).json({ message: 'Failed to fetch users progress' });
+  }
+});
+
 // Admin: Initialize default challenges
   router.post('/admin/initialize', isAuthenticated, async (req: any, res) => {
   try {

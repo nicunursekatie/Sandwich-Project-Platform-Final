@@ -30,6 +30,24 @@ export interface LeaderboardEntry {
   rank: number;
 }
 
+export interface ChallengeCompletion {
+  challengeId: number;
+  challengeTitle: string;
+  points: number;
+  completedAt: Date;
+  kudosSent: boolean;
+}
+
+export interface UserProgress {
+  userId: string;
+  userName: string;
+  email: string;
+  role: string;
+  totalPoints: number;
+  completedChallenges: number;
+  completions: ChallengeCompletion[];
+}
+
 export class OnboardingService {
   /**
    * Get all challenges with user's progress
@@ -234,6 +252,99 @@ export class OnboardingService {
       ...entry,
       rank: index + 1,
     }));
+  }
+
+  /**
+   * Get all users with their onboarding challenge completion status (Admin only)
+   */
+  async getAllUsersProgress(): Promise<UserProgress[]> {
+    const { users, kudosTracking } = await import('@shared/schema');
+
+    // Get all active users
+    const allUsers = await db
+      .select({
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        role: users.role,
+      })
+      .from(users)
+      .where(eq(users.isActive, true));
+
+    // Get all progress records with challenge details
+    const progressRecords = await db
+      .select({
+        userId: onboardingProgress.userId,
+        challengeId: onboardingChallenges.id,
+        challengeTitle: onboardingChallenges.title,
+        points: onboardingChallenges.points,
+        completedAt: onboardingProgress.completedAt,
+      })
+      .from(onboardingProgress)
+      .innerJoin(
+        onboardingChallenges,
+        eq(onboardingProgress.challengeId, onboardingChallenges.id)
+      )
+      .where(eq(onboardingChallenges.isActive, true));
+
+    // Get all kudos records for onboarding challenges
+    const kudosRecords = await db
+      .select({
+        recipientId: kudosTracking.recipientId,
+        contextId: kudosTracking.contextId,
+      })
+      .from(kudosTracking)
+      .where(eq(kudosTracking.contextType, 'onboarding_challenge'));
+
+    // Create a set for quick kudos lookup (recipientId:challengeId)
+    const kudosSet = new Set(
+      kudosRecords.map((k) => `${k.recipientId}:${k.contextId}`)
+    );
+
+    // Group progress by userId
+    const progressByUser = new Map<string, any[]>();
+    for (const record of progressRecords) {
+      if (!progressByUser.has(record.userId)) {
+        progressByUser.set(record.userId, []);
+      }
+      progressByUser.get(record.userId)!.push(record);
+    }
+
+    // Build the result for each user
+    const result: UserProgress[] = allUsers.map((user) => {
+      const userProgressRecords = progressByUser.get(user.id) || [];
+      
+      const completions: ChallengeCompletion[] = userProgressRecords.map((record) => ({
+        challengeId: record.challengeId,
+        challengeTitle: record.challengeTitle,
+        points: record.points,
+        completedAt: record.completedAt,
+        kudosSent: kudosSet.has(`${user.id}:${record.challengeId}`),
+      }));
+
+      const totalPoints = userProgressRecords.reduce((sum, r) => sum + r.points, 0);
+
+      return {
+        userId: user.id,
+        userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
+        email: user.email || '',
+        role: user.role || 'volunteer',
+        totalPoints,
+        completedChallenges: completions.length,
+        completions,
+      };
+    });
+
+    // Sort by totalPoints descending, then by userName
+    result.sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) {
+        return b.totalPoints - a.totalPoints;
+      }
+      return a.userName.localeCompare(b.userName);
+    });
+
+    return result;
   }
 
   /**
