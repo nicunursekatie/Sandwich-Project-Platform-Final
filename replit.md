@@ -4,6 +4,8 @@
 This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support organizational growth, with a vision to become a vital tool for food security initiatives by scaling operations and improving outreach to reduce food waste and hunger.
 
 ## Recent Changes
+**October 23, 2025** - CRITICAL FIX: Google Sheets sync now INSERT-ONLY, never updates existing records: Changed `onConflictDoUpdate` to `onConflictDoNothing` in google-sheets-event-requests-sync.ts. Once an event is imported from Google Sheets, it will NEVER be touched again by the background sync. Manual database edits (organization names, departments, contact info, etc.) are now permanently preserved. The background sync (runs every 5 minutes) will only insert NEW records, skipping all existing records completely. This fixes the critical issue where manual edits were being overwritten every 5 minutes.
+
 **October 23, 2025** - Removed obsolete validation checks: Removed deliveryTimeWindow and deliveryParkingAccess from getMissingIntakeInfo function in event-request-validation.ts. These fields are no longer used, so they won't trigger "missing" badges on scheduled event cards.
 
 **October 23, 2025** - Fixed inline editing for recipient assignment: Added Save/Cancel buttons to recipient inline editor in ScheduledCard.tsx and special handling in ScheduledTab.tsx saveEdit function to parse JSON string to array before sending to backend mutation.

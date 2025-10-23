@@ -670,14 +670,15 @@ export class EventRequestsGoogleSheetsService {
   }
 
   /**
-   * Sync from Google Sheets to database using permanent blacklist for external_id tracking
+   * Sync from Google Sheets to database - INSERT ONLY, never update existing records
+   * CRITICAL GUARANTEE: Once a record is imported, it will NEVER be touched again by sync
+   * 
    * REQUIREMENTS:
-   * 1. Require external_id from the sheet
-   * 2. Check permanent blacklist before attempting any insertions
-   * 3. Skip external_ids that have EVER been imported (even if deleted)
-   * 4. Add external_id to blacklist when successfully inserting new records
-   * 5. Skip blank external_id rows
-   * 6. Never update existing records - only insert new records
+   * 1. Generate external_id from sheet data if not provided
+   * 2. INSERT new records only (onConflictDoNothing ensures existing records are skipped)
+   * 3. Manual database edits are PRESERVED - sync will never overwrite them
+   * 4. Each external_id is imported exactly once
+   * 5. Users can safely edit organization names, departments, contact info without fear of sync overwriting
    */
   async syncFromGoogleSheets(): Promise<{
     success: boolean;
@@ -696,7 +697,7 @@ export class EventRequestsGoogleSheetsService {
       let skippedNoExternalId = 0;
 
       console.log(`🔍 SYNC ANALYSIS: Processing ${sheetRows.length} rows from Google Sheets`);
-      console.log(`🔄 UPSERT MODE: Will insert new records and update existing ones based on external_id`);
+      console.log(`✨ INSERT-ONLY MODE: Will insert new records, skip existing ones (preserves manual edits)`);
 
       for (const row of sheetRows) {
         // UPDATED: External ID is now optional - generate one if missing
@@ -787,30 +788,13 @@ export class EventRequestsGoogleSheetsService {
 
           const recordExisted = existingRecord && existingRecord.length > 0;
 
-          // Use INSERT ON CONFLICT with selective update for existing records
+          // Use INSERT ON CONFLICT DO NOTHING - once imported, never touched again
+          // This ensures manual edits in the database are NEVER overwritten by Google Sheets sync
           const result = await db
             .insert(eventRequests)
             .values(sanitizedData as any)
-            .onConflictDoUpdate({
+            .onConflictDoNothing({
               target: eventRequests.externalId,
-              set: {
-                // Only update contact/organization info, NOT status or workflow fields
-                firstName: eventRequestData.firstName,
-                lastName: eventRequestData.lastName,
-                email: eventRequestData.email,
-                phone: eventRequestData.phone,
-                organizationName: eventRequestData.organizationName,
-                department: eventRequestData.department,
-                desiredEventDate: eventRequestData.desiredEventDate,
-                message: eventRequestData.message,
-                previouslyHosted: eventRequestData.previouslyHosted,
-                organizationExists: eventRequestData.organizationExists,
-                duplicateNotes: eventRequestData.duplicateNotes,
-                googleSheetRowId: row.rowIndex?.toString(),
-                lastSyncedAt: new Date(),
-                updatedAt: new Date(),
-                // CRITICAL: DO NOT include status, createdAt, createdBy, or any workflow fields here
-              }
             })
             .returning({ 
               id: eventRequests.id, 
@@ -818,12 +802,14 @@ export class EventRequestsGoogleSheetsService {
             });
 
           if (result && result.length > 0) {
+            // If result has data, it means INSERT succeeded (new record)
+            console.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
+            createdCount++;
+          } else {
+            // If result is empty, it means conflict was detected and nothing was done (existing record skipped)
             if (recordExisted) {
-              console.log(`🔄 UPDATED contact info for existing record: external_id: ${externalIdTrimmed} - ${row.organizationName} (status preserved: ${existingRecord[0].status})`);
-              updatedCount++;
-            } else {
-              console.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
-              createdCount++;
+              console.log(`⏭️ SKIPPED existing record (no changes): external_id: ${externalIdTrimmed} - ${row.organizationName}`);
+              updatedCount++; // Track as "updated" (but really just skipped) for stats
             }
           }
         } catch (error) {
@@ -833,12 +819,12 @@ export class EventRequestsGoogleSheetsService {
         }
       }
 
-      console.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${updatedCount} records updated`);
-      console.log(`✅ UPSERT SUCCESS: Total ${createdCount + updatedCount} records processed`);
+      console.log(`🔍 SYNC COMPLETE: ${createdCount} new records inserted, ${updatedCount} existing records skipped (manual edits preserved)`);
+      console.log(`✅ INSERT-ONLY SUCCESS: Total ${createdCount + updatedCount} records processed`);
 
       return {
         success: true,
-        message: `Successfully synced from Google Sheets: ${createdCount} created, ${updatedCount} updated`,
+        message: `Successfully synced from Google Sheets: ${createdCount} created, ${updatedCount} skipped (existing)`,
         created: createdCount,
         updated: updatedCount,
       };
