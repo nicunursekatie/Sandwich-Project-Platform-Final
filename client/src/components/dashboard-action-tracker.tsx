@@ -3,15 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Calendar, 
-  Clock, 
-  FileText, 
-  MessageCircle, 
+import {
+  Calendar,
+  Clock,
+  FileText,
+  MessageCircle,
   ArrowRight,
   CheckCircle,
   AlertCircle,
-  Mail
+  Mail,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import * as React from 'react';
@@ -56,6 +58,8 @@ interface DashboardActionTrackerProps {
 }
 
 const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => {
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['/api/me/dashboard'],
     staleTime: 0, // Always fetch fresh data for action items
@@ -291,10 +295,22 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
   return (
     <div className="space-y-6" data-testid="dashboard-action-tracker">
       <div className="text-center">
-        <h2 className="font-bold mb-2 text-[20px] text-[#236383]">My Action Tracker</h2>
+        <div className="flex items-center justify-center gap-2">
+          <h2 className="font-bold mb-2 text-[20px] text-[#236383]">My Action Tracker</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="mb-2"
+            data-testid="collapse-action-tracker"
+          >
+            {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+          </Button>
+        </div>
         <p className="text-gray-600">Stay on top of your assigned work and communications</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {!isCollapsed && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Projects Card */}
         <Card className="hover:shadow-md transition-shadow" data-testid="projects-card">
           <CardHeader className="pb-3">
