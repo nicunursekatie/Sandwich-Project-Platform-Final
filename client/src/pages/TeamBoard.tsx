@@ -24,7 +24,8 @@ import {
   MessageSquare,
   Send,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  UserPlus
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
@@ -53,6 +54,12 @@ interface TeamBoardComment {
   userName: string;
   content: string;
   createdAt: Date;
+}
+
+interface TeamMember {
+  id: string;
+  email: string;
+  name: string;
 }
 
 // Helper to get initials from name
@@ -276,6 +283,11 @@ export default function TeamBoard() {
     queryKey: ['/api/team-board'],
   });
 
+  // Fetch team members for assignment
+  const { data: teamMembers = [] } = useQuery<TeamMember[]>({
+    queryKey: ['/api/team-board', 'users'],
+  });
+
   // Filter items based on search and type
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -384,6 +396,33 @@ export default function TeamBoard() {
         status: 'claimed',
         assignedTo: user.id,
         assignedToName: displayName,
+      },
+    });
+  };
+
+  const handleAssignToUser = (item: TeamBoardItem, userId: string) => {
+    const member = teamMembers.find(m => m.id === userId);
+    if (!member) return;
+    
+    updateItemMutation.mutate({
+      id: item.id,
+      updates: {
+        assignedTo: member.id,
+        assignedToName: member.name,
+      },
+    }, {
+      onSuccess: () => {
+        toast({
+          title: 'Assigned!',
+          description: `Task assigned to ${member.name}`,
+        });
+      },
+      onError: () => {
+        toast({
+          title: 'Assignment failed',
+          description: 'Could not assign task. Please try again.',
+          variant: 'destructive',
+        });
       },
     });
   };
@@ -613,16 +652,54 @@ export default function TeamBoard() {
                       <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                     </div>
 
-                    <Button
-                      onClick={() => handleClaim(item)}
-                      disabled={updateItemMutation.isPending}
-                      className="w-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600 text-sm"
-                      size="sm"
-                      data-testid={`button-claim-${item.id}`}
-                    >
-                      <User className="h-3.5 w-3.5 mr-1.5" />
-                      I'll Handle This
-                    </Button>
+                    {item.assignedTo && item.assignedToName && (
+                      <div className="mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-center gap-2 text-xs">
+                          <UserPlus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-blue-700 dark:text-blue-300 font-medium">
+                            Assigned to {item.assignedToName}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Button
+                        onClick={() => handleClaim(item)}
+                        disabled={updateItemMutation.isPending}
+                        className="w-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600 text-sm"
+                        size="sm"
+                        data-testid={`button-claim-${item.id}`}
+                      >
+                        <User className="h-3.5 w-3.5 mr-1.5" />
+                        I'll Handle This
+                      </Button>
+
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">or assign to</span>
+                        </div>
+                      </div>
+
+                      <Select onValueChange={(userId) => handleAssignToUser(item, userId)}>
+                        <SelectTrigger className="w-full text-sm" data-testid={`select-assign-${item.id}`}>
+                          <div className="flex items-center gap-1.5">
+                            <UserPlus className="h-3.5 w-3.5" />
+                            <SelectValue placeholder="Choose team member" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teamMembers.map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                              {member.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
                     {/* Comments section */}
                     <ItemComments itemId={item.id} initialCommentCount={item.commentCount} />

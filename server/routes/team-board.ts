@@ -10,7 +10,8 @@ import {
   teamBoardComments,
   insertTeamBoardCommentSchema,
   type TeamBoardComment,
-  type InsertTeamBoardComment
+  type InsertTeamBoardComment,
+  users
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
 
@@ -50,6 +51,49 @@ const createCommentSchema = insertTeamBoardCommentSchema
 
 // Create team board router
 export const teamBoardRouter = Router();
+
+// GET /api/team-board/users - Get all active users for assignment
+teamBoardRouter.get('/users', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    logger.info('Fetching active users for team board assignment', { userId: req.user.id });
+
+    // Fetch all active users
+    const activeUsers = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        displayName: users.displayName,
+      })
+      .from(users)
+      .where(eq(users.isActive, true));
+
+    // Format user names for display
+    const formattedUsers = activeUsers.map(user => ({
+      id: user.id,
+      email: user.email,
+      name: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+    }));
+
+    logger.info('Successfully fetched active users', { 
+      count: formattedUsers.length,
+      userId: req.user.id 
+    });
+
+    res.json(formattedUsers);
+  } catch (error) {
+    logger.error('Failed to fetch active users', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch users',
+      message: 'An error occurred while retrieving users' 
+    });
+  }
+});
 
 // GET /api/team-board - Get all board items with comment counts
 teamBoardRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
