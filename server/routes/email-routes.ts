@@ -702,7 +702,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       from: string;
       replyTo: string;
       subject: string;
-      text: string;
+      text?: string;
       html: string;
       bcc?: string;
       attachments?: (string | { filePath: string; originalName?: string })[];
@@ -711,9 +711,13 @@ export function createEmailRouter(deps: RouterDependencies) {
       from: fromEmail,
       replyTo: replyToEmail,
       subject,
-      text: `${textContent}\n\n${EMAIL_FOOTER_TEXT}`,
       html: finalHtml,
     };
+    
+    // Only include plain text fallback for non-HTML emails
+    if (!isFullHtml) {
+      emailPayload.text = `${textContent}\n\n${EMAIL_FOOTER_TEXT}`;
+    }
 
     if (bccEmail) {
       emailPayload.bcc = bccEmail;

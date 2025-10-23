@@ -4,6 +4,8 @@
 This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support organizational growth, with a vision to become a vital tool for food security initiatives by scaling operations and improving outreach to reduce food waste and hunger.
 
 ## Recent Changes
+**October 23, 2025** - Fixed email rendering issue: Updated email-routes.ts to NOT send plain text version when sending full HTML emails. Gmail was choosing to display the plain text fallback instead of the HTML template. Now full HTML emails (toolkit emails) are sent with HTML-only content, forcing proper rendering.
+
 **October 21, 2025** - Fixed event email system: Configured SendGrid to send from verified domain (katie@thesandwichproject.org) instead of Gmail to prevent spam filtering. Rebuilt HTML email templates using table-based layouts with inline styles for proper rendering in all email clients (Gmail, Outlook, mobile). Templates reference attached PDF toolkit files (5 PDFs from cloud storage) plus Budget & Shopping Planner link.
 
 ## Email System Configuration
@@ -37,10 +39,16 @@ This full-stack application for The Sandwich Project nonprofit manages sandwich 
 - All files stored in Replit Object Storage (Google Cloud Storage backend), NOT local filesystem
 - Files pulled from cloud storage in `server/routes/email-routes.ts` and attached to SendGrid emails
 
+**Email Sending Configuration (server/routes/email-routes.ts):**
+- Full HTML emails (starting with `<!DOCTYPE html>`) are sent HTML-only (no plain text version)
+- Gmail and other clients will choose plain text over HTML if both are provided
+- Non-HTML emails include both HTML and plain text versions for compatibility
+
 **Why This Matters:**
 - Modern CSS doesn't work in email clients - they strip it out leaving ugly unstyled text
 - Sending from Gmail addresses flags emails as spam
 - Referencing website instead of attachments caused hours of confusion about attachment availability
+- Sending plain text alongside HTML templates causes Gmail to render plain text instead of formatted HTML
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
