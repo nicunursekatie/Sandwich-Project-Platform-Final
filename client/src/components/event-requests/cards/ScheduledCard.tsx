@@ -1286,12 +1286,28 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <span className="text-sm font-medium">Recipients:</span>
                   {isEditingThisCard &&
                   editingField === 'assignedRecipientIds' ? (
-                    <MultiRecipientSelector
-                      value={editingValue ? JSON.parse(editingValue) : []}
-                      onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                      placeholder="Select recipient organizations..."
-                      data-testid="assigned-recipients-editor"
-                    />
+                    <div className="space-y-2">
+                      <MultiRecipientSelector
+                        value={editingValue ? JSON.parse(editingValue) : []}
+                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                        placeholder="Select recipient organizations..."
+                        data-testid="assigned-recipients-editor"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={cancelEdit}
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex items-start gap-2 group">
                       <div className="flex flex-wrap gap-1">
