@@ -827,6 +827,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   )}
                 </>
               )}
+
+              {/* Van Driver Needed Badge - Shows when specifically requesting a van driver */}
+              {request.vanDriverNeeded && !request.assignedVanDriverId && (
+                <Badge className="bg-[#236383] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center" data-testid="badge-van-driver-needed">
+                  <Car className="w-3 h-3 mr-1" />
+                  Van Driver Needed
+                </Badge>
+              )}
             </div>
 
             {/* Key Information - Prominently Displayed */}
