@@ -168,71 +168,67 @@ export default function OnboardingAdmin() {
         />
       </div>
 
-      {/* Users Table */}
+      {/* Users Progress Grid */}
       <Card>
         <CardHeader>
-          <CardTitle>User Progress Details</CardTitle>
+          <CardTitle>Challenge Completion Matrix</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">User</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Role</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Completed</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-700">Points</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Challenges</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user) => (
-                  <tr key={user.userId} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <div>
-                        <p className="font-medium text-gray-900">{user.userName}</p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
+          <div className="space-y-4">
+            {filteredUsers.map((user) => {
+              // Create a map of completed challenge IDs for quick lookup
+              const completedChallengeIds = new Set(
+                user.completedChallenges.map(c => c.challengeId)
+              );
+
+              return (
+                <div key={user.userId} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  {/* User Header */}
+                  <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{user.userName}</h3>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-xs text-gray-600">Progress</p>
+                        <p className="text-lg font-bold text-brand-primary">
+                          {user.completionCount}/10
+                        </p>
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className="text-xs">
-                        {user.role}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {user.completionCount > 0 ? (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <Clock className="w-4 h-4 text-gray-400" />
-                        )}
-                        <span className="font-medium">{user.completionCount}</span>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-600">Points</p>
+                        <p className="text-lg font-bold text-brand-orange">
+                          {user.totalPoints}
+                        </p>
                       </div>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className="font-bold text-brand-primary">{user.totalPoints}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex flex-wrap gap-1">
-                        {user.completedChallenges.length > 0 ? (
-                          user.completedChallenges.map((challenge) => (
-                            <Badge
-                              key={challenge.challengeId}
-                              className="bg-green-100 text-green-800 text-xs"
-                              title={`Completed: ${new Date(challenge.completedAt!).toLocaleDateString()}`}
-                            >
-                              {challenge.challengeTitle} ({challenge.points}pt)
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-sm text-gray-400 italic">No challenges completed</span>
-                        )}
+                    </div>
+                  </div>
+
+                  {/* Challenge Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {user.completedChallenges.map((challenge) => (
+                      <div
+                        key={challenge.challengeId}
+                        className="flex items-center gap-2 bg-green-50 border border-green-200 rounded px-2 py-1.5"
+                        title={`Completed: ${challenge.completedAt ? new Date(challenge.completedAt).toLocaleDateString() : 'N/A'}`}
+                      >
+                        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <span className="text-xs text-green-900 truncate">
+                          {challenge.challengeTitle}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    ))}
+                  </div>
+
+                  {user.completionCount === 0 && (
+                    <div className="text-center py-6 text-gray-400 italic text-sm">
+                      No challenges completed yet
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             {filteredUsers.length === 0 && (
               <div className="text-center py-12 text-gray-500">
