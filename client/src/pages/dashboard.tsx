@@ -25,6 +25,9 @@ import {
   Clock,
   Truck,
   FileImage,
+  Gift,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import { useLocation, useRoute } from 'wouter';
 // Using optimized SVG for faster loading
@@ -725,13 +728,54 @@ export default function Dashboard({
 
               {/* EIN Information - Always visible at bottom */}
               {!isSidebarCollapsed && (
-                <div className="px-4 mt-6 pt-4 border-t border-amber-200">
+                <div className="px-4 mt-6 pt-4 border-t border-amber-200 space-y-3">
                   <div className="bg-gradient-to-r from-teal-50 to-teal-100 border border-teal-200 rounded-lg px-3 py-2">
                     <div className="text-xs text-teal-700 font-medium uppercase tracking-wide">
                       Organization EIN
                     </div>
                     <div className="text-sm font-bold text-teal-900 font-mono">
                       87-0939484
+                    </div>
+                  </div>
+
+                  {/* Amazon Wishlist Quick Access */}
+                  <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-300 rounded-lg px-3 py-2.5 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <Gift className="w-4 h-4 text-orange-700" />
+                        <div className="text-xs text-orange-700 font-bold uppercase tracking-wide">
+                          Amazon Wishlist
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => {
+                          setActiveSection('wishlist');
+                          window.history.pushState({}, '', '/dashboard?section=wishlist');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="flex-1 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1"
+                        title="View wishlist and share with supporters"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        View & Share
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText('https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV?ref_=wl_share');
+                            // Show toast notification (you'll need to add toast hook)
+                            console.log('Wishlist link copied!');
+                          } catch (err) {
+                            console.error('Copy failed:', err);
+                          }
+                        }}
+                        className="bg-orange-200 hover:bg-orange-300 text-orange-900 px-2 py-1.5 rounded transition-colors"
+                        title="Copy main wishlist link"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                 </div>

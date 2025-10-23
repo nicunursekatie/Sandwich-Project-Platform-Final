@@ -4,6 +4,15 @@
 This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support organizational growth, with a vision to become a vital tool for food security initiatives by scaling operations and improving outreach to reduce food waste and hunger.
 
 ## Recent Changes
+**October 23, 2025** - Added Amazon wishlist quick access widget to navigation sidebar: Created compact widget below EIN section with "View & Share" button and one-click copy functionality for main wishlist URL. Users can access full wishlist management page (with suggestion system) or quickly copy the link to share with supporters. Widget uses orange theme to stand out and includes Gift icon for visual recognition.
+
+**October 23, 2025** - Redesigned onboarding challenge progress UI: Changed from table layout to card-based grid showing actual completed challenges with green checkmarks. Removed unnecessary role column and made email subtle. Each user gets a card showing which specific challenges they've completed (e.g., "Send your first chat message", "Post to Team Board") in a responsive grid (2 cols mobile, 5 cols desktop).
+
+**October 23, 2025** - Condensed Notes & Requirements section on scheduled event cards: Reduced vertical space by ~50% using 2-column grid layout on desktop, smaller text (xs instead of sm/base), reduced padding (2 instead of 3), and thinner borders. Section header is more compact while maintaining readability.
+
+**October 23, 2025** - Added van driver needed badge to scheduled event cards: Shows "Van Driver Needed" badge with Car icon when vanDriverNeeded=true and no driver assigned. Badge appears in brand blue color alongside other staffing badges.
+
+
 **October 23, 2025** - CRITICAL FIX: Google Sheets sync now INSERT-ONLY, never updates existing records: Changed `onConflictDoUpdate` to `onConflictDoNothing` in google-sheets-event-requests-sync.ts. Once an event is imported from Google Sheets, it will NEVER be touched again by the background sync. Manual database edits (organization names, departments, contact info, etc.) are now permanently preserved. The background sync (runs every 5 minutes) will only insert NEW records, skipping all existing records completely. This fixes the critical issue where manual edits were being overwritten every 5 minutes.
 
 **October 23, 2025** - Removed obsolete validation checks: Removed deliveryTimeWindow and deliveryParkingAccess from getMissingIntakeInfo function in event-request-validation.ts. These fields are no longer used, so they won't trigger "missing" badges on scheduled event cards.
