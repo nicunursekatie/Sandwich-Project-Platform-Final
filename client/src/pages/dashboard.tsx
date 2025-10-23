@@ -59,6 +59,7 @@ import GrantMetrics from '@/pages/grant-metrics';
 
 import UserManagementRedesigned from '@/components/user-management-redesigned';
 import UserProfile from '@/components/user-profile';
+import OnboardingAdmin from '@/pages/onboarding-admin';
 import { useState, useMemo } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -440,6 +441,8 @@ export default function Dashboard({
         return <GoogleCalendarAvailability />;
       case 'user-management':
         return <UserManagementRedesigned />;
+      case 'onboarding-admin':
+        return <OnboardingAdmin />;
       case 'admin':
         return <AdminSettings />;
       case 'help':
