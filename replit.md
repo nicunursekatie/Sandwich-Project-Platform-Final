@@ -4,6 +4,8 @@
 This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support organizational growth, with a vision to become a vital tool for food security initiatives by scaling operations and improving outreach to reduce food waste and hunger.
 
 ## Recent Changes
+**October 23, 2025** - Fixed inline editing bug for recipient assignment: Added special handling in ScheduledTab.tsx saveEdit function to parse JSON string to array before sending to backend mutation. The assignedRecipientIds field was being sent as a string instead of an array, causing save failures.
+
 **October 23, 2025** - Fixed email rendering issue: Updated email-routes.ts to NOT send plain text version when sending full HTML emails. Gmail was choosing to display the plain text fallback instead of the HTML template. Now full HTML emails (toolkit emails) are sent with HTML-only content, forcing proper rendering.
 
 **October 21, 2025** - Fixed event email system: Configured SendGrid to send from verified domain (katie@thesandwichproject.org) instead of Gmail to prevent spam filtering. Rebuilt HTML email templates using table-based layouts with inline styles for proper rendering in all email clients (Gmail, Outlook, mobile). Templates reference attached PDF toolkit files (5 PDFs from cloud storage) plus Budget & Shopping Planner link.

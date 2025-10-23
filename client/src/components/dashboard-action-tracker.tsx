@@ -463,6 +463,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
           </CardContent>
         </Card>
       </div>
+      )}
       {/* Quick Action Buttons */}
       {!isLoading && dashboardData && (
         <div className="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-200">
