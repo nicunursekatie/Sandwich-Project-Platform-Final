@@ -653,10 +653,10 @@ export default function TeamBoard() {
                     </div>
 
                     {item.assignedTo && item.assignedToName && (
-                      <div className="mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="mb-3 px-3 py-2 rounded-lg" style={{ backgroundColor: '#E6F4F6', borderLeft: '3px solid #007E8C' }}>
                         <div className="flex items-center gap-2 text-xs">
-                          <UserPlus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                          <span className="text-blue-700 dark:text-blue-300 font-medium">
+                          <UserPlus className="h-3.5 w-3.5" style={{ color: '#007E8C' }} />
+                          <span className="font-medium" style={{ color: '#236383' }}>
                             Assigned to {item.assignedToName}
                           </span>
                         </div>
