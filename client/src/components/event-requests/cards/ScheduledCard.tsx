@@ -870,6 +870,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   )}
                 </>
               )}
+
+              {/* Van Driver Needed Badge - Shows when specifically requesting a van driver */}
+              {request.vanDriverNeeded && !request.assignedVanDriverId && (
+                <Badge className="bg-[#236383] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center" data-testid="badge-van-driver-needed">
+                  <Car className="w-3 h-3 mr-1" />
+                  Van Driver Needed
+                </Badge>
+              )}
             </div>
 
             {/* Key Information - Prominently Displayed */}
@@ -1352,12 +1360,28 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <span className="text-sm font-medium">Recipients:</span>
                   {isEditingThisCard &&
                   editingField === 'assignedRecipientIds' ? (
-                    <MultiRecipientSelector
-                      value={editingValue ? JSON.parse(editingValue) : []}
-                      onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                      placeholder="Select recipient organizations..."
-                      data-testid="assigned-recipients-editor"
-                    />
+                    <div className="space-y-2">
+                      <MultiRecipientSelector
+                        value={editingValue ? JSON.parse(editingValue) : []}
+                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                        placeholder="Select recipient organizations..."
+                        data-testid="assigned-recipients-editor"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={cancelEdit}
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex items-start gap-2 group">
                       <div className="flex flex-wrap gap-1">
