@@ -426,6 +426,19 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   </Badge>
                 )}
               </div>
+              {(request.contactAttempts || request.lastContactAttempt) && (
+                <div className="text-sm text-gray-600 flex items-center gap-2 mt-2">
+                  <Phone className="w-3 h-3" />
+                  {request.contactAttempts && request.contactAttempts > 0 && (
+                    <span>Contact attempts: {request.contactAttempts}</span>
+                  )}
+                  {request.lastContactAttempt && (
+                    <span className="text-xs">
+                      (Last: {formatDistanceToNow(new Date(request.lastContactAttempt), { addSuffix: true })})
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
