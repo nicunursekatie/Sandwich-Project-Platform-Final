@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,9 @@ import {
   Phone,
   Mail,
   FileText,
+  History,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -62,6 +65,7 @@ import { RecipientSelector } from '@/components/ui/recipient-selector';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
+import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 
 interface TimeDialogContentProps {
   request: EventRequest;
@@ -274,6 +278,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   canEdit = true,
 }) => {
   const isMobile = useIsMobile();
+  const [showAuditLog, setShowAuditLog] = useState(false);
 
   // Helper functions
   const parsePostgresArray = (arr: any): string[] => {
@@ -1952,6 +1957,37 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <UserPlus className="w-4 h-4 mr-1" />
                 Assign TSP Contact
               </Button>
+            )}
+          </div>
+
+          {/* Activity History */}
+          <div className="mt-4 border-t border-gray-200 pt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAuditLog(!showAuditLog)}
+              className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
+              data-testid="button-toggle-audit-log"
+            >
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4" />
+                <span className="text-sm">Activity History</span>
+              </div>
+              {showAuditLog ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </Button>
+            
+            {showAuditLog && (
+              <div className="mt-3" data-testid="audit-log-section">
+                <EventRequestAuditLog
+                  eventId={request.id?.toString()}
+                  showFilters={false}
+                  compact={true}
+                />
+              </div>
             )}
           </div>
         </div>
