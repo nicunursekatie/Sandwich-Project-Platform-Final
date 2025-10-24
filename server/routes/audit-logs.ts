@@ -30,11 +30,36 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
         );
 
         // Parse JSON strings in the logs for easier consumption
-        const parsedLogs = logs.map(log => ({
-          ...log,
-          oldData: log.oldData ? JSON.parse(log.oldData) : null,
-          newData: log.newData ? JSON.parse(log.newData) : null
-        }));
+        const parsedLogs = logs.map(log => {
+          let oldData = null;
+          let newData = null;
+
+          // Safely parse oldData
+          if (log.oldData) {
+            try {
+              oldData = JSON.parse(log.oldData);
+            } catch (error) {
+              console.error(`Failed to parse oldData for audit log ${log.id}:`, error);
+              oldData = { _parseError: 'Malformed JSON', _raw: log.oldData };
+            }
+          }
+
+          // Safely parse newData
+          if (log.newData) {
+            try {
+              newData = JSON.parse(log.newData);
+            } catch (error) {
+              console.error(`Failed to parse newData for audit log ${log.id}:`, error);
+              newData = { _parseError: 'Malformed JSON', _raw: log.newData };
+            }
+          }
+
+          return {
+            ...log,
+            oldData,
+            newData
+          };
+        });
 
         res.json(parsedLogs);
       } catch (error) {
@@ -61,12 +86,37 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
           parseInt(offset as string, 10)
         );
 
-        // Parse JSON strings
-        const parsedLogs = logs.map(log => ({
-          ...log,
-          oldData: log.oldData ? JSON.parse(log.oldData) : null,
-          newData: log.newData ? JSON.parse(log.newData) : null
-        }));
+        // Parse JSON strings with error handling
+        const parsedLogs = logs.map(log => {
+          let oldData = null;
+          let newData = null;
+
+          // Safely parse oldData
+          if (log.oldData) {
+            try {
+              oldData = JSON.parse(log.oldData);
+            } catch (error) {
+              console.error(`Failed to parse oldData for audit log ${log.id}:`, error);
+              oldData = { _parseError: 'Malformed JSON', _raw: log.oldData };
+            }
+          }
+
+          // Safely parse newData
+          if (log.newData) {
+            try {
+              newData = JSON.parse(log.newData);
+            } catch (error) {
+              console.error(`Failed to parse newData for audit log ${log.id}:`, error);
+              newData = { _parseError: 'Malformed JSON', _raw: log.newData };
+            }
+          }
+
+          return {
+            ...log,
+            oldData,
+            newData
+          };
+        });
 
         res.json(parsedLogs);
       } catch (error) {
