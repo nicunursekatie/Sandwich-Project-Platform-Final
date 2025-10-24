@@ -72,11 +72,20 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             tspContactAssigned: null,
             assignedTo: null,
             assignedToName: null,
+            completedEventsFromRequests: 0, // Track completed events from event_requests
           });
         }
 
         const dept = departmentsMap.get(departmentKey);
         dept.totalRequests += 1;
+        
+        // Count completed events from event_requests
+        if (
+          request.status === 'completed' ||
+          request.status === 'contact_completed'
+        ) {
+          dept.completedEventsFromRequests = (dept.completedEventsFromRequests || 0) + 1;
+        }
 
         // Add contact if not already present
         const existingContact = dept.contacts.find(
@@ -366,10 +375,15 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         }
       });
 
-      // Initialize latestActivityDate for departments that don't have collection data
+      // Initialize latestActivityDate and actualEventCount for departments that don't have collection data
       departmentsMap.forEach((dept, key) => {
         if (!dept.latestActivityDate) {
           dept.latestActivityDate = dept.latestRequestDate;
+        }
+        
+        // If no collection data but has completed events from requests, use that count
+        if (!dept.actualEventCount && dept.completedEventsFromRequests > 0) {
+          dept.actualEventCount = dept.completedEventsFromRequests;
         }
       });
 
