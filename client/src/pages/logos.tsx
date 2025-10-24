@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { logger } from '@/lib/logger';
 
 // Logo files information
 const logoFiles = [
@@ -71,6 +73,16 @@ export default function LogosPage() {
     (typeof logoFiles)[0] | null
   >(null);
   const { trackDownload, trackButtonClick } = useAnalytics();
+  const { trackView } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Logos',
+      'Logos',
+      'Logo Downloads',
+      'User accessed logo downloads page'
+    );
+  }, [trackView]);
 
   const handleDownload = async (filename: string, displayName: string) => {
     try {
@@ -91,7 +103,7 @@ export default function LogosPage() {
       // Track the download
       trackDownload(displayName, 'logo');
     } catch (error) {
-      console.error('Download failed:', error);
+      logger.error('Download failed:', error);
       alert('Failed to download logo. Please try again.');
     }
   };

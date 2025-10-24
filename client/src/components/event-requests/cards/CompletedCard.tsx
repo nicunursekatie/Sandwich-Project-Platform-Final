@@ -60,6 +60,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { logger } from '@/lib/logger';
 
 interface CompletedCardProps {
   request: EventRequest;
@@ -1336,7 +1337,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     user?.role === 'admin';
 
   // Debug: log permission check
-  console.log('CompletedCard org details edit permission:', {
+  logger.log('CompletedCard org details edit permission:', {
     userId: user?.id,
     userRole: user?.role,
     hasPermission: (user?.permissions as string[] | undefined)?.includes('EVENT_REQUESTS_INLINE_EDIT_ORG_DETAILS'),

@@ -31,6 +31,7 @@ import {
   calculateTotalSandwiches,
   parseCollectionDate,
 } from '@/lib/analytics-utils';
+import { logger } from '@/lib/logger';
 
 export default function PredictiveForecasts() {
   const { data: collectionsData } = useQuery<{ collections: SandwichCollection[] }>({
@@ -100,7 +101,7 @@ export default function PredictiveForecasts() {
       return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
     });
 
-    console.log('🔍 ALL events this week (any status):', allEventsThisWeek.map(e => ({
+    logger.log('🔍 ALL events this week (any status):', allEventsThisWeek.map(e => ({
       org: e.organizationName,
       date: e.desiredEventDate,
       count: e.estimatedSandwichCount,
@@ -222,44 +223,44 @@ export default function PredictiveForecasts() {
     const weeklyProjected = currentWeekTotal + scheduledWeeklyTotal + baselineIndividualExpectation;
 
     // Debug logging
-    console.log('=== WEEKLY FORECAST DEBUG ===');
-    console.log('Week range:', formatDate(currentWeekStart), 'to', formatDate(currentWeekEnd));
-    console.log('Today:', today.toLocaleDateString());
-    console.log('Current day of week:', todayDayOfWeek, '(0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)');
-    console.log('---');
-    console.log('Completed this week (past dates):', completedTotal);
-    console.log('Planned collections this week (future dates):', plannedTotal);
-    console.log('Planned collections detail:', plannedThisWeek.map(c => ({
+    logger.log('=== WEEKLY FORECAST DEBUG ===');
+    logger.log('Week range:', formatDate(currentWeekStart), 'to', formatDate(currentWeekEnd));
+    logger.log('Today:', today.toLocaleDateString());
+    logger.log('Current day of week:', todayDayOfWeek, '(0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)');
+    logger.log('---');
+    logger.log('Completed this week (past dates):', completedTotal);
+    logger.log('Planned collections this week (future dates):', plannedTotal);
+    logger.log('Planned collections detail:', plannedThisWeek.map(c => ({
       date: c.collectionDate,
       total: calculateTotalSandwiches(c),
       individual: c.individualCount || 0,
       groups: c.groupCollections || []
     })));
-    console.log('---');
-    console.log('Scheduled events total:', scheduledWeeklyTotal);
-    console.log('Scheduled events count:', scheduledThisWeek.length);
-    console.log('Scheduled events detail:', scheduledThisWeek.map(e => ({
+    logger.log('---');
+    logger.log('Scheduled events total:', scheduledWeeklyTotal);
+    logger.log('Scheduled events count:', scheduledThisWeek.length);
+    logger.log('Scheduled events detail:', scheduledThisWeek.map(e => ({
       org: e.organizationName,
       date: e.desiredEventDate,
       count: e.estimatedSandwichCount,
       status: e.status
     })));
-    console.log('---');
-    console.log('Expected remaining individual donations:', Math.round(expectedRemainingDays));
-    console.log('Days elapsed in week:', daysElapsedInWeek);
-    console.log('Days remaining in week:', 7 - daysElapsedInWeek);
-    console.log('---');
-    console.log('📊 TOTAL PROJECTED:', weeklyProjected);
-    console.log('📈 Average weekly:', Math.round(avgWeekly));
-    console.log('Difference:', weeklyProjected - avgWeekly);
+    logger.log('---');
+    logger.log('Expected remaining individual donations:', Math.round(expectedRemainingDays));
+    logger.log('Days elapsed in week:', daysElapsedInWeek);
+    logger.log('Days remaining in week:', 7 - daysElapsedInWeek);
+    logger.log('---');
+    logger.log('📊 TOTAL PROJECTED:', weeklyProjected);
+    logger.log('📈 Average weekly:', Math.round(avgWeekly));
+    logger.log('Difference:', weeklyProjected - avgWeekly);
 
     // Also log ALL collections with future dates to help find the missing 2900
     const allFutureCollections = collections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
       return date > today;
     }).slice(0, 20); // First 20 to not spam console
-    console.log('---');
-    console.log('🔍 ALL future collections (first 20):', allFutureCollections.map(c => ({
+    logger.log('---');
+    logger.log('🔍 ALL future collections (first 20):', allFutureCollections.map(c => ({
       date: c.collectionDate,
       total: calculateTotalSandwiches(c),
       host: c.hostName || 'Unknown',

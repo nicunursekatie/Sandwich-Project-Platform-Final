@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Card,
   CardContent,
@@ -60,9 +61,21 @@ interface MeetingCalendarProps {
 export default function MeetingCalendar({
   isEmbedded = false,
 }: MeetingCalendarProps) {
+  const { trackView, trackCreate } = useActivityTracker();
   const [, setLocation] = useLocation();
   const { setActiveSection } = useDashboardNavigation();
   const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (!isEmbedded) {
+      trackView(
+        'Meetings',
+        'Meetings',
+        'Meeting Calendar',
+        'User accessed meeting calendar page'
+      );
+    }
+  }, [isEmbedded, trackView]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]

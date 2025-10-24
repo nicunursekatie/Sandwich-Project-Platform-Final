@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { ChevronUp, ChevronDown, Save, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface AdminDocument {
   id: string;
@@ -87,7 +88,7 @@ export function DashboardDocumentSelector({ adminDocuments }: Props) {
       });
     },
     onError: (error: any) => {
-      console.error('Error saving dashboard documents:', error);
+      logger.error('Error saving dashboard documents:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to save dashboard documents configuration',

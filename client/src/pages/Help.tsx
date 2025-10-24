@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   HelpCircle,
   Search,
@@ -28,6 +28,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { TOURS, TOUR_CATEGORIES, type TourCategory, type Tour } from '@/lib/tourDefinitions';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 
 interface HelpTopic {
   id: string;
@@ -220,9 +221,19 @@ interface HelpProps {
 }
 
 export default function Help({ onLaunchTour }: HelpProps) {
+  const { trackView, trackSearch, trackClick } = useActivityTracker();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TourCategory | null>(null);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    trackView(
+      'Help',
+      'Help',
+      'Help Center',
+      'User accessed help center'
+    );
+  }, [trackView]);
 
   const filteredTopics = useMemo(() => {
     let topics = HELP_TOPICS;
@@ -251,11 +262,23 @@ export default function Help({ onLaunchTour }: HelpProps) {
       newExpanded.delete(topicId);
     } else {
       newExpanded.add(topicId);
+      trackClick(
+        `help_topic_${topicId}`,
+        'Help',
+        'Help Center',
+        `Expanded help topic: ${topicId}`
+      );
     }
     setExpandedTopics(newExpanded);
   };
 
   const handleLaunchTour = (tourId: string) => {
+    trackClick(
+      `launch_tour_${tourId}`,
+      'Help',
+      'Help Center',
+      `Launched interactive tour: ${tourId}`
+    );
     if (onLaunchTour) {
       onLaunchTour(tourId);
     } else {

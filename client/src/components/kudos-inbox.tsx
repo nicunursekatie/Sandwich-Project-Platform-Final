@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Trophy, CheckCircle, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 interface KudosMessage {
   id: number;
@@ -49,7 +50,7 @@ export function KudosInbox() {
       refetch();
     },
     onError: (error) => {
-      console.error('Failed to mark kudos as read:', error);
+      logger.error('Failed to mark kudos as read:', error);
     },
   });
 

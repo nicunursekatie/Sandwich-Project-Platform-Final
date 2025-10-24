@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   format,
   startOfWeek,
@@ -62,10 +63,20 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function MyAvailability() {
   const { user } = useAuth();
+  const { trackView, trackCreate, trackUpdate, trackDelete } = useActivityTracker();
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<AvailabilitySlot | null>(null);
   const [isAllDay, setIsAllDay] = useState(false);
+
+  useEffect(() => {
+    trackView(
+      'Availability',
+      'Availability',
+      'My Availability',
+      'User accessed my availability page'
+    );
+  }, [trackView]);
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 }); // Sunday

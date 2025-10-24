@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
 import {
   Copy,
   ExternalLink,
@@ -24,11 +26,22 @@ import {
   Clock,
   Shield,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export default function WishlistPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { trackView, trackClick } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Wishlist',
+      'Wishlist',
+      'Amazon Wishlist',
+      'User accessed wishlist page'
+    );
+  }, [trackView]);
 
   const [newSuggestion, setNewSuggestion] = useState({
     item: '',
@@ -80,7 +93,7 @@ export default function WishlistPage() {
       });
     },
     onError: (error) => {
-      console.error('Wishlist submission error:', error);
+      logger.error('Wishlist submission error:', error);
       toast({
         title: 'Submission Failed',
         description:
@@ -117,7 +130,7 @@ export default function WishlistPage() {
       });
     },
     onError: (error) => {
-      console.error('Review error:', error);
+      logger.error('Review error:', error);
       toast({
         title: 'Review Failed',
         description: 'There was an error updating the suggestion',
@@ -142,7 +155,7 @@ export default function WishlistPage() {
       });
     },
     onError: (error) => {
-      console.error('Delete error:', error);
+      logger.error('Delete error:', error);
       toast({
         title: 'Delete Failed',
         description: 'There was an error deleting the suggestion',

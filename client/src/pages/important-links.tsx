@@ -19,12 +19,24 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { logger } from '@/lib/logger';
 
 export default function ImportantLinks() {
   const [isLoading, setIsLoading] = useState(false);
   const [eventsZoomLevel, setEventsZoomLevel] = useState(85);
   const [userSheetZoomLevel, setUserSheetZoomLevel] = useState(85);
   const { track } = useOnboardingTracker();
+  const { trackView, trackClick } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Links',
+      'Links',
+      'Important Links',
+      'User accessed important links page'
+    );
+  }, [trackView]);
 
   // URLs for all the important links
   const inventoryCalculatorUrl =
@@ -190,7 +202,7 @@ export default function ImportantLinks() {
                         await navigator.clipboard.writeText(eventToolkitUrl);
                         alert('Link copied to clipboard!');
                       } catch (error) {
-                        console.error('Failed to copy:', error);
+                        logger.error('Failed to copy:', error);
                       }
                     }}
                     className="border-brand-orange text-brand-orange hover:bg-orange-50 px-6 py-3 font-medium"

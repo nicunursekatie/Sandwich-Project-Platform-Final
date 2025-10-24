@@ -7,6 +7,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { formatTime12Hour } from '@/components/event-requests/utils';
+import { logger } from '@/lib/logger';
 
 interface DateTimePickerProps {
   value?: string; // ISO string or datetime value
@@ -48,7 +49,7 @@ export function DateTimePicker({
           setSelectedTime(`${hours}:${minutes}`);
         }
       } catch (error) {
-        console.warn('Invalid datetime value:', value);
+        logger.warn('Invalid datetime value:', value);
       }
     } else {
       // If no value but we have a default event date, use that for the date
@@ -59,7 +60,7 @@ export function DateTimePicker({
             setSelectedDate(defaultDate);
           }
         } catch (error) {
-          console.warn('Invalid default event date:', defaultToEventDate);
+          logger.warn('Invalid default event date:', defaultToEventDate);
         }
       }
     }

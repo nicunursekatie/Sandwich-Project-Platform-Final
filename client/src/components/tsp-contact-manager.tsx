@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import type { RecipientTspContact, User as AppUser } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface TSPContactManagerProps {
   recipientId: number;
@@ -84,7 +85,7 @@ export default function TSPContactManager({
   }, [recipientId, refetch]);
 
   // Debug logging
-  console.log('TSP Contact Manager Debug:', {
+  logger.log('TSP Contact Manager Debug:', {
     recipientId,
     recipientName,
     tspContactsLength: tspContacts.length,

@@ -22,6 +22,8 @@ import {
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
+import { hasPermission } from '@shared/auth-utils';
+import { logger } from '@/lib/logger';
 
 interface GoogleSheetsViewerProps {
   initialUrl?: string;
@@ -58,7 +60,7 @@ export function GoogleSheetsViewer({
       const response = await apiRequest('GET', '/api/project-data/status');
       setFallbackFileStatus(response);
     } catch (error) {
-      console.error('Failed to check fallback status:', error);
+      logger.error('Failed to check fallback status:', error);
     }
   };
 

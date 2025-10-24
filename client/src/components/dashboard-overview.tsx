@@ -52,6 +52,7 @@ import {
   NetworkIcon,
 } from '@/components/modern-dashboard/custom-svg-icons';
 import CMYK_PRINT_TSP_01__2_ from '@assets/CMYK_PRINT_TSP-01 (2).png';
+import { logger } from '@/lib/logger';
 // Using optimized SVG logos for faster loading
 const tspLogoSvg = '/logo-optimized.svg';
 const sandwichIconSvg = '/sandwich-icon-optimized.svg';
@@ -182,7 +183,7 @@ export default function DashboardOverview({
           'The inventory calculator link has been copied to your clipboard.',
       });
     } catch (error) {
-      console.error('Failed to copy link:', error);
+      logger.error('Failed to copy link:', error);
       toast({
         title: 'Error',
         description: 'Failed to copy link to clipboard.',

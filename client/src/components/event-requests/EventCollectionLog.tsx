@@ -17,6 +17,7 @@ import { apiRequest } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import { getSandwichTypesSummary } from './utils';
 import SandwichDestinationTracker from './SandwichDestinationTracker';
+import { logger } from '@/lib/logger';
 
 // Event Collection Log Component
 interface EventCollectionLogProps {
@@ -94,7 +95,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
         description: 'Sandwich destination has been updated successfully.',
       });
     } catch (error) {
-      console.error('Error updating destination:', error);
+      logger.error('Error updating destination:', error);
       toast({
         title: 'Update Failed',
         description: 'Failed to update sandwich destination.',

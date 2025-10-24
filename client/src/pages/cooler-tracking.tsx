@@ -11,6 +11,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission as checkPermission } from '@shared/unified-auth-utils';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Dialog,
   DialogContent,
@@ -86,6 +87,16 @@ export default function CoolerTrackingPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { trackView, trackFormSubmit } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Cooler Tracking',
+      'Cooler Tracking',
+      'Cooler Tracking Page',
+      'User accessed cooler tracking page'
+    );
+  }, [trackView]);
 
   // Permission checks
   const canViewCoolers = user ? checkPermission(user, PERMISSIONS.COOLERS_VIEW) : false;

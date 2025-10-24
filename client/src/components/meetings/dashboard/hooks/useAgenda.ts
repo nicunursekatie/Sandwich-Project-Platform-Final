@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { isDateInPast, normalizeDate } from '@/lib/date-utils';
 import type { Meeting } from './useMeetings';
+import { logger } from '@/lib/logger';
 
 // Interfaces
 export interface AgendaItem {
@@ -51,9 +52,9 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
   const agendaItemsQuery = useQuery<AgendaItem[]>({
     queryKey: ['agenda-items', selectedMeetingId],
     queryFn: async () => {
-      console.log('[Frontend] Fetching agenda items from /api/agenda-items for meeting:', selectedMeetingId);
+      logger.log('[Frontend] Fetching agenda items from /api/agenda-items for meeting:', selectedMeetingId);
       const response = await apiRequest('GET', `/api/agenda-items?meetingId=${selectedMeetingId || ''}`);
-      console.log('[Frontend] Agenda items response:', response);
+      logger.log('[Frontend] Agenda items response:', response);
       return response || [];
     },
     enabled: !!selectedMeetingId,
@@ -68,7 +69,7 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
   // Create off-agenda item mutation
   const createOffAgendaItemMutation = useMutation({
     mutationFn: async (itemData: OffAgendaItemData) => {
-      console.log('[Frontend] Creating agenda item via /api/meetings/agenda-items:', itemData);
+      logger.log('[Frontend] Creating agenda item via /api/meetings/agenda-items:', itemData);
       return await apiRequest('POST', '/api/meetings/agenda-items', {
         title: itemData.title,
         description: '', // Clear description since section is separate now
@@ -157,13 +158,13 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
             upcomingMeetings.push(meeting);
           }
         } catch (error) {
-          console.warn('Date parsing issue for meeting:', meeting.id, meeting.date, error);
+          logger.warn('Date parsing issue for meeting:', meeting.id, meeting.date, error);
           // If date parsing fails, default to upcoming to be safe
           upcomingMeetings.push(meeting);
         }
       });
 
-      console.log('🗓️ Meeting Classification:', {
+      logger.log('🗓️ Meeting Classification:', {
         upcoming: upcomingMeetings.map(m => ({ id: m.id, date: m.date })),
         past: pastMeetings.map(m => ({ id: m.id, date: m.date })),
       });
@@ -177,11 +178,11 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
             const dateB = new Date(normalizeDate(b.date) + 'T12:00:00');
             return dateA.getTime() - dateB.getTime();
           } catch (error) {
-            console.warn('Date sorting error:', error);
+            logger.warn('Date sorting error:', error);
             return 0; // Keep original order if sorting fails
           }
         })[0];
-        console.log('✅ Selected upcoming meeting:', targetMeeting.id, targetMeeting.date);
+        logger.log('✅ Selected upcoming meeting:', targetMeeting.id, targetMeeting.date);
         return targetMeeting;
       }
       
@@ -194,25 +195,25 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
             const dateB = new Date(normalizeDate(b.date) + 'T12:00:00');
             return dateB.getTime() - dateA.getTime();
           } catch (error) {
-            console.warn('Date sorting error:', error);
+            logger.warn('Date sorting error:', error);
             return 0; // Keep original order if sorting fails
           }
         })[0];
-        console.log('✅ Selected past meeting:', targetMeeting.id, targetMeeting.date);
+        logger.log('✅ Selected past meeting:', targetMeeting.id, targetMeeting.date);
         return targetMeeting;
       }
       
       // Priority 3: Fallback - just pick the first available meeting
       const targetMeeting = meetings[0];
-      console.log('⚠️ Using fallback meeting selection:', targetMeeting.id);
+      logger.log('⚠️ Using fallback meeting selection:', targetMeeting.id);
       return targetMeeting;
 
     } catch (error) {
-      console.error('Error in meeting selection logic:', error);
+      logger.error('Error in meeting selection logic:', error);
       // Ultimate fallback - just pick any available meeting
       if (meetings.length > 0) {
         const targetMeeting = meetings[0];
-        console.log('🚨 Emergency fallback meeting selection:', targetMeeting.id);
+        logger.log('🚨 Emergency fallback meeting selection:', targetMeeting.id);
         return targetMeeting;
       }
     }
@@ -253,7 +254,7 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
       targetMeeting = autoSelectMeetingForAgenda(availableMeetings);
       
       // Debug logging for meeting selection
-      console.log('🔍 Meeting Auto-Selection Debug:', {
+      logger.log('🔍 Meeting Auto-Selection Debug:', {
         selectedMeeting: selectedMeeting?.id,
         totalMeetings: availableMeetings.length,
         meetings: availableMeetings.map(m => ({ id: m.id, title: m.title, date: m.date, status: m.status })),
@@ -264,7 +265,7 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
 
     // Final validation
     if (!targetMeeting) {
-      console.error('❌ No target meeting found despite', availableMeetings?.length, 'meetings available');
+      logger.error('❌ No target meeting found despite', availableMeetings?.length, 'meetings available');
       toast({
         title: 'No Meetings Available',
         description: `Unable to find a suitable meeting from ${availableMeetings?.length || 0} available meetings. Please select a meeting manually or create a new one.`,
@@ -273,7 +274,7 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
       return;
     }
 
-    console.log('🎯 Final target meeting selected:', {
+    logger.log('🎯 Final target meeting selected:', {
       id: targetMeeting.id,
       title: targetMeeting.title,
       date: targetMeeting.date,

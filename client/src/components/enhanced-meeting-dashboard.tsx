@@ -94,6 +94,7 @@ import {
 import type { Meeting, MeetingFormData } from './meetings/dashboard/hooks/useMeetings';
 import type { Project, NewProjectData } from './meetings/dashboard/hooks/useProjects';
 import type { AgendaItem, OffAgendaItemData } from './meetings/dashboard/hooks/useAgenda';
+import { logger } from '@/lib/logger';
 
 export default function EnhancedMeetingDashboard() {
   const { user } = useAuth();
@@ -251,7 +252,7 @@ export default function EnhancedMeetingDashboard() {
         const sortedPlanning = planningMeetings.sort((a, b) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
-        console.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
+        logger.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
         setSelectedMeeting(sortedPlanning[0]);
         return;
       }
@@ -260,7 +261,7 @@ export default function EnhancedMeetingDashboard() {
       const sortedMeetings = safeMeetings.sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      console.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
+      logger.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
       setSelectedMeeting(sortedMeetings[0]);
     }
   }, [safeMeetings, selectedMeeting]);
@@ -337,7 +338,7 @@ export default function EnhancedMeetingDashboard() {
   const handleSendToAgenda = useCallback(
     (projectId: number, noteContent?: string) => {
       // Debug logging for Christine's issue
-      console.log('🔍 Send to Agenda Debug Info:', {
+      logger.log('🔍 Send to Agenda Debug Info:', {
         user: user?.email,
         role: user?.role,
         permissions: Array.isArray(user?.permissions) ? user.permissions.length : 0,
@@ -367,7 +368,7 @@ export default function EnhancedMeetingDashboard() {
             updates.meetingDecisionItems = parsed.decisionItems;
           }
         } catch (error) {
-          console.warn('Failed to parse note content:', error);
+          logger.warn('Failed to parse note content:', error);
         }
       }
       
@@ -435,11 +436,11 @@ export default function EnhancedMeetingDashboard() {
 
       await generateAgendaPDF(projectAgendaStatus);
     } catch (error) {
-      console.error('=== PDF GENERATION CLIENT ERROR ===');
-      console.error('Error details:', error);
-      console.error('User permissions:', user?.permissions);
-      console.error('User email:', user?.email);
-      console.error('====================================');
+      logger.error('=== PDF GENERATION CLIENT ERROR ===');
+      logger.error('Error details:', error);
+      logger.error('User permissions:', user?.permissions);
+      logger.error('User email:', user?.email);
+      logger.error('====================================');
 
       let errorMessage = 'Failed to generate agenda PDF';
       const errorObj = error as { message?: string } | undefined;

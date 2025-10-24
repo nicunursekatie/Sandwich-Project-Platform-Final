@@ -30,8 +30,8 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         });
       }
 
-      // Check password using bcrypt
-      const storedPassword = user.password;
+      // Check password with automatic migration to bcrypt hashing
+      let storedPassword = user.password;
       if (!storedPassword) {
         return res.status(401).json({
           success: false,
@@ -39,12 +39,55 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         });
       }
 
-      const isValidPassword = await bcrypt.compare(password, storedPassword);
+      let isValidPassword = false;
+      let needsHashUpgrade = false;
+      let plaintextPassword: string | null = null;
+
+      // Try bcrypt comparison first (for already-hashed passwords)
+      try {
+        isValidPassword = await bcrypt.compare(password, storedPassword);
+      } catch (bcryptError) {
+        // bcrypt.compare failed - password might be in legacy format
+        isValidPassword = false;
+      }
+
+      // If bcrypt failed, check for legacy plaintext formats
+      if (!isValidPassword) {
+        // Format 1: JSON wrapped password {"password": "xxx"}
+        try {
+          const parsed = JSON.parse(storedPassword);
+          if (parsed.password && typeof parsed.password === 'string') {
+            plaintextPassword = parsed.password.trim();
+            isValidPassword = plaintextPassword === password;
+            needsHashUpgrade = isValidPassword; // Upgrade if valid
+          }
+        } catch {
+          // Not JSON - check Format 2: plain string
+          if (storedPassword.trim() === password) {
+            plaintextPassword = storedPassword.trim();
+            isValidPassword = true;
+            needsHashUpgrade = true;
+          }
+        }
+      }
+
+      // Reject if password doesn't match in any format
       if (!isValidPassword) {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password',
         });
+      }
+
+      // AUTO-UPGRADE: Hash plaintext password on successful login
+      if (needsHashUpgrade && plaintextPassword) {
+        console.log(`🔐 Auto-upgrading password to bcrypt hash for: ${email}`);
+        const SALT_ROUNDS = 10;
+        const hashedPassword = await bcrypt.hash(plaintextPassword, SALT_ROUNDS);
+        
+        // Update password in database
+        await storage.updateUser(user.id, { password: hashedPassword });
+        console.log(`✅ Password upgraded successfully for: ${email}`);
       }
 
       // Create session user object

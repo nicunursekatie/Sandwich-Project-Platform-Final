@@ -7,10 +7,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { useResourcePermissions, usePermissions } from '@/hooks/useResourcePermissions';
 
 export default function WorkLogPage() {
   const { user } = useAuth();
+  const { trackView, trackFormSubmit } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Work Log',
+      'Work Log',
+      'Work Log Page',
+      'User accessed work log page'
+    );
+  }, [trackView]);
 
   // Simplified permissions: CREATE_WORK_LOGS automatically includes edit/delete own permissions
   const { canAdd, canView, canEdit, canDelete } = useResourcePermissions('WORK_LOGS');
@@ -37,9 +50,9 @@ export default function WorkLogPage() {
   } = useQuery({
     queryKey: ['/api/work-logs'],
     queryFn: async () => {
-      console.log('🚀 Work logs query function called');
+      logger.log('🚀 Work logs query function called');
       const data = await apiRequest('GET', '/api/work-logs');
-      console.log('🚀 Work logs API response data:', data);
+      logger.log('🚀 Work logs API response data:', data);
       return data;
     },
     enabled: !!user, // Only fetch when user is authenticated

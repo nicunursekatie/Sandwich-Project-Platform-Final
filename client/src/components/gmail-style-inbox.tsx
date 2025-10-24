@@ -64,6 +64,7 @@ import {
 } from '@/components/ui/select';
 import { ButtonTooltip } from '@/components/ui/button-tooltip';
 import { KudosInbox } from '@/components/kudos-inbox';
+import { logger } from '@/lib/logger';
 
 interface User {
   id: string;
@@ -110,14 +111,14 @@ interface Draft {
 }
 
 export default function GmailStyleInbox() {
-  console.log('🔍 GmailStyleInbox component is rendering');
+  logger.log('🔍 GmailStyleInbox component is rendering');
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const { track } = useOnboardingTracker();
 
   // Add early return for loading state
   if (authLoading) {
-    console.log('🔄 Auth is loading, showing loading state');
+    logger.log('🔄 Auth is loading, showing loading state');
     return (
       <div className="flex h-full items-center justify-center bg-white">
         <div className="text-center">
@@ -129,7 +130,7 @@ export default function GmailStyleInbox() {
   }
 
   if (!user) {
-    console.log('❌ No user found, showing error');
+    logger.log('❌ No user found, showing error');
     return (
       <div className="flex h-full items-center justify-center bg-white">
         <div className="text-center">
@@ -139,7 +140,7 @@ export default function GmailStyleInbox() {
     );
   }
 
-  console.log(
+  logger.log(
     '✅ User authenticated, rendering inbox for:',
     (user as any)?.email
   );
@@ -237,7 +238,7 @@ export default function GmailStyleInbox() {
           isRead: kudo.isRead || false,
         }));
         
-        console.log(`Fetched ${formattedKudos.length} kudos`);
+        logger.log(`Fetched ${formattedKudos.length} kudos`);
         return formattedKudos;
       } else if (activeFolder === 'inbox') {
         // For inbox, fetch both emails and kudos, then merge them
@@ -270,7 +271,7 @@ export default function GmailStyleInbox() {
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         
-        console.log(
+        logger.log(
           `Fetched ${emails.length} emails and ${kudos.length} kudos, merged into ${allMessages.length} total messages`
         );
         return allMessages;
@@ -284,7 +285,7 @@ export default function GmailStyleInbox() {
           messageType: 'email',
         }));
         
-        console.log(`Fetched ${formattedMessages.length} emails from ${activeFolder} folder`);
+        logger.log(`Fetched ${formattedMessages.length} emails from ${activeFolder} folder`);
         return formattedMessages;
       }
     },
@@ -323,7 +324,7 @@ export default function GmailStyleInbox() {
         content: messageData.content,
         isDraft: messageData.isDraft || false,
       };
-      console.log('Sending email with data:', emailData);
+      logger.log('Sending email with data:', emailData);
       return await apiRequest('POST', '/api/emails', emailData);
     },
     onSuccess: () => {
@@ -337,7 +338,7 @@ export default function GmailStyleInbox() {
       toast({ description: 'Message sent successfully' });
     },
     onError: (error) => {
-      console.error('Send email error:', error);
+      logger.error('Send email error:', error);
       toast({
         description: 'Failed to send message',
         variant: 'destructive',
@@ -364,7 +365,7 @@ export default function GmailStyleInbox() {
         isDraft: false,
       };
 
-      console.log('Sending reply:', replyEmailData);
+      logger.log('Sending reply:', replyEmailData);
       return await apiRequest('POST', '/api/emails', replyEmailData);
     },
     onSuccess: () => {
@@ -376,7 +377,7 @@ export default function GmailStyleInbox() {
       toast({ description: 'Reply sent successfully' });
     },
     onError: (error) => {
-      console.error('Reply error:', error);
+      logger.error('Reply error:', error);
       toast({
         description: 'Failed to send reply',
         variant: 'destructive',
@@ -400,7 +401,7 @@ export default function GmailStyleInbox() {
       toast({ description: 'Marked as read' });
     },
     onError: (error) => {
-      console.error('Mark as read error:', error);
+      logger.error('Mark as read error:', error);
       toast({
         description: 'Failed to mark as read',
         variant: 'destructive',
@@ -417,7 +418,7 @@ export default function GmailStyleInbox() {
       messageId: number;
       isStarred: boolean;
     }) => {
-      console.log(
+      logger.log(
         'Star not implemented for conversation messages:',
         messageId,
         isStarred
@@ -446,7 +447,7 @@ export default function GmailStyleInbox() {
       toast({ description: 'Messages archived successfully' });
     },
     onError: (error) => {
-      console.error('Archive error:', error);
+      logger.error('Archive error:', error);
       toast({
         description: 'Failed to archive messages',
         variant: 'destructive',
@@ -471,7 +472,7 @@ export default function GmailStyleInbox() {
       toast({ description: 'Messages moved to trash' });
     },
     onError: (error) => {
-      console.error('Trash error:', error);
+      logger.error('Trash error:', error);
       toast({
         description: 'Failed to move messages to trash',
         variant: 'destructive',
@@ -598,7 +599,7 @@ export default function GmailStyleInbox() {
       return;
     }
 
-    console.log('Sending reply with data:', {
+    logger.log('Sending reply with data:', {
       content: replyContent,
       sender: null, // Let backend use authenticated user info
       recipientId: selectedMessage.userId,
@@ -684,8 +685,8 @@ export default function GmailStyleInbox() {
     },
   ];
 
-  console.log('🎨 About to render GmailStyleInbox main UI');
-  console.log('📊 Component state:', {
+  logger.log('🎨 About to render GmailStyleInbox main UI');
+  logger.log('📊 Component state:', {
     activeFolder,
     selectedMessage: !!selectedMessage,
     messageCount: messages.length,
@@ -697,7 +698,7 @@ export default function GmailStyleInbox() {
       await apiRequest('PATCH', `/api/emails/kudos/${kudoId}`, { isRead: true });
       queryClient.invalidateQueries({ queryKey: ['/api/emails/kudos'] });
     } catch (error) {
-      console.error('Failed to mark kudos as read', error);
+      logger.error('Failed to mark kudos as read', error);
     }
   };
 
@@ -887,7 +888,7 @@ export default function GmailStyleInbox() {
                   variant="ghost"
                   size="sm"
                   onClick={() =>
-                    console.log(
+                    logger.log(
                       'Mark Read not implemented for conversation messages'
                     )
                   }
@@ -1163,7 +1164,7 @@ export default function GmailStyleInbox() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            console.log('Star clicked for message', message.id);
+                            logger.log('Star clicked for message', message.id);
                           }}
                           className="mt-1"
                         >
@@ -1365,7 +1366,7 @@ export default function GmailStyleInbox() {
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        console.log(
+                        logger.log(
                           'Star clicked for message',
                           selectedMessage.id
                         )

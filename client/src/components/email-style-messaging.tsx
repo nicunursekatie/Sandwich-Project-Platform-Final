@@ -28,6 +28,7 @@ import {
   Paperclip,
   X,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface EmailMessage {
   id: string;
@@ -130,12 +131,12 @@ export default function EmailStyleMessaging() {
   // Send message mutation - Use messaging API for internal messages with graceful SendGrid handling
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: any) => {
-      console.log('Sending message data:', messageData);
+      logger.log('Sending message data:', messageData);
 
       // Find recipient user by email
       const recipientUser = users.find((u: any) => u.email === messageData.to);
       if (!recipientUser) {
-        console.warn('Recipient not found in user list:', messageData.to);
+        logger.warn('Recipient not found in user list:', messageData.to);
         throw new Error(
           `Recipient ${messageData.to} not found. Please make sure the email address is correct and the user exists in the system.`
         );
@@ -153,7 +154,7 @@ export default function EmailStyleMessaging() {
         '/api/messaging',
         messagingData
       );
-      console.log('Send message response:', response);
+      logger.log('Send message response:', response);
       return response;
     },
     onSuccess: () => {
@@ -169,7 +170,7 @@ export default function EmailStyleMessaging() {
       setComposeData({ to: '', subject: '', content: '' });
     },
     onError: (error) => {
-      console.error('Send message error:', error);
+      logger.error('Send message error:', error);
       // More detailed error handling
       let errorMessage = 'Failed to send message. Please try again.';
       if (error.message?.includes('401')) {

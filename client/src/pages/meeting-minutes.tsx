@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Card,
   CardContent,
@@ -37,6 +38,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { DocumentViewer } from '@/components/DocumentViewer';
 import type { Meeting, MeetingMinutes, InsertMeeting } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface MeetingMinutesProps {
   isEmbedded?: boolean;
@@ -45,8 +47,21 @@ interface MeetingMinutesProps {
 export default function MeetingMinutes({
   isEmbedded = false,
 }: MeetingMinutesProps) {
+  const { trackView, trackCreate, trackUpdate } = useActivityTracker();
   const [, setLocation] = useLocation();
   const { setActiveSection } = useDashboardNavigation();
+
+  useEffect(() => {
+    if (!isEmbedded) {
+      trackView(
+        'Meetings',
+        'Meetings',
+        'Meeting Minutes',
+        'User accessed meeting minutes page'
+      );
+    }
+  }, [isEmbedded, trackView]);
+
   const [selectedMeetingId, setSelectedMeetingId] = useState<number | null>(
     null
   );
@@ -331,7 +346,7 @@ export default function MeetingMinutes({
 
       toast({ title: 'File downloaded successfully' });
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       toast({
         title: 'Download failed',
         description:

@@ -3,6 +3,7 @@ import * as React from 'react';
 import { useParams, useLocation } from 'wouter';
 import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Card,
   CardContent,
@@ -58,6 +59,7 @@ import { MultiUserTaskCompletion } from '@/components/multi-user-task-completion
 import SendKudosButton from '@/components/send-kudos-button';
 import { useAuth } from '@/hooks/useAuth';
 import { canEditProject, canDeleteProject } from '@shared/auth-utils';
+import { logger } from '@/lib/logger';
 
 // Back to Projects button component
 function BackToProjectsButton() {
@@ -69,7 +71,7 @@ function BackToProjectsButton() {
       variant="ghost"
       size="sm"
       onClick={() => {
-        console.log('Back to Projects clicked - navigating to projects');
+        logger.log('Back to Projects clicked - navigating to projects');
         setActiveSection('projects');
       }}
       className="flex items-center gap-2 text-brand-primary hover:bg-brand-primary/10 font-roboto"
@@ -119,12 +121,24 @@ export default function ProjectDetailClean({
 }: {
   projectId?: number;
 }) {
+  const { trackView, trackCreate, trackUpdate } = useActivityTracker();
   const { id: paramId } = useParams<{ id: string }>();
   const id = projectId ? projectId.toString() : paramId;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [isAddingTask, setIsAddingTask] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      trackView(
+        'Projects',
+        'Projects',
+        'Project Detail',
+        `User viewed project details for project ID: ${id}`
+      );
+    }
+  }, [id, trackView]);
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [isEditingTask, setIsEditingTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState({
@@ -162,7 +176,7 @@ export default function ProjectDetailClean({
       });
     },
     onError: (error) => {
-      console.error('Error saving meeting notes:', error);
+      logger.error('Error saving meeting notes:', error);
       toast({
         title: 'Error',
         description: 'Failed to save meeting notes',
@@ -187,7 +201,7 @@ export default function ProjectDetailClean({
       });
     },
     onError: (error) => {
-      console.error('Error saving milestone:', error);
+      logger.error('Error saving milestone:', error);
       toast({
         title: 'Error',
         description: 'Failed to update milestone',
@@ -246,7 +260,7 @@ export default function ProjectDetailClean({
           : 'Project removed from meeting agenda',
       });
     } catch (error) {
-      console.error('Error updating meeting review status:', error);
+      logger.error('Error updating meeting review status:', error);
       toast({
         title: 'Error',
         description: 'Failed to update meeting review status',
@@ -320,7 +334,7 @@ export default function ProjectDetailClean({
         try {
           // Validate assignee data before sending
           if (!assignee.id || !assignee.id.trim()) {
-            console.warn(
+            logger.warn(
               `Skipping kudos for ${assignee.name}: empty recipient ID`
             );
             continue;
@@ -335,9 +349,9 @@ export default function ProjectDetailClean({
             customMessage: `🎉 Congratulations on completing "${projectTitle}"! Amazing work!`,
           });
 
-          console.log(`Kudos sent to ${assignee.name} for project completion`);
+          logger.log(`Kudos sent to ${assignee.name} for project completion`);
         } catch (error) {
-          console.error(`Failed to send kudos to ${assignee.name}:`, error);
+          logger.error(`Failed to send kudos to ${assignee.name}:`, error);
         }
       }
 
@@ -352,7 +366,7 @@ export default function ProjectDetailClean({
         });
       }
     } catch (error) {
-      console.error('Failed to send project completion kudos:', error);
+      logger.error('Failed to send project completion kudos:', error);
     }
   };
 
@@ -430,7 +444,7 @@ export default function ProjectDetailClean({
       toast({ description: 'Task added successfully' });
     },
     onError: (error: any) => {
-      console.error('Task creation failed:', error);
+      logger.error('Task creation failed:', error);
       toast({
         description: 'Failed to add task',
         variant: 'destructive',
@@ -466,7 +480,7 @@ export default function ProjectDetailClean({
         queryClient.invalidateQueries({ queryKey: ['/api/projects', id] });
         queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       } catch (error) {
-        console.error('Failed to auto-complete project:', error);
+        logger.error('Failed to auto-complete project:', error);
       }
     }
   };
@@ -512,7 +526,7 @@ export default function ProjectDetailClean({
       toast({ description: 'Task deleted successfully' });
     },
     onError: (error: any) => {
-      console.error('Task deletion failed:', error);
+      logger.error('Task deletion failed:', error);
       toast({
         description: 'Failed to delete task',
         variant: 'destructive',
@@ -689,7 +703,7 @@ export default function ProjectDetailClean({
   }
 
   if (projectError) {
-    console.error('Project query error:', projectError);
+    logger.error('Project query error:', projectError);
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg text-red-600">Error loading project: {(projectError as Error).message}</div>

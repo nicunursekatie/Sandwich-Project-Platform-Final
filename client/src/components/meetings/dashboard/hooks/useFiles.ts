@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 
 // Interfaces
 export interface UploadedFile {
@@ -129,7 +130,7 @@ export function useFiles() {
       return uploadedFile;
 
     } catch (error) {
-      console.error('File upload error:', error);
+      logger.error('File upload error:', error);
       toast({
         title: 'Upload Failed',
         description: error instanceof Error ? error.message : 'Failed to upload file',
@@ -175,7 +176,7 @@ export function useFiles() {
 
       return true;
     } catch (error) {
-      console.error('File deletion error:', error);
+      logger.error('File deletion error:', error);
       toast({
         title: 'Deletion Failed',
         description: 'Failed to delete file',

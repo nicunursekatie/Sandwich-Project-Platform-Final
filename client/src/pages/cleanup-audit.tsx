@@ -2,8 +2,21 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, Info, AlertCircle } from 'lucide-react';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
 
 export default function CleanupAudit() {
+  const { trackView } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Admin',
+      'Admin',
+      'Cleanup Audit',
+      'User accessed cleanup audit page'
+    );
+  }, [trackView]);
+
   const { data: auditData, isLoading } = useQuery({
     queryKey: ['/api/sandwich-collections/audit-cleanup-impact'],
     queryFn: async () => {

@@ -41,6 +41,7 @@ import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { getPickupDateTimeForInput } from './utils';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
+import { logger } from '@/lib/logger';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -365,11 +366,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const createEventRequestMutation = useMutation({
     mutationFn: (data: any) => {
-      console.log('🚀 CREATE MUTATION: Sending data:', data);
+      logger.log('🚀 CREATE MUTATION: Sending data:', data);
       return apiRequest('POST', '/api/event-requests', data);
     },
     onSuccess: (response) => {
-      console.log('✅ CREATE MUTATION SUCCESS: Response:', response);
+      logger.log('✅ CREATE MUTATION SUCCESS: Response:', response);
       toast({
         title: 'Event created successfully',
         description: 'The new event request has been created.',
@@ -379,7 +380,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       onClose();
     },
     onError: (error) => {
-      console.error('❌ CREATE MUTATION ERROR:', error);
+      logger.error('❌ CREATE MUTATION ERROR:', error);
       toast({
         title: 'Error',
         description: 'Failed to create event.',
@@ -511,21 +512,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // Include assigned recipient IDs
     eventData.assignedRecipientIds = formData.assignedRecipientIds || [];
 
-    console.log('📋 FORM SUBMIT DEBUG:');
-    console.log('  - eventRequest exists?', !!eventRequest);
-    console.log('  - mode:', mode);
-    console.log('  - isCreateMode:', isCreateMode);
-    console.log('  - eventData being sent:', eventData);
+    logger.log('📋 FORM SUBMIT DEBUG:');
+    logger.log('  - eventRequest exists?', !!eventRequest);
+    logger.log('  - mode:', mode);
+    logger.log('  - isCreateMode:', isCreateMode);
+    logger.log('  - eventData being sent:', eventData);
 
     if (eventRequest) {
-      console.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
+      logger.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
       // Update existing event request
       updateEventRequestMutation.mutate({
         id: eventRequest.id,
         data: eventData,
       });
     } else {
-      console.log('➕ Calling CREATE mutation for new event');
+      logger.log('➕ Calling CREATE mutation for new event');
       // Create new event request
       createEventRequestMutation.mutate(eventData);
     }

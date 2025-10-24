@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/queryClient';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 
 interface CalendarEvent {
   id: string;
@@ -21,7 +22,17 @@ interface CalendarEvent {
 }
 
 export default function GoogleCalendarAvailability() {
+  const { trackView, trackClick } = useActivityTracker();
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  useEffect(() => {
+    trackView(
+      'Availability',
+      'Availability',
+      'Google Calendar Availability',
+      'User accessed Google Calendar availability'
+    );
+  }, [trackView]);
 
   // Calculate month boundaries
   const monthStart = useMemo(() => {

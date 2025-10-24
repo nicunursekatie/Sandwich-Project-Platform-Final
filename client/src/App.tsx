@@ -19,6 +19,7 @@ import SignupPage from '@/pages/signup';
 import ResetPassword from '@/pages/reset-password';
 import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
+import { logger } from '@/lib/logger';
 
 function Router() {
   const { isAuthenticated, isLoading, error } = useAuth();
@@ -41,7 +42,7 @@ function Router() {
 
   // Enhanced error handling for authentication issues
   if (error && error.message && !error.message.includes('401')) {
-    console.error('[App] Authentication error:', error);
+    logger.error('[App] Authentication error:', error);
     // For non-401 errors, show error state
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -261,7 +262,7 @@ function App() {
   useEffect(() => {
     // Verify required environment variable is present
     if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
-      console.warn(
+      logger.warn(
         'Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID'
       );
     } else {
