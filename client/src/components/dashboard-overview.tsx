@@ -217,7 +217,7 @@ export default function DashboardOverview({
   // Fetch dashboard documents configuration from API
   const { data: dashboardDocumentsData } = useQuery({
     queryKey: ['/api/dashboard-documents'],
-    staleTime: 0, // Always refetch when invalidated
+    // Use global defaults (5 min staleTime) - invalidateQueries handles refetch on mutations
   });
 
   // Map dashboard document IDs to full document details from adminDocuments

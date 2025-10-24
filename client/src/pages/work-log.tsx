@@ -56,10 +56,8 @@ export default function WorkLogPage() {
       return data;
     },
     enabled: !!user, // Only fetch when user is authenticated
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (TanStack Query v5 uses gcTime instead of cacheTime)
-    refetchOnMount: true, // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window gains focus
+    staleTime: 2 * 60 * 1000, // 2 minutes - work logs need reasonable freshness for collaborative updates
+    refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
   // Ensure logs is always an array

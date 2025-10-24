@@ -8,6 +8,7 @@ import { insertRecipientSchema } from '@shared/schema';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
 import { logger } from '../utils/production-safe-logger';
+import { AuditLogger } from '../audit-logger';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -273,11 +274,25 @@ router.get(
 router.post(
   '/',
   requirePermission(PERMISSIONS.RECIPIENTS_ADD),
-  async (req, res) => {
+  async (req: any, res) => {
     try {
       const validatedData = insertRecipientSchema.parse(req.body);
 
       const recipient = await storage.createRecipient(validatedData);
+
+      // Audit log
+      await AuditLogger.logCreate(
+        'recipients',
+        String(recipient.id),
+        recipient,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.status(201).json(recipient);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -297,7 +312,7 @@ router.post(
 router.put(
   '/:id',
   requirePermission(PERMISSIONS.RECIPIENTS_EDIT),
-  async (req, res) => {
+  async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -321,6 +336,20 @@ router.put(
           .json({ error: 'Recipient not found after update' });
       }
 
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'recipients',
+        String(id),
+        existingRecipient,
+        updatedRecipient,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.json(updatedRecipient);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -340,17 +369,36 @@ router.put(
 router.delete(
   '/:id',
   requirePermission(PERMISSIONS.RECIPIENTS_DELETE),
-  async (req, res) => {
+  async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ error: 'Invalid recipient ID' });
       }
 
+      // Get old data before delete
+      const oldRecipient = await storage.getRecipient(id);
+      if (!oldRecipient) {
+        return res.status(404).json({ error: 'Recipient not found' });
+      }
+
       const success = await storage.deleteRecipient(id);
       if (!success) {
         return res.status(404).json({ error: 'Recipient not found' });
       }
+
+      // Audit log
+      await AuditLogger.logDelete(
+        'recipients',
+        String(id),
+        oldRecipient,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
 
       res.json({ success: true, message: 'Recipient deleted successfully' });
     } catch (error) {

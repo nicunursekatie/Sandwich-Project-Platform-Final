@@ -63,8 +63,8 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
 
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['/api/me/dashboard'],
-    staleTime: 0, // Always fetch fresh data for action items
-    refetchOnWindowFocus: true,
+    staleTime: 2 * 60 * 1000, // 2 minutes - action items need reasonable freshness
+    refetchOnWindowFocus: true, // Refetch when user returns to ensure fresh data for real-time updates
   });
 
   const formatDate = (dateString?: string) => {

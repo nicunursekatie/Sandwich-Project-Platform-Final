@@ -172,8 +172,7 @@ export default function HostsManagementConsolidated() {
     HostWithContacts[]
   >({
     queryKey: ['/api/hosts-with-contacts'],
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache data
+    // Use global defaults (5 min staleTime, 10 min gcTime) - proper cache invalidation after mutations
   });
 
   const { data: recipients = [] } = useQuery<Recipient[]>({

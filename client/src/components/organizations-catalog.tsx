@@ -136,8 +136,7 @@ export default function GroupCatalog({
       logger.log('✅ Groups catalog received data:', data);
       return data;
     },
-    staleTime: 0, // Always consider data stale so it refetches when invalidated
-    refetchOnWindowFocus: true, // Refetch when window gains focus
+    // Use global defaults (5 min staleTime) - invalidateQueries handles refetch on mutations
   });
 
   // Function to fetch complete event details
@@ -754,8 +753,11 @@ export default function GroupCatalog({
               <div className="space-y-6">
                 {/* Unified organizations catalog - all organizations together */}
                 {paginatedActiveGroups.map((group, groupIndex) => {
-                  // Use detailed layout for multi-department organizations
-                  if (group.totalDepartments > 1) {
+                  // Use detailed layout for organizations with multiple departments OR multiple events
+                  const hasMultipleEvents = group.departments.some(
+                    (dept: any) => (dept.actualEventCount || 0) > 1 || (dept.pastEvents?.length || 0) > 1
+                  );
+                  if (group.totalDepartments > 1 || hasMultipleEvents) {
                     return (
                     <div
                       key={`multi-${group.groupName}-${groupIndex}`}
@@ -1029,7 +1031,7 @@ export default function GroupCatalog({
                   </div>
                     );
                   } else {
-                    // Use compact layout for single-department organizations
+                    // Use compact layout for organizations with only one event
                     const org = group.departments[0];
                     return (
                       <Card

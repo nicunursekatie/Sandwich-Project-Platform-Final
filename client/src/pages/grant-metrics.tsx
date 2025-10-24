@@ -85,9 +85,7 @@ export default function GrantMetrics() {
       if (!response.ok) throw new Error('Failed to fetch collections');
       return response.json();
     },
-    staleTime: 0,
-    cacheTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 2 * 60 * 1000, // 2 minutes - grant metrics need reasonable freshness
   });
 
   const collections = collectionsData?.collections || [];
@@ -99,9 +97,7 @@ export default function GrantMetrics() {
   // Fetch stats
   const { data: stats } = useQuery({
     queryKey: ['/api/sandwich-collections/stats'],
-    staleTime: 0,
-    cacheTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 2 * 60 * 1000, // 2 minutes - grant metrics need reasonable freshness
   });
 
   // Fetch recipients data

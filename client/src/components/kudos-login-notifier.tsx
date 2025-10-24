@@ -35,8 +35,7 @@ export function KudosLoginNotifier() {
     {
       queryKey: ['/api/messaging/kudos/unnotified'],
       enabled: !!user && !hasShownNotifications,
-      staleTime: 0, // Always fetch fresh data
-      gcTime: 0, // Don't cache the results
+      staleTime: 1 * 60 * 1000, // 1 minute - notifications need reasonable freshness but not aggressive refetching
     }
   );
 

@@ -2,6 +2,7 @@ import express from 'express';
 import type { RouterDependencies } from '../types';
 import { insertDriverSchema } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
+import { AuditLogger } from '../audit-logger';
 
 export function createDriversRouter(deps: RouterDependencies) {
   const router = express.Router();
@@ -125,6 +126,20 @@ export function createDriversRouter(deps: RouterDependencies) {
     try {
       const validatedData = insertDriverSchema.parse(req.body);
       const driver = await storage.createDriver(validatedData);
+
+      // Audit log
+      await AuditLogger.logCreate(
+        'drivers',
+        String(driver.id),
+        driver,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.status(201).json(driver);
     } catch (error) {
       logger.error('Failed to create driver', error);
@@ -136,10 +151,32 @@ export function createDriversRouter(deps: RouterDependencies) {
   router.put('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before update
+      const oldDriver = await storage.getDriver(id);
+      if (!oldDriver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
       const driver = await storage.updateDriver(id, req.body);
       if (!driver) {
         return res.status(404).json({ message: 'Driver not found' });
       }
+
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'drivers',
+        String(id),
+        oldDriver,
+        driver,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.json(driver);
     } catch (error) {
       logger.error('Failed to update driver', error);
@@ -151,10 +188,32 @@ export function createDriversRouter(deps: RouterDependencies) {
   router.patch('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before update
+      const oldDriver = await storage.getDriver(id);
+      if (!oldDriver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
       const driver = await storage.updateDriver(id, req.body);
       if (!driver) {
         return res.status(404).json({ message: 'Driver not found' });
       }
+
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'drivers',
+        String(id),
+        oldDriver,
+        driver,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.json(driver);
     } catch (error) {
       logger.error('Failed to update driver', error);
@@ -166,10 +225,31 @@ export function createDriversRouter(deps: RouterDependencies) {
   router.delete('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before delete
+      const oldDriver = await storage.getDriver(id);
+      if (!oldDriver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
       const deleted = await storage.deleteDriver(id);
       if (!deleted) {
         return res.status(404).json({ message: 'Driver not found' });
       }
+
+      // Audit log
+      await AuditLogger.logDelete(
+        'drivers',
+        String(id),
+        oldDriver,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.status(204).send();
     } catch (error) {
       logger.error('Failed to delete driver', error);

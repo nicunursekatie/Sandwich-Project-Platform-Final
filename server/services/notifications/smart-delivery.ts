@@ -10,18 +10,32 @@
  */
 
 import { db } from '../../db';
-import { 
-  notifications, 
+import {
+  notifications,
   notificationHistory,
   notificationABTests,
-  users 
+  users
 } from '../../../shared/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { mlEngine } from './ml-engine';
 import logger from '../../utils/logger';
 import { Server as SocketIOServer } from 'socket.io';
+import { sendEmail } from '../sendgrid';
+import { SMSProviderFactory } from '../../sms-providers/provider-factory';
 
 const deliveryLogger = logger.child({ service: 'smart-delivery' });
+
+// Initialize SMS provider
+let smsProvider: any = null;
+try {
+  const factory = SMSProviderFactory.getInstance();
+  smsProvider = factory.getProvider();
+  if (smsProvider.isConfigured()) {
+    deliveryLogger.info(`${smsProvider.name} SMS provider initialized for smart delivery`);
+  }
+} catch (error) {
+  deliveryLogger.warn('SMS provider initialization failed', { error: (error as Error).message });
+}
 
 export interface DeliveryOptions {
   forceChannel?: 'email' | 'sms' | 'in_app' | 'push';
@@ -301,25 +315,80 @@ export class SmartDeliveryService {
         throw new Error('User email not found');
       }
 
-      // TODO: Integrate with email service (SendGrid, etc.)
-      deliveryLogger.info('Email notification would be sent', {
+      // Check if SendGrid is configured
+      if (!process.env.SENDGRID_API_KEY) {
+        deliveryLogger.warn('SendGrid not configured, email notification not sent', {
+          notificationId: notification.id,
+          email: user[0].email
+        });
+        throw new Error('Email service not configured - SENDGRID_API_KEY missing');
+      }
+
+      // Get sender email from environment or use default
+      const fromEmail = process.env.NOTIFICATION_FROM_EMAIL || 'noreply@thesandwichproject.org';
+      const userName = user[0].firstName || 'there';
+
+      // Create HTML email body
+      const htmlBody = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px 5px 0 0; }
+            .content { background-color: #ffffff; padding: 30px; border: 1px solid #e9ecef; }
+            .footer { background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d; border-radius: 0 0 5px 5px; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 15px 0; }
+            .priority-high { border-left: 4px solid #dc3545; }
+            .priority-urgent { border-left: 4px solid #ff0000; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h2 style="margin: 0; color: #495057;">The Sandwich Project</h2>
+            </div>
+            <div class="content ${notification.priority === 'high' || notification.priority === 'urgent' ? 'priority-' + notification.priority : ''}">
+              <p>Hi ${userName},</p>
+              <h3>${notification.title}</h3>
+              <p>${notification.message.replace(/\n/g, '<br>')}</p>
+              ${notification.actionUrl ? `
+                <p>
+                  <a href="${notification.actionUrl}" class="button">
+                    ${notification.actionText || 'View Details'}
+                  </a>
+                </p>
+              ` : ''}
+            </div>
+            <div class="footer">
+              <p>This is an automated notification from The Sandwich Project</p>
+              <p>If you'd prefer not to receive these emails, you can manage your notification preferences in your account settings.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Send email using SendGrid
+      await sendEmail({
+        to: user[0].email,
+        from: fromEmail,
+        subject: notification.title,
+        text: notification.message,
+        html: htmlBody
+      });
+
+      deliveryLogger.info('Email notification sent successfully', {
         notificationId: notification.id,
         email: user[0].email,
         subject: notification.title
       });
 
-      // For now, just log the email content
-      deliveryLogger.debug('Email content', {
-        to: user[0].email,
-        subject: notification.title,
-        body: notification.message,
-        notificationId: notification.id
-      });
-
     } catch (error) {
-      deliveryLogger.error('Error delivering email notification', { 
-        error, 
-        notificationId: notification.id 
+      deliveryLogger.error('Error delivering email notification', {
+        error,
+        notificationId: notification.id
       });
       throw error;
     }
@@ -330,9 +399,18 @@ export class SmartDeliveryService {
    */
   private async deliverSMS(notification: any): Promise<void> {
     try {
+      // Check if SMS provider is configured
+      if (!smsProvider || !smsProvider.isConfigured()) {
+        deliveryLogger.warn('SMS provider not configured, notification not sent', {
+          notificationId: notification.id,
+          userId: notification.userId
+        });
+        throw new Error('SMS service not configured - provider missing or not configured');
+      }
+
       // Get user phone number
       const user = await db
-        .select({ phoneNumber: users.phoneNumber })
+        .select({ phoneNumber: users.phoneNumber, firstName: users.firstName })
         .from(users)
         .where(eq(users.id, notification.userId))
         .limit(1);
@@ -341,17 +419,62 @@ export class SmartDeliveryService {
         throw new Error('User phone number not found');
       }
 
-      // TODO: Integrate with SMS service (Twilio, etc.)
-      deliveryLogger.info('SMS notification would be sent', {
+      // Format phone number if needed
+      // First, remove all non-digits
+      let formattedPhone = user[0].phoneNumber.replace(/[^\d]/g, '');
+
+      // Then add the leading + and format properly
+      if (!formattedPhone.startsWith('+')) {
+        // Assume US number if no country code
+        if (formattedPhone.length === 10) {
+          formattedPhone = `+1${formattedPhone}`;
+        } else if (formattedPhone.length === 11 && formattedPhone.startsWith('1')) {
+          formattedPhone = `+${formattedPhone}`;
+        } else {
+          formattedPhone = `+${formattedPhone}`;
+        }
+      }
+
+      // Prepare SMS message (limit to 160 characters for single SMS)
+      const userName = user[0].firstName || '';
+      let smsBody = notification.title;
+
+      // Add message if there's room (accounting for ": " separator = 2 chars)
+      if (notification.message && smsBody.length + notification.message.length + 2 <= 150) {
+        smsBody += `: ${notification.message}`;
+      }
+
+      // Add action URL if provided and there's room (accounting for space + full URL length)
+      if (notification.actionUrl && smsBody.length + 1 + notification.actionUrl.length <= 160) {
+        smsBody += ` ${notification.actionUrl}`;
+      }
+
+      // Truncate if still too long
+      if (smsBody.length > 160) {
+        smsBody = smsBody.substring(0, 157) + '...';
+      }
+
+      // Send SMS using provider
+      const result = await smsProvider.sendSMS({
+        to: formattedPhone,
+        body: smsBody
+      });
+
+      if (!result.success) {
+        throw new Error(result.message || 'SMS delivery failed');
+      }
+
+      deliveryLogger.info('SMS notification sent successfully', {
         notificationId: notification.id,
-        phoneNumber: user[0].phoneNumber.replace(/\d(?=\d{4})/g, '*'),
-        message: notification.message.substring(0, 160)
+        phoneNumber: formattedPhone.replace(/\d(?=\d{4})/g, '*'),
+        messageId: result.messageId,
+        provider: smsProvider.name
       });
 
     } catch (error) {
-      deliveryLogger.error('Error delivering SMS notification', { 
-        error, 
-        notificationId: notification.id 
+      deliveryLogger.error('Error delivering SMS notification', {
+        error,
+        notificationId: notification.id
       });
       throw error;
     }
@@ -359,21 +482,81 @@ export class SmartDeliveryService {
 
   /**
    * Deliver notification via push notification
+   *
+   * To enable push notifications, you need to:
+   * 1. Install a push notification service (e.g., firebase-admin for FCM)
+   * 2. Add environment variables (FCM_SERVER_KEY, FCM_PROJECT_ID, etc.)
+   * 3. Store user device tokens in the database
+   * 4. Implement the push notification logic below
+   *
+   * Example for FCM:
+   * - npm install firebase-admin
+   * - Initialize Firebase Admin SDK with service account
+   * - Send to user's registered device tokens
    */
   private async deliverPush(notification: any): Promise<void> {
     try {
-      // TODO: Integrate with push notification service (FCM, APNS, etc.)
-      deliveryLogger.info('Push notification would be sent', {
+      // Check if push notification service is configured
+      const fcmConfigured = process.env.FCM_SERVER_KEY && process.env.FCM_PROJECT_ID;
+      const apnsConfigured = process.env.APNS_KEY_ID && process.env.APNS_TEAM_ID;
+
+      if (!fcmConfigured && !apnsConfigured) {
+        deliveryLogger.warn('Push notification service not configured', {
+          notificationId: notification.id,
+          userId: notification.userId,
+          message: 'No FCM or APNS credentials found. Add FCM_SERVER_KEY/FCM_PROJECT_ID or APNS_KEY_ID/APNS_TEAM_ID to enable push notifications.'
+        });
+        throw new Error('Push notification service not configured - add FCM or APNS credentials');
+      }
+
+      // TODO: Get user's device tokens from database
+      // const deviceTokens = await db
+      //   .select({ token: userDeviceTokens.token, platform: userDeviceTokens.platform })
+      //   .from(userDeviceTokens)
+      //   .where(eq(userDeviceTokens.userId, notification.userId));
+
+      // if (!deviceTokens || deviceTokens.length === 0) {
+      //   throw new Error('No device tokens found for user');
+      // }
+
+      // TODO: Send push notification using appropriate service
+      // Example FCM implementation:
+      // import admin from 'firebase-admin';
+      // const message = {
+      //   notification: {
+      //     title: notification.title,
+      //     body: notification.message,
+      //   },
+      //   data: {
+      //     notificationId: notification.id.toString(),
+      //     type: notification.type,
+      //     actionUrl: notification.actionUrl || '',
+      //   },
+      //   tokens: deviceTokens.map(dt => dt.token),
+      // };
+      // const response = await admin.messaging().sendMulticast(message);
+
+      deliveryLogger.info('Push notification delivery attempted but not fully implemented', {
         notificationId: notification.id,
         userId: notification.userId,
         title: notification.title,
-        body: notification.message
+        configured: { fcm: !!fcmConfigured, apns: !!apnsConfigured }
+      });
+
+      // For now, log what would be sent
+      deliveryLogger.debug('Push notification details', {
+        notificationId: notification.id,
+        userId: notification.userId,
+        title: notification.title,
+        body: notification.message,
+        priority: notification.priority,
+        actionUrl: notification.actionUrl
       });
 
     } catch (error) {
-      deliveryLogger.error('Error delivering push notification', { 
-        error, 
-        notificationId: notification.id 
+      deliveryLogger.error('Error delivering push notification', {
+        error,
+        notificationId: notification.id
       });
       throw error;
     }
