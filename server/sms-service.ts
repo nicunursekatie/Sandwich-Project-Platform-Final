@@ -96,6 +96,18 @@ export async function sendSMSReminder(
         const smsConsent = metadata.smsConsent;
         const phoneNumber = smsConsent?.phoneNumber;
 
+        // Validate phone number exists before sending
+        if (!phoneNumber) {
+          console.warn(`⚠️ Skipping SMS for ${user.email}: No phone number found`);
+          results.push({
+            user: user.email,
+            phone: 'none',
+            error: 'No phone number in SMS consent',
+            success: false,
+          });
+          continue;
+        }
+
         const message = `Hi! 🥪 Friendly reminder: The Sandwich Project weekly numbers haven't been submitted yet for ${hostLocation}. Please submit at: ${appUrl} - Thanks for all you do!`;
 
         const result = await smsProvider.sendSMS({
@@ -296,6 +308,15 @@ export async function sendConfirmationSMS(
   }
 
   try {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      console.error('❌ Invalid phone number provided');
+      return {
+        success: false,
+        message: 'Invalid phone number provided',
+      };
+    }
+
     const messages = getWelcomeMessages(smsProvider);
     const confirmationMessage = messages.confirmation(verificationCode);
 
@@ -432,6 +453,15 @@ export async function sendWelcomeSMS(
   }
 
   try {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      console.error('❌ Invalid phone number provided');
+      return {
+        success: false,
+        message: 'Invalid phone number provided',
+      };
+    }
+
     const messages = getWelcomeMessages(smsProvider);
     const welcomeMessage = messages.welcome();
 
