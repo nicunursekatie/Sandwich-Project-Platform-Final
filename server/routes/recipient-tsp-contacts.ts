@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { insertRecipientTspContactSchema } from '@shared/schema';
 import { z } from 'zod';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { AuditLogger } from '../audit-logger';
 
 export function createRecipientTspContactsRouter(deps: RouterDependencies) {
   const router = Router();
@@ -62,7 +63,7 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
   '/',
   isAuthenticated,
   requirePermission('RECIPIENTS_EDIT'),
-  async (req, res) => {
+  async (req: any, res) => {
     try {
       const validatedData = insertRecipientTspContactSchema.parse(req.body);
 
@@ -101,6 +102,19 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
         .values(validatedData)
         .returning();
 
+      // Audit log
+      await AuditLogger.logCreate(
+        'recipient_tsp_contacts',
+        String(contact.id),
+        contact,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.status(201).json(contact);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -119,12 +133,22 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
   '/:id',
   isAuthenticated,
   requirePermission('RECIPIENTS_EDIT'),
-  async (req, res) => {
+  async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const updateData = insertRecipientTspContactSchema
         .partial()
         .parse(req.body);
+
+      // Get old data before update
+      const [oldContact] = await db
+        .select()
+        .from(recipientTspContacts)
+        .where(eq(recipientTspContacts.id, id));
+
+      if (!oldContact) {
+        return res.status(404).json({ error: 'TSP contact not found' });
+      }
 
       // If this is being set as primary, unset other primary contacts for this recipient
       if (updateData.isPrimary) {
@@ -175,9 +199,19 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
         .where(eq(recipientTspContacts.id, id))
         .returning();
 
-      if (!contact) {
-        return res.status(404).json({ error: 'TSP contact not found' });
-      }
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'recipient_tsp_contacts',
+        String(id),
+        oldContact,
+        contact,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
 
       res.json(contact);
     } catch (error) {
@@ -197,9 +231,19 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
   '/:id',
   isAuthenticated,
   requirePermission('RECIPIENTS_EDIT'),
-  async (req, res) => {
+  async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before delete/deactivate
+      const [oldContact] = await db
+        .select()
+        .from(recipientTspContacts)
+        .where(eq(recipientTspContacts.id, id));
+
+      if (!oldContact) {
+        return res.status(404).json({ error: 'TSP contact not found' });
+      }
 
       const [contact] = await db
         .update(recipientTspContacts)
@@ -207,9 +251,19 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
         .where(eq(recipientTspContacts.id, id))
         .returning();
 
-      if (!contact) {
-        return res.status(404).json({ error: 'TSP contact not found' });
-      }
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'recipient_tsp_contacts',
+        String(id),
+        oldContact,
+        contact,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
 
       res.json({ message: 'TSP contact deactivated successfully' });
     } catch (error) {

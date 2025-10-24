@@ -37,34 +37,37 @@ export interface ChangeMetadata {
 }
 
 export class AuditLogger {
-  // Field mapping for event request fields to user-friendly names
+  // Field mapping for all entities to user-friendly names
   private static readonly FIELD_MAPPINGS: Record<string, string> = {
-    // Basic contact information
+    // Basic contact information (shared across entities)
     firstName: 'First Name',
-    lastName: 'Last Name', 
+    lastName: 'Last Name',
+    name: 'Name',
     email: 'Email Address',
     phone: 'Phone Number',
+    address: 'Address',
+    notes: 'Notes',
     organizationName: 'Organization Name',
     department: 'Department',
-    
-    // Event details
+
+    // Event request fields
     desiredEventDate: 'Desired Event Date',
     scheduledEventDate: 'Scheduled Event Date',
     message: 'Message/Notes',
     previouslyHosted: 'Previously Hosted Events',
-    
+
     // System tracking
     status: 'Status',
     statusChangedAt: 'Status Changed Date',
     assignedTo: 'Assigned To',
-    
+
     // Follow-up tracking
     followUpMethod: 'Follow-up Method',
     updatedEmail: 'Updated Email',
     followUpDate: 'Follow-up Date',
     scheduledCallDate: 'Scheduled Call Date',
     contactedAt: 'Contacted Date',
-    
+
     // Contact completion details
     communicationMethod: 'Communication Method',
     contactCompletionNotes: 'Contact Notes',
@@ -72,7 +75,7 @@ export class AuditLogger {
     estimatedSandwichCount: 'Estimated Sandwich Count',
     hasRefrigeration: 'Has Refrigeration',
     completedByUserId: 'Completed By',
-    
+
     // TSP contact assignments
     tspContactAssigned: 'TSP Contact Assigned',
     tspContact: 'Primary TSP Contact',
@@ -81,19 +84,20 @@ export class AuditLogger {
     additionalContact1: 'Additional Contact 1',
     additionalContact2: 'Additional Contact 2',
     customTspContact: 'Custom TSP Contact',
-    
+    tspContactUserId: 'TSP Contact User ID',
+
     // Toolkit tracking
     toolkitSent: 'Toolkit Sent',
     toolkitSentDate: 'Toolkit Sent Date',
     toolkitStatus: 'Toolkit Status',
     toolkitSentBy: 'Toolkit Sent By',
-    
+
     // Event timing
     eventStartTime: 'Event Start Time',
     eventEndTime: 'Event End Time',
     pickupTime: 'Pickup Time',
     overnightPickupTime: 'Overnight Pickup Time',
-    
+
     // Event details
     additionalRequirements: 'Additional Requirements',
     planningNotes: 'Planning Notes',
@@ -101,13 +105,13 @@ export class AuditLogger {
     sandwichTypes: 'Sandwich Types',
     deliveryDestination: 'Delivery Destination',
     overnightHoldingLocation: 'Overnight Holding Location',
-    
+
     // Resource requirements
     driversNeeded: 'Drivers Needed',
     speakersNeeded: 'Speakers Needed',
     volunteersNeeded: 'Volunteers Needed',
     volunteerNotes: 'Volunteer Notes',
-    
+
     // Assignments
     assignedDriverIds: 'Assigned Drivers',
     driverPickupTime: 'Driver Pickup Time',
@@ -116,31 +120,93 @@ export class AuditLogger {
     assignedSpeakerIds: 'Assigned Speakers',
     assignedDriverSpeakers: 'Driver-Speakers',
     assignedVolunteerIds: 'Assigned Volunteers',
-    
+
     // Van driver
     vanDriverNeeded: 'Van Driver Needed',
     assignedVanDriverId: 'Assigned Van Driver',
     customVanDriverName: 'Custom Van Driver',
     vanDriverNotes: 'Van Driver Notes',
-    
+
     // Follow-up completion
     followUpOneDayCompleted: '1-Day Follow-up Completed',
     followUpOneDayDate: '1-Day Follow-up Date',
     followUpOneMonthCompleted: '1-Month Follow-up Completed',
     followUpOneMonthDate: '1-Month Follow-up Date',
-    
+
     // Social media and tracking
     socialMediaPosted: 'Social Media Posted',
     socialMediaPostDate: 'Social Media Post Date',
     actualSandwichCount: 'Actual Sandwich Count',
     sandwichesDistributed: 'Sandwiches Distributed',
     sandwichDistributionDate: 'Distribution Date',
-    
-    // Additional fields
+
+    // Host fields
+    latitude: 'Latitude',
+    longitude: 'Longitude',
+    geocodedAt: 'Geocoded Date',
+
+    // Host Contact fields
+    hostId: 'Host Location',
+    role: 'Role',
+    isPrimary: 'Is Primary Contact',
+    weeklyActive: 'Weekly Active',
+    lastScraped: 'Last Scraped Date',
+
+    // Recipient fields
+    website: 'Website',
+    instagramHandle: 'Instagram Handle',
+    region: 'Region',
+    focusArea: 'Focus Area',
+    contactPersonName: 'Contact Person Name',
+    contactPersonPhone: 'Contact Person Phone',
+    contactPersonEmail: 'Contact Person Email',
+    contactPersonRole: 'Contact Person Role',
+    secondContactPersonName: 'Second Contact Person Name',
+    secondContactPersonPhone: 'Second Contact Person Phone',
+    secondContactPersonEmail: 'Second Contact Person Email',
+    secondContactPersonRole: 'Second Contact Person Role',
+    reportingGroup: 'Reporting Group',
+    estimatedSandwiches: 'Estimated Sandwiches',
+    sandwichType: 'Sandwich Type',
+    contractSigned: 'Contract Signed',
+    contractSignedDate: 'Contract Signed Date',
+    collectionDay: 'Collection Day',
+    collectionTime: 'Collection Time',
+    feedingDay: 'Feeding Day',
+    feedingTime: 'Feeding Time',
+    hasSharedPost: 'Has Shared Post',
+    sharedPostDate: 'Shared Post Date',
+
+    // Driver & Volunteer fields
+    isActive: 'Active Status',
+    vehicleType: 'Vehicle Type',
+    licenseNumber: 'License Number',
+    availability: 'Availability',
+    zone: 'Zone',
+    area: 'Area',
+    routeDescription: 'Route Description',
+    hostLocation: 'Host Location',
+    vanApproved: 'Van Approved',
+    homeAddress: 'Home Address',
+    emailAgreementSent: 'Email Agreement Sent',
+    voicemailLeft: 'Voicemail Left',
+    inactiveReason: 'Inactive Reason',
+    isWeeklyDriver: 'Is Weekly Driver',
+    volunteerType: 'Volunteer Type',
+
+    // Recipient TSP Contact fields
+    recipientId: 'Recipient',
+    userId: 'User ID',
+    userName: 'User Name',
+    userEmail: 'User Email',
+    contactName: 'Contact Name',
+    contactEmail: 'Contact Email',
+    contactPhone: 'Contact Phone',
+    isActive: 'Is Active',
+
+    // Common timestamp fields
     createdAt: 'Created Date',
-    updatedAt: 'Last Updated',
-    driverDetails: 'Driver Details',
-    speakerDetails: 'Speaker Details'
+    updatedAt: 'Last Updated'
   };
 
   // Format different data types for human-readable display
@@ -353,6 +419,93 @@ export class AuditLogger {
 
     // Default summary
     return `Updated ${changeCount} field${changeCount === 1 ? '' : 's'}: ${changes.slice(0, 3).map(c => c.friendlyName).join(', ')}${changeCount > 3 ? ` and ${changeCount - 3} more` : ''}`;
+  }
+
+  // Generic method for logging entity changes with detailed tracking
+  static async logEntityChange(
+    tableName: string,
+    recordId: string,
+    oldData: any,
+    newData: any,
+    context: AuditContext = {},
+    changeContext?: ChangeContext
+  ): Promise<void> {
+    try {
+      // Identify all field-level changes
+      const changes = this.identifyChanges(oldData, newData);
+
+      // Generate summary
+      const summary = this.generateChangeSummary(changes, changeContext);
+
+      // Identify significant changes (status, assignments, contact info)
+      const significantChanges = changes
+        .filter(change => {
+          const field = change.field.toLowerCase();
+          return field.includes('status') ||
+                 field.includes('assigned') ||
+                 field.includes('contact') ||
+                 field.includes('date') ||
+                 field === 'email' ||
+                 field === 'phone' ||
+                 field === 'name' ||
+                 field === 'isactive' ||
+                 field.includes('active');
+        })
+        .map(change => change.description);
+
+      // Create clean additional context without field change data
+      const cleanChangeContext = changeContext ? {
+        ...changeContext,
+        ...(changeContext.notes && { notes: changeContext.notes }),
+        ...(changeContext.actionType && { actionType: changeContext.actionType }),
+        ...(changeContext.operation && { operation: changeContext.operation }),
+        ...(changeContext.section && { section: changeContext.section }),
+      } : undefined;
+
+      // Filter out field-level changes from the clean context to avoid duplication
+      const fieldsInChanges = new Set(changes.map(change => change.field.toLowerCase()));
+      const filteredContext: any = {};
+
+      if (cleanChangeContext) {
+        Object.keys(cleanChangeContext).forEach(key => {
+          const lowerKey = key.toLowerCase();
+          if (!fieldsInChanges.has(lowerKey) &&
+              !['email', 'phone', 'name', 'status'].includes(lowerKey)) {
+            filteredContext[key] = (cleanChangeContext as any)[key];
+          }
+        });
+      }
+
+      // Enhanced new data with properly separated metadata
+      const enhancedNewData = {
+        ...newData,
+        _auditMetadata: {
+          changes,
+          summary,
+          totalChanges: changes.length,
+          significantChanges,
+          changeTimestamp: new Date().toISOString(),
+          changedBy: context.userId || 'Unknown User',
+          additionalContext: Object.keys(filteredContext).length > 0 ? filteredContext : undefined
+        }
+      };
+
+      // Log using the existing audit system
+      await this.log(
+        'UPDATE',
+        tableName,
+        recordId,
+        oldData,
+        enhancedNewData,
+        context
+      );
+
+      console.log(`📋 ${tableName} Audit: ${summary} (${changes.length} total changes)`);
+
+    } catch (error) {
+      console.error(`Failed to log ${tableName} change:`, error);
+      // Don't throw - audit logging shouldn't break the main operation
+    }
   }
 
   // Main method for logging event request changes
