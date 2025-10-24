@@ -1,11 +1,24 @@
 import { GoogleSheetsViewer } from '@/components/google-sheets-viewer';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { usePermissions } from '@/hooks/useResourcePermissions';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
 
 export default function GoogleSheetsPage() {
   const { user } = useAuth();
   const { VIEW_SANDWICH_DATA: canView } = usePermissions(['VIEW_SANDWICH_DATA']);
+  const { trackView } = useActivityTracker();
+
+  useEffect(() => {
+    if (canView) {
+      trackView(
+        'Data',
+        'Data',
+        'Google Sheets Data',
+        'User accessed Google Sheets data viewer'
+      );
+    }
+  }, [canView, trackView]);
 
   if (!canView) {
     return (

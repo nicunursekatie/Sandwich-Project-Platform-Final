@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Card,
   CardContent,
@@ -61,8 +62,18 @@ import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-u
 import { logger } from '@/lib/logger';
 
 export default function GrantMetrics() {
+  const { trackView } = useActivityTracker();
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>('all');
   const [selectedQuarter, setSelectedQuarter] = useState<string>('all');
+
+  useEffect(() => {
+    trackView(
+      'Analytics',
+      'Analytics',
+      'Grant Metrics',
+      'User accessed grant metrics page'
+    );
+  }, [trackView]);
 
   // Fetch collections data
   const { data: collectionsData } = useQuery({

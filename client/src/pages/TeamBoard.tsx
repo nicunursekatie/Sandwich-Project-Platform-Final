@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Loader2,
   Plus,
@@ -276,12 +277,23 @@ export default function TeamBoard() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { track } = useOnboardingTracker();
+  const { trackView, trackClick, trackCreate } = useActivityTracker();
   const [newItemContent, setNewItemContent] = useState('');
   const [newItemType, setNewItemType] = useState<BoardItemType>('task');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<BoardItemType | 'all'>('all');
 
-  // Track page visit for onboarding challenge
+  // Track page visit for onboarding challenge and activity tracking
+  useEffect(() => {
+    trackView(
+      'Team Board',
+      'Team Board',
+      'Team Board',
+      'User accessed team board'
+    );
+  }, [trackView]);
+
+  // Track onboarding
   useEffect(() => {
     track('view_team_board');
   }, []);

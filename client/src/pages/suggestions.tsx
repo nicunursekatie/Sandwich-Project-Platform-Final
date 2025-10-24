@@ -43,6 +43,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiRequest } from '@/lib/queryClient';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Lightbulb,
   Plus,
@@ -123,11 +124,21 @@ interface SuggestionResponse {
 }
 
 export default function SuggestionsPortal() {
+  const { trackView, trackClick, trackFormSubmit } = useActivityTracker();
   const [selectedSuggestion, setSelectedSuggestion] =
     useState<Suggestion | null>(null);
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [showClarificationDialog, setShowClarificationDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+
+  useEffect(() => {
+    trackView(
+      'Suggestions',
+      'Suggestions',
+      'Suggestions Portal',
+      'User accessed suggestions portal'
+    );
+  }, [trackView]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');

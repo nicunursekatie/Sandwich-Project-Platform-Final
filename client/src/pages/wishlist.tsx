@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
 import {
   Copy,
   ExternalLink,
@@ -30,6 +32,16 @@ export default function WishlistPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { trackView, trackClick } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Wishlist',
+      'Wishlist',
+      'Amazon Wishlist',
+      'User accessed wishlist page'
+    );
+  }, [trackView]);
 
   const [newSuggestion, setNewSuggestion] = useState({
     item: '',

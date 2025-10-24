@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Trophy, CheckCircle, Clock, Users, Award, Mail, ChevronDown, ChevronRight, Heart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 
 interface ChallengeCompletion {
   challengeId: number;
@@ -27,10 +28,20 @@ interface UserProgress {
 }
 
 export default function OnboardingAdmin() {
+  const { trackView, trackClick } = useActivityTracker();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    trackView(
+      'Admin',
+      'Admin',
+      'Onboarding Admin',
+      'User accessed onboarding admin page'
+    );
+  }, [trackView]);
 
   const { data: usersProgress = [], isLoading } = useQuery<UserProgress[]>({
     queryKey: ['/api/onboarding/admin/users-progress'],
