@@ -20,7 +20,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent
+} from '@/components/ui/tooltip';
 
 // Import existing components that we'll reuse
 import RequestFilters from '@/components/event-requests/RequestFilters';
@@ -177,7 +182,20 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* Header */}
         <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
           <div>
-            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
+            <div className="flex items-center gap-2">
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">Event Requests Help</p>
+                  <p className="text-sm">Track and manage all event requests from organizations. Use tabs to filter by status, assign TSP contacts, schedule events, and plan sandwich deliveries.</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <p className="text-[#236383]">
               {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
             </p>

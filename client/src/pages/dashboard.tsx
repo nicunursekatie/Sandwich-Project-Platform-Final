@@ -28,6 +28,7 @@ import {
   Gift,
   Copy,
   ExternalLink,
+  HelpCircle,
 } from 'lucide-react';
 import { useLocation, useRoute } from 'wouter';
 // Using optimized SVG for faster loading
@@ -589,6 +590,32 @@ export default function Dashboard({
 
               {/* Onboarding Challenge Button */}
               <OnboardingChallengeButton onNavigate={(section) => setActiveSection(section)} />
+
+              {/* Quick Help Button */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Help button clicked');
+                  trackButtonClick('help', 'dashboard_header');
+                  setActiveSection('help');
+                  window.history.pushState(
+                    {},
+                    '',
+                    '/dashboard?section=help'
+                  );
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
+                  activeSection === 'help'
+                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
+                    : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
+                }`}
+                title="Help & Support"
+                aria-label="Help & Support"
+              >
+                <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
 
               <button
                 onClick={(e) => {
