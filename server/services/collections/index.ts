@@ -645,22 +645,31 @@ export class CollectionService implements ICollectionService {
         });
       }
 
-      // Check for suspicious patterns
+      // Check for suspicious patterns (test/dummy data, not legitimate organizations)
       const suspiciousNames = collections.filter((c) => {
         const name = (c.hostName || '').toLowerCase().trim();
         return (
-          name.startsWith('test') ||
-          name.startsWith('loc') || // Catches "loc", "loc ", "loc1", "loc123", etc.
-          name.match(/^loc\d+$/) || // Catches "loc1", "loc2", "loc123"
-          name.match(/^group\s*\d+$/) || // Catches "group 1", "group1", "group 12"
-          name === 'unknown' ||
+          // Test data patterns
           name === 'test' ||
           name === 'sample' ||
           name === 'demo' ||
-          name.includes('test') ||
+          name.startsWith('test ') || // "test something" but not "Contest Hall"
+          name.startsWith('test_') || // "test_location"
+          name.startsWith('test-') || // "test-location"
+          // Location placeholders
+          name.startsWith('loc') || // Catches "loc", "loc ", "loc1", "location1"
+          name.match(/^loc\d+$/) || // Catches "loc1", "loc2", "loc123"
+          // Only flag very obvious test group patterns (single digit groups)
+          name.match(/^group\s*[1-9]$/) || // "group 1", "group1" through "group 9" only
+          // Placeholder names
+          name === 'unknown' ||
+          name === 'tbd' ||
+          name === 'tba' ||
+          name === 'placeholder' ||
+          // Invalid formats
           name.length < 3 ||
-          name.match(/^\d+$/) || // Pure numbers
-          name.match(/^[a-z]{1,2}$/) // Single/double letters only
+          name.match(/^\d+$/) || // Pure numbers like "123"
+          name.match(/^[a-z]{1,2}$/) // Single/double letters like "a", "ab"
         );
       });
       if (suspiciousNames.length > 0) {
