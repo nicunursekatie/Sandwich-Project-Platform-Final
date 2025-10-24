@@ -15,6 +15,7 @@ import {
   Download,
   ChevronDown,
   ChevronRight,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -473,14 +480,26 @@ export default function RecipientsManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center">
-            <Users className="text-blue-500 mr-3 w-6 h-6" />
-            Recipients Management
-          </h1>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+          <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Users className="text-blue-500 w-6 h-6" />
+              Recipients Management
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">Recipients Management Help</p>
+                  <p className="text-sm">Manage individuals and organizations who receive sandwiches. Track contact information, delivery addresses, and special requirements.</p>
+                </TooltipContent>
+              </Tooltip>
+            </h1>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -2477,5 +2496,6 @@ export default function RecipientsManagement() {
         </Dialog>
       )}
     </div>
+    </TooltipProvider>
   );
 }

@@ -7,6 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +25,7 @@ import {
   ArrowRight,
   Clock,
   MapPin,
+  HelpCircle,
 } from 'lucide-react';
 import type { SandwichCollection } from '@shared/schema';
 import {
@@ -607,14 +614,28 @@ export default function ActionCenter() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold text-brand-primary">Action Center</h2>
-        <p className="text-gray-600 mt-2">
-          Strategic opportunities for volunteer recruitment and program growth • {actionItems.length} insights
-        </p>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-3xl font-bold text-brand-primary">Action Center</h2>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                  <HelpCircle className="w-5 h-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold mb-1">Action Center Help</p>
+                <p className="text-sm">Strategic insights and opportunities based on your data. Get actionable recommendations for volunteer recruitment, event scheduling, recognition, and program planning.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <p className="text-gray-600 mt-2">
+            Strategic opportunities for volunteer recruitment and program growth • {actionItems.length} insights
+          </p>
+        </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -772,5 +793,6 @@ export default function ActionCenter() {
         )}
       </div>
     </div>
+    </TooltipProvider>
   );
 }
