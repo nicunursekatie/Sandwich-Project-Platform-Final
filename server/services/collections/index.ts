@@ -7,7 +7,8 @@ import type {
   InsertSandwichCollection,
 } from '@shared/schema';
 import * as XLSX from 'xlsx';
-import { parse, stringify } from 'csv-parse/sync';
+import { parse } from 'csv-parse/sync';
+import { stringify } from 'csv-stringify/sync';
 
 /**
  * Collection Statistics Interface
@@ -649,10 +650,17 @@ export class CollectionService implements ICollectionService {
         const name = (c.hostName || '').toLowerCase().trim();
         return (
           name.startsWith('test') ||
-          name.startsWith('loc ') ||
-          name.match(/^group \d+$/) ||
+          name.startsWith('loc') || // Catches "loc", "loc ", "loc1", "loc123", etc.
+          name.match(/^loc\d+$/) || // Catches "loc1", "loc2", "loc123"
+          name.match(/^group\s*\d+$/) || // Catches "group 1", "group1", "group 12"
           name === 'unknown' ||
-          name.length < 3
+          name === 'test' ||
+          name === 'sample' ||
+          name === 'demo' ||
+          name.includes('test') ||
+          name.length < 3 ||
+          name.match(/^\d+$/) || // Pure numbers
+          name.match(/^[a-z]{1,2}$/) // Single/double letters only
         );
       });
       if (suspiciousNames.length > 0) {
@@ -1186,10 +1194,34 @@ export class CollectionService implements ICollectionService {
    * Export data to Excel format
    */
   private exportToExcel(data: any[]): Buffer {
+    // Handle empty data array
+    if (data.length === 0) {
+      // Create empty worksheet with headers only
+      const emptyData = [{
+        id: '',
+        collectionDate: '',
+        hostName: '',
+        individualSandwiches: '',
+        group1Name: '',
+        group1Count: '',
+        group2Name: '',
+        group2Count: '',
+        totalSandwiches: '',
+      }];
+      const worksheet = XLSX.utils.json_to_sheet(emptyData);
+      // Remove the empty row, keep only headers
+      worksheet['!ref'] = 'A1:I1';
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Collections');
+
+      return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    }
+
     const worksheet = XLSX.utils.json_to_sheet(data);
 
     // Set column widths
-    const headers = Object.keys(data[0] || {});
+    const headers = Object.keys(data[0]);
     worksheet['!cols'] = headers.map(() => ({ width: 20 }));
 
     const workbook = XLSX.utils.book_new();
@@ -1202,9 +1234,27 @@ export class CollectionService implements ICollectionService {
    * Export data to CSV format
    */
   private exportToCSV(data: any[]): Buffer {
+    // Handle empty data array
+    if (data.length === 0) {
+      // Return CSV with headers only
+      const headers = [
+        'id',
+        'collectionDate',
+        'hostName',
+        'individualSandwiches',
+        'group1Name',
+        'group1Count',
+        'group2Name',
+        'group2Count',
+        'totalSandwiches',
+      ];
+      const csvContent = stringify([headers]);
+      return Buffer.from(csvContent, 'utf-8');
+    }
+
     const csvContent = stringify(data, {
       header: true,
-      columns: Object.keys(data[0] || {}),
+      columns: Object.keys(data[0]),
     });
     return Buffer.from(csvContent, 'utf-8');
   }
