@@ -95,8 +95,8 @@ export default function RecipientsManagement() {
     editSocialMedia: false,
   });
 
-  const toggleSection = (section: keyof typeof sections) => {
-    setSections(prev => ({ ...prev, [section]: !prev[section] }));
+  const updateSection = (section: keyof typeof sections, open: boolean) => {
+    setSections(prev => ({ ...prev, [section]: open }));
   };
   const [newRecipient, setNewRecipient] = useState({
     name: '',
@@ -615,7 +615,7 @@ export default function RecipientsManagement() {
                     {/* Basic Information Section */}
                     <Collapsible
                       open={sections.basicInfo}
-                      onOpenChange={() => toggleSection('basicInfo')}
+                      onOpenChange={(open) => updateSection('basicInfo', open)}
                     >
                       <div>
                         <CollapsibleTrigger asChild>
@@ -761,7 +761,7 @@ export default function RecipientsManagement() {
                     {/* Contact Person Section */}
                     <Collapsible
                       open={sections.contact}
-                      onOpenChange={() => toggleSection('contact')}
+                      onOpenChange={(open) => updateSection('contact', open)}
                     >
                       <div className="border-t pt-4 mt-4">
                         <CollapsibleTrigger asChild>
@@ -854,7 +854,7 @@ export default function RecipientsManagement() {
                     {/* Second Contact Person Section */}
                     <Collapsible
                       open={sections.secondContact}
-                      onOpenChange={() => toggleSection('secondContact')}
+                      onOpenChange={(open) => updateSection('secondContact', open)}
                     >
                       <div className="border-t pt-4 mt-4">
                         <CollapsibleTrigger asChild>
@@ -947,7 +947,7 @@ export default function RecipientsManagement() {
                     {/* Enhanced Operational Fields */}
                     <Collapsible
                       open={sections.operational}
-                      onOpenChange={() => toggleSection('operational')}
+                      onOpenChange={(open) => updateSection('operational', open)}
                     >
                       <div className="border-t pt-4 mt-4">
                         <CollapsibleTrigger asChild>
@@ -1171,7 +1171,7 @@ export default function RecipientsManagement() {
                     {/* Social Media Tracking */}
                     <Collapsible
                       open={sections.socialMedia}
-                      onOpenChange={() => toggleSection('socialMedia')}
+                      onOpenChange={(open) => updateSection('socialMedia', open)}
                     >
                       <div className="border-t pt-4 mt-4">
                         <CollapsibleTrigger asChild>
@@ -1831,7 +1831,7 @@ export default function RecipientsManagement() {
               {/* Basic Information Section */}
               <Collapsible
                 open={sections.editBasicInfo}
-                onOpenChange={() => toggleSection('editBasicInfo')}
+                onOpenChange={(open) => updateSection('editBasicInfo', open)}
               >
                 <div>
                   <CollapsibleTrigger asChild>
@@ -1973,7 +1973,7 @@ export default function RecipientsManagement() {
               {/* Contact Person Section */}
               <Collapsible
                 open={sections.editContact}
-                onOpenChange={() => toggleSection('editContact')}
+                onOpenChange={(open) => updateSection('editContact', open)}
               >
                 <div className="border-t pt-4 mt-4">
                   <CollapsibleTrigger asChild>
@@ -2066,7 +2066,7 @@ export default function RecipientsManagement() {
               {/* Second Contact Person Section */}
               <Collapsible
                 open={sections.editSecondContact}
-                onOpenChange={() => toggleSection('editSecondContact')}
+                onOpenChange={(open) => updateSection('editSecondContact', open)}
               >
                 <div className="border-t pt-4 mt-4">
                   <CollapsibleTrigger asChild>
@@ -2171,7 +2171,7 @@ export default function RecipientsManagement() {
               {/* Enhanced Operational Fields */}
               <Collapsible
                 open={sections.editOperational}
-                onOpenChange={() => toggleSection('editOperational')}
+                onOpenChange={(open) => updateSection('editOperational', open)}
               >
                 <div className="border-t pt-4 mt-4">
                   <CollapsibleTrigger asChild>
@@ -2413,7 +2413,7 @@ export default function RecipientsManagement() {
               {/* Social Media Tracking */}
               <Collapsible
                 open={sections.editSocialMedia}
-                onOpenChange={() => toggleSection('editSocialMedia')}
+                onOpenChange={(open) => updateSection('editSocialMedia', open)}
               >
                 <div className="border-t pt-4 mt-4">
                   <CollapsibleTrigger asChild>
