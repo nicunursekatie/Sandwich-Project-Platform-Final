@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { usePermissions } from '@/hooks/useResourcePermissions';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { Heart, Star, Trophy, Sparkles, Target } from 'lucide-react';
 import { useUserActivityTracking } from '@/hooks/useUserActivityTracking';
 import { logger } from '@/lib/logger';
@@ -35,7 +34,6 @@ export default function SendKudosButton({
   iconOnly = false,
 }: SendKudosButtonProps) {
   const { user } = useAuth();
-  const { SEND_KUDOS } = usePermissions(['SEND_KUDOS']);
   const { toast } = useToast();
   const { trackKudosSent } = useUserActivityTracking();
   const [hasSentKudos, setHasSentKudos] = useState(false);
@@ -142,7 +140,7 @@ export default function SendKudosButton({
         description: `Kudos sent to ${recipientName}!`,
         duration: 3000,
       });
-      
+
       // Track the kudos send event
       trackKudosSent(recipientName, contextTitle);
     },

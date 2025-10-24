@@ -138,20 +138,27 @@ export class GoogleCalendarService {
     const personColorMap = new Map<string, string>();
     let colorIndex = 0;
 
+    // First pass: collect all unique person names and assign colors
+    const uniquePersons = new Set<string>();
+    events.forEach((event: any) => {
+      const personName = extractPersonName(event.summary || 'Untitled');
+      uniquePersons.add(personName);
+    });
+
+    // Assign colors to each unique person
+    Array.from(uniquePersons).forEach(personName => {
+      const colorId = availableColorIds[colorIndex % availableColorIds.length];
+      personColorMap.set(personName, colorId);
+      colorIndex++;
+      console.log(`Assigned color ${colorId} to person: "${personName}"`);
+    });
+
     const getColorForEvent = (event: any) => {
       const summary = event.summary || 'Untitled';
       const personName = extractPersonName(summary);
       
-      // Check if we already have a color assigned for this person
-      if (personColorMap.has(personName)) {
-        return personColorMap.get(personName)!;
-      }
-      
-      // Assign a new color to this person
-      const colorId = availableColorIds[colorIndex % availableColorIds.length];
-      personColorMap.set(personName, colorId);
-      colorIndex++;
-      
+      // Get the assigned color for this person
+      const colorId = personColorMap.get(personName) || availableColorIds[0];
       return colorId;
     };
 
@@ -159,6 +166,10 @@ export class GoogleCalendarService {
       const colorId = getColorForEvent(event);
       const backgroundColor = colors.event?.[colorId]?.background || '#a4bdfc';
       const foregroundColor = colors.event?.[colorId]?.foreground || '#1d1d1d';
+
+      // Debug logging to understand color assignment
+      const personName = extractPersonName(event.summary || 'Untitled');
+      console.log(`Event: "${event.summary}" -> Person: "${personName}" -> Color: ${colorId} -> Background: ${backgroundColor}`);
 
       return {
         ...event,
