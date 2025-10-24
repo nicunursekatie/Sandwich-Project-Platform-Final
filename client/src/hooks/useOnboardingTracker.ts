@@ -37,6 +37,14 @@ export function useOnboardingTracker() {
         showCelebration(data.points, data.message || 'Challenge completed!');
       }
     },
+    onError: (error: any) => {
+      // Silently ignore "already completed" errors - these are expected
+      if (error?.message?.includes('already completed')) {
+        return;
+      }
+      // Log other errors but don't show to user (tracking is non-critical)
+      console.debug('Onboarding tracking error:', error);
+    },
   });
 
   const showCelebration = (points: number, message: string) => {

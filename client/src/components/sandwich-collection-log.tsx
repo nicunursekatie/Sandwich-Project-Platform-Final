@@ -59,6 +59,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   hasPermission,
   PERMISSIONS,
@@ -126,6 +127,17 @@ export default function SandwichCollectionLog() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { trackDataEntry, trackButtonClick, trackDownload } = useAnalytics();
+
+  // Activity Tracking Integration
+  const {
+    trackActivity,
+    trackClick,
+    trackFormSubmit,
+    trackView,
+    trackCreate,
+    trackUpdate,
+    trackDelete,
+  } = useActivityTracker();
 
   // Check user permissions for creating collections (automatically grants edit/delete of own)
   const canCreateCollections =
@@ -241,6 +253,30 @@ export default function SandwichCollectionLog() {
     return () =>
       window.removeEventListener('openCollectionForm', handleOpenForm);
   }, []);
+
+  // Track form views when form visibility changes
+  useEffect(() => {
+    if (showSubmitForm) {
+      trackView(
+        'collection_form',
+        'Collections',
+        'Collection Log',
+        'User opened collection form to add new collection data'
+      );
+    }
+  }, [showSubmitForm, trackView]);
+
+  // Track edit form views
+  useEffect(() => {
+    if (editingCollection) {
+      trackView(
+        'edit_collection_form',
+        'Collections',
+        'Collection Log',
+        `Editing collection ID: ${editingCollection.id}`
+      );
+    }
+  }, [editingCollection, trackView]);
 
   // Debounce search filters to prevent excessive queries
   useEffect(() => {
@@ -937,6 +973,11 @@ export default function SandwichCollectionLog() {
         queryKey: ['/api/sandwich-collections/stats'],
       });
       setEditingCollection(null);
+
+      // Track successful update
+      trackFormSubmit('edit_collection_form', 'Collections', 'Collection Log', true);
+      trackUpdate('sandwich_collection', 'Collections', 'Collection Log', variables.id.toString());
+
       toast({
         title: 'Collection Updated Successfully! ✏️',
         description:
@@ -944,7 +985,21 @@ export default function SandwichCollectionLog() {
         duration: 4000,
       });
     },
-    onError: () => {
+    onError: (error, variables) => {
+      // Track failed update
+      trackFormSubmit('edit_collection_form', 'Collections', 'Collection Log', false);
+      trackActivity({
+        action: 'Update Failed',
+        section: 'Collections',
+        feature: 'Collection Log',
+        details: `Failed to update collection ID: ${variables.id}`,
+        metadata: {
+          collectionId: variables.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString()
+        },
+      });
+
       toast({
         title: 'Error',
         description: 'Failed to update collection. Please try again.',
@@ -960,15 +1015,19 @@ export default function SandwichCollectionLog() {
         'DELETE',
         `/api/sandwich-collections/${id}`
       );
-      return result;
+      return { result, id };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: ['/api/sandwich-collections'],
       });
       queryClient.invalidateQueries({
         queryKey: ['/api/sandwich-collections/stats'],
       });
+
+      // Track successful deletion
+      trackDelete('sandwich_collection', 'Collections', 'Collection Log', data.id.toString());
+
       toast({
         title: 'Collection Deleted Successfully 🗑️',
         description:
@@ -978,6 +1037,19 @@ export default function SandwichCollectionLog() {
     },
     onError: (error: any) => {
       logger.error('Delete collection error:', error);
+
+      // Track failed deletion
+      trackActivity({
+        action: 'Delete Failed',
+        section: 'Collections',
+        feature: 'Collection Log',
+        details: `Failed to delete collection ID: ${id}`,
+        metadata: {
+          collectionId: id,
+          error: error?.message || 'Unknown error occurred',
+          timestamp: new Date().toISOString()
+        },
+      });
 
       // Check if it's just an auth error but the deletion might have worked
       // We'll refresh the data to see if it actually got deleted
@@ -1048,13 +1120,31 @@ export default function SandwichCollectionLog() {
         { id: Math.random().toString(36), groupName: '', sandwichCount: 0 },
       ]);
       setNewCollectionGroupOnlyMode(false);
+
+      // Track successful form submission
+      trackFormSubmit('collection_form', 'Collections', 'Collection Log', true);
+      trackCreate('sandwich_collection', 'Collections', 'Collection Log', response?.id?.toString());
+
       toast({
         title: 'Collection Successfully Added! 🥪',
         description: `Recorded ${totalSandwiches} sandwiches from ${variables.hostName} on ${new Date(variables.collectionDate).toLocaleDateString()}. Thank you for your contribution!`,
         duration: 5000,
       });
     },
-    onError: () => {
+    onError: (error) => {
+      // Track failed form submission
+      trackFormSubmit('collection_form', 'Collections', 'Collection Log', false);
+      trackActivity({
+        action: 'Submit Failed',
+        section: 'Collections',
+        feature: 'Collection Log',
+        details: `Failed to create collection: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        metadata: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString()
+        },
+      });
+
       toast({
         title: 'Submission Failed',
         description:
@@ -1403,6 +1493,21 @@ export default function SandwichCollectionLog() {
       });
       return;
     }
+
+    // Track batch edit button click
+    trackClick('batch_edit_button', 'Collections', 'Collection Log', `Opening batch edit for ${selectedCollections.size} collections`);
+    trackActivity({
+      action: 'Click',
+      section: 'Collections',
+      feature: 'Collection Log',
+      details: 'Opened batch edit dialog',
+      metadata: {
+        selectedCount: selectedCollections.size,
+        selectedIds: Array.from(selectedCollections),
+        timestamp: new Date().toISOString()
+      },
+    });
+
     setShowBatchEdit(true);
   };
 
@@ -1448,18 +1553,37 @@ export default function SandwichCollectionLog() {
       return;
     }
 
+    // Track batch delete button click
+    trackClick('batch_delete_button', 'Collections', 'Collection Log', `Attempting to delete ${selectedCollections.size} collections`);
+
     if (
       confirm(
         `Are you sure you want to delete ${selectedCollections.size} selected collections? This action cannot be undone.`
       )
     ) {
+      // Track confirmed batch delete
+      trackActivity({
+        action: 'Batch Delete',
+        section: 'Collections',
+        feature: 'Collection Log',
+        details: `Confirmed batch deletion of ${selectedCollections.size} collections`,
+        metadata: {
+          selectedCount: selectedCollections.size,
+          selectedIds: Array.from(selectedCollections),
+          timestamp: new Date().toISOString()
+        },
+      });
+
       batchDeleteMutation.mutate(Array.from(selectedCollections));
     }
   };
 
   const handleEdit = (collection: SandwichCollection) => {
     setEditingCollection(collection);
-    
+
+    // Track edit button click
+    trackClick('edit_collection_button', 'Collections', 'Collection Log', `Editing collection ID: ${collection.id}`);
+
     // Check if individual type breakdown exists
     const hasIndividualBreakdown = !!(collection.individualDeli || collection.individualPbj);
     setShowEditIndividualBreakdown(hasIndividualBreakdown);
@@ -1604,6 +1728,20 @@ export default function SandwichCollectionLog() {
       ...editGroupCollections,
       { id: newId, groupName: '', sandwichCount: 0, hasTypeBreakdown: false },
     ]);
+
+    // Track group addition
+    trackClick('add_group_button', 'Collections', 'Collection Log', 'Added group row in edit form');
+    trackActivity({
+      action: 'Add Group',
+      section: 'Collections',
+      feature: 'Collection Log',
+      details: 'Added new group row in edit collection form',
+      metadata: {
+        formType: 'edit',
+        totalGroups: editGroupCollections.length + 1,
+        timestamp: new Date().toISOString()
+      },
+    });
   };
 
   const removeEditGroupRow = (id: string) => {
@@ -1611,6 +1749,9 @@ export default function SandwichCollectionLog() {
       setEditGroupCollections(
         editGroupCollections.filter((group) => group.id !== id)
       );
+
+      // Track group removal
+      trackClick('remove_group_button', 'Collections', 'Collection Log', 'Removed group row in edit form');
     }
   };
 
@@ -1707,6 +1848,20 @@ export default function SandwichCollectionLog() {
         sandwichCount: 0,
       },
     ]);
+
+    // Track group addition
+    trackClick('add_group_button', 'Collections', 'Collection Log', 'Added group row in new collection form');
+    trackActivity({
+      action: 'Add Group',
+      section: 'Collections',
+      feature: 'Collection Log',
+      details: 'Added new group row in new collection form',
+      metadata: {
+        formType: 'new',
+        totalGroups: newGroupCollections.length + 1,
+        timestamp: new Date().toISOString()
+      },
+    });
   };
 
   const removeNewGroupRow = (id: string) => {
@@ -1714,6 +1869,9 @@ export default function SandwichCollectionLog() {
       setNewGroupCollections(
         newGroupCollections.filter((group) => group.id !== id)
       );
+
+      // Track group removal
+      trackClick('remove_group_button', 'Collections', 'Collection Log', 'Removed group row in new collection form');
     }
   };
 
@@ -1754,6 +1912,9 @@ export default function SandwichCollectionLog() {
   };
 
   const handleClearFilters = () => {
+    // Track clear filters button click
+    trackClick('clear_filters_button', 'Collections', 'Collection Log', 'Cleared all filters');
+
     const emptyFilters = {
       globalSearch: '',
       hostName: '',
@@ -3029,9 +3190,23 @@ export default function SandwichCollectionLog() {
               <Label htmlFor="edit-host">Host Name</Label>
               <Select
                 value={editFormData.hostName}
-                onValueChange={(value) =>
-                  setEditFormData({ ...editFormData, hostName: value })
-                }
+                onValueChange={(value) => {
+                  setEditFormData({ ...editFormData, hostName: value });
+
+                  // Track location selection
+                  trackActivity({
+                    action: 'Select',
+                    section: 'Collections',
+                    feature: 'Collection Log',
+                    details: `Selected host/location: ${value}`,
+                    metadata: {
+                      formType: 'edit',
+                      selectedHost: value,
+                      collectionId: editingCollection?.id,
+                      timestamp: new Date().toISOString()
+                    },
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select host" />
