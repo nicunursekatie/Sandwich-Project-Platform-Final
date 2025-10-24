@@ -63,7 +63,8 @@ interface TeamMember {
 }
 
 // Helper to get initials from name
-const getInitials = (name: string) => {
+const getInitials = (name: string | null | undefined) => {
+  if (!name || typeof name !== 'string') return '??';
   const parts = name.trim().split(' ');
   if (parts.length >= 2) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -72,7 +73,7 @@ const getInitials = (name: string) => {
 };
 
 // Helper to get consistent avatar color based on name
-const getAvatarColor = (name: string) => {
+const getAvatarColor = (name: string | null | undefined) => {
   const colors = [
     'bg-blue-500',
     'bg-green-500',
@@ -83,6 +84,7 @@ const getAvatarColor = (name: string) => {
     'bg-red-500',
     'bg-teal-500',
   ];
+  if (!name || typeof name !== 'string') return colors[0];
   const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
   return colors[index];
 };
