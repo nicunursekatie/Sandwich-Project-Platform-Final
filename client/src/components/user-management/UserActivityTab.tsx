@@ -156,7 +156,7 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                     return 'Accessed main overview dashboard';
                   }
                   if (desc.includes('Viewed hosts')) {
-                    return 'Browsed host organization directory';
+                    return 'Browsed hosts directory';
                   }
                   if (desc.includes('Viewed announcements')) {
                     return 'Read team announcements and updates';
