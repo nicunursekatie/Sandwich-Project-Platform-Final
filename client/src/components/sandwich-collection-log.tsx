@@ -2483,8 +2483,8 @@ export default function SandwichCollectionLog() {
               >
                 {/* Responsive layout: vertical on mobile, horizontal on desktop */}
                 <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
-                  {/* Mobile: Date, Host, and Checkbox row */}
-                  <div className="flex items-center gap-3 lg:contents">
+                  {/* First Row: Checkbox, Date, Host */}
+                  <div className="flex items-center gap-3 flex-wrap lg:flex-nowrap lg:flex-1 lg:min-w-0">
                     {/* Checkbox */}
                     {(canEditAllCollections ||
                       canEditCollection(user, collection)) && (
@@ -2503,8 +2503,8 @@ export default function SandwichCollectionLog() {
                     )}
 
                     {/* Date - American format (Oct 1, 2025) */}
-                    <div className="lg:w-32 shrink-0">
-                      <span className="text-sm lg:text-base font-semibold text-slate-700">
+                    <div className="shrink-0">
+                      <span className="text-sm lg:text-base font-semibold text-slate-700 whitespace-nowrap">
                         {formatDate(collection.collectionDate)}
                       </span>
                     </div>
@@ -2529,82 +2529,87 @@ export default function SandwichCollectionLog() {
                     </div>
                   </div>
 
-                  {/* Individual - with inline type breakdown when available */}
-                  {collection.individualSandwiches > 0 && (
-                    <div className="flex-1 min-w-0 lg:max-w-[200px]">
-                      <div className="text-xs text-slate-500 mb-0.5 font-semibold">Individual</div>
-                      <div className="text-sm lg:text-base font-bold">
-                        {(() => {
-                          const hasTypes = collection.individualDeli || collection.individualPbj;
-                          if (hasTypes) {
+                  {/* Second Row: Individual & Groups (stacked on small, side-by-side on medium+) */}
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:flex-row lg:flex-1">
+                    {/* Individual - with inline type breakdown when available */}
+                    {collection.individualSandwiches > 0 && (
+                      <div className="flex-1 min-w-0 sm:max-w-[45%] lg:max-w-[200px]">
+                        <div className="text-xs text-slate-500 mb-0.5 font-semibold">Individual</div>
+                        <div className="text-sm lg:text-base font-bold">
+                          {(() => {
+                            const hasTypes = collection.individualDeli || collection.individualPbj;
+                            if (hasTypes) {
+                              return (
+                                <div className="space-y-0.5">
+                                  {(collection.individualDeli ?? 0) > 0 && <div>{collection.individualDeli} Deli</div>}
+                                  {(collection.individualPbj ?? 0) > 0 && <div>{collection.individualPbj} PB&J</div>}
+                                </div>
+                              );
+                            }
+                            return collection.individualSandwiches;
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Groups - inline breakdown when available */}
+                    {calculateGroupTotal(collection) > 0 && (
+                      <div className="flex-1 min-w-0 sm:max-w-[45%] lg:max-w-[250px]">
+                        <div className="text-xs text-slate-500 mb-0.5 font-semibold">Groups</div>
+                        <div className="text-sm lg:text-base font-bold">
+                          {(() => {
+                            if (groupData.length === 0) {
+                              return null;
+                            }
+
+                            // Always show group names and details vertically
                             return (
-                              <div className="space-y-0.5">
-                                {(collection.individualDeli ?? 0) > 0 && <div>{collection.individualDeli} Deli</div>}
-                                {(collection.individualPbj ?? 0) > 0 && <div>{collection.individualPbj} PB&J</div>}
+                              <div className="space-y-2">
+                                {groupData.map((group: any, index: number) => {
+                                  const hasTypes = group.deli || group.pbj;
+                                  const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
+                                  const colorIndex = index % colors.length;
+                                  const borderColor = colors[colorIndex];
+                                  const bgColor = `${borderColor}10`; // 10% opacity
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="p-2 rounded"
+                                      style={{
+                                        backgroundColor: bgColor,
+                                        borderLeft: `3px solid ${borderColor}`
+                                      }}
+                                    >
+                                      <div className="mb-1 font-semibold">{group.groupName}</div>
+                                      {hasTypes ? (
+                                        <div className="space-y-0.5 text-sm">
+                                          {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
+                                          {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
+                                        </div>
+                                      ) : (
+                                        <div className="text-sm">{group.sandwichCount}</div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             );
-                          }
-                          return collection.individualSandwiches;
-                        })()}
+                          })()}
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Groups - inline breakdown when available */}
-                  {calculateGroupTotal(collection) > 0 && (
-                    <div className="flex-1 min-w-0 lg:max-w-[250px]">
-                      <div className="text-xs text-slate-500 mb-0.5 font-semibold">Groups</div>
-                      <div className="text-sm lg:text-base font-bold">
-                        {(() => {
-                          if (groupData.length === 0) {
-                            return null;
-                          }
-
-                          // Always show group names and details vertically
-                          return (
-                            <div className="space-y-2">
-                              {groupData.map((group: any, index: number) => {
-                                const hasTypes = group.deli || group.pbj;
-                                const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
-                                const colorIndex = index % colors.length;
-                                const borderColor = colors[colorIndex];
-                                const bgColor = `${borderColor}10`; // 10% opacity
-                                return (
-                                  <div
-                                    key={index}
-                                    className="p-2 rounded"
-                                    style={{
-                                      backgroundColor: bgColor,
-                                      borderLeft: `3px solid ${borderColor}`
-                                    }}
-                                  >
-                                    <div className="mb-1 font-semibold">{group.groupName}</div>
-                                    {hasTypes ? (
-                                      <div className="space-y-0.5 text-sm">
-                                        {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
-                                        {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
-                                      </div>
-                                    ) : (
-                                      <div className="text-sm">{group.sandwichCount}</div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Total */}
-                  <div className="w-full lg:w-20 shrink-0 lg:text-right flex lg:block items-center gap-2 lg:gap-0">
-                    <div className="text-xs text-slate-500 mb-0 lg:mb-0.5 font-semibold">Total:</div>
-                    <div className="text-xl lg:text-2xl font-bold">{totalSandwiches}</div>
+                    )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0 lg:ml-auto">
+                  {/* Third Row: Total & Actions */}
+                  <div className="flex items-center justify-between lg:justify-end gap-3 lg:gap-4">
+                    {/* Total */}
+                    <div className="shrink-0 flex items-center gap-2 lg:flex-col lg:items-end lg:gap-0">
+                      <div className="text-xs text-slate-500 font-semibold">Total:</div>
+                      <div className="text-xl lg:text-2xl font-bold">{totalSandwiches}</div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0">
                     {collection.createdBy &&
                       collection.createdByName && (
                         <SendKudosButton

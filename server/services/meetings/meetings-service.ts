@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertMeetingSchema } from '@shared/schema';
+import { insertMeetingSchema, type Meeting } from '@shared/schema';
 import type { IMeetingsStorage } from '../../routes/meetings/types';
 
 type InsertMeetingPayload = z.infer<typeof insertMeetingSchema>;
@@ -72,11 +72,7 @@ export class MeetingsService {
    * Map meeting to response format
    * Adds legacy field names for backwards compatibility
    */
-  mapMeetingToResponse(meeting: any) {
-    if (!meeting) {
-      return meeting;
-    }
-
+  mapMeetingToResponse(meeting: Meeting) {
     return {
       ...meeting,
       meetingDate: meeting.date,
@@ -89,9 +85,8 @@ export class MeetingsService {
   /**
    * Map multiple meetings to response format
    */
-  mapMeetingsToResponse(meetings: any[]) {
-    const meetingsArray = Array.isArray(meetings) ? meetings : [];
-    return meetingsArray.map((m) => this.mapMeetingToResponse(m));
+  mapMeetingsToResponse(meetings: Meeting[]) {
+    return meetings.map(m => this.mapMeetingToResponse(m));
   }
 
   /**

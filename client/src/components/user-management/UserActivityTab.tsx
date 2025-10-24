@@ -92,8 +92,13 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
               <div>
                 <p className="text-sm text-gray-600">Most Active</p>
                 <p className="text-lg font-semibold">
-                  {activityStats?.peakUsageTimes?.[0]?.hour
-                    ? `${activityStats.peakUsageTimes[0].hour}:00`
+                  {activityStats?.peakUsageTimes?.[0]?.hour !== undefined
+                    ? (() => {
+                        const hour = activityStats.peakUsageTimes[0].hour;
+                        const period = hour >= 12 ? 'PM' : 'AM';
+                        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                        return `${displayHour}:00 ${period}`;
+                      })()
                     : 'N/A'}
                 </p>
               </div>
@@ -151,14 +156,31 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                     return 'Accessed main overview dashboard';
                   }
                   if (desc.includes('Viewed hosts')) {
-                    return 'Browsed host organization directory';
+                    return 'Browsed hosts directory';
                   }
                   if (desc.includes('Viewed announcements')) {
                     return 'Read team announcements and updates';
                   }
                   if (desc.includes('Viewed') && desc.includes('activity')) {
-                    const feature = log.feature || log.section;
-                    return `Worked in ${feature} section`;
+                    let feature = log.feature || log.section;
+                    
+                    // Clean up redundant "Activity" in feature names
+                    if (feature.includes(' Activity')) {
+                      feature = feature.replace(' Activity', '');
+                    }
+                    
+                    // Map generic names to meaningful ones
+                    const featureMap: Record<string, string> = {
+                      'Basic': 'Dashboard',
+                      'My volunteers': 'Volunteer Management',
+                      'Volunteers': 'Volunteer Directory',
+                      'For assignments': 'Team Board',
+                      'Count': 'Collection Counts',
+                      'Counts': 'Collection Statistics',
+                    };
+                    
+                    const cleanFeature = featureMap[feature] || feature;
+                    return `Worked in ${cleanFeature}`;
                   }
                   
                   return desc;

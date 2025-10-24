@@ -850,6 +850,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
     await mailService.send({
       to: contactEmail,
       from: FROM_EMAIL,
+      bcc: ADMIN_EMAIL, // BCC admin on all host reminder emails
       subject: emailSubject,
       text: emailText,
       html: emailHtml,
@@ -1021,6 +1022,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
       return await mailService.send({
         to: contact.email!,
         from: FROM_EMAIL,
+        bcc: ADMIN_EMAIL, // BCC admin on all Dunwoody reminder emails
         subject: emailSubject,
         text: emailText,
         html: emailHtml,
