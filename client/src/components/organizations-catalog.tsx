@@ -1260,7 +1260,6 @@ export default function GroupCatalog({
                   );
                 })()}
               </div>
-            </div>
           )}
 
           {/* Pagination Controls - Only for Active Organizations */}
