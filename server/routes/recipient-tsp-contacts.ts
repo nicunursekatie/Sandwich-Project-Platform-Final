@@ -199,6 +199,10 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
         .where(eq(recipientTspContacts.id, id))
         .returning();
 
+      if (!contact) {
+        return res.status(404).json({ error: 'TSP contact not found' });
+      }
+
       // Audit log
       await AuditLogger.logEntityChange(
         'recipient_tsp_contacts',

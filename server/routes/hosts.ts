@@ -144,6 +144,9 @@ export function createHostsRouter(deps: RouterDependencies) {
     }
 
     const host = await storage.updateHost(id, updates);
+    if (!host) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
 
     // Audit log
     await AuditLogger.logEntityChange(
@@ -196,6 +199,10 @@ export function createHostsRouter(deps: RouterDependencies) {
       longitude: longitude.toString(),
       geocodedAt: new Date(),
     });
+
+    if (!host) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
 
     // Audit log
     await AuditLogger.logEntityChange(
@@ -359,6 +366,9 @@ export function createHostsRouter(deps: RouterDependencies) {
     }
 
     const contact = await storage.updateHostContact(id, updates);
+    if (!contact) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
+    }
 
     // Audit log
     await AuditLogger.logEntityChange(

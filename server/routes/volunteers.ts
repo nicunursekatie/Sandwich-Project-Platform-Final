@@ -71,6 +71,9 @@ export function createVolunteersRouter(deps: RouterDependencies) {
       }
 
       const volunteer = await storage.updateVolunteer(id, req.body);
+      if (!volunteer) {
+        return res.status(404).json({ message: 'Volunteer not found' });
+      }
 
       // Audit log
       await AuditLogger.logEntityChange(
@@ -105,6 +108,9 @@ export function createVolunteersRouter(deps: RouterDependencies) {
       }
 
       const volunteer = await storage.updateVolunteer(id, req.body);
+      if (!volunteer) {
+        return res.status(404).json({ message: 'Volunteer not found' });
+      }
 
       // Audit log
       await AuditLogger.logEntityChange(

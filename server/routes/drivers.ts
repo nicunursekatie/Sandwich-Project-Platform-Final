@@ -158,6 +158,9 @@ export function createDriversRouter(deps: RouterDependencies) {
       }
 
       const driver = await storage.updateDriver(id, req.body);
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
 
       // Audit log
       await AuditLogger.logEntityChange(
@@ -192,6 +195,9 @@ export function createDriversRouter(deps: RouterDependencies) {
       }
 
       const driver = await storage.updateDriver(id, req.body);
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
 
       // Audit log
       await AuditLogger.logEntityChange(
