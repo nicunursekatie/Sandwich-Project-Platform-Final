@@ -68,7 +68,9 @@ export default function TSPContactManager({
       fetch(`/api/recipient-tsp-contacts/${recipientId}`).then((res) =>
         res.json()
       ),
-    // Use global defaults (5 min staleTime, 10 min gcTime) - proper cache invalidation after mutations
+    staleTime: 30 * 1000, // 30 seconds - contact data changes frequently, needs short cache
+    refetchOnWindowFocus: true, // Refetch to see contact updates when user returns
+    // Note: recipientId in queryKey ensures separate cache entries per recipient
   });
 
   // Debug logging
