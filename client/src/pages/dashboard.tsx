@@ -33,37 +33,7 @@ import { useLocation, useRoute } from 'wouter';
 // Using optimized SVG for faster loading
 const sandwichLogo = '/sandwich-icon-optimized.svg';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ProjectList from '@/components/project-list';
-import WeeklySandwichForm from '@/components/weekly-sandwich-form';
-
-import CommitteeChat from '@/components/committee-chat';
-import GoogleDriveLinks from '@/components/google-drive-links';
-import DashboardOverview from '@/components/dashboard-overview';
-import SandwichCollectionLog from '@/components/sandwich-collection-log';
-import RecipientsManagement from '@/components/recipients-management';
-import DriversManagement from '@/components/drivers-management-simple';
-import VolunteerManagement from '@/components/volunteer-management';
-import HostsManagement from '@/components/hosts-management-consolidated';
-import { DocumentsBrowser } from '@/components/documents-browser';
-import DocumentManagement from '@/components/document-management';
-import ImportantDocuments from '@/pages/important-documents';
-
-import BulkDataManager from '@/components/bulk-data-manager';
-import HostAnalytics from '@/components/host-analytics';
-import EnhancedMeetingDashboard from '@/components/enhanced-meeting-dashboard';
-import RoleDemo from '@/pages/role-demo';
-import ProjectsManagement from '@/components/projects';
-import ProjectDetailClean from '@/pages/project-detail-clean';
-import Analytics from '@/pages/analytics';
-import ImpactDashboard from '@/pages/impact-dashboard';
-import DataManagement from '@/pages/data-management';
-import PerformanceDashboard from '@/pages/performance-dashboard';
-import GrantMetrics from '@/pages/grant-metrics';
-
-import UserManagementRedesigned from '@/components/user-management-redesigned';
-import UserProfile from '@/components/user-profile';
-import OnboardingAdmin from '@/pages/onboarding-admin';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Suspense, lazy } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
@@ -72,47 +42,81 @@ import SimpleNav from '@/components/simple-nav';
 import { NAV_ITEMS } from '@/nav.config';
 import AnnouncementBanner from '@/components/announcement-banner';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import MessageNotifications from '@/components/message-notifications';
 import EnhancedNotifications from '@/components/enhanced-notifications';
-import WorkLogPage from '@/pages/work-log';
-import SuggestionsPortal from '@/pages/suggestions';
-import GoogleSheetsPage from '@/pages/google-sheets';
-
-import MessagingSystem from '@/components/messaging-system';
-import RealTimeMessages from '@/pages/real-time-messages';
-
-import GmailStyleInbox from '@/components/gmail-style-inbox';
-import { ToolkitTabs } from '@/components/toolkit-tabs';
-import { KudosInbox } from '@/components/kudos-inbox';
-import { KudosLoginNotifier } from '@/components/kudos-login-notifier';
-import StreamChatRooms from '@/components/stream-chat-rooms';
-import EventsViewer from '@/components/events-viewer';
-import SignUpGeniusViewer from '@/components/signup-genius-viewer';
-import DonationTracking from '@/components/donation-tracking';
-import WeeklyMonitoringDashboard from '@/components/weekly-monitoring-dashboard';
-import WishlistPage from '@/pages/wishlist';
-import TeamBoard from '@/pages/TeamBoard';
-import CoolerTrackingPage from '@/pages/cooler-tracking';
-import EventRequestsManagement from '@/components/event-requests';
-import EventRemindersManagement from '@/components/event-reminders-management';
-import GroupCatalog from '@/components/organizations-catalog';
-import ActionTracking from '@/components/action-tracking-enhanced';
-import LogosPage from '@/pages/logos';
-import ImportantLinks from '@/pages/important-links';
-import { EventRequestAuditLog } from '@/components/event-request-audit-log';
-import HistoricalImport from '@/pages/historical-import';
 import OnboardingChallengeButton from '@/components/onboarding-challenge-button';
+import { KudosLoginNotifier } from '@/components/kudos-login-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
-import MyAvailability from '@/pages/my-availability';
-import TeamAvailability from '@/pages/team-availability';
-import GoogleCalendarAvailability from '@/pages/google-calendar-availability';
-import RouteMapView from '@/pages/route-map';
-import Help from '@/pages/Help';
-import AdminSettings from '@/pages/admin-settings';
+
+// Lazy load all page/section components for better performance
+const ProjectList = lazy(() => import('@/components/project-list'));
+const WeeklySandwichForm = lazy(() => import('@/components/weekly-sandwich-form'));
+const CommitteeChat = lazy(() => import('@/components/committee-chat'));
+const GoogleDriveLinks = lazy(() => import('@/components/google-drive-links'));
+const DashboardOverview = lazy(() => import('@/components/dashboard-overview'));
+const SandwichCollectionLog = lazy(() => import('@/components/sandwich-collection-log'));
+const RecipientsManagement = lazy(() => import('@/components/recipients-management'));
+const DriversManagement = lazy(() => import('@/components/drivers-management-simple'));
+const VolunteerManagement = lazy(() => import('@/components/volunteer-management'));
+const HostsManagement = lazy(() => import('@/components/hosts-management-consolidated'));
+const DocumentManagement = lazy(() => import('@/components/document-management'));
+const ImportantDocuments = lazy(() => import('@/pages/important-documents'));
+const BulkDataManager = lazy(() => import('@/components/bulk-data-manager'));
+const HostAnalytics = lazy(() => import('@/components/host-analytics'));
+const EnhancedMeetingDashboard = lazy(() => import('@/components/enhanced-meeting-dashboard'));
+const RoleDemo = lazy(() => import('@/pages/role-demo'));
+const ProjectsManagement = lazy(() => import('@/components/projects'));
+const ProjectDetailClean = lazy(() => import('@/pages/project-detail-clean'));
+const Analytics = lazy(() => import('@/pages/analytics'));
+const ImpactDashboard = lazy(() => import('@/pages/impact-dashboard'));
+const DataManagement = lazy(() => import('@/pages/data-management'));
+const PerformanceDashboard = lazy(() => import('@/pages/performance-dashboard'));
+const GrantMetrics = lazy(() => import('@/pages/grant-metrics'));
+const UserManagementRedesigned = lazy(() => import('@/components/user-management-redesigned'));
+const UserProfile = lazy(() => import('@/components/user-profile'));
+const OnboardingAdmin = lazy(() => import('@/pages/onboarding-admin'));
+const WorkLogPage = lazy(() => import('@/pages/work-log'));
+const SuggestionsPortal = lazy(() => import('@/pages/suggestions'));
+const GoogleSheetsPage = lazy(() => import('@/pages/google-sheets'));
+const RealTimeMessages = lazy(() => import('@/pages/real-time-messages'));
+const GmailStyleInbox = lazy(() => import('@/components/gmail-style-inbox'));
+const ToolkitTabs = lazy(() => import('@/components/toolkit-tabs').then(m => ({ default: m.ToolkitTabs })));
+const KudosInbox = lazy(() => import('@/components/kudos-inbox').then(m => ({ default: m.KudosInbox })));
+const StreamChatRooms = lazy(() => import('@/components/stream-chat-rooms'));
+const EventsViewer = lazy(() => import('@/components/events-viewer'));
+const SignUpGeniusViewer = lazy(() => import('@/components/signup-genius-viewer'));
+const DonationTracking = lazy(() => import('@/components/donation-tracking'));
+const WeeklyMonitoringDashboard = lazy(() => import('@/components/weekly-monitoring-dashboard'));
+const WishlistPage = lazy(() => import('@/pages/wishlist'));
+const TeamBoard = lazy(() => import('@/pages/TeamBoard'));
+const CoolerTrackingPage = lazy(() => import('@/pages/cooler-tracking'));
+const EventRequestsManagement = lazy(() => import('@/components/event-requests'));
+const EventRemindersManagement = lazy(() => import('@/components/event-reminders-management'));
+const GroupCatalog = lazy(() => import('@/components/organizations-catalog'));
+const ActionTracking = lazy(() => import('@/components/action-tracking-enhanced'));
+const LogosPage = lazy(() => import('@/pages/logos'));
+const ImportantLinks = lazy(() => import('@/pages/important-links'));
+const EventRequestAuditLog = lazy(() => import('@/components/event-request-audit-log').then(m => ({ default: m.EventRequestAuditLog })));
+const HistoricalImport = lazy(() => import('@/pages/historical-import'));
+const MyAvailability = lazy(() => import('@/pages/my-availability'));
+const TeamAvailability = lazy(() => import('@/pages/team-availability'));
+const GoogleCalendarAvailability = lazy(() => import('@/pages/google-calendar-availability'));
+const RouteMapView = lazy(() => import('@/pages/route-map'));
+const Help = lazy(() => import('@/pages/Help'));
+const AdminSettings = lazy(() => import('@/pages/admin-settings'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
 import sandwich_20logo from '@assets/LOGOS/sandwich logo.png';
+
+// Loading fallback component for lazy-loaded sections
+const SectionLoader = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+      <p className="text-muted-foreground">Loading section...</p>
+    </div>
+  </div>
+);
 
 export default function Dashboard({
   initialSection = 'dashboard',
@@ -785,19 +789,21 @@ export default function Dashboard({
 
           {/* Main Content */}
           <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30 min-w-0 pt-6 pl-6">
-            {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
-              // Special full-height layout for inbox and chat
-              <div className="h-full">{renderContent()}</div>
-            ) : (
-              // Normal layout for other content
-              <div className="h-full overflow-y-auto overflow-x-hidden w-full">
-                <div className="w-full pb-20 min-h-full">
-                  <div className="w-full overflow-x-visible">
-                    {renderContent()}
+            <Suspense fallback={<SectionLoader />}>
+              {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
+                // Special full-height layout for inbox and chat
+                <div className="h-full">{renderContent()}</div>
+              ) : (
+                // Normal layout for other content
+                <div className="h-full overflow-y-auto overflow-x-hidden w-full">
+                  <div className="w-full pb-20 min-h-full">
+                    <div className="w-full overflow-x-visible">
+                      {renderContent()}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </Suspense>
           </div>
         </div>
       </div>
