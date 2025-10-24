@@ -10,7 +10,7 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
   // Get audit logs with filtering
   router.get(
     '/',
-    requirePermission(PERMISSIONS.ADMIN),
+    requirePermission(PERMISSIONS.ADMIN_PANEL_ACCESS),
     async (req: any, res) => {
       try {
         const {
@@ -79,7 +79,7 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
   // Get audit logs for a specific entity
   router.get(
     '/:tableName/:recordId',
-    requirePermission(PERMISSIONS.ADMIN),
+    requirePermission(PERMISSIONS.ADMIN_PANEL_ACCESS),
     async (req: any, res) => {
       try {
         const { tableName, recordId } = req.params;
