@@ -4,6 +4,8 @@
 This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support organizational growth, with a vision to become a vital tool for food security initiatives by scaling operations and improving outreach to reduce food waste and hunger.
 
 ## Recent Changes
+**October 24, 2025** - Fixed collection log type breakdown toggle: Improved the "Specify Types" toggle button in collection form to make it clearer when in breakdown mode (shows "✓ Using Type Breakdown" as filled button). Fixed issue where users couldn't return to simple total entry mode - now clicking toggle always gives you a fresh start by clearing all fields. Switching between modes is now reversible and clear.
+
 **October 24, 2025** - Moved Help to bottom of navigation menu: Relocated Help from middle of Documentation section to the very bottom of the entire menu (after Admin section) following standard UX pattern where users expect to find Help at the bottom.
 
 **October 23, 2025** - Fixed mobile logout button cutoff issue: Changed mobile header from overflow-hidden to overflow-x-auto, allowing horizontal scrolling on small screens. This ensures the logout button is always accessible even when header contains many elements (messages, notifications, onboarding, profile, logout buttons).

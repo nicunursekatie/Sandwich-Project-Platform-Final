@@ -291,7 +291,7 @@ export default function SandwichCollectionFormV2({ onSuccess }: SandwichCollecti
 
             <Button
               type="button"
-              variant="outline"
+              variant={useBreakdown ? "default" : "outline"}
               size="sm"
               onClick={() => {
                 setUseBreakdown(!useBreakdown);
@@ -302,15 +302,16 @@ export default function SandwichCollectionFormV2({ onSuccess }: SandwichCollecti
                   setIndividualPbj('');
                   setIndividualUnspecified('');
                 } else {
-                  // Switching to total mode - clear breakdown
+                  // Switching to total mode - clear breakdown AND total to start fresh
+                  setIndividualTotal('');
                   setIndividualDeli('');
                   setIndividualPbj('');
                   setIndividualUnspecified('');
                 }
               }}
-              className="text-xs"
+              className={`text-xs ${useBreakdown ? 'bg-[#236383] hover:bg-[#1a4a62]' : ''}`}
             >
-              {useBreakdown ? 'Use Total Only' : 'Specify Types'}
+              {useBreakdown ? '✓ Using Type Breakdown' : 'Switch to Type Breakdown'}
             </Button>
           </div>
 
