@@ -298,14 +298,6 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'documentation',
   },
   {
-    id: 'help',
-    label: 'Help',
-    icon: HelpCircle,
-    href: 'help',
-    permission: PERMISSIONS.NAV_HELP,
-    group: 'documentation',
-  },
-  {
     id: 'wishlist',
     label: 'Amazon Wishlist',
     icon: Gift,
@@ -354,5 +346,15 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'onboarding-admin',
     permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
+  },
+
+  // HELP - Always at the bottom (standard UX pattern)
+  {
+    id: 'help',
+    label: 'Help',
+    icon: HelpCircle,
+    href: 'help',
+    permission: PERMISSIONS.NAV_HELP,
+    group: 'help',
   },
 ];
