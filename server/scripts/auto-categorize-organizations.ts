@@ -1,0 +1,282 @@
+import { db } from '../db';
+import { organizations } from '../../shared/schema';
+import { logger } from '../middleware/logger';
+import { eq, isNull, or } from 'drizzle-orm';
+
+/**
+ * Auto-categorize organizations based on their name patterns
+ * Run this with: npx tsx server/scripts/auto-categorize-organizations.ts
+ */
+
+interface CategoryPattern {
+  category: string;
+  schoolClassification?: string;
+  patterns: RegExp[];
+}
+
+const categoryPatterns: CategoryPattern[] = [
+  // Schools - Elementary
+  {
+    category: 'school',
+    schoolClassification: 'public',
+    patterns: [
+      /\belementary\b/i,
+      /\belem\.?\b/i,
+      /\bgrade school\b/i,
+      /\bprimary school\b/i,
+    ],
+  },
+  // Schools - Middle
+  {
+    category: 'school',
+    schoolClassification: 'public',
+    patterns: [
+      /\bmiddle school\b/i,
+      /\bjunior high\b/i,
+      /\bintermediate school\b/i,
+    ],
+  },
+  // Schools - High School
+  {
+    category: 'school',
+    schoolClassification: 'public',
+    patterns: [
+      /\bhigh school\b/i,
+      /\bsecondary school\b/i,
+      /\bhigh\b.*\bschool\b/i,
+    ],
+  },
+  // Schools - University/College
+  {
+    category: 'school',
+    schoolClassification: 'public',
+    patterns: [
+      /\buniversity\b/i,
+      /\bcollege\b/i,
+      /\bacademy\b/i,
+      /\binstitute\b/i,
+    ],
+  },
+  // Schools - Private indicators
+  {
+    category: 'school',
+    schoolClassification: 'private',
+    patterns: [
+      /\bprivate school\b/i,
+      /\bprep school\b/i,
+      /\bpreparatory\b/i,
+      /\bmontessori\b/i,
+      /\bchristian school\b/i,
+      /\bcatholic school\b/i,
+      /\bst\.?\s+\w+'?s?\s+school\b/i, // St. Something School or St. Mary's School
+      /\bsaint\s+\w+'?s?\s+school\b/i,
+    ],
+  },
+  // Schools - Charter
+  {
+    category: 'school',
+    schoolClassification: 'charter',
+    patterns: [
+      /\bcharter school\b/i,
+      /\bcharter\b/i,
+    ],
+  },
+  // Churches and Faith Organizations
+  {
+    category: 'church_faith',
+    patterns: [
+      /\bchurch\b/i,
+      /\bchapel\b/i,
+      /\bsynagogue\b/i,
+      /\bmosque\b/i,
+      /\btemple\b/i,
+      /\bparish\b/i,
+      /\bcathedral\b/i,
+      /\bministry\b/i,
+      /\bfellowship\b/i,
+      /\bcongregation\b/i,
+      /\breligious\b/i,
+      /\bfaith\b/i,
+      /\bbible\b/i,
+      /\bchristian\b/i,
+      /\bcatholic\b/i,
+      /\bjewish\b/i,
+      /\bislamic\b/i,
+      /\bst\.?\s+\w+\s+church\b/i,
+      /\bsaint\s+\w+\s+church\b/i,
+    ],
+  },
+  // Neighborhoods and Community Groups
+  {
+    category: 'neighborhood',
+    patterns: [
+      /\bneighborhood\b/i,
+      /\bcommunity\s+group\b/i,
+      /\bcommunity\s+center\b/i,
+      /\bcommunity\s+association\b/i,
+      /\bhomeowners\b/i,
+      /\bhoa\b/i,
+      /\bresidents\b/i,
+      /\bneighbors\b/i,
+      /\bblock\s+club\b/i,
+      /\bcivic\s+association\b/i,
+    ],
+  },
+  // Clubs
+  {
+    category: 'club',
+    patterns: [
+      /\bclub\b/i,
+      /\brotary\b/i,
+      /\bkiwanis\b/i,
+      /\blions\s+club\b/i,
+      /\bboy\s+scouts\b/i,
+      /\bgirl\s+scouts\b/i,
+      /\b4-h\b/i,
+      /\byouth\s+group\b/i,
+      /\bsports\s+club\b/i,
+      /\bathletic\s+club\b/i,
+      /\bsocial\s+club\b/i,
+      /\brecreation\b/i,
+    ],
+  },
+  // Large Corporations
+  {
+    category: 'large_corp',
+    patterns: [
+      /\bcorporation\b/i,
+      /\bcorp\.?\b/i,
+      /\binc\.?\b/i,
+      /\bllc\b/i,
+      /\bltd\.?\b/i,
+      /\benterprise\b/i,
+      /\bglobal\b/i,
+      /\binternational\b/i,
+      /\bgroup\b/i,
+      /\bholdings\b/i,
+      /\bcompany\b/i,
+      /\bindustries\b/i,
+    ],
+  },
+  // Small/Medium Corporations (less specific business terms)
+  {
+    category: 'small_medium_corp',
+    patterns: [
+      /\bbusiness\b/i,
+      /\bservices\b/i,
+      /\bsolutions\b/i,
+      /\bconsulting\b/i,
+      /\bpartners\b/i,
+      /\bassociates\b/i,
+    ],
+  },
+];
+
+async function categorizeOrganization(
+  name: string
+): Promise<{ category: string; schoolClassification?: string } | null> {
+  const nameLower = name.toLowerCase();
+
+  // Check for church/faith first (high priority due to schools being named after saints)
+  for (const pattern of categoryPatterns.filter(
+    (p) => p.category === 'church_faith'
+  )) {
+    for (const regex of pattern.patterns) {
+      if (regex.test(nameLower)) {
+        return {
+          category: pattern.category,
+          schoolClassification: pattern.schoolClassification,
+        };
+      }
+    }
+  }
+
+  // Then check for schools
+  for (const pattern of categoryPatterns.filter((p) => p.category === 'school')) {
+    for (const regex of pattern.patterns) {
+      if (regex.test(nameLower)) {
+        return {
+          category: pattern.category,
+          schoolClassification: pattern.schoolClassification,
+        };
+      }
+    }
+  }
+
+  // Then check other categories
+  for (const pattern of categoryPatterns.filter(
+    (p) => p.category !== 'school' && p.category !== 'church_faith'
+  )) {
+    for (const regex of pattern.patterns) {
+      if (regex.test(nameLower)) {
+        return {
+          category: pattern.category,
+          schoolClassification: pattern.schoolClassification,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+async function autoCategorizeOrganizations() {
+  try {
+    logger.info('Starting auto-categorization of organizations...');
+
+    // Get all organizations without a category
+    const uncategorizedOrgs = await db
+      .select()
+      .from(organizations)
+      .where(or(isNull(organizations.category), eq(organizations.category, '')));
+
+    logger.info(
+      `Found ${uncategorizedOrgs.length} organizations without a category`
+    );
+
+    let categorizedCount = 0;
+    let skippedCount = 0;
+
+    for (const org of uncategorizedOrgs) {
+      const result = await categorizeOrganization(org.name);
+
+      if (result) {
+        await db
+          .update(organizations)
+          .set({
+            category: result.category,
+            schoolClassification: result.schoolClassification,
+            updatedAt: new Date(),
+          })
+          .where(eq(organizations.id, org.id));
+
+        logger.info(
+          `✅ Categorized "${org.name}" as "${result.category}"${
+            result.schoolClassification
+              ? ` (${result.schoolClassification})`
+              : ''
+          }`
+        );
+        categorizedCount++;
+      } else {
+        logger.info(
+          `⏭️  Skipped "${org.name}" - no matching category pattern found`
+        );
+        skippedCount++;
+      }
+    }
+
+    logger.info('\n📊 Summary:');
+    logger.info(`   Total organizations: ${uncategorizedOrgs.length}`);
+    logger.info(`   ✅ Categorized: ${categorizedCount}`);
+    logger.info(`   ⏭️  Skipped: ${skippedCount}`);
+    logger.info('\n✨ Auto-categorization complete!');
+
+    process.exit(0);
+  } catch (error) {
+    logger.error('❌ Failed to auto-categorize organizations', error);
+    process.exit(1);
+  }
+}
+
+autoCategorizeOrganizations();

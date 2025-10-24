@@ -1714,6 +1714,10 @@ export const organizations = pgTable(
     addresses: text('addresses').array(), // Array of known addresses
     domains: text('domains').array(), // Array of email domains associated with this org
 
+    // Organization categorization
+    category: varchar('category'), // 'small_medium_corp', 'large_corp', 'church_faith', 'school', 'neighborhood', 'club', 'other'
+    schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only when category is 'school')
+
     // Event history
     totalEvents: integer('total_events').notNull().default(0),
     lastEventDate: timestamp('last_event_date'),
