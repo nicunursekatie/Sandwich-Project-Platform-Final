@@ -177,6 +177,7 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.DOCUMENTS_MANAGE]: 'elevated',
   [PERMISSIONS.DOCUMENTS_UPLOAD]: 'elevated',
   [PERMISSIONS.MEETINGS_MANAGE]: 'elevated',
+  [PERMISSIONS.KUDOS_MANAGE]: 'elevated',
   [PERMISSIONS.DATA_EXPORT]: 'elevated',
   [PERMISSIONS.MESSAGES_MODERATE]: 'elevated',
   [PERMISSIONS.MANAGE_ANNOUNCEMENTS]: 'elevated',

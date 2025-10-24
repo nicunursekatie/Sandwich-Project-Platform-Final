@@ -189,6 +189,15 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.CHAT_GROUP,
     ],
   },
+  KUDOS: {
+    label: 'Recognition & Kudos',
+    permissions: [
+      PERMISSIONS.KUDOS_SEND,
+      PERMISSIONS.KUDOS_RECEIVE,
+      PERMISSIONS.KUDOS_VIEW,
+      PERMISSIONS.KUDOS_MANAGE,
+    ],
+  },
   NAVIGATION: {
     label: 'Navigation Tabs',
     permissions: [
@@ -267,6 +276,12 @@ export function getPermissionDescription(permission: string): string {
     [PERMISSIONS.CHAT_CORE_TEAM]: 'Access to core team chat',
     [PERMISSIONS.CHAT_DIRECT]: 'Access to direct messaging',
     [PERMISSIONS.CHAT_GROUP]: 'Access to group chat features',
+
+    // Kudos descriptions
+    [PERMISSIONS.KUDOS_SEND]: 'Send kudos to recognize team members',
+    [PERMISSIONS.KUDOS_RECEIVE]: 'Receive kudos from other team members',
+    [PERMISSIONS.KUDOS_VIEW]: 'View kudos inbox and sent recognition',
+    [PERMISSIONS.KUDOS_MANAGE]: 'Administrative management of all kudos',
 
     // Add more as needed...
   };
