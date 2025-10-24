@@ -82,10 +82,16 @@ export interface User extends Omit<DrizzleUser, 'metadata' | 'permissions'> {
  * Minimal user interface for permission checking
  * Used in auth-utils and permission checking functions
  *
- * Note: permissions can be:
- * - string[] (modern format, preferred)
- * - number (legacy bitmask format, still supported)
+ * IMPORTANT - Permission Format Security:
+ * - string[] (modern format, REQUIRED for unified-auth-utils.ts)
+ * - number (legacy bitmask format, UNSAFE - only for TypeScript compatibility)
  * - null/undefined (no permissions assigned)
+ *
+ * SECURITY WARNING:
+ * - unified-auth-utils.ts REJECTS numeric permissions (secure)
+ * - auth-utils.ts accepts numeric permissions but unsafely grants all access (insecure)
+ * - Numeric format is included in type only to prevent TypeScript errors
+ * - All users with numeric permissions MUST be migrated to string[] format
  */
 export interface UserForPermissions {
   id: string;

@@ -690,8 +690,11 @@ export function hasPermission(user: UserForPermissions | null | undefined, permi
   }
 
   if (typeof user.permissions === 'number') {
-    // For numeric permissions (bitmask), return true for now to avoid filtering issues
-    // The actual permission checking should be done on the server side
+    // 🚨 SECURITY WARNING: This grants ALL permissions to users with numeric format
+    // This is a known security issue - numeric permissions are not properly validated
+    // TODO: Either migrate all users to string[] format or implement proper bitmask checking
+    // For now, returning true to avoid breaking existing users with numeric permissions
+    console.warn(`⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting access without validation for "${permission}"`);
     return true;
   }
 
