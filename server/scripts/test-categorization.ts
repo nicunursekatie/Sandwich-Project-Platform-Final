@@ -30,8 +30,8 @@ const religiousPatterns: RegExp[] = [
   /\bislamic\b/i,
   /\bbuddhist\b/i,
   /\bhindu\b/i,
-  /\bst\.?\s+/i, // St. as in Saint
-  /\bsaint\s+/i,
+  /\bst\.?\s+[A-Z]/i, // St. as in Saint (followed by capital letter to avoid "1st Street")
+  /\bsaint\s+[A-Z]/i, // Saint (followed by capital letter)
   /\bholy\b/i,
   /\bblessed\b/i,
   /\bdivine\b/i,
