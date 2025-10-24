@@ -497,7 +497,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
     }
     
     // Super admins can moderate any message
-    if (currentUser?.permissions?.includes(PERMISSIONS.MODERATE_MESSAGES)) {
+    if (currentUser?.permissions?.includes(PERMISSIONS.MESSAGES_MODERATE)) {
       return true;
     }
     

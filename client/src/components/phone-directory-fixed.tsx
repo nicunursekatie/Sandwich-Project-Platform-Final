@@ -232,13 +232,13 @@ function PhoneDirectoryFixed() {
   const canViewHosts = hostsPermissions.canView;
   const canViewRecipients = recipientsPermissions.canView;
   const canViewDrivers = driversPermissions.canView;
-  const canViewVolunteers = hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS);
+  const canViewVolunteers = hasPermission(user, PERMISSIONS.VOLUNTEERS_VIEW);
   const canEditContacts =
     hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ||
     hasPermission(user, PERMISSIONS.USERS_EDIT) ||
     hasPermission(user, PERMISSIONS.MANAGE_DIRECTORY) ||
     hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL) ||
-    hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS) ||
+    hasPermission(user, PERMISSIONS.VOLUNTEERS_VIEW) ||
     hasPermission(user, PERMISSIONS.HOSTS_VIEW);
 
   // Tabs
