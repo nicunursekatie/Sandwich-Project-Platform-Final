@@ -50,6 +50,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import type { ConfidentialDocument } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface ConfidentialDocumentResponse {
   documents: ConfidentialDocument[];
@@ -101,7 +102,7 @@ export function ConfidentialDocuments() {
       setAllowedEmails('');
     },
     onError: (error) => {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast({
         title: 'Upload Failed',
         description:
@@ -127,7 +128,7 @@ export function ConfidentialDocuments() {
       });
     },
     onError: (error) => {
-      console.error('Delete error:', error);
+      logger.error('Delete error:', error);
       toast({
         title: 'Delete Failed',
         description:
@@ -250,7 +251,7 @@ export function ConfidentialDocuments() {
         description: `${doc.originalName} has been downloaded successfully.`,
       });
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       toast({
         title: 'Download Failed',
         description:

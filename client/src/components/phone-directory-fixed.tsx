@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 
 /* =========================
    Types
@@ -424,7 +425,7 @@ function PhoneDirectoryFixed() {
         deduplicatedAll.push(contact);
       } else {
         // If duplicate found, log it for debugging
-        console.log(
+        logger.log(
           `Duplicate contact found and removed: ${contact.name} (${contact.phone}) - ${contact.source}`
         );
       }
@@ -1130,7 +1131,7 @@ function PhoneDirectoryFixed() {
                                         variant="outline"
                                         size="sm"
                                         onClick={() =>
-                                          console.log('Edit contact:', contact)
+                                          logger.log('Edit contact:', contact)
                                         }
                                       >
                                         <Edit className="w-4 h-4" />
@@ -1144,7 +1145,7 @@ function PhoneDirectoryFixed() {
                                               `Delete contact ${contact.name}?`
                                             )
                                           ) {
-                                            console.log(
+                                            logger.log(
                                               'Delete contact:',
                                               contact
                                             );

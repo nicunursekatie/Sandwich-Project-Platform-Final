@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { logger } from '@/lib/logger';
 
 export const useEventMutations = () => {
   const { toast } = useToast();
@@ -47,15 +48,15 @@ export const useEventMutations = () => {
 
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => {
-      console.log('=== UPDATE MUTATION ===');
-      console.log('Event ID:', id);
-      console.log('Data being sent:', JSON.stringify(data, null, 2));
+      logger.log('=== UPDATE MUTATION ===');
+      logger.log('Event ID:', id);
+      logger.log('Data being sent:', JSON.stringify(data, null, 2));
       return apiRequest('PUT', `/api/event-requests/${id}`, data);
     },
     onSuccess: async (updatedEvent, variables) => {
-      console.log('=== UPDATE SUCCESS ===');
-      console.log('Updated event:', updatedEvent);
-      console.log('Variables:', variables);
+      logger.log('=== UPDATE SUCCESS ===');
+      logger.log('Updated event:', updatedEvent);
+      logger.log('Variables:', variables);
 
       toast({
         title: 'Event request updated',
@@ -77,7 +78,7 @@ export const useEventMutations = () => {
       setEditingValue('');
     },
     onError: (error: any) => {
-      console.error('Update event request error:', error);
+      logger.error('Update event request error:', error);
       toast({
         title: 'Update Failed',
         description:
@@ -91,16 +92,16 @@ export const useEventMutations = () => {
 
   const createEventRequestMutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log('=== CREATE EVENT MUTATION STARTED ===');
-      console.log('Data being sent:', JSON.stringify(data, null, 2));
+      logger.log('=== CREATE EVENT MUTATION STARTED ===');
+      logger.log('Data being sent:', JSON.stringify(data, null, 2));
       const result = await apiRequest('POST', '/api/event-requests', data);
-      console.log('=== CREATE EVENT API RESPONSE ===');
-      console.log('Response:', result);
+      logger.log('=== CREATE EVENT API RESPONSE ===');
+      logger.log('Response:', result);
       return result;
     },
     onSuccess: async (data) => {
-      console.log('=== CREATE EVENT SUCCESS HANDLER ===');
-      console.log('Created event:', data);
+      logger.log('=== CREATE EVENT SUCCESS HANDLER ===');
+      logger.log('Created event:', data);
       
       toast({
         title: 'Event request created',
@@ -121,7 +122,7 @@ export const useEventMutations = () => {
       setIsEditing(false);
     },
     onError: (error: any) => {
-      console.error('Create event request error:', error);
+      logger.error('Create event request error:', error);
       toast({
         title: 'Creation Failed',
         description:
@@ -156,7 +157,7 @@ export const useEventMutations = () => {
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after toolkit sent:', error);
+          logger.error('Failed to fetch updated event data after toolkit sent:', error);
         }
       }
 
@@ -195,7 +196,7 @@ export const useEventMutations = () => {
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after call scheduled:', error);
+          logger.error('Failed to fetch updated event data after call scheduled:', error);
         }
       }
 
@@ -234,7 +235,7 @@ export const useEventMutations = () => {
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after field update:', error);
+          logger.error('Failed to fetch updated event data after field update:', error);
         }
       }
 
@@ -270,7 +271,7 @@ export const useEventMutations = () => {
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after 1-day follow-up:', error);
+          logger.error('Failed to fetch updated event data after 1-day follow-up:', error);
         }
       }
 
@@ -305,7 +306,7 @@ export const useEventMutations = () => {
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data after 1-month follow-up:', error);
+          logger.error('Failed to fetch updated event data after 1-month follow-up:', error);
         }
       }
 
@@ -345,14 +346,14 @@ export const useEventMutations = () => {
   // Recipient assignment mutation - uses the specific recipients endpoint
   const assignRecipientsMutation = useMutation({
     mutationFn: ({ id, assignedRecipientIds }: { id: number; assignedRecipientIds: string[] }) => {
-      console.log('=== RECIPIENT ASSIGNMENT MUTATION ===');
-      console.log('Event ID:', id);
-      console.log('Recipient IDs:', assignedRecipientIds);
+      logger.log('=== RECIPIENT ASSIGNMENT MUTATION ===');
+      logger.log('Event ID:', id);
+      logger.log('Recipient IDs:', assignedRecipientIds);
       return apiRequest('PATCH', `/api/event-requests/${id}/recipients`, { assignedRecipientIds });
     },
     onSuccess: async (updatedEvent, variables) => {
-      console.log('=== RECIPIENT ASSIGNMENT SUCCESS ===');
-      console.log('Updated event:', updatedEvent);
+      logger.log('=== RECIPIENT ASSIGNMENT SUCCESS ===');
+      logger.log('Updated event:', updatedEvent);
       
       toast({
         title: 'Recipients assigned',
@@ -368,13 +369,13 @@ export const useEventMutations = () => {
           const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
           setSelectedEventRequest(freshEventData);
         } catch (error) {
-          console.error('Failed to fetch updated event data:', error);
+          logger.error('Failed to fetch updated event data:', error);
         }
       }
     },
     onError: (error) => {
-      console.error('=== RECIPIENT ASSIGNMENT ERROR ===');
-      console.error(error);
+      logger.error('=== RECIPIENT ASSIGNMENT ERROR ===');
+      logger.error(error);
       
       toast({
         title: 'Failed to assign recipients',

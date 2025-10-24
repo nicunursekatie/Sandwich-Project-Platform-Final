@@ -46,6 +46,7 @@ import MonthlyComparisonAnalytics from '@/components/monthly-comparison-analytic
 import ActionCenter from '@/components/action-center';
 import PredictiveForecasts from '@/components/predictive-forecasts';
 import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
+import { logger } from '@/lib/logger';
 
 export default function ImpactDashboard() {
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>(
@@ -198,7 +199,7 @@ export default function ImpactDashboard() {
         )
       );
 
-    console.log('Processed chart data:', processedData);
+    logger.log('Processed chart data:', processedData);
     return processedData;
   };
 
@@ -450,7 +451,7 @@ export default function ImpactDashboard() {
                 );
               }
             } catch (e) {
-              console.log('Error parsing groupCollections JSON:', e);
+              logger.log('Error parsing groupCollections JSON:', e);
               groupSandwiches = 0;
             }
           }
@@ -489,13 +490,13 @@ export default function ImpactDashboard() {
   const trendAnalysis = calculateTrendAnalysis();
 
   // Debug logging for final data
-  console.log('=== IMPACT DASHBOARD DEBUG ===');
-  console.log('Final chartData:', chartData);
-  console.log('Final chartData length:', chartData?.length);
-  console.log('Chart view:', chartView);
-  console.log('Collections data from API:', collectionsData);
-  console.log('Stats data from API:', stats);
-  console.log('=== END DEBUG ===');
+  logger.log('=== IMPACT DASHBOARD DEBUG ===');
+  logger.log('Final chartData:', chartData);
+  logger.log('Final chartData length:', chartData?.length);
+  logger.log('Chart view:', chartView);
+  logger.log('Collections data from API:', collectionsData);
+  logger.log('Stats data from API:', stats);
+  logger.log('=== END DEBUG ===');
 
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 

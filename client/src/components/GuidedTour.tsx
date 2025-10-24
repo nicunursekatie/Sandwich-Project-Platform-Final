@@ -30,6 +30,7 @@ import {
   type TourStep,
   type TourCategory,
 } from '@/lib/tourDefinitions';
+import { logger } from '@/lib/logger';
 
 const CATEGORY_ICONS: Record<string, any> = {
   FolderOpen,
@@ -61,7 +62,7 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
       try {
         setCompletedTours(JSON.parse(stored));
       } catch (e) {
-        console.error('Failed to load completed tours:', e);
+        logger.error('Failed to load completed tours:', e);
       }
     }
   }, []);

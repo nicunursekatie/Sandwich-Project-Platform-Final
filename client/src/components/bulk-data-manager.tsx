@@ -26,6 +26,7 @@ import {
   Download,
   Scan,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface MappingStats {
   hostName: string;
@@ -141,7 +142,7 @@ export default function BulkDataManager({
       });
     },
     onError: (error) => {
-      console.error('Data fix failed:', error);
+      logger.error('Data fix failed:', error);
       toast({
         title: 'Fix Failed',
         description: 'There was an error fixing data issues. Please try again.',

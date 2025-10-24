@@ -71,6 +71,7 @@ import {
   calculateTotalSandwiches,
   calculateGroupSandwiches,
 } from '@/lib/analytics-utils';
+import { logger } from '@/lib/logger';
 
 interface ImportResult {
   totalRecords: number;
@@ -244,7 +245,7 @@ export default function SandwichCollectionLog() {
   // Debounce search filters to prevent excessive queries
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      console.log('Setting debounced filters:', searchFilters);
+      logger.log('Setting debounced filters:', searchFilters);
       setDebouncedSearchFilters(searchFilters);
     }, 500); // Wait 500ms after user stops typing
 
@@ -340,7 +341,7 @@ export default function SandwichCollectionLog() {
     queryKey,
     queryFn: useCallback(async () => {
       if (needsAllData) {
-        console.log(
+        logger.log(
           'Fetching all data for filtering with filters:',
           debouncedSearchFilters
         );
@@ -349,7 +350,7 @@ export default function SandwichCollectionLog() {
         const data = await response.json();
 
         let filteredCollections = data.collections || [];
-        console.log('Initial collections count:', filteredCollections.length);
+        logger.log('Initial collections count:', filteredCollections.length);
 
         // Apply filters using debounced values
         if (debouncedSearchFilters.hostName) {
@@ -358,7 +359,7 @@ export default function SandwichCollectionLog() {
             (c: SandwichCollection) =>
               c.hostName?.toLowerCase().includes(searchTerm)
           );
-          console.log(
+          logger.log(
             `Host name filter '${searchTerm}' applied: ${filteredCollections.length} results`
           );
         }
@@ -368,7 +369,7 @@ export default function SandwichCollectionLog() {
           filteredCollections = filteredCollections.filter(
             (c: SandwichCollection) => new Date(c.collectionDate) >= fromDate
           );
-          console.log(
+          logger.log(
             `Date from filter '${debouncedSearchFilters.collectionDateFrom}' applied: ${filteredCollections.length} results`
           );
         }
@@ -423,7 +424,7 @@ export default function SandwichCollectionLog() {
               return hostNameMatch || groupNameMatch || dateMatch;
             }
           );
-          console.log(
+          logger.log(
             `Global search filter '${searchTerm}' applied: ${filteredCollections.length} results`
           );
         }
@@ -439,7 +440,7 @@ export default function SandwichCollectionLog() {
               );
             }
           );
-          console.log(
+          logger.log(
             `Group name filter '${searchTerm}' applied: ${filteredCollections.length} results`
           );
         }
@@ -465,7 +466,7 @@ export default function SandwichCollectionLog() {
           endIndex
         );
 
-        console.log('Pagination debug:', {
+        logger.log('Pagination debug:', {
           currentPage,
           itemsPerPage,
           startIndex,
@@ -538,14 +539,14 @@ export default function SandwichCollectionLog() {
       } else {
         const sortParam = `&sort=${sortConfig.field}&order=${sortConfig.direction}`;
         const url = `/api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam}`;
-        console.log('Fetching paginated collections:', url);
+        logger.log('Fetching paginated collections:', url);
         const response = await fetch(url);
         if (!response.ok) {
-          console.error('Failed to fetch collections:', response.status, response.statusText);
+          logger.error('Failed to fetch collections:', response.status, response.statusText);
           throw new Error('Failed to fetch collections');
         }
         const data = await response.json();
-        console.log('Paginated collections response:', {
+        logger.log('Paginated collections response:', {
           collectionsCount: data.collections?.length || 0,
           pagination: data.pagination
         });
@@ -976,7 +977,7 @@ export default function SandwichCollectionLog() {
       });
     },
     onError: (error: any) => {
-      console.error('Delete collection error:', error);
+      logger.error('Delete collection error:', error);
 
       // Check if it's just an auth error but the deletion might have worked
       // We'll refresh the data to see if it actually got deleted
@@ -1009,8 +1010,8 @@ export default function SandwichCollectionLog() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log('=== CLIENT MUTATION DEBUG ===');
-      console.log('Submitting data:', JSON.stringify(data, null, 2));
+      logger.log('=== CLIENT MUTATION DEBUG ===');
+      logger.log('Submitting data:', JSON.stringify(data, null, 2));
       trackDataEntry('sandwich_collection', 'collections_log');
       try {
         const result = await apiRequest(
@@ -1018,10 +1019,10 @@ export default function SandwichCollectionLog() {
           '/api/sandwich-collections',
           data
         );
-        console.log('API call successful, result:', result);
+        logger.log('API call successful, result:', result);
         return result;
       } catch (error) {
-        console.error('API call failed:', error);
+        logger.error('API call failed:', error);
         throw error;
       }
     },
@@ -1089,7 +1090,7 @@ export default function SandwichCollectionLog() {
         description: `Successfully imported ${result.successCount} of ${result.totalRecords} records.`,
       });
       if (result.errorCount > 0) {
-        console.log('Import errors:', result.errors);
+        logger.log('Import errors:', result.errors);
       }
       // Reset file input
       if (fileInputRef.current) {
@@ -1200,7 +1201,7 @@ export default function SandwichCollectionLog() {
       ids: number[];
       updates: Partial<SandwichCollection>;
     }) => {
-      console.log('Batch edit request:', data);
+      logger.log('Batch edit request:', data);
       const response = await fetch('/api/sandwich-collections/batch-edit', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -1209,12 +1210,12 @@ export default function SandwichCollectionLog() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Batch edit error response:', errorData);
+        logger.error('Batch edit error response:', errorData);
         throw new Error(errorData.message || 'Failed to update collections');
       }
 
       const result = await response.json();
-      console.log('Batch edit success response:', result);
+      logger.log('Batch edit success response:', result);
       return result;
     },
     onSuccess: (result: any) => {
@@ -1230,7 +1231,7 @@ export default function SandwichCollectionLog() {
       });
     },
     onError: (error: any) => {
-      console.error('Batch edit mutation error:', error);
+      logger.error('Batch edit mutation error:', error);
       toast({
         title: 'Batch edit failed',
         description:
@@ -1323,7 +1324,7 @@ export default function SandwichCollectionLog() {
         description: `All ${allCollections.length} collections exported to CSV with complete data including group totals.`,
       });
     } catch (error) {
-      console.error('CSV Export Error:', error);
+      logger.error('CSV Export Error:', error);
       toast({
         title: 'Export failed',
         description: 'Failed to export collections data. Please try again.',
@@ -1406,18 +1407,18 @@ export default function SandwichCollectionLog() {
   };
 
   const submitBatchEdit = () => {
-    console.log('submitBatchEdit called with batchEditData:', batchEditData);
-    console.log('selectedCollections:', Array.from(selectedCollections));
+    logger.log('submitBatchEdit called with batchEditData:', batchEditData);
+    logger.log('selectedCollections:', Array.from(selectedCollections));
 
     const updates: Partial<SandwichCollection> = {};
     if (batchEditData.hostName) updates.hostName = batchEditData.hostName;
     if (batchEditData.collectionDate)
       updates.collectionDate = batchEditData.collectionDate;
 
-    console.log('Prepared updates:', updates);
+    logger.log('Prepared updates:', updates);
 
     if (Object.keys(updates).length === 0) {
-      console.log('No updates to apply');
+      logger.log('No updates to apply');
       toast({
         title: 'No changes specified',
         description: 'Please specify at least one field to update.',
@@ -1426,7 +1427,7 @@ export default function SandwichCollectionLog() {
       return;
     }
 
-    console.log('Submitting batch edit with:', {
+    logger.log('Submitting batch edit with:', {
       ids: Array.from(selectedCollections),
       updates,
     });
@@ -1743,10 +1744,10 @@ export default function SandwichCollectionLog() {
   };
 
   const handleFilterChange = (filterUpdates: Partial<typeof searchFilters>) => {
-    console.log('Filter change:', filterUpdates);
+    logger.log('Filter change:', filterUpdates);
     setSearchFilters((prev) => {
       const newFilters = { ...prev, ...filterUpdates };
-      console.log('New search filters:', newFilters);
+      logger.log('New search filters:', newFilters);
       return newFilters;
     });
     setCurrentPage(1);

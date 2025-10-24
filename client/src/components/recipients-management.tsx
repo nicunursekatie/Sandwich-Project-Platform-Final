@@ -54,6 +54,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import type { Recipient } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 export default function RecipientsManagement() {
   const { toast } = useToast();
@@ -1453,7 +1454,7 @@ export default function RecipientsManagement() {
             recipient.id === 19 ||
             recipient.id === 36
           ) {
-            console.log('Recipients Debug - Rendering:', {
+            logger.log('Recipients Debug - Rendering:', {
               id: recipient.id,
               name: recipient.name,
               isBoysAndGirls: recipient.name.includes('Boys'),

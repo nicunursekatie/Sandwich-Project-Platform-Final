@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface User {
   id: string;
@@ -53,7 +54,7 @@ export function MentionInput({
       });
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
-      console.log('Fetched users for mentions:', data?.length || 0, 'users');
+      logger.log('Fetched users for mentions:', data?.length || 0, 'users');
       return Array.isArray(data) ? data : [];
     },
     staleTime: 300000, // 5 minutes
@@ -63,9 +64,9 @@ export function MentionInput({
   // Debug logging
   useEffect(() => {
     if (!isLoading) {
-      console.log('Available users for mentions:', (users || []).length);
+      logger.log('Available users for mentions:', (users || []).length);
     }
-    if (error) console.error('Error fetching users for mentions:', error);
+    if (error) logger.error('Error fetching users for mentions:', error);
   }, [users, error, isLoading]);
 
   // Parse mentions from text and highlight them
@@ -135,7 +136,7 @@ export function MentionInput({
             const email = user.email;
             const searchTerm = textAfterAt.toLowerCase();
 
-            console.log(
+            logger.log(
               `Filtering user: ${fullName} (${email}) against "${searchTerm}"`
             );
 
@@ -169,10 +170,10 @@ export function MentionInput({
             email: user.email,
           }));
 
-        console.log(
+        logger.log(
           `Found ${filteredUsers.length} matching users for "@${textAfterAt}"`
         );
-        console.log('Filtered users:', filteredUsers);
+        logger.log('Filtered users:', filteredUsers);
 
         setSuggestions(filteredUsers);
         setShowSuggestions(filteredUsers.length > 0);

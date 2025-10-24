@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { DocumentPreview } from './document-preview';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface DevelopmentDocument {
   name: string;
@@ -245,7 +246,7 @@ export function DevelopmentDocuments() {
           'The inventory calculator link has been copied to your clipboard.',
       });
     } catch (error) {
-      console.error('Failed to copy link:', error);
+      logger.error('Failed to copy link:', error);
       toast({
         title: 'Error',
         description: 'Failed to copy link to clipboard.',

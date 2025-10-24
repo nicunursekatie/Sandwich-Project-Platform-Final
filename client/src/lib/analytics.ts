@@ -1,3 +1,4 @@
+
 /**
  * Google Analytics Integration
  * Tracks user events and page views to Google Analytics
@@ -19,13 +20,13 @@ const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
  */
 export function initGA(): void {
   if (!GA_MEASUREMENT_ID) {
-    console.warn('Google Analytics: No measurement ID found. Set VITE_GA_MEASUREMENT_ID in your environment variables.');
+    logger.warn('Google Analytics: No measurement ID found. Set VITE_GA_MEASUREMENT_ID in your environment variables.');
     return;
   }
 
   // Check if already initialized
   if (document.querySelector(`script[src*="googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"]`)) {
-    console.log('Google Analytics: Already initialized');
+    logger.log('Google Analytics: Already initialized');
     return;
   }
 
@@ -54,7 +55,7 @@ export function initGA(): void {
     cookie_flags: 'SameSite=None;Secure', // For cross-domain tracking
   });
 
-  console.log('✅ Google Analytics initialized:', GA_MEASUREMENT_ID);
+  logger.log('✅ Google Analytics initialized:', GA_MEASUREMENT_ID);
 }
 
 /**
@@ -72,7 +73,7 @@ export function trackEvent(
   value?: number
 ): void {
   if (!window.gtag) {
-    console.warn('Google Analytics: gtag not initialized');
+    logger.warn('Google Analytics: gtag not initialized');
     return;
   }
 
@@ -82,7 +83,7 @@ export function trackEvent(
     value: value,
   });
 
-  console.log('GA Event:', { action, category, label, value });
+  logger.log('GA Event:', { action, category, label, value });
 }
 
 /**
@@ -93,7 +94,7 @@ export function trackEvent(
  */
 export function trackPageView(path: string, title?: string): void {
   if (!window.gtag) {
-    console.warn('Google Analytics: gtag not initialized');
+    logger.warn('Google Analytics: gtag not initialized');
     return;
   }
 
@@ -102,7 +103,7 @@ export function trackPageView(path: string, title?: string): void {
     page_title: title || document.title,
   });
 
-  console.log('GA Page View:', { path, title });
+  logger.log('GA Page View:', { path, title });
 }
 
 /**
@@ -112,10 +113,10 @@ export function trackPageView(path: string, title?: string): void {
  */
 export function setUserProperties(properties: Record<string, any>): void {
   if (!window.gtag) {
-    console.warn('Google Analytics: gtag not initialized');
+    logger.warn('Google Analytics: gtag not initialized');
     return;
   }
 
   window.gtag('set', 'user_properties', properties);
-  console.log('GA User Properties:', properties);
+  logger.log('GA User Properties:', properties);
 }

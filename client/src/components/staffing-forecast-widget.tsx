@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import type { EventRequest } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface WeeklyStaffing {
   weekKey: string;
@@ -191,7 +192,7 @@ export default function StaffingForecastWidget() {
         week.unfulfilled.vanDrivers += Math.max(0, vanDriversNeeded - vanDriversAssigned);
 
       } catch (error) {
-        console.warn('Error processing event date:', request.desiredEventDate);
+        logger.warn('Error processing event date:', request.desiredEventDate);
       }
     });
 

@@ -42,6 +42,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import type { Driver, Host } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 export default function DriversManagement() {
   const { toast } = useToast();
@@ -145,7 +146,7 @@ export default function DriversManagement() {
       toast({ title: 'Driver added successfully' });
     },
     onError: (error) => {
-      console.error('Driver addition error:', error);
+      logger.error('Driver addition error:', error);
       toast({ title: 'Error adding driver', variant: 'destructive' });
     },
   });
@@ -167,7 +168,7 @@ export default function DriversManagement() {
       toast({ title: 'Driver updated successfully' });
     },
     onError: (error) => {
-      console.error('Driver update error:', error);
+      logger.error('Driver update error:', error);
       toast({ title: 'Error updating driver', variant: 'destructive' });
     },
   });
@@ -180,7 +181,7 @@ export default function DriversManagement() {
       toast({ title: 'Driver deleted successfully' });
     },
     onError: (error) => {
-      console.error('Driver delete error:', error);
+      logger.error('Driver delete error:', error);
       toast({ title: 'Error deleting driver', variant: 'destructive' });
     },
   });
