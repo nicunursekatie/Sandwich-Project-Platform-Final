@@ -1,9 +1,9 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Trophy, CheckCircle, Clock, Users, Award, Mail } from 'lucide-react';
+import { Trophy, CheckCircle, Clock, Users, Award, Mail, ChevronDown, ChevronRight, Heart } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -28,7 +28,9 @@ interface UserProgress {
 
 export default function OnboardingAdmin() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: usersProgress = [], isLoading } = useQuery<UserProgress[]>({
     queryKey: ['/api/onboarding/admin/users-progress'],
@@ -62,6 +64,41 @@ export default function OnboardingAdmin() {
       sendAnnouncementMutation.mutate();
     }
   };
+
+  const toggleUserExpanded = (userId: string) => {
+    const newExpanded = new Set(expandedUsers);
+    if (newExpanded.has(userId)) {
+      newExpanded.delete(userId);
+    } else {
+      newExpanded.add(userId);
+    }
+    setExpandedUsers(newExpanded);
+  };
+
+  const sendKudosMutation = useMutation({
+    mutationFn: async ({ userId, challengeId }: { userId: string; challengeId: number }) => {
+      return await apiRequest('POST', '/api/kudos/send', {
+        recipientId: userId,
+        contextType: 'onboarding_challenge',
+        contextId: challengeId,
+        message: 'Great work completing this onboarding challenge!',
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Kudos Sent!',
+        description: 'Recognition has been sent successfully.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/onboarding/admin/users-progress'] });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to send kudos. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Filter users based on search
   const filteredUsers = usersProgress.filter((user) =>
@@ -183,20 +220,36 @@ export default function OnboardingAdmin() {
               const completedChallengeIds = new Set(
                 completedChallenges.map(c => c.challengeId)
               );
+              const isExpanded = expandedUsers.has(user.userId);
 
               return (
-                <div key={user.userId} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  {/* User Header */}
-                  <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{user.userName}</h3>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                    </div>
+                <div key={user.userId} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                  {/* User Header - Clickable */}
+                  <div
+                    onClick={() => toggleUserExpanded(user.userId)}
+                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
+                      <div>
+                        {isExpanded ? (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{user.userName}</h3>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Badge variant="outline" className="text-xs">
+                        {user.role}
+                      </Badge>
                       <div className="text-right">
                         <p className="text-xs text-gray-600">Progress</p>
                         <p className="text-lg font-bold text-brand-primary">
-                          {user.completionCount}/10
+                          {user.completionCount}
                         </p>
                       </div>
                       <div className="text-right">
@@ -208,25 +261,56 @@ export default function OnboardingAdmin() {
                     </div>
                   </div>
 
-                  {/* Challenge Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    {completedChallenges.map((challenge) => (
-                      <div
-                        key={challenge.challengeId}
-                        className="flex items-center gap-2 bg-green-50 border border-green-200 rounded px-2 py-1.5"
-                        title={`Completed: ${challenge.completedAt ? new Date(challenge.completedAt).toLocaleDateString() : 'N/A'}`}
-                      >
-                        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
-                        <span className="text-xs text-green-900 truncate">
-                          {challenge.challengeTitle}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {user.completionCount === 0 && (
-                    <div className="text-center py-6 text-gray-400 italic text-sm">
-                      No challenges completed yet
+                  {/* Expanded Content - Challenge Details */}
+                  {isExpanded && (
+                    <div className="p-4 pt-0 border-t border-gray-100 bg-gray-50">
+                      {completedChallenges.length > 0 ? (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                            Completed Challenges ({completedChallenges.length})
+                          </h4>
+                          {completedChallenges.map((challenge) => (
+                            <div
+                              key={challenge.challengeId}
+                              className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3"
+                            >
+                              <div className="flex items-center gap-3 flex-1">
+                                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900">{challenge.challengeTitle}</p>
+                                  <p className="text-xs text-gray-500">
+                                    Completed: {challenge.completedAt ? new Date(challenge.completedAt).toLocaleDateString() : 'N/A'}
+                                  </p>
+                                  <p className="text-xs text-gray-600">Points: {challenge.points}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {challenge.kudosSent ? (
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                    <Heart className="w-3 h-3 mr-1 fill-green-600" />
+                                    Kudos Sent
+                                  </Badge>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => sendKudosMutation.mutate({ userId: user.userId, challengeId: challenge.challengeId })}
+                                    disabled={sendKudosMutation.isPending}
+                                    className="text-xs"
+                                  >
+                                    <Heart className="w-3 h-3 mr-1" />
+                                    Send Kudos
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-gray-400 italic text-sm">
+                          No challenges completed yet
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
