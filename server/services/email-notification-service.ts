@@ -1,7 +1,7 @@
 import sgMail from '@sendgrid/mail';
 import { db } from '../db';
 import { users } from '@shared/schema';
-import { eq, or, like, sql } from 'drizzle-orm';
+import { eq, or, like, sql, inArray } from 'drizzle-orm';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 
 // Initialize SendGrid
@@ -72,26 +72,27 @@ export class EmailNotificationService {
     if (mentions.length === 0) return [];
 
     try {
-      // Search by display name, email, firstName, or lastName
-      const allUsers = await db.select().from(users);
-      const mentionedUsers = allUsers.filter((user) => {
-        const lowerEmail = user.email?.toLowerCase() || '';
-        const lowerDisplayName = user.displayName?.toLowerCase() || '';
-        const lowerFirstName = user.firstName?.toLowerCase() || '';
-        const lowerLastName = user.lastName?.toLowerCase() || '';
+      // Lowercase all mentions for case-insensitive matching
+      const lowerMentions = mentions.map(m => m.toLowerCase());
 
-        return mentions.some((mention) => {
-          const lowerMention = mention.toLowerCase();
-          return (
-            lowerEmail === lowerMention ||
-            lowerDisplayName === lowerMention ||
-            lowerFirstName === lowerMention ||
-            lowerLastName === lowerMention
-          );
-        });
-      });
+      // Use SQL WHERE clause to filter at database level (not in JavaScript!)
+      // This prevents loading all users into memory
+      const allMentionedUsers = await db
+        .select()
+        .from(users)
+        .where(
+          or(
+            sql`LOWER(${users.email}) = ANY(${lowerMentions})`,
+            sql`LOWER(${users.displayName}) = ANY(${lowerMentions})`,
+            sql`LOWER(${users.firstName}) = ANY(${lowerMentions})`,
+            sql`LOWER(${users.lastName}) = ANY(${lowerMentions})`
+          )
+        );
 
-      return mentionedUsers.filter((user) => user.email); // Only return users with email addresses
+      // Filter and cast to ensure email is non-null
+      return allMentionedUsers.filter((user): user is typeof user & { email: string } => 
+        user.email !== null && user.email !== undefined
+      );
     } catch (error) {
       console.error('Error finding mentioned users:', error);
       return [];

@@ -3,74 +3,6 @@
 ## Overview
 This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to streamline operations, enhance data visibility, and support organizational growth, with a vision to become a vital tool for food security initiatives by scaling operations and improving outreach to reduce food waste and hunger.
 
-## Recent Changes
-**October 24, 2025** - Fixed collection log type breakdown toggle: Improved the "Specify Types" toggle button in collection form to make it clearer when in breakdown mode (shows "✓ Using Type Breakdown" as filled button). Fixed issue where users couldn't return to simple total entry mode - now clicking toggle always gives you a fresh start by clearing all fields. Switching between modes is now reversible and clear.
-
-**October 24, 2025** - Moved Help to bottom of navigation menu: Relocated Help from middle of Documentation section to the very bottom of the entire menu (after Admin section) following standard UX pattern where users expect to find Help at the bottom.
-
-**October 23, 2025** - Fixed mobile logout button cutoff issue: Changed mobile header from overflow-hidden to overflow-x-auto, allowing horizontal scrolling on small screens. This ensures the logout button is always accessible even when header contains many elements (messages, notifications, onboarding, profile, logout buttons).
-
-**October 23, 2025** - Added Amazon wishlist quick access widget to navigation sidebar: Created compact widget below EIN section with "View & Share" button and one-click copy functionality for main wishlist URL. Users can access full wishlist management page (with suggestion system) or quickly copy the link to share with supporters. Widget uses orange theme to stand out and includes Gift icon for visual recognition.
-
-**October 23, 2025** - Redesigned onboarding challenge progress UI: Changed from table layout to card-based grid showing actual completed challenges with green checkmarks. Removed unnecessary role column and made email subtle. Each user gets a card showing which specific challenges they've completed (e.g., "Send your first chat message", "Post to Team Board") in a responsive grid (2 cols mobile, 5 cols desktop).
-
-**October 23, 2025** - Condensed Notes & Requirements section on scheduled event cards: Reduced vertical space by ~50% using 2-column grid layout on desktop, smaller text (xs instead of sm/base), reduced padding (2 instead of 3), and thinner borders. Section header is more compact while maintaining readability.
-
-**October 23, 2025** - Added van driver needed badge to scheduled event cards: Shows "Van Driver Needed" badge with Car icon when vanDriverNeeded=true and no driver assigned. Badge appears in brand blue color alongside other staffing badges.
-
-
-**October 23, 2025** - CRITICAL FIX: Google Sheets sync now INSERT-ONLY, never updates existing records: Changed `onConflictDoUpdate` to `onConflictDoNothing` in google-sheets-event-requests-sync.ts. Once an event is imported from Google Sheets, it will NEVER be touched again by the background sync. Manual database edits (organization names, departments, contact info, etc.) are now permanently preserved. The background sync (runs every 5 minutes) will only insert NEW records, skipping all existing records completely. This fixes the critical issue where manual edits were being overwritten every 5 minutes.
-
-**October 23, 2025** - Removed obsolete validation checks: Removed deliveryTimeWindow and deliveryParkingAccess from getMissingIntakeInfo function in event-request-validation.ts. These fields are no longer used, so they won't trigger "missing" badges on scheduled event cards.
-
-**October 23, 2025** - Fixed inline editing for recipient assignment: Added Save/Cancel buttons to recipient inline editor in ScheduledCard.tsx and special handling in ScheduledTab.tsx saveEdit function to parse JSON string to array before sending to backend mutation.
-
-**October 23, 2025** - Fixed email rendering issue: Updated email-routes.ts to NOT send plain text version when sending full HTML emails. Gmail was choosing to display the plain text fallback instead of the HTML template. Now full HTML emails (toolkit emails) are sent with HTML-only content, forcing proper rendering.
-
-**October 21, 2025** - Fixed event email system: Configured SendGrid to send from verified domain (katie@thesandwichproject.org) instead of Gmail to prevent spam filtering. Rebuilt HTML email templates using table-based layouts with inline styles for proper rendering in all email clients (Gmail, Outlook, mobile). Templates reference attached PDF toolkit files (5 PDFs from cloud storage) plus Budget & Shopping Planner link.
-
-## Email System Configuration
-**CRITICAL: DO NOT MODIFY WITHOUT REVIEWING THIS SECTION**
-
-### SendGrid Setup
-- **From Address**: `katie@thesandwichproject.org` (configured in `SENDGRID_FROM_EMAIL` environment variable)
-- **Domain**: `thesandwichproject.org` is verified in SendGrid with SPF/DKIM records
-- **Never use Gmail addresses** (`katielong2316@gmail.com`) for organizational sending - they trigger spam filters
-
-### Email Templates (client/src/components/event-email-composer.tsx)
-**Template Structure:**
-- Uses **table-based HTML layouts** with **inline CSS styles** (NOT external stylesheets or CSS classes)
-- NO `@import` fonts, NO `linear-gradient`, NO class-based styling
-- Email clients (Gmail, Outlook) strip out `<style>` blocks and external CSS
-- All styling must be inline: `style="padding: 20px; background-color: #007E8C;"`
-
-**Template Content - MUST reference attachments:**
-- Opening: "Attached you'll find a toolkit (everything you need to plan a sandwich-making event)..."
-- Single button: "Budget & Shopping Planner" (links to inventorycalculator.html)
-- Labeling tip: "The attached PDF for labels are intended to go on the **outside of each bag**"
-- DO NOT say "Visit our Event Toolkit website" or include "View Event Toolkit" button
-- DO reference the **5 attached PDFs** from cloud storage
-
-**Attachments:**
-- Food Safety Guide for Volunteers.pdf
-- PBJ Sandwich Making 101.pdf
-- Deli Sandwich Making 101.pdf
-- Deli Sandwich Labels.pdf
-- PBJ Sandwich Labels.pdf
-- All files stored in Replit Object Storage (Google Cloud Storage backend), NOT local filesystem
-- Files pulled from cloud storage in `server/routes/email-routes.ts` and attached to SendGrid emails
-
-**Email Sending Configuration (server/routes/email-routes.ts):**
-- Full HTML emails (starting with `<!DOCTYPE html>`) are sent HTML-only (no plain text version)
-- Gmail and other clients will choose plain text over HTML if both are provided
-- Non-HTML emails include both HTML and plain text versions for compatibility
-
-**Why This Matters:**
-- Modern CSS doesn't work in email clients - they strip it out leaving ugly unstyled text
-- Sending from Gmail addresses flags emails as spam
-- Referencing website instead of attachments caused hours of confusion about attachment availability
-- Sending plain text alongside HTML templates causes Gmail to render plain text instead of formatted HTML
-
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 UI Design: Button labels and interface text must be extremely clear about their function - avoid ambiguous labels like "Submit" in favor of specific action descriptions like "Enter New Data".
@@ -87,8 +19,8 @@ Activity Notifications UX: User activity displays must show meaningful action de
 The application features a React 18 frontend with TypeScript, Vite, TanStack Query, and Tailwind CSS (with shadcn/ui). The backend uses Express.js (TypeScript), Drizzle ORM, and PostgreSQL (Neon serverless), including session-based authentication. It uses environment variables for database separation, Winston for structured logging, and centralized CORS for security. The UI/UX adheres to The Sandwich Project's official color palette and Roboto typography, prioritizing clarity, responsiveness, and card-based dashboards.
 
 **Key Technical Implementations & Features:**
--   **Authentication System**: Handles login/registration, session management with PostgreSQL storage, role-based access control, password resets via SendGrid, and profile management.
--   **Unified Permissions System**: Consistent frontend/backend logic, visual role templates, and granular functional permissions (e.g., `COOLERS_VIEW`, `DOCUMENTS_CONFIDENTIAL`).
+-   **Authentication System**: Handles login/registration, session management with PostgreSQL storage, role-based access control, password resets, and profile management.
+-   **Unified Permissions System**: Consistent frontend/backend logic, visual role templates, and granular functional permissions.
 -   **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation and timezone-safe date handling.
 -   **Search & Filtering**: Real-time capabilities across management interfaces.
 -   **Performance Optimization**: Query optimization, caching, pagination, and database connection pooling.
@@ -96,8 +28,8 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool.
 -   **Meeting Management**: Full-featured system with agenda compilation, project integration, PDF export, and permission-controlled notes.
 -   **Event Requests Management System**: Tracking, duplicate detection, status tracking, Google Sheets integration, van driver staffing calculations, and comprehensive intake validation.
--   **Multi-Recipient Assignment**: Events can be assigned to multiple destinations with prefixed IDs and badge-based UI. Recipient dropdowns now show individual host contacts (e.g., "Anna Baylin (North Atlanta)") instead of host location areas, making it clear where sandwiches are being delivered. Backward compatibility maintained for legacy host location assignments (displayed as "Location (Legacy - Area)").
--   **Google Sheets Integration**: Bidirectional automatic synchronization for project tracker and event requests.
+-   **Multi-Recipient Assignment**: Events can be assigned to multiple destinations with prefixed IDs and badge-based UI, showing individual host contacts.
+-   **Google Sheets Integration**: Bidirectional automatic synchronization for project tracker and event requests, with dual-layer duplicate prevention and auto-transition for event statuses.
 -   **User Activity Logging System**: Comprehensive tracking of authenticated user actions into `user_activity_logs` table via middleware, displayed in User Management.
 -   **Sandwich Type Tracking System**: Comprehensive tracking of sandwich types for individual sandwiches and group collections with real-time validation, display, and analytics.
 -   **Interactive Route Map & Driver Optimization**: Interactive Leaflet map for visualizing host contact locations, multi-host selection, route optimization, and driver assignment.
@@ -105,7 +37,10 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **24-Hour Volunteer Reminder System**: Automated email reminder system via cron job.
 -   **Team Board Commenting System**: Full-featured commenting system with real-time comment counts and author-specific deletion.
 -   **Guided Tour UX Improvements**: Enhanced tutorial experience with reduced overlay dimming and improved scrolling behavior.
--   **Google Sheets Sync System**: Dual-layer duplicate prevention for event requests using `imported_external_ids` table and unique constraints, with an auto-transition system for event statuses.
+
+**Email System Configuration (CRITICAL):**
+-   **SendGrid Setup**: Uses `katie@thesandwichproject.org` as the verified sender domain.
+-   **Email Templates**: Table-based HTML layouts with inline CSS (no external stylesheets). Must reference 5 attached PDFs and a "Budget & Shopping Planner" link. Sent HTML-only to ensure proper rendering.
 
 ## External Dependencies
 -   **Database**: `@neondatabase/serverless`, `drizzle-orm`
