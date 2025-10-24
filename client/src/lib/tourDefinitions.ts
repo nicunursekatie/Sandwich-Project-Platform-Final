@@ -514,6 +514,250 @@ export const TOURS: Tour[] = [
         }
       }, 300);
     }
+  },
+  {
+    id: 'team-chat-guide',
+    title: 'Using Team Chat',
+    description: 'Learn how to communicate with your team using chat rooms',
+    category: 'team-management',
+    icon: 'MessageSquare',
+    estimatedTime: '2 min',
+    steps: [
+      {
+        id: 'chat-intro',
+        title: 'Team Communication Hub',
+        description: 'Team Chat is where you can message teammates, join conversations, and stay connected. Let me show you around!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'chat-nav',
+        title: 'Open Team Chat',
+        description: 'Click on "Team Chat" in the navigation to access all your conversations.',
+        targetSelector: '[data-nav-id="chat"]',
+        position: 'right',
+        navigationAction: {
+          section: 'chat'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="chat"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'chat-rooms-list',
+        title: 'Your Chat Rooms',
+        description: 'On the left, you\'ll see all chat rooms you have access to - General team chat, committee chats, and direct messages.',
+        targetSelector: '[data-testid="chat-rooms-list"], [data-testid="channel-list"]',
+        position: 'right',
+        highlightPadding: 12
+      },
+      {
+        id: 'chat-general',
+        title: 'General Chat',
+        description: 'The General chat room is for team-wide announcements and casual conversation. Everyone can see messages here.',
+        targetSelector: '[data-testid="chat-general"], [data-channel="general"]',
+        position: 'right',
+        highlightPadding: 8
+      },
+      {
+        id: 'chat-compose',
+        title: 'Send Messages',
+        description: 'Type your message in the box at the bottom. Use @name to mention someone, and they\'ll get a notification!',
+        targetSelector: '[data-testid="chat-input"], [data-testid="message-input"]',
+        position: 'top',
+        highlightPadding: 12
+      }
+    ]
+  },
+  {
+    id: 'team-board-guide',
+    title: 'Using Team Board',
+    description: 'Post tasks, ideas, and notes for the team',
+    category: 'team-management',
+    icon: 'Trello',
+    estimatedTime: '2 min',
+    steps: [
+      {
+        id: 'board-intro',
+        title: 'Team Board - Shared Task Hub',
+        description: 'Team Board is like a virtual bulletin board where anyone can post tasks, ideas, notes, or reminders for the team.',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'board-nav',
+        title: 'Open Team Board',
+        description: 'Find Team Board in the navigation menu.',
+        targetSelector: '[data-nav-id="team-board"]',
+        position: 'right',
+        navigationAction: {
+          section: 'team-board'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="team-board"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'board-create',
+        title: 'Create New Items',
+        description: 'Click here to post a new task, idea, note, or reminder for the team. Choose the type that fits best!',
+        targetSelector: '[data-testid="create-board-item"], [data-testid="new-item-button"]',
+        position: 'bottom',
+        highlightPadding: 8
+      },
+      {
+        id: 'board-columns',
+        title: 'Three Status Columns',
+        description: 'Items are organized by status: Open (available to claim), In Progress (being worked on), and Done (completed).',
+        targetSelector: '[data-testid="board-columns"], [data-testid="status-columns"]',
+        position: 'top',
+        highlightPadding: 16
+      },
+      {
+        id: 'board-claim',
+        title: 'Claim Tasks',
+        description: 'See a task you want to help with? Click "Claim" to assign yourself, or assign it to a teammate!',
+        targetSelector: '[data-testid="claim-button"], [data-testid^="button-claim-"]',
+        position: 'bottom',
+        highlightPadding: 8
+      },
+      {
+        id: 'board-comments',
+        title: 'Add Comments',
+        description: 'Click on any item to view details and add comments. Keep conversations organized per task!',
+        targetSelector: '[data-testid="board-item"]:first-child',
+        position: 'left',
+        highlightPadding: 12
+      }
+    ]
+  },
+  {
+    id: 'collections-log-guide',
+    title: 'Logging Sandwich Collections',
+    description: 'Record sandwich collections from events',
+    category: 'events-calendar',
+    icon: 'ClipboardCheck',
+    estimatedTime: '2 min',
+    steps: [
+      {
+        id: 'collections-intro',
+        title: 'Collections Log',
+        description: 'After a sandwich collection event, log the sandwiches collected here to track our community impact!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'collections-nav',
+        title: 'Open Collections Log',
+        description: 'Navigate to Collections Log in the menu.',
+        targetSelector: '[data-nav-id="collections-log"]',
+        position: 'right',
+        navigationAction: {
+          section: 'collections-log'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="collections-log"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'collections-add',
+        title: 'Add New Collection',
+        description: 'Click here to log a new collection. You\'ll enter the date, host, number of sandwiches, and any notes.',
+        targetSelector: '[data-testid="add-collection"], [data-testid="new-collection-button"]',
+        position: 'bottom',
+        highlightPadding: 8
+      },
+      {
+        id: 'collections-form',
+        title: 'Collection Details',
+        description: 'Fill in the collection date, select the host organization, enter sandwich counts, and add any special notes about the event.',
+        targetSelector: '[data-testid="collection-form"], [data-testid="sandwich-form"]',
+        position: 'right',
+        highlightPadding: 16
+      },
+      {
+        id: 'collections-history',
+        title: 'View History',
+        description: 'All past collections are listed here. Filter by date or host to find specific events. Great for tracking trends!',
+        targetSelector: '[data-testid="collections-table"], [data-testid="collections-list"]',
+        position: 'top',
+        highlightPadding: 12
+      }
+    ]
+  },
+  {
+    id: 'inbox-messages-guide',
+    title: 'Using Your Inbox',
+    description: 'Send messages and kudos to team members',
+    category: 'team-management',
+    icon: 'Mail',
+    estimatedTime: '2 min',
+    steps: [
+      {
+        id: 'inbox-intro',
+        title: 'Your Personal Inbox',
+        description: 'The Inbox is for important messages and kudos. It\'s like email, but just for our team!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'inbox-nav',
+        title: 'Open Inbox',
+        description: 'Click on Inbox in the navigation.',
+        targetSelector: '[data-nav-id="inbox"]',
+        position: 'right',
+        navigationAction: {
+          section: 'gmail-inbox'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="inbox"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'inbox-folders',
+        title: 'Message Folders',
+        description: 'Your messages are organized into folders: Inbox, Sent, Starred, Kudos, and more. Just like Gmail!',
+        targetSelector: '[data-testid="inbox-folders"], [data-testid="folder-list"]',
+        position: 'right',
+        highlightPadding: 12
+      },
+      {
+        id: 'inbox-kudos',
+        title: 'Kudos Folder',
+        description: 'The Kudos folder is special - it\'s where all appreciation messages are stored. Send kudos to recognize great work!',
+        targetSelector: '[data-testid="folder-kudos"], [data-folder="kudos"]',
+        position: 'right',
+        highlightPadding: 8
+      },
+      {
+        id: 'inbox-compose',
+        title: 'Compose New Message',
+        description: 'Click here to send a new message or kudos. Choose the recipient, write your message, and optionally mark it as kudos!',
+        targetSelector: '[data-testid="compose-button"], [data-testid="new-message"]',
+        position: 'left',
+        highlightPadding: 8
+      },
+      {
+        id: 'inbox-kudos-toggle',
+        title: 'Send Kudos',
+        description: 'When composing, toggle "Send as Kudos" to publicly recognize someone\'s great work. Kudos show up on their profile!',
+        targetSelector: '[data-testid="kudos-toggle"], [data-testid="is-kudos-checkbox"]',
+        position: 'top',
+        highlightPadding: 8
+      }
+    ]
   }
 ];
 

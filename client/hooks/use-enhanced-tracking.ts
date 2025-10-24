@@ -32,7 +32,7 @@ export const useEnhancedTracking = () => {
         timeSpent
       );
 
-      // Also send to our backend
+      // Also send to our backend (silently ignore errors)
       fetch('/api/enhanced-user-activity/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,7 +48,9 @@ export const useEnhancedTracking = () => {
             to: location,
           },
         }),
-      }).catch(console.error);
+      }).catch(() => {
+        // Silently ignore tracking errors - non-critical functionality
+      });
     }
 
     // Update refs for current page
@@ -60,7 +62,7 @@ export const useEnhancedTracking = () => {
     // Track in Google Analytics
     trackEvent(data.action, data.section, data.feature);
 
-    // Track in our backend
+    // Track in our backend (silently ignore errors)
     fetch('/api/enhanced-user-activity/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -76,7 +78,9 @@ export const useEnhancedTracking = () => {
           ...data.metadata,
         },
       }),
-    }).catch(console.error);
+    }).catch(() => {
+      // Silently ignore tracking errors - non-critical functionality
+    });
   };
 
   const trackButtonClick = (buttonName: string, section: string) => {
