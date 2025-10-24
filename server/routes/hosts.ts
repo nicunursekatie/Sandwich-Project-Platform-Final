@@ -402,6 +402,10 @@ export function createHostsRouter(deps: RouterDependencies) {
 
     const success = await storage.deleteHostContact(id);
 
+    if (!success) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
+    }
+
     // Audit log
     await AuditLogger.logDelete(
       'host_contacts',
