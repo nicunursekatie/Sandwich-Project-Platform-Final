@@ -106,8 +106,8 @@ export default function ProjectsClean() {
     refetch,
   } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
-    // Use global defaults (5 min staleTime, 10 min gcTime) - reduces unnecessary refetches
-    // Cache invalidation via queryClient.invalidateQueries ensures fresh data after mutations
+    staleTime: 3 * 60 * 1000, // 3 minutes - projects need reasonable freshness for collaborative updates
+    refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
   // Fetch archived projects data

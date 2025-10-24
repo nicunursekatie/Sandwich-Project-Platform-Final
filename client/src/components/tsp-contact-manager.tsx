@@ -71,16 +71,6 @@ export default function TSPContactManager({
     // Use global defaults (5 min staleTime, 10 min gcTime) - proper cache invalidation after mutations
   });
 
-  // Clear cache and refetch on mount
-  useEffect(() => {
-    queryClient.removeQueries({
-      queryKey: ['/api/recipient-tsp-contacts', recipientId],
-    });
-    setTimeout(() => {
-      refetch();
-    }, 100);
-  }, [recipientId, refetch]);
-
   // Debug logging
   logger.log('TSP Contact Manager Debug:', {
     recipientId,

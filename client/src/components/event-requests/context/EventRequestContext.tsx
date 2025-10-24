@@ -174,7 +174,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Fetch event requests using the same query pattern
   const { data: eventRequests = [], isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests', 'v2'],
-    // Use global defaults (5 min staleTime, 10 min gcTime) - proper cache invalidation after mutations
+    staleTime: 2 * 60 * 1000, // 2 minutes - event requests need reasonable freshness for collaborative updates
+    refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
   // Fetch event volunteers data for assignment checking

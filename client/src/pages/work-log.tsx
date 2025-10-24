@@ -56,7 +56,8 @@ export default function WorkLogPage() {
       return data;
     },
     enabled: !!user, // Only fetch when user is authenticated
-    // Use global defaults (5 min staleTime, 10 min gcTime) - proper cache invalidation after mutations
+    staleTime: 2 * 60 * 1000, // 2 minutes - work logs need reasonable freshness for collaborative updates
+    refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
   // Ensure logs is always an array
