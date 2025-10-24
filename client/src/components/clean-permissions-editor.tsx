@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { USER_ROLES, getDefaultPermissionsForRole, getRoleDisplayName, applyPermissionDependencies, PERMISSION_DEPENDENCIES } from '@shared/auth-utils';
 import { PERMISSION_GROUPS, getPermissionLabel, getPermissionDescription } from '@shared/permission-config';
+import { getPermissionRiskInfo, countPermissionsByRisk, type PermissionRiskLevel } from '@shared/permission-security-levels';
 import type { User } from '@/types/user';
 import {
   Tooltip,
@@ -167,6 +168,10 @@ export default function CleanPermissionsEditor({
     return false;
   }, [user, selectedRole, selectedPermissions]);
 
+  const riskCounts = useMemo(() => {
+    return countPermissionsByRisk(Array.from(selectedPermissions));
+  }, [selectedPermissions]);
+
   if (!user) return null;
 
   // Auto-expand groups when searching
@@ -217,6 +222,41 @@ export default function CleanPermissionsEditor({
                   >
                     Reset to Role Default
                   </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Risk Level Summary */}
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Shield className="h-4 w-4 text-amber-600" />
+                Permission Risk Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center justify-between px-2 py-1.5 rounded bg-green-50 border border-green-200">
+                  <span className="text-green-700 font-medium">👁️ Safe</span>
+                  <Badge variant="outline" className="bg-white text-green-700 border-green-300">{riskCounts.safe}</Badge>
+                </div>
+                <div className="flex items-center justify-between px-2 py-1.5 rounded bg-blue-50 border border-blue-200">
+                  <span className="text-blue-700 font-medium">✏️ Moderate</span>
+                  <Badge variant="outline" className="bg-white text-blue-700 border-blue-300">{riskCounts.moderate}</Badge>
+                </div>
+                <div className="flex items-center justify-between px-2 py-1.5 rounded bg-orange-50 border border-orange-200">
+                  <span className="text-orange-700 font-medium">⚠️ Elevated</span>
+                  <Badge variant="outline" className="bg-white text-orange-700 border-orange-300">{riskCounts.elevated}</Badge>
+                </div>
+                <div className="flex items-center justify-between px-2 py-1.5 rounded bg-red-50 border border-red-200">
+                  <span className="text-red-700 font-medium">🔥 Critical</span>
+                  <Badge variant="outline" className="bg-white text-red-700 border-red-300">{riskCounts.critical}</Badge>
+                </div>
+              </div>
+              {riskCounts.critical > 0 && (
+                <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                  ⚠️ <strong>Warning:</strong> This user has {riskCounts.critical} critical permission{riskCounts.critical !== 1 ? 's' : ''} (can delete data or manage users)
                 </div>
               )}
             </CardContent>
@@ -312,6 +352,7 @@ export default function CleanPermissionsEditor({
                                   const isSelected = selectedPermissions.has(permission);
                                   const isDefault = defaultPermissions.has(permission);
                                   const label = getPermissionLabel(permission);
+                                  const riskInfo = getPermissionRiskInfo(permission);
 
                                   return (
                                     <div
@@ -326,14 +367,22 @@ export default function CleanPermissionsEditor({
                                         />
                                         <Label
                                           htmlFor={permission}
-                                          className="cursor-pointer text-sm flex items-center gap-2"
+                                          className="cursor-pointer text-sm flex items-center gap-2 flex-1"
                                         >
-                                          {label}
-                                          {isDefault && (
-                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                              From Role
+                                          <span className="flex-1">{label}</span>
+                                          <div className="flex items-center gap-1.5">
+                                            <Badge
+                                              variant="outline"
+                                              className={`text-[10px] px-1.5 py-0 border ${riskInfo.badgeColor}`}
+                                            >
+                                              {riskInfo.icon} {riskInfo.level}
                                             </Badge>
-                                          )}
+                                            {isDefault && (
+                                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-gray-50">
+                                                From Role
+                                              </Badge>
+                                            )}
+                                          </div>
                                         </Label>
                                       </div>
                                       <Tooltip>
@@ -343,7 +392,10 @@ export default function CleanPermissionsEditor({
                                           </Button>
                                         </TooltipTrigger>
                                         <TooltipContent side="left" className="max-w-xs">
-                                          <p className="text-xs">{getPermissionDescription(permission)}</p>
+                                          <div className="space-y-1">
+                                            <p className="text-xs font-semibold">{getPermissionDescription(permission)}</p>
+                                            <p className="text-xs text-gray-500">{riskInfo.description}</p>
+                                          </div>
                                         </TooltipContent>
                                       </Tooltip>
                                     </div>
