@@ -203,11 +203,11 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         res.redirect('/');
       } catch (sessionError) {
         console.error('Dev auto-login session save error:', sessionError);
-        res.status(500).json({ 
-          success: false, 
-          message: 'Session save failed' 
+        res.status(500).json({
+          success: false,
+          message: 'Session save failed'
         });
-      });
+      }
     } catch (error) {
       console.error('Dev auto-login error:', error);
       res.status(500).json({ 

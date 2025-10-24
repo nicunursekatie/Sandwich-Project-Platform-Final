@@ -1,11 +1,12 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { messagingService } from '../services/messaging-service';
 import { isAuthenticated } from '../temp-auth';
+import { AuthenticatedRequest } from '../types';
 
 const router = Router();
 
 // Get unread messages for the user
-router.get('/unread', isAuthenticated, async (req: any, res) => {
+router.get('/unread', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -30,7 +31,7 @@ router.get('/unread', isAuthenticated, async (req: any, res) => {
 });
 
 // Get unnotified kudos for login notifications
-router.get('/kudos/unnotified', isAuthenticated, async (req: any, res) => {
+router.get('/kudos/unnotified', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -54,7 +55,7 @@ router.get('/kudos/unnotified', isAuthenticated, async (req: any, res) => {
 });
 
 // Mark kudos as initially notified
-router.post('/kudos/mark-initial-notified', isAuthenticated, async (req: any, res) => {
+router.post('/kudos/mark-initial-notified', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -79,7 +80,7 @@ router.post('/kudos/mark-initial-notified', isAuthenticated, async (req: any, re
 });
 
 // Get received kudos for a user
-router.get('/kudos/received', isAuthenticated, async (req: any, res) => {
+router.get('/kudos/received', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -103,7 +104,7 @@ router.get('/kudos/received', isAuthenticated, async (req: any, res) => {
 });
 
 // Send kudos
-router.post('/kudos/send', isAuthenticated, async (req: any, res) => {
+router.post('/kudos/send', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -143,7 +144,7 @@ router.post('/kudos/send', isAuthenticated, async (req: any, res) => {
 });
 
 // Check if kudos was already sent
-router.get('/kudos/check', isAuthenticated, async (req: any, res) => {
+router.get('/kudos/check', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {

@@ -3,6 +3,7 @@ import { SMSProvider } from './sms-providers/types';
 import { db } from './db';
 import { hosts } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
+import { getUserMetadata } from '../shared/types';
 
 // Initialize SMS provider
 let smsProvider: SMSProvider | null = null;
@@ -70,12 +71,12 @@ export async function sendSMSReminder(
     // Get all users who have confirmed SMS opt-in
     const allUsers = await storage.getAllUsers();
     const optedInUsers = allUsers.filter((user) => {
-      const metadata = user.metadata as any || {};
-      const smsConsent = metadata.smsConsent || {};
+      const metadata = getUserMetadata(user);
+      const smsConsent = metadata.smsConsent;
       // Only include users with confirmed status and enabled flag
       return (
-        smsConsent.status === 'confirmed' &&
-        smsConsent.enabled && 
+        smsConsent?.status === 'confirmed' &&
+        smsConsent.enabled &&
         smsConsent.phoneNumber
       );
     });
@@ -91,9 +92,21 @@ export async function sendSMSReminder(
     const results = [];
     for (const user of optedInUsers) {
       try {
-        const metadata = user.metadata as any || {};
-        const smsConsent = metadata.smsConsent || {};
-        const phoneNumber = smsConsent.phoneNumber;
+        const metadata = getUserMetadata(user);
+        const smsConsent = metadata.smsConsent;
+        const phoneNumber = smsConsent?.phoneNumber;
+
+        // Validate phone number exists before sending
+        if (!phoneNumber) {
+          console.warn(`⚠️ Skipping SMS for ${user.email}: No phone number found`);
+          results.push({
+            user: user.email,
+            phone: 'none',
+            error: 'No phone number in SMS consent',
+            success: false,
+          });
+          continue;
+        }
 
         const message = `Hi! 🥪 Friendly reminder: The Sandwich Project weekly numbers haven't been submitted yet for ${hostLocation}. Please submit at: ${appUrl} - Thanks for all you do!`;
 
@@ -114,9 +127,10 @@ export async function sendSMSReminder(
         );
       } catch (error) {
         console.error(`❌ Failed to send SMS to ${user.email}:`, error);
+        const metadata = getUserMetadata(user);
         results.push({
           user: user.email,
-          phone: (user.metadata as any)?.smsConsent?.phoneNumber || 'unknown',
+          phone: metadata.smsConsent?.phoneNumber || 'unknown',
           error: (error as Error).message,
           success: false,
         });
@@ -294,6 +308,15 @@ export async function sendConfirmationSMS(
   }
 
   try {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      console.error('❌ Invalid phone number provided');
+      return {
+        success: false,
+        message: 'Invalid phone number provided',
+      };
+    }
+
     const messages = getWelcomeMessages(smsProvider);
     const confirmationMessage = messages.confirmation(verificationCode);
 
@@ -430,6 +453,15 @@ export async function sendWelcomeSMS(
   }
 
   try {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      console.error('❌ Invalid phone number provided');
+      return {
+        success: false,
+        message: 'Invalid phone number provided',
+      };
+    }
+
     const messages = getWelcomeMessages(smsProvider);
     const welcomeMessage = messages.welcome();
 

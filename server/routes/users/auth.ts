@@ -8,6 +8,7 @@ import {
   getSessionUser,
   SessionUser,
 } from '../../types';
+import { getUserMetadata } from '../../../shared/types';
 
 export function createAuthRoutes(deps: AuthDependencies = {}) {
   const router = Router();
@@ -34,7 +35,8 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       }
 
       // Check password (stored in metadata for now)
-      const storedPassword = (user.metadata as any)?.password;
+      const metadata = getUserMetadata(user);
+      const storedPassword = metadata.password;
       if (storedPassword !== password) {
         return res.status(401).json({
           success: false,
@@ -62,7 +64,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       req.user = sessionUser;
 
       // Force session save to ensure persistence
-      req.session.save((err: any) => {
+      req.session.save((err) => {
         if (err) {
           console.error('Session save error:', err);
           return res
@@ -122,11 +124,12 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       await storage.updateUser(user.id, { lastLoginAt: new Date() });
 
       // Store user in session with explicit save
-      (req as MaybeAuthenticatedRequest).session.user = sessionUser;
-      (req as any).user = sessionUser;
+      const authReq = req as MaybeAuthenticatedRequest;
+      authReq.session.user = sessionUser;
+      authReq.user = sessionUser;
 
       // Force session save to ensure persistence
-      req.session.save((err: any) => {
+      req.session.save((err) => {
         if (err) {
           console.error('Dev auto-login session save error:', err);
           return res.status(500).json({
@@ -153,7 +156,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   router.post('/logout', async (req: Request, res: Response) => {
     try {
       // Destroy the session
-      req.session.destroy((err: any) => {
+      req.session.destroy((err) => {
         if (err) {
           console.error('Session destroy error:', err);
           return res.status(500).json({
@@ -226,7 +229,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   });
 
   // Get user profile with additional contact info
-  router.get('/profile', async (req: any, res) => {
+  router.get('/profile', async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       const user = req.session?.user || req.user;
       if (!user) {
@@ -264,7 +267,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
   });
 
   // Update own profile (self-service)
-  router.put('/profile', async (req: any, res) => {
+  router.put('/profile', async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       const user = req.session?.user || req.user;
       if (!user) {

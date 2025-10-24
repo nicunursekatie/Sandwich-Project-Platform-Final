@@ -1,6 +1,6 @@
 /**
  * Unified Permission System
- * 
+ *
  * This module provides consistent permission checking logic for both
  * frontend and backend. It replaces the inconsistent hasPermission()
  * and requirePermission() implementations with a single, authoritative
@@ -8,14 +8,7 @@
  */
 
 import { PERMISSIONS, USER_ROLES, applyPermissionDependencies } from './auth-utils';
-
-export interface User {
-  id: string;
-  email?: string;
-  role: string;
-  permissions: string[] | number | null | undefined;
-  isActive?: boolean;
-}
+import type { UserForPermissions } from './types';
 
 export interface PermissionCheckResult {
   granted: boolean;
@@ -26,13 +19,13 @@ export interface PermissionCheckResult {
 
 /**
  * Core permission checking logic - used by both frontend and backend
- * 
+ *
  * This function is STRICT by design:
  * - No case-insensitive fallbacks (permissions must match exactly)
  * - No bitmask support (only arrays)
  * - Clear, predictable behavior
  */
-export function checkPermission(user: User | null | undefined, permission: string): PermissionCheckResult {
+export function checkPermission(user: UserForPermissions | null | undefined, permission: string): PermissionCheckResult {
   // Step 1: Validate inputs
   if (!user) {
     return {
@@ -75,15 +68,26 @@ export function checkPermission(user: User | null | undefined, permission: strin
     };
   }
 
-  // Step 3: Extract user permissions (arrays only)
+  // Step 3: Extract user permissions (arrays only - numeric format not supported)
   let userPermissions: string[] = [];
-  
+
   if (Array.isArray(user.permissions)) {
     userPermissions = user.permissions;
   } else if (user.permissions === null || user.permissions === undefined) {
     userPermissions = [];
+  } else if (typeof user.permissions === 'number') {
+    // SECURITY: Numeric bitmask permissions are NOT supported in unified-auth-utils
+    // They must be migrated to string array format
+    // Rejecting access forces proper migration rather than creating security holes
+    console.error(`🚨 SECURITY: User ${user.id} has unsupported numeric permission format (${user.permissions}). Permission denied. Must migrate to array format.`);
+    return {
+      granted: false,
+      reason: 'Numeric permission format not supported - must migrate to array format',
+      userRole: user.role,
+      userPermissions: []
+    };
   } else {
-    // Reject bitmask or other formats - they should be migrated
+    // Unknown format - reject
     return {
       granted: false,
       reason: `Unsupported permission format: ${typeof user.permissions}. Expected array.`,
@@ -133,7 +137,7 @@ export function checkPermission(user: User | null | undefined, permission: strin
  * Frontend-compatible hasPermission function
  * Uses the unified checkPermission logic
  */
-export function hasPermission(user: any, permission: string): boolean {
+export function hasPermission(user: UserForPermissions | null | undefined, permission: string): boolean {
   const result = checkPermission(user, permission);
   return result.granted;
 }
@@ -148,7 +152,7 @@ export function hasPermission(user: any, permission: string): boolean {
  * @returns PermissionCheckResult
  */
 export function checkOwnershipPermission(
-  user: User | null | undefined,
+  user: UserForPermissions | null | undefined,
   ownPermission: string,
   allPermission: string,
   resourceOwnerId?: string | string[] | null
@@ -216,15 +220,15 @@ export function validatePermissionFormat(permission: string): boolean {
 
   // Check if it's a known permission
   const allPermissions = Object.values(PERMISSIONS);
-  return allPermissions.includes(permission as any);
+  return allPermissions.includes(permission);
 }
 
 /**
  * Get all permissions for a user (with validation)
  */
-export function getUserPermissions(user: User | null | undefined): string[] {
+export function getUserPermissions(user: UserForPermissions | null | undefined): string[] {
   const result = checkPermission(user, 'DUMMY_PERMISSION'); // Just to validate user
-  
+
   if (!user || !result.userPermissions) {
     return [];
   }
@@ -237,9 +241,25 @@ export function getUserPermissions(user: User | null | undefined): string[] {
 }
 
 /**
+ * Debug info structure for permission debugging
+ */
+export interface PermissionDebugInfo {
+  userId: string;
+  userRole: string;
+  userPermissions: string[];
+  isActive: boolean | string;
+  permissionFormat: string;
+  permissionCheck?: {
+    permission: string;
+    granted: boolean;
+    reason: string;
+  };
+}
+
+/**
  * Debug helper - get detailed permission info for troubleshooting
  */
-export function debugPermissions(user: User | null | undefined, permission?: string): any {
+export function debugPermissions(user: UserForPermissions | null | undefined, permission?: string): PermissionDebugInfo {
   const baseInfo = {
     userId: user?.id || 'N/A',
     userRole: user?.role || 'N/A',

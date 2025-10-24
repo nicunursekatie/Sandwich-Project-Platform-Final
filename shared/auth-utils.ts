@@ -1,3 +1,32 @@
+import type { UserForPermissions } from './types';
+
+// Resource interfaces for permission checking
+export interface ResourceWithOwner {
+  id?: number | string;
+  createdBy?: string | null;
+  created_by?: string | null;
+}
+
+export interface ProjectResource extends ResourceWithOwner {
+  assigneeId?: string | number | null;
+  assignee_id?: string | number | null;
+  assigneeIds?: string[] | string | null;
+  assignee_ids?: string[] | string | null;
+  supportPeopleIds?: string[] | string | null;
+  support_people_ids?: string[] | string | null;
+  assigneeName?: string[] | string | null;
+  assigneeNames?: string[] | string | null;
+  supportPeople?: string[] | string | null;
+}
+
+export interface WorkLogResource extends ResourceWithOwner {
+  userId?: string | null;
+}
+
+export interface SuggestionResource extends ResourceWithOwner {
+  submittedBy?: string | null;
+}
+
 export const USER_ROLES = {
   SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
@@ -608,7 +637,7 @@ export const CHAT_PERMISSIONS = {
 } as const;
 
 // Function to check if user has access to a specific chat room
-export function hasAccessToChat(user: any, chatRoom: string): boolean {
+export function hasAccessToChat(user: UserForPermissions | null | undefined, chatRoom: string): boolean {
   if (!user || !user.permissions) return false;
 
   const requiredPermission =
@@ -617,13 +646,17 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 
   // Simple permission check without the unified utils
   if (!user.permissions) return false;
-  
+
   if (Array.isArray(user.permissions)) {
     return user.permissions.includes(requiredPermission);
   }
-  
+
   if (typeof user.permissions === 'number') {
-    // For numeric permissions (bitmask), return true to avoid filtering issues
+    // 🚨 SECURITY WARNING: This grants ALL chat access to users with numeric format
+    // This is a known security issue - numeric permissions are not properly validated
+    // TODO: Either migrate all users to string[] format or implement proper bitmask checking
+    // For now, returning true to avoid breaking existing users with numeric permissions
+    console.warn(`⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting chat access without validation`);
     return true;
   }
 
@@ -632,19 +665,19 @@ export function hasAccessToChat(user: any, chatRoom: string): boolean {
 
 // DEPRECATED: Use unified hasPermission from unified-auth-utils instead
 // This function is kept for backwards compatibility only
-export function hasPermission(user: any, permission: string): boolean {
+export function hasPermission(user: UserForPermissions | null | undefined, permission: string): boolean {
   // Simple permission check to avoid import issues in browser
   if (!user || !permission) return false;
-  
+
   // Universal permissions: All authenticated users have these
   if (permission === 'VOLUNTEERS_VIEW') return true;
-  
+
   // Super admins have all permissions
   if (user.role === 'super_admin') return true;
-  
+
   // Admins get automatic access to navigation and core functionality (backward compatibility)
   if (user.role === 'admin') {
-    if (permission.startsWith('NAV_') || 
+    if (permission.startsWith('NAV_') ||
         permission === 'ADMIN_PANEL_ACCESS' ||
         permission.startsWith('EVENT_REQUESTS_') ||
         permission.startsWith('DOCUMENTS_') ||
@@ -655,19 +688,22 @@ export function hasPermission(user: any, permission: string): boolean {
       return true;
     }
   }
-  
+
   // If no permissions array, return false (except for admin/super_admin above)
   if (!user.permissions) return false;
-  
+
   if (Array.isArray(user.permissions)) {
     // Apply permission dependencies at runtime to handle legacy permissions
     const effectivePermissions = applyPermissionDependencies(user.permissions);
     return effectivePermissions.includes(permission);
   }
-  
+
   if (typeof user.permissions === 'number') {
-    // For numeric permissions (bitmask), return true for now to avoid filtering issues
-    // The actual permission checking should be done on the server side
+    // 🚨 SECURITY WARNING: This grants ALL permissions to users with numeric format
+    // This is a known security issue - numeric permissions are not properly validated
+    // TODO: Either migrate all users to string[] format or implement proper bitmask checking
+    // For now, returning true to avoid breaking existing users with numeric permissions
+    console.warn(`⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting access without validation for "${permission}"`);
     return true;
   }
 
@@ -675,40 +711,40 @@ export function hasPermission(user: any, permission: string): boolean {
 }
 
 // Function to check if user can edit a specific collection entry
-export function canEditCollection(user: any, collection: any): boolean {
+export function canEditCollection(user: UserForPermissions | null | undefined, collection: ResourceWithOwner | null | undefined): boolean {
   // Simple ownership check without unified utils to avoid import issues
   if (!user || !user.permissions) return false;
-  
+
   // Check if user has edit all permission
   if (Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_ALL)) {
     return true;
   }
-  
+
   // Check if user owns the collection and has edit own permission
   const resourceOwnerId = collection?.createdBy || collection?.created_by;
   if (resourceOwnerId === user.id && Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_EDIT_OWN)) {
     return true;
   }
-  
+
   return false;
 }
 
 // Function to check if user can delete a specific collection entry
-export function canDeleteCollection(user: any, collection: any): boolean {
+export function canDeleteCollection(user: UserForPermissions | null | undefined, collection: ResourceWithOwner | null | undefined): boolean {
   // Simple ownership check without unified utils to avoid import issues
   if (!user || !user.permissions) return false;
-  
+
   // Check if user has delete all permission
   if (Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_ALL)) {
     return true;
   }
-  
+
   // Check if user owns the collection and has delete own permission
   const resourceOwnerId = collection?.createdBy || collection?.created_by;
   if (resourceOwnerId === user.id && Array.isArray(user.permissions) && user.permissions.includes(PERMISSIONS.COLLECTIONS_DELETE_OWN)) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -783,8 +819,8 @@ const parseNameList = (value: unknown): string[] => {
 };
 
 export function isProjectOwnerOrAssignee(
-  user: any,
-  project: any
+  user: UserForPermissions | null | undefined,
+  project: ProjectResource | null | undefined
 ): boolean {
   if (!user || !project) return false;
 
@@ -823,7 +859,7 @@ export function isProjectOwnerOrAssignee(
   return false;
 }
 
-export function canEditProject(user: any, project: any): boolean {
+export function canEditProject(user: UserForPermissions | null | undefined, project: ProjectResource | null | undefined): boolean {
   if (!user) return false;
 
   const userPermissions = Array.isArray(user.permissions)
@@ -862,10 +898,11 @@ export function canEditProject(user: any, project: any): boolean {
   );
 
   if (projectNames.size > 0) {
+    const userAsAny = user as any; // Temporary for accessing optional user properties
     const candidateNames = [
-      [user.firstName, user.lastName].filter(Boolean).join(' ').trim(),
-      user.displayName,
-      user.preferredEmail,
+      [userAsAny.firstName, userAsAny.lastName].filter(Boolean).join(' ').trim(),
+      userAsAny.displayName,
+      userAsAny.preferredEmail,
       user.email,
     ]
       .filter((value): value is string => Boolean(value))
@@ -881,7 +918,7 @@ export function canEditProject(user: any, project: any): boolean {
 }
 
 // Function to check if user can delete a specific project
-export function canDeleteProject(user: any, project: any): boolean {
+export function canDeleteProject(user: UserForPermissions | null | undefined, project: ProjectResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with DELETE_ALL_PROJECTS can delete all projects
@@ -902,7 +939,7 @@ export function canDeleteProject(user: any, project: any): boolean {
 }
 
 // Function to check if user can edit a specific suggestion entry
-export function canEditSuggestion(user: any, suggestion: any): boolean {
+export function canEditSuggestion(user: UserForPermissions | null | undefined, suggestion: SuggestionResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with EDIT_ALL_SUGGESTIONS can edit all suggestions
@@ -925,7 +962,7 @@ export function canEditSuggestion(user: any, suggestion: any): boolean {
 }
 
 // Function to check if user can delete a specific suggestion entry
-export function canDeleteSuggestion(user: any, suggestion: any): boolean {
+export function canDeleteSuggestion(user: UserForPermissions | null | undefined, suggestion: SuggestionResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with DELETE_ALL_SUGGESTIONS can delete all suggestions
@@ -948,7 +985,7 @@ export function canDeleteSuggestion(user: any, suggestion: any): boolean {
 }
 
 // Function to check if user can edit a specific work log entry
-export function canEditWorkLog(user: any, workLog: any): boolean {
+export function canEditWorkLog(user: UserForPermissions | null | undefined, workLog: WorkLogResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with EDIT_ALL_WORK_LOGS can edit all work logs
@@ -971,7 +1008,7 @@ export function canEditWorkLog(user: any, workLog: any): boolean {
 }
 
 // Function to check if user can delete a specific work log entry
-export function canDeleteWorkLog(user: any, workLog: any): boolean {
+export function canDeleteWorkLog(user: UserForPermissions | null | undefined, workLog: WorkLogResource | null | undefined): boolean {
   if (!user || !user.permissions) return false;
 
   // Super admins and users with DELETE_ALL_WORK_LOGS can delete all work logs
