@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Card,
   CardContent,
@@ -80,7 +81,17 @@ interface PerformanceMetrics {
 export default function PerformanceDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { trackView } = useActivityTracker();
   const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    trackView(
+      'Admin',
+      'Admin',
+      'Performance Dashboard',
+      'User accessed performance dashboard'
+    );
+  }, [trackView]);
 
   const {
     data: metrics,

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Card,
   CardContent,
@@ -55,9 +56,21 @@ export default function MeetingAgenda({
   isEmbedded = false,
 }: MeetingAgendaProps) {
   const { user } = useAuth();
+  const { trackView, trackCreate, trackUpdate } = useActivityTracker();
   const canModifyAgenda = (user as any)?.role !== 'committee_member';
   const [, setLocation] = useLocation();
   const { setActiveSection } = useDashboardNavigation();
+
+  useEffect(() => {
+    if (!isEmbedded) {
+      trackView(
+        'Meetings',
+        'Meetings',
+        'Meeting Agenda',
+        'User accessed meeting agenda page'
+      );
+    }
+  }, [isEmbedded, trackView]);
 
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);

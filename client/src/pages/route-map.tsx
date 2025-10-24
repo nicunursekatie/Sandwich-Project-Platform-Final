@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { 
+import {
   MapPin, Search, AlertCircle, Phone, Mail, Building2, List, ChevronRight, ChevronLeft
 } from 'lucide-react';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -39,8 +40,18 @@ interface HostContactMapData {
 
 export default function RouteMapView() {
   const { user } = useAuth();
+  const { trackView, trackSearch } = useActivityTracker();
   const [searchTerm, setSearchTerm] = useState('');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+
+  useEffect(() => {
+    trackView(
+      'Maps',
+      'Maps',
+      'Route Map',
+      'User accessed route map'
+    );
+  }, [trackView]);
 
   // Check permissions
   const { canView } = useResourcePermissions('HOSTS');

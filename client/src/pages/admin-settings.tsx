@@ -12,9 +12,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
 
 export default function AdminSettings() {
   const { user, isLoading } = useAuth();
+  const { trackView, trackClick } = useActivityTracker();
+
+  useEffect(() => {
+    if (user && hasPermission(user, PERMISSIONS.ADMIN_PANEL_ACCESS)) {
+      trackView(
+        'Admin',
+        'Admin',
+        'Admin Settings',
+        'User accessed admin settings page'
+      );
+    }
+  }, [user, trackView]);
 
   // Check for admin panel access permission
   if (!isLoading && (!user || !hasPermission(user, PERMISSIONS.ADMIN_PANEL_ACCESS))) {
