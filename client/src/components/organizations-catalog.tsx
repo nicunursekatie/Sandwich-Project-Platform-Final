@@ -753,8 +753,8 @@ export default function GroupCatalog({
               <div className="space-y-6">
                 {/* Unified organizations catalog - all organizations together */}
                 {paginatedActiveGroups.map((group, groupIndex) => {
-                  // Use detailed layout for multi-department organizations
-                  if (group.totalDepartments > 1) {
+                  // Use detailed layout for organizations with multiple events
+                  if (group.totalRequests > 1) {
                     return (
                     <div
                       key={`multi-${group.groupName}-${groupIndex}`}
@@ -1028,7 +1028,7 @@ export default function GroupCatalog({
                   </div>
                     );
                   } else {
-                    // Use compact layout for single-department organizations
+                    // Use compact layout for organizations with only one event
                     const org = group.departments[0];
                     return (
                       <Card
