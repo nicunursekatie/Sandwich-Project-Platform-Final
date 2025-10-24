@@ -110,20 +110,28 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       req.user = sessionUser;
 
       // Force session save to ensure persistence
-      req.session.save((err: any) => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res
-            .status(500)
-            .json({ success: false, message: 'Session save failed' });
-        }
+      try {
+        await new Promise((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Session save error:', err);
+              reject(err);
+            } else {
+              resolve(undefined);
+            }
+          });
+        });
+        
         console.log('Session saved successfully for user:', sessionUser.email);
         console.log('Session ID:', req.sessionID);
         console.log('Session data:', req.session);
 
         // Redirect to dashboard after successful login
         res.redirect('/');
-      });
+      } catch (sessionError) {
+        console.error('Session save error:', sessionError);
+        res.status(500).json({ success: false, message: 'Session save failed' });
+      }
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ success: false, message: 'Login failed' });
@@ -176,19 +184,29 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       req.user = sessionUser;
 
       // Force session save to ensure persistence
-      req.session.save((err: any) => {
-        if (err) {
-          console.error('Dev auto-login session save error:', err);
-          return res.status(500).json({ 
-            success: false, 
-            message: 'Session save failed' 
+      try {
+        await new Promise((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Dev auto-login session save error:', err);
+              reject(err);
+            } else {
+              resolve(undefined);
+            }
           });
-        }
+        });
+        
         console.log('🔧 DEV AUTO-LOGIN: Session created for', sessionUser.email);
         console.log('🔧 Session ID:', req.sessionID);
         
         // Redirect to dashboard after successful login
         res.redirect('/');
+      } catch (sessionError) {
+        console.error('Dev auto-login session save error:', sessionError);
+        res.status(500).json({ 
+          success: false, 
+          message: 'Session save failed' 
+        });
       });
     } catch (error) {
       console.error('Dev auto-login error:', error);
