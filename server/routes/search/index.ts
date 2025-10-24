@@ -483,13 +483,22 @@ searchRouter.get('/popular', async (req: AuthenticatedRequest, res: Response) =>
  */
 searchRouter.get('/health', async (_req: Request, res: Response) => {
   try {
-    // Perform a simple test search
-    const testResult = await searchService.getPopularSearches(1);
+    // Perform a real database query to verify service connectivity
+    // Use a small limit to minimize performance impact
+    const testResult = await searchService.searchCollections('', {}, 1);
+
+    // Verify the query executed successfully (returns array, even if empty)
+    const operational = Array.isArray(testResult);
+
     res.json({
-      status: 'healthy',
+      status: operational ? 'healthy' : 'unhealthy',
       service: 'search',
       timestamp: new Date().toISOString(),
-      operational: testResult !== null,
+      operational,
+      details: {
+        dbConnected: operational,
+        testQuery: 'searchCollections',
+      },
     });
   } catch (error) {
     logger.error('Search health check failed', error);
@@ -497,7 +506,12 @@ searchRouter.get('/health', async (_req: Request, res: Response) => {
       status: 'unhealthy',
       service: 'search',
       timestamp: new Date().toISOString(),
+      operational: false,
       error: 'Service unavailable',
+      details: {
+        dbConnected: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
     });
   }
 });
