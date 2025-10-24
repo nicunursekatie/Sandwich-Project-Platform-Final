@@ -47,8 +47,29 @@ import OnboardingChallengeButton from '@/components/onboarding-challenge-button'
 import { KudosLoginNotifier } from '@/components/kudos-login-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
 
+// Helper function to retry failed imports (handles transient network issues)
+const retryImport = (importFn: () => Promise<any>, retries = 3, delay = 1000) => {
+  return new Promise((resolve, reject) => {
+    importFn()
+      .then(resolve)
+      .catch((error) => {
+        if (retries === 0) {
+          console.error('Failed to load module after retries:', error);
+          reject(error);
+          return;
+        }
+        console.warn(`Import failed, retrying... (${retries} attempts left)`);
+        setTimeout(() => {
+          retryImport(importFn, retries - 1, delay * 2)
+            .then(resolve)
+            .catch(reject);
+        }, delay);
+      });
+  });
+};
+
 // Lazy load all page/section components for better performance
-const ProjectList = lazy(() => import('@/components/project-list'));
+const ProjectList = lazy(() => retryImport(() => import('@/components/project-list')));
 const WeeklySandwichForm = lazy(() => import('@/components/weekly-sandwich-form'));
 const CommitteeChat = lazy(() => import('@/components/committee-chat'));
 const GoogleDriveLinks = lazy(() => import('@/components/google-drive-links'));
@@ -77,11 +98,11 @@ const OnboardingAdmin = lazy(() => import('@/pages/onboarding-admin'));
 const WorkLogPage = lazy(() => import('@/pages/work-log'));
 const SuggestionsPortal = lazy(() => import('@/pages/suggestions'));
 const GoogleSheetsPage = lazy(() => import('@/pages/google-sheets'));
-const RealTimeMessages = lazy(() => import('@/pages/real-time-messages'));
-const GmailStyleInbox = lazy(() => import('@/components/gmail-style-inbox'));
-const ToolkitTabs = lazy(() => import('@/components/toolkit-tabs').then(m => ({ default: m.ToolkitTabs })));
-const KudosInbox = lazy(() => import('@/components/kudos-inbox').then(m => ({ default: m.KudosInbox })));
-const StreamChatRooms = lazy(() => import('@/components/stream-chat-rooms'));
+const RealTimeMessages = lazy(() => retryImport(() => import('@/pages/real-time-messages')));
+const GmailStyleInbox = lazy(() => retryImport(() => import('@/components/gmail-style-inbox')));
+const ToolkitTabs = lazy(() => retryImport(() => import('@/components/toolkit-tabs').then(m => ({ default: m.ToolkitTabs }))));
+const KudosInbox = lazy(() => retryImport(() => import('@/components/kudos-inbox').then(m => ({ default: m.KudosInbox }))));
+const StreamChatRooms = lazy(() => retryImport(() => import('@/components/stream-chat-rooms')));
 const EventsViewer = lazy(() => import('@/components/events-viewer'));
 const SignUpGeniusViewer = lazy(() => import('@/components/signup-genius-viewer'));
 const DonationTracking = lazy(() => import('@/components/donation-tracking'));
@@ -117,6 +138,49 @@ const SectionLoader = () => (
     </div>
   </div>
 );
+
+// Error boundary fallback for lazy loading failures
+class LazyLoadErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Lazy loading error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center max-w-md p-6">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Failed to load section</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              There was an error loading this section. Please try refreshing the page.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 export default function Dashboard({
   initialSection = 'dashboard',
@@ -789,21 +853,23 @@ export default function Dashboard({
 
           {/* Main Content */}
           <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30 min-w-0 pt-6 pl-6">
-            <Suspense fallback={<SectionLoader />}>
-              {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
-                // Special full-height layout for inbox and chat
-                <div className="h-full">{renderContent()}</div>
-              ) : (
-                // Normal layout for other content
-                <div className="h-full overflow-y-auto overflow-x-hidden w-full">
-                  <div className="w-full pb-20 min-h-full">
-                    <div className="w-full overflow-x-visible">
-                      {renderContent()}
+            <LazyLoadErrorBoundary>
+              <Suspense fallback={<SectionLoader />}>
+                {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
+                  // Special full-height layout for inbox and chat
+                  <div className="h-full">{renderContent()}</div>
+                ) : (
+                  // Normal layout for other content
+                  <div className="h-full overflow-y-auto overflow-x-hidden w-full">
+                    <div className="w-full pb-20 min-h-full">
+                      <div className="w-full overflow-x-visible">
+                        {renderContent()}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </Suspense>
+                )}
+              </Suspense>
+            </LazyLoadErrorBoundary>
           </div>
         </div>
       </div>
