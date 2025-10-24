@@ -162,8 +162,24 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                     return 'Read team announcements and updates';
                   }
                   if (desc.includes('Viewed') && desc.includes('activity')) {
-                    const feature = log.feature || log.section;
-                    return `Worked in ${feature} section`;
+                    let feature = log.feature || log.section;
+                    
+                    // Clean up redundant "Activity" in feature names
+                    if (feature.includes(' Activity')) {
+                      feature = feature.replace(' Activity', '');
+                    }
+                    
+                    // Map generic names to meaningful ones
+                    const featureMap: Record<string, string> = {
+                      'Basic': 'Dashboard',
+                      'My volunteers': 'Volunteer Management',
+                      'Volunteers': 'Volunteer Directory',
+                      'Count': 'Collection Counts',
+                      'Counts': 'Collection Statistics',
+                    };
+                    
+                    const cleanFeature = featureMap[feature] || feature;
+                    return `Worked in ${cleanFeature}`;
                   }
                   
                   return desc;
