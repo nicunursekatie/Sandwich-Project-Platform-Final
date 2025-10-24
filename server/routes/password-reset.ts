@@ -3,6 +3,7 @@ import type { RouterDependencies } from '../types';
 import { z } from 'zod';
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
+import bcrypt from 'bcrypt';
 
 // Store password reset tokens temporarily (in production, use Redis or database)
 const resetTokens = new Map<
@@ -248,16 +249,11 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
       });
     }
 
-    // Update user's password in metadata
-    const updatedUser = {
-      ...user,
-      metadata: {
-        ...(user.metadata || {}),
-        password: newPassword,
-      },
-    };
-
-    await storage.updateUser(user.id!, updatedUser);
+    // Hash and update user's password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await storage.updateUser(user.id!, {
+      password: hashedPassword,
+    });
 
     // Remove used token
     resetTokens.delete(token);

@@ -1,6 +1,7 @@
 import type { Express, RequestHandler } from 'express';
 import { storage } from './storage-wrapper';
 import { getDefaultPermissionsForRole as getSharedPermissions } from '../shared/auth-utils';
+import bcrypt from 'bcrypt';
 
 // Using shared permissions from auth-utils
 
@@ -507,10 +508,14 @@ export function setupTempAuth(app: Express) {
       const userId =
         'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       const userRole = role || 'volunteer'; // Use provided role or default to volunteer
+
+      // Hash password with bcrypt
+      const hashedPassword = await bcrypt.hash(password.trim(), 10);
+
       const newUser = await storage.createUser({
         id: userId,
         email,
-        password: password.trim(), // Store password in password column
+        password: hashedPassword, // Store hashed password
         firstName,
         lastName,
         role: userRole,
@@ -642,21 +647,19 @@ export function setupTempAuth(app: Express) {
         });
       }
 
-      // Check password (now stored in password column)
+      // Check password using bcrypt
       const storedPassword = user.password;
-      
+
       if (!storedPassword) {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password',
         });
       }
-      
-      // Trim both passwords to handle mobile keyboard whitespace issues
-      const trimmedStoredPassword = storedPassword.trim();
-      const trimmedInputPassword = String(password || '').trim();
-      
-      if (trimmedStoredPassword !== trimmedInputPassword) {
+
+      // Verify password with bcrypt
+      const isValidPassword = await bcrypt.compare(password, storedPassword);
+      if (!isValidPassword) {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password',
@@ -902,17 +905,25 @@ export function setupTempAuth(app: Express) {
           return res.status(404).json({ message: 'User not found' });
         }
 
-        // Check current password
+        // Check current password with bcrypt
         const storedPassword = userData.password;
-        if (!storedPassword || storedPassword.trim() !== currentPassword.trim()) {
+        if (!storedPassword) {
           return res
             .status(400)
             .json({ message: 'Current password is incorrect' });
         }
 
-        // Update password in the password column
+        const isValidPassword = await bcrypt.compare(currentPassword, storedPassword);
+        if (!isValidPassword) {
+          return res
+            .status(400)
+            .json({ message: 'Current password is incorrect' });
+        }
+
+        // Hash and update new password
+        const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
         await storage.updateUser(userData.id, {
-          password: newPassword.trim(),
+          password: hashedPassword,
           updatedAt: new Date(),
         });
 
@@ -952,9 +963,10 @@ export function setupTempAuth(app: Express) {
           return res.status(404).json({ message: 'User not found' });
         }
 
-        // Update password in the password column
+        // Hash and update password
+        const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
         await storage.updateUser(targetUser.id, {
-          password: newPassword.trim(),
+          password: hashedPassword,
           updatedAt: new Date(),
         });
 
