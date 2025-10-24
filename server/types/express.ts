@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { Session } from 'express-session';
+import type { User, UserMetadata } from '../../shared/types';
 
 // User session data structure - must match temp-auth.ts SessionData.user
 export interface SessionUser {
@@ -13,6 +14,9 @@ export interface SessionUser {
   permissions: string[];
   isActive: boolean;
 }
+
+// Re-export shared types for convenience
+export type { User, UserMetadata };
 
 // Replit auth user structure
 export interface ReplitUser {
