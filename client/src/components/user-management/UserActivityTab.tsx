@@ -92,8 +92,13 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
               <div>
                 <p className="text-sm text-gray-600">Most Active</p>
                 <p className="text-lg font-semibold">
-                  {activityStats?.peakUsageTimes?.[0]?.hour
-                    ? `${activityStats.peakUsageTimes[0].hour}:00`
+                  {activityStats?.peakUsageTimes?.[0]?.hour !== undefined
+                    ? (() => {
+                        const hour = activityStats.peakUsageTimes[0].hour;
+                        const period = hour >= 12 ? 'PM' : 'AM';
+                        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                        return `${displayHour}:00 ${period}`;
+                      })()
                     : 'N/A'}
                 </p>
               </div>
