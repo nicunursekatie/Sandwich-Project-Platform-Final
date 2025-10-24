@@ -783,7 +783,7 @@ export default function GroupCatalog({
                         </span>
                         <span className="flex items-center space-x-1">
                           <Calendar className="w-3 h-3" />
-                          <span>{group.totalRequests} requests</span>
+                          <span>{group.totalRequests} request{group.totalRequests !== 1 ? 's' : ''}</span>
                         </span>
                       </div>
                     </div>
@@ -911,9 +911,9 @@ export default function GroupCatalog({
                                         </span>
                                       </div>
                                       <div className="flex items-center space-x-1">
-                                        <span>🎯</span>
+                                        <span>📦</span>
                                         <span className="font-semibold text-brand-primary">
-                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)}
+                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
                                         </span>
                                       </div>
                                     </div>
@@ -1158,9 +1158,9 @@ export default function GroupCatalog({
                                       </span>
                                     </div>
                                     <div className="flex items-center space-x-1">
-                                      <span>🎯</span>
+                                      <span>📦</span>
                                       <span className="font-semibold text-brand-primary">
-                                        {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)}
+                                        {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
                                       </span>
                                     </div>
                                   </div>
