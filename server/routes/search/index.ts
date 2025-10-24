@@ -16,59 +16,86 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Validation schemas
-const globalSearchSchema = z.object({
-  // Allow empty query - both q and query are truly optional
-  q: z.string().optional(),
-  query: z.string().optional(),
-  limit: z.coerce.number().int().positive().max(200).default(100).optional(),
-  types: z
-    .string()
-    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
-    .pipe(
-      z
-        .array(
-          z.enum([
-            'collection',
-            'host',
-            'recipient',
-            'project',
-            'contact',
-            'wishlist',
-            'volunteer',
-          ])
-        )
-        .optional()
-    )
-    .optional(),
-  // Filter options - validate array elements after splitting
-  status: z
-    .string()
-    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
-    .pipe(z.array(z.string().min(1)).optional())
-    .optional(),
-  priority: z
-    .string()
-    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
-    .pipe(z.array(z.enum(['high', 'medium', 'low'])).optional())
-    .optional(),
-  wishlistStatus: z
-    .string()
-    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
-    .pipe(z.array(z.enum(['pending', 'approved', 'rejected', 'added'])).optional())
-    .optional(),
-  // Date range
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  // Count range
-  minCount: z.coerce.number().int().nonnegative().optional(),
-  maxCount: z.coerce.number().int().positive().optional(),
-  // Host filter - validate array elements
-  hostNames: z
-    .string()
-    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
-    .pipe(z.array(z.string().min(1)).optional())
-    .optional(),
-});
+const globalSearchSchema = z
+  .object({
+    // Allow empty query - both q and query are truly optional
+    q: z.string().optional(),
+    query: z.string().optional(),
+    limit: z.coerce.number().int().positive().max(200).default(100).optional(),
+    types: z
+      .string()
+      .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
+      .pipe(
+        z
+          .array(
+            z.enum([
+              'collection',
+              'host',
+              'recipient',
+              'project',
+              'contact',
+              'wishlist',
+              'volunteer',
+            ])
+          )
+          .optional()
+      )
+      .optional(),
+    // Filter options - validate array elements after splitting
+    status: z
+      .string()
+      .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
+      .pipe(z.array(z.string().min(1)).optional())
+      .optional(),
+    priority: z
+      .string()
+      .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
+      .pipe(z.array(z.enum(['high', 'medium', 'low'])).optional())
+      .optional(),
+    wishlistStatus: z
+      .string()
+      .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
+      .pipe(z.array(z.enum(['pending', 'approved', 'rejected', 'added'])).optional())
+      .optional(),
+    // Date range
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+    // Count range
+    minCount: z.coerce.number().int().nonnegative().optional(),
+    maxCount: z.coerce.number().int().positive().optional(),
+    // Host filter - validate array elements
+    hostNames: z
+      .string()
+      .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
+      .pipe(z.array(z.string().min(1)).optional())
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      // Validate that minCount <= maxCount when both are provided
+      if (data.minCount !== undefined && data.maxCount !== undefined) {
+        return data.minCount <= data.maxCount;
+      }
+      return true;
+    },
+    {
+      message: 'minCount must be less than or equal to maxCount',
+      path: ['minCount'],
+    }
+  )
+  .refine(
+    (data) => {
+      // Validate that startDate <= endDate when both are provided
+      if (data.startDate && data.endDate) {
+        return new Date(data.startDate) <= new Date(data.endDate);
+      }
+      return true;
+    },
+    {
+      message: 'startDate must be before or equal to endDate',
+      path: ['startDate'],
+    }
+  );
 
 const wishlistSearchSchema = z.object({
   // Allow empty query - both q and query are truly optional
