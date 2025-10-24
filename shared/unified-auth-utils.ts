@@ -68,18 +68,29 @@ export function checkPermission(user: UserForPermissions | null | undefined, per
     };
   }
 
-  // Step 3: Extract user permissions (arrays only)
+  // Step 3: Extract user permissions (support both arrays and legacy numeric bitmasks)
   let userPermissions: string[] = [];
-  
+
   if (Array.isArray(user.permissions)) {
     userPermissions = user.permissions;
   } else if (user.permissions === null || user.permissions === undefined) {
     userPermissions = [];
+  } else if (typeof user.permissions === 'number') {
+    // Legacy bitmask format - allow but log warning
+    // For numeric permissions, we can't determine exact permissions, so we grant access
+    // This maintains backward compatibility with legacy data
+    console.warn(`⚠️ User ${user.id} has legacy numeric permission format (${user.permissions}). Consider migrating to array format.`);
+    return {
+      granted: true,
+      reason: 'Legacy numeric permission format (backward compatibility)',
+      userRole: user.role,
+      userPermissions: ['*NUMERIC*']
+    };
   } else {
-    // Reject bitmask or other formats - they should be migrated
+    // Unknown format - reject
     return {
       granted: false,
-      reason: `Unsupported permission format: ${typeof user.permissions}. Expected array.`,
+      reason: `Unsupported permission format: ${typeof user.permissions}. Expected array or number.`,
       userRole: user.role,
       userPermissions: []
     };

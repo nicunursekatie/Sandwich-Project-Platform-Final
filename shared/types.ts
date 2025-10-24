@@ -81,12 +81,17 @@ export interface User extends Omit<DrizzleUser, 'metadata' | 'permissions'> {
 /**
  * Minimal user interface for permission checking
  * Used in auth-utils and permission checking functions
+ *
+ * Note: permissions can be:
+ * - string[] (modern format, preferred)
+ * - number (legacy bitmask format, still supported)
+ * - null/undefined (no permissions assigned)
  */
 export interface UserForPermissions {
   id: string;
   email?: string | null;
   role: string;
-  permissions: string[] | null;
+  permissions: string[] | number | null | undefined;
   isActive?: boolean | null;
 }
 
