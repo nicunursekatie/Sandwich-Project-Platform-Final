@@ -1024,8 +1024,16 @@ router.patch(
         }
       );
 
+      // Create meaningful activity log with event details and what changed
+      const organizationName = updatedEventRequest.organizationName || `Event #${id}`;
+      const contactName = updatedEventRequest.firstName && updatedEventRequest.lastName 
+        ? `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}` 
+        : 'contact';
+      
       // Prepare audit details for activity logging
       const auditDetails: any = {};
+      const changeDescriptions: string[] = [];
+      
       for (const [key, newValue] of Object.entries(updates)) {
         if (key !== 'updatedAt') {
           // Skip timestamp field
@@ -1035,17 +1043,35 @@ router.patch(
               from: oldValue,
               to: newValue,
             };
+            
+            // Create human-readable descriptions for key fields
+            if (key === 'status') {
+              changeDescriptions.push(`status: ${oldValue} → ${newValue}`);
+            } else if (key === 'scheduledEventDate' || key === 'desiredEventDate') {
+              const dateStr = newValue ? new Date(newValue).toLocaleDateString('en-US') : 'none';
+              changeDescriptions.push(`event date: ${dateStr}`);
+            } else if (key === 'estimatedSandwichCount') {
+              changeDescriptions.push(`estimated sandwiches: ${newValue}`);
+            } else if (key === 'pickupTime') {
+              changeDescriptions.push(`pickup time: ${newValue}`);
+            } else if (key === 'eventAddress') {
+              changeDescriptions.push(`address updated`);
+            } else {
+              changeDescriptions.push(key.replace(/([A-Z])/g, ' $1').toLowerCase());
+            }
           }
         }
       }
+
+      const changesSummary = changeDescriptions.length > 0 
+        ? changeDescriptions.slice(0, 3).join(', ') + (changeDescriptions.length > 3 ? '...' : '')
+        : 'details updated';
 
       await logActivity(
         req,
         res,
         'EVENT_REQUESTS_EDIT',
-        `Updated event request details: ${Object.keys(auditDetails).join(
-          ', '
-        )}`,
+        `Updated ${organizationName} (${contactName}): ${changesSummary}`,
         { auditDetails: auditDetails }
       );
       res.json(updatedEventRequest);
@@ -1254,11 +1280,54 @@ router.patch(
         }
       );
 
+      // Create meaningful activity log with event details and what changed
+      const organizationName = updatedEventRequest.organizationName || `Event #${id}`;
+      const contactName = updatedEventRequest.firstName && updatedEventRequest.lastName 
+        ? `${updatedEventRequest.firstName} ${updatedEventRequest.lastName}` 
+        : 'contact';
+      
+      // Build human-readable change summary
+      const changedFields = Object.keys(processedUpdates).filter(key => 
+        key !== 'updatedAt' && processedUpdates[key] !== undefined
+      );
+      
+      const changeDescriptions: string[] = [];
+      changedFields.forEach(field => {
+        const oldValue = (originalEvent as any)[field];
+        const newValue = processedUpdates[field];
+        
+        // Skip if values are the same
+        if (oldValue === newValue) return;
+        
+        // Create human-readable descriptions for key fields
+        if (field === 'status') {
+          changeDescriptions.push(`status: ${oldValue} → ${newValue}`);
+        } else if (field === 'scheduledEventDate' || field === 'desiredEventDate') {
+          const dateStr = newValue ? new Date(newValue).toLocaleDateString('en-US') : 'none';
+          changeDescriptions.push(`event date: ${dateStr}`);
+        } else if (field === 'estimatedSandwichCount') {
+          changeDescriptions.push(`estimated sandwiches: ${newValue}`);
+        } else if (field === 'assignedDriverIds' && Array.isArray(newValue)) {
+          changeDescriptions.push(`drivers assigned: ${newValue.length}`);
+        } else if (field === 'recipientIds' && Array.isArray(newValue)) {
+          changeDescriptions.push(`destinations: ${newValue.length}`);
+        } else if (field === 'toolkitSent' || field === 'toolkitStatus') {
+          changeDescriptions.push('toolkit sent');
+        } else {
+          // For other fields, just include the field name
+          changeDescriptions.push(field.replace(/([A-Z])/g, ' $1').toLowerCase());
+        }
+      });
+      
+      const changesSummary = changeDescriptions.length > 0 
+        ? changeDescriptions.slice(0, 3).join(', ') + (changeDescriptions.length > 3 ? '...' : '')
+        : 'details updated';
+      
       await logActivity(
         req,
         res,
         'EVENT_REQUESTS_EDIT',
-        `Updated event request: ${Object.keys(processedUpdates).join(', ')}`
+        `Updated ${organizationName} (${contactName}): ${changesSummary}`
       );
 
       res.json(updatedEventRequest);

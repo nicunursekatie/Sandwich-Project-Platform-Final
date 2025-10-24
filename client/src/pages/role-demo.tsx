@@ -130,11 +130,11 @@ const permissionCategories = {
     PERMISSIONS.USERS_EDIT,
   ],
   Communication: [
-    PERMISSIONS.GENERAL_CHAT,
-    PERMISSIONS.COMMITTEE_CHAT,
-    PERMISSIONS.HOST_CHAT,
-    PERMISSIONS.DRIVER_CHAT,
-    PERMISSIONS.RECIPIENT_CHAT,
+    PERMISSIONS.CHAT_GENERAL,
+    PERMISSIONS.CHAT_COMMITTEE,
+    PERMISSIONS.CHAT_HOST,
+    PERMISSIONS.CHAT_DRIVER,
+    PERMISSIONS.CHAT_RECIPIENT,
   ],
   'Data Viewing': [
     PERMISSIONS.COLLECTIONS_VIEW,
@@ -146,14 +146,14 @@ const permissionCategories = {
 
 const permissionIcons = {
   [PERMISSIONS.CONTACTS_VIEW]: Phone,
-  [PERMISSIONS.EDIT_COLLECTIONS]: Edit,
-  [PERMISSIONS.DELETE_COLLECTIONS]: Trash2,
+  [PERMISSIONS.COLLECTIONS_EDIT_ALL]: Edit,
+  [PERMISSIONS.COLLECTIONS_DELETE_ALL]: Trash2,
   [PERMISSIONS.USERS_EDIT]: Users,
-  [PERMISSIONS.GENERAL_CHAT]: MessageCircle,
-  [PERMISSIONS.COMMITTEE_CHAT]: MessageCircle,
-  [PERMISSIONS.HOST_CHAT]: MessageCircle,
-  [PERMISSIONS.DRIVER_CHAT]: MessageCircle,
-  [PERMISSIONS.RECIPIENT_CHAT]: MessageCircle,
+  [PERMISSIONS.CHAT_GENERAL]: MessageCircle,
+  [PERMISSIONS.CHAT_COMMITTEE]: MessageCircle,
+  [PERMISSIONS.CHAT_HOST]: MessageCircle,
+  [PERMISSIONS.CHAT_DRIVER]: MessageCircle,
+  [PERMISSIONS.CHAT_RECIPIENT]: MessageCircle,
   [PERMISSIONS.COLLECTIONS_VIEW]: FileText,
   [PERMISSIONS.ANALYTICS_VIEW]: BarChart3,
   [PERMISSIONS.PROJECTS_VIEW]: FileText,
@@ -214,7 +214,7 @@ function RoleView({ user }: { user: any }) {
             {/* Data Editing */}
             <div
               className={`p-4 rounded-lg border ${
-                hasPermission(user, PERMISSIONS.EDIT_COLLECTIONS)
+                hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL)
                   ? 'bg-green-50 border-green-200'
                   : 'bg-gray-50 border-gray-200 opacity-50'
               }`}
@@ -222,7 +222,7 @@ function RoleView({ user }: { user: any }) {
               <Edit className="w-6 h-6 mb-2" />
               <div className="font-medium">Edit Data</div>
               <div className="text-sm text-gray-600">
-                {hasPermission(user, PERMISSIONS.EDIT_COLLECTIONS)
+                {hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL)
                   ? 'Can Edit'
                   : 'Read Only'}
               </div>
@@ -311,27 +311,27 @@ function RoleView({ user }: { user: any }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               {
-                perm: PERMISSIONS.GENERAL_CHAT,
+                perm: PERMISSIONS.CHAT_GENERAL,
                 name: 'General Chat',
                 desc: 'Open discussion for all members',
               },
               {
-                perm: PERMISSIONS.COMMITTEE_CHAT,
+                perm: PERMISSIONS.CHAT_COMMITTEE,
                 name: 'Committee Chat',
                 desc: 'Committee members only',
               },
               {
-                perm: PERMISSIONS.HOST_CHAT,
+                perm: PERMISSIONS.CHAT_HOST,
                 name: 'Host Chat',
                 desc: 'Host coordination channel',
               },
               {
-                perm: PERMISSIONS.DRIVER_CHAT,
+                perm: PERMISSIONS.CHAT_DRIVER,
                 name: 'Driver Chat',
                 desc: 'Driver coordination channel',
               },
               {
-                perm: PERMISSIONS.RECIPIENT_CHAT,
+                perm: PERMISSIONS.CHAT_RECIPIENT,
                 name: 'Recipient Chat',
                 desc: 'Support and updates for recipients',
               },
@@ -505,18 +505,18 @@ export default function RoleDemo() {
                           : '❌'}
                       </td>
                       <td className="text-center p-2">
-                        {hasPermission(user, PERMISSIONS.EDIT_COLLECTIONS)
+                        {hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL)
                           ? '✅'
                           : '❌'}
                       </td>
                       <td className="text-center p-2">
-                        {hasPermission(user, PERMISSIONS.COMMITTEE_CHAT)
+                        {hasPermission(user, PERMISSIONS.CHAT_COMMITTEE)
                           ? '✅'
                           : '❌'}
                       </td>
                       <td className="text-center p-2">
-                        {hasPermission(user, PERMISSIONS.HOST_CHAT) ||
-                        hasPermission(user, PERMISSIONS.DRIVER_CHAT)
+                        {hasPermission(user, PERMISSIONS.CHAT_HOST) ||
+                        hasPermission(user, PERMISSIONS.CHAT_DRIVER)
                           ? '✅'
                           : '❌'}
                       </td>

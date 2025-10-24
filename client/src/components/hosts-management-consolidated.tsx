@@ -116,7 +116,7 @@ export default function HostsManagementConsolidated() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'locations' | 'contacts'>(
-    'locations'
+    'contacts'
   );
 
   // Helper function to sort contacts by priority (leads first, then primary contacts)

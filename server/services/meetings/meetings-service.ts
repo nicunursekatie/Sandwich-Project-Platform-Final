@@ -6,6 +6,7 @@ import type {
   Committee,
   CommitteeMembership
 } from '@shared/schema';
+import { insertMeetingSchema, type Meeting } from '@shared/schema';
 import type { IMeetingsStorage } from '../../routes/meetings/types';
 
 type InsertMeetingPayload = z.infer<typeof insertMeetingSchema>;
@@ -130,6 +131,7 @@ export class MeetingsService {
       return meeting;
     }
 
+  mapMeetingToResponse(meeting: Meeting) {
     return {
       ...meeting,
       meetingDate: meeting.date,
@@ -145,6 +147,8 @@ export class MeetingsService {
    */
   mapMeetingsToResponse(meetings: Meeting[]): MeetingResponse[] {
     return meetings.map((m) => this.mapMeetingToResponse(m)) as MeetingResponse[];
+  mapMeetingsToResponse(meetings: Meeting[]) {
+    return meetings.map(m => this.mapMeetingToResponse(m));
   }
 
   /**
