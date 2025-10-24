@@ -588,6 +588,7 @@ export class AuditLogger {
       };
 
       // Log using the existing audit system with clean separation of concerns
+      // The _auditMetadata already includes significantChanges, so no need for a separate log entry
       await this.log(
         'EVENT_REQUEST_CHANGE',
         'event_requests',
@@ -597,19 +598,7 @@ export class AuditLogger {
         context
       );
 
-      // Log individual significant changes for better searchability
-      if (significantChanges.length > 0) {
-        await this.log(
-          'EVENT_REQUEST_SIGNIFICANT_CHANGE',
-          'event_requests',
-          recordId,
-          { significantChanges: significantChanges },
-          { summary, totalChanges: changes.length },
-          context
-        );
-      }
-
-      console.log(`📋 Event Request Audit: ${summary} (${changes.length} total changes)`);
+      console.log(`📋 Event Request Audit: ${summary} (${changes.length} total changes, ${significantChanges.length} significant)`);
       
     } catch (error) {
       console.error('Failed to log event request change:', error);
