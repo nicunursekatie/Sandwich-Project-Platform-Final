@@ -279,6 +279,9 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         try {
           const dbUser = await storage.getUserByEmail(req.session.user.email);
           if (dbUser && dbUser.isActive) {
+            // Update last login time to track session start
+            await storage.updateUser(dbUser.id, { lastLoginAt: new Date() });
+            
             // Return fresh user data with updated permissions
             res.json({
               id: dbUser.id,
@@ -304,6 +307,12 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       // For Replit auth, get user from database
       const userId = req.user.claims?.sub || req.user.id;
       const dbUser = await storage.getUser(userId);
+      
+      // Update last login time for Replit auth too
+      if (dbUser && dbUser.id) {
+        await storage.updateUser(dbUser.id, { lastLoginAt: new Date() });
+      }
+      
       res.json(dbUser || user);
     } catch (error) {
       console.error('Error fetching user:', error);
