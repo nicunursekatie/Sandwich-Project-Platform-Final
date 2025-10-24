@@ -836,8 +836,9 @@ export default function GroupCatalog({
                           )}
 
                           {/* Events Grid for this Department */}
-                          <div className="space-y-3">
-                            {deptEvents.map((org, index) => (
+                          <div className="space-y-2">
+                            {/* Show only first 3 events to prevent cards from being too tall */}
+                            {deptEvents.slice(0, 3).map((org, index) => (
                               <Card
                                 key={`${org.organizationName}-${org.contactName}-${index}`}
                                 className={`hover:shadow-lg transition-all duration-300 border-l-4 w-full ${
@@ -1005,6 +1006,14 @@ export default function GroupCatalog({
                                 </CardContent>
                               </Card>
                             ))}
+                            {/* Show indicator if there are more events */}
+                            {deptEvents.length > 3 && (
+                              <div className="text-center py-2 px-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded border border-orange-200">
+                                <p className="text-xs text-gray-600">
+                                  + {deptEvents.length - 3} more event{deptEvents.length - 3 !== 1 ? 's' : ''} (click "View History" to see all)
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ));
