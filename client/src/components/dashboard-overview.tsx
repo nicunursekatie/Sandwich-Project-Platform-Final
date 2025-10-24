@@ -32,7 +32,8 @@ import {
 } from '@/components/ui/card';
 
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { usePermissions } from '@/hooks/useResourcePermissions';
+import { PERMISSIONS } from '@shared/auth-utils';
 import { useToast } from '@/hooks/use-toast';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
@@ -65,6 +66,11 @@ export default function DashboardOverview({
   onSectionChange?: (section: string) => void;
 }) {
   const { user } = useAuth();
+  const { COLLECTIONS_ADD, COLLECTIONS_EDIT_OWN, ADMIN_ACCESS } = usePermissions([
+    'COLLECTIONS_ADD',
+    'COLLECTIONS_EDIT_OWN',
+    'ADMIN_ACCESS',
+  ]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -396,8 +402,7 @@ export default function DashboardOverview({
         </div>
 
         {/* Collection Call-to-Action */}
-        {(hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-          hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_OWN)) && (
+        {(COLLECTIONS_ADD || COLLECTIONS_EDIT_OWN) && (
           <div className="bg-white rounded-xl mx-4 p-4 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]">
             <div className="text-center">
               <div className="mb-4 sm:mb-6">
@@ -813,7 +818,7 @@ export default function DashboardOverview({
               <div className="text-center py-8 px-4" data-testid="no-documents-message">
                 <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-sm text-gray-500 mb-2">No documents configured for dashboard</p>
-                {hasPermission(user, PERMISSIONS.ADMIN_ACCESS) && (
+                {ADMIN_ACCESS && (
                   <p className="text-xs text-gray-400">
                     Admins can configure documents in the{' '}
                     <a href="/important-documents" className="text-brand-primary hover:underline">

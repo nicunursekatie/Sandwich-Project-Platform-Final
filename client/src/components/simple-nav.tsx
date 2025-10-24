@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { useMessaging } from '@/hooks/useMessaging';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';

@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/useResourcePermissions';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
 import { Heart, Star, Trophy, Sparkles, Target } from 'lucide-react';
 import { useUserActivityTracking } from '@/hooks/useUserActivityTracking';
 
@@ -33,6 +34,7 @@ export default function SendKudosButton({
   iconOnly = false,
 }: SendKudosButtonProps) {
   const { user } = useAuth();
+  const { SEND_KUDOS } = usePermissions(['SEND_KUDOS']);
   const { toast } = useToast();
   const { trackKudosSent } = useUserActivityTracking();
   const [hasSentKudos, setHasSentKudos] = useState(false);
@@ -81,10 +83,10 @@ export default function SendKudosButton({
   }
 
   // Don't render if user doesn't have permission to send kudos
-  if (!hasPermission(user, PERMISSIONS.SEND_KUDOS)) {
+  if (!SEND_KUDOS) {
     console.warn('SendKudosButton: User lacks SEND_KUDOS permission', {
       user: user ? { id: (user as any).id, email: (user as any).email } : null,
-      hasPermission: hasPermission(user, PERMISSIONS.SEND_KUDOS),
+      hasPermission: SEND_KUDOS,
       SEND_KUDOS: PERMISSIONS.SEND_KUDOS,
     });
     return null;

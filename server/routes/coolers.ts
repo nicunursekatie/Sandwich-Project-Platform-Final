@@ -13,7 +13,7 @@ import {
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
 import { PERMISSIONS } from '../../shared/auth-utils';
-import { hasPermission } from '../../shared/unified-auth-utils';
+import { requirePermission } from '../middleware/auth';
 
 // Type definitions for authenticated requests
 interface AuthenticatedRequest extends Request {
@@ -54,15 +54,10 @@ coolerTypesRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
 });
 
 // POST /api/cooler-types - Create new cooler type (requires COOLERS_MANAGE)
-coolerTypesRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
+coolerTypesRouter.post('/', requirePermission(PERMISSIONS.COOLERS_MANAGE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    // Check COOLERS_MANAGE permission
-    if (!hasPermission(req.user, PERMISSIONS.COOLERS_MANAGE)) {
-      return res.status(403).json({ error: 'Cooler management permission required' });
     }
 
     const validation = insertCoolerTypeSchema.safeParse(req.body);
@@ -87,14 +82,10 @@ coolerTypesRouter.post('/', async (req: AuthenticatedRequest, res: Response) => 
 });
 
 // PATCH /api/cooler-types/:id - Update cooler type (requires COOLERS_MANAGE)
-coolerTypesRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
+coolerTypesRouter.patch('/:id', requirePermission(PERMISSIONS.COOLERS_MANAGE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    if (!hasPermission(req.user, PERMISSIONS.COOLERS_MANAGE)) {
-      return res.status(403).json({ error: 'Cooler management permission required' });
     }
 
     const typeId = parseInt(req.params.id);
@@ -341,15 +332,10 @@ coolerInventoryRouter.get('/history/:hostHomeId', async (req: AuthenticatedReque
 });
 
 // POST /api/cooler-inventory/admin-add - Add cooler for any user (requires COOLERS_MANAGE)
-coolerInventoryRouter.post('/admin-add', async (req: AuthenticatedRequest, res: Response) => {
+coolerInventoryRouter.post('/admin-add', requirePermission(PERMISSIONS.COOLERS_MANAGE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    // Check COOLERS_MANAGE permission
-    if (!hasPermission(req.user, PERMISSIONS.COOLERS_MANAGE)) {
-      return res.status(403).json({ error: 'Cooler management permission required' });
     }
 
     const addSchema = z.object({
@@ -396,15 +382,10 @@ coolerInventoryRouter.post('/admin-add', async (req: AuthenticatedRequest, res: 
 });
 
 // DELETE /api/cooler-inventory/:id - Delete a cooler entry (requires COOLERS_MANAGE)
-coolerInventoryRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
+coolerInventoryRouter.delete('/:id', requirePermission(PERMISSIONS.COOLERS_MANAGE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    // Check COOLERS_MANAGE permission
-    if (!hasPermission(req.user, PERMISSIONS.COOLERS_MANAGE)) {
-      return res.status(403).json({ error: 'Cooler management permission required' });
     }
 
     const entryId = parseInt(req.params.id);

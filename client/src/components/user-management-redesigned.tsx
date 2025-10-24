@@ -20,8 +20,9 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/useResourcePermissions';
 import { useCelebration, CelebrationToast } from '@/components/celebration-toast';
-import { hasPermission, USER_ROLES, PERMISSIONS, getRoleDisplayName } from '@shared/auth-utils';
+import { USER_ROLES, PERMISSIONS, getRoleDisplayName } from '@shared/auth-utils';
 import {
   Users,
   Shield,
@@ -63,6 +64,7 @@ import type { User } from '@/types/user';
  */
 export default function UserManagementFinal() {
   const { user: currentUser } = useAuth();
+  const { USERS_EDIT } = usePermissions(['USERS_EDIT']);
   const { toast } = useToast();
   const { celebration, triggerCelebration, hideCelebration } = useCelebration();
 
@@ -78,7 +80,7 @@ export default function UserManagementFinal() {
   const [smsUser, setSmsUser] = useState<User | null>(null);
 
   // Check permissions
-  if (!hasPermission(currentUser, PERMISSIONS.USERS_EDIT)) {
+  if (!USERS_EDIT) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Card className="w-full max-w-md text-center">
@@ -99,7 +101,7 @@ export default function UserManagementFinal() {
   // Fetch users
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['/api/users'],
-    enabled: hasPermission(currentUser, PERMISSIONS.USERS_EDIT),
+    enabled: USERS_EDIT,
   });
 
   // Use custom hooks
