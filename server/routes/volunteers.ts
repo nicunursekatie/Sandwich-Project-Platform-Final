@@ -139,6 +139,9 @@ export function createVolunteersRouter(deps: RouterDependencies) {
       }
 
       const deleted = await storage.deleteVolunteer(id);
+      if (!deleted) {
+        return res.status(404).json({ message: 'Volunteer not found' });
+      }
 
       // Audit log
       await AuditLogger.logDelete(

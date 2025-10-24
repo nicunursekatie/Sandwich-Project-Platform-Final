@@ -226,6 +226,9 @@ export function createDriversRouter(deps: RouterDependencies) {
       }
 
       const deleted = await storage.deleteDriver(id);
+      if (!deleted) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
 
       // Audit log
       await AuditLogger.logDelete(

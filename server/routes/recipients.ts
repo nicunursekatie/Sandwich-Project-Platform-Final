@@ -382,6 +382,9 @@ router.delete(
       }
 
       const success = await storage.deleteRecipient(id);
+      if (!success) {
+        return res.status(404).json({ error: 'Recipient not found' });
+      }
 
       // Audit log
       await AuditLogger.logDelete(
