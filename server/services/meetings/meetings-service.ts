@@ -1,8 +1,57 @@
 import { z } from 'zod';
 import { insertMeetingSchema } from '@shared/schema';
+import type {
+  Meeting,
+  MeetingMinutes,
+  Committee,
+  CommitteeMembership
+} from '@shared/schema';
 import type { IMeetingsStorage } from '../../routes/meetings/types';
 
 type InsertMeetingPayload = z.infer<typeof insertMeetingSchema>;
+
+/**
+ * Request body for meeting operations
+ * Supports both standard and legacy field names
+ */
+export interface MeetingRequest {
+  // Standard fields
+  title?: string;
+  type?: string;
+  date?: string;
+  time?: string;
+  location?: string;
+  description?: string;
+  finalAgenda?: string;
+  status?: string;
+
+  // Legacy field names (for backwards compatibility)
+  meetingDate?: string;
+  startTime?: string;
+  meetingLink?: string;
+  agenda?: string;
+
+  // Allow additional fields
+  [key: string]: unknown;
+}
+
+/**
+ * Response format for meeting data
+ * Includes both standard and legacy field names for backwards compatibility
+ */
+export interface MeetingResponse extends Meeting {
+  meetingDate: string;
+  startTime: string;
+  meetingLink: string | null;
+  agenda: string | null;
+}
+
+/**
+ * Committee with membership information
+ */
+export type CommitteeWithMembership = Committee & {
+  membership: CommitteeMembership
+};
 
 const MEETING_FIELDS: Array<keyof InsertMeetingPayload> = [
   'title',
@@ -27,11 +76,11 @@ export class MeetingsService {
    * Handles field name variations (meetingDate -> date, etc.)
    */
   mapRequestToMeetingPayload(
-    body: any,
+    body: MeetingRequest,
     options: MapMeetingOptions = {}
   ): Partial<InsertMeetingPayload> {
     const source = body ?? {};
-    const mapped: Record<string, any> = { ...source };
+    const mapped: Record<string, unknown> = { ...source };
 
     // Map alternative field names
     if (mapped.meetingDate !== undefined && mapped.date === undefined) {
@@ -72,11 +121,7 @@ export class MeetingsService {
    * Map meeting to response format
    * Adds legacy field names for backwards compatibility
    */
-  mapMeetingToResponse(meeting: any) {
-    if (!meeting) {
-      return meeting;
-    }
-
+  mapMeetingToResponse(meeting: Meeting): MeetingResponse {
     return {
       ...meeting,
       meetingDate: meeting.date,
@@ -89,9 +134,8 @@ export class MeetingsService {
   /**
    * Map multiple meetings to response format
    */
-  mapMeetingsToResponse(meetings: any[]) {
-    const meetingsArray = Array.isArray(meetings) ? meetings : [];
-    return meetingsArray.map((m) => this.mapMeetingToResponse(m));
+  mapMeetingsToResponse(meetings: Meeting[]): MeetingResponse[] {
+    return meetings.map((m) => this.mapMeetingToResponse(m));
   }
 
   /**
@@ -99,8 +143,8 @@ export class MeetingsService {
    */
   async filterMeetingMinutesByRole(
     userId: string,
-    minutes: any[]
-  ): Promise<any[]> {
+    minutes: MeetingMinutes[]
+  ): Promise<MeetingMinutes[]> {
     const user = await this.storage.getUser(userId);
 
     if (!user) {
@@ -120,7 +164,7 @@ export class MeetingsService {
     if (user.role === 'committee_member') {
       const userCommittees = await this.storage.getUserCommittees(userId);
       const committeeTypes = userCommittees.map(
-        (membership: any) => membership.membership.committeeId
+        (membership: CommitteeWithMembership) => membership.membership.committeeId
       );
 
       return minutes.filter(
