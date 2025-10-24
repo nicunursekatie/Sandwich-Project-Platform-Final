@@ -1717,6 +1717,7 @@ export const organizations = pgTable(
     // Organization categorization
     category: varchar('category'), // 'small_medium_corp', 'large_corp', 'church_faith', 'school', 'neighborhood', 'club', 'other'
     schoolClassification: varchar('school_classification'), // 'public', 'private', 'charter' (only when category is 'school')
+    isReligious: boolean('is_religious').default(false), // Whether the organization has religious affiliation (can be true for schools, churches, etc.)
 
     // Event history
     totalEvents: integer('total_events').notNull().default(0),

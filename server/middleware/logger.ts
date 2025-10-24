@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../utils/production-safe-logger';
+import { logger as productionLogger } from '../utils/production-safe-logger';
 
 export interface LogEntry {
   timestamp: string;
@@ -40,20 +40,20 @@ class Logger {
       this.logs = this.logs.slice(-this.maxLogs);
     }
 
-    // Console output for development
+    // Output using production-safe logger
     const logMessage = `[${entry.timestamp}] ${entry.level.toUpperCase()}: ${
       entry.message
     }`;
 
     switch (entry.level) {
       case 'error':
-        logger.error(logMessage, entry.error || '');
+        productionLogger.error(logMessage, entry.error || '');
         break;
       case 'warn':
-        logger.warn(logMessage);
+        productionLogger.warn(logMessage);
         break;
       default:
-        logger.log(logMessage);
+        productionLogger.log(logMessage);
     }
   }
 
