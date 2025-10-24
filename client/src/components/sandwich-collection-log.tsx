@@ -2675,8 +2675,9 @@ export default function SandwichCollectionLog() {
           )}
         </div>
 
-      {/* Bottom Pagination Controls */}
-      {totalItems > 0 && <PaginationControls position="bottom" />}
+        {/* Bottom Pagination Controls */}
+        {totalItems > 0 && <PaginationControls position="bottom" />}
+      </div>
 
       {/* Duplicate Analysis Modal */}
       <Dialog

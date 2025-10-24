@@ -19,6 +19,7 @@ import {
   XCircle,
   UserCheck,
   Star,
+  Pause,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -50,6 +51,7 @@ interface RequestFiltersProps {
     scheduled: number;
     completed: number;
     declined: number;
+    postponed: number;
     my_assignments: number;
   };
   
@@ -60,6 +62,7 @@ interface RequestFiltersProps {
     scheduled: ReactNode;
     completed: ReactNode;
     declined: ReactNode;
+    postponed: ReactNode;
     my_assignments: ReactNode;
   };
   
@@ -129,6 +132,13 @@ export default function RequestFilters({
       count: statusCounts.declined,
     },
     {
+      value: 'postponed',
+      label: 'Postponed',
+      shortLabel: 'Postponed',
+      icon: Pause,
+      count: statusCounts.postponed,
+    },
+    {
       value: 'my_assignments',
       label: 'My Assignments',
       shortLabel: 'Mine',
@@ -189,7 +199,7 @@ export default function RequestFilters({
         /* Desktop: Traditional Tabs */
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
           <div className="w-full overflow-x-auto pb-1">
-            <TabsList className="w-full inline-flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-1 min-w-full">
+            <TabsList className="w-full inline-flex sm:grid sm:grid-cols-3 lg:grid-cols-7 gap-1 min-w-full">
               {tabConfig.map((tab) => (
                 <TabsTrigger 
                   key={tab.value}
@@ -213,7 +223,7 @@ export default function RequestFilters({
           </div>
 
           {/* Desktop Tab Content */}
-          {['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].map(
+          {['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments'].map(
             (status) => (
               <TabsContent key={status} value={status} className="space-y-4">
                 {/* Search and Filters for this specific status */}

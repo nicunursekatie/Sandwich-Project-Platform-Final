@@ -142,6 +142,7 @@ interface EventRequestContextType {
     scheduled: number;
     completed: number;
     declined: number;
+    postponed: number;
     my_assignments: number;
   };
 }
@@ -355,10 +356,12 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     scheduled: requestsByStatus.scheduled?.length || 0,
     completed: requestsByStatus.completed?.length || 0,
     declined: requestsByStatus.declined?.length || 0,
+    postponed: requestsByStatus.postponed?.length || 0,
     my_assignments: eventRequests.filter(req => 
       isUserAssignedToEvent(req) && 
       req.status !== 'completed' && 
-      req.status !== 'declined'
+      req.status !== 'declined' &&
+      req.status !== 'postponed'
     ).length,
   };
 
@@ -388,7 +391,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
 
@@ -409,6 +412,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
             setActiveTab('in_process');
           } else if (targetEvent.status === 'declined') {
             setActiveTab('declined');
+          } else if (targetEvent.status === 'postponed') {
+            setActiveTab('postponed');
           } else {
             setActiveTab('new');
           }

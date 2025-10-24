@@ -8,6 +8,7 @@ import { InProcessTab } from './tabs/InProcessTab';
 import { ScheduledTab } from './tabs/ScheduledTab';
 import { CompletedTab } from './tabs/CompletedTab';
 import { DeclinedTab } from './tabs/DeclinedTab';
+import { PostponedTab } from './tabs/PostponedTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -311,6 +312,7 @@ const EventRequestsManagementContent: React.FC = () => {
               scheduled: <ScheduledTab />,
               completed: <CompletedTab />,
               declined: <DeclinedTab />,
+              postponed: <PostponedTab />,
               my_assignments: <MyAssignmentsTab />,
             }}
           />

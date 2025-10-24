@@ -131,7 +131,6 @@ export class MeetingsService {
       return meeting;
     }
 
-  mapMeetingToResponse(meeting: Meeting) {
     return {
       ...meeting,
       meetingDate: meeting.date,
@@ -147,8 +146,6 @@ export class MeetingsService {
    */
   mapMeetingsToResponse(meetings: Meeting[]): MeetingResponse[] {
     return meetings.map((m) => this.mapMeetingToResponse(m)) as MeetingResponse[];
-  mapMeetingsToResponse(meetings: Meeting[]) {
-    return meetings.map(m => this.mapMeetingToResponse(m));
   }
 
   /**
