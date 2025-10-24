@@ -88,6 +88,7 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
       '/api/notifications/counts', // Skip notification polling
       '/count', // Skip all count endpoints - they're background polling
       '/stats', // Skip all stats endpoints - they're background data fetches
+      '/kudos/unnotified', // Skip kudos polling for unnotified entries
     ];
 
     const shouldSkip =
@@ -156,6 +157,9 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
               } else if (req.path.includes('/user-management')) {
                 section = 'Admin';
                 feature = 'User Management';
+              } else if (req.path.includes('/event-requests') && req.path.includes('/toolkit-sent')) {
+                section = 'Event Requests';
+                feature = 'Toolkit Sent';
               } else {
                 // Extract meaningful names from path
                 const pathParts = req.path
