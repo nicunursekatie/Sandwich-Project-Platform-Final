@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { USER_ROLES, getDefaultPermissionsForRole, getRoleDisplayName } from '@shared/auth-utils';
+import { USER_ROLES, getDefaultPermissionsForRole, getRoleDisplayName, applyPermissionDependencies, PERMISSION_DEPENDENCIES } from '@shared/auth-utils';
 import { PERMISSION_GROUPS, getPermissionLabel, getPermissionDescription } from '@shared/permission-config';
 import type { User } from '@/types/user';
 import {
@@ -97,6 +97,11 @@ export default function CleanPermissionsEditor({
       newPermissions.delete(permission);
     } else {
       newPermissions.add(permission);
+      // Auto-add dependencies when enabling a permission
+      const dependencies = PERMISSION_DEPENDENCIES[permission];
+      if (dependencies) {
+        dependencies.forEach(dep => newPermissions.add(dep));
+      }
     }
     setSelectedPermissions(newPermissions);
   };
@@ -106,6 +111,11 @@ export default function CleanPermissionsEditor({
     groupPermissions.forEach(perm => {
       if (enable) {
         newPermissions.add(perm);
+        // Auto-add dependencies when enabling permissions
+        const dependencies = PERMISSION_DEPENDENCIES[perm];
+        if (dependencies) {
+          dependencies.forEach(dep => newPermissions.add(dep));
+        }
       } else {
         newPermissions.delete(perm);
       }
@@ -125,7 +135,9 @@ export default function CleanPermissionsEditor({
 
   const handleSave = () => {
     if (user) {
-      onSave(user.id, selectedRole, Array.from(selectedPermissions));
+      // Apply permission dependencies before saving to ensure completeness
+      const permissionsWithDeps = applyPermissionDependencies(Array.from(selectedPermissions));
+      onSave(user.id, selectedRole, permissionsWithDeps);
     }
   };
 
