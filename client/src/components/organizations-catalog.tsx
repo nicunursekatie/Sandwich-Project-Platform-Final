@@ -770,38 +770,20 @@ export default function GroupCatalog({
                           {group.groupName}
                         </h2>
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-gray-600">
-                          <span className="flex items-center space-x-1">
-                            <Users className="w-3 h-3" />
-                            <span>
-                              {group.totalDepartments}{' '}
-                              {group.totalDepartments === 1
-                                ? 'contact'
-                                : 'depts'}
-                            </span>
+                      <div className="flex items-center justify-between text-xs text-gray-600">
+                        <span className="flex items-center space-x-1">
+                          <Users className="w-3 h-3" />
+                          <span>
+                            {group.totalDepartments}{' '}
+                            {group.totalDepartments === 1
+                              ? 'contact'
+                              : 'depts'}
                           </span>
-                          <span className="flex items-center space-x-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{group.totalRequests} requests</span>
-                          </span>
-                        </div>
-                        {/* View Complete Organization History Button */}
-                        <Button
-                          onClick={() => {
-                            setSelectedOrganization(group.departments[0]); // Use first department as org reference
-                            setOrganizationDetails(null); // Reset previous details
-                            fetchOrganizationDetails(
-                              group.groupName
-                            ); // Fetch complete organization history
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-xs bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90"
-                        >
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          View History
-                        </Button>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>{group.totalRequests} requests</span>
+                        </span>
                       </div>
                     </div>
 
