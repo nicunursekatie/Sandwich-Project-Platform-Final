@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
+import { logger } from './utils/production-safe-logger';
 
 export interface CalendarEvent {
   id: string;
@@ -150,7 +151,7 @@ export class GoogleCalendarService {
       const colorId = availableColorIds[colorIndex % availableColorIds.length];
       personColorMap.set(personName, colorId);
       colorIndex++;
-      console.log(`Assigned color ${colorId} to person: "${personName}"`);
+      logger.log(`Assigned color ${colorId} to person: "${personName}"`);
     });
 
     const getColorForEvent = (event: any) => {
@@ -169,7 +170,7 @@ export class GoogleCalendarService {
 
       // Debug logging to understand color assignment
       const personName = extractPersonName(event.summary || 'Untitled');
-      console.log(`Event: "${event.summary}" -> Person: "${personName}" -> Color: ${colorId} -> Background: ${backgroundColor}`);
+      logger.log(`Event: "${event.summary}" -> Person: "${personName}" -> Color: ${colorId} -> Background: ${backgroundColor}`);
 
       return {
         ...event,
@@ -189,11 +190,11 @@ export class GoogleCalendarService {
 
     try {
       const response = await this.calendar.colors.get();
-      console.log('✅ Successfully fetched colors from Google Calendar API');
+      logger.log('✅ Successfully fetched colors from Google Calendar API');
       return response.data;
     } catch (error: any) {
-      console.error('❌ Failed to fetch colors from Google Calendar API:', error.message);
-      console.log('📝 Using default color palette');
+      logger.error('❌ Failed to fetch colors from Google Calendar API:', error.message);
+      logger.log('📝 Using default color palette');
       // Return default Google Calendar colors with white text for better readability
       return {
         event: {

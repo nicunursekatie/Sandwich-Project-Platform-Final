@@ -3,6 +3,7 @@
  */
 import { Pool } from 'pg';
 import bcrypt from 'bcrypt';
+import { logger } from './utils/production-safe-logger';
 
 const SALT_ROUNDS = 10;
 
@@ -13,7 +14,7 @@ async function forceHashPasswords() {
   });
   
   try {
-    console.log('🔐 FORCE HASH - Direct PostgreSQL connection\n');
+    logger.log('🔐 FORCE HASH - Direct PostgreSQL connection\n');
     
     // Get all users with JSON/plaintext passwords
     const result = await pool.query(`
@@ -23,7 +24,7 @@ async function forceHashPasswords() {
       ORDER BY email
     `);
     
-    console.log(`Found ${result.rows.length} users needing migration\n`);
+    logger.log(`Found ${result.rows.length} users needing migration\n`);
     
     for (const row of result.rows) {
       const { id, email, password } = row;
@@ -46,11 +47,11 @@ async function forceHashPasswords() {
         format = 'plaintext';
       }
       
-      console.log(`🔓 ${email}: ${format} = "${plaintextPassword}"`);
+      logger.log(`🔓 ${email}: ${format} = "${plaintextPassword}"`);
       
       // Hash it
       const hashedPassword = await bcrypt.hash(plaintextPassword, SALT_ROUNDS);
-      console.log(`   🔒 Hashing to: ${hashedPassword.substring(0, 29)}...`);
+      logger.log(`   🔒 Hashing to: ${hashedPassword.substring(0, 29)}...`);
       
       // Direct update
       await pool.query(
@@ -58,12 +59,12 @@ async function forceHashPasswords() {
         [hashedPassword, id]
       );
       
-      console.log(`   ✅ Updated\n`);
+      logger.log(`   ✅ Updated\n`);
     }
     
-    console.log('\n═══════════════════════════════════════════════');
-    console.log(`✅ Successfully migrated ${result.rows.length} passwords`);
-    console.log('═══════════════════════════════════════════════\n');
+    logger.log('\n═══════════════════════════════════════════════');
+    logger.log(`✅ Successfully migrated ${result.rows.length} passwords`);
+    logger.log('═══════════════════════════════════════════════\n');
     
   } finally {
     await pool.end();
@@ -73,6 +74,6 @@ async function forceHashPasswords() {
 forceHashPasswords()
   .then(() => process.exit(0))
   .catch(err => {
-    console.error('💥 Failed:', err);
+    logger.error('💥 Failed:', err);
     process.exit(1);
   });

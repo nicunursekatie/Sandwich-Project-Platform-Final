@@ -7,6 +7,7 @@ import { storage } from '../storage-wrapper';
 import { insertRecipientSchema } from '@shared/schema';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
+import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 
 const router = Router();
@@ -21,7 +22,7 @@ router.get(
       const recipients = await storage.getAllRecipients();
       res.json(recipients);
     } catch (error) {
-      console.error('Error fetching recipients:', error);
+      logger.error('Error fetching recipients:', error);
       res.status(500).json({ error: 'Failed to fetch recipients' });
     }
   }
@@ -33,7 +34,7 @@ router.get(
   requirePermission(PERMISSIONS.RECIPIENTS_VIEW),
   async (req, res) => {
     try {
-      console.log('[RECIPIENTS EXPORT] Export route hit!');
+      logger.log('[RECIPIENTS EXPORT] Export route hit!');
       const recipients = await storage.getAllRecipients();
 
       // CSV headers - all relevant fields
@@ -137,7 +138,7 @@ router.get(
       );
       res.send(csvContent);
     } catch (error) {
-      console.error('Failed to export recipients', error);
+      logger.error('Failed to export recipients', error);
       res.status(500).json({ error: 'Failed to export recipients' });
     }
   }
@@ -230,14 +231,14 @@ router.post(
           await storage.createRecipient(validatedData);
           imported++;
         } catch (error) {
-          console.error('Error importing recipient record:', error);
+          logger.error('Error importing recipient record:', error);
           skipped++;
         }
       }
 
       res.json({ imported, skipped });
     } catch (error) {
-      console.error('Failed to import recipients', error);
+      logger.error('Failed to import recipients', error);
       res.status(500).json({ error: 'Failed to import recipients' });
     }
   }
@@ -249,10 +250,10 @@ router.get(
   requirePermission(PERMISSIONS.RECIPIENTS_VIEW),
   async (req, res) => {
     try {
-      console.log('[RECIPIENTS GET BY ID] Route hit with id:', req.params.id);
+      logger.log('[RECIPIENTS GET BY ID] Route hit with id:', req.params.id);
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
-        console.log('[RECIPIENTS GET BY ID] Invalid ID - returning 400');
+        logger.log('[RECIPIENTS GET BY ID] Invalid ID - returning 400');
         return res.status(400).json({ error: 'Invalid recipient ID' });
       }
 
@@ -263,7 +264,7 @@ router.get(
 
       res.json(recipient);
     } catch (error) {
-      console.error('Error fetching recipient:', error);
+      logger.error('Error fetching recipient:', error);
       res.status(500).json({ error: 'Failed to fetch recipient' });
     }
   }
@@ -301,7 +302,7 @@ router.post(
         });
       }
 
-      console.error('Error creating recipient:', error);
+      logger.error('Error creating recipient:', error);
       res.status(500).json({ error: 'Failed to create recipient' });
     }
   }
@@ -358,7 +359,7 @@ router.put(
         });
       }
 
-      console.error('Error updating recipient:', error);
+      logger.error('Error updating recipient:', error);
       res.status(500).json({ error: 'Failed to update recipient' });
     }
   }
@@ -401,7 +402,7 @@ router.delete(
 
       res.json({ success: true, message: 'Recipient deleted successfully' });
     } catch (error) {
-      console.error('Error deleting recipient:', error);
+      logger.error('Error deleting recipient:', error);
       res.status(500).json({ error: 'Failed to delete recipient' });
     }
   }
@@ -432,7 +433,7 @@ router.patch(
 
       res.json(updatedRecipient);
     } catch (error) {
-      console.error('Error updating recipient status:', error);
+      logger.error('Error updating recipient status:', error);
       res.status(500).json({ error: 'Failed to update recipient status' });
     }
   }

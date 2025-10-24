@@ -1,6 +1,7 @@
 import express from 'express';
 import type { RouterDependencies } from '../types';
 import { insertVolunteerSchema } from '@shared/schema';
+import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 
 export function createVolunteersRouter(deps: RouterDependencies) {
@@ -13,7 +14,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
       const volunteers = await storage.getAllVolunteers();
       res.json(volunteers);
     } catch (error) {
-      console.error('Failed to get volunteers', error);
+      logger.error('Failed to get volunteers', error);
       res.status(500).json({ message: 'Failed to get volunteers' });
     }
   });
@@ -28,7 +29,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
       }
       res.json(volunteer);
     } catch (error) {
-      console.error('Failed to get volunteer', error);
+      logger.error('Failed to get volunteer', error);
       res.status(500).json({ message: 'Failed to get volunteer' });
     }
   });
@@ -54,7 +55,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
 
       res.status(201).json(volunteer);
     } catch (error) {
-      console.error('Failed to create volunteer', error);
+      logger.error('Failed to create volunteer', error);
       res.status(500).json({ message: 'Failed to create volunteer' });
     }
   });
@@ -91,7 +92,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
 
       res.json(volunteer);
     } catch (error) {
-      console.error('Failed to update volunteer', error);
+      logger.error('Failed to update volunteer', error);
       res.status(500).json({ message: 'Failed to update volunteer' });
     }
   });
@@ -128,7 +129,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
 
       res.json(volunteer);
     } catch (error) {
-      console.error('Failed to update volunteer', error);
+      logger.error('Failed to update volunteer', error);
       res.status(500).json({ message: 'Failed to update volunteer' });
     }
   });
@@ -164,7 +165,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
 
       res.status(204).send();
     } catch (error) {
-      console.error('Failed to delete volunteer', error);
+      logger.error('Failed to delete volunteer', error);
       res.status(500).json({ message: 'Failed to delete volunteer' });
     }
   });
@@ -209,7 +210,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
 
       res.send(csvContent.join('\n'));
     } catch (error) {
-      console.error('Failed to export volunteers', error);
+      logger.error('Failed to export volunteers', error);
       res.status(500).json({ message: 'Failed to export volunteers' });
     }
   });

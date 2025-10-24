@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import type { IStorage } from '../storage';
+import { logger } from '../utils/production-safe-logger';
 
 export function createDashboardDocumentsRoutes(
   isAuthenticated: any,
@@ -14,7 +15,7 @@ export function createDashboardDocumentsRoutes(
       const documents = await storage.getDashboardDocuments();
       res.json(documents);
     } catch (error) {
-      console.error('Error fetching dashboard documents:', error);
+      logger.error('Error fetching dashboard documents:', error);
       res.status(500).json({ error: 'Failed to fetch dashboard documents' });
     }
   });
@@ -44,7 +45,7 @@ export function createDashboardDocumentsRoutes(
         if (error instanceof z.ZodError) {
           res.status(400).json({ error: 'Invalid request data', details: error.errors });
         } else {
-          console.error('Error adding dashboard document:', error);
+          logger.error('Error adding dashboard document:', error);
           res.status(500).json({ error: 'Failed to add dashboard document' });
         }
       }
@@ -66,7 +67,7 @@ export function createDashboardDocumentsRoutes(
 
         res.json({ success: true });
       } catch (error) {
-        console.error('Error removing dashboard document:', error);
+        logger.error('Error removing dashboard document:', error);
         res.status(500).json({ error: 'Failed to remove dashboard document' });
       }
     }
@@ -94,7 +95,7 @@ export function createDashboardDocumentsRoutes(
         if (error instanceof z.ZodError) {
           res.status(400).json({ error: 'Invalid request data', details: error.errors });
         } else {
-          console.error('Error updating dashboard document order:', error);
+          logger.error('Error updating dashboard document order:', error);
           res.status(500).json({ error: 'Failed to update dashboard document order' });
         }
       }

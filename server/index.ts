@@ -12,6 +12,7 @@ import { setupSocketChat } from './socket-chat';
 import { startBackgroundSync } from './background-sync-service';
 import { smartDeliveryService } from './services/notifications/smart-delivery';
 import logger, { createServiceLogger, logRequest } from './utils/logger.js';
+import { logger } from './utils/production-safe-logger';
 
 const app = express();
 const serverLogger = createServiceLogger('server');
@@ -111,9 +112,9 @@ app.use((req, res, next) => {
 });
 
 // Debug process exit
-process.on('exit', (code) => console.log('⚠️ Process exiting with code:', code));
-process.on('uncaughtException', (e) => console.error('❌ Uncaught exception:', e));
-process.on('unhandledRejection', (e) => console.error('❌ Unhandled rejection:', e));
+process.on('exit', (code) => logger.log('⚠️ Process exiting with code:', code));
+process.on('uncaughtException', (e) => logger.error('❌ Uncaught exception:', e));
+process.on('unhandledRejection', (e) => logger.error('❌ Unhandled rejection:', e));
 
 async function bootstrap() {
   try {
@@ -331,7 +332,7 @@ async function bootstrap() {
       setImmediate(async () => {
         try {
           await initializeDatabase();
-          console.log('✓ Database initialization complete');
+          logger.log('✓ Database initialization complete');
 
           // Background Google Sheets sync re-enabled
           const { storage } = await import('./storage-wrapper');
@@ -339,19 +340,19 @@ async function bootstrap() {
             './background-sync-service'
           );
           startBackgroundSync(storage as any); // TODO: Fix storage interface types
-          console.log('✓ Background Google Sheets sync service started');
+          logger.log('✓ Background Google Sheets sync service started');
 
           // Initialize cron jobs for scheduled tasks
           const { initializeCronJobs } = await import('./services/cron-jobs');
           initializeCronJobs();
-          console.log(
+          logger.log(
             '✓ Cron jobs initialized (host availability scraper scheduled)'
           );
 
-          console.log(
+          logger.log(
             '✓ The Sandwich Project server is fully ready to handle requests'
           );
-          console.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
+          logger.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
         } catch (initError) {
           serverLogger.error('✗ Background initialization failed:', initError);
           serverLogger.error(
@@ -386,34 +387,34 @@ async function bootstrap() {
 
     // PRODUCTION MODE: Aggressive exit prevention
     if (process.env.NODE_ENV === 'production') {
-      console.log('✅ Production exit prevention installed');
+      logger.log('✅ Production exit prevention installed');
 
       // Strategy 1: Keep stdin open
       process.stdin.resume();
 
       // Strategy 2: Prevent beforeExit
       process.on('beforeExit', (code) => {
-        console.log(`⚠ Prevented process exit with code ${code} - keeping alive`);
+        logger.log(`⚠ Prevented process exit with code ${code} - keeping alive`);
         setTimeout(() => {}, 1000);
       });
 
       // Strategy 3: Override process.exit
       const originalExit = process.exit;
       process.exit = ((code?: number) => {
-        console.log(`⚠ Prevented process.exit(${code}) in production mode`);
+        logger.log(`⚠ Prevented process.exit(${code}) in production mode`);
         return undefined as never;
       }) as typeof process.exit;
 
       // Production heartbeat
       setInterval(() => {
-        console.log(`✅ Production heartbeat - uptime: ${Math.floor(process.uptime())}s`);
+        logger.log(`✅ Production heartbeat - uptime: ${Math.floor(process.uptime())}s`);
       }, 60000);
 
-      console.log('✅ Production infinite keep-alive loop started');
+      logger.log('✅ Production infinite keep-alive loop started');
     }
 
-    console.log('✅ Health endpoint ready: /healthz');
-    console.log('✅ Server startup complete - ready for traffic');
+    logger.log('✅ Health endpoint ready: /healthz');
+    logger.log('✅ Server startup complete - ready for traffic');
   } catch (error) {
     serverLogger.error('✗ Server startup failed:', error);
     process.exit(1);

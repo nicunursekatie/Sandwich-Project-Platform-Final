@@ -8,6 +8,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { db } from '../db';
 import { sandwichCollections, hosts } from '@shared/schema';
 import { sql, eq, desc } from 'drizzle-orm';
+import { logger } from '../utils/production-safe-logger';
 
 export function createDataManagementRouter(deps: RouterDependencies) {
   const router = Router();
@@ -45,7 +46,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
         res.json(result);
       }
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       res.status(500).json({ error: 'Export failed' });
     }
   }
@@ -73,7 +74,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
         res.json(result);
       }
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
       res.status(500).json({ error: 'Export failed' });
     }
   }
@@ -90,7 +91,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     );
     res.json(result.data);
   } catch (error) {
-    console.error('Full export failed:', error);
+    logger.error('Full export failed:', error);
     res.status(500).json({ error: 'Full export failed' });
   }
 });
@@ -100,7 +101,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     const summary = await DataExporter.getDataSummary();
     res.json(summary);
   } catch (error) {
-    console.error('Summary failed:', error);
+    logger.error('Summary failed:', error);
     res.status(500).json({ error: 'Summary failed' });
   }
 });
@@ -121,7 +122,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
       const result = await BulkOperationsManager.deduplicateHosts(context);
       res.json(result);
     } catch (error) {
-      console.error('Deduplication failed:', error);
+      logger.error('Deduplication failed:', error);
       res.status(500).json({ error: 'Deduplication failed' });
     }
   }
@@ -151,7 +152,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
       );
       res.json(result);
     } catch (error) {
-      console.error('Bulk deletion failed:', error);
+      logger.error('Bulk deletion failed:', error);
       res.status(500).json({ error: 'Bulk deletion failed' });
     }
   }
@@ -163,7 +164,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     const result = await BulkOperationsManager.validateDataIntegrity();
     res.json(result);
   } catch (error) {
-    console.error('Integrity check failed:', error);
+    logger.error('Integrity check failed:', error);
     res.status(500).json({ error: 'Integrity check failed' });
   }
 });
@@ -189,7 +190,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
 
     res.json({ history });
   } catch (error) {
-    console.error('Audit history failed:', error);
+    logger.error('Audit history failed:', error);
     res.status(500).json({ error: 'Audit history failed' });
   }
 });
@@ -216,7 +217,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
       unmappedRecords: unmappedRecords.length,
     });
   } catch (error) {
-    console.error('Collection stats failed:', error);
+    logger.error('Collection stats failed:', error);
     res.status(500).json({ error: 'Failed to get collection stats' });
   }
 });
@@ -254,7 +255,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     
     res.json(distribution);
   } catch (error) {
-    console.error('Host mapping stats failed:', error);
+    logger.error('Host mapping stats failed:', error);
     res.status(500).json({ error: 'Failed to get host mapping stats' });
   }
 });
@@ -272,7 +273,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     
     res.json(collections);
   } catch (error) {
-    console.error('Get collections by host failed:', error);
+    logger.error('Get collections by host failed:', error);
     res.status(500).json({ error: 'Failed to get collections for host' });
   }
 });
@@ -312,7 +313,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
       message: `Successfully standardized ${updatedRecords} host name(s) to match the hosts directory`
     });
   } catch (error) {
-    console.error('Bulk map hosts failed:', error);
+    logger.error('Bulk map hosts failed:', error);
     res.status(500).json({ error: 'Failed to map hosts' });
   }
 });
@@ -385,7 +386,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
       message: `Fixed ${fixedCount} data corruption issue(s) out of ${allCollections.length} records checked`
     });
   } catch (error) {
-    console.error('Fix data corruption failed:', error);
+    logger.error('Fix data corruption failed:', error);
     res.status(500).json({ error: 'Failed to fix data corruption' });
   }
 });

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
 import bcrypt from 'bcrypt';
+import { logger } from '../utils/production-safe-logger';
 
 // Store password reset tokens temporarily (in production, use Redis or database)
 const resetTokens = new Map<
@@ -177,12 +178,12 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
         `,
       });
 
-      console.log(`✅ Password reset email sent successfully to: ${email}`);
+      logger.log(`✅ Password reset email sent successfully to: ${email}`);
     } catch (emailError) {
-      console.error('❌ Failed to send password reset email:', emailError);
+      logger.error('❌ Failed to send password reset email:', emailError);
       // For development, log the reset link as fallback
       if (process.env.NODE_ENV === 'development') {
-        console.log(`
+        logger.log(`
 🔧 DEVELOPMENT FALLBACK - Email failed, but reset link available:
 📧 Email: ${email}
 🔗 Reset Link: ${req.protocol}://${
@@ -199,7 +200,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
         'If an account with this email exists, you will receive a password reset link.',
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
+    logger.error('Forgot password error:', error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
@@ -258,7 +259,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
     // Remove used token
     resetTokens.delete(token);
 
-    console.log(`Password reset successful for user: ${user.email}`);
+    logger.log(`Password reset successful for user: ${user.email}`);
 
     res.json({
       success: true,
@@ -266,7 +267,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
         'Password has been reset successfully. You can now log in with your new password.',
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    logger.error('Reset password error:', error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,

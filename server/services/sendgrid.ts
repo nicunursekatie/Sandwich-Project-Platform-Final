@@ -1,11 +1,12 @@
 import sgMail from '@sendgrid/mail';
+import { logger } from '../utils/production-safe-logger';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
-  console.warn('⚠️  SENDGRID_API_KEY not found in environment variables');
+  logger.warn('⚠️  SENDGRID_API_KEY not found in environment variables');
 } else {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  console.log('✅ SendGrid configured successfully');
+  logger.log('✅ SendGrid configured successfully');
 }
 
 interface EmailParams {
@@ -31,14 +32,14 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     };
 
     await sgMail.send(msg);
-    console.log(`✅ Email sent successfully to ${params.to}`);
+    logger.log(`✅ Email sent successfully to ${params.to}`);
     return true;
   } catch (error) {
-    console.error('❌ SendGrid email error:', error);
+    logger.error('❌ SendGrid email error:', error);
 
     // Log more details for debugging
     if ((error as any).response?.body) {
-      console.error('SendGrid error details:', (error as any).response.body);
+      logger.error('SendGrid error details:', (error as any).response.body);
     }
 
     throw error;

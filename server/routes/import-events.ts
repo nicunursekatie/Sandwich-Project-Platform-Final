@@ -4,6 +4,7 @@ import XLSX from 'xlsx';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isValid, parseISO } from 'date-fns';
+import { logger } from '../utils/production-safe-logger';
 
 export function createImportEventsRouter(deps: RouterDependencies) {
   const router = Router();
@@ -33,7 +34,7 @@ const convertTimeToDateTime = (timeStr: string, baseDate?: Date): string | null 
     const dateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes);
     return dateTime.toISOString();
   } catch (error) {
-    console.warn('Failed to convert time to datetime:', timeStr, error);
+    logger.warn('Failed to convert time to datetime:', timeStr, error);
     return null;
   }
 };
@@ -54,7 +55,7 @@ const extractTimeFromDateTime = (dateTimeStr: string): string | null => {
     
     return timeStr;
   } catch (error) {
-    console.warn('Failed to extract time from datetime:', dateTimeStr, error);
+    logger.warn('Failed to extract time from datetime:', dateTimeStr, error);
     return null;
   }
 };
@@ -65,7 +66,7 @@ const processImportedPickupTime = (eventData: any, eventDate?: Date) => {
   
   // If we have pickupTime but no pickupDateTime, convert it
   if (result.pickupTime && !result.pickupDateTime) {
-    console.log('📅 Converting imported pickupTime to pickupDateTime');
+    logger.log('📅 Converting imported pickupTime to pickupDateTime');
     const baseDate = eventDate || new Date();
     const convertedDateTime = convertTimeToDateTime(result.pickupTime, baseDate);
     if (convertedDateTime) {
@@ -74,7 +75,7 @@ const processImportedPickupTime = (eventData: any, eventDate?: Date) => {
   }
   // If we have pickupDateTime but no pickupTime, extract it
   else if (result.pickupDateTime && !result.pickupTime) {
-    console.log('📅 Extracting pickupTime from imported pickupDateTime');
+    logger.log('📅 Extracting pickupTime from imported pickupDateTime');
     const extractedTime = extractTimeFromDateTime(result.pickupDateTime);
     if (extractedTime) {
       result.pickupTime = extractedTime;
@@ -91,7 +92,7 @@ const __dirname = path.dirname(__filename);
 // Import past events that are already completed
   router.post('/import-past-events', isAuthenticated, async (req, res) => {
   try {
-    console.log('Starting past events import...');
+    logger.log('Starting past events import...');
 
     // Parse events data from request body
     const { events: eventData } = req.body;
@@ -123,7 +124,7 @@ const __dirname = path.dirname(__filename);
             parsedDate = null;
           }
         } catch (e) {
-          console.warn(`Could not parse date "${eventInfo.date}"`);
+          logger.warn(`Could not parse date "${eventInfo.date}"`);
           parsedDate = null;
         }
       }
@@ -185,7 +186,7 @@ const __dirname = path.dirname(__filename);
         );
 
         if (isDuplicate) {
-          console.log(
+          logger.log(
             `⚠️  Skipping duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName}`
           );
           skippedDuplicates.push(event);
@@ -194,18 +195,18 @@ const __dirname = path.dirname(__filename);
 
         const result = await storage.createEventRequest(event);
         importedEvents.push(result);
-        console.log(
+        logger.log(
           `✅ Imported past event: ${event.firstName} ${event.lastName} - ${event.organizationName}`
         );
       } catch (error) {
-        console.error(
+        logger.error(
           `❌ Failed to import: ${event.firstName} ${event.lastName} - ${event.organizationName}`,
           error
         );
       }
     }
 
-    console.log(
+    logger.log(
       `✅ Successfully imported ${importedEvents.length} past events!`
     );
 
@@ -217,7 +218,7 @@ const __dirname = path.dirname(__filename);
       skipped: skippedDuplicates.length,
     });
   } catch (error) {
-    console.error('❌ Error importing past events:', error);
+    logger.error('❌ Error importing past events:', error);
     res.status(500).json({
       error: 'Failed to import past events',
       details: error instanceof Error ? error.message : 'Unknown error',
@@ -228,7 +229,7 @@ const __dirname = path.dirname(__filename);
 // Import historical 2024 events from attached Excel/CSV file
   router.post('/import-historical', isAuthenticated, async (req, res) => {
   try {
-    console.log('Starting historical 2024 event import...');
+    logger.log('Starting historical 2024 event import...');
 
     // Read the 2024 historical data file
     const filePath = path.join(
@@ -238,7 +239,7 @@ const __dirname = path.dirname(__filename);
       'attached_assets',
       '2024 Groups_1756753446666.xlsx'
     );
-    console.log('Reading historical file:', filePath);
+    logger.log('Reading historical file:', filePath);
 
     const workbook = XLSX.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
@@ -247,8 +248,8 @@ const __dirname = path.dirname(__filename);
     // Convert to JSON with proper headers
     const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
-    console.log('Historical headers:', data[0]);
-    console.log(`Total historical rows: ${data.length}`);
+    logger.log('Historical headers:', data[0]);
+    logger.log(`Total historical rows: ${data.length}`);
 
     // Skip header row and process data
     const events = [];
@@ -328,7 +329,7 @@ const __dirname = path.dirname(__filename);
             parsedDate = null;
           }
         } catch (e) {
-          console.warn(
+          logger.warn(
             `Could not parse historical date "${eventDateStr}" for row ${i + 1}`
           );
           parsedDate = null;
@@ -359,7 +360,7 @@ const __dirname = path.dirname(__filename);
 
       // Debug the mapping for first few rows
       if (i <= 5) {
-        console.log(`🔍 Row ${i + 1} debug:`, {
+        logger.log(`🔍 Row ${i + 1} debug:`, {
           firstName,
           lastName,
           groupName,
@@ -392,11 +393,11 @@ const __dirname = path.dirname(__filename);
             : null,
         });
 
-        console.log(
+        logger.log(
           `✅ Prepared historical event: ${firstName} ${lastName} from ${groupName} (${email})`
         );
       } else {
-        console.log(
+        logger.log(
           `⚠️  Skipping historical row ${i + 1} - missing required fields:`,
           {
             firstName: !!firstName,
@@ -407,12 +408,12 @@ const __dirname = path.dirname(__filename);
       }
     }
 
-    console.log(`\nPrepared ${events.length} historical events for import`);
+    logger.log(`\nPrepared ${events.length} historical events for import`);
 
     if (events.length > 0) {
-      console.log('First 3 prepared events:');
+      logger.log('First 3 prepared events:');
       events.slice(0, 3).forEach((event, idx) => {
-        console.log(
+        logger.log(
           `  ${idx + 1}. ${event.firstName} ${event.lastName} - ${
             event.organizationName
           } (${event.email})`
@@ -442,7 +443,7 @@ const __dirname = path.dirname(__filename);
         );
 
         if (isDuplicate) {
-          console.log(
+          logger.log(
             `⚠️  Skipping historical duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName} (${event.email})`
           );
           skippedDuplicates.push(event);
@@ -451,22 +452,22 @@ const __dirname = path.dirname(__filename);
 
         const result = await storage.createEventRequest(event);
         importedEvents.push(result);
-        console.log(
+        logger.log(
           `✅ Imported historical: ${event.firstName} ${event.lastName} - ${event.organizationName}`
         );
       } catch (error) {
-        console.error(
+        logger.error(
           `❌ Failed to import historical: ${event.firstName} ${event.lastName} - ${event.organizationName}`,
           error
         );
       }
     }
 
-    console.log(
+    logger.log(
       `✅ Successfully imported ${importedEvents.length} historical events!`
     );
     if (skippedDuplicates.length > 0) {
-      console.log(
+      logger.log(
         `⚠️  Skipped ${skippedDuplicates.length} historical duplicates`
       );
     }
@@ -485,7 +486,7 @@ const __dirname = path.dirname(__filename);
       })),
     });
   } catch (error) {
-    console.error('❌ Error importing historical events:', error);
+    logger.error('❌ Error importing historical events:', error);
     res.status(500).json({
       error: 'Failed to import historical events',
       details: error instanceof Error ? error.message : 'Unknown error',
@@ -495,7 +496,7 @@ const __dirname = path.dirname(__filename);
 
   router.post('/import-excel', isAuthenticated, async (req, res) => {
   try {
-    console.log('Starting Excel event import...');
+    logger.log('Starting Excel event import...');
 
     // Read the Excel file
     const filePath = path.join(
@@ -505,7 +506,7 @@ const __dirname = path.dirname(__filename);
       'attached_assets',
       'Events January - May_1756610094691.xlsx'
     );
-    console.log('Reading file:', filePath);
+    logger.log('Reading file:', filePath);
 
     const workbook = XLSX.readFile(filePath);
     const sheetName = workbook.SheetNames[0]; // Get first sheet
@@ -514,8 +515,8 @@ const __dirname = path.dirname(__filename);
     // Convert to JSON with proper headers
     const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
-    console.log('Headers:', data[0]);
-    console.log(`Total rows: ${data.length}`);
+    logger.log('Headers:', data[0]);
+    logger.log(`Total rows: ${data.length}`);
 
     // Skip header row and process data
     const events = [];
@@ -611,7 +612,7 @@ const __dirname = path.dirname(__filename);
             parsedDate = null;
           }
         } catch (e) {
-          console.warn(`Could not parse date "${eventDate}" for row ${i + 1}`);
+          logger.warn(`Could not parse date "${eventDate}" for row ${i + 1}`);
           parsedDate = null;
         }
       }
@@ -660,11 +661,11 @@ const __dirname = path.dirname(__filename);
         const processedEventData = processImportedPickupTime(baseEventData, parsedDate);
         events.push(processedEventData);
 
-        console.log(
+        logger.log(
           `✅ Prepared event: ${firstName} ${lastName} from ${organization}`
         );
       } else {
-        console.log(`⚠️  Skipping row ${i + 1} - missing required fields:`, {
+        logger.log(`⚠️  Skipping row ${i + 1} - missing required fields:`, {
           firstName: !!firstName,
           organization: !!organization,
           email: !!email,
@@ -672,7 +673,7 @@ const __dirname = path.dirname(__filename);
       }
     }
 
-    console.log(`\nPrepared ${events.length} events for import`);
+    logger.log(`\nPrepared ${events.length} events for import`);
 
     if (events.length === 0) {
       return res.status(400).json({ error: 'No valid events found to import' });
@@ -694,7 +695,7 @@ const __dirname = path.dirname(__filename);
         );
 
         if (isDuplicate) {
-          console.log(
+          logger.log(
             `⚠️  Skipping duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName}`
           );
           skippedDuplicates.push(event);
@@ -703,20 +704,20 @@ const __dirname = path.dirname(__filename);
 
         const result = await storage.createEventRequest(event);
         importedEvents.push(result);
-        console.log(
+        logger.log(
           `✅ Imported: ${event.firstName} ${event.lastName} - ${event.organizationName}`
         );
       } catch (error) {
-        console.error(
+        logger.error(
           `❌ Failed to import: ${event.firstName} ${event.lastName} - ${event.organizationName}`,
           error
         );
       }
     }
 
-    console.log(`✅ Successfully imported ${importedEvents.length} events!`);
+    logger.log(`✅ Successfully imported ${importedEvents.length} events!`);
     if (skippedDuplicates.length > 0) {
-      console.log(`⚠️  Skipped ${skippedDuplicates.length} duplicates`);
+      logger.log(`⚠️  Skipped ${skippedDuplicates.length} duplicates`);
     }
 
     const message =
@@ -738,7 +739,7 @@ const __dirname = path.dirname(__filename);
       })),
     });
   } catch (error) {
-    console.error('❌ Error importing events:', error);
+    logger.error('❌ Error importing events:', error);
     res.status(500).json({
       error: 'Failed to import events',
       details: error instanceof Error ? error.message : 'Unknown error',
@@ -749,7 +750,7 @@ const __dirname = path.dirname(__filename);
 // Sync from Google Sheets - proxy to event requests sync endpoint
   router.post('/sync-from-sheets', isAuthenticated, async (req, res) => {
   try {
-    console.log(
+    logger.log(
       '🔄 Proxying sync-from-sheets request to event-requests sync endpoint...'
     );
 
@@ -786,7 +787,7 @@ const __dirname = path.dirname(__filename);
 
     res.json(response);
   } catch (error) {
-    console.error('❌ Error syncing from Google Sheets:', error);
+    logger.error('❌ Error syncing from Google Sheets:', error);
     res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : 'Sync failed',
@@ -798,7 +799,7 @@ const __dirname = path.dirname(__filename);
 // Import 2023 historical events
   router.post('/import-2023-events', isAuthenticated, async (req, res) => {
   try {
-    console.log('Starting 2023 events import...');
+    logger.log('Starting 2023 events import...');
 
     // Read the 2023 Excel file
     const filePath = path.join(
@@ -808,7 +809,7 @@ const __dirname = path.dirname(__filename);
       'attached_assets',
       '2023 Events_1757981703985.xlsx'
     );
-    console.log('Reading 2023 events file:', filePath);
+    logger.log('Reading 2023 events file:', filePath);
 
     const workbook = XLSX.readFile(filePath);
     const sheetName = workbook.SheetNames[0]; // '2023 groups'
@@ -817,8 +818,8 @@ const __dirname = path.dirname(__filename);
     // Convert to JSON with proper headers
     const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
-    console.log('2023 Events headers:', data[0]);
-    console.log(`Total 2023 rows: ${data.length}`);
+    logger.log('2023 Events headers:', data[0]);
+    logger.log(`Total 2023 rows: ${data.length}`);
 
     // Skip header row and process data
     const events = [];
@@ -891,7 +892,7 @@ const __dirname = path.dirname(__filename);
             parsedDate = null;
           }
         } catch (e) {
-          console.warn(`Could not parse 2023 date "${eventDateRaw}" for row ${i + 1}`);
+          logger.warn(`Could not parse 2023 date "${eventDateRaw}" for row ${i + 1}`);
           parsedDate = null;
         }
       }
@@ -928,7 +929,7 @@ const __dirname = path.dirname(__filename);
 
       // Debug first few rows
       if (i <= 5) {
-        console.log(`🔍 Row ${i + 1} debug:`, {
+        logger.log(`🔍 Row ${i + 1} debug:`, {
           firstName,
           lastName,
           groupName: groupName ? groupName.toString() : 'N/A',
@@ -969,13 +970,13 @@ const __dirname = path.dirname(__filename);
             : null,
         });
 
-        console.log(
+        logger.log(
           `✅ Prepared 2023 event: ${firstName} ${lastName} from ${groupName.toString()}`
         );
       } else {
         skippedRows++;
         if (skippedRows <= 10) { // Only show first 10 skipped rows to avoid spam
-          console.log(`⚠️  Skipping 2023 row ${i + 1} - insufficient data:`, {
+          logger.log(`⚠️  Skipping 2023 row ${i + 1} - insufficient data:`, {
             groupName: groupName ? groupName.toString() : 'N/A',
             email: cleanEmail,
             contactName: contactName ? contactName.toString() : 'N/A',
@@ -984,7 +985,7 @@ const __dirname = path.dirname(__filename);
       }
     }
 
-    console.log(`\nPrepared ${events.length} 2023 events for import (skipped ${skippedRows} incomplete rows)`);
+    logger.log(`\nPrepared ${events.length} 2023 events for import (skipped ${skippedRows} incomplete rows)`);
 
     if (events.length === 0) {
       return res.status(400).json({ 
@@ -995,9 +996,9 @@ const __dirname = path.dirname(__filename);
 
     // Show sample events
     if (events.length > 0) {
-      console.log('First 3 prepared 2023 events:');
+      logger.log('First 3 prepared 2023 events:');
       events.slice(0, 3).forEach((event, idx) => {
-        console.log(
+        logger.log(
           `  ${idx + 1}. ${event.firstName} ${event.lastName} - ${event.organizationName} (${event.email})`
         );
       });
@@ -1019,7 +1020,7 @@ const __dirname = path.dirname(__filename);
         );
 
         if (isDuplicate) {
-          console.log(
+          logger.log(
             `⚠️  Skipping 2023 duplicate: ${event.firstName} ${event.lastName} - ${event.organizationName}`
           );
           skippedDuplicates.push(event);
@@ -1028,20 +1029,20 @@ const __dirname = path.dirname(__filename);
 
         const result = await storage.createEventRequest(event);
         importedEvents.push(result);
-        console.log(
+        logger.log(
           `✅ Imported 2023: ${event.firstName} ${event.lastName} - ${event.organizationName}`
         );
       } catch (error) {
-        console.error(
+        logger.error(
           `❌ Failed to import 2023: ${event.firstName} ${event.lastName} - ${event.organizationName}`,
           error
         );
       }
     }
 
-    console.log(`✅ Successfully imported ${importedEvents.length} 2023 events!`);
+    logger.log(`✅ Successfully imported ${importedEvents.length} 2023 events!`);
     if (skippedDuplicates.length > 0) {
-      console.log(`⚠️  Skipped ${skippedDuplicates.length} 2023 duplicates`);
+      logger.log(`⚠️  Skipped ${skippedDuplicates.length} 2023 duplicates`);
     }
 
     res.json({
@@ -1061,7 +1062,7 @@ const __dirname = path.dirname(__filename);
       })),
     });
   } catch (error) {
-    console.error('❌ Error importing 2023 events:', error);
+    logger.error('❌ Error importing 2023 events:', error);
     res.status(500).json({
       error: 'Failed to import 2023 events',
       details: error instanceof Error ? error.message : 'Unknown error',

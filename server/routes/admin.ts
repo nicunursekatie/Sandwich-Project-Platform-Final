@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
 import { requirePermission } from '../middleware/auth';
+import { logger } from '../utils/production-safe-logger';
 
 interface AdminDependencies {
   isAuthenticated: any;
@@ -18,11 +19,11 @@ export function createAdminRoutes(deps: AdminDependencies) {
     requirePermission('ADMIN_ACCESS'),
     async (req: any, res) => {
       try {
-        console.log('🔄 Starting permission migration...');
+        logger.log('🔄 Starting permission migration...');
 
         // Get all users
         const allUsers = await storage.getAllUsers();
-        console.log(`Found ${allUsers.length} users to migrate`);
+        logger.log(`Found ${allUsers.length} users to migrate`);
 
         let migratedCount = 0;
         let unchangedCount = 0;
@@ -138,7 +139,7 @@ export function createAdminRoutes(deps: AdminDependencies) {
             : [];
 
           if (!userPermissions || userPermissions.length === 0) {
-            console.log(`⏭️  Skipping ${user.email} - no permissions`);
+            logger.log(`⏭️  Skipping ${user.email} - no permissions`);
             unchangedCount++;
             continue;
           }
@@ -148,14 +149,14 @@ export function createAdminRoutes(deps: AdminDependencies) {
             .map((oldPerm: string) => {
               const newPerm = PERMISSION_MAPPING[oldPerm.toLowerCase()];
               if (newPerm) {
-                console.log(`  📝 ${oldPerm} → ${newPerm}`);
+                logger.log(`  📝 ${oldPerm} → ${newPerm}`);
                 return newPerm;
               } else {
                 // Keep permission as-is if already in new format or unrecognized
                 if (oldPerm.includes('_')) {
-                  console.log(`  ✅ ${oldPerm} (already new format)`);
+                  logger.log(`  ✅ ${oldPerm} (already new format)`);
                 } else {
-                  console.log(
+                  logger.log(
                     `  ⚠️  Unknown permission: ${oldPerm} (keeping as-is)`
                   );
                 }
@@ -174,21 +175,21 @@ export function createAdminRoutes(deps: AdminDependencies) {
             JSON.stringify(newPermissions.sort());
 
           if (hasChanges) {
-            console.log(`🔄 Migrating ${user.email}:`);
-            console.log(`   Old: ${userPermissions.join(', ')}`);
-            console.log(`   New: ${newPermissions.join(', ')}`);
+            logger.log(`🔄 Migrating ${user.email}:`);
+            logger.log(`   Old: ${userPermissions.join(', ')}`);
+            logger.log(`   New: ${newPermissions.join(', ')}`);
 
             await storage.updateUser(user.id, { permissions: newPermissions });
             migratedCount++;
           } else {
-            console.log(`✅ ${user.email} - no migration needed`);
+            logger.log(`✅ ${user.email} - no migration needed`);
             unchangedCount++;
           }
         }
 
-        console.log(`\n🎉 Migration complete!`);
-        console.log(`   ✅ ${migratedCount} users migrated`);
-        console.log(`   ➡️  ${unchangedCount} users unchanged`);
+        logger.log(`\n🎉 Migration complete!`);
+        logger.log(`   ✅ ${migratedCount} users migrated`);
+        logger.log(`   ➡️  ${unchangedCount} users unchanged`);
 
         res.json({
           success: true,
@@ -197,7 +198,7 @@ export function createAdminRoutes(deps: AdminDependencies) {
           message: `Migration complete: ${migratedCount} users updated, ${unchangedCount} unchanged`,
         });
       } catch (error) {
-        console.error('❌ Permission migration failed:', error);
+        logger.error('❌ Permission migration failed:', error);
         res.status(500).json({
           success: false,
           error: 'Migration failed',
@@ -243,7 +244,7 @@ export function createAdminRoutes(deps: AdminDependencies) {
           environment: process.env.NODE_ENV || 'development',
         });
       } catch (error) {
-        console.error('Debug session error:', error);
+        logger.error('Debug session error:', error);
         res.status(500).json({ error: 'Failed to get session info' });
       }
     }
@@ -270,7 +271,7 @@ export function createAdminRoutes(deps: AdminDependencies) {
           timestamp: new Date().toISOString(),
         });
       } catch (error) {
-        console.error('Debug auth status error:', error);
+        logger.error('Debug auth status error:', error);
         res.status(500).json({ error: 'Failed to get auth status' });
       }
     }

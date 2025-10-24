@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type { IStorage } from '../storage';
+import { logger } from '../utils/production-safe-logger';
 
 const errorLogSchema = z.object({
   error: z.string(),
@@ -35,7 +36,7 @@ export function createErrorLogsRoutes(storage: IStorage) {
       };
 
       // Log to console for immediate monitoring
-      console.log('🚨 Client Error Logged:', {
+      logger.log('🚨 Client Error Logged:', {
         error: errorData.error,
         user: errorData.context.userId,
         page: errorData.context.currentPage,
@@ -75,7 +76,7 @@ export function createErrorLogsRoutes(storage: IStorage) {
         message: 'Error logged successfully',
       });
     } catch (error) {
-      console.error('Failed to log client error:', error);
+      logger.error('Failed to log client error:', error);
 
       // Don't let error logging failures break the client
       res.status(200).json({

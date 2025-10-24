@@ -4,15 +4,16 @@
 import { db } from './db';
 import { users } from '@shared/schema';
 import bcrypt from 'bcrypt';
+import { logger } from './utils/production-safe-logger';
 
 const SALT_ROUNDS = 10;
 
 async function hashAllPasswords() {
-  console.log('🔐 Starting DIRECT password hash migration...\n');
+  logger.log('🔐 Starting DIRECT password hash migration...\n');
   
   // Get all users
   const allUsers = await db.select().from(users);
-  console.log(`Found ${allUsers.length} total users\n`);
+  logger.log(`Found ${allUsers.length} total users\n`);
   
   let migrated = 0;
   let alreadyHashed = 0;
@@ -23,14 +24,14 @@ async function hashAllPasswords() {
     const storedPassword = user.password;
     
     if (!storedPassword) {
-      console.log(`⚠️  ${email}: No password - skipping`);
+      logger.log(`⚠️  ${email}: No password - skipping`);
       continue;
     }
     
     // Skip if already bcrypt
     if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$')) {
       alreadyHashed++;
-      console.log(`✅ ${email}: Already bcrypt - skipping`);
+      logger.log(`✅ ${email}: Already bcrypt - skipping`);
       continue;
     }
     
@@ -58,39 +59,39 @@ async function hashAllPasswords() {
         format = 'plaintext';
       }
       
-      console.log(`🔓 ${email}: Extracting ${format} password: "${plaintextPassword}"`);
+      logger.log(`🔓 ${email}: Extracting ${format} password: "${plaintextPassword}"`);
       
       // Hash it
       const hashedPassword = await bcrypt.hash(plaintextPassword, SALT_ROUNDS);
-      console.log(`   🔒 Hashing...`);
+      logger.log(`   🔒 Hashing...`);
       
       // Update directly
       await db.update(users)
         .set({ password: hashedPassword })
         .where(db.sql`${users.id} = ${user.id}`);
       
-      console.log(`   ✅ SUCCESS - Updated to bcrypt hash\n`);
+      logger.log(`   ✅ SUCCESS - Updated to bcrypt hash\n`);
       migrated++;
       
     } catch (error) {
-      console.error(`   ❌ FAILED for ${email}:`, error);
+      logger.error(`   ❌ FAILED for ${email}:`, error);
       failed++;
     }
   }
   
-  console.log('\n═══════════════════════════════════════════════');
-  console.log('📊 MIGRATION COMPLETE');
-  console.log('═══════════════════════════════════════════════');
-  console.log(`✅ Already hashed: ${alreadyHashed}`);
-  console.log(`🔐 Migrated to bcrypt: ${migrated}`);
-  console.log(`❌ Failed: ${failed}`);
-  console.log(`📦 Total: ${allUsers.length}`);
-  console.log('═══════════════════════════════════════════════\n');
+  logger.log('\n═══════════════════════════════════════════════');
+  logger.log('📊 MIGRATION COMPLETE');
+  logger.log('═══════════════════════════════════════════════');
+  logger.log(`✅ Already hashed: ${alreadyHashed}`);
+  logger.log(`🔐 Migrated to bcrypt: ${migrated}`);
+  logger.log(`❌ Failed: ${failed}`);
+  logger.log(`📦 Total: ${allUsers.length}`);
+  logger.log('═══════════════════════════════════════════════\n');
 }
 
 hashAllPasswords()
   .then(() => process.exit(0))
   .catch(err => {
-    console.error('💥 Migration failed:', err);
+    logger.error('💥 Migration failed:', err);
     process.exit(1);
   });

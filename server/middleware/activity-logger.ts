@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import type { IStorage } from '../storage';
+import { logger } from '../utils/production-safe-logger';
 
 interface ActivityLoggerOptions {
   storage: IStorage;
@@ -112,12 +113,12 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
 
           // Only log missing user context for API calls (not static assets)
           if (!user?.id && req.path.startsWith('/api/')) {
-            console.log(
+            logger.log(
               `🚨 Activity Logger: No user context for ${req.method} ${req.path}`
             );
-            console.log(`   - req.user exists: ${!!user}`);
-            console.log(`   - Session user exists: ${!!sessionUser}`);
-            console.log(`   - Status code: ${res.statusCode}`);
+            logger.log(`   - req.user exists: ${!!user}`);
+            logger.log(`   - Session user exists: ${!!sessionUser}`);
+            logger.log(`   - Status code: ${res.statusCode}`);
           }
 
           if (user?.id && res.statusCode < 400) {
@@ -367,7 +368,7 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
             // Activity logged silently
           }
         } catch (error) {
-          console.error('Error logging user activity:', error);
+          logger.error('Error logging user activity:', error);
         }
       });
 

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
@@ -20,7 +21,7 @@ router.get('/', async (req, res) => {
 
     res.json(notes);
   } catch (error) {
-    console.error('Error fetching meeting notes:', error);
+    logger.error('Error fetching meeting notes:', error);
     res.status(500).json({ error: 'Failed to fetch meeting notes' });
   }
 });
@@ -37,7 +38,7 @@ router.get('/:id', async (req, res) => {
 
     res.json(note);
   } catch (error) {
-    console.error('Error fetching meeting note:', error);
+    logger.error('Error fetching meeting note:', error);
     res.status(500).json({ error: 'Failed to fetch meeting note' });
   }
 });
@@ -76,7 +77,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(savedNote);
   } catch (error) {
-    console.error('Error creating meeting note:', error);
+    logger.error('Error creating meeting note:', error);
     res.status(500).json({ error: 'Failed to create meeting note' });
   }
 });
@@ -96,7 +97,7 @@ router.patch('/:id', async (req, res) => {
 
     res.json(updatedNote);
   } catch (error) {
-    console.error('Error updating meeting note:', error);
+    logger.error('Error updating meeting note:', error);
     res.status(500).json({ error: 'Failed to update meeting note' });
   }
 });
@@ -115,7 +116,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ success: true, message: 'Note deleted successfully' });
   } catch (error) {
-    console.error('Error deleting meeting note:', error);
+    logger.error('Error deleting meeting note:', error);
     res.status(500).json({ error: 'Failed to delete meeting note' });
   }
 });
@@ -145,7 +146,7 @@ router.patch('/bulk/status', async (req, res) => {
       updated: successCount 
     });
   } catch (error) {
-    console.error('Error bulk updating meeting notes:', error);
+    logger.error('Error bulk updating meeting notes:', error);
     res.status(500).json({ error: 'Failed to bulk update meeting notes' });
   }
 });
@@ -172,7 +173,7 @@ router.delete('/bulk', async (req, res) => {
       deleted: successCount 
     });
   } catch (error) {
-    console.error('Error bulk deleting meeting notes:', error);
+    logger.error('Error bulk deleting meeting notes:', error);
     res.status(500).json({ error: 'Failed to bulk delete meeting notes' });
   }
 });

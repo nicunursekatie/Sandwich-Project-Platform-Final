@@ -4,6 +4,7 @@ import { logger } from '../../middleware/logger';
 import { insertTaskCompletionSchema } from '@shared/schema';
 import { storage } from '../../storage-wrapper';
 import { taskService } from '../../services/tasks/index';
+import { logger } from '../utils/production-safe-logger';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
@@ -45,8 +46,8 @@ tasksRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
     const updates = req.body;
     const user = getUser(req);
 
-    console.log(`Task PATCH request - Task ID: ${taskId}`);
-    console.log('Updates payload:', updates);
+    logger.log(`Task PATCH request - Task ID: ${taskId}`);
+    logger.log('Updates payload:', updates);
 
     if (!user) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -70,10 +71,10 @@ tasksRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) => {
       );
     }
 
-    console.log(`Task ${taskId} updated successfully`);
+    logger.log(`Task ${taskId} updated successfully`);
     res.json(task);
   } catch (error) {
-    console.error('Error updating project task:', error);
+    logger.error('Error updating project task:', error);
     logger.error('Failed to update task', error);
     res.status(500).json({ error: 'Failed to update task' });
   }
@@ -96,7 +97,7 @@ tasksRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting project task:', error);
+    logger.error('Error deleting project task:', error);
     logger.error('Failed to delete task', error);
     res.status(500).json({ error: 'Failed to delete task' });
   }
@@ -190,7 +191,7 @@ tasksRouter.post(
         totalAssignees: assigneeIds.length,
       });
     } catch (error) {
-      console.error('Error completing task:', error);
+      logger.error('Error completing task:', error);
       logger.error('Failed to complete task', error);
       res.status(500).json({ error: 'Failed to complete task' });
     }
@@ -223,7 +224,7 @@ tasksRouter.delete(
 
       res.json({ success: true });
     } catch (error) {
-      console.error('Error removing completion:', error);
+      logger.error('Error removing completion:', error);
       logger.error('Failed to remove task completion', error);
       res.status(500).json({ error: 'Failed to remove completion' });
     }
@@ -239,7 +240,7 @@ tasksRouter.get(
       const completions = await storage.getTaskCompletions(taskId);
       res.json(completions);
     } catch (error) {
-      console.error('Error fetching completions:', error);
+      logger.error('Error fetching completions:', error);
       logger.error('Failed to fetch task completions', error);
       res.status(500).json({ error: 'Failed to fetch completions' });
     }

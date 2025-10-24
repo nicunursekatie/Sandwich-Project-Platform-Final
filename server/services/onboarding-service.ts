@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { onboardingChallenges, onboardingProgress } from '@shared/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
+import { logger } from '../utils/production-safe-logger';
 
 export interface ChallengeWithProgress {
   id: number;
@@ -141,7 +142,7 @@ export class OnboardingService {
         message: `Completed: ${challengeData.title}`,
       };
     } catch (error) {
-      console.error('Error tracking challenge completion:', error);
+      logger.error('Error tracking challenge completion:', error);
       return {
         success: false,
         message: 'Failed to track challenge completion',
@@ -464,7 +465,7 @@ export class OnboardingService {
       }
     }
 
-    console.log('✅ Default onboarding challenges initialized');
+    logger.log('✅ Default onboarding challenges initialized');
   }
 }
 

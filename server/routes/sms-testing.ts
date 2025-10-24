@@ -8,6 +8,7 @@ import {
   validateSMSConfig,
 } from '../sms-service';
 import { z } from 'zod';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
@@ -48,11 +49,11 @@ router.get(
             .accounts(process.env.TWILIO_ACCOUNT_SID)
             .fetch();
           twilioStatus = 'connected';
-          console.log('✅ Twilio connection successful:', account.friendlyName);
+          logger.log('✅ Twilio connection successful:', account.friendlyName);
         } catch (err: any) {
           twilioStatus = 'error';
           twilioError = err.message;
-          console.error('❌ Twilio connection error:', err);
+          logger.error('❌ Twilio connection error:', err);
         }
       }
 
@@ -75,7 +76,7 @@ router.get(
         },
       });
     } catch (error: any) {
-      console.error('Error checking SMS configuration:', error);
+      logger.error('Error checking SMS configuration:', error);
       res.status(500).json({
         error: 'Failed to check SMS configuration',
         message: (error as Error).message,
@@ -98,21 +99,21 @@ router.post(
         ? `https://${process.env.REPLIT_DOMAIN}`
         : req.headers.origin || 'https://your-app.replit.app';
 
-      console.log(
+      logger.log(
         `🧪 Sending test SMS to ${phoneNumber} from user ${req.user?.email}`
       );
 
       const result = await sendTestSMS(phoneNumber, appUrl);
 
       if (result.success) {
-        console.log(`✅ Test SMS sent successfully to ${phoneNumber}`);
+        logger.log(`✅ Test SMS sent successfully to ${phoneNumber}`);
       } else {
-        console.error(`❌ Test SMS failed: ${result.message}`);
+        logger.error(`❌ Test SMS failed: ${result.message}`);
       }
 
       res.json(result);
     } catch (error) {
-      console.error('Error sending test SMS:', error);
+      logger.error('Error sending test SMS:', error);
 
       if ((error as any).name === 'ZodError') {
         return res.status(400).json({
@@ -143,25 +144,25 @@ router.post(
         ? `https://${process.env.REPLIT_DOMAIN}`
         : req.headers.origin || 'https://your-app.replit.app';
 
-      console.log(
+      logger.log(
         `📱 Sending SMS reminder for location "${hostLocation}" from user ${req.user?.email}`
       );
 
       const result = await sendSMSReminder(hostLocation, appUrl);
 
       if (result.success) {
-        console.log(
+        logger.log(
           `✅ SMS reminder sent for ${hostLocation}: ${result.message}`
         );
       } else {
-        console.error(
+        logger.error(
           `❌ SMS reminder failed for ${hostLocation}: ${result.message}`
         );
       }
 
       res.json(result);
     } catch (error) {
-      console.error('Error sending SMS reminder:', error);
+      logger.error('Error sending SMS reminder:', error);
 
       if ((error as any).name === 'ZodError') {
         return res.status(400).json({
@@ -199,7 +200,7 @@ router.post(
         ? `https://${process.env.REPLIT_DOMAIN}`
         : req.headers.origin || 'https://your-app.replit.app';
 
-      console.log(
+      logger.log(
         `📱 Sending weekly SMS reminders for ${missingLocations.length} locations from user ${req.user?.email}`
       );
 
@@ -212,7 +213,7 @@ router.post(
       ).length;
       const failureCount = locationResults.length - successCount;
 
-      console.log(
+      logger.log(
         `✅ Weekly SMS reminders completed: ${successCount} successes, ${failureCount} failures`
       );
 
@@ -227,7 +228,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error('Error sending weekly SMS reminders:', error);
+      logger.error('Error sending weekly SMS reminders:', error);
 
       if ((error as any).name === 'ZodError') {
         return res.status(400).json({

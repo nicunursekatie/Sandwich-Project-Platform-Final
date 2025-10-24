@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db';
 import { userActivityLogs } from '@shared/schema';
 import { sql, desc, and, gte, eq } from 'drizzle-orm';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
@@ -105,7 +106,7 @@ router.get('/enhanced-stats', async (req, res) => {
       dailyActiveUsers: dailyActiveUsers || []
     });
   } catch (error) {
-    console.error('Error fetching enhanced stats:', error);
+    logger.error('Error fetching enhanced stats:', error);
     res.status(500).json({ error: 'Failed to fetch enhanced stats' });
   }
 });
@@ -225,7 +226,7 @@ router.get('/detailed-users', async (req, res) => {
 
     res.json(detailedActivities || []);
   } catch (error) {
-    console.error('Error fetching detailed users:', error);
+    logger.error('Error fetching detailed users:', error);
     res.status(500).json({ error: 'Failed to fetch detailed user activities' });
   }
 });
@@ -274,7 +275,7 @@ router.get('/logs', async (req, res) => {
 
     res.json(logs || []);
   } catch (error) {
-    console.error('Error fetching activity logs:', error);
+    logger.error('Error fetching activity logs:', error);
     res.status(500).json({ error: 'Failed to fetch activity logs' });
   }
 });
@@ -381,7 +382,7 @@ router.get('/user-stats/:userId', async (req, res) => {
       peakUsageTimes: peakUsageTimes || []
     });
   } catch (error) {
-    console.error('Error fetching user stats:', error);
+    logger.error('Error fetching user stats:', error);
     res.status(500).json({ error: 'Failed to fetch user stats' });
   }
 });
@@ -426,7 +427,7 @@ router.post('/track', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error tracking activity:', error);
+    logger.error('Error tracking activity:', error);
     res.status(500).json({ error: 'Failed to track activity' });
   }
 });

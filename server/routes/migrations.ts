@@ -4,6 +4,7 @@ import { requirePermission } from '../middleware/auth.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
@@ -20,7 +21,7 @@ router.post('/sandwich-range-fields', requirePermission('ADMIN'), async (req: an
       return res.status(500).json({ error: 'DATABASE_URL not configured' });
     }
 
-    console.log('🔄 Running sandwich range fields migration...');
+    logger.log('🔄 Running sandwich range fields migration...');
 
     // Connect to database using Neon HTTP
     const sql = neon(DATABASE_URL);
@@ -29,12 +30,12 @@ router.post('/sandwich-range-fields', requirePermission('ADMIN'), async (req: an
     const migrationPath = path.join(__dirname, '..', 'migrations', 'add_sandwich_range_fields.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf-8');
 
-    console.log('📝 Executing SQL:\n', migrationSQL);
+    logger.log('📝 Executing SQL:\n', migrationSQL);
 
     // Execute the migration
     await sql(migrationSQL);
 
-    console.log('✅ Migration completed successfully!');
+    logger.log('✅ Migration completed successfully!');
 
     res.json({
       success: true,
@@ -42,7 +43,7 @@ router.post('/sandwich-range-fields', requirePermission('ADMIN'), async (req: an
       sql: migrationSQL
     });
   } catch (error: any) {
-    console.error('❌ Migration failed:', error);
+    logger.error('❌ Migration failed:', error);
     res.status(500).json({
       success: false,
       error: 'Migration failed',

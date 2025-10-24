@@ -11,6 +11,7 @@
 
 import { storage } from '../../storage-wrapper';
 import type { User, Message, Project } from '../../../shared/schema';
+import { logger } from '../utils/production-safe-logger';
 
 // TODO: Move messaging logic from messaging-service.ts and chat components
 export interface MessagingService {
@@ -173,13 +174,13 @@ export class MessagingServiceImpl implements MessagingService {
             .onConflictDoNothing();
         } catch (err) {
           // Silently handle duplicates - this is expected behavior
-          console.log(`Message ${message.id} already marked as read for user ${userId}`);
+          logger.log(`Message ${message.id} already marked as read for user ${userId}`);
         }
       }
 
       return true;
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      logger.error('Error marking messages as read:', error);
       return false;
     }
   }

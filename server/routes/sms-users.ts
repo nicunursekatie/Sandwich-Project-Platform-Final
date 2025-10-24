@@ -4,6 +4,7 @@ import { storage } from '../storage-wrapper';
 import { z } from 'zod';
 import { generateVerificationCode, sendConfirmationSMS, submitTollFreeVerification, checkTollFreeVerificationStatus } from '../sms-service';
 import twilio from 'twilio';
+import { logger } from '../utils/production-safe-logger';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -51,7 +52,7 @@ router.get('/users/sms-status', isAuthenticated, async (req, res) => {
       confirmationMethod: smsConsent.confirmationMethod || null,
     });
   } catch (error) {
-    console.error('Error getting SMS status:', error);
+    logger.error('Error getting SMS status:', error);
     res.status(500).json({
       error: 'Failed to get SMS status',
       message: (error as Error).message,
@@ -126,19 +127,19 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
       const result = await sendWelcomeSMS(formattedPhone);
       
       if (result.success) {
-        console.log(`✅ Welcome SMS sent to ${formattedPhone}`);
+        logger.log(`✅ Welcome SMS sent to ${formattedPhone}`);
       } else {
-        console.warn(`⚠️ Welcome SMS failed: ${result.message}`);
+        logger.warn(`⚠️ Welcome SMS failed: ${result.message}`);
       }
     } catch (smsError) {
       // Log the error but don't fail the opt-in
-      console.error('Failed to send welcome SMS:', smsError);
-      console.error('Error details:', {
+      logger.error('Failed to send welcome SMS:', smsError);
+      logger.error('Error details:', {
         message: (smsError as any).message
       });
     }
 
-    console.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone})`);
+    logger.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone})`);
 
     res.json({
       success: true,
@@ -147,7 +148,7 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
       status: 'pending_confirmation',
     });
   } catch (error) {
-    console.error('Error processing SMS opt-in:', error);
+    logger.error('Error processing SMS opt-in:', error);
     
     if ((error as any).name === 'ZodError') {
       return res.status(400).json({
@@ -191,14 +192,14 @@ router.post('/users/sms-opt-out', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    console.log(`✅ SMS opt-out successful for user ${user.email}`);
+    logger.log(`✅ SMS opt-out successful for user ${user.email}`);
 
     res.json({
       success: true,
       message: 'Successfully opted out of SMS reminders',
     });
   } catch (error) {
-    console.error('Error processing SMS opt-out:', error);
+    logger.error('Error processing SMS opt-out:', error);
     res.status(500).json({
       error: 'Failed to opt out of SMS reminders',
       message: (error as Error).message,
@@ -264,7 +265,7 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    console.log(`✅ SMS confirmation successful for user ${user.email} (${smsConsent.phoneNumber})`);
+    logger.log(`✅ SMS confirmation successful for user ${user.email} (${smsConsent.phoneNumber})`);
 
     res.json({
       success: true,
@@ -273,7 +274,7 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
       status: 'confirmed',
     });
   } catch (error) {
-    console.error('Error confirming SMS:', error);
+    logger.error('Error confirming SMS:', error);
     
     if ((error as any).name === 'ZodError') {
       return res.status(400).json({
@@ -322,14 +323,14 @@ router.post('/users/sms-reset', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    console.log(`✅ SMS status reset for user ${user.email}`);
+    logger.log(`✅ SMS status reset for user ${user.email}`);
 
     res.json({
       success: true,
       message: 'SMS opt-in status has been reset. You can now start the opt-in process again.',
     });
   } catch (error) {
-    console.error('Error resetting SMS status:', error);
+    logger.error('Error resetting SMS status:', error);
     res.status(500).json({
       error: 'Failed to reset SMS status',
       message: (error as Error).message,
@@ -396,7 +397,7 @@ router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    console.log(`✅ Verification code resent to ${phoneNumber} for user ${user.email}`);
+    logger.log(`✅ Verification code resent to ${phoneNumber} for user ${user.email}`);
 
     res.json({
       success: true,
@@ -404,7 +405,7 @@ router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
       phoneNumber: phoneNumber,
     });
   } catch (error) {
-    console.error('Error resending verification code:', error);
+    logger.error('Error resending verification code:', error);
     res.status(500).json({
       error: 'Failed to resend verification code',
       message: (error as Error).message,
@@ -422,12 +423,12 @@ router.post('/sms/webhook', async (req, res) => {
     const twilioSignature = req.headers['x-twilio-signature'] as string;
     
     if (!twilioSignature) {
-      console.warn('⚠️ SECURITY VIOLATION: SMS webhook request missing X-Twilio-Signature header');
+      logger.warn('⚠️ SECURITY VIOLATION: SMS webhook request missing X-Twilio-Signature header');
       return res.status(403).json({ error: 'Forbidden: Missing signature' });
     }
     
     if (!process.env.TWILIO_AUTH_TOKEN) {
-      console.error('❌ SECURITY ERROR: TWILIO_AUTH_TOKEN not configured for webhook validation');
+      logger.error('❌ SECURITY ERROR: TWILIO_AUTH_TOKEN not configured for webhook validation');
       return res.status(500).json({ error: 'Server configuration error' });
     }
     
@@ -445,13 +446,13 @@ router.post('/sms/webhook', async (req, res) => {
     );
     
     if (!isValidRequest) {
-      console.warn(`⚠️ SECURITY VIOLATION: Invalid Twilio signature for webhook request from ${req.ip}`);
-      console.warn(`Attempted URL: ${webhookUrl}`);
-      console.warn(`Signature: ${twilioSignature}`);
+      logger.warn(`⚠️ SECURITY VIOLATION: Invalid Twilio signature for webhook request from ${req.ip}`);
+      logger.warn(`Attempted URL: ${webhookUrl}`);
+      logger.warn(`Signature: ${twilioSignature}`);
       return res.status(403).json({ error: 'Forbidden: Invalid signature' });
     }
     
-    console.log('✅ SECURITY: Twilio webhook signature validated successfully');
+    logger.log('✅ SECURITY: Twilio webhook signature validated successfully');
     
     const { Body, From } = req.body;
     
@@ -462,7 +463,7 @@ router.post('/sms/webhook', async (req, res) => {
     const messageBody = Body.trim().toUpperCase();
     const phoneNumber = From;
 
-    console.log(`📱 Received SMS from ${phoneNumber}: "${Body}"`);
+    logger.log(`📱 Received SMS from ${phoneNumber}: "${Body}"`);
 
     // Check if message is "YES" confirmation
     if (messageBody === 'YES') {
@@ -478,7 +479,7 @@ router.post('/sms/webhook', async (req, res) => {
       });
 
       if (!userWithPendingConfirmation) {
-        console.log(`❌ No pending confirmation found for ${phoneNumber}`);
+        logger.log(`❌ No pending confirmation found for ${phoneNumber}`);
         return res.status(200).send('OK'); // Still return 200 to Twilio
       }
 
@@ -501,7 +502,7 @@ router.post('/sms/webhook', async (req, res) => {
 
       await storage.updateUser(userWithPendingConfirmation.id, { metadata: updatedMetadata });
 
-      console.log(`✅ SMS confirmation via YES reply successful for user ${userWithPendingConfirmation.email} (${phoneNumber})`);
+      logger.log(`✅ SMS confirmation via YES reply successful for user ${userWithPendingConfirmation.email} (${phoneNumber})`);
     } 
     // Check if message is a verification code
     else if (/^\d{6}$/.test(messageBody)) {
@@ -518,7 +519,7 @@ router.post('/sms/webhook', async (req, res) => {
       });
 
       if (!userWithMatchingCode) {
-        console.log(`❌ No matching verification code found for ${phoneNumber}: ${messageBody}`);
+        logger.log(`❌ No matching verification code found for ${phoneNumber}: ${messageBody}`);
         return res.status(200).send('OK');
       }
 
@@ -528,7 +529,7 @@ router.post('/sms/webhook', async (req, res) => {
       const expiry = new Date(smsConsent.verificationCodeExpiry);
       
       if (new Date() > expiry) {
-        console.log(`❌ Verification code expired for ${phoneNumber}`);
+        logger.log(`❌ Verification code expired for ${phoneNumber}`);
         return res.status(200).send('OK');
       }
 
@@ -548,15 +549,15 @@ router.post('/sms/webhook', async (req, res) => {
 
       await storage.updateUser(userWithMatchingCode.id, { metadata: updatedMetadata });
 
-      console.log(`✅ SMS confirmation via verification code successful for user ${userWithMatchingCode.email} (${phoneNumber})`);
+      logger.log(`✅ SMS confirmation via verification code successful for user ${userWithMatchingCode.email} (${phoneNumber})`);
     } else {
-      console.log(`ℹ️ Unrecognized SMS message from ${phoneNumber}: "${Body}"`);
+      logger.log(`ℹ️ Unrecognized SMS message from ${phoneNumber}: "${Body}"`);
     }
 
     // Always respond with 200 OK to Twilio
     res.status(200).send('OK');
   } catch (error) {
-    console.error('Error processing SMS webhook:', error);
+    logger.error('Error processing SMS webhook:', error);
     // Always respond with 200 OK to Twilio even on errors
     res.status(200).send('OK');
   }
@@ -568,12 +569,12 @@ router.post('/sms/webhook', async (req, res) => {
  */
 router.post('/users/sms-webhook/status', async (req, res) => {
   try {
-    console.log('📱 Received Twilio status webhook:', req.body);
+    logger.log('📱 Received Twilio status webhook:', req.body);
 
     const { MessageSid, MessageStatus, ErrorCode, To, From } = req.body;
 
     if (MessageStatus === 'undelivered' || MessageStatus === 'failed') {
-      console.error(`❌ SMS delivery failed:`, {
+      logger.error(`❌ SMS delivery failed:`, {
         sid: MessageSid,
         status: MessageStatus,
         errorCode: ErrorCode,
@@ -583,28 +584,28 @@ router.post('/users/sms-webhook/status', async (req, res) => {
 
       // Log specific error code details
       if (ErrorCode === '30032') {
-        console.error('⚠️ Error 30032: Carrier unreachable. This may be due to:');
-        console.error('- The number may be a landline');
-        console.error('- Carrier-specific filtering (AT&T/Verizon may block unregistered numbers)');
-        console.error('- The number needs to be registered with A2P 10DLC');
-        console.error('- Try texting "START" to the Twilio number from the recipient phone first');
+        logger.error('⚠️ Error 30032: Carrier unreachable. This may be due to:');
+        logger.error('- The number may be a landline');
+        logger.error('- Carrier-specific filtering (AT&T/Verizon may block unregistered numbers)');
+        logger.error('- The number needs to be registered with A2P 10DLC');
+        logger.error('- Try texting "START" to the Twilio number from the recipient phone first');
       } else if (ErrorCode === '30005') {
-        console.error('⚠️ Error 30005: Unknown destination handset');
-        console.error('- The phone number format may be incorrect');
-        console.error('- The number may not exist or be deactivated');
+        logger.error('⚠️ Error 30005: Unknown destination handset');
+        logger.error('- The phone number format may be incorrect');
+        logger.error('- The number may not exist or be deactivated');
       } else if (ErrorCode === '30003') {
-        console.error('⚠️ Error 30003: Unreachable destination handset');
-        console.error('- The phone is likely turned off or out of service area');
+        logger.error('⚠️ Error 30003: Unreachable destination handset');
+        logger.error('- The phone is likely turned off or out of service area');
       } else if (ErrorCode === '30006') {
-        console.error('⚠️ Error 30006: Landline or unreachable carrier');
-        console.error('- The number is likely a landline that cannot receive SMS');
+        logger.error('⚠️ Error 30006: Landline or unreachable carrier');
+        logger.error('- The number is likely a landline that cannot receive SMS');
       } else if (ErrorCode === '30007') {
-        console.error('⚠️ Error 30007: Carrier violation');
-        console.error('- Message content was blocked by the carrier');
-        console.error('- May need to register for A2P 10DLC');
+        logger.error('⚠️ Error 30007: Carrier violation');
+        logger.error('- Message content was blocked by the carrier');
+        logger.error('- May need to register for A2P 10DLC');
       } else if (ErrorCode === '30008') {
-        console.error('⚠️ Error 30008: Unknown error');
-        console.error('- Carrier returned an unknown error');
+        logger.error('⚠️ Error 30008: Unknown error');
+        logger.error('- Carrier returned an unknown error');
       }
 
       // Update user's SMS status if delivery fails with certain error codes
@@ -632,11 +633,11 @@ router.post('/users/sms-webhook/status', async (req, res) => {
           };
 
           await storage.updateUser(affectedUser.id, { metadata: updatedMetadata });
-          console.log(`📝 Updated user ${affectedUser.email} with delivery error information`);
+          logger.log(`📝 Updated user ${affectedUser.email} with delivery error information`);
         }
       }
     } else if (MessageStatus === 'delivered') {
-      console.log(`✅ SMS delivered successfully:`, {
+      logger.log(`✅ SMS delivered successfully:`, {
         sid: MessageSid,
         to: To,
       });
@@ -645,7 +646,7 @@ router.post('/users/sms-webhook/status', async (req, res) => {
     // Always respond with 200 OK to Twilio
     res.status(200).send('OK');
   } catch (error) {
-    console.error('Error processing SMS status webhook:', error);
+    logger.error('Error processing SMS status webhook:', error);
     // Always respond with 200 OK to Twilio even on errors
     res.status(200).send('OK');
   }
@@ -678,7 +679,7 @@ router.post('/users/toll-free-verification/submit', isAuthenticated, async (req,
       });
     }
   } catch (error) {
-    console.error('Error submitting toll-free verification:', error);
+    logger.error('Error submitting toll-free verification:', error);
     res.status(500).json({
       error: 'Failed to submit toll-free verification',
       message: (error as Error).message,
@@ -714,7 +715,7 @@ router.get('/users/toll-free-verification/status', isAuthenticated, async (req, 
       });
     }
   } catch (error) {
-    console.error('Error checking toll-free verification status:', error);
+    logger.error('Error checking toll-free verification status:', error);
     res.status(500).json({
       error: 'Failed to check toll-free verification status',
       message: (error as Error).message,

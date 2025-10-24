@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { z } from 'zod';
 import { insertSandwichDistributionSchema } from '@shared/schema';
+import { logger } from '../utils/production-safe-logger';
 
 export function createSandwichDistributionsRouter(deps: RouterDependencies) {
   const router = Router();
@@ -13,7 +14,7 @@ export function createSandwichDistributionsRouter(deps: RouterDependencies) {
     const distributions = await storage.getAllSandwichDistributions();
     res.json(distributions);
   } catch (error) {
-    console.error('Error fetching sandwich distributions:', error);
+    logger.error('Error fetching sandwich distributions:', error);
     res.status(500).json({ error: 'Failed to fetch sandwich distributions' });
   }
 });
@@ -33,7 +34,7 @@ export function createSandwichDistributionsRouter(deps: RouterDependencies) {
 
     res.json(distribution);
   } catch (error) {
-    console.error('Error fetching sandwich distribution:', error);
+    logger.error('Error fetching sandwich distribution:', error);
     res.status(500).json({ error: 'Failed to fetch sandwich distribution' });
   }
 });
@@ -54,7 +55,7 @@ export function createSandwichDistributionsRouter(deps: RouterDependencies) {
       });
     }
 
-    console.error('Error creating sandwich distribution:', error);
+    logger.error('Error creating sandwich distribution:', error);
     res.status(500).json({ error: 'Failed to create sandwich distribution' });
   }
 });
@@ -96,7 +97,7 @@ export function createSandwichDistributionsRouter(deps: RouterDependencies) {
       });
     }
 
-    console.error('Error updating sandwich distribution:', error);
+    logger.error('Error updating sandwich distribution:', error);
     res.status(500).json({ error: 'Failed to update sandwich distribution' });
   }
 });
@@ -116,7 +117,7 @@ export function createSandwichDistributionsRouter(deps: RouterDependencies) {
 
     res.json({ success: true, message: 'Distribution deleted successfully' });
   } catch (error) {
-    console.error('Error deleting sandwich distribution:', error);
+    logger.error('Error deleting sandwich distribution:', error);
     res.status(500).json({ error: 'Failed to delete sandwich distribution' });
   }
 });
@@ -137,7 +138,7 @@ export function createSandwichDistributionsRouter(deps: RouterDependencies) {
       await storage.getSandwichDistributionsByWeek(weekEnding);
     res.json(distributions);
   } catch (error) {
-    console.error('Error fetching distributions by week:', error);
+    logger.error('Error fetching distributions by week:', error);
     res.status(500).json({ error: 'Failed to fetch distributions by week' });
   }
 });
@@ -153,7 +154,7 @@ export function createSandwichDistributionsRouter(deps: RouterDependencies) {
     const distributions = await storage.getSandwichDistributionsByHost(hostId);
     res.json(distributions);
   } catch (error) {
-    console.error('Error fetching distributions by host:', error);
+    logger.error('Error fetching distributions by host:', error);
     res.status(500).json({ error: 'Failed to fetch distributions by host' });
   }
 });
@@ -170,7 +171,7 @@ export function createSandwichDistributionsRouter(deps: RouterDependencies) {
       await storage.getSandwichDistributionsByRecipient(recipientId);
     res.json(distributions);
   } catch (error) {
-    console.error('Error fetching distributions by recipient:', error);
+    logger.error('Error fetching distributions by recipient:', error);
     res
       .status(500)
       .json({ error: 'Failed to fetch distributions by recipient' });

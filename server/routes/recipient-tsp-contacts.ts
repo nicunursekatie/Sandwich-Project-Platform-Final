@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { insertRecipientTspContactSchema } from '@shared/schema';
 import { z } from 'zod';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 
 export function createRecipientTspContactsRouter(deps: RouterDependencies) {
@@ -52,7 +53,7 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
 
       res.json(contacts);
     } catch (error) {
-      console.error('Error fetching TSP contacts:', error);
+      logger.error('Error fetching TSP contacts:', error);
       res.status(500).json({ error: 'Failed to fetch TSP contacts' });
     }
   }
@@ -122,7 +123,7 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
           .status(400)
           .json({ error: 'Invalid data', details: error.errors });
       }
-      console.error('Error creating TSP contact:', error);
+      logger.error('Error creating TSP contact:', error);
       res.status(500).json({ error: 'Failed to create TSP contact' });
     }
   }
@@ -224,7 +225,7 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
           .status(400)
           .json({ error: 'Invalid data', details: error.errors });
       }
-      console.error('Error updating TSP contact:', error);
+      logger.error('Error updating TSP contact:', error);
       res.status(500).json({ error: 'Failed to update TSP contact' });
     }
   }
@@ -275,7 +276,7 @@ export function createRecipientTspContactsRouter(deps: RouterDependencies) {
 
       res.json({ message: 'TSP contact deactivated successfully' });
     } catch (error) {
-      console.error('Error deleting TSP contact:', error);
+      logger.error('Error deleting TSP contact:', error);
       res.status(500).json({ error: 'Failed to delete TSP contact' });
     }
   }
