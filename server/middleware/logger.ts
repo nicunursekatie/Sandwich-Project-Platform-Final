@@ -47,13 +47,13 @@ class Logger {
 
     switch (entry.level) {
       case 'error':
-        logger.error(logMessage, entry.error || '');
+        console.error(logMessage, entry.error || '');
         break;
       case 'warn':
-        logger.warn(logMessage);
+        console.warn(logMessage);
         break;
       default:
-        logger.log(logMessage);
+        console.log(logMessage);
     }
   }
 
