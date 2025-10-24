@@ -403,6 +403,7 @@ export interface IStorage {
 
   // Host Contacts
   createHostContact(contact: InsertHostContact): Promise<HostContact>;
+  getHostContact(id: number): Promise<HostContact | undefined>;
   getHostContacts(hostId: number): Promise<HostContact[]>;
   updateHostContact(
     id: number,
@@ -1947,6 +1948,10 @@ export class MemStorage implements IStorage {
     };
     this.hostContacts.set(id, contact);
     return contact;
+  }
+
+  async getHostContact(id: number): Promise<HostContact | undefined> {
+    return this.hostContacts.get(id);
   }
 
   async getHostContacts(hostId: number): Promise<HostContact[]> {

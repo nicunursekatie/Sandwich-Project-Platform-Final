@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Shield, FileText, Trophy } from 'lucide-react';
+import { Settings, Shield, FileText, Trophy, Database } from 'lucide-react';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import { ComprehensiveAuditLog } from '@/components/comprehensive-audit-log';
 import { DashboardDocumentSelector } from '@/components/dashboard-document-selector';
 import AdminOnboardingKudos from '@/components/admin-onboarding-kudos';
 import { adminDocuments } from '@/pages/important-documents';
@@ -80,20 +81,31 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <Tabs defaultValue="audit-log" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
+        <Tabs defaultValue="entity-audit-log" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
+            <TabsTrigger
+              value="entity-audit-log"
+              className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+              data-testid="tab-entity-audit-log"
+              onClick={() => trackClick('Entity Audit Log Tab', 'Admin', 'Tab Navigation', 'Switched to entity audit log tab')}
+            >
+              <Database className="h-4 w-4" />
+              Entity Audit Log
+            </TabsTrigger>
             <TabsTrigger
               value="audit-log"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
               data-testid="tab-audit-log"
+              onClick={() => trackClick('Event Request Audit Log Tab', 'Admin', 'Tab Navigation', 'Switched to event request audit log tab')}
             >
               <Shield className="h-4 w-4" />
-              Audit Log
+              Event Requests
             </TabsTrigger>
             <TabsTrigger
               value="dashboard-config"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
               data-testid="tab-dashboard-config"
+              onClick={() => trackClick('Dashboard Config Tab', 'Admin', 'Tab Navigation', 'Switched to dashboard config tab')}
             >
               <FileText className="h-4 w-4" />
               Dashboard Config
@@ -102,11 +114,16 @@ export default function AdminSettings() {
               value="onboarding-kudos"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
               data-testid="tab-onboarding-kudos"
+              onClick={() => trackClick('Onboarding Kudos Tab', 'Admin', 'Tab Navigation', 'Switched to onboarding kudos tab')}
             >
               <Trophy className="h-4 w-4" />
               Onboarding Kudos
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="entity-audit-log" className="space-y-6">
+            <ComprehensiveAuditLog />
+          </TabsContent>
 
           <TabsContent value="audit-log" className="space-y-6">
             <EventRequestAuditLog showFilters data-testid="audit-log" />

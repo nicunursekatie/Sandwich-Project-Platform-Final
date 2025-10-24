@@ -13,6 +13,7 @@ import {
   HostsError,
 } from './hosts/error-handler';
 import { z } from 'zod';
+import { AuditLogger } from '../audit-logger';
 
 export function createHostsRouter(deps: RouterDependencies) {
   const router = Router();
@@ -92,9 +93,9 @@ export function createHostsRouter(deps: RouterDependencies) {
   '/hosts',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: any, res) => {
     validateRequired(req.body, ['name'], 'host creation');
-    
+
     const result = insertHostSchema.safeParse(req.body);
     if (!result.success) {
       throw createHostsError(
@@ -104,8 +105,22 @@ export function createHostsRouter(deps: RouterDependencies) {
         { validationErrors: result.error.errors }
       );
     }
-    
+
     const host = await storage.createHost(result.data);
+
+    // Audit log
+    await AuditLogger.logCreate(
+      'hosts',
+      String(host.id),
+      host,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
     res.status(201).json(host);
   })
 );
@@ -114,18 +129,39 @@ export function createHostsRouter(deps: RouterDependencies) {
   '/hosts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: any, res) => {
     const id = validateId(req.params.id, 'host');
     const updates = req.body;
-    
+
     if (!updates || Object.keys(updates).length === 0) {
       throw createHostsError('No update data provided', 400, 'NO_UPDATE_DATA');
     }
-    
+
+    // Get old data before update
+    const oldHost = await storage.getHost(id);
+    if (!oldHost) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+
     const host = await storage.updateHost(id, updates);
     if (!host) {
       throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
     }
+
+    // Audit log
+    await AuditLogger.logEntityChange(
+      'hosts',
+      String(id),
+      oldHost,
+      host,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
     res.json(host);
   })
 );
@@ -135,9 +171,9 @@ export function createHostsRouter(deps: RouterDependencies) {
   '/hosts/:id/coordinates',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: any, res) => {
     const id = validateId(req.params.id, 'host');
-    
+
     // Validate coordinates using Zod schema
     const result = coordinatesSchema.safeParse(req.body);
     if (!result.success) {
@@ -148,20 +184,40 @@ export function createHostsRouter(deps: RouterDependencies) {
         { validationErrors: result.error.errors }
       );
     }
-    
+
     const { latitude, longitude } = result.data;
-    
+
+    // Get old data before update
+    const oldHost = await storage.getHost(id);
+    if (!oldHost) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+
     // Update host with new coordinates and set geocodedAt timestamp
     const host = await storage.updateHost(id, {
       latitude: latitude.toString(),
       longitude: longitude.toString(),
       geocodedAt: new Date(),
     });
-    
+
     if (!host) {
       throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
     }
-    
+
+    // Audit log
+    await AuditLogger.logEntityChange(
+      'hosts',
+      String(id),
+      oldHost,
+      host,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
     res.json(host);
   })
 );
@@ -169,14 +225,34 @@ export function createHostsRouter(deps: RouterDependencies) {
   router.delete(
   '/hosts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: any, res) => {
     const id = validateId(req.params.id, 'host');
-    
+
+    // Get old data before delete
+    const oldHost = await storage.getHost(id);
+    if (!oldHost) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+
     try {
       const success = await storage.deleteHost(id);
       if (!success) {
         throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
       }
+
+      // Audit log
+      await AuditLogger.logDelete(
+        'hosts',
+        String(id),
+        oldHost,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.status(204).send();
     } catch (error: unknown) {
       // Check if it's a constraint error (has associated records)
@@ -239,9 +315,9 @@ export function createHostsRouter(deps: RouterDependencies) {
   '/host-contacts',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: any, res) => {
     validateRequired(req.body, ['name', 'role', 'phone', 'hostId'], 'host contact creation');
-    
+
     const result = insertHostContactSchema.safeParse(req.body);
     if (!result.success) {
       throw createHostsError(
@@ -251,8 +327,22 @@ export function createHostsRouter(deps: RouterDependencies) {
         { validationErrors: result.error.errors }
       );
     }
-    
+
     const contact = await storage.createHostContact(result.data);
+
+    // Audit log
+    await AuditLogger.logCreate(
+      'host_contacts',
+      String(contact.id),
+      contact,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
     res.status(201).json(contact);
   })
 );
@@ -261,7 +351,7 @@ export function createHostsRouter(deps: RouterDependencies) {
   '/host-contacts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: any, res) => {
     const id = validateId(req.params.id, 'host contact');
     const updates = req.body;
 
@@ -269,10 +359,31 @@ export function createHostsRouter(deps: RouterDependencies) {
       throw createHostsError('No update data provided', 400, 'NO_UPDATE_DATA');
     }
 
+    // Get old data before update
+    const oldContact = await storage.getHostContact(id);
+    if (!oldContact) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
+    }
+
     const contact = await storage.updateHostContact(id, updates);
     if (!contact) {
       throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
     }
+
+    // Audit log
+    await AuditLogger.logEntityChange(
+      'host_contacts',
+      String(id),
+      oldContact,
+      contact,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
     res.json(contact);
   })
 );
@@ -280,12 +391,34 @@ export function createHostsRouter(deps: RouterDependencies) {
   router.delete(
   '/host-contacts/:id',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: any, res) => {
     const id = validateId(req.params.id, 'host contact');
+
+    // Get old data before delete
+    const oldContact = await storage.getHostContact(id);
+    if (!oldContact) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
+    }
+
     const success = await storage.deleteHostContact(id);
+
     if (!success) {
       throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
     }
+
+    // Audit log
+    await AuditLogger.logDelete(
+      'host_contacts',
+      String(id),
+      oldContact,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
     res.status(204).send();
   })
 );

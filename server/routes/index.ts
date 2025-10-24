@@ -52,6 +52,7 @@ import { createPasswordResetRouter } from './password-reset';
 import { createMessageNotificationsRouter } from './message-notifications';
 import { createAnnouncementsRouter } from './announcements';
 import { createPerformanceRouter } from './performance';
+import { createAuditLogsRouter } from './audit-logs';
 
 // Import centralized middleware
 import {
@@ -307,6 +308,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     activityLogRouter
   );
   router.use('/api/activity-log', createErrorHandler('activity-log'));
+
+  // Audit logs router
+  const auditLogsRouter = createAuditLogsRouter(deps);
+  router.use(
+    '/api/audit-logs',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    auditLogsRouter
+  );
+  router.use('/api/audit-logs', createErrorHandler('audit-logs'));
 
   // Event Requests routes
   router.use(

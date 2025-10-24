@@ -1875,6 +1875,14 @@ export class DatabaseStorage implements IStorage {
     return contact;
   }
 
+  async getHostContact(id: number): Promise<HostContact | undefined> {
+    const [contact] = await db
+      .select()
+      .from(hostContacts)
+      .where(eq(hostContacts.id, id));
+    return contact;
+  }
+
   async getHostContacts(hostId: number): Promise<HostContact[]> {
     return await db
       .select()

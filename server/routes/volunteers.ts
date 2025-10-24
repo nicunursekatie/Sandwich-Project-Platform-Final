@@ -1,6 +1,7 @@
 import express from 'express';
 import type { RouterDependencies } from '../types';
 import { insertVolunteerSchema } from '@shared/schema';
+import { AuditLogger } from '../audit-logger';
 
 export function createVolunteersRouter(deps: RouterDependencies) {
   const router = express.Router();
@@ -37,6 +38,20 @@ export function createVolunteersRouter(deps: RouterDependencies) {
     try {
       const validatedData = insertVolunteerSchema.parse(req.body);
       const volunteer = await storage.createVolunteer(validatedData);
+
+      // Audit log
+      await AuditLogger.logCreate(
+        'volunteers',
+        String(volunteer.id),
+        volunteer,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.status(201).json(volunteer);
     } catch (error) {
       console.error('Failed to create volunteer', error);
@@ -48,10 +63,32 @@ export function createVolunteersRouter(deps: RouterDependencies) {
   router.patch('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before update
+      const oldVolunteer = await storage.getVolunteer(id);
+      if (!oldVolunteer) {
+        return res.status(404).json({ message: 'Volunteer not found' });
+      }
+
       const volunteer = await storage.updateVolunteer(id, req.body);
       if (!volunteer) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
+
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'volunteers',
+        String(id),
+        oldVolunteer,
+        volunteer,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.json(volunteer);
     } catch (error) {
       console.error('Failed to update volunteer', error);
@@ -63,10 +100,32 @@ export function createVolunteersRouter(deps: RouterDependencies) {
   router.put('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before update
+      const oldVolunteer = await storage.getVolunteer(id);
+      if (!oldVolunteer) {
+        return res.status(404).json({ message: 'Volunteer not found' });
+      }
+
       const volunteer = await storage.updateVolunteer(id, req.body);
       if (!volunteer) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
+
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'volunteers',
+        String(id),
+        oldVolunteer,
+        volunteer,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.json(volunteer);
     } catch (error) {
       console.error('Failed to update volunteer', error);
@@ -78,10 +137,31 @@ export function createVolunteersRouter(deps: RouterDependencies) {
   router.delete('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before delete
+      const oldVolunteer = await storage.getVolunteer(id);
+      if (!oldVolunteer) {
+        return res.status(404).json({ message: 'Volunteer not found' });
+      }
+
       const deleted = await storage.deleteVolunteer(id);
       if (!deleted) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
+
+      // Audit log
+      await AuditLogger.logDelete(
+        'volunteers',
+        String(id),
+        oldVolunteer,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.status(204).send();
     } catch (error) {
       console.error('Failed to delete volunteer', error);
