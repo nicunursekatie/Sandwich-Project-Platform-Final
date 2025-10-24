@@ -2645,16 +2645,17 @@ export default function SandwichCollectionLog() {
                         </Button>
                       )}
                     </div>
-                </div>
+                  </div>
 
-                {/* Submission info - small text at bottom */}
-                <div className="mt-2 ml-11 text-sm text-slate-500">
-                  Submitted {formatSubmittedAt(collection.submittedAt)}
-                  {collection.createdByName && (
-                    <span className="ml-1 font-medium">
-                      by {collection.createdByName}
-                    </span>
-                  )}
+                  {/* Submission info - small text at bottom */}
+                  <div className="mt-2 ml-11 text-sm text-slate-500">
+                    Submitted {formatSubmittedAt(collection.submittedAt)}
+                    {collection.createdByName && (
+                      <span className="ml-1 font-medium">
+                        by {collection.createdByName}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
