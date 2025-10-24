@@ -147,7 +147,7 @@ After successful deployment:
 
 ### Code Files Updated
 1. **server/routes/auth.ts** - Login route uses `bcrypt.compare()`
-2. **server/temp-auth.ts** - Login, registration, password change, and admin reset all use bcrypt
+2. **server/auth.ts** - Login, registration, password change, and admin reset all use bcrypt
 3. **server/routes/password-reset.ts** - Password reset uses bcrypt hashing
 4. **package.json** - Added `bcrypt` and `@types/bcrypt` dependencies
 

@@ -152,8 +152,8 @@ async upsertUser(user: UpsertUser): Promise<User> {
 }
 ```
 
-#### 3. temp-auth.ts Middleware (20 instances)
-**File:** `server/temp-auth.ts`
+#### 3. auth.ts Middleware (20 instances)
+**File:** `server/auth.ts`
 
 **Pattern to Fix:**
 ```typescript
@@ -313,7 +313,7 @@ After fixing `any` types:
 | **Messaging Routes** | 6 | 6 | 0 | 100% |
 | **Other Route Handlers** | 79 | 0 | 79 | 0% |
 | **Storage Layer** | 96 | 0 | 96 | 0% |
-| **temp-auth.ts** | 20 | 0 | 20 | 0% |
+| **auth.ts** | 20 | 0 | 20 | 0% |
 | **Google Sheets** | 60 | 0 | 60 | 0% |
 | **Reporting** | 69 | 0 | 69 | 0% |
 | **Notifications/ML** | 22 | 0 | 22 | 0% |

@@ -7,7 +7,7 @@ import {
   isAuthenticated,
   getUser,
   type AuthenticatedRequest,
-} from '../temp-auth';
+} from '../auth';
 import { logger } from '../middleware/logger';
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
 import { storage } from '../storage-wrapper';

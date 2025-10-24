@@ -2,7 +2,7 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { Session } from 'express-session';
 import type { User, UserMetadata } from '../../shared/types';
 
-// User session data structure - must match temp-auth.ts SessionData.user
+// User session data structure - must match auth.ts SessionData.user
 export interface SessionUser {
   id: string;
   email: string;

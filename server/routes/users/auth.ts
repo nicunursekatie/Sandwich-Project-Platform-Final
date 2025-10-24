@@ -14,7 +14,7 @@ import { logger } from '../utils/production-safe-logger';
 export function createAuthRoutes(deps: AuthDependencies = {}) {
   const router = Router();
 
-  // Login endpoint - moved from temp-auth.ts to proper auth router
+  // Login endpoint - moved from auth.ts to proper auth router
   router.post('/login', async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;

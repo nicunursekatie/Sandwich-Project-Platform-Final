@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { isAuthenticated } from '../temp-auth';
+import { isAuthenticated } from '../auth';
 import { storage } from '../storage-wrapper';
 import { z } from 'zod';
 import { generateVerificationCode, sendConfirmationSMS, submitTollFreeVerification, checkTollFreeVerificationStatus } from '../sms-service';
