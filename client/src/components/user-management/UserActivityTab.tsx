@@ -169,12 +169,9 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                       feature = feature.replace(' Activity', '');
                     }
                     
-                    // Map generic names to meaningful ones
+                    // Map only truly generic/unclear names to meaningful ones
                     const featureMap: Record<string, string> = {
                       'Basic': 'Dashboard',
-                      'My volunteers': 'Volunteer Management',
-                      'Volunteers': 'Volunteer Directory',
-                      'For assignments': 'Team Board',
                       'Count': 'Collection Counts',
                       'Counts': 'Collection Statistics',
                     };
@@ -188,12 +185,9 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                 return log.action?.replace(/_/g, ' ') || 'Activity';
               };
 
-              // Map section names to cleaner display names
+              // Map section names to cleaner display names (only for truly generic labels)
               const sectionMap: Record<string, string> = {
                 'Basic': 'Dashboard',
-                'My volunteers': 'Volunteer Management',
-                'Volunteers': 'Volunteer Directory',
-                'For assignments': 'Team Board',
                 'Count': 'Collection Counts',
                 'Counts': 'Collection Statistics',
               };
