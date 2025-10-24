@@ -9,6 +9,35 @@ interface CategoryPattern {
   patterns: RegExp[];
 }
 
+// Patterns that indicate religious affiliation (independent of category)
+const religiousPatterns: RegExp[] = [
+  /\bchurch\b/i,
+  /\bchapel\b/i,
+  /\bsynagogue\b/i,
+  /\bmosque\b/i,
+  /\btemple\b/i,
+  /\bparish\b/i,
+  /\bcathedral\b/i,
+  /\bministry\b/i,
+  /\bfellowship\b/i,
+  /\bcongregation\b/i,
+  /\breligious\b/i,
+  /\bfaith\b/i,
+  /\bbible\b/i,
+  /\bchristian\b/i,
+  /\bcatholic\b/i,
+  /\bjewish\b/i,
+  /\bislamic\b/i,
+  /\bbuddhist\b/i,
+  /\bhindu\b/i,
+  /\bst\.?\s+/i, // St. as in Saint
+  /\bsaint\s+/i,
+  /\bholy\b/i,
+  /\bblessed\b/i,
+  /\bdivine\b/i,
+  /\bgospel\b/i,
+];
+
 const categoryPatterns: CategoryPattern[] = [
   // Schools - Elementary
   {
@@ -167,12 +196,38 @@ const categoryPatterns: CategoryPattern[] = [
   },
 ];
 
+function checkReligiousAffiliation(name: string): boolean {
+  const nameLower = name.toLowerCase();
+  return religiousPatterns.some((pattern) => pattern.test(nameLower));
+}
+
 function categorizeOrganization(
   name: string
-): { category: string; schoolClassification?: string } | null {
+): {
+  category: string;
+  schoolClassification?: string;
+  isReligious: boolean;
+} | null {
   const nameLower = name.toLowerCase();
 
-  // Check for church/faith first
+  // First, check if organization has religious affiliation
+  const isReligious = checkReligiousAffiliation(name);
+
+  // Prioritize schools over church_faith category
+  // This ensures "St. Mary's School" is categorized as a school, not a church
+  for (const pattern of categoryPatterns.filter((p) => p.category === 'school')) {
+    for (const regex of pattern.patterns) {
+      if (regex.test(nameLower)) {
+        return {
+          category: pattern.category,
+          schoolClassification: pattern.schoolClassification,
+          isReligious,
+        };
+      }
+    }
+  }
+
+  // Check for church/faith organizations (only if not already categorized as school)
   for (const pattern of categoryPatterns.filter(
     (p) => p.category === 'church_faith'
   )) {
@@ -181,18 +236,7 @@ function categorizeOrganization(
         return {
           category: pattern.category,
           schoolClassification: pattern.schoolClassification,
-        };
-      }
-    }
-  }
-
-  // Then check for schools
-  for (const pattern of categoryPatterns.filter((p) => p.category === 'school')) {
-    for (const regex of pattern.patterns) {
-      if (regex.test(nameLower)) {
-        return {
-          category: pattern.category,
-          schoolClassification: pattern.schoolClassification,
+          isReligious: true, // Churches are always religious
         };
       }
     }
@@ -207,6 +251,7 @@ function categorizeOrganization(
         return {
           category: pattern.category,
           schoolClassification: pattern.schoolClassification,
+          isReligious,
         };
       }
     }
@@ -270,6 +315,7 @@ for (const orgName of testOrganizations) {
     if (result.schoolClassification) {
       console.log(`   → School Classification: ${result.schoolClassification}`);
     }
+    console.log(`   → Religious: ${result.isReligious ? 'Yes' : 'No'}`);
     successCount++;
   } else {
     console.log(`❌ "${orgName}"`);
