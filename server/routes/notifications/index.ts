@@ -7,7 +7,7 @@ import { createStandardMiddleware } from '../../middleware';
 import { smartNotificationsRouter } from './smart';
 import { analyticsRouter } from './analytics';
 import { z } from 'zod';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 const notificationsRouter = Router();
 

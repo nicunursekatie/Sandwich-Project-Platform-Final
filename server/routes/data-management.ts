@@ -8,7 +8,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { db } from '../db';
 import { sandwichCollections, hosts } from '@shared/schema';
 import { sql, eq, desc } from 'drizzle-orm';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export function createDataManagementRouter(deps: RouterDependencies) {
   const router = Router();

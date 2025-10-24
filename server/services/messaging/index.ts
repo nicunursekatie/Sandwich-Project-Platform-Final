@@ -11,7 +11,7 @@
 
 import { storage } from '../../storage-wrapper';
 import type { User, Message, Project } from '../../../shared/schema';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 // TODO: Move messaging logic from messaging-service.ts and chat components
 export interface MessagingService {

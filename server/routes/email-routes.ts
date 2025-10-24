@@ -4,7 +4,7 @@ import { emailService } from '../services/email-service';
 import { db } from '../db';
 import { kudosTracking, users, emailMessages } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export function createEmailRouter(deps: RouterDependencies) {
   const router = Router();

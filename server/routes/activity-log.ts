@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 // Auth will be handled by existing middleware
 import { IStorage } from '../storage';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 const activityLogSchema = z.object({
   action: z.string().min(1),

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { QueryOptimizer } from '../performance/query-optimizer';
 import { CacheManager } from '../performance/cache-manager';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export function createPerformanceRouter(deps: RouterDependencies) {
   const router = Router();

@@ -4,7 +4,7 @@ import { storage } from '../storage-wrapper';
 import logger from '../utils/logger';
 import { z } from 'zod';
 import { insertMeetingNoteSchema } from '@shared/schema';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 const router = Router();
 

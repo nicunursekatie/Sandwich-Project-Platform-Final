@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { db } from '../db';
 import { userActivityLogs } from '@shared/schema';
 import { sql, desc, and, gte, eq } from 'drizzle-orm';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 const router = Router();
 

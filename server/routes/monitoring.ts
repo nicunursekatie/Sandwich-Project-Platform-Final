@@ -6,7 +6,7 @@ import {
   sendWeeklyReminderSMS,
   validateSMSConfig,
 } from '../sms-service';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 const router = Router();
 

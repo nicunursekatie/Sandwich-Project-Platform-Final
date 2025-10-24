@@ -9,7 +9,7 @@ import {
   SessionUser,
 } from '../../types';
 import { getUserMetadata } from '../../../shared/types';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export function createAuthRoutes(deps: AuthDependencies = {}) {
   const router = Router();

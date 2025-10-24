@@ -10,7 +10,7 @@ import {
 } from '@shared/schema';
 import { hasPermission, isProjectOwnerOrAssignee } from '@shared/auth-utils';
 import type { z } from 'zod';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 // Types
 export type Project = typeof projects.$inferSelect;

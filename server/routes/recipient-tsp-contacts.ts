@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { insertRecipientTspContactSchema } from '@shared/schema';
 import { z } from 'zod';
 import { PERMISSIONS } from '@shared/auth-utils';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 
 export function createRecipientTspContactsRouter(deps: RouterDependencies) {

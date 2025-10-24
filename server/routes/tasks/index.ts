@@ -4,7 +4,7 @@ import { logger } from '../../middleware/logger';
 import { insertTaskCompletionSchema } from '@shared/schema';
 import { storage } from '../../storage-wrapper';
 import { taskService } from '../../services/tasks/index';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {

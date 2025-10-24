@@ -14,7 +14,7 @@ import {
   type InsertKudosTracking,
 } from '@shared/schema';
 import { NotificationService } from '../notification-service';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export interface MessageWithSender extends Message {
   senderName?: string;

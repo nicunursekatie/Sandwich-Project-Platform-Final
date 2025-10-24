@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { onboardingChallenges, onboardingProgress } from '@shared/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export interface ChallengeWithProgress {
   id: number;

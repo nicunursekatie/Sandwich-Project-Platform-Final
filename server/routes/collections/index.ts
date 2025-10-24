@@ -12,7 +12,7 @@ import { upload } from '../../middleware/uploads';
 import { QueryOptimizer } from '../../performance/query-optimizer';
 import { insertSandwichCollectionSchema } from '@shared/schema';
 import historicalImportRouter from './historical-import';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 const collectionsRouter = Router();
 

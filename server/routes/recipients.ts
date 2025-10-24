@@ -7,7 +7,7 @@ import { storage } from '../storage-wrapper';
 import { insertRecipientSchema } from '@shared/schema';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 
 const router = Router();

@@ -3,7 +3,7 @@ import { db } from '../db';
 import { users } from '@shared/schema';
 import { eq, or, like, sql, inArray } from 'drizzle-orm';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {

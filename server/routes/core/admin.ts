@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { requirePermission } from '../../middleware/auth';
 import { AdminDependencies, AuthenticatedRequest } from '../../types';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export function createAdminRoutes(deps: AdminDependencies) {
   const router = Router();

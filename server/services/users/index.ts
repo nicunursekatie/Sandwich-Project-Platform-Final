@@ -1,7 +1,7 @@
 import { storage } from '../../storage-wrapper';
 import { getDefaultPermissionsForRole } from '@shared/auth-utils';
 import { AuditLogger } from '../../audit-logger';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export interface IUserService {
   // User CRUD operations

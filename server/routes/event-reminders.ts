@@ -1,6 +1,6 @@
 import express from 'express';
 import type { RouterDependencies } from '../types';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export function createEventRemindersRouter(deps: RouterDependencies) {
   const router = express.Router();

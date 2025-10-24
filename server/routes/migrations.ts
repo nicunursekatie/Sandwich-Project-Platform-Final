@@ -4,7 +4,7 @@ import { requirePermission } from '../middleware/auth.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 const router = Router();
 

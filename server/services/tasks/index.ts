@@ -1,7 +1,7 @@
 import { logger } from '../../middleware/logger';
 import type { IStorage } from '../../storage';
 import { WebSocket } from 'ws';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 // Task Management Service
 // Business logic for task operations including assignment notifications and sync

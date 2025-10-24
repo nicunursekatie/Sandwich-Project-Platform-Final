@@ -4,7 +4,7 @@ import XLSX from 'xlsx';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isValid, parseISO } from 'date-fns';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export function createImportEventsRouter(deps: RouterDependencies) {
   const router = Router();

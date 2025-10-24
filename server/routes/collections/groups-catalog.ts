@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { GroupsCatalogDependencies, AuthenticatedRequest } from '../../types';
-import { logger } from '../utils/production-safe-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 // Canonicalize organization names for robust matching
 function canonicalizeOrgName(orgName: string): string {
