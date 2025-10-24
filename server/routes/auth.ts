@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
+import bcrypt from 'bcrypt';
 
 interface AuthDependencies {
   isAuthenticated?: any;
@@ -29,9 +30,17 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         });
       }
 
-      // Check password (stored in metadata for now)
-      const storedPassword = (user.metadata as any)?.password;
-      if (storedPassword !== password) {
+      // Check password using bcrypt
+      const storedPassword = user.password;
+      if (!storedPassword) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password',
+        });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, storedPassword);
+      if (!isValidPassword) {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password',
