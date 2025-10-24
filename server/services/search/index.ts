@@ -99,8 +99,11 @@ export class SearchService implements ISearchService {
       ];
 
       // Distribute limit proportionally based on enabled search types
+      // Ensure minimum of 1 result per type to prevent empty searches on low limits
+      // Example: limit=3, types=7 → perTypeLimit=1 (gets 7 results, sliced to 3)
+      // Example: limit=100, types=7 → perTypeLimit=14 (gets ~98 results, sliced to 100)
       const typeCount = searchTypes.length;
-      const perTypeLimit = Math.floor(limit / typeCount);
+      const perTypeLimit = Math.max(1, Math.floor(limit / typeCount));
 
       // Map to track which promise index corresponds to which type
       const typeToIndexMap: Map<string, number> = new Map();
