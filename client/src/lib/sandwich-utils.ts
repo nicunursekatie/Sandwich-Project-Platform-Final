@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 
 /**
  * Utility functions for handling sandwich types data

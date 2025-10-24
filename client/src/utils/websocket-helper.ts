@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 
 // WebSocket connection utility to handle various deployment environments
 // This helps fix WebSocket URL construction issues across different platforms
