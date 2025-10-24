@@ -100,9 +100,10 @@ export class MeetingsService {
     const payload: Partial<InsertMeetingPayload> = {};
     for (const field of MEETING_FIELDS) {
       if (mapped[field] !== undefined) {
-        // Type assertion is safe here: field is a known InsertMeetingPayload key
-        // and the value will be validated by Zod schema at the call site
-        payload[field] = mapped[field] as any;
+        // TypeScript cannot verify type safety of dynamic property access,
+        // so we cast through 'unknown'. The value is validated by Zod at call site.
+        const value = mapped[field] as unknown;
+        payload[field] = value as InsertMeetingPayload[typeof field];
       }
     }
 
@@ -140,12 +141,10 @@ export class MeetingsService {
 
   /**
    * Map multiple meetings to response format
-   * Filters out any null/undefined values from the result
+   * Preserves array length and positions (1:1 mapping)
    */
   mapMeetingsToResponse(meetings: Meeting[]): MeetingResponse[] {
-    return meetings
-      .map((m) => this.mapMeetingToResponse(m))
-      .filter((m): m is MeetingResponse => m !== null && m !== undefined);
+    return meetings.map((m) => this.mapMeetingToResponse(m)) as MeetingResponse[];
   }
 
   /**
