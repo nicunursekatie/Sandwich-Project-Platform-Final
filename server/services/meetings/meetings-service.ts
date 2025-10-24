@@ -1,8 +1,58 @@
 import { z } from 'zod';
+import { insertMeetingSchema } from '@shared/schema';
+import type {
+  Meeting,
+  MeetingMinutes,
+  Committee,
+  CommitteeMembership
+} from '@shared/schema';
 import { insertMeetingSchema, type Meeting } from '@shared/schema';
 import type { IMeetingsStorage } from '../../routes/meetings/types';
 
 type InsertMeetingPayload = z.infer<typeof insertMeetingSchema>;
+
+/**
+ * Request body for meeting operations
+ * Supports both standard and legacy field names
+ */
+export interface MeetingRequest {
+  // Standard fields
+  title?: string;
+  type?: string;
+  date?: string;
+  time?: string;
+  location?: string;
+  description?: string;
+  finalAgenda?: string;
+  status?: string;
+
+  // Legacy field names (for backwards compatibility)
+  meetingDate?: string;
+  startTime?: string;
+  meetingLink?: string;
+  agenda?: string;
+
+  // Allow additional fields
+  [key: string]: unknown;
+}
+
+/**
+ * Response format for meeting data
+ * Includes both standard and legacy field names for backwards compatibility
+ */
+export interface MeetingResponse extends Meeting {
+  meetingDate: string;
+  startTime: string;
+  meetingLink: string | null;
+  agenda: string | null;
+}
+
+/**
+ * Committee with membership information
+ */
+export type CommitteeWithMembership = Committee & {
+  membership: CommitteeMembership
+};
 
 const MEETING_FIELDS: Array<keyof InsertMeetingPayload> = [
   'title',
@@ -27,11 +77,11 @@ export class MeetingsService {
    * Handles field name variations (meetingDate -> date, etc.)
    */
   mapRequestToMeetingPayload(
-    body: any,
+    body: MeetingRequest,
     options: MapMeetingOptions = {}
   ): Partial<InsertMeetingPayload> {
     const source = body ?? {};
-    const mapped: Record<string, any> = { ...source };
+    const mapped: Record<string, unknown> = { ...source };
 
     // Map alternative field names
     if (mapped.meetingDate !== undefined && mapped.date === undefined) {
@@ -51,7 +101,10 @@ export class MeetingsService {
     const payload: Partial<InsertMeetingPayload> = {};
     for (const field of MEETING_FIELDS) {
       if (mapped[field] !== undefined) {
-        payload[field] = mapped[field];
+        // TypeScript cannot verify type safety of dynamic property access,
+        // so we cast through 'unknown'. The value is validated by Zod at call site.
+        const value = mapped[field] as unknown;
+        payload[field] = value as InsertMeetingPayload[typeof field];
       }
     }
 
@@ -71,7 +124,13 @@ export class MeetingsService {
   /**
    * Map meeting to response format
    * Adds legacy field names for backwards compatibility
+   * Returns null/undefined as-is for safety
    */
+  mapMeetingToResponse(meeting: Meeting | null | undefined): MeetingResponse | null | undefined {
+    if (!meeting) {
+      return meeting;
+    }
+
   mapMeetingToResponse(meeting: Meeting) {
     return {
       ...meeting,
@@ -84,7 +143,10 @@ export class MeetingsService {
 
   /**
    * Map multiple meetings to response format
+   * Preserves array length and positions (1:1 mapping)
    */
+  mapMeetingsToResponse(meetings: Meeting[]): MeetingResponse[] {
+    return meetings.map((m) => this.mapMeetingToResponse(m)) as MeetingResponse[];
   mapMeetingsToResponse(meetings: Meeting[]) {
     return meetings.map(m => this.mapMeetingToResponse(m));
   }
@@ -94,8 +156,8 @@ export class MeetingsService {
    */
   async filterMeetingMinutesByRole(
     userId: string,
-    minutes: any[]
-  ): Promise<any[]> {
+    minutes: MeetingMinutes[]
+  ): Promise<MeetingMinutes[]> {
     const user = await this.storage.getUser(userId);
 
     if (!user) {
@@ -115,7 +177,7 @@ export class MeetingsService {
     if (user.role === 'committee_member') {
       const userCommittees = await this.storage.getUserCommittees(userId);
       const committeeTypes = userCommittees.map(
-        (membership: any) => membership.membership.committeeId
+        (membership: CommitteeWithMembership) => membership.membership.committeeId
       );
 
       return minutes.filter(
