@@ -73,10 +73,6 @@ export class MeetingsService {
    * Adds legacy field names for backwards compatibility
    */
   mapMeetingToResponse(meeting: Meeting) {
-    if (!meeting) {
-      return meeting;
-    }
-
     return {
       ...meeting,
       meetingDate: meeting.date,
