@@ -407,30 +407,63 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
         }
 
-        org.departments.push({
-          organizationName: org.displayName, // Use unified display name
-          department: dept.department,
-          contactName: dept.contacts[0]?.name || contactNameLabel,
-          email: dept.contacts[0]?.email || '',
-          phone: dept.contacts[0]?.phone || '',
-          allContacts: dept.contacts,
-          status: dept.latestStatus,
-          totalRequests: dept.totalRequests,
-          hasHostedEvent: dept.hasHostedEvent,
-          totalSandwiches: dept.totalSandwiches,
-          actualSandwichTotal: dept.actualSandwichTotal || 0,
-          actualEventCount: dept.actualEventCount || 0,
-          eventFrequency: dept.eventFrequency || null,
-          eventDate: dept.eventDate,
-          latestRequestDate: dept.latestRequestDate,
-          latestCollectionDate: dept.latestCollectionDate || null,
-          latestActivityDate: dept.latestActivityDate,
-          tspContact: dept.tspContact || null,
-          tspContactAssigned: dept.tspContactAssigned || null,
-          assignedTo: dept.assignedTo || null,
-          assignedToName: dept.assignedToName || null,
-          pastEvents: dept.pastEvents || [], // NEW: Include past events list
-        });
+        // If this department has multiple past events, create individual entries for each
+        if (dept.pastEvents && dept.pastEvents.length > 1) {
+          dept.pastEvents.forEach((event: any, eventIndex: number) => {
+            org.departments.push({
+              organizationName: org.displayName,
+              department: dept.department,
+              contactName: dept.contacts[0]?.name || contactNameLabel,
+              email: dept.contacts[0]?.email || '',
+              phone: dept.contacts[0]?.phone || '',
+              allContacts: dept.contacts,
+              status: 'past', // Individual past events are always 'past' status
+              totalRequests: 0, // Individual event has no "requests"
+              hasHostedEvent: true,
+              totalSandwiches: 0,
+              actualSandwichTotal: event.sandwichCount || 0,
+              actualEventCount: 1, // This is a single event
+              eventFrequency: null,
+              eventDate: event.date,
+              latestRequestDate: new Date(event.date),
+              latestCollectionDate: event.date,
+              latestActivityDate: new Date(event.date),
+              tspContact: dept.tspContact || null,
+              tspContactAssigned: dept.tspContactAssigned || null,
+              assignedTo: dept.assignedTo || null,
+              assignedToName: dept.assignedToName || null,
+              pastEvents: [event], // Single event in array
+              _isIndividualEvent: true, // Mark as individual event for frontend
+              _eventIndex: eventIndex, // Track which event this is
+            });
+          });
+        } else {
+          // Single event or no past events - keep aggregated view
+          org.departments.push({
+            organizationName: org.displayName, // Use unified display name
+            department: dept.department,
+            contactName: dept.contacts[0]?.name || contactNameLabel,
+            email: dept.contacts[0]?.email || '',
+            phone: dept.contacts[0]?.phone || '',
+            allContacts: dept.contacts,
+            status: dept.latestStatus,
+            totalRequests: dept.totalRequests,
+            hasHostedEvent: dept.hasHostedEvent,
+            totalSandwiches: dept.totalSandwiches,
+            actualSandwichTotal: dept.actualSandwichTotal || 0,
+            actualEventCount: dept.actualEventCount || 0,
+            eventFrequency: dept.eventFrequency || null,
+            eventDate: dept.eventDate,
+            latestRequestDate: dept.latestRequestDate,
+            latestCollectionDate: dept.latestCollectionDate || null,
+            latestActivityDate: dept.latestActivityDate,
+            tspContact: dept.tspContact || null,
+            tspContactAssigned: dept.tspContactAssigned || null,
+            assignedTo: dept.assignedTo || null,
+            assignedToName: dept.assignedToName || null,
+            pastEvents: dept.pastEvents || [], // Include past events list
+          });
+        }
       });
 
       // Convert to final format and sort
