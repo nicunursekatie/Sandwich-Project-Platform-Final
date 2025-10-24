@@ -15,8 +15,9 @@ import {
   Archive,
   Filter,
 } from 'lucide-react';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/useResourcePermissions';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
 
 const ProjectsManagementContent: React.FC = () => {
@@ -34,6 +35,7 @@ const ProjectsManagementContent: React.FC = () => {
   } = useProjectContext();
 
   const { user } = useAuth();
+  const { PROJECTS_ADD } = usePermissions(['PROJECTS_ADD']);
   const filteredProjects = getFilteredProjects();
 
   if (isLoading) {
@@ -64,7 +66,7 @@ const ProjectsManagementContent: React.FC = () => {
               </p>
             </div>
           </div>
-          {hasPermission(user, PERMISSIONS.PROJECTS_ADD) && (
+          {PROJECTS_ADD && (
             <Button
               onClick={() => setShowCreateDialog(true)}
               className="bg-brand-orange hover:bg-brand-orange-dark text-white font-roboto font-medium shadow-sm"

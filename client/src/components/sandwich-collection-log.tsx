@@ -60,8 +60,8 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { usePermissions } from '@/hooks/useResourcePermissions';
 import {
-  hasPermission,
   PERMISSIONS,
   canEditCollection,
   canDeleteCollection,
@@ -139,25 +139,26 @@ export default function SandwichCollectionLog() {
     trackDelete,
   } = useActivityTracker();
 
+  // Check user permissions using the unified hook
+  const {
+    COLLECTIONS_ADD,
+    COLLECTIONS_EDIT_OWN,
+    COLLECTIONS_EDIT_ALL,
+    COLLECTIONS_DELETE_ALL,
+  } = usePermissions([
+    'COLLECTIONS_ADD',
+    'COLLECTIONS_EDIT_OWN',
+    'COLLECTIONS_EDIT_ALL',
+    'COLLECTIONS_DELETE_ALL',
+  ]);
+
   // Check user permissions for creating collections (automatically grants edit/delete of own)
-  const canCreateCollections =
-    hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-    hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_OWN);
-  const canEditAllCollections = hasPermission(
-    user,
-    PERMISSIONS.COLLECTIONS_EDIT_ALL
-  );
-  const canDeleteAllCollections = hasPermission(
-    user,
-    PERMISSIONS.COLLECTIONS_DELETE_ALL
-  );
+  const canCreateCollections = COLLECTIONS_ADD || COLLECTIONS_EDIT_OWN;
+  const canEditAllCollections = COLLECTIONS_EDIT_ALL;
+  const canDeleteAllCollections = COLLECTIONS_DELETE_ALL;
   // Simplified approach: CREATE_COLLECTIONS automatically includes edit/delete own permissions
-  const canEditData =
-    hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-    hasPermission(user, PERMISSIONS.COLLECTIONS_EDIT_ALL);
-  const canDeleteData =
-    hasPermission(user, PERMISSIONS.COLLECTIONS_ADD) ||
-    hasPermission(user, PERMISSIONS.COLLECTIONS_DELETE_ALL);
+  const canEditData = COLLECTIONS_ADD || COLLECTIONS_EDIT_ALL;
+  const canDeleteData = COLLECTIONS_ADD || COLLECTIONS_DELETE_ALL;
   const [editingCollection, setEditingCollection] =
     useState<SandwichCollection | null>(null);
   const [showDuplicateAnalysis, setShowDuplicateAnalysis] = useState(false);
