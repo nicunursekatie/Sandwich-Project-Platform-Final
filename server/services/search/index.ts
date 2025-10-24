@@ -102,32 +102,43 @@ export class SearchService implements ISearchService {
       const typeCount = searchTypes.length;
       const perTypeLimit = Math.floor(limit / typeCount);
 
+      // Map to track which promise index corresponds to which type
+      const typeToIndexMap: Map<string, number> = new Map();
       const searchPromises: Promise<SearchResult[]>[] = [];
 
       if (searchTypes.includes('collection')) {
+        typeToIndexMap.set('collection', searchPromises.length);
         searchPromises.push(this.searchCollections(query, filters, perTypeLimit));
       }
       if (searchTypes.includes('host')) {
+        typeToIndexMap.set('host', searchPromises.length);
         searchPromises.push(this.searchHosts(query, filters, perTypeLimit));
       }
       if (searchTypes.includes('project')) {
+        typeToIndexMap.set('project', searchPromises.length);
         searchPromises.push(this.searchProjects(query, filters, perTypeLimit));
       }
       if (searchTypes.includes('contact')) {
+        typeToIndexMap.set('contact', searchPromises.length);
         searchPromises.push(this.searchContacts(query, perTypeLimit));
       }
       if (searchTypes.includes('wishlist')) {
-        const wishlistResults = await this.searchWishlistSuggestions(
-          query,
-          { wishlistStatus: filters.wishlistStatus, priority: filters.priority },
-          perTypeLimit
+        typeToIndexMap.set('wishlist', searchPromises.length);
+        // Convert wishlist search to return SearchResult[] directly for parallel execution
+        searchPromises.push(
+          this.searchWishlistSuggestions(
+            query,
+            { wishlistStatus: filters.wishlistStatus, priority: filters.priority },
+            perTypeLimit
+          ).then((results) => this.convertWishlistToSearchResults(results))
         );
-        searchPromises.push(Promise.resolve(this.convertWishlistToSearchResults(wishlistResults)));
       }
       if (searchTypes.includes('volunteer')) {
+        typeToIndexMap.set('volunteer', searchPromises.length);
         searchPromises.push(this.searchVolunteers(query, perTypeLimit));
       }
       if (searchTypes.includes('recipient')) {
+        typeToIndexMap.set('recipient', searchPromises.length);
         searchPromises.push(this.searchRecipients(query, perTypeLimit));
       }
 
@@ -137,18 +148,28 @@ export class SearchService implements ISearchService {
       // Sort by relevance
       flatResults.sort((a, b) => b.relevance - a.relevance);
 
-      // Calculate summary
+      // Calculate summary using the type-to-index mapping
       const summary = {
-        collections: allResults[0]?.length || 0,
-        hosts: allResults[1]?.length || 0,
-        projects: allResults[2]?.length || 0,
-        contacts: allResults[3]?.length || 0,
-        wishlists: searchTypes.includes('wishlist') ? (allResults[4]?.length || 0) : 0,
-        volunteers: searchTypes.includes('volunteer')
-          ? (allResults[searchTypes.indexOf('volunteer')]?.length || 0)
+        collections: typeToIndexMap.has('collection')
+          ? allResults[typeToIndexMap.get('collection')!]?.length || 0
           : 0,
-        recipients: searchTypes.includes('recipient')
-          ? (allResults[searchTypes.indexOf('recipient')]?.length || 0)
+        hosts: typeToIndexMap.has('host')
+          ? allResults[typeToIndexMap.get('host')!]?.length || 0
+          : 0,
+        projects: typeToIndexMap.has('project')
+          ? allResults[typeToIndexMap.get('project')!]?.length || 0
+          : 0,
+        contacts: typeToIndexMap.has('contact')
+          ? allResults[typeToIndexMap.get('contact')!]?.length || 0
+          : 0,
+        wishlists: typeToIndexMap.has('wishlist')
+          ? allResults[typeToIndexMap.get('wishlist')!]?.length || 0
+          : 0,
+        volunteers: typeToIndexMap.has('volunteer')
+          ? allResults[typeToIndexMap.get('volunteer')!]?.length || 0
+          : 0,
+        recipients: typeToIndexMap.has('recipient')
+          ? allResults[typeToIndexMap.get('recipient')!]?.length || 0
           : 0,
         total: flatResults.length,
       };
