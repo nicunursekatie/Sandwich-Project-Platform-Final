@@ -49,6 +49,34 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Add CDN caching headers for static assets
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const path = req.path;
+
+  // Set cache headers based on content type and path
+  if (path.match(/\.(js|css|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|pdf)$/i)) {
+    // Static assets - cache for 1 year (immutable if using content hashing)
+    if (path.includes('.') && path.match(/\.[a-f0-9]{8,}\./)) {
+      // Content-hashed assets (e.g., main.abc123def.js) - cache immutably
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      // Non-hashed assets - cache for 1 day with revalidation
+      res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate');
+    }
+    res.setHeader('Vary', 'Accept-Encoding');
+  } else if (path.startsWith('/api/')) {
+    // API routes - no caching
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  } else if (path === '/' || path.endsWith('.html')) {
+    // HTML pages - minimal caching with revalidation
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  }
+
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
