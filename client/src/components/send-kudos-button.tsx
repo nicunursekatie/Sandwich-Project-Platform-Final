@@ -82,11 +82,7 @@ export default function SendKudosButton({
   }
 
   // Don't render if user doesn't have permission to send kudos
-  if (!hasPermission(user, PERMISSIONS.SEND_KUDOS)) {
-    logger.warn('SendKudosButton: User lacks SEND_KUDOS permission', {
-      user: user ? { id: (user as any).id, email: (user as any).email } : null,
-      SEND_KUDOS: PERMISSIONS.SEND_KUDOS,
-    });
+  if (!hasPermission(user, PERMISSIONS.KUDOS_SEND)) {
     return null;
   }
 
@@ -119,7 +115,7 @@ export default function SendKudosButton({
         throw new Error(`Cannot send kudos: recipient ID is empty`);
       }
 
-      return await apiRequest('POST', '/api/messaging/kudos', {
+      return await apiRequest('POST', '/api/messaging/kudos/send', {
         recipientId,
         contextType,
         contextId,
