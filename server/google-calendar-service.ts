@@ -106,21 +106,53 @@ export class GoogleCalendarService {
     const colors = await this.getColors();
 
     // Map events with their colors
-    // Use a hash of the event summary to assign consistent colors
+    // Use person-based color assignment to ensure each person gets a unique color
     const availableColorIds = ['1', '2', '3', '4', '5', '6', '7', '9', '10', '11']; // Skip 8 (gray)
 
-    const getColorForEvent = (event: any) => {
-      // ALWAYS use hash-based color assignment for better visual variety
-      // (ignoring any colorId set in Google Calendar)
-      const summary = event.summary || 'Untitled';
-      let hash = 0;
-      for (let i = 0; i < summary.length; i++) {
-        hash = ((hash << 5) - hash) + summary.charCodeAt(i);
-        hash = hash & hash; // Convert to 32bit integer
+    // Extract person name from event summary for consistent color assignment
+    const extractPersonName = (summary: string): string => {
+      const lowerSummary = summary.toLowerCase();
+      
+      // Common patterns for unavailability events
+      const patterns = [
+        /^([^,\s]+)\s+(unavailable|out of town|unavail|away)/i,
+        /^([^,\s]+)\s+(unavailable)/i,
+        /^([^,\s]+)\s+(out of town)/i,
+        /^([^,\s]+)\s+(unavail)/i,
+        /^([^,\s]+)\s+(away)/i,
+      ];
+      
+      for (const pattern of patterns) {
+        const match = summary.match(pattern);
+        if (match && match[1]) {
+          return match[1].trim().toLowerCase();
+        }
       }
+      
+      // If no pattern matches, use the first word as person name
+      const firstWord = summary.split(/\s+/)[0];
+      return firstWord ? firstWord.toLowerCase() : summary.toLowerCase();
+    };
 
-      const colorIndex = Math.abs(hash) % availableColorIds.length;
-      return availableColorIds[colorIndex];
+    // Create a mapping of person names to colors for consistency
+    const personColorMap = new Map<string, string>();
+    let colorIndex = 0;
+
+    const getColorForEvent = (event: any) => {
+      const summary = event.summary || 'Untitled';
+      const personName = extractPersonName(summary);
+      
+      // Check if we already have a color assigned for this person
+      if (personColorMap.has(personName)) {
+        return personColorMap.get(personName)!;
+      }
+      
+      // Assign a new color to this person
+      const colorId = availableColorIds[colorIndex % availableColorIds.length];
+      personColorMap.set(personName, colorId);
+      colorIndex++;
+      
+      return colorId;
     };
 
     const mappedEvents = events.map((event: any) => {
