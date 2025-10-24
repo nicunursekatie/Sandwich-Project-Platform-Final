@@ -17,12 +17,13 @@ interface AuthenticatedRequest extends Request {
 
 // Validation schemas
 const globalSearchSchema = z.object({
-  q: z.string().min(1, 'Search query is required').optional(),
-  query: z.string().min(1, 'Search query is required').optional(),
+  // Allow empty query - both q and query are truly optional
+  q: z.string().optional(),
+  query: z.string().optional(),
   limit: z.coerce.number().int().positive().max(200).default(100).optional(),
   types: z
     .string()
-    .transform((val) => val.split(','))
+    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
     .pipe(
       z
         .array(
@@ -39,19 +40,20 @@ const globalSearchSchema = z.object({
         .optional()
     )
     .optional(),
-  // Filter options
+  // Filter options - validate array elements after splitting
   status: z
     .string()
-    .transform((val) => val.split(','))
+    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
+    .pipe(z.array(z.string().min(1)).optional())
     .optional(),
   priority: z
     .string()
-    .transform((val) => val.split(','))
+    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
     .pipe(z.array(z.enum(['high', 'medium', 'low'])).optional())
     .optional(),
   wishlistStatus: z
     .string()
-    .transform((val) => val.split(','))
+    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
     .pipe(z.array(z.enum(['pending', 'approved', 'rejected', 'added'])).optional())
     .optional(),
   // Date range
@@ -60,32 +62,39 @@ const globalSearchSchema = z.object({
   // Count range
   minCount: z.coerce.number().int().nonnegative().optional(),
   maxCount: z.coerce.number().int().positive().optional(),
-  // Host filter
+  // Host filter - validate array elements
   hostNames: z
     .string()
-    .transform((val) => val.split(','))
+    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
+    .pipe(z.array(z.string().min(1)).optional())
     .optional(),
 });
 
 const wishlistSearchSchema = z.object({
-  q: z.string().min(1, 'Search query is required').optional(),
-  query: z.string().min(1, 'Search query is required').optional(),
+  // Allow empty query - both q and query are truly optional
+  q: z.string().optional(),
+  query: z.string().optional(),
   limit: z.coerce.number().int().positive().max(100).default(50).optional(),
   status: z
     .string()
-    .transform((val) => val.split(','))
+    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
     .pipe(z.array(z.enum(['pending', 'approved', 'rejected', 'added'])).optional())
     .optional(),
   priority: z
     .string()
-    .transform((val) => val.split(','))
+    .transform((val) => val.split(',').map((v) => v.trim()).filter(Boolean))
     .pipe(z.array(z.enum(['high', 'medium', 'low'])).optional())
     .optional(),
 });
 
 const suggestionsSchema = z.object({
-  q: z.string().min(1, 'Query is required').optional(),
-  query: z.string().min(1, 'Query is required').optional(),
+  // Allow empty query - both q and query are truly optional
+  q: z.string().optional(),
+  query: z.string().optional(),
+  limit: z.coerce.number().int().positive().max(20).default(10).optional(),
+});
+
+const popularSearchesSchema = z.object({
   limit: z.coerce.number().int().positive().max(20).default(10).optional(),
 });
 
@@ -444,10 +453,16 @@ searchRouter.get('/popular', async (req: AuthenticatedRequest, res: Response) =>
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const limit = Math.min(
-      parseInt((req.query.limit as string) || '10'),
-      20
-    );
+    const validation = popularSearchesSchema.safeParse(req.query);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Invalid parameters',
+        details: validation.error.issues,
+      });
+    }
+
+    const params = validation.data;
+    const limit = params.limit || 10;
 
     logger.info('Popular searches request', { userId: req.user.id, limit });
 
