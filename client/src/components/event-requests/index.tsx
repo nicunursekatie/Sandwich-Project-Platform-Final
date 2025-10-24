@@ -51,6 +51,7 @@ import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog
 import { AssignmentDialog } from './dialogs/AssignmentDialog';
 import { MissingInfoSummaryDialog } from './MissingInfoSummaryDialog';
 import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
+import { logger } from '@/lib/logger';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -476,12 +477,12 @@ const EventRequestsManagementContent: React.FC = () => {
           onAssign={async (assignees: string[]) => {
             if (!assignmentEventId || !assignmentType) return;
 
-            console.log('=== ASSIGNMENT SUBMIT ===');
-            console.log('Event ID:', assignmentEventId);
-            console.log('Assignment Type:', assignmentType);
-            console.log('Selected Assignees:', assignees);
-            console.log('Available drivers:', (drivers as any[]).map((d: any) => ({ id: d.id, name: d.name })));
-            console.log('Available users:', (users as any[]).map((u: any) => ({ id: u.id, name: `${u.firstName} ${u.lastName}` })));
+            logger.log('=== ASSIGNMENT SUBMIT ===');
+            logger.log('Event ID:', assignmentEventId);
+            logger.log('Assignment Type:', assignmentType);
+            logger.log('Selected Assignees:', assignees);
+            logger.log('Available drivers:', (drivers as any[]).map((d: any) => ({ id: d.id, name: d.name })));
+            logger.log('Available users:', (users as any[]).map((u: any) => ({ id: u.id, name: `${u.firstName} ${u.lastName}` })));
 
             // Get the current event to preserve existing assignments
             const currentEvent = eventRequests.find(e => e.id === assignmentEventId);
@@ -521,9 +522,9 @@ const EventRequestsManagementContent: React.FC = () => {
                   const driver = (drivers as any[]).find((d: any) => d.id.toString() === driverId || d.id === parseInt(driverId));
                   if (driver) {
                     driverName = driver.name;
-                    console.log(`Found driver: ID=${driverId}, Name=${driver.name}`);
+                    logger.log(`Found driver: ID=${driverId}, Name=${driver.name}`);
                   } else {
-                    console.warn(`Driver not found in loaded drivers: ID=${driverId}`);
+                    logger.warn(`Driver not found in loaded drivers: ID=${driverId}`);
                     // Keep the ID as-is, it will show as "Driver #350" in the UI
                   }
                 } else {
@@ -609,14 +610,14 @@ const EventRequestsManagementContent: React.FC = () => {
             }
 
             try {
-              console.log('Update data:', updateData);
+              logger.log('Update data:', updateData);
 
               const result = await updateEventRequestMutation.mutateAsync({
                 id: assignmentEventId,
                 data: updateData,
               });
 
-              console.log('Update result:', result);
+              logger.log('Update result:', result);
 
               // Close the dialog
               setShowAssignmentDialog(false);
@@ -629,7 +630,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 description: `${assignmentType}s assigned successfully`,
               });
             } catch (error) {
-              console.error('Assignment error:', error);
+              logger.error('Assignment error:', error);
               toast({
                 title: 'Error',
                 description: `Failed to assign ${assignmentType}s`,

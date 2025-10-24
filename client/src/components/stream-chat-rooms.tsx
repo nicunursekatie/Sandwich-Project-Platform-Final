@@ -25,6 +25,7 @@ import {
 
 // Import Stream Chat styles
 import 'stream-chat-react/dist/css/v2/index.css';
+import { logger } from '@/lib/logger';
 
 // Room definitions matching your Socket.io setup
 const CHAT_ROOMS = [
@@ -106,7 +107,7 @@ export default function StreamChatRooms() {
             const channel = chatClient.channel('team', room.id);
             await channel.watch();
           } catch (error) {
-            console.error(`Failed to join channel ${room.id}:`, error);
+            logger.error(`Failed to join channel ${room.id}:`, error);
           }
         }
 
@@ -121,7 +122,7 @@ export default function StreamChatRooms() {
         }
 
       } catch (error) {
-        console.error('Failed to initialize Stream Chat:', error);
+        logger.error('Failed to initialize Stream Chat:', error);
         toast({
           title: 'Chat Initialization Failed',
           description: 'Unable to connect to chat service. Please try refreshing.',
@@ -200,7 +201,7 @@ export default function StreamChatRooms() {
                       await channel.watch();
                       setActiveChannel(channel);
                     } catch (error) {
-                      console.error(`Failed to switch to channel ${room.id}:`, error);
+                      logger.error(`Failed to switch to channel ${room.id}:`, error);
                     }
                   }}
                 >

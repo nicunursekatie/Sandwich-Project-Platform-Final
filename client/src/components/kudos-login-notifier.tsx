@@ -5,6 +5,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Trophy, X, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 interface UnnotifiedKudos {
   id: number;
@@ -56,7 +57,7 @@ export function KudosLoginNotifier() {
       });
     },
     onError: (error) => {
-      console.error('Failed to mark kudos as initially notified:', error);
+      logger.error('Failed to mark kudos as initially notified:', error);
     },
   });
 

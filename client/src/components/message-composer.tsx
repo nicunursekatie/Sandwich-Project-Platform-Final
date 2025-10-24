@@ -10,6 +10,7 @@ import { useMessaging } from '@/hooks/useMessaging';
 import { Send, X, User, Plus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { apiRequest } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 
 interface MessageComposerProps {
   contextType?: 'suggestion' | 'project' | 'task' | 'direct';
@@ -42,7 +43,7 @@ export function MessageComposer({
         const response = await apiRequest('GET', '/api/users');
         return Array.isArray(response) ? response : [];
       } catch (error) {
-        console.error('Error fetching users:', error);
+        logger.error('Error fetching users:', error);
         return [];
       }
     },
@@ -68,7 +69,7 @@ export function MessageComposer({
       return;
     }
 
-    console.log('Sending message:', {
+    logger.log('Sending message:', {
       recipientIds: selectedRecipients,
       content: content.trim(),
       contextType,
@@ -93,7 +94,7 @@ export function MessageComposer({
       });
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] }); // Refresh messages
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
       toast({
         title: 'Failed to send message',
         description:

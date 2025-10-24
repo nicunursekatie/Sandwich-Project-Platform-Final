@@ -110,6 +110,7 @@ const AdminSettings = lazy(() => import('@/pages/admin-settings'));
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
 import sandwich_20logo from '@assets/LOGOS/sandwich logo.png';
+import { logger } from '@/lib/logger';
 
 // Loading fallback component for lazy-loaded sections
 const SectionLoader = () => (
@@ -144,16 +145,16 @@ export default function Dashboard({
 
   // Listen to URL changes to update activeSection
   React.useEffect(() => {
-    console.log('Current URL location:', location);
+    logger.log('Current URL location:', location);
 
     // Check for section in query parameters first
     if (urlParams.section) {
-      console.log('Setting activeSection from query parameter:', urlParams.section);
+      logger.log('Setting activeSection from query parameter:', urlParams.section);
       
       // Handle special case for project detail view via query parameters
       if (urlParams.section === 'projects' && urlParams.view === 'detail' && urlParams.id) {
         const projectSection = `project-${urlParams.id}`;
-        console.log('Setting activeSection to project detail:', projectSection);
+        logger.log('Setting activeSection to project detail:', projectSection);
         setActiveSection(projectSection);
         return;
       }
@@ -170,25 +171,25 @@ export default function Dashboard({
       const projectId = parts.length > 1 ? parts[1] : null;
       if (projectId) {
         const newSection = `project-${projectId}`;
-        console.log('Setting activeSection to project ID:', newSection);
+        logger.log('Setting activeSection to project ID:', newSection);
         setActiveSection(newSection);
       }
     } else {
       // Handle other sections - strip query parameters and leading slash
       const pathSection = pathWithoutQuery.substring(1) || 'dashboard';
-      console.log('Setting activeSection to:', pathSection);
+      logger.log('Setting activeSection to:', pathSection);
       setActiveSection(pathSection);
     }
   }, [location, urlParams.section]);
 
   // Debug logging
   React.useEffect(() => {
-    console.log('Dashboard activeSection changed to:', activeSection);
+    logger.log('Dashboard activeSection changed to:', activeSection);
   }, [activeSection]);
 
   // Enhanced setActiveSection with debugging
   const enhancedSetActiveSection = (section: string) => {
-    console.log('📍 Dashboard setActiveSection called with:', section);
+    logger.log('📍 Dashboard setActiveSection called with:', section);
     setActiveSection(section);
   };
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -259,7 +260,7 @@ export default function Dashboard({
       case 'important-documents':
         return <ImportantDocuments />;
       case 'projects':
-        console.log('Rendering ProjectsManagement component');
+        logger.log('Rendering ProjectsManagement component');
         return <ProjectsManagement />;
       case 'real-time-messages':
         return <RealTimeMessages />;
@@ -565,7 +566,7 @@ export default function Dashboard({
             <div className="flex items-center gap-0.5 xs:gap-1 relative z-50 flex-shrink-0">
               <button
                 onClick={() => {
-                  console.log('Messages button clicked');
+                  logger.log('Messages button clicked');
                   trackButtonClick('messages', 'dashboard_header');
                   setActiveSection('messages');
                   setIsMobileMenuOpen(false);
@@ -594,7 +595,7 @@ export default function Dashboard({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('Help button clicked');
+                  logger.log('Help button clicked');
                   trackButtonClick('help', 'dashboard_header');
                   setLocation('/help');
                   setIsMobileMenuOpen(false);
@@ -610,7 +611,7 @@ export default function Dashboard({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log(
+                  logger.log(
                     'Profile button clicked, current section:',
                     activeSection
                   );
@@ -652,7 +653,7 @@ export default function Dashboard({
                     // Force immediate redirect to login page
                     window.location.href = '/api/login';
                   } catch (error) {
-                    console.error('Logout error:', error);
+                    logger.error('Logout error:', error);
                     queryClient.clear();
                     queryClient.invalidateQueries({
                       queryKey: ['/api/auth/user'],
@@ -714,7 +715,7 @@ export default function Dashboard({
                 navigationItems={NAV_ITEMS}
                 activeSection={activeSection}
                 onSectionChange={(section) => {
-                  console.log(
+                  logger.log(
                     'Dashboard setActiveSection called with:',
                     section
                   );
@@ -782,9 +783,9 @@ export default function Dashboard({
                           try {
                             await navigator.clipboard.writeText('https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV?ref_=wl_share');
                             // Show toast notification (you'll need to add toast hook)
-                            console.log('Wishlist link copied!');
+                            logger.log('Wishlist link copied!');
                           } catch (err) {
-                            console.error('Copy failed:', err);
+                            logger.error('Copy failed:', err);
                           }
                         }}
                         className="bg-orange-200 hover:bg-orange-300 text-orange-900 px-2 py-1.5 rounded transition-colors"

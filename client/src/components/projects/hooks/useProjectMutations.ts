@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Project, InsertProject } from '@shared/schema';
 import { useProjectContext } from '../context/ProjectContext';
+import { logger } from '@/lib/logger';
 
 export const useProjectMutations = () => {
   const { toast } = useToast();
@@ -29,7 +30,7 @@ export const useProjectMutations = () => {
       });
     },
     onError: (error: any) => {
-      console.error('Create project error:', error);
+      logger.error('Create project error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to create project.',
@@ -53,7 +54,7 @@ export const useProjectMutations = () => {
       });
     },
     onError: (error: any) => {
-      console.error('Update project error:', error);
+      logger.error('Update project error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to update project.',
@@ -75,7 +76,7 @@ export const useProjectMutations = () => {
       });
     },
     onError: (error: any) => {
-      console.error('Delete project error:', error);
+      logger.error('Delete project error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to delete project.',
@@ -105,7 +106,7 @@ export const useProjectMutations = () => {
       }
     },
     onError: (error: any) => {
-      console.error('Update status error:', error);
+      logger.error('Update status error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to update project status.',
@@ -130,7 +131,7 @@ export const useProjectMutations = () => {
       });
     },
     onError: (error: any) => {
-      console.error('Archive project error:', error);
+      logger.error('Archive project error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to archive project.',
@@ -153,7 +154,7 @@ export const useProjectMutations = () => {
       });
     },
     onError: (error: any) => {
-      console.error('Unarchive project error:', error);
+      logger.error('Unarchive project error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to restore project.',

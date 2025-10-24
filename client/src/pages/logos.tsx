@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { logger } from '@/lib/logger';
 
 // Logo files information
 const logoFiles = [
@@ -91,7 +92,7 @@ export default function LogosPage() {
       // Track the download
       trackDownload(displayName, 'logo');
     } catch (error) {
-      console.error('Download failed:', error);
+      logger.error('Download failed:', error);
       alert('Failed to download logo. Please try again.');
     }
   };

@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { logger } from '@/lib/logger';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { useResourcePermissions, usePermissions } from '@/hooks/useResourcePermissions';
 
@@ -37,9 +39,9 @@ export default function WorkLogPage() {
   } = useQuery({
     queryKey: ['/api/work-logs'],
     queryFn: async () => {
-      console.log('🚀 Work logs query function called');
+      logger.log('🚀 Work logs query function called');
       const data = await apiRequest('GET', '/api/work-logs');
-      console.log('🚀 Work logs API response data:', data);
+      logger.log('🚀 Work logs API response data:', data);
       return data;
     },
     enabled: !!user, // Only fetch when user is authenticated

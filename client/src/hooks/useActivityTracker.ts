@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { apiRequest } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 
 interface ActivityData {
   action: string;
@@ -29,7 +30,7 @@ export function useActivityTracker() {
       });
     } catch (error) {
       // Silently fail to avoid disrupting user experience
-      console.debug('Activity tracking failed:', error);
+      logger.log('Activity tracking failed:', error);
     }
   }, []);
 

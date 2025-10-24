@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import type { AvailabilitySlot } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface ComprehensivePersonSelectorProps {
   selectedPeople: string[];
@@ -418,7 +419,7 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
       if (!eventDate) return [];
       const response = await fetch(`/api/availability?startDate=${eventDate}&endDate=${eventDate}`);
       if (!response.ok) {
-        console.error('Failed to fetch availability');
+        logger.error('Failed to fetch availability');
         return [];
       }
       return response.json();

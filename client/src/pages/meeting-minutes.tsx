@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { DocumentViewer } from '@/components/DocumentViewer';
 import type { Meeting, MeetingMinutes, InsertMeeting } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface MeetingMinutesProps {
   isEmbedded?: boolean;
@@ -331,7 +332,7 @@ export default function MeetingMinutes({
 
       toast({ title: 'File downloaded successfully' });
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       toast({
         title: 'Download failed',
         description:

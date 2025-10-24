@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import { logger } from '@/lib/logger';
 
 export default function ImportantLinks() {
   const [isLoading, setIsLoading] = useState(false);
@@ -190,7 +191,7 @@ export default function ImportantLinks() {
                         await navigator.clipboard.writeText(eventToolkitUrl);
                         alert('Link copied to clipboard!');
                       } catch (error) {
-                        console.error('Failed to copy:', error);
+                        logger.error('Failed to copy:', error);
                       }
                     }}
                     className="border-brand-orange text-brand-orange hover:bg-orange-50 px-6 py-3 font-medium"
