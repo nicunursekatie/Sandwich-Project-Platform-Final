@@ -649,16 +649,19 @@ export class CollectionService implements ICollectionService {
       const suspiciousNames = collections.filter((c) => {
         const name = (c.hostName || '').toLowerCase().trim();
         return (
-          // Test data patterns
+          // Test data patterns (specific patterns to avoid false positives)
           name === 'test' ||
           name === 'sample' ||
           name === 'demo' ||
           name.startsWith('test ') || // "test something" but not "Contest Hall"
           name.startsWith('test_') || // "test_location"
           name.startsWith('test-') || // "test-location"
-          // Location placeholders
-          name.startsWith('loc') || // Catches "loc", "loc ", "loc1", "location1"
-          name.match(/^loc\d+$/) || // Catches "loc1", "loc2", "loc123"
+          name.endsWith(' test') || // "something test"
+          // Location placeholders (very specific patterns)
+          name === 'loc' || // Exact match only
+          name === 'location' || // Exact match only
+          name.match(/^loc\s*\d+$/) || // "loc 1", "loc1", "loc 123" but not "Local Kitchen"
+          name.match(/^location\s*\d+$/) || // "location 1", "location1"
           // Only flag very obvious test group patterns (single digit groups)
           name.match(/^group\s*[1-9]$/) || // "group 1", "group1" through "group 9" only
           // Placeholder names
@@ -666,10 +669,13 @@ export class CollectionService implements ICollectionService {
           name === 'tbd' ||
           name === 'tba' ||
           name === 'placeholder' ||
-          // Invalid formats
-          name.length < 3 ||
+          name === 'n/a' ||
+          name === 'na' ||
+          name === 'none' ||
+          // Invalid formats (but allow legitimate 2-letter abbreviations)
+          name.length < 2 || // Single character only
           name.match(/^\d+$/) || // Pure numbers like "123"
-          name.match(/^[a-z]{1,2}$/) // Single/double letters like "a", "ab"
+          (name.length === 2 && name.match(/^[a-z]{2}$/) && !this.isLegitimateAbbreviation(name)) // Two lowercase letters (not uppercase abbreviations)
         );
       });
       if (suspiciousNames.length > 0) {
@@ -867,11 +873,20 @@ export class CollectionService implements ICollectionService {
 
       // Keep the newest entry from each duplicate group
       duplicates.forEach((group) => {
-        const sorted = group.entries.sort(
-          (a, b) =>
+        const sorted = group.entries.sort((a, b) => {
+          // Primary sort: newest first (by submittedAt)
+          const timeDiff =
             new Date(b.submittedAt).getTime() -
-            new Date(a.submittedAt).getTime()
-        );
+            new Date(a.submittedAt).getTime();
+
+          // Secondary sort: if timestamps are identical, sort by ID (highest first)
+          // This ensures deterministic behavior for bulk imports with same timestamp
+          if (timeDiff === 0) {
+            return b.id - a.id;
+          }
+
+          return timeDiff;
+        });
         // Keep first (newest), delete rest
         idsToDelete.push(...sorted.slice(1).map((c) => c.id));
       });
@@ -1157,6 +1172,71 @@ export class CollectionService implements ICollectionService {
     }
 
     return filtered;
+  }
+
+  /**
+   * Check if a 2-letter name is a legitimate abbreviation
+   * (e.g., "VA", "UN", "NY") rather than test data (e.g., "ab", "xy")
+   */
+  private isLegitimateAbbreviation(name: string): boolean {
+    // Common legitimate 2-letter abbreviations
+    const legitimateAbbreviations = new Set([
+      'va', // Veterans Affairs / Virginia
+      'un', // United Nations
+      'ny', // New York
+      'la', // Los Angeles / Louisiana
+      'dc', // District of Columbia
+      'aa', // Alcoholics Anonymous
+      'ca', // California
+      'ma', // Massachusetts
+      'pa', // Pennsylvania
+      'tx', // Texas
+      'fl', // Florida
+      'il', // Illinois
+      'oh', // Ohio
+      'nc', // North Carolina
+      'ga', // Georgia
+      'mi', // Michigan
+      'nj', // New Jersey
+      'az', // Arizona
+      'wa', // Washington
+      'tn', // Tennessee
+      'md', // Maryland
+      'mn', // Minnesota
+      'co', // Colorado
+      'wi', // Wisconsin
+      'or', // Oregon
+      'sc', // South Carolina
+      'ky', // Kentucky
+      'al', // Alabama
+      'ok', // Oklahoma
+      'ct', // Connecticut
+      'ia', // Iowa
+      'ms', // Mississippi
+      'ar', // Arkansas
+      'ks', // Kansas
+      'nv', // Nevada
+      'nm', // New Mexico
+      'wv', // West Virginia
+      'ne', // Nebraska
+      'id', // Idaho
+      'hi', // Hawaii
+      'me', // Maine
+      'nh', // New Hampshire
+      'ri', // Rhode Island
+      'mt', // Montana
+      'de', // Delaware
+      'sd', // South Dakota
+      'nd', // North Dakota
+      'ak', // Alaska
+      'vt', // Vermont
+      'wy', // Wyoming
+      'ut', // Utah
+      'in', // Indiana
+      'mo', // Missouri
+    ]);
+
+    return legitimateAbbreviations.has(name.toLowerCase());
   }
 
   /**
