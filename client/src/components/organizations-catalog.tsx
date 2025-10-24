@@ -736,10 +736,10 @@ export default function GroupCatalog({
           </p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <>
           {/* Active Organizations Section */}
           {totalActiveItems > 0 && (
-            <div>
+            <div className="space-y-8">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-200">
                   <Calendar className="w-5 h-5 text-teal-700" />
@@ -1343,7 +1343,7 @@ export default function GroupCatalog({
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
 
