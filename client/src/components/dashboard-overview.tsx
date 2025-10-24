@@ -217,21 +217,29 @@ export default function DashboardOverview({
   // Fetch dashboard documents configuration from API
   const { data: dashboardDocumentsData } = useQuery({
     queryKey: ['/api/dashboard-documents'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always refetch when invalidated
   });
 
   // Map dashboard document IDs to full document details from adminDocuments
   const importantDocuments = React.useMemo(() => {
     if (!dashboardDocumentsData || !Array.isArray(dashboardDocumentsData)) {
+      logger.log('📄 Dashboard documents: No data or not array', dashboardDocumentsData);
       // Return empty array if no documents configured
       return [];
     }
 
-    return dashboardDocumentsData
+    logger.log('📄 Dashboard documents data received:', dashboardDocumentsData);
+
+    const mapped = dashboardDocumentsData
       .map((dashDoc: any) => {
         const doc = adminDocuments.find((d: any) => d.id === dashDoc.documentId);
-        if (!doc) return null;
-        
+        if (!doc) {
+          logger.warn(`⚠️ Document not found in adminDocuments: ${dashDoc.documentId}`);
+          return null;
+        }
+
+        logger.log(`✅ Found document: ${doc.name} (${dashDoc.documentId})`);
+
         return {
           title: doc.name,
           description: doc.description,
@@ -241,6 +249,9 @@ export default function DashboardOverview({
         };
       })
       .filter((doc: any) => doc !== null);
+
+    logger.log('📄 Final important documents:', mapped);
+    return mapped;
   }, [dashboardDocumentsData]);
 
   // Fetch all collections for peak calculations
