@@ -69,9 +69,7 @@ export default function AnalyticsDashboard() {
       return data.collections || [];
     },
     enabled: !!user && !authLoading, // Only run when user is authenticated
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 2 * 60 * 1000, // 2 minutes - analytics need reasonable freshness but not aggressive refetching
     refetchOnWindowFocus: false,
   });
 

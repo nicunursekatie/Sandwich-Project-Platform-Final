@@ -154,7 +154,8 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: 'throw' }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 0, // Immediately stale - allows invalidation to trigger refetch
+      staleTime: 5 * 60 * 1000, // 5 minutes - reduces aggressive refetching while allowing proper cache invalidation
+      gcTime: 10 * 60 * 1000, // 10 minutes - garbage collection time (formerly cacheTime)
       retry: (failureCount, error) => {
         // Don't retry for auth, permission, or validation errors
         const noRetryErrors = [

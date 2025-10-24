@@ -168,7 +168,7 @@ export default function SuggestionsPortal() {
   const { data: suggestions = [], isLoading } = useQuery<Suggestion[]>({
     queryKey: ['/api/suggestions'],
     enabled: true, // Everyone can access suggestions (filtering happens server-side)
-    staleTime: 0,
+    // Use global defaults (5 min staleTime) - proper cache invalidation after mutations
   });
 
   // Update selected suggestion when suggestions data changes

@@ -101,10 +101,7 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
   // Fetch active projects
   const { data: activeProjects = [], isLoading: activeLoading } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    gcTime: 0,
+    // Use global defaults (5 min staleTime, 10 min gcTime) - proper cache invalidation after mutations
   });
 
   // Fetch archived projects

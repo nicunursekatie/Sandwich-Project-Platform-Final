@@ -174,8 +174,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Fetch event requests using the same query pattern
   const { data: eventRequests = [], isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests', 'v2'],
-    staleTime: 0,
-    gcTime: 0,
+    // Use global defaults (5 min staleTime, 10 min gcTime) - proper cache invalidation after mutations
   });
 
   // Fetch event volunteers data for assignment checking
