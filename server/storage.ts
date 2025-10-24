@@ -725,6 +725,7 @@ export class MemStorage implements IStorage {
   private eventRequests: Map<number, EventRequest>;
   private organizations: Map<number, Organization>;
   private eventVolunteers: Map<number, EventVolunteer>;
+  private dashboardDocuments: Map<number, any>;
   private currentIds: {
     user: number;
     project: number;
@@ -756,6 +757,7 @@ export class MemStorage implements IStorage {
     eventRequest: number;
     organization: number;
     eventVolunteer: number;
+    dashboardDocument: number;
   };
 
   constructor() {
@@ -792,6 +794,7 @@ export class MemStorage implements IStorage {
     this.eventRequests = new Map();
     this.organizations = new Map();
     this.eventVolunteers = new Map();
+    this.dashboardDocuments = new Map();
     this.currentIds = {
       user: 1,
       project: 1,
@@ -824,6 +827,7 @@ export class MemStorage implements IStorage {
       eventRequest: 1,
       organization: 1,
       eventVolunteer: 1,
+      dashboardDocument: 1,
     };
 
     // No sample data - start with clean storage
@@ -3149,9 +3153,10 @@ export class MemStorage implements IStorage {
 
   // Dashboard Documents Methods (fallback implementations for memory storage)
   async getDashboardDocuments(): Promise<any[]> {
-    // For memory storage fallback, return empty array
-    // In-memory storage doesn't persist dashboard document configuration
-    return [];
+    // Return all active dashboard documents sorted by display order
+    return Array.from(this.dashboardDocuments.values())
+      .filter((doc) => doc.isActive)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
   }
 
   async addDashboardDocument(
@@ -3159,31 +3164,45 @@ export class MemStorage implements IStorage {
     displayOrder: number,
     userId: string
   ): Promise<any> {
-    // For memory storage fallback, return a mock document
-    // Data will not persist across deployments
-    return {
-      id: Date.now(),
+    const id = this.currentIds.dashboardDocument++;
+    const doc = {
+      id,
       documentId,
       displayOrder,
       isActive: true,
       addedBy: userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
+    this.dashboardDocuments.set(id, doc);
+    return doc;
   }
 
   async removeDashboardDocument(documentId: string): Promise<boolean> {
-    // For memory storage fallback, return true (pretend success)
-    // Data doesn't persist anyway
-    return true;
+    // Find and delete the document by documentId
+    for (const [id, doc] of this.dashboardDocuments.entries()) {
+      if (doc.documentId === documentId) {
+        this.dashboardDocuments.delete(id);
+        return true;
+      }
+    }
+    return false;
   }
 
   async updateDashboardDocumentOrder(
     updates: Array<{ documentId: string; displayOrder: number }>
   ): Promise<void> {
-    // For memory storage fallback, do nothing
-    // Data doesn't persist anyway
-    return;
+    // Update display order for each document
+    for (const update of updates) {
+      for (const [id, doc] of this.dashboardDocuments.entries()) {
+        if (doc.documentId === update.documentId) {
+          doc.displayOrder = update.displayOrder;
+          doc.updatedAt = new Date().toISOString();
+          this.dashboardDocuments.set(id, doc);
+          break;
+        }
+      }
+    }
   }
 }
 
