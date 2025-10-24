@@ -322,8 +322,32 @@ const markMessagesRead = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Conversation ID is required' });
     }
 
-    // TODO: Implement read tracking when messageReads table is added
-    res.json({ success: true, markedCount: 0 });
+    console.log(
+      `Marking messages as read for user ${userId} in conversation ${conversationId}`
+    );
+
+    // Update messageRecipients to mark messages in this conversation as read
+    const result = await db
+      .update(messageRecipients)
+      .set({
+        read: true,
+        readAt: new Date(),
+      })
+      .where(
+        and(
+          eq(messageRecipients.recipientId, userId),
+          eq(messageRecipients.read, false),
+          // Get messages from this conversation
+          sql`${messageRecipients.messageId} IN (SELECT id FROM ${messages} WHERE ${messages.conversationId} = ${conversationId})`
+        )
+      )
+      .returning({ id: messageRecipients.id });
+
+    const markedCount = result.length;
+
+    console.log(`Marked ${markedCount} messages as read`);
+
+    res.json({ success: true, markedCount });
   } catch (error) {
     console.error('Error marking messages as read:', error);
     res.status(500).json({ error: 'Failed to mark messages as read' });
@@ -334,12 +358,118 @@ const markMessagesRead = async (req: Request, res: Response) => {
 const markAllRead = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id || (req as any).session?.user?.id;
-    if (!userId) {
+    const user = (req as any).user || (req as any).session?.user;
+
+    if (!userId || !user) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // TODO: Implement when messageReads table is added
-    res.json({ success: true, markedCount: 0 });
+    console.log(`Marking all messages as read for user ${userId}`);
+
+    let totalMarkedCount = 0;
+
+    // 1. Mark all formal message recipients as read (messageRecipients)
+    const messageRecipientsResult = await db
+      .update(messageRecipients)
+      .set({
+        read: true,
+        readAt: new Date(),
+      })
+      .where(
+        and(
+          eq(messageRecipients.recipientId, userId),
+          eq(messageRecipients.read, false)
+        )
+      )
+      .returning({ id: messageRecipients.id });
+
+    totalMarkedCount += messageRecipientsResult.length;
+    console.log(`Marked ${messageRecipientsResult.length} formal messages as read`);
+
+    // 2. Mark all email inbox messages as read (emailMessages)
+    const emailMessagesResult = await db
+      .update(emailMessages)
+      .set({
+        isRead: true,
+      })
+      .where(
+        and(
+          eq(emailMessages.recipientId, userId),
+          eq(emailMessages.isRead, false),
+          eq(emailMessages.isDraft, false),
+          eq(emailMessages.isTrashed, false),
+          eq(emailMessages.isArchived, false)
+        )
+      )
+      .returning({ id: emailMessages.id });
+
+    totalMarkedCount += emailMessagesResult.length;
+    console.log(`Marked ${emailMessagesResult.length} email messages as read`);
+
+    // 3. Mark all chat messages as read (chatMessageReads)
+    const { chatMessageReads } = await import('../../shared/schema');
+
+    // Get all channels the user has permission to access
+    const chatChannels = [
+      { channel: 'general', key: 'general' },
+      { channel: 'core-team', key: 'core_team' },
+      { channel: 'committee', key: 'committee' },
+      { channel: 'host', key: 'hosts' },
+      { channel: 'driver', key: 'drivers' },
+      { channel: 'recipient', key: 'recipients' },
+    ];
+
+    for (const { channel, key } of chatChannels) {
+      // Check if user has permission to see this channel
+      if (!checkUserChatPermission(user, key)) {
+        continue;
+      }
+
+      // Get all unread messages in this channel
+      const channelMessages = await db
+        .select({ id: chatMessages.id })
+        .from(chatMessages)
+        .leftJoin(
+          chatMessageReads,
+          and(
+            eq(chatMessageReads.messageId, chatMessages.id),
+            eq(chatMessageReads.userId, userId)
+          )
+        )
+        .where(
+          and(
+            eq(chatMessages.channel, channel),
+            sql`${chatMessages.userId} != ${userId}`, // Don't mark own messages
+            isNull(chatMessageReads.id) // Not already read
+          )
+        );
+
+      // Insert read tracking records for all unread messages, ignoring duplicates
+      for (const message of channelMessages) {
+        try {
+          const result = await db
+            .insert(chatMessageReads)
+            .values({
+              messageId: message.id,
+              userId,
+              channel,
+            })
+            .onConflictDoNothing()
+            .returning();
+
+          if (result.length > 0) {
+            totalMarkedCount++;
+          }
+        } catch (err) {
+          // Silently handle duplicates - this is expected
+          console.log(`Message ${message.id} already marked as read for user ${userId}`);
+        }
+      }
+    }
+
+    console.log(`Total marked ${totalMarkedCount} messages as read`);
+
+    res.json({ success: true, markedCount: totalMarkedCount });
   } catch (error) {
     console.error('Error marking all messages as read:', error);
     res.status(500).json({ error: 'Failed to mark all messages as read' });
