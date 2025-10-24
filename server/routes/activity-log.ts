@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 // Auth will be handled by existing middleware
 import { IStorage } from '../storage';
+import { logger } from '../utils/production-safe-logger';
 
 const activityLogSchema = z.object({
   action: z.string().min(1),
@@ -39,7 +40,7 @@ export function createActivityLogRoutes(storage: IStorage) {
 
       res.json({ success: true });
     } catch (error) {
-      console.error('Activity log error:', error);
+      logger.error('Activity log error:', error);
       res.status(500).json({ error: 'Failed to log activity' });
     }
   });

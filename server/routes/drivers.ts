@@ -1,6 +1,7 @@
 import express from 'express';
 import type { RouterDependencies } from '../types';
 import { insertDriverSchema } from '@shared/schema';
+import { logger } from '../utils/production-safe-logger';
 
 export function createDriversRouter(deps: RouterDependencies) {
   const router = express.Router();
@@ -12,7 +13,7 @@ export function createDriversRouter(deps: RouterDependencies) {
       const drivers = await storage.getAllDrivers();
       res.json(drivers);
     } catch (error) {
-      console.error('Failed to get drivers', error);
+      logger.error('Failed to get drivers', error);
       res.status(500).json({ message: 'Failed to get drivers' });
     }
   });
@@ -99,7 +100,7 @@ export function createDriversRouter(deps: RouterDependencies) {
       res.setHeader('Content-Disposition', `attachment; filename="drivers-${new Date().toISOString().split('T')[0]}.csv"`);
       res.send(csvContent);
     } catch (error) {
-      console.error('Failed to export drivers', error);
+      logger.error('Failed to export drivers', error);
       res.status(500).json({ message: 'Failed to export drivers' });
     }
   });
@@ -114,7 +115,7 @@ export function createDriversRouter(deps: RouterDependencies) {
       }
       res.json(driver);
     } catch (error) {
-      console.error('Failed to get driver', error);
+      logger.error('Failed to get driver', error);
       res.status(500).json({ message: 'Failed to get driver' });
     }
   });
@@ -126,7 +127,7 @@ export function createDriversRouter(deps: RouterDependencies) {
       const driver = await storage.createDriver(validatedData);
       res.status(201).json(driver);
     } catch (error) {
-      console.error('Failed to create driver', error);
+      logger.error('Failed to create driver', error);
       res.status(500).json({ message: 'Failed to create driver' });
     }
   });
@@ -141,7 +142,7 @@ export function createDriversRouter(deps: RouterDependencies) {
       }
       res.json(driver);
     } catch (error) {
-      console.error('Failed to update driver', error);
+      logger.error('Failed to update driver', error);
       res.status(500).json({ message: 'Failed to update driver' });
     }
   });
@@ -156,7 +157,7 @@ export function createDriversRouter(deps: RouterDependencies) {
       }
       res.json(driver);
     } catch (error) {
-      console.error('Failed to update driver', error);
+      logger.error('Failed to update driver', error);
       res.status(500).json({ message: 'Failed to update driver' });
     }
   });
@@ -171,7 +172,7 @@ export function createDriversRouter(deps: RouterDependencies) {
       }
       res.status(204).send();
     } catch (error) {
-      console.error('Failed to delete driver', error);
+      logger.error('Failed to delete driver', error);
       res.status(500).json({ message: 'Failed to delete driver' });
     }
   });

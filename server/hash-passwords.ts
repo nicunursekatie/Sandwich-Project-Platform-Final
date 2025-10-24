@@ -21,7 +21,7 @@ interface HashMigrationResult {
 }
 
 async function hashAllPasswords(): Promise<HashMigrationResult[]> {
-  console.log('🔐 Starting bcrypt password hashing migration...\n');
+  logger.log('🔐 Starting bcrypt password hashing migration...\n');
 
   const results: HashMigrationResult[] = [];
 
@@ -31,17 +31,17 @@ async function hashAllPasswords(): Promise<HashMigrationResult[]> {
     .from(users)
     .where(eq(users.isActive, true));
 
-  console.log(`Found ${allUsers.length} active users to process\n`);
+  logger.log(`Found ${allUsers.length} active users to process\n`);
 
   for (const user of allUsers) {
     const email = user.email || 'unknown';
-    console.log(`\n📧 Processing: ${email}`);
+    logger.log(`\n📧 Processing: ${email}`);
 
     try {
       const currentPassword = user.password;
 
       if (!currentPassword) {
-        console.log(`  ⚠️  No password found - skipping`);
+        logger.log(`  ⚠️  No password found - skipping`);
         results.push({
           email,
           success: true,
@@ -55,7 +55,7 @@ async function hashAllPasswords(): Promise<HashMigrationResult[]> {
       const isBcryptHash = /^\$2[aby]\$\d{2}\$/.test(currentPassword) && currentPassword.length === 60;
 
       if (isBcryptHash) {
-        console.log(`  ✓ Password already hashed - skipping`);
+        logger.log(`  ✓ Password already hashed - skipping`);
         results.push({
           email,
           success: true,
@@ -65,7 +65,7 @@ async function hashAllPasswords(): Promise<HashMigrationResult[]> {
       }
 
       // Hash the plaintext password
-      console.log(`  🔒 Hashing plaintext password...`);
+      logger.log(`  🔒 Hashing plaintext password...`);
       const hashedPassword = await bcrypt.hash(currentPassword, SALT_ROUNDS);
 
       // Update the user with hashed password
@@ -76,7 +76,7 @@ async function hashAllPasswords(): Promise<HashMigrationResult[]> {
         })
         .where(eq(users.id, user.id));
 
-      console.log(`  ✅ Password hashed successfully`);
+      logger.log(`  ✅ Password hashed successfully`);
 
       results.push({
         email,
@@ -85,7 +85,7 @@ async function hashAllPasswords(): Promise<HashMigrationResult[]> {
       });
 
     } catch (error) {
-      console.error(`  ❌ Hashing failed:`, error);
+      logger.error(`  ❌ Hashing failed:`, error);
       results.push({
         email,
         success: false,
@@ -99,34 +99,35 @@ async function hashAllPasswords(): Promise<HashMigrationResult[]> {
 }
 
 async function generateHashReport(results: HashMigrationResult[]) {
-  console.log('\n\n═══════════════════════════════════════════════');
-  console.log('📊 BCRYPT HASHING MIGRATION REPORT');
-  console.log('═══════════════════════════════════════════════\n');
+  logger.log('\n\n═══════════════════════════════════════════════');
+  logger.log('📊 BCRYPT HASHING MIGRATION REPORT');
+  logger.log('═══════════════════════════════════════════════\n');
 
   const successful = results.filter(r => r.success);
   const failed = results.filter(r => !r.success);
   const newlyHashed = successful.filter(r => !r.wasAlreadyHashed);
   const alreadyHashed = successful.filter(r => r.wasAlreadyHashed);
 
-  console.log(`✅ Successfully processed: ${successful.length}/${results.length}`);
-  console.log(`   - Newly hashed: ${newlyHashed.length}`);
-  console.log(`   - Already hashed: ${alreadyHashed.length}`);
+  logger.log(`✅ Successfully processed: ${successful.length}/${results.length}`);
+  logger.log(`   - Newly hashed: ${newlyHashed.length}`);
+  logger.log(`   - Already hashed: ${alreadyHashed.length}`);
 
   if (failed.length > 0) {
-    console.log(`\n❌ Failed to hash: ${failed.length}`);
+    logger.log(`\n❌ Failed to hash: ${failed.length}`);
     failed.forEach(r => {
-      console.log(`   - ${r.email}: ${r.error}`);
+      logger.log(`   - ${r.email}: ${r.error}`);
     });
   }
 
-  console.log('\n═══════════════════════════════════════════════');
-  console.log('✅ Hashing migration complete!');
-  console.log('Next step: Deploy authentication code changes');
-  console.log('═══════════════════════════════════════════════\n');
+  logger.log('\n═══════════════════════════════════════════════');
+  logger.log('✅ Hashing migration complete!');
+  logger.log('Next step: Deploy authentication code changes');
+  logger.log('═══════════════════════════════════════════════\n');
 }
 
 // Run migration if called directly
 import { fileURLToPath } from 'url';
+import { logger } from './utils/production-safe-logger';
 const __filename = fileURLToPath(import.meta.url);
 
 if (process.argv[1] === __filename) {
@@ -134,7 +135,7 @@ if (process.argv[1] === __filename) {
     .then(generateHashReport)
     .then(() => process.exit(0))
     .catch((error) => {
-      console.error('💥 Migration failed:', error);
+      logger.error('💥 Migration failed:', error);
       process.exit(1);
     });
 }

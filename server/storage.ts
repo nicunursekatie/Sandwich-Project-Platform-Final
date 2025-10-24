@@ -1184,7 +1184,7 @@ export class MemStorage implements IStorage {
     // For the real-time messaging system, we don't have a read status field in the Message schema
     // This is a placeholder implementation for now
     // In a real implementation, you would need a separate table for message read status
-    console.log(
+    logger.log(
       `MemStorage: Marking message ${messageId} as read for user ${userId}`
     );
   }
@@ -1929,7 +1929,7 @@ export class MemStorage implements IStorage {
           contact.name === insertContact.name &&
           contact.email === insertContact.email
         ) {
-          console.log(
+          logger.log(
             `Duplicate host contact prevented in memory: ${insertContact.name} (${insertContact.email})`
           );
           return contact;
@@ -2354,7 +2354,7 @@ export class MemStorage implements IStorage {
     updates: { content: string }
   ): Promise<void> {
     // In-memory storage doesn't persist anyway, so just log
-    console.log(
+    logger.log(
       `[MemStorage] Updated chat message ${id} with content: ${updates.content}`
     );
   }
@@ -2372,7 +2372,7 @@ export class MemStorage implements IStorage {
     channel: string
   ): Promise<void> {
     // No-op for memory storage since it doesn't persist anyway
-    console.log(
+    logger.log(
       `[MemStorage] Marked all messages in ${channel} as read for user ${userId}`
     );
   }
@@ -2640,11 +2640,11 @@ export class MemStorage implements IStorage {
       }
       
       if (addedCount > 0) {
-        console.log(`📄 Auto-populated ${addedCount} documents from public folders`);
+        logger.log(`📄 Auto-populated ${addedCount} documents from public folders`);
       }
       
     } catch (error) {
-      console.error('Error auto-populating documents:', error);
+      logger.error('Error auto-populating documents:', error);
     }
   }
 
@@ -3184,6 +3184,7 @@ export class MemStorage implements IStorage {
 
 // GoogleSheetsStorage removed completely to prevent conflicts with meeting management system
 import { DatabaseStorage } from './database-storage';
+import { logger } from './utils/production-safe-logger';
 
 // Create storage instance with error handling
 let storageInstance: IStorage;
@@ -3191,19 +3192,19 @@ let storageInstance: IStorage;
 try {
   // Priority 1: Use database storage if available (for persistence across deployments)
   if (process.env.DATABASE_URL) {
-    console.log('Using database storage for data persistence...');
+    logger.log('Using database storage for data persistence...');
     storageInstance = new DatabaseStorage();
   }
   // Old Google Sheets storage system completely removed
   // Fallback: Memory storage (data will not persist across deployments)
   else {
-    console.log(
+    logger.log(
       'No persistent storage configured, using memory storage (data will not persist)'
     );
     storageInstance = new MemStorage();
   }
 } catch (error) {
-  console.error(
+  logger.error(
     'Failed to initialize persistent storage, falling back to memory:',
     error
   );

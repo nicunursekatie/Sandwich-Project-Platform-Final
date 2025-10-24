@@ -13,6 +13,7 @@ import {
 } from '../../shared/schema';
 import { db } from '../db';
 import { hasPermission, PERMISSIONS } from '../../shared/auth-utils';
+import { logger } from '../utils/production-safe-logger';
 
 // Helper function to check if user has permission for specific chat type
 function checkUserChatPermission(user: any, chatType: string): boolean {
@@ -43,22 +44,22 @@ function checkUserChatPermission(user: any, chatType: string): boolean {
 // Get unread message counts for a user
 const getUnreadCounts = async (req: Request, res: Response) => {
   try {
-    console.log('=== UNREAD COUNTS REQUEST ===');
-    console.log('req.user exists:', !!(req as any).user);
-    console.log('req.user?.id:', (req as any).user?.id);
-    console.log('req.session exists:', !!(req as any).session);
-    console.log('req.session?.user exists:', !!(req as any).session?.user);
+    logger.log('=== UNREAD COUNTS REQUEST ===');
+    logger.log('req.user exists:', !!(req as any).user);
+    logger.log('req.user?.id:', (req as any).user?.id);
+    logger.log('req.session exists:', !!(req as any).session);
+    logger.log('req.session?.user exists:', !!(req as any).session?.user);
 
     // Try to get user from both req.user and req.session.user for compatibility
     const userId = (req as any).user?.id || (req as any).session?.user?.id;
     const user = (req as any).user || (req as any).session?.user;
 
     if (!userId || !user) {
-      console.log('Authentication failed: No user ID found');
+      logger.log('Authentication failed: No user ID found');
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    console.log('Using user data:', {
+    logger.log('Using user data:', {
       id: userId,
       permissions: user.permissions?.length || 0,
     });
@@ -155,7 +156,7 @@ const getUnreadCounts = async (req: Request, res: Response) => {
         );
         unreadCounts.groups = 0; // Groups functionality not implemented yet
       } catch (directMsgError) {
-        console.error('Error getting direct message counts:', directMsgError);
+        logger.error('Error getting direct message counts:', directMsgError);
         unreadCounts.direct = 0;
         unreadCounts.groups = 0;
       }
@@ -178,7 +179,7 @@ const getUnreadCounts = async (req: Request, res: Response) => {
 
         unreadCounts.kudos = parseInt(String(kudosCount[0]?.count || 0));
       } catch (kudosError) {
-        console.error('Error getting kudos counts:', kudosError);
+        logger.error('Error getting kudos counts:', kudosError);
         unreadCounts.kudos = 0;
       }
 
@@ -194,13 +195,13 @@ const getUnreadCounts = async (req: Request, res: Response) => {
         unreadCounts.groups +
         unreadCounts.kudos;
     } catch (dbError) {
-      console.error('Database query error in unread counts:', dbError);
+      logger.error('Database query error in unread counts:', dbError);
       // Return fallback counts on database error
     }
 
     res.json(unreadCounts);
   } catch (error) {
-    console.error('Error getting unread counts:', error);
+    logger.error('Error getting unread counts:', error);
     res.status(500).json({ error: 'Failed to get unread counts' });
   }
 };
@@ -219,7 +220,7 @@ const markChatMessagesRead = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Channel is required' });
     }
 
-    console.log(
+    logger.log(
       `Marking chat messages as read for user ${userId} in channel ${channel}`
     );
 
@@ -252,7 +253,7 @@ const markChatMessagesRead = async (req: Request, res: Response) => {
           }
         } catch (err) {
           // Silently handle duplicates - this is expected
-          console.log(`Message ${messageId} already marked as read for user ${userId}`);
+          logger.log(`Message ${messageId} already marked as read for user ${userId}`);
         }
       }
 
@@ -296,14 +297,14 @@ const markChatMessagesRead = async (req: Request, res: Response) => {
           }
         } catch (err) {
           // Silently handle duplicates - this is expected
-          console.log(`Message ${message.id} already marked as read for user ${userId}`);
+          logger.log(`Message ${message.id} already marked as read for user ${userId}`);
         }
       }
 
       res.json({ success: true, channel, userId, markedRead: markedCount });
     }
   } catch (error) {
-    console.error('Error marking chat messages as read:', error);
+    logger.error('Error marking chat messages as read:', error);
     res.status(500).json({ error: 'Failed to mark chat messages as read' });
   }
 };
@@ -325,7 +326,7 @@ const markMessagesRead = async (req: Request, res: Response) => {
     // TODO: Implement read tracking when messageReads table is added
     res.json({ success: true, markedCount: 0 });
   } catch (error) {
-    console.error('Error marking messages as read:', error);
+    logger.error('Error marking messages as read:', error);
     res.status(500).json({ error: 'Failed to mark messages as read' });
   }
 };
@@ -341,7 +342,7 @@ const markAllRead = async (req: Request, res: Response) => {
     // TODO: Implement when messageReads table is added
     res.json({ success: true, markedCount: 0 });
   } catch (error) {
-    console.error('Error marking all messages as read:', error);
+    logger.error('Error marking all messages as read:', error);
     res.status(500).json({ error: 'Failed to mark all messages as read' });
   }
 };

@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { z } from 'zod';
+import { logger } from '../utils/production-safe-logger';
 
 // Get announcements
 const getAnnouncements = async (req: Request, res: Response) => {
@@ -8,7 +9,7 @@ const getAnnouncements = async (req: Request, res: Response) => {
     // Return empty array for now - can be implemented later
     res.json([]);
   } catch (error) {
-    console.error('Error getting announcements:', error);
+    logger.error('Error getting announcements:', error);
     res.status(500).json({ error: 'Failed to get announcements' });
   }
 };
@@ -66,7 +67,7 @@ export function createAnnouncementsRouter(deps: RouterDependencies) {
           });
           successCount++;
         } catch (notifError) {
-          console.error(`Failed to create notification for ${user.id}:`, notifError);
+          logger.error(`Failed to create notification for ${user.id}:`, notifError);
           failureCount++;
         }
       }
@@ -79,7 +80,7 @@ export function createAnnouncementsRouter(deps: RouterDependencies) {
         totalUsers: targetUsers.length,
       });
     } catch (error) {
-      console.error('Error broadcasting announcement:', error);
+      logger.error('Error broadcasting announcement:', error);
       res.status(500).json({ error: 'Failed to broadcast announcement' });
     }
   });

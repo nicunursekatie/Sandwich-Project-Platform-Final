@@ -22,7 +22,7 @@ interface PasswordMigrationResult {
 }
 
 async function migratePasswords(): Promise<PasswordMigrationResult[]> {
-  console.log('🔐 Starting password migration...\n');
+  logger.log('🔐 Starting password migration...\n');
   
   const results: PasswordMigrationResult[] = [];
   
@@ -32,11 +32,11 @@ async function migratePasswords(): Promise<PasswordMigrationResult[]> {
     .from(users)
     .where(eq(users.isActive, true));
   
-  console.log(`Found ${allUsers.length} active users to process\n`);
+  logger.log(`Found ${allUsers.length} active users to process\n`);
   
   for (const user of allUsers) {
     const email = user.email || 'unknown';
-    console.log(`\n📧 Processing: ${email}`);
+    logger.log(`\n📧 Processing: ${email}`);
     
     try {
       let finalPassword: string | null = null;
@@ -47,7 +47,7 @@ async function migratePasswords(): Promise<PasswordMigrationResult[]> {
       if (metadataPassword && typeof metadataPassword === 'string') {
         finalPassword = metadataPassword.trim();
         source = 'metadata';
-        console.log(`  ✓ Found password in metadata: "${finalPassword}"`);
+        logger.log(`  ✓ Found password in metadata: "${finalPassword}"`);
       }
       
       // 2. Check password column (might be JSON wrapped)
@@ -60,14 +60,14 @@ async function migratePasswords(): Promise<PasswordMigrationResult[]> {
           if (parsed.password && typeof parsed.password === 'string') {
             finalPassword = parsed.password.trim();
             source = 'password_column';
-            console.log(`  ✓ Extracted password from JSON in password column: "${finalPassword}"`);
+            logger.log(`  ✓ Extracted password from JSON in password column: "${finalPassword}"`);
           }
         } catch {
           // Not JSON, treat as plain password
           if (passwordValue.trim().length > 0) {
             finalPassword = passwordValue.trim();
             source = 'password_column';
-            console.log(`  ✓ Found plain password in password column: "${finalPassword}"`);
+            logger.log(`  ✓ Found plain password in password column: "${finalPassword}"`);
           }
         }
       }
@@ -76,7 +76,7 @@ async function migratePasswords(): Promise<PasswordMigrationResult[]> {
       if (!finalPassword) {
         finalPassword = 'sandwich123'; // Standard temporary password
         source = 'generated';
-        console.log(`  ⚠️  No password found - generating temporary: "${finalPassword}"`);
+        logger.log(`  ⚠️  No password found - generating temporary: "${finalPassword}"`);
       }
       
       // 4. Update the user with clean password
@@ -91,7 +91,7 @@ async function migratePasswords(): Promise<PasswordMigrationResult[]> {
         })
         .where(eq(users.id, user.id));
       
-      console.log(`  ✅ Migration successful - password now in password column`);
+      logger.log(`  ✅ Migration successful - password now in password column`);
       
       results.push({
         email,
@@ -101,7 +101,7 @@ async function migratePasswords(): Promise<PasswordMigrationResult[]> {
       });
       
     } catch (error) {
-      console.error(`  ❌ Migration failed:`, error);
+      logger.error(`  ❌ Migration failed:`, error);
       results.push({
         email,
         source: 'metadata',
@@ -115,9 +115,9 @@ async function migratePasswords(): Promise<PasswordMigrationResult[]> {
 }
 
 async function generateMigrationReport(results: PasswordMigrationResult[]) {
-  console.log('\n\n═══════════════════════════════════════════════');
-  console.log('📊 PASSWORD MIGRATION REPORT');
-  console.log('═══════════════════════════════════════════════\n');
+  logger.log('\n\n═══════════════════════════════════════════════');
+  logger.log('📊 PASSWORD MIGRATION REPORT');
+  logger.log('═══════════════════════════════════════════════\n');
   
   const successful = results.filter(r => r.success);
   const failed = results.filter(r => !r.success);
@@ -125,41 +125,42 @@ async function generateMigrationReport(results: PasswordMigrationResult[]) {
   const fromColumn = successful.filter(r => r.source === 'password_column');
   const generated = successful.filter(r => r.source === 'generated');
   
-  console.log(`✅ Successfully migrated: ${successful.length}/${results.length}`);
-  console.log(`   - From metadata: ${fromMetadata.length}`);
-  console.log(`   - From password column: ${fromColumn.length}`);
-  console.log(`   - Generated new: ${generated.length}`);
+  logger.log(`✅ Successfully migrated: ${successful.length}/${results.length}`);
+  logger.log(`   - From metadata: ${fromMetadata.length}`);
+  logger.log(`   - From password column: ${fromColumn.length}`);
+  logger.log(`   - Generated new: ${generated.length}`);
   
   if (failed.length > 0) {
-    console.log(`\n❌ Failed migrations: ${failed.length}`);
+    logger.log(`\n❌ Failed migrations: ${failed.length}`);
     failed.forEach(r => {
-      console.log(`   - ${r.email}: ${r.error}`);
+      logger.log(`   - ${r.email}: ${r.error}`);
     });
   }
   
   if (generated.length > 0) {
-    console.log('\n\n⚠️  USERS WITH GENERATED TEMPORARY PASSWORDS:');
-    console.log('═══════════════════════════════════════════════');
-    console.log('These users need to be notified to set new passwords:\n');
+    logger.log('\n\n⚠️  USERS WITH GENERATED TEMPORARY PASSWORDS:');
+    logger.log('═══════════════════════════════════════════════');
+    logger.log('These users need to be notified to set new passwords:\n');
     
     generated.forEach(r => {
-      console.log(`📧 ${r.email}`);
-      console.log(`   Temporary password: ${r.newPassword}`);
-      console.log('');
+      logger.log(`📧 ${r.email}`);
+      logger.log(`   Temporary password: ${r.newPassword}`);
+      logger.log('');
     });
     
-    console.log('Action required: Use the "Set Password" feature in User Management');
-    console.log('to set proper passwords for these users.\n');
+    logger.log('Action required: Use the "Set Password" feature in User Management');
+    logger.log('to set proper passwords for these users.\n');
   }
   
-  console.log('\n═══════════════════════════════════════════════');
-  console.log('✅ Migration complete!');
-  console.log('Next step: Update authentication code to use password column');
-  console.log('═══════════════════════════════════════════════\n');
+  logger.log('\n═══════════════════════════════════════════════');
+  logger.log('✅ Migration complete!');
+  logger.log('Next step: Update authentication code to use password column');
+  logger.log('═══════════════════════════════════════════════\n');
 }
 
 // Run migration if called directly
 import { fileURLToPath } from 'url';
+import { logger } from './utils/production-safe-logger';
 const __filename = fileURLToPath(import.meta.url);
 
 if (process.argv[1] === __filename) {
@@ -167,7 +168,7 @@ if (process.argv[1] === __filename) {
     .then(generateMigrationReport)
     .then(() => process.exit(0))
     .catch((error) => {
-      console.error('💥 Migration failed:', error);
+      logger.error('💥 Migration failed:', error);
       process.exit(1);
     });
 }

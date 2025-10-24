@@ -1,4 +1,5 @@
 import { storage } from './storage-wrapper';
+import { logger } from './utils/production-safe-logger';
 
 // Event data extracted from the spreadsheet
 const scheduledEvents = [
@@ -209,7 +210,7 @@ async function eventExists(
       return sameDate && sameOrg;
     });
   } catch (error) {
-    console.error(
+    logger.error(
       'Error checking event existence:',
       error instanceof Error ? error.message : String(error)
     );
@@ -229,7 +230,7 @@ export async function importScheduledEvents(): Promise<{
     errors: [] as string[],
   };
 
-  console.log(
+  logger.log(
     `🔄 Starting import of ${scheduledEvents.length} scheduled events...`
   );
 
@@ -239,7 +240,7 @@ export async function importScheduledEvents(): Promise<{
       const exists = await eventExists(event.groupName, event.date);
 
       if (exists) {
-        console.log(
+        logger.log(
           `⏭️ Skipping existing event: ${event.groupName} on ${event.date}`
         );
         results.skipped++;
@@ -290,32 +291,32 @@ export async function importScheduledEvents(): Promise<{
         updated_at: new Date(),
       };
 
-      console.log(
+      logger.log(
         `🔍 About to create event request:`,
         JSON.stringify(newEvent, null, 2)
       );
 
       try {
         const createdEvent = await storage.createEventRequest(newEvent);
-        console.log(
+        logger.log(
           `✅ Successfully created event with ID: ${createdEvent.id} for ${event.groupName}`
         );
         results.imported++;
       } catch (createError) {
-        console.error(`❌ Failed to create event request:`, createError);
+        logger.error(`❌ Failed to create event request:`, createError);
         throw createError;
       }
     } catch (error) {
       const errorMsg = `Failed to import ${event.groupName}: ${
         error instanceof Error ? error.message : String(error)
       }`;
-      console.error(`❌ ${errorMsg}`);
-      console.error('Full error details:', error);
+      logger.error(`❌ ${errorMsg}`);
+      logger.error('Full error details:', error);
       results.errors.push(errorMsg);
     }
   }
 
-  console.log(
+  logger.log(
     `📊 Import complete: ${results.imported} imported, ${results.skipped} skipped, ${results.errors.length} errors`
   );
   return results;

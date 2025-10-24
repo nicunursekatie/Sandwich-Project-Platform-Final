@@ -4,6 +4,7 @@ import { db } from './db';
 import { hosts } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { getUserMetadata } from '../shared/types';
+import { logger } from './utils/production-safe-logger';
 
 // Initialize SMS provider
 let smsProvider: SMSProvider | null = null;
@@ -13,12 +14,12 @@ try {
   smsProvider = factory.getProvider();
   
   if (smsProvider.isConfigured()) {
-    console.log(`✅ ${smsProvider.name} SMS service initialized`);
+    logger.log(`✅ ${smsProvider.name} SMS service initialized`);
   } else {
-    console.log(`⚠️ ${smsProvider.name} SMS service not configured - SMS features will be limited`);
+    logger.log(`⚠️ ${smsProvider.name} SMS service not configured - SMS features will be limited`);
   }
 } catch (error) {
-  console.log('⚠️ SMS service initialization failed:', (error as Error).message);
+  logger.log('⚠️ SMS service initialization failed:', (error as Error).message);
   smsProvider = null;
 }
 
@@ -98,7 +99,7 @@ export async function sendSMSReminder(
 
         // Validate phone number exists before sending
         if (!phoneNumber) {
-          console.warn(`⚠️ Skipping SMS for ${user.email}: No phone number found`);
+          logger.warn(`⚠️ Skipping SMS for ${user.email}: No phone number found`);
           results.push({
             user: user.email,
             phone: 'none',
@@ -122,11 +123,11 @@ export async function sendSMSReminder(
           success: result.success,
         });
 
-        console.log(
+        logger.log(
           `✅ SMS sent to ${user.email} (${phoneNumber}) for ${hostLocation}`
         );
       } catch (error) {
-        console.error(`❌ Failed to send SMS to ${user.email}:`, error);
+        logger.error(`❌ Failed to send SMS to ${user.email}:`, error);
         const metadata = getUserMetadata(user);
         results.push({
           user: user.email,
@@ -149,7 +150,7 @@ export async function sendSMSReminder(
         .join(', '),
     };
   } catch (error) {
-    console.error('Error sending SMS reminder:', error);
+    logger.error('Error sending SMS reminder:', error);
     return {
       success: false,
       message: `Failed to send SMS reminder: ${(error as Error).message}`,
@@ -210,7 +211,7 @@ export async function sendTestSMS(
       formattedPhone = `+${formattedPhone}`;
     }
 
-    console.log(`📱 Formatting phone number: ${toPhoneNumber} -> ${formattedPhone}`);
+    logger.log(`📱 Formatting phone number: ${toPhoneNumber} -> ${formattedPhone}`);
 
     const testMessage = `🧪 Test SMS from The Sandwich Project! This is a test of the SMS reminder system. App link: ${
       appUrl || 'https://your-app.replit.app'
@@ -222,7 +223,7 @@ export async function sendTestSMS(
     });
 
     if (result.success) {
-      console.log(`✅ Test SMS sent to ${formattedPhone}`);
+      logger.log(`✅ Test SMS sent to ${formattedPhone}`);
       return {
         success: true,
         message: `Test SMS sent successfully to ${formattedPhone}`,
@@ -235,7 +236,7 @@ export async function sendTestSMS(
       };
     }
   } catch (error) {
-    console.error('Error sending test SMS:', error);
+    logger.error('Error sending test SMS:', error);
     return {
       success: false,
       message: `Failed to send test SMS: ${(error as Error).message}`,
@@ -285,22 +286,22 @@ export async function sendConfirmationSMS(
   verificationCode: string,
   retryCount: number = 0
 ): Promise<SMSConfirmationResult> {
-  console.log('📱 Attempting to send confirmation SMS...');
-  console.log('Phone number:', phoneNumber);
-  console.log('Verification code:', verificationCode);
-  console.log('Retry attempt:', retryCount);
-  console.log('Twilio configured:', !!twilioClient);
-  console.log('Twilio phone:', process.env.TWILIO_PHONE_NUMBER);
+  logger.log('📱 Attempting to send confirmation SMS...');
+  logger.log('Phone number:', phoneNumber);
+  logger.log('Verification code:', verificationCode);
+  logger.log('Retry attempt:', retryCount);
+  logger.log('Twilio configured:', !!twilioClient);
+  logger.log('Twilio phone:', process.env.TWILIO_PHONE_NUMBER);
 
   if (!twilioClient) {
-    console.error('❌ Twilio client not initialized');
+    logger.error('❌ Twilio client not initialized');
     return {
       success: false,
       message: 'SMS service not configured - no provider available',
     };
   }
   if (!process.env.TWILIO_PHONE_NUMBER) {
-    console.error('❌ TWILIO_PHONE_NUMBER not set');
+    logger.error('❌ TWILIO_PHONE_NUMBER not set');
     return {
       success: false,
       message: `SMS service not configured - ${smsProvider.name} provider missing configuration`,
@@ -310,7 +311,7 @@ export async function sendConfirmationSMS(
   try {
     // Validate phone number
     if (!phoneNumber || phoneNumber.trim() === '') {
-      console.error('❌ Invalid phone number provided');
+      logger.error('❌ Invalid phone number provided');
       return {
         success: false,
         message: 'Invalid phone number provided',
@@ -326,7 +327,7 @@ export async function sendConfirmationSMS(
     });
 
     if (result.success) {
-      console.log(`✅ SMS confirmation sent via ${smsProvider.name} to ${phoneNumber} (${result.messageId})`);
+      logger.log(`✅ SMS confirmation sent via ${smsProvider.name} to ${phoneNumber} (${result.messageId})`);
       return {
         success: true,
         message: `Confirmation SMS sent successfully to ${phoneNumber}`,
@@ -339,10 +340,10 @@ export async function sendConfirmationSMS(
       };
     }
   } catch (error: any) {
-    console.error('Error sending confirmation SMS via provider:', error);
+    logger.error('Error sending confirmation SMS via provider:', error);
     
     // Fallback to direct Twilio if provider fails
-    console.log('🔄 Falling back to direct Twilio...');
+    logger.log('🔄 Falling back to direct Twilio...');
     
     try {
       // Format phone number with improved AT&T compatibility
@@ -355,13 +356,13 @@ export async function sendConfirmationSMS(
         formattedPhone = `+${formattedPhone}`;
       }
 
-      console.log(`📱 Phone number formatting: ${phoneNumber} -> ${formattedPhone}`);
+      logger.log(`📱 Phone number formatting: ${phoneNumber} -> ${formattedPhone}`);
 
       // Simplified message to avoid carrier filtering
       const confirmationMessage = `Sandwich Project: Your verification code is ${verificationCode}. Reply with this code or YES to confirm weekly reminders.`;
 
-      console.log('📤 Sending SMS via Twilio...');
-      console.log('Message length:', confirmationMessage.length, 'characters');
+      logger.log('📤 Sending SMS via Twilio...');
+      logger.log('Message length:', confirmationMessage.length, 'characters');
 
       const result = await twilioClient.messages.create({
         body: confirmationMessage,
@@ -373,9 +374,9 @@ export async function sendConfirmationSMS(
           : undefined,
       });
 
-      console.log(`✅ SMS confirmation sent to ${phoneNumber} (${result.sid})`);
-      console.log('Message status:', result.status);
-      console.log('Message price:', result.price);
+      logger.log(`✅ SMS confirmation sent to ${phoneNumber} (${result.sid})`);
+      logger.log('Message status:', result.status);
+      logger.log('Message price:', result.price);
 
       return {
         success: true,
@@ -383,10 +384,10 @@ export async function sendConfirmationSMS(
         verificationCode,
       };
     } catch (twilioError: any) {
-      console.error('❌ Error sending confirmation SMS:', twilioError);
-      console.error('Error code:', twilioError.code);
-      console.error('Error message:', twilioError.message);
-      console.error('More info:', twilioError.moreInfo);
+      logger.error('❌ Error sending confirmation SMS:', twilioError);
+      logger.error('Error code:', twilioError.code);
+      logger.error('Error message:', twilioError.message);
+      logger.error('More info:', twilioError.moreInfo);
 
       // Check for specific Twilio error codes
       if (twilioError.code === 21211) {
@@ -407,12 +408,12 @@ export async function sendConfirmationSMS(
       } else if (twilioError.code === 30032 || twilioError.code === 30005) {
         // Error 30032: Unknown destination handset (carrier issue)
         // Error 30005: Unknown destination handset (number unreachable)
-        console.log(`⚠️ Carrier delivery issue (${twilioError.code}), attempting retry...`);
+        logger.log(`⚠️ Carrier delivery issue (${twilioError.code}), attempting retry...`);
 
         if (retryCount < 2) {
           // Wait before retry (exponential backoff)
           const delay = (retryCount + 1) * 2000;
-          console.log(`⏱️ Waiting ${delay}ms before retry ${retryCount + 1}...`);
+          logger.log(`⏱️ Waiting ${delay}ms before retry ${retryCount + 1}...`);
           await new Promise(resolve => setTimeout(resolve, delay));
 
           // Retry with incremented count
@@ -455,7 +456,7 @@ export async function sendWelcomeSMS(
   try {
     // Validate phone number
     if (!phoneNumber || phoneNumber.trim() === '') {
-      console.error('❌ Invalid phone number provided');
+      logger.error('❌ Invalid phone number provided');
       return {
         success: false,
         message: 'Invalid phone number provided',
@@ -471,7 +472,7 @@ export async function sendWelcomeSMS(
     });
 
     if (result.success) {
-      console.log(`✅ Welcome SMS sent via ${smsProvider.name} to ${phoneNumber} (${result.messageId})`);
+      logger.log(`✅ Welcome SMS sent via ${smsProvider.name} to ${phoneNumber} (${result.messageId})`);
       return {
         success: true,
         message: `Welcome SMS sent successfully to ${phoneNumber}`,
@@ -484,7 +485,7 @@ export async function sendWelcomeSMS(
       };
     }
   } catch (error) {
-    console.error('Error sending welcome SMS:', error);
+    logger.error('Error sending welcome SMS:', error);
     return {
       success: false,
       message: `Failed to send welcome SMS: ${(error as Error).message}`,
@@ -588,7 +589,7 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
     }
 
     const verification = await response.json();
-    console.log(`✅ Toll-free verification submitted: ${verification.sid}`);
+    logger.log(`✅ Toll-free verification submitted: ${verification.sid}`);
     
     return {
       success: true,
@@ -598,7 +599,7 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
     };
 
   } catch (error) {
-    console.error('Error submitting toll-free verification:', error);
+    logger.error('Error submitting toll-free verification:', error);
     return {
       success: false,
       message: `Failed to submit toll-free verification: ${(error as Error).message}`,
@@ -687,7 +688,7 @@ export async function checkTollFreeVerificationStatus(verificationSid?: string):
     }
 
   } catch (error) {
-    console.error('Error checking toll-free verification status:', error);
+    logger.error('Error checking toll-free verification status:', error);
     return {
       success: false,
       message: `Failed to check verification status: ${(error as Error).message}`,

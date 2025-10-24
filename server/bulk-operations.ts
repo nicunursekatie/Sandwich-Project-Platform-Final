@@ -14,6 +14,7 @@ import {
 } from '@shared/schema';
 import { AuditLogger, type AuditContext } from './audit-logger';
 import { eq, inArray, sql } from 'drizzle-orm';
+import { logger } from './utils/production-safe-logger';
 
 export interface BulkOperationResult {
   success: boolean;
@@ -351,7 +352,7 @@ export class BulkOperationsManager {
         summary: { totalIssues, criticalIssues },
       };
     } catch (error) {
-      console.error('Data integrity check failed:', error);
+      logger.error('Data integrity check failed:', error);
       return {
         issues: [
           {

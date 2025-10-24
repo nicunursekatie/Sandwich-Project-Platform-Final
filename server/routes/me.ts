@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { logger } from '../middleware/logger';
 import type { IStorage } from '../storage';
 import { storage } from '../storage-wrapper';
+import { logger } from '../utils/production-safe-logger';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {
@@ -363,7 +364,7 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     res.json(dashboardData);
   } catch (error) {
     logger.error('Failed to fetch dashboard data', error);
-    console.error('Dashboard endpoint error:', error);
+    logger.error('Dashboard endpoint error:', error);
     res.status(500).json({ message: 'Failed to fetch dashboard data' });
   }
 });

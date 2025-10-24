@@ -2,6 +2,7 @@ import type { IStorage } from './storage';
 import { MemStorage } from './storage';
 // Removed GoogleSheetsStorage import - old implementation deleted to prevent conflicts
 import { DatabaseStorage } from './database-storage';
+import { logger } from './utils/production-safe-logger';
 
 class StorageWrapper implements IStorage {
   private primaryStorage: IStorage;
@@ -15,9 +16,9 @@ class StorageWrapper implements IStorage {
     try {
       // Use database storage as primary for persistence across deployments
       this.primaryStorage = new DatabaseStorage();
-      console.log('Database storage initialized');
+      logger.log('Database storage initialized');
     } catch (error) {
-      console.log(
+      logger.log(
         'Failed to initialize database storage, using memory storage'
       );
       this.primaryStorage = this.fallbackStorage;
@@ -45,11 +46,11 @@ class StorageWrapper implements IStorage {
           // Ignore duplicates or other sync errors
         }
       }
-      console.log(
+      logger.log(
         `Synchronized ${syncedCount} sandwich collections to memory storage`
       );
     } catch (error) {
-      console.warn('Failed to sync data from Google Sheets:', error);
+      logger.warn('Failed to sync data from Google Sheets:', error);
     }
   }
 
@@ -69,21 +70,21 @@ class StorageWrapper implements IStorage {
       const result = await operation();
       // For delete operations that return false, use fallback
       if (typeof result === 'boolean' && result === false) {
-        console.log(
+        logger.log(
           'Primary storage operation returned false, using fallback storage'
         );
         return fallbackOperation();
       }
       // For update operations that return undefined, use fallback
       if (result === undefined) {
-        console.log(
+        logger.log(
           'Primary storage operation returned undefined, using fallback storage'
         );
         return fallbackOperation();
       }
       return result;
     } catch (error) {
-      console.warn('Primary storage operation failed, using fallback:', error);
+      logger.warn('Primary storage operation failed, using fallback:', error);
       return fallbackOperation();
     }
   }
@@ -95,7 +96,7 @@ class StorageWrapper implements IStorage {
       const result = await this.primaryStorage.getUser(id);
       return result; // Return null/undefined as-is, don't fall back
     } catch (error) {
-      console.warn('Primary storage getUser failed, using fallback:', error);
+      logger.warn('Primary storage getUser failed, using fallback:', error);
       return this.fallbackStorage.getUser(id);
     }
   }
@@ -106,7 +107,7 @@ class StorageWrapper implements IStorage {
       const result = await this.primaryStorage.getUserById(id);
       return result; // Return null/undefined as-is, don't fall back
     } catch (error) {
-      console.warn(
+      logger.warn(
         'Primary storage getUserById failed, using fallback:',
         error
       );
@@ -120,7 +121,7 @@ class StorageWrapper implements IStorage {
       const result = await this.primaryStorage.getUserByEmail(email);
       return result; // Return null/undefined as-is, don't fall back
     } catch (error) {
-      console.warn(
+      logger.warn(
         'Primary storage getUserByEmail failed, using fallback:',
         error
       );
@@ -548,7 +549,7 @@ class StorageWrapper implements IStorage {
             id: result.id,
           });
         } catch (error) {
-          console.warn('Failed to sync collection to fallback storage:', error);
+          logger.warn('Failed to sync collection to fallback storage:', error);
         }
         return result;
       },
@@ -580,7 +581,7 @@ class StorageWrapper implements IStorage {
     } catch (error) {
       // If database fails, remove from tracking and fallback
       this.deletedIds.delete(id);
-      console.warn('Database delete failed, trying fallback storage:', error);
+      logger.warn('Database delete failed, trying fallback storage:', error);
       return this.fallbackStorage.deleteSandwichCollection(id);
     }
   }

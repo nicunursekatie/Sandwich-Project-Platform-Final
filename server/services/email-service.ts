@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { emailMessages, users } from '@shared/schema';
 import { eq, and, or, desc, isNull, sql, inArray } from 'drizzle-orm';
+import { logger } from '../utils/production-safe-logger';
 
 export interface EmailMessage {
   id: number;
@@ -49,7 +50,7 @@ export class EmailService {
 
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Failed to get unread email count:', error);
+      logger.error('Failed to get unread email count:', error);
       return 0;
     }
   }
@@ -176,7 +177,7 @@ export class EmailService {
 
       return results as EmailMessage[];
     } catch (error) {
-      console.error(`Failed to get emails for folder ${folder}:`, error);
+      logger.error(`Failed to get emails for folder ${folder}:`, error);
       throw error;
     }
   }
@@ -312,7 +313,7 @@ export class EmailService {
                   if (docMeta) {
                     processedAttachments.push(docMeta);
                   } else {
-                    console.warn(`[Email Service] Document ID ${docId} not found`);
+                    logger.warn(`[Email Service] Document ID ${docId} not found`);
                   }
                   continue;
                 }
@@ -361,11 +362,11 @@ export class EmailService {
             `,
             attachments: processedAttachments,
           });
-          console.log(
+          logger.log(
             `[Email Service] SendGrid notification sent successfully to ${data.recipientEmail}`
           );
         } catch (emailError) {
-          console.warn(
+          logger.warn(
             `[Email Service] SendGrid notification failed (but internal message saved): ${
               emailError?.message || 'Unknown error'
             }`
@@ -376,7 +377,7 @@ export class EmailService {
 
       return newEmail as EmailMessage;
     } catch (error) {
-      console.error('Failed to save internal email:', error);
+      logger.error('Failed to save internal email:', error);
       throw error;
     }
   }
@@ -412,14 +413,14 @@ export class EmailService {
         );
 
       if (!email) {
-        console.error('Email not found or user does not have access');
+        logger.error('Email not found or user does not have access');
         return false;
       }
 
       // CRITICAL FIX: Only allow recipients to mark emails as read
       // If sender is trying to mark as read, ignore that update to prevent affecting recipient's unread status
       if (updates.isRead !== undefined && email.senderId === userId) {
-        console.log(
+        logger.log(
           `Sender ${userId} attempted to mark email ${emailId} as read - ignoring to protect recipient read status`
         );
         // Remove isRead from updates for senders
@@ -450,7 +451,7 @@ export class EmailService {
 
       return true;
     } catch (error) {
-      console.error('Failed to update email status:', error);
+      logger.error('Failed to update email status:', error);
       return false;
     }
   }
@@ -482,7 +483,7 @@ export class EmailService {
 
       return true;
     } catch (error) {
-      console.error('Failed to delete email:', error);
+      logger.error('Failed to delete email:', error);
       return false;
     }
   }
@@ -510,7 +511,7 @@ export class EmailService {
 
       return (email as EmailMessage) || null;
     } catch (error) {
-      console.error('Failed to get email by ID:', error);
+      logger.error('Failed to get email by ID:', error);
       return null;
     }
   }
@@ -548,7 +549,7 @@ export class EmailService {
 
       return results as EmailMessage[];
     } catch (error) {
-      console.error('Failed to search emails:', error);
+      logger.error('Failed to search emails:', error);
       throw error;
     }
   }
@@ -578,7 +579,7 @@ export class EmailService {
 
       return results as EmailMessage[];
     } catch (error) {
-      console.error('Failed to get drafts by context:', error);
+      logger.error('Failed to get drafts by context:', error);
       throw error;
     }
   }

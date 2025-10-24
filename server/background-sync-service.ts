@@ -5,6 +5,7 @@ import { db } from './db.js';
 import { sql, and, or, eq, lt, isNull, isNotNull } from 'drizzle-orm';
 import { eventRequests } from '@shared/schema';
 import { createServiceLogger } from './utils/logger.js';
+import { logger } from './utils/production-safe-logger';
 
 const syncLogger = createServiceLogger('background-sync');
 
@@ -20,19 +21,19 @@ export class BackgroundSyncService {
    */
   start() {
     if (this.isRunning) {
-      console.log('⚠ Background sync already running');
+      logger.log('⚠ Background sync already running');
       return;
     }
 
-    console.log('🚀 Starting background Google Sheets sync service...');
-    console.log('🛡️ PROTECTED: Now using permanent external_id blacklist system');
-    console.log('🔒 GUARANTEE: External_ids will NEVER be imported twice, even after deletion');
+    logger.log('🚀 Starting background Google Sheets sync service...');
+    logger.log('🛡️ PROTECTED: Now using permanent external_id blacklist system');
+    logger.log('🔒 GUARANTEE: External_ids will NEVER be imported twice, even after deletion');
     this.isRunning = true;
 
     // Run sync immediately on startup with error handling
     this.performSync().catch((error) => {
       syncLogger.error('Initial background sync failed', { error });
-      console.error('❌ Initial background sync failed:', error);
+      logger.error('❌ Initial background sync failed:', error);
     });
 
     // Set up recurring sync every 5 minutes
@@ -40,13 +41,13 @@ export class BackgroundSyncService {
       () => {
         this.performSync().catch((error) => {
           syncLogger.error('Scheduled background sync failed', { error });
-          console.error('❌ Scheduled background sync failed:', error);
+          logger.error('❌ Scheduled background sync failed:', error);
         });
       },
       5 * 60 * 1000
     ); // 5 minutes
 
-    console.log('✅ Background sync service started - syncing every 5 minutes with blacklist protection');
+    logger.log('✅ Background sync service started - syncing every 5 minutes with blacklist protection');
   }
 
   /**
@@ -58,7 +59,7 @@ export class BackgroundSyncService {
       this.syncInterval = null;
     }
     this.isRunning = false;
-    console.log('🛑 Background sync service stopped');
+    logger.log('🛑 Background sync service stopped');
   }
 
   /**
@@ -87,7 +88,7 @@ export class BackgroundSyncService {
       syncLogger.info('Background sync acquired lock - starting execution', {
         lockKey: SYNC_LOCK_KEY
       });
-      console.log('📊 Starting automated background sync...');
+      logger.log('📊 Starting automated background sync...');
 
       try {
         // Sync Projects from Google Sheets
@@ -104,7 +105,7 @@ export class BackgroundSyncService {
           lockKey: SYNC_LOCK_KEY,
           duration: `${duration}ms`
         });
-        console.log('✅ Background sync completed successfully');
+        logger.log('✅ Background sync completed successfully');
 
       } catch (syncError) {
         const duration = Date.now() - startTime;
@@ -113,7 +114,7 @@ export class BackgroundSyncService {
           duration: `${duration}ms`,
           error: syncError
         });
-        console.error('❌ Background sync failed:', syncError);
+        logger.error('❌ Background sync failed:', syncError);
 
       } finally {
         // Always release the lock when done
@@ -126,7 +127,7 @@ export class BackgroundSyncService {
         lockKey: SYNC_LOCK_KEY,
         error: coordinationError
       });
-      console.error('❌ Background sync coordination failed:', coordinationError);
+      logger.error('❌ Background sync coordination failed:', coordinationError);
     }
   }
 
@@ -139,14 +140,14 @@ export class BackgroundSyncService {
       const result = await projectSyncService.bidirectionalSync();
 
       if (result.success) {
-        console.log(
+        logger.log(
           `📋 Projects sync: ${result.updated || 0} updated, ${result.created || 0} created`
         );
       } else {
-        console.log('⚠ Projects sync skipped:', result.message);
+        logger.log('⚠ Projects sync skipped:', result.message);
       }
     } catch (error) {
-      console.error('❌ Projects sync error:', error);
+      logger.error('❌ Projects sync error:', error);
     }
   }
 
@@ -160,7 +161,7 @@ export class BackgroundSyncService {
       );
 
       if (!eventRequestsSyncService) {
-        console.log(
+        logger.log(
           '⚠ Event requests sync skipped: Google Sheets service not configured'
         );
         return;
@@ -169,14 +170,14 @@ export class BackgroundSyncService {
       const result = await eventRequestsSyncService.syncFromGoogleSheets();
 
       if (result.success) {
-        console.log(
+        logger.log(
           `📝 Event requests sync: ${result.updated || 0} updated, ${result.created || 0} created`
         );
       } else {
-        console.log('⚠ Event requests sync skipped:', result.message);
+        logger.log('⚠ Event requests sync skipped:', result.message);
       }
     } catch (error) {
-      console.error('❌ Event requests sync error:', error);
+      logger.error('❌ Event requests sync error:', error);
     }
   }
 
@@ -225,7 +226,7 @@ export class BackgroundSyncService {
         .returning();
       
       if (transitionedEvents.length > 0) {
-        console.log(`🗓️ Auto-transitioned ${transitionedEvents.length} past events from scheduled to completed`);
+        logger.log(`🗓️ Auto-transitioned ${transitionedEvents.length} past events from scheduled to completed`);
         syncLogger.info('Auto-transition completed', {
           transitionedCount: transitionedEvents.length,
           events: transitionedEvents.map(e => ({
@@ -241,7 +242,7 @@ export class BackgroundSyncService {
       
     } catch (error) {
       syncLogger.error('Auto-transition of past events failed', { error });
-      console.error('❌ Auto-transition of past events failed:', error);
+      logger.error('❌ Auto-transition of past events failed:', error);
     }
   }
 

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { QueryOptimizer } from '../performance/query-optimizer';
 import { CacheManager } from '../performance/cache-manager';
+import { logger } from '../utils/production-safe-logger';
 
 export function createPerformanceRouter(deps: RouterDependencies) {
   const router = Router();
@@ -18,7 +19,7 @@ export function createPerformanceRouter(deps: RouterDependencies) {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Performance health check failed:', error);
+      logger.error('Performance health check failed:', error);
       res.status(500).json({
         error: 'Failed to get performance metrics',
         timestamp: new Date().toISOString(),
@@ -50,7 +51,7 @@ export function createPerformanceRouter(deps: RouterDependencies) {
         res.status(400).json({ error: 'Invalid action' });
       }
     } catch (error) {
-      console.error('Performance optimization failed:', error);
+      logger.error('Performance optimization failed:', error);
       res.status(500).json({
         error: 'Failed to perform optimization',
         timestamp: new Date().toISOString(),
@@ -85,7 +86,7 @@ export function createPerformanceRouter(deps: RouterDependencies) {
         res.json({ message: 'All caches cleared' });
       }
     } catch (error) {
-      console.error('Cache invalidation failed:', error);
+      logger.error('Cache invalidation failed:', error);
       res.status(500).json({ error: 'Failed to invalidate cache' });
     }
   });
@@ -99,7 +100,7 @@ export function createPerformanceRouter(deps: RouterDependencies) {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Cache warming failed:', error);
+      logger.error('Cache warming failed:', error);
       res.status(500).json({ error: 'Failed to warm caches' });
     }
   });
@@ -115,7 +116,7 @@ export function createPerformanceRouter(deps: RouterDependencies) {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Cache maintenance failed:', error);
+      logger.error('Cache maintenance failed:', error);
       res.status(500).json({ error: 'Failed to perform cache maintenance' });
     }
   });
@@ -151,7 +152,7 @@ export function createPerformanceRouter(deps: RouterDependencies) {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Performance dashboard failed:', error);
+      logger.error('Performance dashboard failed:', error);
       res.status(500).json({
         error: 'Failed to get performance dashboard data',
         timestamp: new Date().toISOString(),

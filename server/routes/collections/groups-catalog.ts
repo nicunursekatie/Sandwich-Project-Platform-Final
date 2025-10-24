@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { GroupsCatalogDependencies, AuthenticatedRequest } from '../../types';
+import { logger } from '../utils/production-safe-logger';
 
 // Canonicalize organization names for robust matching
 function canonicalizeOrgName(orgName: string): string {
@@ -460,7 +461,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
       res.json({ groups: organizations });
     } catch (error) {
-      console.error('Error fetching organizations catalog:', error);
+      logger.error('Error fetching organizations catalog:', error);
       res
         .status(500)
         .json({ message: 'Failed to fetch organizations catalog' });
@@ -686,7 +687,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           events: allEvents,
         });
       } catch (error) {
-        console.error(
+        logger.error(
           `Error fetching details for organization ${req.params.organizationName}:`,
           error
         );

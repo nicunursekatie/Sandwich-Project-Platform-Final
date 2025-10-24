@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import type { DatabaseStorage } from './database-storage';
 import { MeetingAgendaCompiler } from './meeting-agenda-compiler';
+import { logger } from './utils/production-safe-logger';
 
 export class GoogleSheetsMeetingExporter {
   private auth: any;
@@ -362,7 +363,7 @@ export class GoogleSheetsMeetingExporter {
       });
       existingData = response.data.values || [];
     } catch (error) {
-      console.warn(
+      logger.warn(
         'Could not read existing sheet data, proceeding with full overwrite:',
         error
       );

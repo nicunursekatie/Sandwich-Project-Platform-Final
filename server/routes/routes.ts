@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { z } from 'zod';
+import { logger } from '../utils/production-safe-logger';
 
 export function createRouteOptimizationRouter(deps: RouterDependencies) {
   const router = Router();
@@ -153,7 +154,7 @@ export function createRouteOptimizationRouter(deps: RouterDependencies) {
         algorithm: 'nearest-neighbor',
       });
     } catch (error) {
-      console.error('Route optimization error:', error);
+      logger.error('Route optimization error:', error);
       res.status(500).json({
         error: 'Failed to optimize route',
         message: error instanceof Error ? error.message : 'Unknown error',

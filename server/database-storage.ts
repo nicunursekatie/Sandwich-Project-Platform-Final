@@ -150,6 +150,7 @@ import {
   ilike,
 } from 'drizzle-orm';
 import type { IStorage } from './storage';
+import { logger } from './utils/production-safe-logger';
 
 const UNASSIGNED_PROJECT_STATUSES: Array<Project['status']> = [
   'waiting',
@@ -368,7 +369,7 @@ export class DatabaseStorage implements IStorage {
         
       return project || undefined;
     } catch (error) {
-      console.error(`[Database] Failed to update project ${id}:`, error);
+      logger.error(`[Database] Failed to update project ${id}:`, error);
       throw error;
     }
   }
@@ -471,7 +472,7 @@ export class DatabaseStorage implements IStorage {
     updates: Partial<ProjectTask>
   ): Promise<ProjectTask | undefined> {
     // Log for debugging
-    console.log(`Updating task ${id} with updates:`, updates);
+    logger.log(`Updating task ${id} with updates:`, updates);
 
     // Handle timestamp fields properly and filter out fields that shouldn't be updated
     const processedUpdates = { ...updates };
@@ -497,7 +498,7 @@ export class DatabaseStorage implements IStorage {
     // Always update the updatedAt timestamp
     processedUpdates.updatedAt = new Date();
 
-    console.log(`Processed updates for task ${id}:`, processedUpdates);
+    logger.log(`Processed updates for task ${id}:`, processedUpdates);
 
     try {
       const [task] = await db
@@ -505,10 +506,10 @@ export class DatabaseStorage implements IStorage {
         .set(processedUpdates)
         .where(eq(projectTasks.id, id))
         .returning();
-      console.log(`Task ${id} updated successfully:`, task);
+      logger.log(`Task ${id} updated successfully:`, task);
       return task || undefined;
     } catch (error) {
-      console.error(`Error updating task ${id}:`, error);
+      logger.error(`Error updating task ${id}:`, error);
       throw error;
     }
   }
@@ -638,7 +639,7 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       // If sender column doesn't exist, query without it and add default sender
-      console.log('Sender column not found, using fallback query');
+      logger.log('Sender column not found, using fallback query');
       const result = await db
         .select({
           id: messages.id,
@@ -718,7 +719,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(users.id, conversationParticipants.userId))
       .where(eq(conversationParticipants.conversationId, conversationId));
 
-    console.log(
+    logger.log(
       `[DB] Found ${results.length} participants for conversation ${conversationId}`
     );
     return results.map((row) => ({
@@ -783,7 +784,7 @@ export class DatabaseStorage implements IStorage {
 
       return newConversation.id;
     } catch (error) {
-      console.error('Error getting/creating conversation:', error);
+      logger.error('Error getting/creating conversation:', error);
       throw error;
     }
   }
@@ -824,7 +825,7 @@ export class DatabaseStorage implements IStorage {
       referenceId
     );
 
-    console.log(
+    logger.log(
       `🔍 QUERY: getDirectMessages - conversationId: ${conversationId}, users: ${userId1} <-> ${userId2}, referenceId: ${referenceId}`
     );
 
@@ -834,40 +835,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
 
-    console.log(
+    logger.log(
       `🔍 RESULT: Found ${messageResults.length} direct messages for conversationId ${conversationId}`
     );
     return messageResults;
   }
 
   async getMessageById(id: number): Promise<Message | undefined> {
-    console.log(`[DEBUG] getMessageById called with id: ${id}`);
+    logger.log(`[DEBUG] getMessageById called with id: ${id}`);
     try {
       const [message] = await db
         .select()
         .from(messages)
         .where(eq(messages.id, id));
-      console.log(`[DEBUG] getMessageById result:`, message);
+      logger.log(`[DEBUG] getMessageById result:`, message);
       return message || undefined;
     } catch (error) {
-      console.error(`[ERROR] getMessageById failed for id ${id}:`, error);
+      logger.error(`[ERROR] getMessageById failed for id ${id}:`, error);
       return undefined;
     }
   }
 
   async markMessageAsRead(messageId: string, userId: string): Promise<void> {
-    console.log(`[DB] Marking message ${messageId} as read for user ${userId}`);
+    logger.log(`[DB] Marking message ${messageId} as read for user ${userId}`);
     try {
       // Update the message read status
       await db
         .update(messages)
         .set({ read: true })
         .where(eq(messages.id, parseInt(messageId)));
-      console.log(
+      logger.log(
         `[DB] Message ${messageId} marked as read for user ${userId}`
       );
     } catch (error) {
-      console.error(
+      logger.error(
         `[ERROR] Failed to mark message ${messageId} as read for user ${userId}:`,
         error
       );
@@ -896,7 +897,7 @@ export class DatabaseStorage implements IStorage {
 
       if (conversation) {
         insertMessage.conversationId = conversation.id;
-        console.log(
+        logger.log(
           `✅ SEND: Using existing conversationId ${conversation.id} for general message from ${insertMessage.userId}`
         );
       } else {
@@ -910,12 +911,12 @@ export class DatabaseStorage implements IStorage {
           .returning();
 
         insertMessage.conversationId = newConversation.id;
-        console.log(
+        logger.log(
           `✅ SEND: Created new conversationId ${newConversation.id} for general message from ${insertMessage.userId}`
         );
       }
     } else {
-      console.log(
+      logger.log(
         `🔄 SEND: Using existing conversationId ${insertMessage.conversationId} for message from ${insertMessage.userId}`
       );
     }
@@ -924,7 +925,7 @@ export class DatabaseStorage implements IStorage {
       .insert(messages)
       .values(insertMessage)
       .returning();
-    console.log(
+    logger.log(
       `📤 MESSAGE SENT: id=${message.id}, conversationId=${message.conversationId}, sender=${message.userId}`
     );
     return message;
@@ -950,21 +951,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMessage(id: number): Promise<boolean> {
-    console.log(`[DEBUG] deleteMessage called with id: ${id}`);
+    logger.log(`[DEBUG] deleteMessage called with id: ${id}`);
     try {
       const result = await db.delete(messages).where(eq(messages.id, id));
-      console.log(`[DEBUG] deleteMessage result:`, result);
+      logger.log(`[DEBUG] deleteMessage result:`, result);
       const success = (result.rowCount ?? 0) > 0;
-      console.log(`[DEBUG] deleteMessage success: ${success}`);
+      logger.log(`[DEBUG] deleteMessage success: ${success}`);
       return success;
     } catch (error) {
-      console.error(`[ERROR] deleteMessage failed for id ${id}:`, error);
+      logger.error(`[ERROR] deleteMessage failed for id ${id}:`, error);
       return false;
     }
   }
 
   async getMessagesBySender(senderId: string): Promise<Message[]> {
-    console.log(
+    logger.log(
       `[DEBUG] getMessagesBySender called with senderId: ${senderId}`
     );
     try {
@@ -973,12 +974,12 @@ export class DatabaseStorage implements IStorage {
         .from(messages)
         .where(eq(messages.senderId, senderId))
         .orderBy(desc(messages.createdAt));
-      console.log(
+      logger.log(
         `[DEBUG] Found ${result.length} messages sent by ${senderId}`
       );
       return result;
     } catch (error) {
-      console.error(
+      logger.error(
         `[ERROR] getMessagesBySender failed for senderId ${senderId}:`,
         error
       );
@@ -987,7 +988,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMessagesBySenderWithReadStatus(senderId: string): Promise<any[]> {
-    console.log(
+    logger.log(
       `[DEBUG] getMessagesBySenderWithReadStatus called with senderId: ${senderId}`
     );
     try {
@@ -1009,12 +1010,12 @@ export class DatabaseStorage implements IStorage {
         .where(eq(messages.senderId, senderId))
         .orderBy(desc(messages.createdAt));
 
-      console.log(
+      logger.log(
         `[DEBUG] Found ${result.length} message-recipient pairs for sender ${senderId}`
       );
       return result;
     } catch (error) {
-      console.error(
+      logger.error(
         `[ERROR] getMessagesBySenderWithReadStatus failed for senderId ${senderId}:`,
         error
       );
@@ -1023,7 +1024,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMessagesForRecipient(recipientId: string): Promise<Message[]> {
-    console.log(
+    logger.log(
       `[DEBUG] getMessagesForRecipient called with recipientId: ${recipientId}`
     );
     try {
@@ -1032,12 +1033,12 @@ export class DatabaseStorage implements IStorage {
         .from(messages)
         .where(eq(messages.contextId, recipientId))
         .orderBy(desc(messages.createdAt));
-      console.log(
+      logger.log(
         `[DEBUG] Found ${result.length} messages for recipient ${recipientId}`
       );
       return result;
     } catch (error) {
-      console.error(
+      logger.error(
         `[ERROR] getMessagesForRecipient failed for recipientId ${recipientId}:`,
         error
       );
@@ -1086,7 +1087,7 @@ export class DatabaseStorage implements IStorage {
 
       return undefined;
     } catch (error) {
-      console.error('Error finding direct conversation:', error);
+      logger.error('Error finding direct conversation:', error);
       return undefined;
     }
   }
@@ -1832,7 +1833,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       if (existingContact.length > 0) {
-        console.log(
+        logger.log(
           `Duplicate host contact prevented: ${insertContact.name} (${insertContact.email})`
         );
         throw new Error(
@@ -1849,13 +1850,13 @@ export class DatabaseStorage implements IStorage {
     );
 
     if (crossTableCheck.exists) {
-      console.log(
+      logger.log(
         `❌ CROSS-TABLE DUPLICATE DETECTED: ${insertContact.name} already exists in ${crossTableCheck.source} table (ID: ${crossTableCheck.contactId})`
       );
-      console.log(
+      logger.log(
         `   - Attempted to create in host_contacts: ${insertContact.email}, ${insertContact.phone}`
       );
-      console.log(
+      logger.log(
         `   - Use contact assignment/linking instead of creating duplicate records`
       );
 
@@ -1869,7 +1870,7 @@ export class DatabaseStorage implements IStorage {
       .insert(hostContacts)
       .values(insertContact)
       .returning();
-    console.log(
+    logger.log(
       `✅ New host contact created: ${contact.name} (${contact.email})`
     );
     return contact;
@@ -2126,7 +2127,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(notifications.userId, userId))
         .orderBy(desc(notifications.createdAt));
     } catch (error) {
-      console.error('Failed to get user notifications:', error);
+      logger.error('Failed to get user notifications:', error);
       return [];
     }
   }
@@ -2141,7 +2142,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return createdNotification;
     } catch (error) {
-      console.error('Failed to create notification:', error);
+      logger.error('Failed to create notification:', error);
       throw error;
     }
   }
@@ -2154,7 +2155,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(notifications.id, id));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+      logger.error('Failed to mark notification as read:', error);
       return false;
     }
   }
@@ -2166,7 +2167,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(notifications.id, id));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error('Failed to delete notification:', error);
+      logger.error('Failed to delete notification:', error);
       return false;
     }
   }
@@ -2264,7 +2265,7 @@ export class DatabaseStorage implements IStorage {
         unreadCount: parseInt(unreadResult?.count as string) || 0,
       };
     } catch (error) {
-      console.error('Failed to get paginated user notifications:', error);
+      logger.error('Failed to get paginated user notifications:', error);
       return { notifications: [], totalCount: 0, unreadCount: 0 };
     }
   }
@@ -2283,7 +2284,7 @@ export class DatabaseStorage implements IStorage {
       
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error('Failed to archive notification:', error);
+      logger.error('Failed to archive notification:', error);
       return false;
     }
   }
@@ -2305,7 +2306,7 @@ export class DatabaseStorage implements IStorage {
 
       return result.rowCount ?? 0;
     } catch (error) {
-      console.error('Failed to bulk mark notifications as read:', error);
+      logger.error('Failed to bulk mark notifications as read:', error);
       return 0;
     }
   }
@@ -2350,7 +2351,7 @@ export class DatabaseStorage implements IStorage {
 
       return { total, byCategory, byPriority };
     } catch (error) {
-      console.error('Failed to get notification counts:', error);
+      logger.error('Failed to get notification counts:', error);
       return { total: 0, byCategory: {}, byPriority: {} };
     }
   }
@@ -2426,7 +2427,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(notifications.id, notificationId));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      logger.error('Error marking notification as read:', error);
       return false;
     }
   }
@@ -2441,7 +2442,7 @@ export class DatabaseStorage implements IStorage {
         );
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      logger.error('Error marking all notifications as read:', error);
       return false;
     }
   }
@@ -2464,7 +2465,7 @@ export class DatabaseStorage implements IStorage {
 
       return newAssignment;
     } catch (error) {
-      console.error('Error adding project assignment:', error);
+      logger.error('Error adding project assignment:', error);
       return null;
     }
   }
@@ -2485,7 +2486,7 @@ export class DatabaseStorage implements IStorage {
 
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error('Error removing project assignment:', error);
+      logger.error('Error removing project assignment:', error);
       return false;
     }
   }
@@ -2509,14 +2510,14 @@ export class DatabaseStorage implements IStorage {
 
       return updatedAssignment;
     } catch (error) {
-      console.error('Error updating project assignment:', error);
+      logger.error('Error updating project assignment:', error);
       return null;
     }
   }
 
   async initialize(): Promise<void> {
     try {
-      console.log('Initializing database storage...');
+      logger.log('Initializing database storage...');
 
       // Test database connection
       await this.testConnection();
@@ -2524,22 +2525,22 @@ export class DatabaseStorage implements IStorage {
       // Check and add missing sender column if needed
       try {
         await db.execute(sql`SELECT sender FROM messages LIMIT 1`);
-        console.log('Sender column exists');
+        logger.log('Sender column exists');
       } catch (error) {
-        console.log('Adding missing sender column to messages table...');
+        logger.log('Adding missing sender column to messages table...');
         try {
           await db.execute(
             sql`ALTER TABLE messages ADD COLUMN sender TEXT DEFAULT 'Unknown User'`
           );
-          console.log('Sender column added successfully');
+          logger.log('Sender column added successfully');
         } catch (alterError) {
-          console.log('Could not add sender column, will use fallback queries');
+          logger.log('Could not add sender column, will use fallback queries');
         }
       }
 
-      console.log('Database storage initialized successfully');
+      logger.log('Database storage initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize database storage:', error);
+      logger.error('Failed to initialize database storage:', error);
       throw error;
     }
   }
@@ -2553,7 +2554,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(suggestions.createdAt);
       return result as Suggestion[];
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      logger.error('Error fetching suggestions:', error);
       return [];
     }
   }
@@ -2567,7 +2568,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
       return result[0] as Suggestion | undefined;
     } catch (error) {
-      console.error('Error fetching suggestion:', error);
+      logger.error('Error fetching suggestion:', error);
       return undefined;
     }
   }
@@ -2580,7 +2581,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result[0] as Suggestion;
     } catch (error) {
-      console.error('Error creating suggestion:', error);
+      logger.error('Error creating suggestion:', error);
       throw error;
     }
   }
@@ -2597,7 +2598,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result[0] as Suggestion | undefined;
     } catch (error) {
-      console.error('Error updating suggestion:', error);
+      logger.error('Error updating suggestion:', error);
       return undefined;
     }
   }
@@ -2612,7 +2613,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.delete(suggestions).where(eq(suggestions.id, id));
       return true;
     } catch (error) {
-      console.error('Error deleting suggestion:', error);
+      logger.error('Error deleting suggestion:', error);
       return false;
     }
   }
@@ -2625,7 +2626,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(suggestions.id, id));
       return true;
     } catch (error) {
-      console.error('Error upvoting suggestion:', error);
+      logger.error('Error upvoting suggestion:', error);
       return false;
     }
   }
@@ -2642,7 +2643,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(suggestionResponses.createdAt);
       return result as SuggestionResponse[];
     } catch (error) {
-      console.error('Error fetching suggestion responses:', error);
+      logger.error('Error fetching suggestion responses:', error);
       return [];
     }
   }
@@ -2657,7 +2658,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result[0] as SuggestionResponse;
     } catch (error) {
-      console.error('Error creating suggestion response:', error);
+      logger.error('Error creating suggestion response:', error);
       throw error;
     }
   }
@@ -2669,7 +2670,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(suggestionResponses.id, id));
       return true;
     } catch (error) {
-      console.error('Error deleting suggestion response:', error);
+      logger.error('Error deleting suggestion response:', error);
       return false;
     }
   }
@@ -2677,7 +2678,7 @@ export class DatabaseStorage implements IStorage {
   // Messaging System methods
   async getUserConversations(userId: string): Promise<any[]> {
     try {
-      console.log(`[DB] Getting conversations for user: ${userId}`);
+      logger.log(`[DB] Getting conversations for user: ${userId}`);
 
       // Get all conversations where the user is a participant
       const userConversations = await db
@@ -2697,7 +2698,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(conversationParticipants.userId, userId))
         .orderBy(conversations.createdAt);
 
-      console.log(
+      logger.log(
         `[DB] Found ${userConversations.length} conversations for user ${userId}`
       );
 
@@ -2734,7 +2735,7 @@ export class DatabaseStorage implements IStorage {
 
       return enrichedConversations;
     } catch (error) {
-      console.error('Error getting user conversations:', error);
+      logger.error('Error getting user conversations:', error);
       return [];
     }
   }
@@ -2748,7 +2749,7 @@ export class DatabaseStorage implements IStorage {
     participants: string[]
   ): Promise<any> {
     try {
-      console.log(`[DB] Creating conversation:`, conversationData);
+      logger.log(`[DB] Creating conversation:`, conversationData);
 
       // Create the conversation
       const [newConversation] = await db
@@ -2759,7 +2760,7 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
 
-      console.log(`[DB] Created conversation with ID: ${newConversation.id}`);
+      logger.log(`[DB] Created conversation with ID: ${newConversation.id}`);
 
       // Add participants
       const participantData = participants.map((userId) => ({
@@ -2769,7 +2770,7 @@ export class DatabaseStorage implements IStorage {
 
       await db.insert(conversationParticipants).values(participantData);
 
-      console.log(
+      logger.log(
         `[DB] Added ${participants.length} participants to conversation ${newConversation.id}`
       );
 
@@ -2778,7 +2779,7 @@ export class DatabaseStorage implements IStorage {
         memberCount: participants.length,
       };
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      logger.error('Error creating conversation:', error);
       throw error;
     }
   }
@@ -2788,7 +2789,7 @@ export class DatabaseStorage implements IStorage {
     userId: string
   ): Promise<any[]> {
     try {
-      console.log(
+      logger.log(
         `[DB] Getting messages for conversation ${conversationId} and user ${userId}`
       );
 
@@ -2805,7 +2806,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       if (hasAccess.length === 0) {
-        console.log(
+        logger.log(
           `[DB] User ${userId} does not have access to conversation ${conversationId}`
         );
         return [];
@@ -2836,12 +2837,12 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(messages.createdAt);
 
-      console.log(
+      logger.log(
         `[DB] Found ${messages.length} messages for conversation ${conversationId}`
       );
       return messages;
     } catch (error) {
-      console.error('Error getting conversation messages:', error);
+      logger.error('Error getting conversation messages:', error);
       return [];
     }
   }
@@ -2858,7 +2859,7 @@ export class DatabaseStorage implements IStorage {
     replyToSender?: string | null;
   }): Promise<any> {
     try {
-      console.log(
+      logger.log(
         `[DB] Adding message to conversation ${messageData.conversationId}`
       );
 
@@ -2878,10 +2879,10 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
 
-      console.log(`[DB] Created message with ID: ${newMessage.id}`);
+      logger.log(`[DB] Created message with ID: ${newMessage.id}`);
       return newMessage;
     } catch (error) {
-      console.error('Error adding conversation message:', error);
+      logger.error('Error adding conversation message:', error);
       throw error;
     }
   }
@@ -2895,7 +2896,7 @@ export class DatabaseStorage implements IStorage {
     }
   ): Promise<any> {
     try {
-      console.log(`[DB] Updating message ${messageId} by user ${userId}`);
+      logger.log(`[DB] Updating message ${messageId} by user ${userId}`);
 
       const [updatedMessage] = await db
         .update(messages)
@@ -2908,7 +2909,7 @@ export class DatabaseStorage implements IStorage {
 
       return updatedMessage;
     } catch (error) {
-      console.error('Error updating conversation message:', error);
+      logger.error('Error updating conversation message:', error);
       throw error;
     }
   }
@@ -2918,7 +2919,7 @@ export class DatabaseStorage implements IStorage {
     userId: string
   ): Promise<boolean> {
     try {
-      console.log(`[DB] Deleting message ${messageId} by user ${userId}`);
+      logger.log(`[DB] Deleting message ${messageId} by user ${userId}`);
 
       const result = await db
         .update(messages)
@@ -2930,7 +2931,7 @@ export class DatabaseStorage implements IStorage {
 
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error('Error deleting conversation message:', error);
+      logger.error('Error deleting conversation message:', error);
       return false;
     }
   }
@@ -2957,7 +2958,7 @@ export class DatabaseStorage implements IStorage {
         // Unique constraint violation
         return null; // Already liked
       }
-      console.error('Error liking message:', error);
+      logger.error('Error liking message:', error);
       throw error;
     }
   }
@@ -2975,7 +2976,7 @@ export class DatabaseStorage implements IStorage {
 
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error('Error unliking message:', error);
+      logger.error('Error unliking message:', error);
       return false;
     }
   }
@@ -2990,7 +2991,7 @@ export class DatabaseStorage implements IStorage {
 
       return likes;
     } catch (error) {
-      console.error('Error getting message likes:', error);
+      logger.error('Error getting message likes:', error);
       return [];
     }
   }
@@ -3013,7 +3014,7 @@ export class DatabaseStorage implements IStorage {
 
       return !!like;
     } catch (error) {
-      console.error('Error checking if user liked message:', error);
+      logger.error('Error checking if user liked message:', error);
       return false;
     }
   }
@@ -3040,7 +3041,7 @@ export class DatabaseStorage implements IStorage {
         // Unique constraint violation
         return null; // Already liked
       }
-      console.error('Error liking chat message:', error);
+      logger.error('Error liking chat message:', error);
       throw error;
     }
   }
@@ -3058,7 +3059,7 @@ export class DatabaseStorage implements IStorage {
 
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
-      console.error('Error unliking chat message:', error);
+      logger.error('Error unliking chat message:', error);
       return false;
     }
   }
@@ -3073,7 +3074,7 @@ export class DatabaseStorage implements IStorage {
 
       return likes;
     } catch (error) {
-      console.error('Error getting chat message likes:', error);
+      logger.error('Error getting chat message likes:', error);
       return [];
     }
   }
@@ -3096,7 +3097,7 @@ export class DatabaseStorage implements IStorage {
 
       return !!like;
     } catch (error) {
-      console.error('Error checking if user liked chat message:', error);
+      logger.error('Error checking if user liked chat message:', error);
       return false;
     }
   }
@@ -3201,12 +3202,12 @@ export class DatabaseStorage implements IStorage {
         }));
 
         await db.insert(chatMessageReads).values(readEntries);
-        console.log(
+        logger.log(
           `Marked ${unreadMessages.length} messages as read for user ${userId} in channel ${channel}`
         );
       }
     } catch (error) {
-      console.error(
+      logger.error(
         `Error marking channel messages as read for user ${userId} in channel ${channel}:`,
         error
       );
@@ -3841,12 +3842,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEventRequest(id: number): Promise<EventRequest | undefined> {
-    console.log(`🔍 getEventRequest called with id: ${id}, type: ${typeof id}`);
+    logger.log(`🔍 getEventRequest called with id: ${id}, type: ${typeof id}`);
     const [result] = await db
       .select()
       .from(eventRequests)
       .where(eq(eventRequests.id, id));
-    console.log(`🔍 getEventRequest result for id ${id}:`, result ? `Found (${result.organizationName})` : 'NOT FOUND');
+    logger.log(`🔍 getEventRequest result for id ${id}:`, result ? `Found (${result.organizationName})` : 'NOT FOUND');
     return result || undefined;
   }
 
@@ -4072,7 +4073,7 @@ export class DatabaseStorage implements IStorage {
 
       return !!result;
     } catch (error) {
-      console.error('❌ Error checking if external_id exists:', error);
+      logger.error('❌ Error checking if external_id exists:', error);
       return false;
     }
   }
@@ -4110,7 +4111,7 @@ export class DatabaseStorage implements IStorage {
 
       return result;
     } catch (error) {
-      console.error('❌ Error adding external_id to blacklist:', error);
+      logger.error('❌ Error adding external_id to blacklist:', error);
       throw error;
     }
   }
@@ -4129,7 +4130,7 @@ export class DatabaseStorage implements IStorage {
 
       return await query.orderBy(desc(importedExternalIds.importedAt));
     } catch (error) {
-      console.error('❌ Error getting all imported external_ids:', error);
+      logger.error('❌ Error getting all imported external_ids:', error);
       return [];
     }
   }
@@ -4152,14 +4153,14 @@ export class DatabaseStorage implements IStorage {
 
       return result || undefined;
     } catch (error) {
-      console.error('❌ Error getting imported external_id:', error);
+      logger.error('❌ Error getting imported external_id:', error);
       return undefined;
     }
   }
 
   async backfillExistingExternalIds(): Promise<number> {
     try {
-      console.log('🔄 Starting backfill of existing external_ids...');
+      logger.log('🔄 Starting backfill of existing external_ids...');
 
       // Get all existing external_ids from event_requests table
       const existingExternalIds = await db
@@ -4169,7 +4170,7 @@ export class DatabaseStorage implements IStorage {
         .from(eventRequests)
         .where(isNotNull(eventRequests.externalId));
 
-      console.log(`📊 Found ${existingExternalIds.length} existing external_ids to backfill`);
+      logger.log(`📊 Found ${existingExternalIds.length} existing external_ids to backfill`);
 
       let backfilledCount = 0;
 
@@ -4185,15 +4186,15 @@ export class DatabaseStorage implements IStorage {
             backfilledCount++;
           } catch (error) {
             // Skip if already exists or other error
-            console.warn(`⚠️ Failed to backfill external_id ${externalId}:`, error);
+            logger.warn(`⚠️ Failed to backfill external_id ${externalId}:`, error);
           }
         }
       }
 
-      console.log(`✅ Successfully backfilled ${backfilledCount} external_ids`);
+      logger.log(`✅ Successfully backfilled ${backfilledCount} external_ids`);
       return backfilledCount;
     } catch (error) {
-      console.error('❌ Error during backfill process:', error);
+      logger.error('❌ Error during backfill process:', error);
       throw error;
     }
   }

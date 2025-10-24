@@ -1,13 +1,14 @@
 import { MailService } from '@sendgrid/mail';
 import * as fs from 'fs';
 import * as path from 'path';
+import { logger } from './utils/production-safe-logger';
 
 const mailService = new MailService();
 
 if (process.env.SENDGRID_API_KEY) {
   mailService.setApiKey(process.env.SENDGRID_API_KEY);
 } else {
-  console.warn('⚠️ SENDGRID_API_KEY not set - email functionality will be disabled');
+  logger.warn('⚠️ SENDGRID_API_KEY not set - email functionality will be disabled');
 }
 
 interface EmailAttachment {
@@ -35,12 +36,12 @@ interface EmailParams {
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
-    console.warn('Email sending skipped - SENDGRID_API_KEY not configured');
+    logger.warn('Email sending skipped - SENDGRID_API_KEY not configured');
     return false;
   }
   
   try {
-    console.log(
+    logger.log(
       `Attempting to send email to ${params.to} from ${params.from} with subject: ${params.subject}`
     );
     const emailData: any = {
@@ -81,7 +82,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
           // Handle base64 attachments (already processed from GCS)
           if (attachment && typeof attachment === 'object' && 'content' in attachment && 'filename' in attachment) {
             processedAttachments.push(attachment);
-            console.log(`Added base64 attachment: ${attachment.filename}`);
+            logger.log(`Added base64 attachment: ${attachment.filename}`);
             continue;
           }
           
@@ -91,7 +92,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
           
           // Check if file exists
           if (!fs.existsSync(filePath)) {
-            console.warn(`Attachment file not found: ${filePath}`);
+            logger.warn(`Attachment file not found: ${filePath}`);
             continue;
           }
           
@@ -126,26 +127,26 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
             disposition: 'attachment',
           });
           
-          console.log(`Processed attachment: ${filename} (${contentType})`);
+          logger.log(`Processed attachment: ${filename} (${contentType})`);
         } catch (attachmentError) {
-          console.error(`Failed to process attachment ${filePath}:`, attachmentError);
+          logger.error(`Failed to process attachment ${filePath}:`, attachmentError);
           // Continue processing other attachments even if one fails
         }
       }
       
       if (processedAttachments.length > 0) {
         emailData.attachments = processedAttachments;
-        console.log(`Added ${processedAttachments.length} attachment(s) to email`);
+        logger.log(`Added ${processedAttachments.length} attachment(s) to email`);
       }
     }
     
     await mailService.send(emailData);
-    console.log(`Email sent successfully to ${params.to}`);
+    logger.log(`Email sent successfully to ${params.to}`);
     return true;
   } catch (error) {
-    console.error('SendGrid email error:', error);
+    logger.error('SendGrid email error:', error);
     if (error.response && error.response.body) {
-      console.error(
+      logger.error(
         'SendGrid error details:',
         JSON.stringify(error.response.body, null, 2)
       );
@@ -229,7 +230,7 @@ export async function sendWeeklyMonitoringReminder(location: string): Promise<{s
       message: result.message
     };
   } catch (error) {
-    console.error('Error sending weekly monitoring reminder:', error);
+    logger.error('Error sending weekly monitoring reminder:', error);
     return {
       success: false,
       message: error.message || 'Failed to send email'

@@ -1,5 +1,6 @@
 import { storage } from '../storage-wrapper';
 import { AuditLogger } from '../audit-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export interface VersionedRecord {
   id: string;
@@ -172,7 +173,7 @@ export class VersionControl {
 
       return true;
     } catch (error) {
-      console.error('Failed to restore version:', error);
+      logger.error('Failed to restore version:', error);
       return false;
     }
   }

@@ -12,6 +12,7 @@ import { upload } from '../../middleware/uploads';
 import { QueryOptimizer } from '../../performance/query-optimizer';
 import { insertSandwichCollectionSchema } from '@shared/schema';
 import historicalImportRouter from './historical-import';
+import { logger } from '../utils/production-safe-logger';
 
 const collectionsRouter = Router();
 
@@ -98,7 +99,7 @@ collectionsRouter.get('/', async (req, res) => {
     const sortField = (req.query.sort as string) || 'collectionDate';
     const sortOrder = (req.query.order as string) || 'desc';
 
-    console.log(`[Collections API] GET request - page: ${page}, limit: ${limit}, sort: ${sortField}, order: ${sortOrder}`);
+    logger.log(`[Collections API] GET request - page: ${page}, limit: ${limit}, sort: ${sortField}, order: ${sortOrder}`);
 
     const result = await storage.getSandwichCollections(
       limit,
@@ -108,7 +109,7 @@ collectionsRouter.get('/', async (req, res) => {
     );
     const totalCount = await storage.getSandwichCollectionsCount();
 
-    console.log(`[Collections API] Found ${result.length} collections, total count: ${totalCount}`);
+    logger.log(`[Collections API] Found ${result.length} collections, total count: ${totalCount}`);
 
     res.json({
       collections: result,
@@ -122,7 +123,7 @@ collectionsRouter.get('/', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[Collections API] Error fetching collections:', error);
+    logger.error('[Collections API] Error fetching collections:', error);
     res.status(500).json({ message: 'Failed to fetch sandwich collections' });
   }
 });
@@ -212,12 +213,12 @@ collectionsRouter.post(
                 actionText: 'View Collections',
               });
             } catch (notifError) {
-              console.error(`Failed to create milestone notification for ${admin.id}:`, notifError);
+              logger.error(`Failed to create milestone notification for ${admin.id}:`, notifError);
             }
           }
         }
       } catch (milestoneError) {
-        console.error('Error checking sandwich milestones:', milestoneError);
+        logger.error('Error checking sandwich milestones:', milestoneError);
         // Don't fail collection creation if milestone check fails
       }
 
@@ -606,7 +607,7 @@ collectionsRouter.delete('/bulk', async (req, res) => {
           deletedCount++;
         }
       } catch (error) {
-        console.error(`Failed to delete collection ${collection.id}:`, error);
+        logger.error(`Failed to delete collection ${collection.id}:`, error);
       }
     }
 
@@ -739,7 +740,7 @@ collectionsRouter.delete(
           errors.push(
             `Failed to delete collection ${collection.id}: ${errorMessage}`
           );
-          console.error(`Failed to delete collection ${collection.id}:`, error);
+          logger.error(`Failed to delete collection ${collection.id}:`, error);
         }
       }
 

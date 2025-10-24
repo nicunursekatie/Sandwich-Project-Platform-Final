@@ -9,6 +9,7 @@ import {
   SessionUser,
 } from '../../types';
 import { getUserMetadata } from '../../../shared/types';
+import { logger } from '../utils/production-safe-logger';
 
 export function createAuthRoutes(deps: AuthDependencies = {}) {
   const router = Router();
@@ -66,18 +67,18 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       // Force session save to ensure persistence
       req.session.save((err) => {
         if (err) {
-          console.error('Session save error:', err);
+          logger.error('Session save error:', err);
           return res
             .status(500)
             .json({ success: false, message: 'Session save failed' });
         }
-        console.log('Session saved successfully for user:', sessionUser.email);
-        console.log('Session ID:', req.sessionID);
-        console.log('Session data:', req.session);
+        logger.log('Session saved successfully for user:', sessionUser.email);
+        logger.log('Session ID:', req.sessionID);
+        logger.log('Session data:', req.session);
         res.json({ success: true, user: sessionUser });
       });
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       res.status(500).json({ success: false, message: 'Login failed' });
     }
   });
@@ -131,20 +132,20 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       // Force session save to ensure persistence
       req.session.save((err) => {
         if (err) {
-          console.error('Dev auto-login session save error:', err);
+          logger.error('Dev auto-login session save error:', err);
           return res.status(500).json({
             success: false,
             message: 'Session save failed'
           });
         }
-        console.log('🔧 DEV AUTO-LOGIN: Session created for', sessionUser.email);
-        console.log('🔧 Session ID:', req.sessionID);
+        logger.log('🔧 DEV AUTO-LOGIN: Session created for', sessionUser.email);
+        logger.log('🔧 Session ID:', req.sessionID);
 
         // Redirect to dashboard after successful login
         res.redirect('/');
       });
     } catch (error) {
-      console.error('Dev auto-login error:', error);
+      logger.error('Dev auto-login error:', error);
       res.status(500).json({
         success: false,
         message: 'Auto-login failed'
@@ -158,7 +159,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       // Destroy the session
       req.session.destroy((err) => {
         if (err) {
-          console.error('Session destroy error:', err);
+          logger.error('Session destroy error:', err);
           return res.status(500).json({
             success: false,
             message: 'Failed to logout'
@@ -173,7 +174,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         });
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
       res.status(500).json({
         success: false,
         message: 'Logout failed'
@@ -211,7 +212,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
             return;
           }
         } catch (error) {
-          console.error('Error getting fresh user data:', error);
+          logger.error('Error getting fresh user data:', error);
           // Fallback to session user if database error
           res.json(user);
           return;
@@ -223,7 +224,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       const dbUser = await storage.getUser(userId);
       res.json(dbUser || user);
     } catch (error) {
-      console.error('Error fetching user:', error);
+      logger.error('Error fetching user:', error);
       res.status(500).json({ message: 'Failed to fetch user' });
     }
   });
@@ -261,7 +262,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         isActive: dbUser.isActive,
       });
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      logger.error('Error fetching user profile:', error);
       res.status(500).json({ message: 'Failed to fetch user profile' });
     }
   });
@@ -320,7 +321,7 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
         isActive: updatedUser.isActive,
       });
     } catch (error) {
-      console.error('Error updating user profile:', error);
+      logger.error('Error updating user profile:', error);
       res.status(500).json({ message: 'Failed to update user profile' });
     }
   });

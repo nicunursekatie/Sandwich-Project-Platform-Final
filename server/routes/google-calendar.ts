@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { GoogleCalendarService } from '../google-calendar-service';
+import { logger } from '../utils/production-safe-logger';
 
 export function createGoogleCalendarRouter(deps: RouterDependencies) {
   const router = Router();
@@ -22,7 +23,7 @@ export function createGoogleCalendarRouter(deps: RouterDependencies) {
     
     res.json(events);
   } catch (error: any) {
-    console.error('Error fetching calendar events:', error);
+    logger.error('Error fetching calendar events:', error);
     res.status(500).json({ 
       error: 'Failed to fetch calendar events',
       message: error.message 
