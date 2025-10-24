@@ -122,8 +122,13 @@ export class MeetingsService {
   /**
    * Map meeting to response format
    * Adds legacy field names for backwards compatibility
+   * Returns null/undefined as-is for safety
    */
-  mapMeetingToResponse(meeting: Meeting): MeetingResponse {
+  mapMeetingToResponse(meeting: Meeting | null | undefined): MeetingResponse | null | undefined {
+    if (!meeting) {
+      return meeting;
+    }
+
     return {
       ...meeting,
       meetingDate: meeting.date,
@@ -135,9 +140,12 @@ export class MeetingsService {
 
   /**
    * Map multiple meetings to response format
+   * Filters out any null/undefined values from the result
    */
   mapMeetingsToResponse(meetings: Meeting[]): MeetingResponse[] {
-    return meetings.map((m) => this.mapMeetingToResponse(m));
+    return meetings
+      .map((m) => this.mapMeetingToResponse(m))
+      .filter((m): m is MeetingResponse => m !== null && m !== undefined);
   }
 
   /**
