@@ -41,13 +41,14 @@ import {
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import type { Driver, Host } from '@shared/schema';
 import { logger } from '@/lib/logger';
 
 export default function DriversManagement() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEdit = hasPermission(user, PERMISSIONS.DRIVERS_EDIT);
+  const { canEdit } = useResourcePermissions('DRIVERS');
   const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
   const queryClient = useQueryClient();
 

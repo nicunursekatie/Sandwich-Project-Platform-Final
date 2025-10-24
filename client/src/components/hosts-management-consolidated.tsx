@@ -57,7 +57,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import type {
   Host,
   InsertHost,
@@ -91,7 +92,7 @@ const HOST_AREAS = [
 export default function HostsManagementConsolidated() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEdit = hasPermission(user, PERMISSIONS.HOSTS_EDIT);
+  const { canEdit } = useResourcePermissions('HOSTS');
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingHost, setEditingHost] = useState<Host | null>(null);
