@@ -999,9 +999,9 @@ export class CollectionService implements ICollectionService {
       // Generate export based on format
       switch (options.format) {
         case 'xlsx':
-          return this.exportToExcel(exportData);
+          return this.exportToExcel(exportData, options.includeMetadata || false);
         case 'csv':
-          return this.exportToCSV(exportData);
+          return this.exportToCSV(exportData, options.includeMetadata || false);
         case 'json':
           return Buffer.from(JSON.stringify(exportData, null, 2), 'utf-8');
         default:
@@ -1193,24 +1193,38 @@ export class CollectionService implements ICollectionService {
   /**
    * Export data to Excel format
    */
-  private exportToExcel(data: any[]): Buffer {
+  private exportToExcel(data: any[], includeMetadata: boolean = false): Buffer {
     // Handle empty data array
     if (data.length === 0) {
-      // Create empty worksheet with headers only
-      const emptyData = [{
-        id: '',
-        collectionDate: '',
-        hostName: '',
-        individualSandwiches: '',
-        group1Name: '',
-        group1Count: '',
-        group2Name: '',
-        group2Count: '',
-        totalSandwiches: '',
-      }];
-      const worksheet = XLSX.utils.json_to_sheet(emptyData);
-      // Remove the empty row, keep only headers
-      worksheet['!ref'] = 'A1:I1';
+      // Define headers based on whether metadata is included
+      const baseHeaders = [
+        'id',
+        'collectionDate',
+        'hostName',
+        'individualSandwiches',
+        'group1Name',
+        'group1Count',
+        'group2Name',
+        'group2Count',
+        'totalSandwiches',
+      ];
+
+      const metadataHeaders = [
+        'createdBy',
+        'createdByName',
+        'submittedAt',
+        'submissionMethod',
+      ];
+
+      const headers = includeMetadata
+        ? [...baseHeaders, ...metadataHeaders]
+        : baseHeaders;
+
+      // Create worksheet from headers array
+      const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+
+      // Set column widths
+      worksheet['!cols'] = headers.map(() => ({ width: 20 }));
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Collections');
@@ -1233,11 +1247,11 @@ export class CollectionService implements ICollectionService {
   /**
    * Export data to CSV format
    */
-  private exportToCSV(data: any[]): Buffer {
+  private exportToCSV(data: any[], includeMetadata: boolean = false): Buffer {
     // Handle empty data array
     if (data.length === 0) {
-      // Return CSV with headers only
-      const headers = [
+      // Define headers based on whether metadata is included
+      const baseHeaders = [
         'id',
         'collectionDate',
         'hostName',
@@ -1248,6 +1262,18 @@ export class CollectionService implements ICollectionService {
         'group2Count',
         'totalSandwiches',
       ];
+
+      const metadataHeaders = [
+        'createdBy',
+        'createdByName',
+        'submittedAt',
+        'submissionMethod',
+      ];
+
+      const headers = includeMetadata
+        ? [...baseHeaders, ...metadataHeaders]
+        : baseHeaders;
+
       const csvContent = stringify([headers]);
       return Buffer.from(csvContent, 'utf-8');
     }
