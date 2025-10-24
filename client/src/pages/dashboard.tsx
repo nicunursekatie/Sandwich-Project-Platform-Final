@@ -48,6 +48,7 @@ import OnboardingChallengeButton from '@/components/onboarding-challenge-button'
 import { KudosLoginNotifier } from '@/components/kudos-login-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
 
 // Lazy load all page/section components for better performance
 const ProjectList = lazy(() => import('@/components/project-list'));
@@ -195,15 +196,6 @@ export default function Dashboard({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user, isLoading } = useAuth();
   const { trackNavigation, trackButtonClick } = useAnalytics();
-
-  // Make setActiveSection available globally for project detail navigation
-  React.useEffect(() => {
-    (window as any).dashboardSetActiveSection = enhancedSetActiveSection;
-
-    return () => {
-      delete (window as any).dashboardSetActiveSection;
-    };
-  }, []);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
@@ -497,7 +489,8 @@ export default function Dashboard({
       {/* Login Kudos Notifier */}
       <KudosLoginNotifier />
 
-      <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
+      <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
+        <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
         {/* Announcement Banner */}
         <AnnouncementBanner />
         
@@ -851,10 +844,11 @@ export default function Dashboard({
             </ErrorBoundary>
           </div>
         </div>
-      </div>
+        </div>
 
-      {/* Guided Tour System */}
-      <GuidedTour />
+        {/* Guided Tour System */}
+        <GuidedTour />
+      </DashboardNavigationProvider>
     </>
   );
 }

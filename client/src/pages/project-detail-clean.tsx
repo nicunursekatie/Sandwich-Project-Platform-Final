@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as React from 'react';
 import { useParams, useLocation } from 'wouter';
+import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Card,
@@ -57,6 +58,27 @@ import { MultiUserTaskCompletion } from '@/components/multi-user-task-completion
 import SendKudosButton from '@/components/send-kudos-button';
 import { useAuth } from '@/hooks/useAuth';
 import { canEditProject, canDeleteProject } from '@shared/auth-utils';
+
+// Back to Projects button component
+function BackToProjectsButton() {
+  const [, setLocation] = useLocation();
+  const { setActiveSection } = useDashboardNavigation();
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => {
+        console.log('Back to Projects clicked - navigating to projects');
+        setActiveSection('projects');
+      }}
+      className="flex items-center gap-2 text-brand-primary hover:bg-brand-primary/10 font-roboto"
+    >
+      <ArrowLeft className="h-4 w-4" />
+      Back to Projects
+    </Button>
+  );
+}
 
 interface Project {
   id: number;
@@ -703,22 +725,7 @@ export default function ProjectDetailClean({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              console.log('Back to Projects clicked - navigating to projects');
-              if ((window as any).dashboardSetActiveSection) {
-                (window as any).dashboardSetActiveSection('projects');
-              } else {
-                setLocation('/projects');
-              }
-            }}
-            className="flex items-center gap-2 text-brand-primary hover:bg-brand-primary/10 font-roboto"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Projects
-          </Button>
+          <BackToProjectsButton />
           <div>
             <h1 className="text-3xl font-bold text-brand-primary font-roboto mb-2">
               {project.title}
