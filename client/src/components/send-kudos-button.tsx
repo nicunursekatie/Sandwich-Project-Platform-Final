@@ -119,7 +119,7 @@ export default function SendKudosButton({
         throw new Error(`Cannot send kudos: recipient ID is empty`);
       }
 
-      return await apiRequest('POST', '/api/messaging/kudos', {
+      return await apiRequest('POST', '/api/messaging/kudos/send', {
         recipientId,
         contextType,
         contextId,
