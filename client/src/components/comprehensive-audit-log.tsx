@@ -95,7 +95,7 @@ export function ComprehensiveAuditLog() {
   const [limit, setLimit] = useState(100);
 
   // Check permissions
-  if (!hasPermission(currentUser, PERMISSIONS.ADMIN)) {
+  if (!hasPermission(currentUser, PERMISSIONS.ADMIN_PANEL_ACCESS)) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
         <Card className="w-full max-w-md text-center shadow-lg">
@@ -134,7 +134,7 @@ export function ComprehensiveAuditLog() {
       if (!response.ok) throw new Error('Failed to fetch audit logs');
       return response.json();
     },
-    enabled: hasPermission(currentUser, PERMISSIONS.ADMIN),
+    enabled: hasPermission(currentUser, PERMISSIONS.ADMIN_PANEL_ACCESS),
   });
 
   // Fetch users for display names
@@ -145,7 +145,7 @@ export function ComprehensiveAuditLog() {
       if (!response.ok) throw new Error('Failed to fetch users');
       return response.json();
     },
-    enabled: hasPermission(currentUser, PERMISSIONS.ADMIN),
+    enabled: hasPermission(currentUser, PERMISSIONS.ADMIN_PANEL_ACCESS),
   });
 
   const userMap = React.useMemo(() => {

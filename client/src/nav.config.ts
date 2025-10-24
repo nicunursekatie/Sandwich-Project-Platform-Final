@@ -339,14 +339,6 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
   },
-  {
-    id: 'onboarding-admin',
-    label: 'Onboarding Challenges',
-    icon: Trophy,
-    href: 'onboarding-admin',
-    permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
-    group: 'admin',
-  },
 
   // HELP - Always at the bottom (standard UX pattern)
   {
