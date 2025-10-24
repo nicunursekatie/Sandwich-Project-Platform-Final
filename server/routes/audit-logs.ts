@@ -21,12 +21,19 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
           offset = 0
         } = req.query;
 
+        // Safely parse limit and offset with validation
+        const parsedLimit = parseInt(limit as string, 10);
+        const parsedOffset = parseInt(offset as string, 10);
+
+        const validLimit = !isNaN(parsedLimit) && parsedLimit > 0 ? parsedLimit : 100;
+        const validOffset = !isNaN(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
+
         const logs = await AuditLogger.getAuditHistory(
           tableName as string | undefined,
           recordId as string | undefined,
           userId as string | undefined,
-          parseInt(limit as string, 10),
-          parseInt(offset as string, 10)
+          validLimit,
+          validOffset
         );
 
         // Parse JSON strings in the logs for easier consumption
@@ -78,12 +85,19 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
         const { tableName, recordId } = req.params;
         const { limit = 50, offset = 0 } = req.query;
 
+        // Safely parse limit and offset with validation
+        const parsedLimit = parseInt(limit as string, 10);
+        const parsedOffset = parseInt(offset as string, 10);
+
+        const validLimit = !isNaN(parsedLimit) && parsedLimit > 0 ? parsedLimit : 50;
+        const validOffset = !isNaN(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
+
         const logs = await AuditLogger.getAuditHistory(
           tableName,
           recordId,
           undefined,
-          parseInt(limit as string, 10),
-          parseInt(offset as string, 10)
+          validLimit,
+          validOffset
         );
 
         // Parse JSON strings with error handling
