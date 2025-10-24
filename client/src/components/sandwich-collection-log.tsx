@@ -1035,7 +1035,7 @@ export default function SandwichCollectionLog() {
         duration: 4000,
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, id: number) => {
       logger.error('Delete collection error:', error);
 
       // Track failed deletion
