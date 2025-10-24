@@ -3,11 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { promises as fs } from 'fs';
 import type { IStorage } from '../storage';
-import {
-  isAuthenticated,
-  getUser,
-  type AuthenticatedRequest,
-} from '../auth';
+import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
 import { storage } from '../storage-wrapper';
