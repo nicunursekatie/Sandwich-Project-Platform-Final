@@ -2610,41 +2610,41 @@ export default function SandwichCollectionLog() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1.5 shrink-0">
-                    {collection.createdBy &&
-                      collection.createdByName && (
-                        <SendKudosButton
-                          recipientId={collection.createdBy}
-                          recipientName={collection.createdByName}
-                          contextType="task"
-                          contextId={collection.id.toString()}
-                          contextTitle={`${totalSandwiches} sandwiches from ${collection.hostName}`}
-                          size="sm"
+                      {collection.createdBy &&
+                        collection.createdByName && (
+                          <SendKudosButton
+                            recipientId={collection.createdBy}
+                            recipientName={collection.createdByName}
+                            contextType="task"
+                            contextId={collection.id.toString()}
+                            contextTitle={`${totalSandwiches} sandwiches from ${collection.hostName}`}
+                            size="sm"
+                            variant="outline"
+                            iconOnly={true}
+                            className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                          />
+                        )}
+                      {canEditCollection(user, collection) && (
+                        <Button
                           variant="outline"
-                          iconOnly={true}
-                          className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                        />
+                          size="sm"
+                          onClick={() => handleEdit(collection)}
+                          className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
                       )}
-                    {canEditCollection(user, collection) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(collection)}
-                        className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {canDeleteCollection(user, collection) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(collection.id)}
-                        className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
+                      {canDeleteCollection(user, collection) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(collection.id)}
+                          className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                 </div>
 
                 {/* Submission info - small text at bottom */}
