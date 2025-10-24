@@ -166,6 +166,9 @@ export function ComprehensiveAuditLog() {
     if (!logs) return [];
 
     return logs.filter((log) => {
+      // Filter out legacy EVENT_REQUEST_SIGNIFICANT_CHANGE entries (replaced with detailed logs)
+      if (log.action === 'EVENT_REQUEST_SIGNIFICANT_CHANGE') return false;
+
       // Action filter
       if (actionFilter !== 'all' && log.action !== actionFilter) return false;
 
