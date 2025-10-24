@@ -386,7 +386,27 @@ const markAllRead = async (req: Request, res: Response) => {
     totalMarkedCount += messageRecipientsResult.length;
     console.log(`Marked ${messageRecipientsResult.length} formal messages as read`);
 
-    // 2. Mark all chat messages as read (chatMessageReads)
+    // 2. Mark all email inbox messages as read (emailMessages)
+    const emailMessagesResult = await db
+      .update(emailMessages)
+      .set({
+        isRead: true,
+      })
+      .where(
+        and(
+          eq(emailMessages.recipientId, userId),
+          eq(emailMessages.isRead, false),
+          eq(emailMessages.isDraft, false),
+          eq(emailMessages.isTrashed, false),
+          eq(emailMessages.isArchived, false)
+        )
+      )
+      .returning({ id: emailMessages.id });
+
+    totalMarkedCount += emailMessagesResult.length;
+    console.log(`Marked ${emailMessagesResult.length} email messages as read`);
+
+    // 3. Mark all chat messages as read (chatMessageReads)
     const { chatMessageReads } = await import('../../shared/schema');
 
     // Get all channels the user has permission to access
