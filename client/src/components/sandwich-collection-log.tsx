@@ -2526,11 +2526,6 @@ export default function SandwichCollectionLog() {
                           </span>
                         )}
                       </div>
-                      {collection.createdByName && (
-                        <div className="text-xs text-slate-500 mt-1">
-                          by {collection.createdByName}
-                        </div>
-                      )}
                     </div>
                   </div>
 
