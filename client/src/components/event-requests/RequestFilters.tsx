@@ -52,9 +52,10 @@ interface RequestFiltersProps {
     completed: number;
     declined: number;
     postponed: number;
+    cancelled: number;
     my_assignments: number;
   };
-  
+
   // Content for each tab
   children: {
     new: ReactNode;
@@ -62,7 +63,6 @@ interface RequestFiltersProps {
     scheduled: ReactNode;
     completed: ReactNode;
     declined: ReactNode;
-    postponed: ReactNode;
     my_assignments: ReactNode;
   };
   
@@ -126,10 +126,10 @@ export default function RequestFilters({
     },
     {
       value: 'declined',
-      label: 'Declined/Postponed',
-      shortLabel: 'Declined/Postponed',
+      label: 'Declined/Postponed/Cancelled',
+      shortLabel: 'D/P/C',
       icon: XCircle,
-      count: statusCounts.declined + statusCounts.postponed,
+      count: statusCounts.declined + statusCounts.postponed + statusCounts.cancelled,
     },
     {
       value: 'my_assignments',

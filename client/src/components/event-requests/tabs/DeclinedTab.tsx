@@ -24,6 +24,7 @@ export const DeclinedTab: React.FC = () => {
 
   const declinedRequests = filterRequestsByStatus('declined');
   const postponedRequests = filterRequestsByStatus('postponed');
+  const cancelledRequests = filterRequestsByStatus('cancelled');
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
@@ -48,9 +49,9 @@ export const DeclinedTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {declinedRequests.length === 0 && postponedRequests.length === 0 ? (
+      {declinedRequests.length === 0 && postponedRequests.length === 0 && cancelledRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          No declined or postponed events
+          No declined, postponed, or cancelled events
         </div>
       ) : (
         <>
@@ -114,6 +115,47 @@ export const DeclinedTab: React.FC = () => {
                   }}
                   onDelete={() => {
                     if (window.confirm('Are you sure you want to permanently delete this postponed event?')) {
+                      deleteEventRequestMutation.mutate(request.id);
+                    }
+                  }}
+                  onContact={() => {
+                    setContactEventRequest(request);
+                    setShowContactOrganizerDialog(true);
+                  }}
+                  onCall={() => handleCall(request)}
+                  onReactivate={() => {
+                    if (window.confirm('Do you want to reactivate this event request?')) {
+                      handleStatusChange(request.id, 'new');
+                      toast({
+                        title: 'Event reactivated',
+                        description: 'The event request has been moved back to New Requests.',
+                      });
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Cancelled Events Section */}
+          {cancelledRequests.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b-2 border-gray-300">
+                <h3 className="text-lg font-semibold text-gray-700">Cancelled Events</h3>
+                <span className="text-sm text-gray-500">({cancelledRequests.length})</span>
+              </div>
+              {cancelledRequests.map((request) => (
+                <DeclinedCard
+                  key={request.id}
+                  request={request}
+                  resolveUserName={resolveUserName}
+                  onView={() => {
+                    setSelectedEventRequest(request);
+                    setIsEditing(false);
+                    setShowEventDetails(true);
+                  }}
+                  onDelete={() => {
+                    if (window.confirm('Are you sure you want to permanently delete this cancelled event?')) {
                       deleteEventRequestMutation.mutate(request.id);
                     }
                   }}

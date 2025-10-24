@@ -12,6 +12,12 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
@@ -72,6 +78,8 @@ interface OrganizationContact {
     | 'scheduled'
     | 'past'
     | 'declined'
+    | 'postponed'
+    | 'cancelled'
     | 'contact_completed'
     | 'in_process';
   hasHostedEvent: boolean;
@@ -98,7 +106,7 @@ export default function GroupCatalog({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('groupName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>(['contacted', 'scheduled', 'completed', 'declined', 'past']); // Exclude new and in_process by default
   const [dateFilterStart, setDateFilterStart] = useState<string>('');
   const [dateFilterEnd, setDateFilterEnd] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -262,7 +270,7 @@ export default function GroupCatalog({
     }
 
     // For organizations with event requests, apply all filters
-    const matchesStatus = statusFilter === 'all' || org.status === statusFilter;
+    const matchesStatus = statusFilter.length === 0 || statusFilter.includes(org.status);
 
     // Use event date for filtering (when the event actually happened), not activity date (when it was created)
     const eventDate = org.eventDate ? new Date(org.eventDate) : null;
@@ -549,23 +557,75 @@ export default function GroupCatalog({
             />
           </div>
 
-          {/* Status Filter */}
+          {/* Status Filter - Multi-select */}
           <div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="new">New Requests</SelectItem>
-                <SelectItem value="contacted">Contacted</SelectItem>
-                <SelectItem value="scheduled">Upcoming Events</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="declined">Postponed Events</SelectItem>
-                <SelectItem value="past">Past Events</SelectItem>
-              </SelectContent>
-            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start">
+                  <Filter className="w-4 h-4 mr-2" />
+                  {statusFilter.length === 0
+                    ? 'No statuses selected'
+                    : statusFilter.length === 9
+                    ? 'All Statuses'
+                    : `${statusFilter.length} status${statusFilter.length > 1 ? 'es' : ''} selected`}
+                  <ChevronDown className="w-4 h-4 ml-auto" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56">
+                <div className="space-y-2">
+                  <div className="font-medium text-sm mb-2">Filter by Status</div>
+                  {[
+                    { value: 'new', label: 'New Requests' },
+                    { value: 'in_process', label: 'In Process' },
+                    { value: 'contacted', label: 'Contacted' },
+                    { value: 'scheduled', label: 'Upcoming Events' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'declined', label: 'Declined' },
+                    { value: 'postponed', label: 'Postponed' },
+                    { value: 'cancelled', label: 'Cancelled' },
+                    { value: 'past', label: 'Past Events' },
+                  ].map((status) => (
+                    <div key={status.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={status.value}
+                        checked={statusFilter.includes(status.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setStatusFilter([...statusFilter, status.value]);
+                          } else {
+                            setStatusFilter(statusFilter.filter((s) => s !== status.value));
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={status.value}
+                        className="text-sm cursor-pointer"
+                      >
+                        {status.label}
+                      </label>
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setStatusFilter(['new', 'in_process', 'contacted', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled', 'past'])}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setStatusFilter([])}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Date Range Filters */}
@@ -668,7 +728,7 @@ export default function GroupCatalog({
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600">No organizations found</p>
           <p className="text-sm text-gray-500 mt-2">
-            {searchTerm || statusFilter !== 'all'
+            {searchTerm || statusFilter.length < 9
               ? 'Try adjusting your search or filters'
               : 'Event requests will populate this directory'}
           </p>
