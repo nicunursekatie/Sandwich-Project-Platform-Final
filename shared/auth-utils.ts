@@ -305,6 +305,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         // Basic messaging and chat
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.CHAT_GRANTS_COMMITTEE,
         PERMISSIONS.CHAT_EVENTS_COMMITTEE,
         PERMISSIONS.CHAT_WEB_COMMITTEE,
@@ -342,6 +344,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.CHAT_GENERAL,
         PERMISSIONS.CHAT_HOST,
         PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
 
         // Analytics and other access
         PERMISSIONS.ANALYTICS_VIEW,
@@ -409,6 +412,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.CHAT_HOST,
         PERMISSIONS.CHAT_CORE_TEAM,
         PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.CHAT_GRANTS_COMMITTEE,
         PERMISSIONS.CHAT_EVENTS_COMMITTEE,
         PERMISSIONS.CHAT_WEB_COMMITTEE,
@@ -439,6 +443,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.CHAT_GENERAL,
         PERMISSIONS.CHAT_DRIVER,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.ORGANIZATIONS_VIEW,
@@ -459,6 +465,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.COLLECTIONS_ADD, // Can create collections (automatically can edit/delete own)
         PERMISSIONS.COLLECTIONS_WALKTHROUGH, // Can use simplified walkthrough for collections
         PERMISSIONS.PROJECTS_ADD, // Can create projects (automatically can edit/delete own)
@@ -481,6 +489,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.CHAT_GENERAL,
         PERMISSIONS.CHAT_RECIPIENT,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.COLLECTIONS_WALKTHROUGH, // Can use simplified walkthrough for collections (recipients who help with collections)
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.EVENT_REQUESTS_VIEW,
@@ -518,6 +528,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
         // Chat permissions (read-only)
         PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.CHAT_GRANTS_COMMITTEE,
         PERMISSIONS.CHAT_HOST,
         PERMISSIONS.CHAT_DRIVER,
@@ -539,6 +551,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.PROJECTS_VIEW,
         PERMISSIONS.SUGGESTIONS_VIEW,
         PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
+        PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.SUGGESTIONS_ADD, // Can create suggestions (automatically can edit/delete own)
         PERMISSIONS.KUDOS_VIEW, // Viewers can only view kudos, not send or receive
         PERMISSIONS.EVENT_REQUESTS_VIEW,
@@ -553,10 +569,11 @@ export function getDefaultPermissionsForRole(role: string): string[] {
       return [
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.CHAT_GENERAL,
+        PERMISSIONS.CHAT_DIRECT,
+        PERMISSIONS.CHAT_GROUP,
         PERMISSIONS.MESSAGES_VIEW,
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.PROJECTS_VIEW,
-        PERMISSIONS.CHAT_GENERAL,
         PERMISSIONS.AVAILABILITY_VIEW,
         PERMISSIONS.AVAILABILITY_ADD,
         PERMISSIONS.AVAILABILITY_EDIT_OWN,
