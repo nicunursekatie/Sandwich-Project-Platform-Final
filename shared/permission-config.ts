@@ -172,6 +172,23 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.DOCUMENTS_DELETE_ALL,
     ],
   },
+  CHAT: {
+    label: 'Chat Rooms',
+    permissions: [
+      PERMISSIONS.CHAT_GENERAL,
+      PERMISSIONS.CHAT_GRANTS_COMMITTEE,
+      PERMISSIONS.CHAT_EVENTS_COMMITTEE,
+      PERMISSIONS.CHAT_BOARD,
+      PERMISSIONS.CHAT_WEB_COMMITTEE,
+      PERMISSIONS.CHAT_VOLUNTEER_MANAGEMENT,
+      PERMISSIONS.CHAT_HOST,
+      PERMISSIONS.CHAT_DRIVER,
+      PERMISSIONS.CHAT_RECIPIENT,
+      PERMISSIONS.CHAT_CORE_TEAM,
+      PERMISSIONS.CHAT_DIRECT,
+      PERMISSIONS.CHAT_GROUP,
+    ],
+  },
   NAVIGATION: {
     label: 'Navigation Tabs',
     permissions: [
@@ -236,6 +253,21 @@ export function getPermissionDescription(permission: string): string {
     [PERMISSIONS.USERS_EDIT]: 'Edit user accounts and permissions',
     [PERMISSIONS.HOSTS_VIEW]: 'View host location directory',
     [PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS]: 'Assign team members to events',
+
+    // Chat room descriptions
+    [PERMISSIONS.CHAT_GENERAL]: 'Access to general team chat',
+    [PERMISSIONS.CHAT_GRANTS_COMMITTEE]: 'Access to grants committee chat',
+    [PERMISSIONS.CHAT_EVENTS_COMMITTEE]: 'Access to events committee chat',
+    [PERMISSIONS.CHAT_BOARD]: 'Access to board members chat',
+    [PERMISSIONS.CHAT_WEB_COMMITTEE]: 'Access to web committee chat',
+    [PERMISSIONS.CHAT_VOLUNTEER_MANAGEMENT]: 'Access to volunteer management chat',
+    [PERMISSIONS.CHAT_HOST]: 'Access to host organization chat',
+    [PERMISSIONS.CHAT_DRIVER]: 'Access to driver coordination chat',
+    [PERMISSIONS.CHAT_RECIPIENT]: 'Access to recipient organization chat',
+    [PERMISSIONS.CHAT_CORE_TEAM]: 'Access to core team chat',
+    [PERMISSIONS.CHAT_DIRECT]: 'Access to direct messaging',
+    [PERMISSIONS.CHAT_GROUP]: 'Access to group chat features',
+
     // Add more as needed...
   };
   return descriptions[permission] || getPermissionLabel(permission);
