@@ -174,6 +174,7 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                       'Basic': 'Dashboard',
                       'My volunteers': 'Volunteer Management',
                       'Volunteers': 'Volunteer Directory',
+                      'For assignments': 'Team Board',
                       'Count': 'Collection Counts',
                       'Counts': 'Collection Statistics',
                     };
