@@ -6,21 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { useResourcePermissions, usePermissions } from '@/hooks/useResourcePermissions';
 
 export default function WorkLogPage() {
   const { user } = useAuth();
 
   // Simplified permissions: CREATE_WORK_LOGS automatically includes edit/delete own permissions
-  const canCreateLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD);
-  const canEditOwnLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD); // Automatically included
-  const canDeleteOwnLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD); // Automatically included
-  const canViewAllLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_VIEW);
-  const canEditAllLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_EDIT_ALL);
-  const canDeleteAllLogs = hasPermission(
-    user,
-    PERMISSIONS.WORK_LOGS_DELETE_ALL
-  );
+  const { canAdd, canView, canEdit, canDelete } = useResourcePermissions('WORK_LOGS');
+  const { WORK_LOGS_EDIT_ALL: canEditAllLogs, WORK_LOGS_DELETE_ALL: canDeleteAllLogs } = usePermissions(['WORK_LOGS_EDIT_ALL', 'WORK_LOGS_DELETE_ALL']);
+
+  const canCreateLogs = canAdd;
+  const canEditOwnLogs = canAdd; // Automatically included
+  const canDeleteOwnLogs = canAdd; // Automatically included
+  const canViewAllLogs = canView;
   const [description, setDescription] = useState('');
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);

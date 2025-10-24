@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 
 // Fix Leaflet default marker icon issue in bundled apps
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -42,7 +43,7 @@ export default function RouteMapView() {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
 
   // Check permissions
-  const canView = hasPermission(user, PERMISSIONS.HOSTS_VIEW);
+  const { canView } = useResourcePermissions('HOSTS');
 
   // Fetch host contacts with coordinates
   const { data: hosts = [], isLoading, error } = useQuery<HostContactMapData[]>({

@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { usePermissions } from '@/hooks/useResourcePermissions';
 import {
   Database,
   FileText,
@@ -61,8 +62,7 @@ export default function BulkDataManager({
   const [showHostRecords, setShowHostRecords] = useState(false);
 
   // Permission checks
-  const canImport = hasPermission(user, PERMISSIONS.DATA_IMPORT);
-  const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
+  const { DATA_IMPORT: canImport, DATA_EXPORT: canExport } = usePermissions(['DATA_IMPORT', 'DATA_EXPORT']);
 
   // Fetch collection statistics
   const { data: stats, isLoading: statsLoading } = useQuery<any>({

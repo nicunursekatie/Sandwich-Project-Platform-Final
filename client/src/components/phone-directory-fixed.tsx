@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import {
   Phone,
   User,
@@ -223,9 +224,13 @@ function PhoneDirectoryFixed() {
   const { toast } = useToast();
 
   // Permissions
-  const canViewHosts = hasPermission(user, PERMISSIONS.HOSTS_VIEW);
-  const canViewRecipients = hasPermission(user, PERMISSIONS.RECIPIENTS_VIEW);
-  const canViewDrivers = hasPermission(user, PERMISSIONS.DRIVERS_VIEW);
+  const hostsPermissions = useResourcePermissions('HOSTS');
+  const recipientsPermissions = useResourcePermissions('RECIPIENTS');
+  const driversPermissions = useResourcePermissions('DRIVERS');
+
+  const canViewHosts = hostsPermissions.canView;
+  const canViewRecipients = recipientsPermissions.canView;
+  const canViewDrivers = driversPermissions.canView;
   const canViewVolunteers = hasPermission(user, PERMISSIONS.ACCESS_VOLUNTEERS);
   const canEditContacts =
     hasPermission(user, PERMISSIONS.ADMIN_ACCESS) ||

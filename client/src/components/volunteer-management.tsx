@@ -40,9 +40,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
 import { apiRequest } from '@/lib/queryClient';
 import { ButtonTooltip } from '@/components/ui/button-tooltip';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 
 export default function VolunteerManagement() {
   const { user } = useAuth();
@@ -75,10 +76,8 @@ export default function VolunteerManagement() {
   const [hostNotes, setHostNotes] = useState('');
 
   // Check permissions
-  const canManage = hasPermission(user, PERMISSIONS.VOLUNTEERS_EDIT);
-  const canAdd = hasPermission(user, PERMISSIONS.VOLUNTEERS_ADD);
-  const canEdit = hasPermission(user, PERMISSIONS.VOLUNTEERS_EDIT);
-  const canView = hasPermission(user, PERMISSIONS.VOLUNTEERS_VIEW);
+  const { canView, canAdd, canEdit } = useResourcePermissions('VOLUNTEERS');
+  const canManage = canEdit;
 
   if (!canView) {
     return (
