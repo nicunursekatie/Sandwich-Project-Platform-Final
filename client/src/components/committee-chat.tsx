@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Send, Users, MessageCircle, ChevronLeft, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,77 @@ const committees = [
     permission: 'CHAT_VOLUNTEER_MANAGEMENT',
   },
 ];
+
+// Memoized message item component to prevent unnecessary re-renders
+const MessageItem = memo(({
+  message,
+  currentUserName,
+  onDelete,
+  isDeleting
+}: {
+  message: Message;
+  currentUserName: string;
+  onDelete: (id: number) => void;
+  isDeleting: boolean;
+}) => {
+  const formattedTime = useMemo(() => {
+    if (message.timestamp && !isNaN(new Date(message.timestamp).getTime())) {
+      return new Date(message.timestamp).toLocaleTimeString();
+    }
+    return 'Just now';
+  }, [message.timestamp]);
+
+  const avatarInitials = useMemo(() => {
+    return message.sender
+      ?.split(' ')
+      .map((n: string) => n[0])
+      .join('')
+      .slice(0, 2) || 'TM';
+  }, [message.sender]);
+
+  const isOwnMessage = message.sender === currentUserName;
+
+  return (
+    <div className="flex space-x-3 group">
+      <Avatar className="w-8 h-8">
+        <AvatarFallback className="bg-gray-500 text-white text-xs">
+          {avatarInitials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center space-x-2">
+            <span className="font-medium text-sm">
+              {message.sender}
+            </span>
+            <span className="text-xs text-gray-500">
+              {formattedTime}
+            </span>
+          </div>
+          {isOwnMessage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(message.id)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+              disabled={isDeleting}
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+        <div className="bg-gray-100 rounded-lg p-3">
+          <p className="text-sm">{message.content}</p>
+        </div>
+        <div className="flex items-center mt-1 space-x-2">
+          <MessageLikeButton messageId={message.id} />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+MessageItem.displayName = 'MessageItem';
 
 export default function CommitteeChat() {
   const { toast } = useToast();
@@ -204,6 +275,27 @@ export default function CommitteeChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Memoized delete handler to prevent recreating on every render
+  const handleDeleteMessage = useMemo(() => {
+    return (messageId: number) => deleteMessageMutation.mutate(messageId);
+  }, [deleteMessageMutation]);
+
+  // Memoized current user name to prevent recalculation
+  const currentUserName = useMemo(() => getUserName(), [userProfile, user]);
+
+  // Memoized message list to prevent unnecessary re-renders
+  const renderedMessages = useMemo(() => {
+    return displayedMessages.map((message: Message) => (
+      <MessageItem
+        key={message.id}
+        message={message}
+        currentUserName={currentUserName}
+        onDelete={handleDeleteMessage}
+        isDeleting={deleteMessageMutation.isPending}
+      />
+    ));
+  }, [displayedMessages, currentUserName, handleDeleteMessage, deleteMessageMutation.isPending]);
+
   // Filter committees based on user permissions
   const availableCommittees = useMemo(() => {
     if (!user || !user.permissions) return [];
@@ -280,53 +372,7 @@ export default function CommitteeChat() {
               <p>No messages yet. Start the conversation!</p>
             </div>
           ) : (
-            displayedMessages.map((message: Message) => (
-              <div key={message.id} className="flex space-x-3 group">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-gray-500 text-white text-xs">
-                    {message.sender
-                      ?.split(' ')
-                      .map((n: string) => n[0])
-                      .join('')
-                      .slice(0, 2) || 'TM'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium text-sm">
-                        {message.sender}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {message.timestamp &&
-                        !isNaN(new Date(message.timestamp).getTime())
-                          ? new Date(message.timestamp).toLocaleTimeString()
-                          : 'Just now'}
-                      </span>
-                    </div>
-                    {/* Only show delete button for user's own messages */}
-                    {message.sender === getUserName() && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteMessageMutation.mutate(message.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        disabled={deleteMessageMutation.isPending}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="bg-gray-100 rounded-lg p-3">
-                    <p className="text-sm">{message.content}</p>
-                  </div>
-                  {/* Message actions */}
-                  <div className="flex items-center mt-1 space-x-2">
-                    <MessageLikeButton messageId={message.id} />
-                  </div>
-                </div>
-              </div>
-            ))
+            renderedMessages
           )}
           <div ref={messagesEndRef} />
         </div>
