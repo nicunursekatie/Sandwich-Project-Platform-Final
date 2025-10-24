@@ -31,7 +31,7 @@ export class MeetingsService {
     options: MapMeetingOptions = {}
   ): Partial<InsertMeetingPayload> {
     const source = body ?? {};
-    const mapped: Record<string, any> = { ...source };
+    const mapped: Record<string, unknown> = { ...source };
 
     // Map alternative field names
     if (mapped.meetingDate !== undefined && mapped.date === undefined) {
@@ -51,7 +51,9 @@ export class MeetingsService {
     const payload: Partial<InsertMeetingPayload> = {};
     for (const field of MEETING_FIELDS) {
       if (mapped[field] !== undefined) {
-        payload[field] = mapped[field];
+        // Type assertion is safe here because we're iterating over known InsertMeetingPayload keys
+        // and the actual validation will happen through the Zod schema
+        payload[field] = mapped[field] as any;
       }
     }
 
