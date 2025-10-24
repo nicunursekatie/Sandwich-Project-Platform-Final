@@ -101,7 +101,7 @@ export interface FormActivityTracking {
   /**
    * Track multiple validation errors at once
    */
-  trackValidationErrors: (errors: Record<string, string>) => void;
+  trackMultipleValidationErrors: (errors: Record<string, string>) => void;
 
   /**
    * Track any custom form event
@@ -366,7 +366,7 @@ export function useFormActivityTracking(
   );
 
   // Track multiple validation errors
-  const trackValidationErrors = useCallback(
+  const trackMultipleValidationErrors = useCallback(
     (errors: Record<string, string>) => {
       if (!trackValidationErrors) return;
 
@@ -466,7 +466,7 @@ export function useFormActivityTracking(
     trackFieldBlur,
     trackFieldChange,
     trackValidationError,
-    trackValidationErrors,
+    trackMultipleValidationErrors,
     trackFormEvent,
     getFormMetrics,
   };
@@ -501,7 +501,7 @@ export function useFormActivityTracking(
  *         acc[key] = value?.message || 'Invalid';
  *         return acc;
  *       }, {} as Record<string, string>);
- *       formTracking.trackValidationErrors(errorMessages);
+ *       formTracking.trackMultipleValidationErrors(errorMessages);
  *     }
  *   }, [errors, formTracking]);
  *

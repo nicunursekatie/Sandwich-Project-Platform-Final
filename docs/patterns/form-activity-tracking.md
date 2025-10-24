@@ -186,7 +186,7 @@ if (!email.includes('@')) {
 }
 ```
 
-### 9. trackValidationErrors(errors)
+### 9. trackMultipleValidationErrors(errors)
 
 Track multiple validation errors at once. Great for React Hook Form integration.
 
@@ -199,7 +199,7 @@ useEffect(() => {
       acc[key] = value?.message || 'Invalid';
       return acc;
     }, {});
-    formTracking.trackValidationErrors(errorMessages);
+    formTracking.trackMultipleValidationErrors(errorMessages);
   }
 }, [errors, formTracking]);
 ```
@@ -278,7 +278,7 @@ function CreateUserForm({ onClose }) {
         acc[key] = value?.message || 'Invalid';
         return acc;
       }, {});
-      formTracking.trackValidationErrors(errorMessages);
+      formTracking.trackMultipleValidationErrors(errorMessages);
     }
   }, [errors, formTracking]);
 
@@ -524,7 +524,7 @@ useEffect(() => {
       acc[key] = value?.message || 'Invalid';
       return acc;
     }, {});
-    formTracking.trackValidationErrors(errorMessages);
+    formTracking.trackMultipleValidationErrors(errorMessages);
   }
 }, [errors, formTracking]);
 ```

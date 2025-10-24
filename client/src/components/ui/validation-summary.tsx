@@ -91,7 +91,7 @@ function normalizeErrors(
   errors: ValidationError[] | string[] | Record<string, string>
 ): ValidationError[] {
   // Already in correct format
-  if (Array.isArray(errors) && errors.length > 0 && typeof errors[0] === 'object') {
+  if (Array.isArray(errors) && errors.length > 0 && typeof errors[0] === 'object' && errors[0] !== null) {
     return errors as ValidationError[];
   }
 

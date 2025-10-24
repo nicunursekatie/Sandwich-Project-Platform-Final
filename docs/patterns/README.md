@@ -199,7 +199,7 @@ function ComprehensiveForm({ onClose }) {
         acc[key] = value?.message || 'Invalid';
         return acc;
       }, {} as Record<string, string>);
-      formTracking.trackValidationErrors(errorMessages);
+      formTracking.trackMultipleValidationErrors(errorMessages);
     }
   }, [errors, formTracking]);
 
