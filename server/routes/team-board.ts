@@ -38,8 +38,8 @@ const createItemSchema = insertTeamBoardItemSchema
 
 const updateItemSchema = z.object({
   status: z.enum(['open', 'claimed', 'done']).optional(),
-  assignedTo: z.string().nullable().optional(),
-  assignedToName: z.string().nullable().optional(),
+  assignedTo: z.array(z.string()).nullable().optional(),
+  assignedToNames: z.array(z.string()).nullable().optional(),
   completedAt: z.string().datetime().optional().nullable(),
 });
 
@@ -187,7 +187,7 @@ teamBoardRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
       createdByName: displayName,
       status: 'open',
       assignedTo: null,
-      assignedToName: null,
+      assignedToNames: null,
       completedAt: null,
     };
 

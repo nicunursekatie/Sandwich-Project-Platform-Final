@@ -1440,8 +1440,8 @@ export const teamBoardItems = pgTable('team_board_items', {
   type: varchar('type').default('note'), // 'task', 'note', 'idea', 'reminder' - optional categorization
   createdBy: varchar('created_by').notNull(), // User ID who posted it
   createdByName: varchar('created_by_name').notNull(), // Display name of poster
-  assignedTo: varchar('assigned_to'), // User ID if someone claimed it (optional)
-  assignedToName: varchar('assigned_to_name'), // Display name of assignee (optional)
+  assignedTo: text('assigned_to').array(), // Array of user IDs - supports multiple assignees
+  assignedToNames: text('assigned_to_names').array(), // Array of display names - supports multiple assignees
   status: varchar('status').notNull().default('open'), // 'open', 'claimed', 'done'
   createdAt: timestamp('created_at').defaultNow().notNull(),
   completedAt: timestamp('completed_at'), // When marked as done
