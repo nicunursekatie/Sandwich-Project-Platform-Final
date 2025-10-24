@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { onboardingService } from '../services/onboarding-service';
+import { logger } from '../utils/production-safe-logger';
 
 export function createOnboardingRouter(deps: RouterDependencies) {
   const router = Router();
@@ -17,7 +18,7 @@ export function createOnboardingRouter(deps: RouterDependencies) {
     const challenges = await onboardingService.getChallengesForUser(userId);
     res.json(challenges);
   } catch (error) {
-    console.error('Error fetching challenges:', error);
+    logger.error('Error fetching challenges:', error);
     res.status(500).json({ message: 'Failed to fetch challenges' });
   }
 });
@@ -45,7 +46,7 @@ export function createOnboardingRouter(deps: RouterDependencies) {
       res.status(400).json(result);
     }
   } catch (error) {
-    console.error('Error tracking challenge:', error);
+    logger.error('Error tracking challenge:', error);
     res.status(500).json({ message: 'Failed to track challenge' });
   }
 });
@@ -61,7 +62,7 @@ export function createOnboardingRouter(deps: RouterDependencies) {
     const stats = await onboardingService.getUserStats(userId);
     res.json(stats);
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    logger.error('Error fetching stats:', error);
     res.status(500).json({ message: 'Failed to fetch stats' });
   }
 });
@@ -73,7 +74,7 @@ export function createOnboardingRouter(deps: RouterDependencies) {
     const leaderboard = await onboardingService.getLeaderboard(limit);
     res.json(leaderboard);
   } catch (error) {
-    console.error('Error fetching leaderboard:', error);
+    logger.error('Error fetching leaderboard:', error);
     res.status(500).json({ message: 'Failed to fetch leaderboard' });
   }
 });
@@ -89,7 +90,7 @@ router.get('/admin/users-progress', isAuthenticated, async (req: any, res) => {
     const usersProgress = await onboardingService.getAllUsersProgress();
     res.json(usersProgress);
   } catch (error) {
-    console.error('Error fetching users progress:', error);
+    logger.error('Error fetching users progress:', error);
     res.status(500).json({ message: 'Failed to fetch users progress' });
   }
 });
@@ -105,7 +106,7 @@ router.get('/admin/users-progress', isAuthenticated, async (req: any, res) => {
     await onboardingService.initializeDefaultChallenges();
     res.json({ message: 'Challenges initialized successfully' });
   } catch (error) {
-    console.error('Error initializing challenges:', error);
+    logger.error('Error initializing challenges:', error);
     res.status(500).json({ message: 'Failed to initialize challenges' });
   }
 });
@@ -208,7 +209,7 @@ router.post('/admin/send-announcement', isAuthenticated, async (req: any, res) =
         });
         successCount++;
       } catch (error) {
-        console.error(`Failed to send email to ${user.email}:`, error);
+        logger.error(`Failed to send email to ${user.email}:`, error);
         failedEmails.push(user.email);
       }
     }
@@ -221,7 +222,7 @@ router.post('/admin/send-announcement', isAuthenticated, async (req: any, res) =
       failedEmails,
     });
   } catch (error) {
-    console.error('Error sending announcement:', error);
+    logger.error('Error sending announcement:', error);
     res.status(500).json({ message: 'Failed to send announcement' });
   }
 });

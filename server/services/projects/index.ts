@@ -10,6 +10,7 @@ import {
 } from '@shared/schema';
 import { hasPermission, isProjectOwnerOrAssignee } from '@shared/auth-utils';
 import type { z } from 'zod';
+import { logger } from '../utils/production-safe-logger';
 
 // Types
 export type Project = typeof projects.$inferSelect;
@@ -502,7 +503,7 @@ export class ProjectService implements IProjectService {
             }
           } catch (error) {
             // Remove field if date parsing fails
-            console.error(`Failed to parse date for field ${field}:`, error);
+            logger.error(`Failed to parse date for field ${field}:`, error);
             delete validUpdates[field];
           }
         } else if (validUpdates[field] instanceof Date) {
@@ -529,11 +530,11 @@ export class ProjectService implements IProjectService {
         );
         const syncService = getGoogleSheetsSyncService(this.storage);
         await syncService.syncToGoogleSheets();
-        console.log(
+        logger.log(
           'Projects synced to Google Sheets successfully (background)'
         );
       } catch (syncError) {
-        console.error(
+        logger.error(
           'Failed to sync to Google Sheets (background):',
           syncError
         );

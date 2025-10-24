@@ -2,9 +2,10 @@ import { MailService } from '@sendgrid/mail';
 import { db } from './db';
 import { sandwichCollections, hosts, hostContacts } from '@shared/schema';
 import { eq, sql, and, gte, lte, like, or } from 'drizzle-orm';
+import { logger } from './utils/production-safe-logger';
 
 if (!process.env.SENDGRID_API_KEY) {
-  console.error(
+  logger.error(
     'SENDGRID_API_KEY environment variable must be set for email notifications'
   );
 }
@@ -222,10 +223,10 @@ export async function checkWeeklySubmissions(
 ): Promise<WeeklySubmissionStatus[]> {
   const { startDate, endDate } = getWeekRange(weeksAgo);
 
-  console.log(
+  logger.log(
     `Checking submissions for week: ${startDate.toDateString()} to ${endDate.toDateString()}`
   );
-  console.log(
+  logger.log(
     `Week range: ${startDate.toISOString().split('T')[0]} to ${
       endDate.toISOString().split('T')[0]
     }`
@@ -253,7 +254,7 @@ export async function checkWeeklySubmissions(
         )
       );
 
-    console.log(
+    logger.log(
       `Found ${weeklySubmissions.length} submissions for this week:`,
       weeklySubmissions
     );
@@ -316,10 +317,10 @@ export async function checkWeeklySubmissions(
       });
     }
 
-    console.log(`Status results:`, statusResults);
+    logger.log(`Status results:`, statusResults);
     return statusResults;
   } catch (error) {
-    console.error('Error checking weekly submissions:', error);
+    logger.error('Error checking weekly submissions:', error);
     throw error;
   }
 }
@@ -427,7 +428,7 @@ export async function sendMissingSubmissionsEmail(
   weekLabel?: string
 ): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
-    console.log(
+    logger.log(
       'SendGrid not configured - would send email about missing submissions:',
       missingSubmissions.map((s) => s.location)
     );
@@ -449,7 +450,7 @@ export async function sendMissingSubmissionsEmail(
 
   // For test emails, always send even if no missing locations
   if (missingLocations.length === 0 && !isTest) {
-    console.log('All locations have submitted - no email needed');
+    logger.log('All locations have submitted - no email needed');
     return true;
   }
 
@@ -569,12 +570,12 @@ Check the Collections Log in the platform for real-time updates.
 
   try {
     await mailService.send(emailContent);
-    console.log(
+    logger.log(
       `Missing submissions email sent successfully to ${ADMIN_EMAIL}`
     );
     return true;
   } catch (error) {
-    console.error('Failed to send missing submissions email:', error);
+    logger.error('Failed to send missing submissions email:', error);
     return false;
   }
 }
@@ -583,14 +584,14 @@ Check the Collections Log in the platform for real-time updates.
  * Main function to check submissions and send alerts if needed
  */
 export async function runWeeklyMonitoring(): Promise<void> {
-  console.log('Running weekly sandwich submission monitoring...');
+  logger.log('Running weekly sandwich submission monitoring...');
 
   try {
     const submissionStatus = await checkWeeklySubmissions();
 
-    console.log('Weekly submission status:');
+    logger.log('Weekly submission status:');
     submissionStatus.forEach((status) => {
-      console.log(
+      logger.log(
         `- ${status.location}: ${
           status.hasSubmitted ? '✅ Submitted' : '❌ Missing'
         }`
@@ -602,10 +603,10 @@ export async function runWeeklyMonitoring(): Promise<void> {
     if (missingSubmissions.length > 0) {
       await sendMissingSubmissionsEmail(submissionStatus);
     } else {
-      console.log('🎉 All host locations have submitted their numbers!');
+      logger.log('🎉 All host locations have submitted their numbers!');
     }
   } catch (error) {
-    console.error('Error in weekly monitoring:', error);
+    logger.error('Error in weekly monitoring:', error);
 
     // Send error notification email
     if (process.env.SENDGRID_API_KEY) {
@@ -627,7 +628,7 @@ export async function runWeeklyMonitoring(): Promise<void> {
           `,
         });
       } catch (emailError) {
-        console.error('Failed to send error notification email:', emailError);
+        logger.error('Failed to send error notification email:', emailError);
       }
     }
   }
@@ -658,7 +659,7 @@ export function scheduleWeeklyMonitoring(): NodeJS.Timeout[] {
   const hourlyCheck = setInterval(checkAndRun, 60 * 60 * 1000);
   intervals.push(hourlyCheck);
 
-  console.log('Weekly monitoring scheduled for Thursday 7 PM and Friday 8 AM');
+  logger.log('Weekly monitoring scheduled for Thursday 7 PM and Friday 8 AM');
 
   return intervals;
 }
@@ -856,7 +857,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
       html: emailHtml,
     });
 
-    console.log(
+    logger.log(
       `✅ Email reminder sent successfully to ${location} (${contactEmail})`
     );
 
@@ -867,7 +868,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
       } at ${contactEmail}`,
     };
   } catch (error) {
-    console.error(`❌ Failed to send email reminder to ${location}:`, error);
+    logger.error(`❌ Failed to send email reminder to ${location}:`, error);
     return {
       success: false,
       message: `Failed to send email reminder: ${
@@ -1032,7 +1033,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
     await Promise.all(emailPromises);
 
     const contactNames = targetContacts.map((c) => c.name).join(', ');
-    console.log(
+    logger.log(
       `✅ Targeted Dunwoody email sent successfully to: ${contactNames}`
     );
 
@@ -1041,7 +1042,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
       message: `Targeted email sent successfully to: ${contactNames}`,
     };
   } catch (error) {
-    console.log(`❌ Failed to send targeted Dunwoody email:`, error);
+    logger.log(`❌ Failed to send targeted Dunwoody email:`, error);
 
     return {
       success: false,

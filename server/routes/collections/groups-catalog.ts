@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { GroupsCatalogDependencies, AuthenticatedRequest } from '../../types';
+import { logger } from '../utils/production-safe-logger';
 
 // Canonicalize organization names for robust matching
 function canonicalizeOrgName(orgName: string): string {
@@ -71,11 +72,20 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             tspContactAssigned: null,
             assignedTo: null,
             assignedToName: null,
+            completedEventsFromRequests: 0, // Track completed events from event_requests
           });
         }
 
         const dept = departmentsMap.get(departmentKey);
         dept.totalRequests += 1;
+        
+        // Count completed events from event_requests
+        if (
+          request.status === 'completed' ||
+          request.status === 'contact_completed'
+        ) {
+          dept.completedEventsFromRequests = (dept.completedEventsFromRequests || 0) + 1;
+        }
 
         // Add contact if not already present
         const existingContact = dept.contacts.find(
@@ -229,24 +239,26 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
         };
 
-        // Process legacy group data
-        if (collection.group1Name && collection.group1Count) {
-          processOrganization(collection.group1Name, collection.group1Count);
-        }
-        if (collection.group2Name && collection.group2Count) {
-          processOrganization(collection.group2Name, collection.group2Count);
-        }
-
-        // Process new JSON group collections data
+        // Process group data: prioritize JSON groupCollections to avoid duplicates
         if (
           collection.groupCollections &&
-          Array.isArray(collection.groupCollections)
+          Array.isArray(collection.groupCollections) &&
+          collection.groupCollections.length > 0
         ) {
+          // Use new JSON group collections data (preferred)
           collection.groupCollections.forEach((group: any) => {
             if (group.name && group.count) {
               processOrganization(group.name, group.count);
             }
           });
+        } else {
+          // Fall back to legacy group data only if JSON is empty
+          if (collection.group1Name && collection.group1Count) {
+            processOrganization(collection.group1Name, collection.group1Count);
+          }
+          if (collection.group2Name && collection.group2Count) {
+            processOrganization(collection.group2Name, collection.group2Count);
+          }
         }
       });
 
@@ -363,10 +375,15 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         }
       });
 
-      // Initialize latestActivityDate for departments that don't have collection data
+      // Initialize latestActivityDate and actualEventCount for departments that don't have collection data
       departmentsMap.forEach((dept, key) => {
         if (!dept.latestActivityDate) {
           dept.latestActivityDate = dept.latestRequestDate;
+        }
+        
+        // If no collection data but has completed events from requests, use that count
+        if (!dept.actualEventCount && dept.completedEventsFromRequests > 0) {
+          dept.actualEventCount = dept.completedEventsFromRequests;
         }
       });
 
@@ -407,63 +424,31 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
         }
 
-        // If this department has multiple past events, create individual entries for each
-        if (dept.pastEvents && dept.pastEvents.length > 1) {
-          dept.pastEvents.forEach((event: any, eventIndex: number) => {
-            org.departments.push({
-              organizationName: org.displayName,
-              department: dept.department,
-              contactName: dept.contacts[0]?.name || contactNameLabel,
-              email: dept.contacts[0]?.email || '',
-              phone: dept.contacts[0]?.phone || '',
-              allContacts: dept.contacts,
-              status: 'past', // Individual past events are always 'past' status
-              totalRequests: 0, // Individual event has no "requests"
-              hasHostedEvent: true,
-              totalSandwiches: 0,
-              actualSandwichTotal: event.sandwichCount || 0,
-              actualEventCount: 1, // This is a single event
-              eventFrequency: null,
-              eventDate: event.date,
-              latestRequestDate: new Date(event.date),
-              latestCollectionDate: event.date,
-              latestActivityDate: new Date(event.date),
-              tspContact: dept.tspContact || null,
-              tspContactAssigned: dept.tspContactAssigned || null,
-              assignedTo: dept.assignedTo || null,
-              assignedToName: dept.assignedToName || null,
-              pastEvents: [event], // Single event in array
-              _isIndividualEvent: true, // Mark as individual event for frontend
-              _eventIndex: eventIndex, // Track which event this is
-            });
-          });
-        } else {
-          // Single event or no past events - keep aggregated view
-          org.departments.push({
-            organizationName: org.displayName, // Use unified display name
-            department: dept.department,
-            contactName: dept.contacts[0]?.name || contactNameLabel,
-            email: dept.contacts[0]?.email || '',
-            phone: dept.contacts[0]?.phone || '',
-            allContacts: dept.contacts,
-            status: dept.latestStatus,
-            totalRequests: dept.totalRequests,
-            hasHostedEvent: dept.hasHostedEvent,
-            totalSandwiches: dept.totalSandwiches,
-            actualSandwichTotal: dept.actualSandwichTotal || 0,
-            actualEventCount: dept.actualEventCount || 0,
-            eventFrequency: dept.eventFrequency || null,
-            eventDate: dept.eventDate,
-            latestRequestDate: dept.latestRequestDate,
-            latestCollectionDate: dept.latestCollectionDate || null,
-            latestActivityDate: dept.latestActivityDate,
-            tspContact: dept.tspContact || null,
-            tspContactAssigned: dept.tspContactAssigned || null,
-            assignedTo: dept.assignedTo || null,
-            assignedToName: dept.assignedToName || null,
-            pastEvents: dept.pastEvents || [], // Include past events list
-          });
-        }
+        // Always create a single entry per department, with all events included
+        org.departments.push({
+          organizationName: org.displayName, // Use unified display name
+          department: dept.department,
+          contactName: dept.contacts[0]?.name || contactNameLabel,
+          email: dept.contacts[0]?.email || '',
+          phone: dept.contacts[0]?.phone || '',
+          allContacts: dept.contacts,
+          status: dept.latestStatus,
+          totalRequests: dept.totalRequests,
+          hasHostedEvent: dept.hasHostedEvent,
+          totalSandwiches: dept.totalSandwiches,
+          actualSandwichTotal: dept.actualSandwichTotal || 0,
+          actualEventCount: dept.actualEventCount || 0,
+          eventFrequency: dept.eventFrequency || null,
+          eventDate: dept.eventDate,
+          latestRequestDate: dept.latestRequestDate,
+          latestCollectionDate: dept.latestCollectionDate || null,
+          latestActivityDate: dept.latestActivityDate,
+          tspContact: dept.tspContact || null,
+          tspContactAssigned: dept.tspContactAssigned || null,
+          assignedTo: dept.assignedTo || null,
+          assignedToName: dept.assignedToName || null,
+          pastEvents: dept.pastEvents || [], // Include all past events in array
+        });
       });
 
       // Convert to final format and sort
@@ -493,7 +478,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
       res.json({ groups: organizations });
     } catch (error) {
-      console.error('Error fetching organizations catalog:', error);
+      logger.error('Error fetching organizations catalog:', error);
       res
         .status(500)
         .json({ message: 'Failed to fetch organizations catalog' });
@@ -719,7 +704,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           events: allEvents,
         });
       } catch (error) {
-        console.error(
+        logger.error(
           `Error fetching details for organization ${req.params.organizationName}:`,
           error
         );

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { googleSheets, insertGoogleSheetSchema } from '@shared/schema';
+import { logger } from '../utils/production-safe-logger';
 
 export function createGoogleSheetsRouter(deps: RouterDependencies) {
   const router = Router();
@@ -23,7 +24,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
 
     res.json(sheets);
   } catch (error) {
-    console.error('Error fetching Google Sheets:', error);
+    logger.error('Error fetching Google Sheets:', error);
     res.status(500).json({ message: 'Failed to fetch Google Sheets' });
   }
 });
@@ -47,7 +48,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
 
     res.json(sheet);
   } catch (error) {
-    console.error('Error fetching Google Sheet:', error);
+    logger.error('Error fetching Google Sheet:', error);
     res.status(500).json({ message: 'Failed to fetch Google Sheet' });
   }
 });
@@ -80,7 +81,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       });
     }
 
-    console.error('Error creating Google Sheet:', error);
+    logger.error('Error creating Google Sheet:', error);
     res.status(500).json({ message: 'Failed to create Google Sheet' });
   }
 });
@@ -125,7 +126,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       });
     }
 
-    console.error('Error updating Google Sheet:', error);
+    logger.error('Error updating Google Sheet:', error);
     res.status(500).json({ message: 'Failed to update Google Sheet' });
   }
 });
@@ -149,7 +150,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
 
     res.json({ message: 'Google Sheet deleted successfully' });
   } catch (error) {
-    console.error('Error deleting Google Sheet:', error);
+    logger.error('Error deleting Google Sheet:', error);
     res.status(500).json({ message: 'Failed to delete Google Sheet' });
   }
 });
@@ -182,7 +183,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
         : 'Sheet may not be publicly accessible',
     });
   } catch (error) {
-    console.error('Error testing Google Sheet accessibility:', error);
+    logger.error('Error testing Google Sheet accessibility:', error);
     res.json({
       accessible: false,
       message: 'Unable to test sheet accessibility',
@@ -207,7 +208,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       targetSpreadsheetId: '1mjx5o6boluo8mNx8tzAV76NBGS6tF0um2Rq9bIdxPo8',
     });
   } catch (error) {
-    console.error('Error analyzing Google Sheet:', error);
+    logger.error('Error analyzing Google Sheet:', error);
     res.status(500).json({
       success: false,
       message: 'Google Sheets analysis failed. Please check API credentials.',
@@ -250,7 +251,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
         : `Import complete: ${result.imported} records imported, ${result.skipped} skipped`,
     });
   } catch (error) {
-    console.error('Error importing from Google Sheet:', error);
+    logger.error('Error importing from Google Sheet:', error);
     res.status(500).json({
       success: false,
       message: 'Google Sheets import failed',
@@ -275,7 +276,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       message: `Export complete: ${result.exported} records exported to ${sheetName}`,
     });
   } catch (error) {
-    console.error('Error exporting to Google Sheet:', error);
+    logger.error('Error exporting to Google Sheet:', error);
     res.status(500).json({
       success: false,
       message: 'Google Sheets export failed',
@@ -318,7 +319,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
 
     res.json(syncStats);
   } catch (error) {
-    console.error('Error fetching sync status:', error);
+    logger.error('Error fetching sync status:', error);
     res.status(500).json({
       error: 'Failed to fetch sync status',
       message: (error as any).message,
@@ -350,7 +351,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       });
     }
   } catch (error) {
-    console.error('Error syncing to Google Sheets:', error);
+    logger.error('Error syncing to Google Sheets:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to sync to Google Sheets',
@@ -384,7 +385,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       });
     }
   } catch (error) {
-    console.error('Error syncing from Google Sheets:', error);
+    logger.error('Error syncing from Google Sheets:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to sync from Google Sheets',
@@ -420,7 +421,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
         });
       }
     } catch (error) {
-      console.error('Error performing bidirectional sync:', error);
+      logger.error('Error performing bidirectional sync:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to perform bidirectional sync',
@@ -452,7 +453,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       worksheetName: process.env.GOOGLE_WORKSHEET_NAME || 'Sheet1',
     });
   } catch (error) {
-    console.error('Error checking configuration:', error);
+    logger.error('Error checking configuration:', error);
     res.status(500).json({
       configured: false,
       error: 'Failed to check configuration',
@@ -527,7 +528,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       skipped: result.skipped,
     });
   } catch (error) {
-    console.error('Error in append-only sync:', error);
+    logger.error('Error in append-only sync:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to perform append-only sync',
@@ -562,7 +563,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
         } for review in next meeting`,
       });
     } catch (error) {
-      console.error('Error updating project review status:', error);
+      logger.error('Error updating project review status:', error);
       res.status(500).json({
         error: 'Failed to update project review status',
         message: error.message,
@@ -596,7 +597,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       message: `Sync complete: ${result.syncSummary}`,
     });
   } catch (error) {
-    console.error('Error syncing with Google Sheet:', error);
+    logger.error('Error syncing with Google Sheet:', error);
     res.status(500).json({
       success: false,
       message: 'Google Sheets sync failed',
@@ -639,7 +640,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       },
     });
   } catch (error) {
-    console.error('Error fetching event requests sync status:', error);
+    logger.error('Error fetching event requests sync status:', error);
     res.status(500).json({
       configured: false,
       error: 'Failed to fetch event requests sync status',
@@ -683,7 +684,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
         });
       }
     } catch (error) {
-      console.error('Error syncing event requests from Google Sheets:', error);
+      logger.error('Error syncing event requests from Google Sheets:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to sync event requests from Google Sheets',
@@ -729,7 +730,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
         );
 
         if (!result.success) {
-          console.warn(
+          logger.warn(
             'Failed to update Google Sheets status:',
             result.message
           );
@@ -742,7 +743,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
         sheetsUpdate: syncService ? 'attempted' : 'skipped',
       });
     } catch (error) {
-      console.error('Error updating event request status:', error);
+      logger.error('Error updating event request status:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to update event request status',
@@ -774,7 +775,7 @@ export function createGoogleSheetsRouter(deps: RouterDependencies) {
       worksheetName: 'Sheet1',
     });
   } catch (error) {
-    console.error('Error checking event requests configuration:', error);
+    logger.error('Error checking event requests configuration:', error);
     res.status(500).json({
       configured: false,
       error: 'Failed to check event requests configuration',
@@ -834,7 +835,7 @@ TqvVOJ0zAgMBAAECggEAGMsmlOtvscXk21FhrJ5/9F[...truncated for security...]
       rowCount: response.data.values?.length || 0,
     });
   } catch (error) {
-    console.error('Direct auth test failed:', error);
+    logger.error('Direct auth test failed:', error);
     res.status(400).json({
       success: false,
       error: 'Direct auth failed: ' + (error as Error).message,

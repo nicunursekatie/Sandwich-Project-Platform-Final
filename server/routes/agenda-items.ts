@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { insertAgendaItemSchema } from '@shared/schema';
 import { IStorage } from '../storage';
 import { AuthMiddleware, AuthenticatedRequest, getUserId } from '../types';
+import { logger } from '../utils/production-safe-logger';
 
 export default function createAgendaItemsRouter(
   isAuthenticated: AuthMiddleware,
@@ -10,12 +11,12 @@ export default function createAgendaItemsRouter(
 ) {
   const router = Router();
 
-  console.log('🔧 Agenda Items Router - Initializing with authentication middleware');
+  logger.log('🔧 Agenda Items Router - Initializing with authentication middleware');
 
   // Get agenda items (optionally filtered by meetingId)
   router.get('/', isAuthenticated, (async (req: AuthenticatedRequest, res: Response) => {
     try {
-      console.log('🟢 Agenda Items API - GET request received:', req.url, req.query);
+      logger.log('🟢 Agenda Items API - GET request received:', req.url, req.query);
       const { meetingId } = req.query;
 
       const items = await storage.getAllAgendaItems();
@@ -25,11 +26,11 @@ export default function createAgendaItemsRouter(
         ? items.filter((item: { meetingId: number }) => item.meetingId === parseInt(meetingId as string))
         : items;
 
-      console.log('✅ Agenda Items API - Returning', filteredItems.length, 'items',
+      logger.log('✅ Agenda Items API - Returning', filteredItems.length, 'items',
         meetingId ? `for meeting ${meetingId}` : '(all meetings)');
       res.json(filteredItems);
     } catch (error) {
-      console.error('❌ Agenda Items API - Error fetching items:', error);
+      logger.error('❌ Agenda Items API - Error fetching items:', error);
       res.status(500).json({ message: 'Failed to fetch agenda items' });
     }
   }) as any);
@@ -37,7 +38,7 @@ export default function createAgendaItemsRouter(
   // Create new agenda item
   router.post('/', isAuthenticated, (async (req: AuthenticatedRequest, res: Response) => {
     try {
-      console.log('🟢 Agenda Items API - Creating agenda item:', req.body);
+      logger.log('🟢 Agenda Items API - Creating agenda item:', req.body);
 
       // Get user information from the authenticated request
       const userId = getUserId(req);
@@ -54,10 +55,10 @@ export default function createAgendaItemsRouter(
       });
       
       const item = await storage.createAgendaItem(itemData);
-      console.log('✅ Agenda Items API - Created agenda item:', item);
+      logger.log('✅ Agenda Items API - Created agenda item:', item);
       res.status(201).json(item);
     } catch (error) {
-      console.error('❌ Agenda Items API - Error creating agenda item:', error);
+      logger.error('❌ Agenda Items API - Error creating agenda item:', error);
       if (error instanceof z.ZodError) {
         res
           .status(400)

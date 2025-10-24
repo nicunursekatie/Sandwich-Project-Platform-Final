@@ -2,6 +2,7 @@ import type { Express, RequestHandler } from 'express';
 import { storage } from './storage-wrapper';
 import { getDefaultPermissionsForRole as getSharedPermissions } from '../shared/auth-utils';
 import bcrypt from 'bcrypt';
+import { logger } from './utils/production-safe-logger';
 
 // Using shared permissions from auth-utils
 
@@ -42,7 +43,7 @@ export const requireCommitteeAccess = (
             .json({ message: 'Access denied: Not a member of this committee' });
         }
       } catch (error) {
-        console.error('Error checking committee membership:', error);
+        logger.error('Error checking committee membership:', error);
         return res
           .status(500)
           .json({ message: 'Error verifying committee access' });
@@ -527,7 +528,7 @@ export function setupAuth(app: Express) {
 
       res.json({ success: true, message: 'Registration successful' });
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
       res.status(500).json({ success: false, message: 'Registration failed' });
     }
   });
@@ -548,7 +549,7 @@ export function setupAuth(app: Express) {
         res.status(404).json({ message: 'User not found' });
       }
     } catch (error) {
-      console.error('Debug user error:', error);
+      logger.error('Debug user error:', error);
       res.status(500).json({ error: 'Failed to get user' });
     }
   });
@@ -569,7 +570,7 @@ export function setupAuth(app: Express) {
           : { exists: false }
       );
     } catch (error) {
-      console.error('Debug user error:', error);
+      logger.error('Debug user error:', error);
       res.status(500).json({ error: 'Failed to get user' });
     }
   });
@@ -577,7 +578,7 @@ export function setupAuth(app: Express) {
   // Fix existing users with empty permissions endpoint
   app.post('/api/auth/fix-permissions', async (req: any, res) => {
     try {
-      console.log('Fixing permissions for existing users...');
+      logger.log('Fixing permissions for existing users...');
 
       // Get all users and update their permissions to match the shared auth system
       const allUsers = await storage.getAllUsers();
@@ -589,13 +590,13 @@ export function setupAuth(app: Express) {
         if (user.email === 'katielong2316@gmail.com') {
           if (!correctPermissions.includes('view_projects')) {
             correctPermissions = [...correctPermissions, 'view_projects'];
-            console.log('Adding VIEW_PROJECTS permission to Katie');
+            logger.log('Adding VIEW_PROJECTS permission to Katie');
           }
           // Force update Katie regardless to ensure she gets projects access
-          console.log(
+          logger.log(
             `Forcing Katie's permission update. Current: [${Array.isArray(user.permissions) ? user.permissions.join(', ') : 'none'}]`
           );
-          console.log(`New: [${correctPermissions.join(', ')}]`);
+          logger.log(`New: [${correctPermissions.join(', ')}]`);
         }
 
         // Update user with correct permissions if they differ, or force update for Katie
@@ -605,18 +606,18 @@ export function setupAuth(app: Express) {
           user.email === 'katielong2316@gmail.com';
 
         if (shouldUpdate) {
-          console.log(`Updating permissions for ${user.email} (${user.role})`);
+          logger.log(`Updating permissions for ${user.email} (${user.role})`);
           await storage.updateUser(user.id, {
             ...user,
             permissions: correctPermissions,
           });
-          console.log(`Updated ${user.email} permissions:`, correctPermissions);
+          logger.log(`Updated ${user.email} permissions:`, correctPermissions);
         }
       }
 
       res.json({ success: true, message: 'All user permissions fixed' });
     } catch (error) {
-      console.error('Fix permissions error:', error);
+      logger.error('Fix permissions error:', error);
       res
         .status(500)
         .json({ success: false, message: 'Failed to fix permissions' });
@@ -688,18 +689,18 @@ export function setupAuth(app: Express) {
       // Force session save to ensure persistence
       req.session.save((err: any) => {
         if (err) {
-          console.error('Session save error:', err);
+          logger.error('Session save error:', err);
           return res
             .status(500)
             .json({ success: false, message: 'Session save failed' });
         }
-        console.log('Session saved successfully for user:', sessionUser.email);
-        console.log('Session ID:', req.sessionID);
-        console.log('Session data:', req.session);
+        logger.log('Session saved successfully for user:', sessionUser.email);
+        logger.log('Session ID:', req.sessionID);
+        logger.log('Session data:', req.session);
         res.json({ success: true, user: sessionUser });
       });
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       res.status(500).json({ success: false, message: 'Login failed' });
     }
   });
@@ -731,7 +732,7 @@ export function setupAuth(app: Express) {
 
       res.json({ success: true, user: sessionUser });
     } catch (error) {
-      console.error('Temp login error:', error);
+      logger.error('Temp login error:', error);
       res.status(500).json({ error: 'Login failed' });
     }
   });
@@ -766,7 +767,7 @@ export function setupAuth(app: Express) {
           isActive: dbUser.isActive,
         });
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        logger.error('Error fetching user data:', error);
         res.status(500).json({ message: 'Error fetching user data' });
       }
     } else {
@@ -804,7 +805,7 @@ export function setupAuth(app: Express) {
           isActive: dbUser.isActive,
         });
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        logger.error('Error fetching user data:', error);
         res.status(500).json({ message: 'Error fetching user data' });
       }
     } else {
@@ -816,7 +817,7 @@ export function setupAuth(app: Express) {
   app.post('/api/logout', (req: any, res) => {
     req.session.destroy((err: any) => {
       if (err) {
-        console.error('Session destroy error:', err);
+        logger.error('Session destroy error:', err);
         return res
           .status(500)
           .json({ success: false, message: 'Logout failed' });
@@ -846,7 +847,7 @@ export function setupAuth(app: Express) {
         res.status(404).json({ message: 'User not found' });
       }
     } catch (error) {
-      console.error('Profile fetch error:', error);
+      logger.error('Profile fetch error:', error);
       res.status(500).json({ message: 'Failed to fetch profile' });
     }
   });
@@ -887,7 +888,7 @@ export function setupAuth(app: Express) {
         phoneNumber: updatedUser?.phoneNumber,
       });
     } catch (error) {
-      console.error('Profile update error:', error);
+      logger.error('Profile update error:', error);
       res.status(500).json({ message: 'Failed to update profile' });
     }
   });
@@ -929,7 +930,7 @@ export function setupAuth(app: Express) {
 
         res.json({ message: 'Password changed successfully' });
       } catch (error) {
-        console.error('Password change error:', error);
+        logger.error('Password change error:', error);
         res.status(500).json({ message: 'Failed to change password' });
       }
     }
@@ -975,7 +976,7 @@ export function setupAuth(app: Express) {
           newPassword: newPassword, // Include for admin convenience
         });
       } catch (error) {
-        console.error('Admin password reset error:', error);
+        logger.error('Admin password reset error:', error);
         res.status(500).json({ message: 'Failed to reset password' });
       }
     }
@@ -984,16 +985,16 @@ export function setupAuth(app: Express) {
 
 // Middleware to check if user is authenticated
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
-  console.log('=== AUTHENTICATION MIDDLEWARE ===');
-  console.log('URL:', req.method, req.url);
-  console.log('req.session exists:', !!req.session);
-  console.log('req.session.user exists:', !!req.session?.user);
-  console.log('Session ID:', req.sessionID);
-  console.log('User email in session:', req.session?.user?.email);
+  logger.log('=== AUTHENTICATION MIDDLEWARE ===');
+  logger.log('URL:', req.method, req.url);
+  logger.log('req.session exists:', !!req.session);
+  logger.log('req.session.user exists:', !!req.session?.user);
+  logger.log('Session ID:', req.sessionID);
+  logger.log('User email in session:', req.session?.user?.email);
 
   // AUTHENTICATION REQUIRED - no auto-login
   if (!req.session || !req.session.user) {
-    console.log('❌ No session user found - authentication required');
+    logger.log('❌ No session user found - authentication required');
     return res.status(401).json({ message: 'Authentication required' });
   }
 
@@ -1008,7 +1009,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
         JSON.stringify(req.session.user.permissions) !==
           JSON.stringify(freshUser.permissions)
       ) {
-        console.log(
+        logger.log(
           `🔄 Updating session for ${freshUser.email} with fresh permissions`
         );
         req.session.user = {
@@ -1024,7 +1025,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
 
         // Force session save to ensure persistence
         req.session.save((err: unknown) => {
-          if (err) console.error('Session save error:', err);
+          if (err) logger.error('Session save error:', err);
         });
       }
 
@@ -1046,33 +1047,33 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       if (!freshUser.lastLoginAt || new Date(freshUser.lastLoginAt) < hourAgo) {
         storage.updateUser(freshUser.id, { lastLoginAt: now }).catch((err) => {
-          console.error('Failed to update lastLoginAt:', err);
+          logger.error('Failed to update lastLoginAt:', err);
         });
       }
 
-      console.log(
+      logger.log(
         `✅ Authentication successful for ${freshUser.email} (${freshUser.role})`
       );
       const permCount = Array.isArray(freshUser.permissions) ? freshUser.permissions.length : 0;
-      console.log(
+      logger.log(
         `✅ req.user set with ${permCount} permissions`
       );
     } else {
-      console.log(`❌ User not found or inactive: ${req.session.user.email}`);
+      logger.log(`❌ User not found or inactive: ${req.session.user.email}`);
       // User not found in database or inactive, clear invalid session
       req.session.destroy((err: unknown) => {
-        if (err) console.error('Session destroy error:', err);
+        if (err) logger.error('Session destroy error:', err);
       });
       return res.status(401).json({ message: 'Unauthorized' });
     }
   } catch (error) {
-    console.error(
+    logger.error(
       '❌ Error fetching fresh user data in isAuthenticated:',
       error
     );
     // Fallback to session user if database fetch fails but still set req.user
     req.user = req.session.user;
-    console.log(
+    logger.log(
       `⚠️ Fallback: Using session user for ${req.session.user.email}`
     );
   }
@@ -1082,7 +1083,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
 
 // Initialize authentication system with default admin user and committees
 export async function initializeAuth() {
-  console.log('Authentication system initialized');
+  logger.log('Authentication system initialized');
 
   // Create default admin user if it doesn't exist
   try {
@@ -1104,22 +1105,22 @@ export async function initializeAuth() {
           password: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123',
         }, // Use env var or fallback
       });
-      console.log(
+      logger.log(
         '✅ Default admin user created: admin@sandwich.project / [password set from env or default]'
       );
     } else {
-      console.log(
+      logger.log(
         '✅ Default admin user already exists: admin@sandwich.project'
       );
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.log(
+      logger.log(
         '❌ Could not create default admin user (using fallback):',
         error.message
       );
     } else {
-      console.log(
+      logger.log(
         '❌ Could not create default admin user (using fallback):',
         error
       );
@@ -1144,10 +1145,10 @@ export async function initializeAuth() {
           name: 'Outreach',
           description: 'Community outreach and partnerships',
         });
-        console.log('✅ Default committees created');
+        logger.log('✅ Default committees created');
       }
     } catch (error) {
-      console.warn('Committee creation failed:', error.message);
+      logger.warn('Committee creation failed:', error.message);
     }
 
     // Create committee member user and assign to specific committee
@@ -1171,13 +1172,13 @@ export async function initializeAuth() {
           password: process.env.DEFAULT_COMMITTEE_PASSWORD || 'committee123',
         },
       });
-      console.log(
+      logger.log(
         '✅ Committee member user created: katielong2316@gmail.com / [password set from env or default]'
       );
     } else {
       // Use existing user without updating role (preserve current role and permissions)
       committeeMemberId = existingCommitteeMember.id;
-      console.log(
+      logger.log(
         '✅ Found existing user: katielong2316@gmail.com (preserving current role and permissions)'
       );
     }
@@ -1206,16 +1207,16 @@ export async function initializeAuth() {
               role: 'member',
             });
           }
-          console.log(
+          logger.log(
             '✅ Assigned katielong2316@gmail.com to Finance Committee only'
           );
         }
       }
     } catch (error) {
-      console.warn('Assigning committee member failed:', error.message);
+      logger.warn('Assigning committee member failed:', error.message);
     }
   } catch (error) {
-    console.log('❌ Could not setup committees:', error.message);
+    logger.log('❌ Could not setup committees:', error.message);
   }
 
   // Setup driver user - kenig.ka@gmail.com with restricted permissions
@@ -1238,16 +1239,16 @@ export async function initializeAuth() {
           password: process.env.DEFAULT_DRIVER_PASSWORD || 'driver123',
         },
       });
-      console.log(
+      logger.log(
         '✅ Driver user created: kenig.ka@gmail.com / [password set from env or default]'
       );
     } else {
       // Preserve existing user permissions - do not reset them
-      console.log(
+      logger.log(
         '✅ Found existing user: kenig.ka@gmail.com (preserving current role and permissions)'
       );
     }
   } catch (error) {
-    console.log('❌ Could not setup driver user:', error.message);
+    logger.log('❌ Could not setup driver user:', error.message);
   }
 }

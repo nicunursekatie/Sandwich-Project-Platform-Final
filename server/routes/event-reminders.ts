@@ -1,5 +1,6 @@
 import express from 'express';
 import type { RouterDependencies } from '../types';
+import { logger } from '../utils/production-safe-logger';
 
 export function createEventRemindersRouter(deps: RouterDependencies) {
   const router = express.Router();
@@ -11,7 +12,7 @@ export function createEventRemindersRouter(deps: RouterDependencies) {
       const reminders = await storage.getAllEventReminders(req.user?.id);
       res.json(reminders);
     } catch (error) {
-      console.error('Error getting event reminders:', error);
+      logger.error('Error getting event reminders:', error);
       res.status(500).json({ error: 'Failed to get event reminders' });
     }
   });
@@ -22,7 +23,7 @@ export function createEventRemindersRouter(deps: RouterDependencies) {
       const count = await storage.getEventRemindersCount(req.user?.id);
       res.json({ count });
     } catch (error) {
-      console.error('Error getting event reminders count:', error);
+      logger.error('Error getting event reminders count:', error);
       res
         .status(500)
         .json({ error: 'Failed to get event reminders count', count: 0 });
@@ -54,13 +55,13 @@ export function createEventRemindersRouter(deps: RouterDependencies) {
           actionText: 'View Events',
         });
       } catch (notifError) {
-        console.error('Failed to create notification for event reminder:', notifError);
+        logger.error('Failed to create notification for event reminder:', notifError);
         // Don't fail the reminder creation if notification fails
       }
 
       res.status(201).json(reminder);
     } catch (error) {
-      console.error('Error creating event reminder:', error);
+      logger.error('Error creating event reminder:', error);
       res.status(500).json({ error: 'Failed to create event reminder' });
     }
   });
@@ -80,7 +81,7 @@ export function createEventRemindersRouter(deps: RouterDependencies) {
       }
       res.json(reminder);
     } catch (error) {
-      console.error('Error updating event reminder:', error);
+      logger.error('Error updating event reminder:', error);
       res.status(500).json({ error: 'Failed to update event reminder' });
     }
   });
@@ -95,7 +96,7 @@ export function createEventRemindersRouter(deps: RouterDependencies) {
       }
       res.status(204).send();
     } catch (error) {
-      console.error('Error deleting event reminder:', error);
+      logger.error('Error deleting event reminder:', error);
       res.status(500).json({ error: 'Failed to delete event reminder' });
     }
   });

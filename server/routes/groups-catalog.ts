@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
+import { logger } from '../utils/production-safe-logger';
 
 interface GroupsCatalogDependencies {
   isAuthenticated: any;
@@ -458,7 +459,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
       res.json({ groups: organizations });
     } catch (error) {
-      console.error('Error fetching organizations catalog:', error);
+      logger.error('Error fetching organizations catalog:', error);
       res
         .status(500)
         .json({ message: 'Failed to fetch organizations catalog' });
@@ -684,7 +685,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           events: allEvents,
         });
       } catch (error) {
-        console.error(
+        logger.error(
           `Error fetching details for organization ${req.params.organizationName}:`,
           error
         );

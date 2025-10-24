@@ -4,6 +4,7 @@ import { requirePermission } from '../middleware/auth';
 import { sendEmail } from '../sendgrid';
 import { storage } from '../storage';
 import { z } from 'zod';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
@@ -179,11 +180,11 @@ ${testMode ? '\n[THIS IS A TEST EMAIL - No actual announcement was sent]' : ''}
             html: htmlContent,
           });
           successCount++;
-          console.log(`✅ SMS announcement sent to ${user.email}`);
+          logger.log(`✅ SMS announcement sent to ${user.email}`);
         } catch (error) {
           failureCount++;
           errors.push({ email: user.email, error: error.message });
-          console.error(
+          logger.error(
             `❌ Failed to send SMS announcement to ${user.email}:`,
             error.message
           );
@@ -203,10 +204,10 @@ ${testMode ? '\n[THIS IS A TEST EMAIL - No actual announcement was sent]' : ''}
         errors: errors.length > 0 ? errors : undefined,
       };
 
-      console.log(`📧 SMS announcement results:`, result);
+      logger.log(`📧 SMS announcement results:`, result);
       res.json(result);
     } catch (error) {
-      console.error('Error sending SMS announcement:', error);
+      logger.error('Error sending SMS announcement:', error);
       res.status(500).json({
         error: 'Failed to send SMS announcement',
         message: error.message,

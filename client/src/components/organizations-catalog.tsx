@@ -120,6 +120,8 @@ export default function GroupCatalog({
   const [organizationDetails, setOrganizationDetails] = useState<any>(null);
   const [loadingOrganizationDetails, setLoadingOrganizationDetails] =
     useState(false);
+  const [showContactDetailsModal, setShowContactDetailsModal] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<OrganizationContact | null>(null);
 
   // Fetch groups data
   const {
@@ -1344,16 +1346,27 @@ export default function GroupCatalog({
                                 <div className="space-y-1">
                                   <div className="flex items-center space-x-1 text-sm">
                                     <User className="w-4 h-4 text-teal-600" />
-                                    <span className="font-medium text-gray-900 truncate">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedContact(org);
+                                        setShowContactDetailsModal(true);
+                                      }}
+                                      className="font-medium text-gray-900 hover:text-teal-600 truncate transition-colors underline decoration-dotted underline-offset-2"
+                                      data-testid={`button-contact-${org.organizationName}`}
+                                    >
                                       {org.contactName}
-                                    </span>
+                                    </button>
                                   </div>
                                   {org.email && (
                                     <div className="flex items-center space-x-1 text-xs">
                                       <Mail className="w-3 h-3 text-teal-500" />
-                                      <span className="text-teal-700 hover:text-teal-800 truncate">
+                                      <a
+                                        href={`mailto:${org.email}`}
+                                        className="text-teal-700 hover:text-teal-900 truncate hover:underline transition-colors"
+                                        data-testid={`link-email-${org.email}`}
+                                      >
                                         {org.email}
-                                      </span>
+                                      </a>
                                     </div>
                                   )}
                                 </div>
@@ -1710,6 +1723,175 @@ export default function GroupCatalog({
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact Details Modal */}
+      <Dialog open={showContactDetailsModal} onOpenChange={setShowContactDetailsModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-heading text-brand-primary">
+              Contact Information
+            </DialogTitle>
+            <DialogDescription>
+              Complete contact details for this organization
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedContact && (
+            <div className="space-y-4 mt-4">
+              {/* Organization Name */}
+              <div className="border-b pb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building className="w-5 h-5 text-brand-primary" />
+                  <h3 className="font-semibold text-gray-900">
+                    {selectedContact.organizationName}
+                  </h3>
+                </div>
+                {selectedContact.department && (
+                  <p className="text-sm text-gray-600 ml-7">
+                    Department: {selectedContact.department}
+                  </p>
+                )}
+              </div>
+
+              {/* Contact Details */}
+              <div className="space-y-3">
+                {/* Contact Name */}
+                <div className="flex items-start gap-2">
+                  <User className="w-5 h-5 text-teal-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-600">Contact Name</p>
+                    <p className="font-medium text-gray-900">{selectedContact.contactName}</p>
+                  </div>
+                </div>
+
+                {/* Email */}
+                {selectedContact.email && (
+                  <div className="flex items-start gap-2">
+                    <Mail className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">Email Address</p>
+                      <a
+                        href={`mailto:${selectedContact.email}`}
+                        className="font-medium text-teal-700 hover:text-teal-900 hover:underline"
+                        data-testid={`link-modal-email-${selectedContact.email}`}
+                      >
+                        {selectedContact.email}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status */}
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-teal-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-600">Current Status</p>
+                    <div className="mt-1">{getStatusBadge(selectedContact.status)}</div>
+                  </div>
+                </div>
+
+                {/* Latest Activity */}
+                {selectedContact.latestActivityDate && (
+                  <div className="flex items-start gap-2">
+                    <Clock className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">Latest Activity</p>
+                      <p className="font-medium text-gray-900">
+                        {formatDateForDisplay(selectedContact.latestActivityDate.toString())}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Event Date */}
+                {selectedContact.eventDate && (
+                  <div className="flex items-start gap-2">
+                    <Calendar className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">Event Date</p>
+                      <p className="font-medium text-gray-900">
+                        {formatDateForDisplay(selectedContact.eventDate)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* TSP Contact */}
+                {selectedContact.tspContactAssigned && (
+                  <div className="flex items-start gap-2">
+                    <UserCheck className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">TSP Contact</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedContact.tspContactAssigned}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Statistics */}
+                {(selectedContact.actualEventCount || selectedContact.totalRequests) && (
+                  <div className="border-t pt-3 mt-3">
+                    <p className="text-sm text-gray-600 mb-2">Event History</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedContact.actualEventCount > 0 && (
+                        <div>
+                          <p className="text-2xl font-bold text-brand-primary">
+                            {selectedContact.actualEventCount}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Completed Event{selectedContact.actualEventCount !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      )}
+                      {selectedContact.totalRequests > 0 && (
+                        <div>
+                          <p className="text-2xl font-bold text-brand-secondary">
+                            {selectedContact.totalRequests}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Total Request{selectedContact.totalRequests !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Past Events */}
+                {selectedContact.pastEvents && selectedContact.pastEvents.length > 0 && (
+                  <div className="border-t pt-3 mt-3">
+                    <p className="text-sm text-gray-600 mb-2">Past Collection Events</p>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {selectedContact.pastEvents.map((event, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-teal-600" />
+                            <span>{formatDateForDisplay(event.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-semibold text-orange-700">
+                              {event.sandwichCount}
+                            </span>
+                            <img 
+                              src="/attached_assets/LOGOS/sandwich logo.png" 
+                              alt="sandwich" 
+                              className="w-4 h-4 object-contain"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

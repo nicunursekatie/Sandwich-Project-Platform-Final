@@ -2,13 +2,14 @@ import { readFileSync, existsSync } from 'fs';
 import { parse } from 'csv-parse/sync';
 import { db } from './db';
 import { sandwichCollections } from '../shared/schema';
+import { logger } from './utils/production-safe-logger';
 
 interface CSVRow {
   [key: string]: string;
 }
 
 export async function importCollectionsFromCSV(filePath: string) {
-  console.log(`Starting CSV import from: ${filePath}`);
+  logger.log(`Starting CSV import from: ${filePath}`);
 
   // Check if file exists
   if (!existsSync(filePath)) {
@@ -23,13 +24,13 @@ export async function importCollectionsFromCSV(filePath: string) {
     trim: true,
   });
 
-  console.log(`Found ${records.length} records in CSV`);
+  logger.log(`Found ${records.length} records in CSV`);
 
   // Debug: Log the first record to see the actual column names
   if (records.length > 0) {
-    console.log('Available columns in CSV:', Object.keys(records[0]));
-    console.log('First record sample:', records[0]);
-    console.log('Second record sample:', records[1]);
+    logger.log('Available columns in CSV:', Object.keys(records[0]));
+    logger.log('First record sample:', records[0]);
+    logger.log('Second record sample:', records[1]);
   }
 
   let successCount = 0;
@@ -134,7 +135,7 @@ export async function importCollectionsFromCSV(filePath: string) {
 
       // Log progress every 100 records
       if ((i + 1) % 100 === 0) {
-        console.log(`Processed ${i + 1}/${records.length} records...`);
+        logger.log(`Processed ${i + 1}/${records.length} records...`);
       }
     } catch (error) {
       errorCount++;
@@ -142,21 +143,21 @@ export async function importCollectionsFromCSV(filePath: string) {
         error instanceof Error ? error.message : 'Unknown error'
       }`;
       errors.push(errorMsg);
-      console.error(errorMsg);
+      logger.error(errorMsg);
     }
   }
 
   // Summary
-  console.log('\n=== Import Summary ===');
-  console.log(`Total records processed: ${records.length}`);
-  console.log(`Successfully imported: ${successCount}`);
-  console.log(`Errors: ${errorCount}`);
+  logger.log('\n=== Import Summary ===');
+  logger.log(`Total records processed: ${records.length}`);
+  logger.log(`Successfully imported: ${successCount}`);
+  logger.log(`Errors: ${errorCount}`);
 
   if (errors.length > 0) {
-    console.log('\nError details:');
-    errors.slice(0, 10).forEach((error) => console.log(`  ${error}`));
+    logger.log('\nError details:');
+    errors.slice(0, 10).forEach((error) => logger.log(`  ${error}`));
     if (errors.length > 10) {
-      console.log(`  ... and ${errors.length - 10} more errors`);
+      logger.log(`  ... and ${errors.length - 10} more errors`);
     }
   }
 
@@ -173,19 +174,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const csvPath = process.argv[2];
 
   if (!csvPath) {
-    console.error('Usage: tsx server/import-collections.ts <path-to-csv-file>');
+    logger.error('Usage: tsx server/import-collections.ts <path-to-csv-file>');
     process.exit(1);
   }
 
   importCollectionsFromCSV(csvPath)
     .then((result) => {
-      console.log(
+      logger.log(
         `\nImport completed: ${result.successCount}/${result.totalRecords} records imported`
       );
       process.exit(result.errorCount > 0 ? 1 : 0);
     })
     .catch((error) => {
-      console.error('Import failed:', error);
+      logger.error('Import failed:', error);
       process.exit(1);
     });
 }

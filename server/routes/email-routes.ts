@@ -4,6 +4,7 @@ import { emailService } from '../services/email-service';
 import { db } from '../db';
 import { kudosTracking, users, emailMessages } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { logger } from '../utils/production-safe-logger';
 
 export function createEmailRouter(deps: RouterDependencies) {
   const router = Router();
@@ -19,7 +20,7 @@ export function createEmailRouter(deps: RouterDependencies) {
 
     const folder = (req.query.folder as string) || 'inbox';
     const threaded = req.query.threaded === 'true';
-    console.log(
+    logger.log(
       `[Email API] Getting emails for folder: ${folder}, user: ${user.email}, threaded: ${threaded}`
     );
 
@@ -47,13 +48,13 @@ export function createEmailRouter(deps: RouterDependencies) {
         committee: email.contextType || 'email',
       }));
 
-      console.log(
+      logger.log(
         `[Email API] Found ${formattedEmails.length} emails in ${folder}`
       );
       res.json(formattedEmails);
     }
   } catch (error) {
-    console.error('[Email API] Error fetching emails:', error);
+    logger.error('[Email API] Error fetching emails:', error);
     res.status(500).json({ message: 'Failed to fetch emails' });
   }
 });
@@ -93,7 +94,7 @@ export function createEmailRouter(deps: RouterDependencies) {
         .json({ message: 'Recipient information is required' });
     }
 
-    console.log(
+    logger.log(
       `[Email API] Sending email from ${user.email} to ${recipientEmail}`
     );
 
@@ -123,7 +124,7 @@ export function createEmailRouter(deps: RouterDependencies) {
 
     res.status(201).json(newEmail);
   } catch (error) {
-    console.error('[Email API] Error sending email:', error);
+    logger.error('[Email API] Error sending email:', error);
     res.status(500).json({ message: 'Failed to send email' });
   }
 });
@@ -139,7 +140,7 @@ export function createEmailRouter(deps: RouterDependencies) {
     const emailId = parseInt(req.params.id);
     const updates = req.body;
 
-    console.log(`[Email API] Updating email ${emailId} status:`, updates);
+    logger.log(`[Email API] Updating email ${emailId} status:`, updates);
 
     // Check if this is a kudo ID instead of an email ID
     const kudoCheck = await db
@@ -156,7 +157,7 @@ export function createEmailRouter(deps: RouterDependencies) {
     if (kudoCheck.length > 0) {
       // This is a kudo ID, get the actual message ID
       actualEmailId = kudoCheck[0].messageId;
-      console.log(
+      logger.log(
         `[Email API] Kudo ${emailId} corresponds to message ${actualEmailId}`
       );
 
@@ -188,7 +189,7 @@ export function createEmailRouter(deps: RouterDependencies) {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('[Email API] Error updating email:', error);
+    logger.error('[Email API] Error updating email:', error);
     res.status(500).json({ message: 'Failed to update email' });
   }
 });
@@ -202,7 +203,7 @@ export function createEmailRouter(deps: RouterDependencies) {
     }
 
     const emailId = parseInt(req.params.id);
-    console.log(`[Email API] Deleting email ${emailId} for user ${user.email}`);
+    logger.log(`[Email API] Deleting email ${emailId} for user ${user.email}`);
 
     const success = await emailService.deleteEmail(emailId, user.id);
 
@@ -214,7 +215,7 @@ export function createEmailRouter(deps: RouterDependencies) {
 
     res.status(204).send();
   } catch (error) {
-    console.error('[Email API] Error deleting email:', error);
+    logger.error('[Email API] Error deleting email:', error);
     res.status(500).json({ message: 'Failed to delete email' });
   }
 });
@@ -230,7 +231,7 @@ export function createEmailRouter(deps: RouterDependencies) {
     const count = await emailService.getUnreadEmailCount(user.id);
     res.json({ count });
   } catch (error) {
-    console.error('[Email API] Error getting unread count:', error);
+    logger.error('[Email API] Error getting unread count:', error);
     res.status(500).json({ message: 'Failed to get unread count' });
   }
 });
@@ -248,12 +249,12 @@ export function createEmailRouter(deps: RouterDependencies) {
       return res.status(400).json({ message: 'Search term is required' });
     }
 
-    console.log(`[Email API] Searching emails for "${searchTerm}"`);
+    logger.log(`[Email API] Searching emails for "${searchTerm}"`);
 
     const emails = await emailService.searchEmails(user.id, searchTerm);
     res.json(emails);
   } catch (error) {
-    console.error('[Email API] Error searching emails:', error);
+    logger.error('[Email API] Error searching emails:', error);
     res.status(500).json({ message: 'Failed to search emails' });
   }
 });
@@ -272,7 +273,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       return res.status(400).json({ message: 'Event request ID is required' });
     }
 
-    console.log(`[Email API] Getting drafts for event request ${eventRequestId}, user: ${user.email}`);
+    logger.log(`[Email API] Getting drafts for event request ${eventRequestId}, user: ${user.email}`);
 
     const drafts = await emailService.getDraftsByContext(
       user.id,
@@ -297,10 +298,10 @@ export function createEmailRouter(deps: RouterDependencies) {
       updatedAt: draft.updatedAt,
     }));
 
-    console.log(`[Email API] Found ${formattedDrafts.length} drafts for event request ${eventRequestId}`);
+    logger.log(`[Email API] Found ${formattedDrafts.length} drafts for event request ${eventRequestId}`);
     res.json(formattedDrafts);
   } catch (error) {
-    console.error('[Email API] Error fetching event drafts:', error);
+    logger.error('[Email API] Error fetching event drafts:', error);
     res.status(500).json({ message: 'Failed to fetch event drafts' });
   }
 });
@@ -313,7 +314,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    console.log(`[Email API] Getting kudos for user: ${user.email}`);
+    logger.log(`[Email API] Getting kudos for user: ${user.email}`);
 
     // Import here to avoid circular dependency
     const { messagingService } = await import('../services/messaging-service');
@@ -336,10 +337,10 @@ export function createEmailRouter(deps: RouterDependencies) {
       readAt: kudo.readAt,
     }));
 
-    console.log(`[Email API] Found ${formattedKudos.length} kudos`);
+    logger.log(`[Email API] Found ${formattedKudos.length} kudos`);
     res.json(formattedKudos);
   } catch (error) {
-    console.error('[Email API] Error fetching kudos:', error);
+    logger.error('[Email API] Error fetching kudos:', error);
     res.status(500).json({ message: 'Failed to fetch kudos' });
   }
 });
@@ -357,7 +358,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       return res.status(400).json({ message: 'Invalid message ID' });
     }
 
-    console.log(
+    logger.log(
       `[Email API] Marking message ${messageId} as read for user: ${user.email}`
     );
 
@@ -376,7 +377,7 @@ export function createEmailRouter(deps: RouterDependencies) {
     if (kudoCheck.length > 0) {
       // This is a kudo ID, get the actual message ID
       actualMessageId = kudoCheck[0].messageId;
-      console.log(
+      logger.log(
         `[Email API] Kudo ${messageId} corresponds to message ${actualMessageId}`
       );
 
@@ -411,7 +412,7 @@ export function createEmailRouter(deps: RouterDependencies) {
 
     res.json({ success: true, message: 'Message marked as read' });
   } catch (error) {
-    console.error('[Email API] Error marking message as read:', error);
+    logger.error('[Email API] Error marking message as read:', error);
     res.status(500).json({ message: 'Failed to mark message as read' });
   }
 });
@@ -447,11 +448,11 @@ export function createEmailRouter(deps: RouterDependencies) {
       return res.status(400).json({ message: 'Recipient email is required' });
     }
 
-    console.log(
+    logger.log(
       `[Event Email API] Sending event email from ${user.email} to ${recipientEmail}`
     );
     if (attachments.length > 0) {
-      console.log(
+      logger.log(
         `[Event Email API] Attachments payload received: ${attachments
           .map(att =>
             typeof att === 'object' ? JSON.stringify(att) : String(att)
@@ -485,7 +486,7 @@ export function createEmailRouter(deps: RouterDependencies) {
         attachments,
       });
 
-      console.log('[Event Email API] Draft saved successfully');
+      logger.log('[Event Email API] Draft saved successfully');
       return res.json({
         success: true,
         message: 'Draft saved successfully',
@@ -567,7 +568,7 @@ export function createEmailRouter(deps: RouterDependencies) {
           if (docMeta) {
             processedAttachments.push(docMeta);
           } else {
-            console.warn(
+            logger.warn(
               `[Event Email API] Attachment document ID ${attachment} not found`
             );
           }
@@ -583,7 +584,7 @@ export function createEmailRouter(deps: RouterDependencies) {
             if (docMeta) {
               processedAttachments.push(docMeta);
             } else {
-              console.warn(
+              logger.warn(
                 `[Event Email API] Attachment document ID ${docId} not found`
               );
             }
@@ -624,9 +625,9 @@ export function createEmailRouter(deps: RouterDependencies) {
                   filePath: path.join(process.cwd(), fileInfo.file),
                   originalName: fileInfo.name
                 });
-                console.log(`[Event Email API] Mapped hash ${hash} to ${fileInfo.name}`);
+                logger.log(`[Event Email API] Mapped hash ${hash} to ${fileInfo.name}`);
               } else {
-                console.warn(`[Event Email API] Document hash not found in mapping: ${hash}`);
+                logger.warn(`[Event Email API] Document hash not found in mapping: ${hash}`);
               }
             }
             continue;
@@ -752,14 +753,14 @@ export function createEmailRouter(deps: RouterDependencies) {
       requestPhoneCall: false,
     }).returning();
 
-    console.log('[Event Email API] Email sent successfully');
+    logger.log('[Event Email API] Email sent successfully');
     res.json({
       success: true,
       message: 'Email sent successfully',
       emailId: newEmail[0].id,
     });
   } catch (error) {
-    console.error('[Event Email API] Error:', error);
+    logger.error('[Event Email API] Error:', error);
     res.status(500).json({
       message: 'Failed to send email',
       error: error instanceof Error ? error.message : 'Unknown error',

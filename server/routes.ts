@@ -7,6 +7,7 @@ import { createActivityLogger } from './middleware/activity-logger';
 import createMainRoutes from './routes/index';
 import { requirePermission } from './middleware/auth';
 import { createCorsMiddleware, logCorsConfig } from './config/cors';
+import { logger } from './utils/production-safe-logger';
 
 /**
  * ⚠️  WARNING: LEGACY ROUTING SYSTEM - DO NOT ADD NEW ROUTES HERE! ⚠️
@@ -56,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   const isReplitDev = !!(process.env.REPL_ID || process.env.REPLIT_DB_URL);
   const useSecureCookies = isProduction && !isReplitDev;
 
-  console.log('[Session Config]', {
+  logger.log('[Session Config]', {
     isProduction,
     isReplitDev,
     useSecureCookies,
@@ -185,10 +186,10 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Monitoring routes for weekly collection tracking
   // try {
   //   const monitoringRoutes = await import('./routes/monitoring');
-  //   console.log('✅ Monitoring routes loaded successfully');
+  //   logger.log('✅ Monitoring routes loaded successfully');
   //   app.use('/api/monitoring', isAuthenticated, monitoringRoutes.default);
   // } catch (error) {
-  //   console.error('❌ Failed to load monitoring routes:', error);
+  //   logger.error('❌ Failed to load monitoring routes:', error);
   // }
 
   // Add catch-all handler for unknown API routes to prevent SPA fallback serving HTML

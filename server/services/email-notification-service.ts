@@ -3,10 +3,11 @@ import { db } from '../db';
 import { users } from '@shared/schema';
 import { eq, or, like, sql, inArray } from 'drizzle-orm';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
+import { logger } from '../utils/production-safe-logger';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
-  console.warn(
+  logger.warn(
     'SENDGRID_API_KEY not found - email notifications will be disabled'
   );
 } else {
@@ -94,7 +95,7 @@ export class EmailNotificationService {
         user.email !== null && user.email !== undefined
       );
     } catch (error) {
-      console.error('Error finding mentioned users:', error);
+      logger.error('Error finding mentioned users:', error);
       return [];
     }
   }
@@ -106,7 +107,7 @@ export class EmailNotificationService {
     notification: ChatMentionNotification
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      console.log('SendGrid not configured - skipping email notification');
+      logger.log('SendGrid not configured - skipping email notification');
       return false;
     }
 
@@ -180,12 +181,12 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       };
 
       await sgMail.send(msg);
-      console.log(
+      logger.log(
         `Chat mention notification sent to ${notification.mentionedUserEmail}`
       );
       return true;
     } catch (error) {
-      console.error('Error sending chat mention notification:', error);
+      logger.error('Error sending chat mention notification:', error);
       return false;
     }
   }
@@ -200,7 +201,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     eventDate: Date | string | null
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      console.log('SendGrid not configured - skipping TSP contact assignment notification');
+      logger.log('SendGrid not configured - skipping TSP contact assignment notification');
       return false;
     }
 
@@ -209,7 +210,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
       
       if (!user || user.length === 0 || !user[0].email) {
-        console.warn(`User ${userId} not found or has no email - cannot send TSP contact notification`);
+        logger.warn(`User ${userId} not found or has no email - cannot send TSP contact notification`);
         return false;
       }
 
@@ -293,10 +294,10 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       };
 
       await sgMail.send(msg);
-      console.log(`TSP contact assignment notification sent to ${userEmail} for event ${eventId}`);
+      logger.log(`TSP contact assignment notification sent to ${userEmail} for event ${eventId}`);
       return true;
     } catch (error) {
-      console.error('Error sending TSP contact assignment notification:', error);
+      logger.error('Error sending TSP contact assignment notification:', error);
       return false;
     }
   }
@@ -313,7 +314,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     role: string
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      console.log('SendGrid not configured - skipping volunteer reminder notification');
+      logger.log('SendGrid not configured - skipping volunteer reminder notification');
       return false;
     }
 
@@ -425,10 +426,10 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       };
 
       await sgMail.send(msg);
-      console.log(`24-hour volunteer reminder sent to ${volunteerEmail} for event ${eventId}`);
+      logger.log(`24-hour volunteer reminder sent to ${volunteerEmail} for event ${eventId}`);
       return true;
     } catch (error) {
-      console.error('Error sending volunteer reminder notification:', error);
+      logger.error('Error sending volunteer reminder notification:', error);
       return false;
     }
   }
@@ -474,7 +475,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         });
       }
     } catch (error) {
-      console.error('Error processing chat message for mentions:', error);
+      logger.error('Error processing chat message for mentions:', error);
     }
   }
 

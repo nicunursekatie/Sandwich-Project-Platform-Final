@@ -6,6 +6,7 @@ import {
   sendWeeklyReminderSMS,
   validateSMSConfig,
 } from '../sms-service';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
@@ -48,7 +49,7 @@ router.get('/sms-config', async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error checking SMS config:', error);
+    logger.error('Error checking SMS config:', error);
     res.status(500).json({ error: 'Failed to check SMS configuration' });
   }
 });
@@ -76,7 +77,7 @@ router.get('/phone-gateway/health', async (req, res) => {
     const healthResult = await (provider as any).healthCheck();
     res.json(healthResult);
   } catch (error) {
-    console.error('Error performing phone gateway health check:', error);
+    logger.error('Error performing phone gateway health check:', error);
     res.status(500).json({ 
       error: 'Failed to perform health check',
       message: (error as Error).message 
@@ -107,7 +108,7 @@ router.get('/phone-gateway/device-info', async (req, res) => {
     const deviceResult = await (provider as any).getDeviceInfo();
     res.json(deviceResult);
   } catch (error) {
-    console.error('Error getting phone gateway device info:', error);
+    logger.error('Error getting phone gateway device info:', error);
     res.status(500).json({ 
       error: 'Failed to get device info',
       message: (error as Error).message 
@@ -169,7 +170,7 @@ router.get('/weekly-status/:weeksAgo', async (req, res) => {
       reportingCount: locationStatus.size,
     });
   } catch (error) {
-    console.error('Error getting weekly status:', error);
+    logger.error('Error getting weekly status:', error);
     res.status(500).json({ error: 'Failed to get weekly status' });
   }
 });
@@ -214,7 +215,7 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
 
     res.json({ weeks: reports });
   } catch (error) {
-    console.error('Error getting multi-week report:', error);
+    logger.error('Error getting multi-week report:', error);
     res.status(500).json({ error: 'Failed to get multi-week report' });
   }
 });
@@ -292,7 +293,7 @@ router.get('/stats', async (req, res) => {
 
     res.json(stats);
   } catch (error) {
-    console.error('Error getting monitoring stats:', error);
+    logger.error('Error getting monitoring stats:', error);
     res.status(500).json({ error: 'Failed to get monitoring statistics' });
   }
 });
@@ -304,7 +305,7 @@ router.post('/check-now', async (req, res) => {
     // For now, just return success
     res.json({ success: true, message: 'Manual check completed' });
   } catch (error) {
-    console.error('Error running manual check:', error);
+    logger.error('Error running manual check:', error);
     res.status(500).json({ error: 'Failed to run manual check' });
   }
 });
@@ -319,7 +320,7 @@ router.post('/check-week/:weeksAgo', async (req, res) => {
       message: `Check completed for week ${weeksAgo}`,
     });
   } catch (error) {
-    console.error('Error checking week:', error);
+    logger.error('Error checking week:', error);
     res.status(500).json({ error: 'Failed to check week' });
   }
 });
@@ -349,7 +350,7 @@ router.post('/send-sms-reminders', async (req, res) => {
       totalFailed: failureCount,
     });
   } catch (error) {
-    console.error('Error sending SMS reminders:', error);
+    logger.error('Error sending SMS reminders:', error);
     res.status(500).json({ error: 'Failed to send SMS reminders' });
   }
 });
@@ -377,7 +378,7 @@ router.post('/send-sms-reminder/:location', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error sending SMS reminder:', error);
+    logger.error('Error sending SMS reminder:', error);
     res.status(500).json({ error: 'Failed to send SMS reminder' });
   }
 });
@@ -408,7 +409,7 @@ router.post('/test-sms', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error sending test SMS:', error);
+    logger.error('Error sending test SMS:', error);
     res.status(500).json({ error: 'Failed to send test SMS' });
   }
 });
@@ -504,7 +505,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
       message: `Test email sent successfully to ${emailAddress}`,
     });
   } catch (error) {
-    console.error('Error sending test email:', error);
+    logger.error('Error sending test email:', error);
     res.status(500).json({ error: 'Failed to send test email', details: error.message });
   }
 });
@@ -531,7 +532,7 @@ router.post('/send-email-reminder', async (req, res) => {
       ...result
     });
   } catch (error) {
-    console.error('Error sending email reminder:', error);
+    logger.error('Error sending email reminder:', error);
     res.status(500).json({ error: 'Failed to send email reminder', details: error.message });
   }
 });
@@ -554,7 +555,7 @@ router.post('/send-email-reminder/:location', async (req, res) => {
       ...result
     });
   } catch (error) {
-    console.error('Error sending email reminder:', error);
+    logger.error('Error sending email reminder:', error);
     res.status(500).json({ error: 'Failed to send email reminder', details: error.message });
   }
 });

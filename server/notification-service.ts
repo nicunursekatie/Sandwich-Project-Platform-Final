@@ -8,9 +8,10 @@ import {
 import { db } from './database-storage';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { logger } from './utils/production-safe-logger';
 
 if (!process.env.SENDGRID_API_KEY) {
-  console.warn(
+  logger.warn(
     'SENDGRID_API_KEY environment variable not set. Email notifications will be disabled.'
   );
 }
@@ -33,7 +34,7 @@ export class NotificationService {
     contextType?: string
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      console.log(
+      logger.log(
         'Direct message email notification skipped - no SendGrid API key configured'
       );
       return false;
@@ -68,12 +69,12 @@ export class NotificationService {
       };
 
       await mailService.send(emailData);
-      console.log(
+      logger.log(
         `Direct message email notification sent to ${recipientEmail}`
       );
       return true;
     } catch (error) {
-      console.error('Failed to send direct message email notification:', error);
+      logger.error('Failed to send direct message email notification:', error);
       return false;
     }
   }
@@ -88,7 +89,7 @@ export class NotificationService {
     assignedBy: string
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      console.log(
+      logger.log(
         'Project assignment email notification skipped - no SendGrid API key configured'
       );
       return false;
@@ -127,12 +128,12 @@ export class NotificationService {
       };
 
       await mailService.send(emailData);
-      console.log(
+      logger.log(
         `Project assignment email notification sent to ${assigneeEmails.length} recipients`
       );
       return true;
     } catch (error) {
-      console.error(
+      logger.error(
         'Failed to send project assignment email notification:',
         error
       );
@@ -146,7 +147,7 @@ export class NotificationService {
     recipientEmails: string[]
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      console.log(
+      logger.log(
         'Email notification skipped - no SendGrid API key configured'
       );
       return false;
@@ -164,12 +165,12 @@ export class NotificationService {
       };
 
       await mailService.send(emailData);
-      console.log(
+      logger.log(
         `Email notification sent: ${type} to ${recipientEmails.length} recipients`
       );
       return true;
     } catch (error) {
-      console.error('Failed to send email notification:', error);
+      logger.error('Failed to send email notification:', error);
       return false;
     }
   }

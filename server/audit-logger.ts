@@ -1,6 +1,7 @@
 import { db } from './db';
 import { auditLogs, type InsertAuditLog } from '@shared/schema';
 import { sql, desc, eq, and } from 'drizzle-orm';
+import { logger } from './utils/production-safe-logger';
 
 export interface AuditContext {
   userId?: string;
@@ -598,10 +599,20 @@ export class AuditLogger {
         context
       );
 
-      console.log(`📋 Event Request Audit: ${summary} (${changes.length} total changes, ${significantChanges.length} significant)`);
-      
+      // Log individual significant changes for better searchability
+      if (significantChanges.length > 0) {
+        await this.log(
+          'EVENT_REQUEST_SIGNIFICANT_CHANGE',
+          'event_requests',
+          recordId,
+          { significantChanges: significantChanges },
+          { summary, totalChanges: changes.length },
+          context
+        );
+      }
+
     } catch (error) {
-      console.error('Failed to log event request change:', error);
+      logger.error('Failed to log event request change:', error);
       // Don't throw - audit logging shouldn't break the main operation
     }
   }
@@ -628,7 +639,7 @@ export class AuditLogger {
 
       await db.insert(auditLogs).values(auditEntry);
     } catch (error) {
-      console.error('Failed to log audit entry:', error);
+      logger.error('Failed to log audit entry:', error);
       // Don't throw - audit logging shouldn't break the main operation
     }
   }
@@ -742,7 +753,7 @@ export class AuditLogger {
 
       return results;
     } catch (error) {
-      console.error('Failed to retrieve audit history:', error);
+      logger.error('Failed to retrieve audit history:', error);
       return [];
     }
   }

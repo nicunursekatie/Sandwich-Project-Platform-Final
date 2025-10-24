@@ -7,6 +7,7 @@ import { createStandardMiddleware } from '../../middleware';
 import { smartNotificationsRouter } from './smart';
 import { analyticsRouter } from './analytics';
 import { z } from 'zod';
+import { logger } from '../utils/production-safe-logger';
 
 const notificationsRouter = Router();
 
@@ -23,7 +24,7 @@ notificationsRouter.use('/analytics', analyticsRouter);
 if (process.env.NODE_ENV === 'development') {
   import('./test-endpoints').then(({ testRouter }) => {
     notificationsRouter.use('/test', testRouter);
-  }).catch(err => console.error('Failed to load test endpoints:', err));
+  }).catch(err => logger.error('Failed to load test endpoints:', err));
 }
 
 // Get notifications for current user
@@ -80,7 +81,7 @@ notificationsRouter.get('/', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching notifications:', error);
+    logger.error('Error fetching notifications:', error);
     res.status(500).json({ error: 'Failed to fetch notifications' });
   }
 });
@@ -127,7 +128,7 @@ notificationsRouter.get('/counts', async (req, res) => {
       }, {} as Record<string, number>)
     });
   } catch (error) {
-    console.error('Error fetching notification counts:', error);
+    logger.error('Error fetching notification counts:', error);
     res.status(500).json({ error: 'Failed to fetch notification counts' });
   }
 });
@@ -161,7 +162,7 @@ notificationsRouter.patch('/:id/read', async (req, res) => {
 
     res.json({ success: true, notification: result[0] });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
+    logger.error('Error marking notification as read:', error);
     res.status(500).json({ error: 'Failed to mark notification as read' });
   }
 });
@@ -211,7 +212,7 @@ notificationsRouter.patch('/bulk/read', async (req, res) => {
       notifications: result 
     });
   } catch (error) {
-    console.error('Error bulk marking notifications as read:', error);
+    logger.error('Error bulk marking notifications as read:', error);
     res.status(500).json({ error: 'Failed to mark notifications as read' });
   }
 });
@@ -245,7 +246,7 @@ notificationsRouter.patch('/:id/archive', async (req, res) => {
 
     res.json({ success: true, notification: result[0] });
   } catch (error) {
-    console.error('Error archiving notification:', error);
+    logger.error('Error archiving notification:', error);
     res.status(500).json({ error: 'Failed to archive notification' });
   }
 });
@@ -282,7 +283,7 @@ notificationsRouter.post('/', async (req, res) => {
       notification: result[0] 
     });
   } catch (error) {
-    console.error('Error creating notification:', error);
+    logger.error('Error creating notification:', error);
     res.status(500).json({ error: 'Failed to create notification' });
   }
 });
@@ -360,7 +361,7 @@ notificationsRouter.post('/broadcast', async (req, res) => {
       notificationCount: result.length
     });
   } catch (error) {
-    console.error('Error broadcasting notification:', error);
+    logger.error('Error broadcasting notification:', error);
     res.status(500).json({ error: 'Failed to broadcast notification' });
   }
 });
@@ -396,7 +397,7 @@ notificationsRouter.delete('/:id', async (req, res) => {
 
     res.json({ success: true, message: 'Notification deleted' });
   } catch (error) {
-    console.error('Error deleting notification:', error);
+    logger.error('Error deleting notification:', error);
     res.status(500).json({ error: 'Failed to delete notification' });
   }
 });
@@ -449,7 +450,7 @@ notificationsRouter.post('/admin/cleanup', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error cleaning up notifications:', error);
+    logger.error('Error cleaning up notifications:', error);
     res.status(500).json({ error: 'Failed to clean up notifications' });
   }
 });
