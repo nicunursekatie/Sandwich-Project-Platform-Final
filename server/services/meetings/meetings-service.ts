@@ -100,7 +100,9 @@ export class MeetingsService {
     const payload: Partial<InsertMeetingPayload> = {};
     for (const field of MEETING_FIELDS) {
       if (mapped[field] !== undefined) {
-        payload[field] = mapped[field];
+        // Type assertion is safe here: field is a known InsertMeetingPayload key
+        // and the value will be validated by Zod schema at the call site
+        payload[field] = mapped[field] as any;
       }
     }
 
