@@ -145,7 +145,7 @@ export default function SuggestionsPortal() {
   const [selectedPriority, setSelectedPriority] = useState('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { trackSearch, trackFormSubmit } = useUserActivityTracking();
+  const { trackSearch } = useUserActivityTracking();
 
   // Get current user
   const { data: currentUser } = useQuery({
