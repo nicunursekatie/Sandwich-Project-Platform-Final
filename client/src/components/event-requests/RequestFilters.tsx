@@ -126,17 +126,10 @@ export default function RequestFilters({
     },
     {
       value: 'declined',
-      label: 'Declined',
-      shortLabel: 'Declined',
+      label: 'Declined/Postponed',
+      shortLabel: 'Declined/Postponed',
       icon: XCircle,
-      count: statusCounts.declined,
-    },
-    {
-      value: 'postponed',
-      label: 'Postponed',
-      shortLabel: 'Postponed',
-      icon: Pause,
-      count: statusCounts.postponed,
+      count: statusCounts.declined + statusCounts.postponed,
     },
     {
       value: 'my_assignments',
@@ -223,7 +216,7 @@ export default function RequestFilters({
           </div>
 
           {/* Desktop Tab Content */}
-          {['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments'].map(
+          {['new', 'in_process', 'scheduled', 'completed', 'declined', 'my_assignments'].map(
             (status) => (
               <TabsContent key={status} value={status} className="space-y-4">
                 {/* Search and Filters for this specific status */}

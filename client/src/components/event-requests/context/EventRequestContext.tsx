@@ -410,10 +410,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
             setActiveTab('scheduled');
           } else if (targetEvent.status === 'in_process') {
             setActiveTab('in_process');
-          } else if (targetEvent.status === 'declined') {
+          } else if (targetEvent.status === 'declined' || targetEvent.status === 'postponed') {
             setActiveTab('declined');
-          } else if (targetEvent.status === 'postponed') {
-            setActiveTab('postponed');
           } else {
             setActiveTab('new');
           }
