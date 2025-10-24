@@ -417,7 +417,6 @@ export default function TeamBoard() {
     updateItemMutation.mutate({
       id: item.id,
       updates: {
-        status: 'claimed',
         assignedTo: [...currentAssignedTo, user.id],
         assignedToNames: [...currentAssignedToNames, displayName],
       },
@@ -442,7 +441,6 @@ export default function TeamBoard() {
     updateItemMutation.mutate({
       id: item.id,
       updates: {
-        status: currentAssignedTo.length === 0 ? 'claimed' : item.status,
         assignedTo: [...currentAssignedTo, member.id],
         assignedToNames: [...currentAssignedToNames, member.name],
       },
@@ -503,7 +501,6 @@ export default function TeamBoard() {
     updateItemMutation.mutate({
       id: item.id,
       updates: {
-        status: newAssignedTo.length === 0 ? 'open' : item.status,
         assignedTo: newAssignedTo.length === 0 ? null : newAssignedTo,
         assignedToNames: newAssignedToNames.length === 0 ? null : newAssignedToNames,
       },

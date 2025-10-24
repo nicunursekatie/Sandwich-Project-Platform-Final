@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
 import {
   Card,
   CardContent,
@@ -60,6 +61,7 @@ export default function MeetingCalendar({
   isEmbedded = false,
 }: MeetingCalendarProps) {
   const [, setLocation] = useLocation();
+  const { setActiveSection } = useDashboardNavigation();
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(
@@ -236,9 +238,7 @@ export default function MeetingCalendar({
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              (window as any).dashboardSetActiveSection?.('meetings')
-            }
+            onClick={() => setActiveSection('meetings')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
