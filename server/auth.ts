@@ -87,7 +87,7 @@ declare global {
 }
 
 // Official authentication system for The Sandwich Project
-export function setupTempAuth(app: Express) {
+export function setupAuth(app: Express) {
   // GET route for login page with registration capability
   app.get('/api/login', (req, res) => {
     const loginHtml = `
@@ -704,7 +704,7 @@ export function setupTempAuth(app: Express) {
     }
   });
 
-  // Legacy temp login endpoint (for backwards compatibility)
+  // Legacy login endpoint (for backward compatibility - development/testing only)
   app.post('/api/temp-login', async (req: any, res) => {
     try {
       // Get Katie's actual user data for testing
@@ -736,7 +736,7 @@ export function setupTempAuth(app: Express) {
     }
   });
 
-  // Get current user endpoint - TEMP AUTH VERSION
+  // Get current user endpoint (legacy path for backward compatibility)
   app.get('/api/temp-auth/current-user', async (req: any, res) => {
     if (req.session.user) {
       try {
@@ -1081,7 +1081,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
 };
 
 // Initialize authentication system with default admin user and committees
-export async function initializeTempAuth() {
+export async function initializeAuth() {
   console.log('Authentication system initialized');
 
   // Create default admin user if it doesn't exist

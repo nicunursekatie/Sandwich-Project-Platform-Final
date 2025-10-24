@@ -46,7 +46,7 @@ These users need to set new passwords via User Management > Set Password:
 
 ### Files Modified:
 
-1. **server/temp-auth.ts**
+1. **server/auth.ts**
    - Login endpoint now checks `user.password` instead of `user.metadata.password`
    - Added whitespace trimming for mobile keyboard compatibility
    - Password change endpoint updated to use `password` column

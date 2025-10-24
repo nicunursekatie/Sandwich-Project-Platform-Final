@@ -9,7 +9,7 @@ import {
 } from '@shared/schema';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
-import { isAuthenticated } from '../temp-auth';
+import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
 import { AuditLogger } from '../audit-logger';
 import { db } from '../db';

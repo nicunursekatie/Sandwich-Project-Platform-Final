@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { isAuthenticated } from '../temp-auth';
+import { isAuthenticated } from '../auth';
 import { requirePermission } from '../middleware/auth';
 import { sendEmail } from '../sendgrid';
 import { storage } from '../storage';

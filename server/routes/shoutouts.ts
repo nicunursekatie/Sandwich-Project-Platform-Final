@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { isAuthenticated } from '../temp-auth';
+import { isAuthenticated } from '../auth';
 import { requirePermission } from '../middleware/auth';
 import { storage } from '../storage-wrapper';
 import { sendEmail } from '../services/sendgrid';

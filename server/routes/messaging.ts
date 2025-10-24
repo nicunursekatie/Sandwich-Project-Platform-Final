@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { messagingService } from '../services/messaging-service';
-import { isAuthenticated } from '../temp-auth';
+import { isAuthenticated } from '../auth';
 import { AuthenticatedRequest } from '../types';
 
 const router = Router();
