@@ -37,6 +37,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState, useMemo, Suspense, lazy } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { queryClient } from '@/lib/queryClient';
 import SimpleNav from '@/components/simple-nav';
@@ -126,9 +127,19 @@ export default function Dashboard({
 }: {
   initialSection?: string;
 }) {
+  const { trackView } = useActivityTracker();
   const [location, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
+
+  React.useEffect(() => {
+    trackView(
+      'Dashboard',
+      'Dashboard',
+      'Main Dashboard',
+      `User accessed dashboard - section: ${activeSection}`
+    );
+  }, [activeSection, trackView]);
 
   // Parse URL query parameters
   const urlParams = useMemo(() => {
