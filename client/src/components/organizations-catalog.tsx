@@ -93,6 +93,7 @@ interface OrganizationContact {
   tspContactAssigned?: string | null;
   assignedTo?: string | null;
   assignedToName?: string | null;
+  pastEvents?: Array<{ date: string; sandwichCount: number }>;
 }
 
 interface GroupCatalogProps {
@@ -961,6 +962,40 @@ export default function GroupCatalog({
                                     </div>
                                   )}
 
+                                  {/* Past Events List */}
+                                  {org.pastEvents && org.pastEvents.length > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-orange-300">
+                                      <div className="text-xs font-semibold text-gray-700 mb-2">
+                                        Past Events:
+                                      </div>
+                                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                                        {org.pastEvents.map((event, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex items-center justify-between text-xs bg-white/60 px-2 py-1 rounded"
+                                          >
+                                            <div className="flex items-center space-x-2">
+                                              <Calendar className="w-3 h-3 text-teal-600" />
+                                              <span className="text-gray-700">
+                                                {formatDateForDisplay(event.date)}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-semibold text-orange-700">
+                                                {event.sandwichCount}
+                                              </span>
+                                              <img 
+                                                src="/attached_assets/LOGOS/sandwich logo.png" 
+                                                alt="sandwich" 
+                                                className="w-3 h-3 object-contain"
+                                              />
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
                                 </div>
                               </div>
                             </div>
@@ -1263,6 +1298,40 @@ export default function GroupCatalog({
                                       </span>
                                     </div>
                                   </div>
+
+                                  {/* Past Events List - Compact */}
+                                  {org.pastEvents && org.pastEvents.length > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-orange-300">
+                                      <div className="text-xs font-semibold text-gray-700 mb-1">
+                                        Past Events:
+                                      </div>
+                                      <div className="space-y-1 max-h-24 overflow-y-auto">
+                                        {org.pastEvents.map((event, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex items-center justify-between bg-white/60 px-1.5 py-0.5 rounded"
+                                          >
+                                            <div className="flex items-center space-x-1">
+                                              <Calendar className="w-2.5 h-2.5 text-teal-600" />
+                                              <span className="text-gray-700" style={{ fontSize: '10px' }}>
+                                                {formatDateForDisplay(event.date)}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-semibold text-orange-700" style={{ fontSize: '10px' }}>
+                                                {event.sandwichCount}
+                                              </span>
+                                              <img 
+                                                src="/attached_assets/LOGOS/sandwich logo.png" 
+                                                alt="sandwich" 
+                                                className="w-2.5 h-2.5 object-contain"
+                                              />
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </CardHeader>

@@ -209,6 +209,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
               totalSandwiches: 0,
               eventCount: 0,
               eventDates: new Set(),
+              pastEvents: [], // NEW: Track individual past events
             });
           }
 
@@ -219,6 +220,12 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           if (collectionDate) {
             orgData.eventDates.add(collectionDate);
             orgData.eventCount = orgData.eventDates.size;
+            
+            // NEW: Add individual past event details
+            orgData.pastEvents.push({
+              date: collectionDate,
+              sandwichCount: sandwichCount || 0,
+            });
           }
         };
 
@@ -293,6 +300,11 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         // Find existing department entries for this organization using canonical matching
         let foundExisting = false;
 
+        // Sort past events by date (most recent first)
+        const sortedPastEvents = (orgData.pastEvents || []).sort((a: any, b: any) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
         departmentsMap.forEach((dept, key) => {
           if (dept.canonicalName === canonicalOrgName) {
             foundExisting = true;
@@ -300,6 +312,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             dept.actualEventCount = orgData.eventCount;
             dept.eventFrequency = calculateEventFrequency(orgData.eventDates);
             dept.hasHostedEvent = true;
+            dept.pastEvents = sortedPastEvents; // NEW: Add past events list
 
             // Update latest collection date and calculate latest activity date
             const latestCollectionDate = Math.max(
@@ -345,6 +358,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             latestCollectionDate: new Date(latestCollectionDate)
               .toISOString()
               .split('T')[0],
+            pastEvents: sortedPastEvents, // NEW: Add past events list
           });
         }
       });
@@ -415,6 +429,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           tspContactAssigned: dept.tspContactAssigned || null,
           assignedTo: dept.assignedTo || null,
           assignedToName: dept.assignedToName || null,
+          pastEvents: dept.pastEvents || [], // NEW: Include past events list
         });
       });
 
