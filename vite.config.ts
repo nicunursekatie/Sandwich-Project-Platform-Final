@@ -37,7 +37,7 @@ export default defineConfig({
         // Manual chunk splitting for better caching
         manualChunks: {
           // Vendor chunks for better caching
-          'react-vendor': ['react', 'react-dom', 'react-router-dom', 'wouter'],
+          'react-vendor': ['react', 'react-dom', 'wouter'],
           'ui-vendor': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-dropdown-menu',
