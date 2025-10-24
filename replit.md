@@ -36,6 +36,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Sandwich Forecasting Accuracy**: Uses actual recorded counts for completed events and estimated counts for scheduled/in-process events.
 -   **24-Hour Volunteer Reminder System**: Automated email reminder system via cron job.
 -   **Team Board Commenting System**: Full-featured commenting system with real-time comment counts and author-specific deletion.
+-   **Team Board Multi-User Assignment**: Team board items support multiple assignees via text[] arrays for assignedTo and assignedToNames fields, with individual remove buttons and multi-select UI.
 -   **Guided Tour UX Improvements**: Enhanced tutorial experience with reduced overlay dimming and improved scrolling behavior.
 
 **Email System Configuration (CRITICAL):**
