@@ -229,24 +229,26 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
         };
 
-        // Process legacy group data
-        if (collection.group1Name && collection.group1Count) {
-          processOrganization(collection.group1Name, collection.group1Count);
-        }
-        if (collection.group2Name && collection.group2Count) {
-          processOrganization(collection.group2Name, collection.group2Count);
-        }
-
-        // Process new JSON group collections data
+        // Process group data: prioritize JSON groupCollections to avoid duplicates
         if (
           collection.groupCollections &&
-          Array.isArray(collection.groupCollections)
+          Array.isArray(collection.groupCollections) &&
+          collection.groupCollections.length > 0
         ) {
+          // Use new JSON group collections data (preferred)
           collection.groupCollections.forEach((group: any) => {
             if (group.name && group.count) {
               processOrganization(group.name, group.count);
             }
           });
+        } else {
+          // Fall back to legacy group data only if JSON is empty
+          if (collection.group1Name && collection.group1Count) {
+            processOrganization(collection.group1Name, collection.group1Count);
+          }
+          if (collection.group2Name && collection.group2Count) {
+            processOrganization(collection.group2Name, collection.group2Count);
+          }
         }
       });
 
