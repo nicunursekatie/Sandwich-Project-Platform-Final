@@ -86,6 +86,7 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
       '/api/user-activity', // Don't log activity API calls themselves
       '/api/enhanced-user-activity', // Don't log enhanced analytics API calls
       '/api/notifications/counts', // Skip notification polling
+      '/stats', // Skip all stats endpoints - they're just data fetches
     ];
 
     const shouldSkip =
