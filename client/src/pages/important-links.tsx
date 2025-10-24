@@ -19,12 +19,23 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 
 export default function ImportantLinks() {
   const [isLoading, setIsLoading] = useState(false);
   const [eventsZoomLevel, setEventsZoomLevel] = useState(85);
   const [userSheetZoomLevel, setUserSheetZoomLevel] = useState(85);
   const { track } = useOnboardingTracker();
+  const { trackView, trackClick } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Links',
+      'Links',
+      'Important Links',
+      'User accessed important links page'
+    );
+  }, [trackView]);
 
   // URLs for all the important links
   const inventoryCalculatorUrl =

@@ -41,16 +41,27 @@ import {
   Pie,
 } from 'recharts';
 import { apiRequest } from '@/lib/queryClient';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MonthlyComparisonAnalytics from '@/components/monthly-comparison-analytics';
 import ActionCenter from '@/components/action-center';
 import PredictiveForecasts from '@/components/predictive-forecasts';
 import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 
 export default function ImpactDashboard() {
+  const { trackView, trackClick } = useActivityTracker();
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>(
     'monthly'
   );
+
+  useEffect(() => {
+    trackView(
+      'Analytics',
+      'Analytics',
+      'Impact Dashboard',
+      'User accessed impact dashboard'
+    );
+  }, [trackView]);
   const [dateRange, setDateRange] = useState<'3months' | '6months' | '1year' | 'all'>('1year');
   const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
   

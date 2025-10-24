@@ -2,8 +2,21 @@ import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import SimpleNav from '@/components/simple-nav';
 import AnalyticsDashboard from '@/components/analytics-dashboard';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
 
 export default function AnalyticsPage() {
+  const { trackView } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Analytics',
+      'Analytics',
+      'Analytics Page',
+      'User accessed analytics page'
+    );
+  }, [trackView]);
+
   return (
     <div className="bg-slate-50 min-h-screen flex flex-col">
       {/* Top Header */}

@@ -7,9 +7,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
 
 export default function WorkLogPage() {
   const { user } = useAuth();
+  const { trackView, trackFormSubmit } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Work Log',
+      'Work Log',
+      'Work Log Page',
+      'User accessed work log page'
+    );
+  }, [trackView]);
 
   // Simplified permissions: CREATE_WORK_LOGS automatically includes edit/delete own permissions
   const canCreateLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD);

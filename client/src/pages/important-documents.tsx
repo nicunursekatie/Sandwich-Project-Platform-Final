@@ -26,6 +26,7 @@ import { ConfidentialDocuments } from '@/components/confidential-documents';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Dialog,
   DialogContent,
@@ -315,9 +316,20 @@ export default function ImportantDocuments() {
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuth();
   const { track } = useOnboardingTracker();
+  const { trackView, trackClick } = useActivityTracker();
   const [previewDocument, setPreviewDocument] = useState<AdminDocument | null>(
     null
   );
+
+  // Track page view for activity tracking
+  useEffect(() => {
+    trackView(
+      'Documents',
+      'Documents',
+      'Important Documents',
+      'User accessed important documents page'
+    );
+  }, [trackView]);
 
   // Track page visit for onboarding challenge
   useEffect(() => {
