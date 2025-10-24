@@ -838,11 +838,11 @@ export default function GroupCatalog({
                           )}
 
                           {/* Events Grid for this Department */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 w-full">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
                             {deptEvents.map((org, index) => (
                               <Card
                                 key={`${org.organizationName}-${org.contactName}-${index}`}
-                                className={`hover:shadow-lg transition-all duration-300 border-l-4 max-w-sm w-full ${
+                                className={`hover:shadow-lg transition-all duration-300 border-l-4 w-full ${
                                   org.status === 'declined'
                                     ? 'border-l-4 border-2 shadow-xl'
                                     : 'bg-gradient-to-br from-white to-orange-50 border-l-4'
@@ -858,24 +858,24 @@ export default function GroupCatalog({
                                     : { borderLeftColor: '#FBAD3F' }
                                 }
                               >
-                                <CardHeader className="pb-2 px-3 pt-3">
+                                <CardHeader className="pb-3 px-4 pt-4">
                                   {/* Event Date - Primary Focus */}
                                   {org.eventDate ? (
-                                    <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                                    <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
                                       <Calendar className="w-4 h-4 text-teal-600" />
                                       <span className="font-medium">
                                         {formatDateForDisplay(org.eventDate)}
                                       </span>
                                     </div>
                                   ) : (
-                                    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+                                    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-3">
                                       <Calendar className="w-4 h-4 text-gray-400" />
                                       <span>No date specified</span>
                                     </div>
                                   )}
 
                                   {/* Contact Information */}
-                                  <div className="space-y-1 mb-2">
+                                  <div className="space-y-1 mb-3">
                                     <div className="flex items-center space-x-1 text-sm">
                                       <User className="w-4 h-4 text-teal-600" />
                                       <span className="font-medium text-gray-900 truncate">
@@ -901,7 +901,7 @@ export default function GroupCatalog({
                                   </div>
 
                                   {/* Status and Metrics */}
-                                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-2 border border-orange-200 rounded text-xs mt-2">
+                                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-2 border border-orange-200 rounded text-xs mt-3">
                                     <div className="flex items-center justify-between mb-1">
                                       <Badge
                                         className={getStatusBadgeColor(org.status)}
@@ -989,7 +989,7 @@ export default function GroupCatalog({
                                   </div>
                                 </CardHeader>
 
-                                <CardContent className="pt-0 px-3 pb-3">
+                                <CardContent className="pt-0 px-4 pb-4">
                                   {/* View Complete History Button */}
                                   <Button
                                     onClick={() => {
