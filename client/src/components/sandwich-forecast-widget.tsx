@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import type { EventRequest } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 export default function SandwichForecastWidget() {
   const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
@@ -119,7 +120,7 @@ export default function SandwichForecastWidget() {
 
         // Debug logging for event grouping
         if (eventDate.getDay() === 5) { // Friday
-          console.log('🔍 Friday Event Grouping:', {
+          logger.log('🔍 Friday Event Grouping:', {
             org: request.organizationName,
             eventDate: eventDate.toDateString(),
             eventDayOfWeek: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][eventDate.getDay()],
@@ -172,7 +173,7 @@ export default function SandwichForecastWidget() {
           weeklyData[weekKey].pendingCount += sandwichCount;
         }
       } catch (error) {
-        console.warn('Error processing event date:', request.desiredEventDate);
+        logger.warn('Error processing event date:', request.desiredEventDate);
       }
     });
 

@@ -25,6 +25,7 @@ import {
   Edit,
 } from 'lucide-react';
 import { useEventMutations } from '../hooks/useEventMutations';
+import { logger } from '@/lib/logger';
 
 interface TspContactAssignmentDialogProps {
   isOpen: boolean;
@@ -134,7 +135,7 @@ export const TspContactAssignmentDialog: React.FC<TspContactAssignmentDialogProp
       });
       onClose();
     } catch (error) {
-      console.error('Failed to assign TSP contact:', error);
+      logger.error('Failed to assign TSP contact:', error);
     } finally {
       setIsSubmitting(false);
     }

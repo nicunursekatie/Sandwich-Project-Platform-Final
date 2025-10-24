@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from './useAuth';
+import { logger } from '@/lib/logger';
 
 interface Message {
   id: number;
@@ -38,7 +39,7 @@ export function useMessageReads() {
       });
     },
     onError: (error) => {
-      console.error('Failed to mark messages as read:', error);
+      logger.error('Failed to mark messages as read:', error);
     },
   });
 

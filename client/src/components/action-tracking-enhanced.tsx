@@ -37,6 +37,7 @@ import {
   X,
 } from 'lucide-react';
 import { format, isValid, subDays, subMonths } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 interface Project {
   id: number;
@@ -202,7 +203,7 @@ const ActionTracking = () => {
       refetchEvents();
     },
     onError: (error) => {
-      console.error('Error marking follow-up complete:', error);
+      logger.error('Error marking follow-up complete:', error);
       toast({
         title: 'Error',
         description: 'Failed to mark follow-up as complete. Please try again.',

@@ -27,6 +27,7 @@ import {
   ErrorRecoveryAction,
   DynamicErrorManager,
 } from '@shared/error-management';
+import { logger } from '@/lib/logger';
 
 interface DynamicErrorMessageProps {
   error: DynamicErrorMessage;
@@ -72,7 +73,7 @@ export function DynamicErrorMessageDisplay({
         break;
       case 'custom':
         // Custom actions should be handled by the parent component
-        console.warn(
+        logger.warn(
           'Custom action needs to be handled by parent component:',
           action.target
         );
@@ -304,7 +305,7 @@ export function useDynamicError() {
           .catch(() => alert('Network connection appears to be down.'));
         break;
       default:
-        console.warn('Unhandled custom action:', action.target);
+        logger.warn('Unhandled custom action:', action.target);
     }
   }, []);
 
@@ -338,7 +339,7 @@ export class DynamicErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+    logger.error('Error caught by boundary:', error, errorInfo);
   }
 
   render() {

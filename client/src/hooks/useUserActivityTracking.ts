@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useAuth } from './useAuth';
+import { logger } from '@/lib/logger';
 
 interface TrackEventParams {
   action: string;
@@ -42,7 +43,7 @@ export function useUserActivityTracking() {
       });
     } catch (error) {
       // Silent fail - don't disrupt user experience if tracking fails
-      console.warn('Failed to track user activity:', error);
+      logger.warn('Failed to track user activity:', error);
     }
   }, [user?.id]);
 

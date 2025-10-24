@@ -65,6 +65,7 @@ import type { ToastActionElement } from '@/components/ui/toast';
 // Import types from hooks
 import type { Meeting } from '../hooks/useMeetings';
 import type { Project } from '../hooks/useProjects';
+import { logger } from '@/lib/logger';
 
 // Toast function type
 type ToastFunction = (props: {
@@ -142,12 +143,12 @@ export function NotesTab({
 
   // Debug logging for notes
   React.useEffect(() => {
-    console.log('[NotesTab] Current filters:', filters);
-    console.log('[NotesTab] Notes received from hook:', notes.length, 'notes');
+    logger.log('[NotesTab] Current filters:', filters);
+    logger.log('[NotesTab] Notes received from hook:', notes.length, 'notes');
     if (notes.length > 0) {
-      console.log('[NotesTab] Sample notes (first 3):');
+      logger.log('[NotesTab] Sample notes (first 3):');
       notes.slice(0, 3).forEach(note => {
-        console.log({
+        logger.log({
           id: note.id,
           projectId: note.projectId,
           meetingId: note.meetingId,

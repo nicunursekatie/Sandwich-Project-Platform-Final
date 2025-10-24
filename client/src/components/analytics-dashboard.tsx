@@ -48,24 +48,24 @@ export default function AnalyticsDashboard() {
   // Force complete cache busting and debugging
   const [debugKey] = useState(() => `analytics-v4-${Date.now()}-${Math.random()}`);
   
-  console.log('\n🚀 ANALYTICS DASHBOARD v4 - COMPONENT LOADING:', debugKey);
-  console.log('🔐 Auth status:', { user: !!user, authLoading, userEmail: user?.email });
+  logger.log('\n🚀 ANALYTICS DASHBOARD v4 - COMPONENT LOADING:', debugKey);
+  logger.log('🔐 Auth status:', { user: !!user, authLoading, userEmail: user?.email });
   
   const { data: collections, isLoading: collectionsLoading } = useQuery<
     SandwichCollection[]
   >({
     queryKey: ['/api/sandwich-collections/all', debugKey], // Unique key per component instance
     queryFn: async () => {
-      console.log('\n🔄 ANALYTICS v4: Fetching collections with key:', debugKey);
+      logger.log('\n🔄 ANALYTICS v4: Fetching collections with key:', debugKey);
       const response = await fetch(`/api/sandwich-collections?limit=10000&cache=${Date.now()}`, {
         credentials: 'include',
       });
       if (!response.ok) {
-        console.error('❌ Failed to fetch collections:', response.status, response.statusText);
+        logger.error('❌ Failed to fetch collections:', response.status, response.statusText);
         throw new Error(`Failed to fetch collections: ${response.status}`);
       }
       const data = await response.json();
-      console.log('✅ ANALYTICS v4: Successfully fetched', data.collections?.length || 0, 'collections');
+      logger.log('✅ ANALYTICS v4: Successfully fetched', data.collections?.length || 0, 'collections');
       return data.collections || [];
     },
     enabled: !!user && !authLoading, // Only run when user is authenticated
@@ -97,7 +97,7 @@ export default function AnalyticsDashboard() {
   const isLoading = authLoading || collectionsLoading || statsLoading || hostsLoading;
 
   const analyticsData = useMemo(() => {
-    console.log('\n📊 ANALYTICS v4 - COMPUTING DATA:', {
+    logger.log('\n📊 ANALYTICS v4 - COMPUTING DATA:', {
       collectionsCount: collections?.length || 0,
       hasStatsData: !!statsData,
       hasHostsData: !!hostsData,
@@ -105,7 +105,7 @@ export default function AnalyticsDashboard() {
     });
     
     if (!collections?.length || !statsData || !hostsData) {
-      console.log('⚠️ ANALYTICS v4: Missing required data, returning null');
+      logger.log('⚠️ ANALYTICS v4: Missing required data, returning null');
       return null;
     }
 
@@ -132,17 +132,17 @@ export default function AnalyticsDashboard() {
     // ===============================
     // BULLETPROOF ANALYTICS FIX v5 - FINAL COMPREHENSIVE SOLUTION
     // ===============================
-    console.log('\n🔥 ANALYTICS DASHBOARD v5 - BULLETPROOF FIX STARTING');
-    console.log('🆕 Debug Key:', debugKey);
-    console.log('📅 Current time:', new Date().toISOString());
-    console.log('📊 Total collections to process:', collections.length);
+    logger.log('\n🔥 ANALYTICS DASHBOARD v5 - BULLETPROOF FIX STARTING');
+    logger.log('🆕 Debug Key:', debugKey);
+    logger.log('📅 Current time:', new Date().toISOString());
+    logger.log('📊 Total collections to process:', collections.length);
     
     // Declare trendData outside try/catch for proper scoping
     let trendData: { month: string; sandwiches: number }[] = [];
     
     try {
       // STEP 1: DATA AGGREGATION - Build monthly totals with bulletproof calculation
-      console.log('\n📊 STEP 1: AGGREGATING MONTHLY DATA');
+      logger.log('\n📊 STEP 1: AGGREGATING MONTHLY DATA');
       
       const monthlyTotals: Record<string, number> = {};
       let totalProcessed = 0;
@@ -152,14 +152,14 @@ export default function AnalyticsDashboard() {
       collections.forEach((collection, index) => {
         const dateStr = collection.collectionDate;
         if (!dateStr) {
-          console.log(`⚠️ Skipping collection ${index}: No date`);
+          logger.log(`⚠️ Skipping collection ${index}: No date`);
           return;
         }
         
         // Extract YYYY-MM from date string (bulletproof parsing)
         const monthKey = getCollectionMonthKey(dateStr);
         if (!monthKey) {
-          console.log(`⚠️ Skipping collection ${index}: Invalid date format: ${dateStr}`);
+          logger.log(`⚠️ Skipping collection ${index}: Invalid date format: ${dateStr}`);
           return;
         }
         
@@ -181,7 +181,7 @@ export default function AnalyticsDashboard() {
           august2025Count++;
           
           if (august2025Count <= 3) { // Log first 3 for debugging
-            console.log(`🎆 August 2025 collection ${august2025Count}:`, {
+            logger.log(`🎆 August 2025 collection ${august2025Count}:`, {
               date: dateStr,
               host: collection.hostName,
               individual,
@@ -193,24 +193,24 @@ export default function AnalyticsDashboard() {
         }
       });
       
-      console.log('📊 Processed', totalProcessed, 'collections');
-      console.log('📅 Found data for months:', Object.keys(monthlyTotals).sort());
-      console.log('🎯 August 2025 VERIFICATION:');
-      console.log('  - Collections found:', august2025Count);
-      console.log('  - Total calculated:', august2025Total.toLocaleString());
-      console.log('  - Expected total: 26,009');
-      console.log('  - Match status:', august2025Total === 26009 ? '✅ EXACT MATCH' : '❌ MISMATCH');
+      logger.log('📊 Processed', totalProcessed, 'collections');
+      logger.log('📅 Found data for months:', Object.keys(monthlyTotals).sort());
+      logger.log('🎯 August 2025 VERIFICATION:');
+      logger.log('  - Collections found:', august2025Count);
+      logger.log('  - Total calculated:', august2025Total.toLocaleString());
+      logger.log('  - Expected total: 26,009');
+      logger.log('  - Match status:', august2025Total === 26009 ? '✅ EXACT MATCH' : '❌ MISMATCH');
       
       // STEP 2: TIMELINE GENERATION - Create bulletproof chronological sequence
-      console.log('\n📈 STEP 2: GENERATING BULLETPROOF TIMELINE (EXCLUDING CURRENT MONTH)');
+      logger.log('\n📈 STEP 2: GENERATING BULLETPROOF TIMELINE (EXCLUDING CURRENT MONTH)');
       
       const today = new Date();
       const currentYear = today.getFullYear();
       const currentMonth = today.getMonth(); // 0-based: September = 8
       
-      console.log('📅 Reference date:', today.toISOString().split('T')[0]);
-      console.log('📅 Current year:', currentYear, '| Current month (0-based):', currentMonth);
-      console.log('🚫 EXCLUDING current month to prevent incomplete data trend');
+      logger.log('📅 Reference date:', today.toISOString().split('T')[0]);
+      logger.log('📅 Current year:', currentYear, '| Current month (0-based):', currentMonth);
+      logger.log('🚫 EXCLUDING current month to prevent incomplete data trend');
       
       // Generate 12 months chronologically: [oldest ... newest] - EXCLUDING current month
       const chartData: { month: string; sandwiches: number }[] = [];
@@ -237,13 +237,13 @@ export default function AnalyticsDashboard() {
           sandwiches: monthTotal
         });
         
-        console.log(`📅 Position ${i + 1}/12: ${displayName} (${monthKey}) = ${monthTotal.toLocaleString()} sandwiches`);
+        logger.log(`📅 Position ${i + 1}/12: ${displayName} (${monthKey}) = ${monthTotal.toLocaleString()} sandwiches`);
       }
       
       // STEP 3: VERIFICATION - Ensure timeline is correct
-      console.log('\n🔍 STEP 3: FINAL VERIFICATION');
-      console.log('📅 Timeline order: [OLDEST] ' + chartData.map(d => d.month).join(' → ') + ' [NEWEST]');
-      console.log('🎯 Chart data length:', chartData.length);
+      logger.log('\n🔍 STEP 3: FINAL VERIFICATION');
+      logger.log('📅 Timeline order: [OLDEST] ' + chartData.map(d => d.month).join(' → ') + ' [NEWEST]');
+      logger.log('🎯 Chart data length:', chartData.length);
       
       // Check for August 2025 in chart data
       const augustChartEntry = chartData.find(d => {
@@ -253,25 +253,25 @@ export default function AnalyticsDashboard() {
       });
       
       if (augustChartEntry) {
-        console.log('🎯 August 2025 in chart:', augustChartEntry.month, '=', augustChartEntry.sandwiches.toLocaleString());
+        logger.log('🎯 August 2025 in chart:', augustChartEntry.month, '=', augustChartEntry.sandwiches.toLocaleString());
         if (augustChartEntry.sandwiches === 26009) {
-          console.log('✅ AUGUST DATA PERFECT MATCH!');
+          logger.log('✅ AUGUST DATA PERFECT MATCH!');
         } else {
-          console.log('❌ AUGUST DATA MISMATCH! Expected: 26,009, Got:', augustChartEntry.sandwiches);
+          logger.log('❌ AUGUST DATA MISMATCH! Expected: 26,009, Got:', augustChartEntry.sandwiches);
         }
       } else {
-        console.log('⚠️ August 2025 not found in chart data');
+        logger.log('⚠️ August 2025 not found in chart data');
       }
       
       trendData = chartData;
       
-      console.log('\n✅ BULLETPROOF ANALYTICS v5 COMPLETE!');
-      console.log('🚀 Timeline fixed: Chronological order verified');
-      console.log('🚀 August data fixed: Total verified');
-      console.log('🚀 Ready for chart rendering\n');
+      logger.log('\n✅ BULLETPROOF ANALYTICS v5 COMPLETE!');
+      logger.log('🚀 Timeline fixed: Chronological order verified');
+      logger.log('🚀 August data fixed: Total verified');
+      logger.log('🚀 Ready for chart rendering\n');
       
     } catch (error) {
-      console.error('❌ ANALYTICS v5 ERROR:', error);
+      logger.error('❌ ANALYTICS v5 ERROR:', error);
       // Fallback to empty data to prevent crashes
       trendData = Array.from({ length: 12 }, (_, i) => ({
         month: `Month ${i + 1}`,

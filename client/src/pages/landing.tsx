@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { DocumentsBrowser } from '@/components/documents-browser';
 import tspLogo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 import tspTransparent from '@assets/LOGOS/Copy of TSP_transparent.png';
+import { logger } from '@/lib/logger';
 
 export default function Landing() {
   const [showToolkit, setShowToolkit] = useState(false);
@@ -102,7 +103,7 @@ export default function Landing() {
               variant="outline"
               size="lg"
               onClick={() => {
-                console.log(
+                logger.log(
                   'Toolkit button clicked, current state:',
                   showToolkit
                 );

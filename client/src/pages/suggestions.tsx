@@ -71,6 +71,7 @@ import { hasPermission } from '@shared/auth-utils';
 import { MessageComposer } from '@/components/message-composer';
 import { useMessaging } from '@/hooks/useMessaging';
 import { useUserActivityTracking } from '@/hooks/useUserActivityTracking';
+import { logger } from '@/lib/logger';
 
 // Schema for suggestion form
 const suggestionSchema = z.object({
@@ -262,7 +263,7 @@ export default function SuggestionsPortal() {
       });
     },
     onError: (error) => {
-      console.error('Failed to delete suggestion:', error);
+      logger.error('Failed to delete suggestion:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete suggestion. Please try again.',

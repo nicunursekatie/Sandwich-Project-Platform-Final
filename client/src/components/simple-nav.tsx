@@ -9,6 +9,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { HelpBubble } from '@/components/help-system/HelpBubble';
 import { NavItem } from '@/nav.types';
 import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
+import { logger } from '@/lib/logger';
 
 export default function SimpleNav({
   navigationItems,
@@ -35,7 +36,7 @@ export default function SimpleNav({
           const response = await apiRequest('GET', '/api/emails/unread-count');
           return typeof response?.count === 'number' ? response.count : 0;
         } catch (error) {
-          console.warn('Gmail unread count fetch failed:', error);
+          logger.warn('Gmail unread count fetch failed:', error);
           return 0;
         }
       },
@@ -53,7 +54,7 @@ export default function SimpleNav({
           const response = await apiRequest('GET', '/api/event-reminders/count');
           return typeof response?.count === 'number' ? response.count : 0;
         } catch (error) {
-          console.warn('Event reminders count fetch failed:', error);
+          logger.warn('Event reminders count fetch failed:', error);
           return 0;
         }
       },
@@ -167,7 +168,7 @@ export default function SimpleNav({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Navigation click:', item.href);
+                logger.log('Navigation click:', item.href);
                 onSectionChange(item.href);
               }}
               title={isCollapsed ? item.label : undefined}
@@ -209,7 +210,7 @@ export default function SimpleNav({
       </nav>
     );
   } catch (error) {
-    console.error('SimpleNav rendering error:', error);
+    logger.error('SimpleNav rendering error:', error);
     return (
       <nav className="flex flex-col gap-1 p-2">
         <div className="text-sm text-red-500">Navigation error</div>

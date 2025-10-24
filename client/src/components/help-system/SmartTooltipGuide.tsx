@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from './useSmartGuide';
+import { logger } from '@/lib/logger';
 
 // Define comprehensive guide content based on user context
 export interface GuideStep {
@@ -140,7 +141,7 @@ const createGuideSequences = (context: UserContext): GuideSequence[] => {
           actions: {
             primary: {
               label: 'Try It Now',
-              action: () => console.log('Navigate to collections'),
+              action: () => logger.log('Navigate to collections'),
             },
           },
         },

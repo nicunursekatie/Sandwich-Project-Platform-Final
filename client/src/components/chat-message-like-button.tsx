@@ -10,6 +10,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
+import { logger } from '@/lib/logger';
 
 interface ChatMessageLike {
   id: number;
@@ -35,7 +36,7 @@ export function ChatMessageLikeButton({
   const numericMessageId = Number(messageId);
 
   // Debug logging
-  console.log('ChatMessageLikeButton rendered:', {
+  logger.log('ChatMessageLikeButton rendered:', {
     messageId,
     numericMessageId,
     user: user?.id,
@@ -81,7 +82,7 @@ export function ChatMessageLikeButton({
       });
     },
     onError: (error) => {
-      console.error('Error toggling chat message like:', error);
+      logger.error('Error toggling chat message like:', error);
     },
   });
 

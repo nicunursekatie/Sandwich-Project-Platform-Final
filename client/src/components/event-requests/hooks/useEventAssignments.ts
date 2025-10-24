@@ -4,6 +4,7 @@ import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventMutations } from './useEventMutations';
 import { useEventQueries } from './useEventQueries';
 import type { EventRequest } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 export const useEventAssignments = () => {
   const { toast } = useToast();
@@ -63,7 +64,7 @@ export const useEventAssignments = () => {
         const contactId = userIdOrName.replace('host-contact-', '');
         const numericContactId = parseInt(contactId);
         
-        console.log('🔍 RESOLVING HOST CONTACT:', { 
+        logger.log('🔍 RESOLVING HOST CONTACT:', { 
           userIdOrName, 
           contactId, 
           numericContactId,
@@ -75,18 +76,18 @@ export const useEventAssignments = () => {
         if (hostsWithContacts && hostsWithContacts.length > 0) {
           // Find the contact in hostsWithContacts
           for (const host of hostsWithContacts) {
-            console.log('🔍 Checking host:', host.name, 'contacts:', host.contacts?.length || 0);
+            logger.log('🔍 Checking host:', host.name, 'contacts:', host.contacts?.length || 0);
             const contact = host.contacts?.find((c: any) => c.id === numericContactId);
             if (contact) {
               const contactName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.name || contact.email;
-              console.log('✅ FOUND HOST CONTACT:', contactName);
+              logger.log('✅ FOUND HOST CONTACT:', contactName);
               return contactName || `Contact #${contactId}`;
             }
           }
         }
         
         // If hostsWithContacts not loaded yet, show loading state instead of raw ID
-        console.warn(`❌ Host contact data not loaded or contact not found: ${userIdOrName}`);
+        logger.warn(`❌ Host contact data not loaded or contact not found: ${userIdOrName}`);
         return 'Loading...';
       }
 
@@ -103,7 +104,7 @@ export const useEventAssignments = () => {
           return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.displayName || user.email || 'Unknown User';
         }
         // If user not found in users array, return a more readable format
-        console.warn(`TSP Contact user not found: ${userIdOrName}`);
+        logger.warn(`TSP Contact user not found: ${userIdOrName}`);
         return `User (${userIdOrName.slice(-8)})`;
       }
 
@@ -125,7 +126,7 @@ export const useEventAssignments = () => {
           return `${volunteer.firstName || ''} ${volunteer.lastName || ''}`.trim() || volunteer.name || `Volunteer #${volunteerId}`;
         }
         
-        console.warn(`Volunteer not found: ${userIdOrName}`);
+        logger.warn(`Volunteer not found: ${userIdOrName}`);
         return `Volunteer #${volunteerId}`;
       }
 
@@ -136,25 +137,25 @@ export const useEventAssignments = () => {
         // First try drivers - ensure driver object exists and has required fields
         const driver = drivers.find((d) => d && (d.id === numericId || d.id?.toString() === userIdOrName));
         if (driver && driver.name) {
-          console.log(`Resolved driver: ID=${userIdOrName} => Name=${driver.name}`);
+          logger.log(`Resolved driver: ID=${userIdOrName} => Name=${driver.name}`);
           return driver.name;
         }
         
         // Then try volunteers (speakers are volunteers) - ensure volunteer object exists
         const volunteer = volunteers.find((v) => v && (v.id === numericId || v.id?.toString() === userIdOrName));
         if (volunteer && volunteer.name) {
-          console.log(`Resolved volunteer/speaker: ID=${userIdOrName} => Name=${volunteer.name}`);
+          logger.log(`Resolved volunteer/speaker: ID=${userIdOrName} => Name=${volunteer.name}`);
           return volunteer.name;
         }
         
         // If not found, return a generic placeholder
-        console.warn(`Person not found in resolveUserName: ID=${userIdOrName}`);
+        logger.warn(`Person not found in resolveUserName: ID=${userIdOrName}`);
         return `Person #${userIdOrName}`;
       }
 
       return userIdOrName;
     } catch (error) {
-      console.error('Error in resolveUserName:', error, 'Input:', userIdOrName);
+      logger.error('Error in resolveUserName:', error, 'Input:', userIdOrName);
       return `Error: ${userIdOrName}`;
     }
   };
@@ -255,7 +256,7 @@ export const useEventAssignments = () => {
         description: `Person has been removed from ${type} assignments`,
       });
     } catch (error) {
-      console.error('Failed to remove assignment:', error);
+      logger.error('Failed to remove assignment:', error);
       toast({
         title: 'Removal failed',
         description: 'Failed to remove assignment. Please try again.',
@@ -413,7 +414,7 @@ export const useEventAssignments = () => {
         description: `You have been signed up as a ${type} for this event`,
       });
     } catch (error) {
-      console.error('Failed to self-signup:', error);
+      logger.error('Failed to self-signup:', error);
       toast({
         title: 'Signup failed',
         description: 'Failed to sign up. Please try again.',

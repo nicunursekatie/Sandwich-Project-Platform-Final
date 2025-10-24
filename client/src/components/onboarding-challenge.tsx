@@ -37,6 +37,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface Challenge {
   id: number;
@@ -168,7 +169,7 @@ export default function OnboardingChallenge({
   });
 
   // Debug logging
-  console.log('OnboardingChallenge:', {
+  logger.log('OnboardingChallenge:', {
     challenges: challenges?.length,
     stats,
     leaderboard: leaderboard?.length,

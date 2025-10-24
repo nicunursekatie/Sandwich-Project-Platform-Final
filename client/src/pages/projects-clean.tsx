@@ -53,6 +53,7 @@ import SendKudosButton from '@/components/send-kudos-button';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import { logger } from '@/lib/logger';
 
 // Component to display assignee email
 function AssigneeEmail({ assigneeId }: { assigneeId: string | number }) {
@@ -348,9 +349,9 @@ export default function ProjectsClean() {
       key={project.id}
       className="hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-200 bg-white"
       onClick={() => {
-        console.log('🎯 Project card clicked:', project.id, project.title);
+        logger.log('🎯 Project card clicked:', project.id, project.title);
         setLocation(`/projects/${project.id}`);
-        console.log('🚀 setLocation called with:', `/projects/${project.id}`);
+        logger.log('🚀 setLocation called with:', `/projects/${project.id}`);
       }}
     >
       <CardContent className="p-4">

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { CalendarIcon, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 interface RescheduleDialogProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
       await onReschedule(request.id, selectedDate);
       onClose();
     } catch (error) {
-      console.error('Failed to reschedule event:', error);
+      logger.error('Failed to reschedule event:', error);
     } finally {
       setIsSubmitting(false);
     }

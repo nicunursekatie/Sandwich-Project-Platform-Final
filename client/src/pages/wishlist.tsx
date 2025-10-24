@@ -26,6 +26,7 @@ import {
   Clock,
   Shield,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export default function WishlistPage() {
   const { toast } = useToast();
@@ -92,7 +93,7 @@ export default function WishlistPage() {
       });
     },
     onError: (error) => {
-      console.error('Wishlist submission error:', error);
+      logger.error('Wishlist submission error:', error);
       toast({
         title: 'Submission Failed',
         description:
@@ -129,7 +130,7 @@ export default function WishlistPage() {
       });
     },
     onError: (error) => {
-      console.error('Review error:', error);
+      logger.error('Review error:', error);
       toast({
         title: 'Review Failed',
         description: 'There was an error updating the suggestion',
@@ -154,7 +155,7 @@ export default function WishlistPage() {
       });
     },
     onError: (error) => {
-      console.error('Delete error:', error);
+      logger.error('Delete error:', error);
       toast({
         title: 'Delete Failed',
         description: 'There was an error deleting the suggestion',

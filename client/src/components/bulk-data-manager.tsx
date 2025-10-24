@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { usePermissions } from '@/hooks/useResourcePermissions';
 import {
   Database,
   FileText,
@@ -26,6 +27,7 @@ import {
   Download,
   Scan,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface MappingStats {
   hostName: string;
@@ -61,8 +63,7 @@ export default function BulkDataManager({
   const [showHostRecords, setShowHostRecords] = useState(false);
 
   // Permission checks
-  const canImport = hasPermission(user, PERMISSIONS.DATA_IMPORT);
-  const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
+  const { DATA_IMPORT: canImport, DATA_EXPORT: canExport } = usePermissions(['DATA_IMPORT', 'DATA_EXPORT']);
 
   // Fetch collection statistics
   const { data: stats, isLoading: statsLoading } = useQuery<any>({
@@ -141,7 +142,7 @@ export default function BulkDataManager({
       });
     },
     onError: (error) => {
-      console.error('Data fix failed:', error);
+      logger.error('Data fix failed:', error);
       toast({
         title: 'Fix Failed',
         description: 'There was an error fixing data issues. Please try again.',

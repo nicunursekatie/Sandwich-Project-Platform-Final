@@ -11,6 +11,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/logger';
 
 interface ConfirmationDialogProps {
   trigger: React.ReactNode;
@@ -42,7 +43,7 @@ export function ConfirmationDialog({
       await onConfirm();
       setOpen(false);
     } catch (error) {
-      console.error('Confirmation action failed:', error);
+      logger.error('Confirmation action failed:', error);
     } finally {
       setIsLoading(false);
     }

@@ -35,6 +35,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { logger } from '@/lib/logger';
 
 export interface AdminDocument {
   id: string;
@@ -421,7 +422,7 @@ export default function ImportantDocuments() {
         description: `${displayName} has been downloaded successfully.`,
       });
     } catch (error) {
-      console.error('Download failed:', error);
+      logger.error('Download failed:', error);
       toast({
         title: 'Download Failed',
         description: 'Failed to download logo. Please try again.',
@@ -446,7 +447,7 @@ export default function ImportantDocuments() {
         });
       } catch (error: any) {
         if (error.name !== 'AbortError') {
-          console.error('Share failed:', error);
+          logger.error('Share failed:', error);
           toast({
             title: 'Share Failed',
             description:
@@ -479,7 +480,7 @@ export default function ImportantDocuments() {
         description: `${displayName} has been copied to clipboard.`,
       });
     } catch (error) {
-      console.error('Copy failed:', error);
+      logger.error('Copy failed:', error);
       // Fallback to copying the URL
       const logoUrl = `${window.location.origin}/attached_assets/LOGOS/${filename}`;
       await navigator.clipboard.writeText(logoUrl);
