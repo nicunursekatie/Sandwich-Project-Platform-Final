@@ -2674,7 +2674,6 @@ export default function SandwichCollectionLog() {
             </div>
           )}
         </div>
-      </div>
 
       {/* Bottom Pagination Controls */}
       {totalItems > 0 && <PaginationControls position="bottom" />}

@@ -188,6 +188,17 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                 return log.action?.replace(/_/g, ' ') || 'Activity';
               };
 
+              // Map section names to cleaner display names
+              const sectionMap: Record<string, string> = {
+                'Basic': 'Dashboard',
+                'My volunteers': 'Volunteer Management',
+                'Volunteers': 'Volunteer Directory',
+                'For assignments': 'Team Board',
+                'Count': 'Collection Counts',
+                'Counts': 'Collection Statistics',
+              };
+              const displaySection = log.section ? (sectionMap[log.section] || log.section) : null;
+
               return (
                 <div
                   key={log.id}
@@ -195,9 +206,9 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      {log.section && (
+                      {displaySection && (
                         <Badge variant="outline" className="text-xs">
-                          {log.section}
+                          {displaySection}
                         </Badge>
                       )}
                     </div>
