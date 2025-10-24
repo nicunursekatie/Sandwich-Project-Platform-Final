@@ -136,8 +136,7 @@ export default function GroupCatalog({
       logger.log('✅ Groups catalog received data:', data);
       return data;
     },
-    staleTime: 0, // Always consider data stale so it refetches when invalidated
-    refetchOnWindowFocus: true, // Refetch when window gains focus
+    // Use global defaults (5 min staleTime) - invalidateQueries handles refetch on mutations
   });
 
   // Function to fetch complete event details

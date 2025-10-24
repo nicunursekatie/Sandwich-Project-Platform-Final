@@ -31,7 +31,7 @@ export function ProjectTasksView({ projectId }: ProjectTasksViewProps) {
   const { data: tasks = [], isLoading } = useQuery<ProjectTask[]>({
     queryKey: ['/api/projects', projectId, 'tasks'],
     enabled: !!projectId,
-    staleTime: 0,
+    // Use global defaults (5 min staleTime) - proper cache invalidation after mutations
   });
 
   // Mutation for marking tasks as complete

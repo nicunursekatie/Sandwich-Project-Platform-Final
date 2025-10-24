@@ -68,21 +68,10 @@ export default function TSPContactManager({
       fetch(`/api/recipient-tsp-contacts/${recipientId}`).then((res) =>
         res.json()
       ),
-    staleTime: 0, // Always fresh data for immediate updates
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    gcTime: 0, // Don't cache at all for debugging
+    staleTime: 30 * 1000, // 30 seconds - contact data changes frequently, needs short cache
+    refetchOnWindowFocus: true, // Refetch to see contact updates when user returns
+    // Note: recipientId in queryKey ensures separate cache entries per recipient
   });
-
-  // Clear cache and refetch on mount
-  useEffect(() => {
-    queryClient.removeQueries({
-      queryKey: ['/api/recipient-tsp-contacts', recipientId],
-    });
-    setTimeout(() => {
-      refetch();
-    }, 100);
-  }, [recipientId, refetch]);
 
   // Debug logging
   logger.log('TSP Contact Manager Debug:', {

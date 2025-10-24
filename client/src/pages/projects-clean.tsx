@@ -106,10 +106,8 @@ export default function ProjectsClean() {
     refetch,
   } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
-    staleTime: 0, // Don't cache to ensure fresh data
-    refetchOnWindowFocus: true,
-    refetchOnMount: true, // Always refetch when component mounts
-    gcTime: 0, // Don't keep stale data in cache
+    staleTime: 3 * 60 * 1000, // 3 minutes - projects need reasonable freshness for collaborative updates
+    refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
   // Fetch archived projects data
