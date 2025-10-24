@@ -611,9 +611,6 @@ export class AuditLogger {
         );
       }
 
-      logger.log(`📋 Event Request Audit: ${summary} (${changes.length} total changes)`);
-      console.log(`📋 Event Request Audit: ${summary} (${changes.length} total changes, ${significantChanges.length} significant)`);
-      
     } catch (error) {
       logger.error('Failed to log event request change:', error);
       // Don't throw - audit logging shouldn't break the main operation
