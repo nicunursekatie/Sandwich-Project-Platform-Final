@@ -281,24 +281,24 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
 
   // Fetch host contacts and recipients for recipient display names
-  const { data: hostContacts = [] } = useQuery<Array<{
+  const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
     id: number;
     displayName: string;
     name: string;
     hostLocationName: string;
   }>>({
     queryKey: ['/api/host-contacts'],
-    staleTime: 10 * 60 * 1000,
+    staleTime: 1 * 60 * 1000, // Reduced to 1 minute
   });
 
-  const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
+  const { data: recipients = [], isLoading: recipientsLoading } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ['/api/recipients'],
-    staleTime: 10 * 60 * 1000,
+    staleTime: 1 * 60 * 1000, // Reduced to 1 minute
   });
 
-  const { data: hostLocations = [] } = useQuery<Array<{ id: number; name: string }>>({
+  const { data: hostLocations = [], isLoading: hostLocationsLoading } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ['/api/hosts'],
-    staleTime: 10 * 60 * 1000,
+    staleTime: 1 * 60 * 1000, // Reduced to 1 minute
   });
 
   // Helper to resolve recipient display name from ID
@@ -313,29 +313,36 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     if (!isNaN(Number(recipientId))) {
       const numId = Number(recipientId);
 
-      // Try to find in host contacts first
-      const hostContact = hostContacts.find(h => h.id === numId);
-      if (hostContact) {
-        return {
-          name: hostContact.displayName || hostContact.name || hostContact.hostLocationName || `Host ${numId}`,
-          type: 'host'
-        };
+      // If data is still loading, show loading indicator
+      if (hostContactsLoading || hostLocationsLoading || recipientsLoading) {
+        return { name: `Loading...`, type: 'unknown' };
       }
 
-      // Try to find in host locations
+      // Try to find in host locations FIRST (most common case)
       const hostLocation = hostLocations.find(h => h.id === numId);
       if (hostLocation) {
-        return { name: hostLocation.name, type: 'host' };
+        return { name: hostLocation.name || `Host Location ${numId}`, type: 'host' };
+      }
+
+      // Try to find in host contacts
+      const hostContact = hostContacts.find(h => h.id === numId);
+      if (hostContact) {
+        // Ensure we have a valid name - displayName should always be set by the server
+        const resolvedName = hostContact.displayName || hostContact.name || hostContact.hostLocationName;
+        return {
+          name: resolvedName || `Host Contact ${numId}`,
+          type: 'host'
+        };
       }
 
       // Try to find in recipients
       const recipient = recipients.find(r => r.id === numId);
       if (recipient) {
-        return { name: recipient.name, type: 'recipient' };
+        return { name: recipient.name || `Recipient ${numId}`, type: 'recipient' };
       }
 
-      // Fallback if not found - still loading or doesn't exist
-      return { name: `Loading... (ID ${recipientId})`, type: 'unknown' };
+      // Fallback if not found after all data loaded
+      return { name: `Unknown ID #${recipientId}`, type: 'unknown' };
     }
 
     // Legacy text format
