@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { storage } from '../storage-wrapper';
 import { db } from '../db';
 import { users } from '@shared/schema';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
 import { requirePermission } from '../middleware/auth';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 interface AdminDependencies {
   isAuthenticated: any;

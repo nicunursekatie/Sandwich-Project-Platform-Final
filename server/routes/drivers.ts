@@ -1,7 +1,7 @@
 import express from 'express';
 import type { RouterDependencies } from '../types';
 import { insertDriverSchema } from '@shared/schema';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 
 export function createDriversRouter(deps: RouterDependencies) {

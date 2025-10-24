@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { StreamChat } from 'stream-chat';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export const streamRoutes = Router();
 

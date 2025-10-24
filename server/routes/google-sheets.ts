@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { googleSheets, insertGoogleSheetSchema } from '@shared/schema';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export function createGoogleSheetsRouter(deps: RouterDependencies) {
   const router = Router();

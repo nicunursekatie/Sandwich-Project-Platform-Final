@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { GoogleCalendarService } from '../google-calendar-service';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export function createGoogleCalendarRouter(deps: RouterDependencies) {
   const router = Router();

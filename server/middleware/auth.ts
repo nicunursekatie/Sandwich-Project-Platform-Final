@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 import { storage } from '../storage-wrapper';
 import { PERMISSIONS } from '../../shared/auth-utils';
 import { checkPermission, checkOwnershipPermission } from '../../shared/unified-auth-utils';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 // Single, authoritative requirePermission middleware
 // DENIES ACCESS BY DEFAULT - only grants access if explicitly authorized

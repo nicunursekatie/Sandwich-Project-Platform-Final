@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { onboardingService } from '../services/onboarding-service';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export function createOnboardingRouter(deps: RouterDependencies) {
   const router = Router();

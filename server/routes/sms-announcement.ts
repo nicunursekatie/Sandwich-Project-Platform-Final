@@ -4,7 +4,7 @@ import { requirePermission } from '../middleware/auth';
 import { sendEmail } from '../sendgrid';
 import { storage } from '../storage';
 import { z } from 'zod';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 

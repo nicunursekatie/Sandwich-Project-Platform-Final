@@ -4,7 +4,7 @@ import { z } from 'zod';
 import crypto from 'crypto';
 import sgMail from '@sendgrid/mail';
 import bcrypt from 'bcrypt';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 // Store password reset tokens temporarily (in production, use Redis or database)
 const resetTokens = new Map<

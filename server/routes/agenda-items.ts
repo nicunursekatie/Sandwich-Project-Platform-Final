@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { insertAgendaItemSchema } from '@shared/schema';
 import { IStorage } from '../storage';
 import { AuthMiddleware, AuthenticatedRequest, getUserId } from '../types';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export default function createAgendaItemsRouter(
   isAuthenticated: AuthMiddleware,

@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { messagingService } from '../services/messaging-service';
 import { isAuthenticated } from '../auth';
 import { AuthenticatedRequest } from '../types';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 

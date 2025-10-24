@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 

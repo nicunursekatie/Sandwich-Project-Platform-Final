@@ -4,7 +4,7 @@ import { isAuthenticated } from '../auth';
 import { requirePermission } from '../middleware/auth';
 import { storage } from '../storage-wrapper';
 import { sendEmail } from '../services/sendgrid';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 

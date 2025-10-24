@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { z } from 'zod';
 import { insertSandwichDistributionSchema } from '@shared/schema';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export function createSandwichDistributionsRouter(deps: RouterDependencies) {
   const router = Router();

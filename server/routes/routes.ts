@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { z } from 'zod';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export function createRouteOptimizationRouter(deps: RouterDependencies) {
   const router = Router();

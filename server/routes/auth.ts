@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { storage } from '../storage-wrapper';
 import bcrypt from 'bcrypt';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 interface AuthDependencies {
   isAuthenticated?: any;

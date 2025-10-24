@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type { IStorage } from '../storage';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 const errorLogSchema = z.object({
   error: z.string(),

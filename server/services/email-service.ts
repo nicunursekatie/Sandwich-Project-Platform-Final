@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { emailMessages, users } from '@shared/schema';
 import { eq, and, or, desc, isNull, sql, inArray } from 'drizzle-orm';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export interface EmailMessage {
   id: number;

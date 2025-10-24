@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import type { IStorage } from '../storage';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 interface ActivityLoggerOptions {
   storage: IStorage;

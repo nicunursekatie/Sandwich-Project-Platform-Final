@@ -8,7 +8,7 @@ import {
   validateSMSConfig,
 } from '../sms-service';
 import { z } from 'zod';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 

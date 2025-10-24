@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { logger } from '../middleware/logger';
 import type { IStorage } from '../storage';
 import { storage } from '../storage-wrapper';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 // Type definitions for authentication
 interface AuthenticatedRequest extends Request {

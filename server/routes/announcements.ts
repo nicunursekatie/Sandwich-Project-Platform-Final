@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { z } from 'zod';
-import { logger } from '../../utils/production-safe-logger';
+import { logger } from '../utils/production-safe-logger';
 
 // Get announcements
 const getAnnouncements = async (req: Request, res: Response) => {
