@@ -70,7 +70,7 @@ function BackToProjectsButton() {
       variant="ghost"
       size="sm"
       onClick={() => {
-        console.log('Back to Projects clicked - navigating to projects');
+        logger.log('Back to Projects clicked - navigating to projects');
         setActiveSection('projects');
       }}
       className="flex items-center gap-2 text-brand-primary hover:bg-brand-primary/10 font-roboto"
@@ -726,22 +726,7 @@ export default function ProjectDetailClean({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              logger.log('Back to Projects clicked - navigating to projects');
-              if ((window as any).dashboardSetActiveSection) {
-                (window as any).dashboardSetActiveSection('projects');
-              } else {
-                setLocation('/projects');
-              }
-            }}
-            className="flex items-center gap-2 text-brand-primary hover:bg-brand-primary/10 font-roboto"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Projects
-          </Button>
+          <BackToProjectsButton />
           <div>
             <h1 className="text-3xl font-bold text-brand-primary font-roboto mb-2">
               {project.title}
