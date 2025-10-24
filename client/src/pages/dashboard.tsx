@@ -47,6 +47,7 @@ import EnhancedNotifications from '@/components/enhanced-notifications';
 import OnboardingChallengeButton from '@/components/onboarding-challenge-button';
 import { KudosLoginNotifier } from '@/components/kudos-login-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 // Lazy load all page/section components for better performance
 const ProjectList = lazy(() => import('@/components/project-list'));
@@ -807,21 +808,47 @@ export default function Dashboard({
 
           {/* Main Content */}
           <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30 min-w-0 pt-6 pl-6">
-            <Suspense fallback={<SectionLoader />}>
-              {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
-                // Special full-height layout for inbox and chat
-                <div className="h-full">{renderContent()}</div>
-              ) : (
-                // Normal layout for other content
-                <div className="h-full overflow-y-auto overflow-x-hidden w-full">
-                  <div className="w-full pb-20 min-h-full">
-                    <div className="w-full overflow-x-visible">
-                      {renderContent()}
+            <ErrorBoundary
+              fallback={
+                <div className="p-8 text-center">
+                  <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
                     </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      This section encountered an error
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Don't worry - your other sections are still working. Try switching to a different section or refreshing the page.
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-dark transition-colors"
+                    >
+                      Refresh Page
+                    </button>
                   </div>
                 </div>
-              )}
-            </Suspense>
+              }
+            >
+              <Suspense fallback={<SectionLoader />}>
+                {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
+                  // Special full-height layout for inbox and chat
+                  <div className="h-full">{renderContent()}</div>
+                ) : (
+                  // Normal layout for other content
+                  <div className="h-full overflow-y-auto overflow-x-hidden w-full">
+                    <div className="w-full pb-20 min-h-full">
+                      <div className="w-full overflow-x-visible">
+                        {renderContent()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
       </div>
