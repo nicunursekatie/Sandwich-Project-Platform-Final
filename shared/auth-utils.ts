@@ -647,7 +647,11 @@ export function hasAccessToChat(user: UserForPermissions | null | undefined, cha
   }
 
   if (typeof user.permissions === 'number') {
-    // For numeric permissions (bitmask), return true to avoid filtering issues
+    // 🚨 SECURITY WARNING: This grants ALL chat access to users with numeric format
+    // This is a known security issue - numeric permissions are not properly validated
+    // TODO: Either migrate all users to string[] format or implement proper bitmask checking
+    // For now, returning true to avoid breaking existing users with numeric permissions
+    console.warn(`⚠️ SECURITY: User has numeric permissions (${user.permissions}) - granting chat access without validation`);
     return true;
   }
 
