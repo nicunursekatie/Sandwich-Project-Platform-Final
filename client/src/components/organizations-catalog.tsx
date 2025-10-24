@@ -753,57 +753,55 @@ export default function GroupCatalog({
               </div>
 
               {/* Organization Grouped Layout - All Events and Departments Displayed */}
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {paginatedActiveGroups.map((group, groupIndex) => (
                   <div
                     key={`group-${group.groupName}-${groupIndex}`}
-                    className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm"
+                    className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-4 shadow-sm"
                   >
                     {/* Organization Header */}
-                    <div className="mb-6 pb-4 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <Building
-                            className="w-6 h-6"
-                            style={{ color: '#236383' }}
-                          />
-                          <h2 className="text-xl font-bold text-gray-900">
-                            {group.groupName}
-                          </h2>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-4 text-sm text-gray-600">
-                            <span className="flex items-center space-x-1">
-                              <Users className="w-4 h-4" />
-                              <span>
-                                {group.totalDepartments}{' '}
-                                {group.totalDepartments === 1
-                                  ? 'contact'
-                                  : 'departments'}
-                              </span>
+                    <div className="mb-4 pb-3 border-b border-gray-200">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Building
+                          className="w-5 h-5"
+                          style={{ color: '#236383' }}
+                        />
+                        <h2 className="text-lg font-bold text-gray-900 truncate">
+                          {group.groupName}
+                        </h2>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-gray-600">
+                          <span className="flex items-center space-x-1">
+                            <Users className="w-3 h-3" />
+                            <span>
+                              {group.totalDepartments}{' '}
+                              {group.totalDepartments === 1
+                                ? 'contact'
+                                : 'depts'}
                             </span>
-                            <span className="flex items-center space-x-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>{group.totalRequests} event requests</span>
-                            </span>
-                          </div>
-                          {/* View Complete Organization History Button */}
-                          <Button
-                            onClick={() => {
-                              setSelectedOrganization(group.departments[0]); // Use first department as org reference
-                              setOrganizationDetails(null); // Reset previous details
-                              fetchOrganizationDetails(
-                                group.groupName
-                              ); // Fetch complete organization history
-                            }}
-                            variant="outline"
-                            size="sm"
-                            className="text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90"
-                          >
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            View Complete History
-                          </Button>
+                          </span>
+                          <span className="flex items-center space-x-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>{group.totalRequests} requests</span>
+                          </span>
                         </div>
+                        {/* View Complete Organization History Button */}
+                        <Button
+                          onClick={() => {
+                            setSelectedOrganization(group.departments[0]); // Use first department as org reference
+                            setOrganizationDetails(null); // Reset previous details
+                            fetchOrganizationDetails(
+                              group.groupName
+                            ); // Fetch complete organization history
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-xs bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90"
+                        >
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          View History
+                        </Button>
                       </div>
                     </div>
 
@@ -821,25 +819,26 @@ export default function GroupCatalog({
                       });
 
                       return Array.from(departmentGroups.entries()).map(([deptName, deptEvents], deptIndex) => (
-                        <div key={`dept-${deptName}-${deptIndex}`} className="mb-6">
+                        <div key={`dept-${deptName}-${deptIndex}`} className="mb-4">
                           {/* Department Header */}
                           {deptName !== 'General' && (
-                            <div className="mb-4 pb-2 border-b border-gray-300">
+                            <div className="mb-3 pb-2 border-b border-gray-300">
                               <div className="flex items-center space-x-2">
-                                <Building className="w-5 h-5 text-purple-600" />
-                                <h3 className="text-lg font-semibold text-gray-800">
+                                <Building className="w-4 h-4 text-purple-600" />
+                                <h3 className="text-sm font-semibold text-gray-800 truncate">
                                   {deptName}
                                 </h3>
-                                <Badge className="bg-purple-100 text-purple-700">
-                                  {deptEvents.length} event{deptEvents.length !== 1 ? 's' : ''}
+                                <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                  {deptEvents.length}
                                 </Badge>
                               </div>
                             </div>
                           )}
 
                           {/* Events Grid for this Department */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-                            {deptEvents.map((org, index) => (
+                          <div className="space-y-2">
+                            {/* Show only first 3 events to prevent cards from being too tall */}
+                            {deptEvents.slice(0, 3).map((org, index) => (
                               <Card
                                 key={`${org.organizationName}-${org.contactName}-${index}`}
                                 className={`hover:shadow-lg transition-all duration-300 border-l-4 w-full ${
@@ -1007,6 +1006,14 @@ export default function GroupCatalog({
                                 </CardContent>
                               </Card>
                             ))}
+                            {/* Show indicator if there are more events */}
+                            {deptEvents.length > 3 && (
+                              <div className="text-center py-2 px-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded border border-orange-200">
+                                <p className="text-xs text-gray-600">
+                                  + {deptEvents.length - 3} more event{deptEvents.length - 3 !== 1 ? 's' : ''} (click "View History" to see all)
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ));
