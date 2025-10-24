@@ -420,7 +420,10 @@ export class SmartDeliveryService {
       }
 
       // Format phone number if needed
-      let formattedPhone = user[0].phoneNumber.replace(/[^\d+]/g, '');
+      // First, remove all non-digits
+      let formattedPhone = user[0].phoneNumber.replace(/[^\d]/g, '');
+
+      // Then add the leading + and format properly
       if (!formattedPhone.startsWith('+')) {
         // Assume US number if no country code
         if (formattedPhone.length === 10) {
@@ -436,13 +439,13 @@ export class SmartDeliveryService {
       const userName = user[0].firstName || '';
       let smsBody = notification.title;
 
-      // Add message if there's room
-      if (notification.message && smsBody.length + notification.message.length < 150) {
+      // Add message if there's room (accounting for ": " separator = 2 chars)
+      if (notification.message && smsBody.length + notification.message.length + 2 <= 150) {
         smsBody += `: ${notification.message}`;
       }
 
-      // Add action URL if provided and there's room
-      if (notification.actionUrl && smsBody.length < 120) {
+      // Add action URL if provided and there's room (accounting for space + full URL length)
+      if (notification.actionUrl && smsBody.length + 1 + notification.actionUrl.length <= 160) {
         smsBody += ` ${notification.actionUrl}`;
       }
 
