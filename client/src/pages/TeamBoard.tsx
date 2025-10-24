@@ -40,8 +40,8 @@ interface TeamBoardItem {
   status: BoardItemStatus;
   createdBy: string;
   createdByName: string;
-  assignedTo: string | null;
-  assignedToName: string | null;
+  assignedTo: string[] | null;
+  assignedToNames: string[] | null;
   completedAt: Date | null;
   createdAt: Date;
   commentCount: number;
@@ -294,7 +294,7 @@ export default function TeamBoard() {
       const matchesSearch = !searchQuery || 
         item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.createdByName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.assignedToName?.toLowerCase().includes(searchQuery.toLowerCase());
+        item.assignedToNames?.some(name => name.toLowerCase().includes(searchQuery.toLowerCase()));
       
       const matchesType = filterType === 'all' || item.type === filterType;
       
@@ -335,8 +335,8 @@ export default function TeamBoard() {
       id: number; 
       updates: {
         status?: BoardItemStatus;
-        assignedTo?: string | null;
-        assignedToName?: string | null;
+        assignedTo?: string[] | null;
+        assignedToNames?: string[] | null;
         completedAt?: string | null;
       };
     }) => {
@@ -390,12 +390,23 @@ export default function TeamBoard() {
     
     const displayName = user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
     
+    const currentAssignedTo = item.assignedTo || [];
+    const currentAssignedToNames = item.assignedToNames || [];
+    
+    if (currentAssignedTo.includes(user.id)) {
+      toast({
+        title: 'Already assigned',
+        description: 'You are already working on this item',
+      });
+      return;
+    }
+    
     updateItemMutation.mutate({
       id: item.id,
       updates: {
         status: 'claimed',
-        assignedTo: user.id,
-        assignedToName: displayName,
+        assignedTo: [...currentAssignedTo, user.id],
+        assignedToNames: [...currentAssignedToNames, displayName],
       },
     });
   };
@@ -404,11 +415,23 @@ export default function TeamBoard() {
     const member = teamMembers.find(m => m.id === userId);
     if (!member) return;
     
+    const currentAssignedTo = item.assignedTo || [];
+    const currentAssignedToNames = item.assignedToNames || [];
+    
+    if (currentAssignedTo.includes(member.id)) {
+      toast({
+        title: 'Already assigned',
+        description: `${member.name} is already working on this item`,
+      });
+      return;
+    }
+    
     updateItemMutation.mutate({
       id: item.id,
       updates: {
-        assignedTo: member.id,
-        assignedToName: member.name,
+        status: currentAssignedTo.length === 0 ? 'claimed' : item.status,
+        assignedTo: [...currentAssignedTo, member.id],
+        assignedToNames: [...currentAssignedToNames, member.name],
       },
     }, {
       onSuccess: () => {
@@ -443,8 +466,28 @@ export default function TeamBoard() {
       updates: {
         status: 'open',
         assignedTo: null,
-        assignedToName: null,
+        assignedToNames: null,
         completedAt: null,
+      },
+    });
+  };
+
+  const handleUnassign = (item: TeamBoardItem, userId: string) => {
+    const currentAssignedTo = item.assignedTo || [];
+    const currentAssignedToNames = item.assignedToNames || [];
+    
+    const userIndex = currentAssignedTo.indexOf(userId);
+    if (userIndex === -1) return;
+    
+    const newAssignedTo = currentAssignedTo.filter((_, i) => i !== userIndex);
+    const newAssignedToNames = currentAssignedToNames.filter((_, i) => i !== userIndex);
+    
+    updateItemMutation.mutate({
+      id: item.id,
+      updates: {
+        status: newAssignedTo.length === 0 ? 'open' : item.status,
+        assignedTo: newAssignedTo.length === 0 ? null : newAssignedTo,
+        assignedToNames: newAssignedToNames.length === 0 ? null : newAssignedToNames,
       },
     });
   };
@@ -652,13 +695,37 @@ export default function TeamBoard() {
                       <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                     </div>
 
-                    {item.assignedTo && item.assignedToName && (
+                    {item.assignedTo && item.assignedToNames && item.assignedTo.length > 0 && (
                       <div className="mb-3 px-3 py-2 rounded-lg" style={{ backgroundColor: '#E6F4F6', borderLeft: '3px solid #007E8C' }}>
-                        <div className="flex items-center gap-2 text-xs">
-                          <UserPlus className="h-3.5 w-3.5" style={{ color: '#007E8C' }} />
+                        <div className="flex items-start gap-2 text-xs mb-2">
+                          <UserPlus className="h-3.5 w-3.5 mt-0.5" style={{ color: '#007E8C' }} />
                           <span className="font-medium" style={{ color: '#236383' }}>
-                            Assigned to {item.assignedToName}
+                            Assigned to:
                           </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {item.assignedToNames.map((name, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-1.5 bg-white dark:bg-gray-800 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700"
+                              data-testid={`assigned-user-${item.id}-${index}`}
+                            >
+                              <Avatar className={`h-4 w-4 ${getAvatarColor(name)}`}>
+                                <AvatarFallback className="text-white text-[8px]">
+                                  {getInitials(name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{name}</span>
+                              <button
+                                onClick={() => handleUnassign(item, item.assignedTo![index])}
+                                className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 ml-1"
+                                data-testid={`button-unassign-${item.id}-${index}`}
+                                title="Remove assignee"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -760,14 +827,35 @@ export default function TeamBoard() {
                         </Avatar>
                         <span>Posted by <span className="font-medium">{item.createdByName}</span></span>
                       </div>
-                      {item.assignedToName && (
-                        <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
-                          <Avatar className={`h-6 w-6 ${getAvatarColor(item.assignedToName)}`}>
-                            <AvatarFallback className="text-white text-xs">
-                              {getInitials(item.assignedToName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>Working on it: <span className="font-medium">{item.assignedToName}</span></span>
+                      {item.assignedToNames && item.assignedToNames.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                            Working on it:
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {item.assignedToNames.map((name, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950 px-2 py-1 rounded-md border border-blue-200 dark:border-blue-800"
+                                data-testid={`assigned-user-progress-${item.id}-${index}`}
+                              >
+                                <Avatar className={`h-4 w-4 ${getAvatarColor(name)}`}>
+                                  <AvatarFallback className="text-white text-[8px]">
+                                    {getInitials(name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{name}</span>
+                                <button
+                                  onClick={() => handleUnassign(item, item.assignedTo![index])}
+                                  className="text-blue-400 hover:text-red-600 dark:hover:text-red-400 ml-1"
+                                  data-testid={`button-unassign-progress-${item.id}-${index}`}
+                                  title="Remove assignee"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -854,14 +942,27 @@ export default function TeamBoard() {
                         </Avatar>
                         <span>Posted by <span className="font-medium">{item.createdByName}</span></span>
                       </div>
-                      {item.assignedToName && (
-                        <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
-                          <Avatar className={`h-6 w-6 ${getAvatarColor(item.assignedToName)}`}>
-                            <AvatarFallback className="text-white text-xs">
-                              {getInitials(item.assignedToName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>Completed by <span className="font-medium">{item.assignedToName}</span></span>
+                      {item.assignedToNames && item.assignedToNames.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                            Completed by:
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {item.assignedToNames.map((name, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-1.5 bg-green-50 dark:bg-green-950 px-2 py-1 rounded-md border border-green-200 dark:border-green-800"
+                                data-testid={`assigned-user-done-${item.id}-${index}`}
+                              >
+                                <Avatar className={`h-4 w-4 ${getAvatarColor(name)}`}>
+                                  <AvatarFallback className="text-white text-[8px]">
+                                    {getInitials(name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs font-medium text-green-700 dark:text-green-300">{name}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                       {item.completedAt && (
