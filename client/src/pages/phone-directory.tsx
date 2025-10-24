@@ -14,12 +14,23 @@ import {
   Phone,
 } from 'lucide-react';
 import PhoneDirectoryFixed from '@/components/phone-directory-fixed';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 
 export default function PhoneDirectoryPage() {
   const [location] = useLocation();
+  const { trackView } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Directory',
+      'Directory',
+      'Phone Directory',
+      'User accessed phone directory'
+    );
+  }, [trackView]);
 
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },

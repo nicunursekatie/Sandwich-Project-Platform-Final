@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   format,
   startOfDay,
@@ -41,9 +42,19 @@ interface User {
 type QuickFilter = 'today' | 'this-week' | 'next-week' | 'this-month';
 
 export default function TeamAvailability() {
+  const { trackView, trackSearch, trackFilter } = useActivityTracker();
   const [startDate, setStartDate] = useState<Date>(startOfDay(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfDay(new Date()));
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    trackView(
+      'Availability',
+      'Availability',
+      'Team Availability',
+      'User accessed team availability page'
+    );
+  }, [trackView]);
 
   // Fetch all users
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({

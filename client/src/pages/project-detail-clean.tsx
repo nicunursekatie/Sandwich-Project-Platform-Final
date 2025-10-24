@@ -3,6 +3,7 @@ import * as React from 'react';
 import { useParams, useLocation } from 'wouter';
 import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Card,
   CardContent,
@@ -119,12 +120,24 @@ export default function ProjectDetailClean({
 }: {
   projectId?: number;
 }) {
+  const { trackView, trackCreate, trackUpdate } = useActivityTracker();
   const { id: paramId } = useParams<{ id: string }>();
   const id = projectId ? projectId.toString() : paramId;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [isAddingTask, setIsAddingTask] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      trackView(
+        'Projects',
+        'Projects',
+        'Project Detail',
+        `User viewed project details for project ID: ${id}`
+      );
+    }
+  }, [id, trackView]);
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [isEditingTask, setIsEditingTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState({
