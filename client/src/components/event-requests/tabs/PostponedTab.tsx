@@ -1,33 +1,88 @@
 import React from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
-import EventCard from '../cards/EventCard';
+import { useEventMutations } from '../hooks/useEventMutations';
+import { useEventAssignments } from '../hooks/useEventAssignments';
+import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { DeclinedCard } from '../cards/DeclinedCard';
 
 export const PostponedTab: React.FC = () => {
+  const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const { filterRequestsByStatus } = useEventFilters();
+  const { deleteEventRequestMutation } = useEventMutations();
+  const { handleStatusChange, resolveUserName } = useEventAssignments();
+
   const {
-    currentPage,
-    itemsPerPage,
+    setSelectedEventRequest,
+    setIsEditing,
+    setShowEventDetails,
+    setShowContactOrganizerDialog,
+    setContactEventRequest,
   } = useEventRequestContext();
 
-  const { filterRequestsByStatus } = useEventFilters();
-
-  // Get postponed events with pagination
   const postponedRequests = filterRequestsByStatus('postponed');
+
+  const handleCall = (request: any) => {
+    const phoneNumber = request.phone;
+
+    if (isMobile) {
+      window.location.href = `tel:${phoneNumber}`;
+    } else {
+      navigator.clipboard.writeText(phoneNumber || '').then(() => {
+        toast({
+          title: 'Phone number copied!',
+          description: `${phoneNumber} has been copied to your clipboard.`,
+        });
+      }).catch(() => {
+        toast({
+          title: 'Failed to copy',
+          description: 'Please copy manually: ' + phoneNumber,
+          variant: 'destructive',
+        });
+      });
+    }
+  };
 
   return (
     <div className="space-y-4">
-      {postponedRequests.length > 0 ? (
+      {postponedRequests.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No postponed events
+        </div>
+      ) : (
         postponedRequests.map((request) => (
-          <EventCard
+          <DeclinedCard
             key={request.id}
             request={request}
+            resolveUserName={resolveUserName}
+            onView={() => {
+              setSelectedEventRequest(request);
+              setIsEditing(false);
+              setShowEventDetails(true);
+            }}
+            onDelete={() => {
+              if (window.confirm('Are you sure you want to permanently delete this postponed event?')) {
+                deleteEventRequestMutation.mutate(request.id);
+              }
+            }}
+            onContact={() => {
+              setContactEventRequest(request);
+              setShowContactOrganizerDialog(true);
+            }}
+            onCall={() => handleCall(request)}
+            onReactivate={() => {
+              if (window.confirm('Do you want to reactivate this event request?')) {
+                handleStatusChange(request.id, 'new');
+                toast({
+                  title: 'Event reactivated',
+                  description: 'The event request has been moved back to New Requests.',
+                });
+              }
+            }}
           />
         ))
-      ) : (
-        <div className="text-center py-12 text-[#007E8C]">
-          <p className="text-lg font-medium">No postponed events</p>
-          <p className="text-sm text-gray-600 mt-2">Events that have been postponed will appear here</p>
-        </div>
       )}
     </div>
   );
