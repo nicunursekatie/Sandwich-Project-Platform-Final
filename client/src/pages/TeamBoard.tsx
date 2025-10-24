@@ -30,6 +30,12 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 
+// Helper to safely flatten assignment arrays (fixes corrupted nested array data)
+function safelyFlattenArray(arr: unknown): string[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.flat().filter((item): item is string => typeof item === 'string');
+}
+
 type BoardItemType = 'task' | 'note' | 'idea' | 'reminder';
 type BoardItemStatus = 'open' | 'claimed' | 'done';
 
@@ -389,12 +395,17 @@ export default function TeamBoard() {
 
   const handleClaim = (item: TeamBoardItem) => {
     if (!user) return;
-    
+
     const displayName = user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
-    
-    const currentAssignedTo = item.assignedTo || [];
-    const currentAssignedToNames = item.assignedToNames || [];
-    
+
+    // Flatten arrays in case of corrupted data (nested arrays)
+    const currentAssignedTo = Array.isArray(item.assignedTo)
+      ? item.assignedTo.flat().filter((id): id is string => typeof id === 'string')
+      : [];
+    const currentAssignedToNames = Array.isArray(item.assignedToNames)
+      ? item.assignedToNames.flat().filter((name): name is string => typeof name === 'string')
+      : [];
+
     if (currentAssignedTo.includes(user.id)) {
       toast({
         title: 'Already assigned',
@@ -402,7 +413,7 @@ export default function TeamBoard() {
       });
       return;
     }
-    
+
     updateItemMutation.mutate({
       id: item.id,
       updates: {
@@ -417,8 +428,8 @@ export default function TeamBoard() {
     const member = teamMembers.find(m => m.id === userId);
     if (!member) return;
     
-    const currentAssignedTo = item.assignedTo || [];
-    const currentAssignedToNames = item.assignedToNames || [];
+    const currentAssignedTo = safelyFlattenArray(item.assignedTo);
+    const currentAssignedToNames = safelyFlattenArray(item.assignedToNames);
     
     if (currentAssignedTo.includes(member.id)) {
       toast({
@@ -475,15 +486,20 @@ export default function TeamBoard() {
   };
 
   const handleUnassign = (item: TeamBoardItem, userId: string) => {
-    const currentAssignedTo = item.assignedTo || [];
-    const currentAssignedToNames = item.assignedToNames || [];
-    
+    // Flatten arrays in case of corrupted data (nested arrays)
+    const currentAssignedTo = Array.isArray(item.assignedTo)
+      ? item.assignedTo.flat().filter((id): id is string => typeof id === 'string')
+      : [];
+    const currentAssignedToNames = Array.isArray(item.assignedToNames)
+      ? item.assignedToNames.flat().filter((name): name is string => typeof name === 'string')
+      : [];
+
     const userIndex = currentAssignedTo.indexOf(userId);
     if (userIndex === -1) return;
-    
+
     const newAssignedTo = currentAssignedTo.filter((_, i) => i !== userIndex);
     const newAssignedToNames = currentAssignedToNames.filter((_, i) => i !== userIndex);
-    
+
     updateItemMutation.mutate({
       id: item.id,
       updates: {
