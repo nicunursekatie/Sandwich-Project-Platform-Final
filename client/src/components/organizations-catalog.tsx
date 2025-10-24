@@ -67,6 +67,7 @@ interface OrganizationContact {
   organizationName: string;
   contactName: string;
   email?: string;
+  phone?: string;
   department?: string;
   latestRequestDate: string;
   latestActivityDate: string;
@@ -877,9 +878,16 @@ export default function GroupCatalog({
                                   <div className="space-y-1 mb-3">
                                     <div className="flex items-center space-x-1 text-sm">
                                       <User className="w-4 h-4 text-teal-600" />
-                                      <span className="font-medium text-gray-900 truncate">
+                                      <button
+                                        onClick={() => {
+                                          setSelectedContact(org);
+                                          setShowContactDetailsModal(true);
+                                        }}
+                                        className="font-medium text-gray-900 hover:text-teal-600 truncate transition-colors underline decoration-dotted underline-offset-2"
+                                        data-testid={`button-contact-${org.organizationName}-${org.contactName}`}
+                                      >
                                         {org.contactName}
-                                      </span>
+                                      </button>
                                     </div>
                                     {org.email && (
                                       <div className="flex items-center space-x-1 text-xs">
@@ -1649,6 +1657,23 @@ export default function GroupCatalog({
                         data-testid={`link-modal-email-${selectedContact.email}`}
                       >
                         {selectedContact.email}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Phone */}
+                {selectedContact.phone && (
+                  <div className="flex items-start gap-2">
+                    <Phone className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">Phone Number</p>
+                      <a
+                        href={`tel:${selectedContact.phone}`}
+                        className="font-medium text-teal-700 hover:text-teal-900 hover:underline"
+                        data-testid={`link-modal-phone-${selectedContact.phone}`}
+                      >
+                        {selectedContact.phone}
                       </a>
                     </div>
                   </div>
