@@ -20,6 +20,7 @@ import {
   CheckCircle,
   RefreshCw,
   Package,
+  HelpCircle,
 } from 'lucide-react';
 
 // Lazy load map and cooler tracking components
@@ -30,6 +31,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -1005,17 +1012,29 @@ export default function HostsManagementConsolidated() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center">
-            <Building2 className="w-6 h-6 mr-2" />
-            Host Management
-          </h2>
-          <p className="text-slate-600 mt-1">
-            Manage collection hosts and their contact information
-          </p>
-        </div>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Building2 className="w-6 h-6" />
+              Host Management
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">Host Management Help</p>
+                  <p className="text-sm">Manage organizations that host sandwich collection events. Track contact information, view locations on a map, and manage cooler inventory.</p>
+                </TooltipContent>
+              </Tooltip>
+            </h2>
+            <p className="text-slate-600 mt-1">
+              Manage collection hosts and their contact information
+            </p>
+          </div>
 
         {/* View Toggle */}
         <div className="flex items-center gap-2">
@@ -2432,5 +2451,6 @@ export default function HostsManagementConsolidated() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 }

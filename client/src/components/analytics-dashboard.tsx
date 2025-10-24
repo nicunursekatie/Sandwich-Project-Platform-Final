@@ -4,6 +4,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
+import {
   BarChart,
   Bar,
   XAxis,
@@ -21,6 +27,7 @@ import {
   Users2,
   Calendar,
   Trophy,
+  HelpCircle,
 } from 'lucide-react';
 import type { SandwichCollection } from '@shared/schema';
 import {
@@ -327,16 +334,30 @@ export default function AnalyticsDashboard() {
   }
 
   return (
-    <div className="space-y-6 lg:space-y-8 min-w-0 overflow-hidden">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-brand-primary mb-2">
-          ANALYTICS DASHBOARD
-        </h1>
-        <p className="text-lg text-[#646464]">
-          Data insights and impact visualization
-        </p>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-6 lg:space-y-8 min-w-0 overflow-hidden">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-brand-primary">
+              ANALYTICS DASHBOARD
+            </h1>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                  <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold mb-1">Analytics Dashboard Help</p>
+                <p className="text-sm">View comprehensive data insights including total sandwiches delivered, weekly trends, host performance metrics, and impact statistics over different time periods.</p>
+              </TooltipContent>
+            </UITooltip>
+          </div>
+          <p className="text-lg text-[#646464]">
+            Data insights and impact visualization
+          </p>
+        </div>
 
       {/* Period Selection Buttons */}
       <div className="flex justify-center gap-2 mb-4">
@@ -589,5 +610,6 @@ export default function AnalyticsDashboard() {
         </Card>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
