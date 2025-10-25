@@ -39,18 +39,45 @@ const religiousPatterns: RegExp[] = [
 ];
 
 const categoryPatterns: CategoryPattern[] = [
-  // Schools - Elementary
+  // Schools - Private indicators (CHECK FIRST before generic patterns)
+  {
+    category: 'school',
+    schoolClassification: 'private',
+    patterns: [
+      /\bprivate school\b/i,
+      /\bprep school\b/i,
+      /\bpreparatory\b/i,
+      /\bmontessori\b/i,
+      /\bchristian\s+(elementary|middle|high|school)\b/i,
+      /\bcatholic\s+(elementary|middle|high|school)\b/i,
+      /\bst\.?\s+\w+'?s?\s+(elementary|middle|high|school)\b/i, // St. Mary's Elementary/Middle/High/School
+      /\bsaint\s+\w+'?s?\s+(elementary|middle|high|school)\b/i,
+      /\bparochial\b/i,
+    ],
+  },
+  // Schools - Charter (CHECK SECOND)
+  {
+    category: 'school',
+    schoolClassification: 'charter',
+    patterns: [
+      /\bcharter\s+school\b/i,
+      /\bcharter\s+(elementary|middle|high)\b/i,
+      /\bcharter\b/i,
+    ],
+  },
+  // Schools - Elementary (Public - checked AFTER private/charter)
   {
     category: 'school',
     schoolClassification: 'public',
     patterns: [
-      /\belementary\b/i,
-      /\belem\.?\b/i,
+      /\belementary\s+school\b/i,
+      /\belem\.?\s+school\b/i,
       /\bgrade school\b/i,
       /\bprimary school\b/i,
+      /\belementary\b/i, // More generic, so check last
     ],
   },
-  // Schools - Middle
+  // Schools - Middle (Public)
   {
     category: 'school',
     schoolClassification: 'public',
@@ -60,17 +87,16 @@ const categoryPatterns: CategoryPattern[] = [
       /\bintermediate school\b/i,
     ],
   },
-  // Schools - High School
+  // Schools - High School (Public)
   {
     category: 'school',
     schoolClassification: 'public',
     patterns: [
       /\bhigh school\b/i,
       /\bsecondary school\b/i,
-      /\bhigh\b.*\bschool\b/i,
     ],
   },
-  // Schools - University/College
+  // Schools - University/College (Public by default, though many are private)
   {
     category: 'school',
     schoolClassification: 'public',
@@ -79,30 +105,6 @@ const categoryPatterns: CategoryPattern[] = [
       /\bcollege\b/i,
       /\bacademy\b/i,
       /\binstitute\b/i,
-    ],
-  },
-  // Schools - Private indicators
-  {
-    category: 'school',
-    schoolClassification: 'private',
-    patterns: [
-      /\bprivate school\b/i,
-      /\bprep school\b/i,
-      /\bpreparatory\b/i,
-      /\bmontessori\b/i,
-      /\bchristian school\b/i,
-      /\bcatholic school\b/i,
-      /\bst\.?\s+\w+'?s?\s+school\b/i,
-      /\bsaint\s+\w+'?s?\s+school\b/i,
-    ],
-  },
-  // Schools - Charter
-  {
-    category: 'school',
-    schoolClassification: 'charter',
-    patterns: [
-      /\bcharter school\b/i,
-      /\bcharter\b/i,
     ],
   },
   // Churches and Faith Organizations
@@ -262,14 +264,22 @@ function categorizeOrganization(
 
 // Test cases
 const testOrganizations = [
-  // Schools
+  // Schools - Public
   'Lincoln Elementary School',
   'Roosevelt Middle School',
   'Washington High School',
   'Harvard University',
+
+  // Schools - Private/Religious (should NOT be marked as public)
   'St. Mary\'s School',
+  'St. Mary\'s Elementary School',
+  'Catholic Middle School',
+  'Christian High School',
   'Montessori Academy',
+
+  // Schools - Charter
   'Summit Charter School',
+  'Charter Elementary',
 
   // Churches
   'First Baptist Church',
