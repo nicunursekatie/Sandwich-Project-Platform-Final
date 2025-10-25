@@ -249,7 +249,8 @@ export default function EnhancedMeetingDashboard() {
       const planningMeetings = safeMeetings.filter(m => m.status === 'planning');
       if (planningMeetings.length > 0) {
         // Sort by date (most recent first) and select the first one
-        const sortedPlanning = planningMeetings.sort((a, b) =>
+        // Create a copy to avoid mutating the original array
+        const sortedPlanning = [...planningMeetings].sort((a, b) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         logger.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
@@ -258,7 +259,8 @@ export default function EnhancedMeetingDashboard() {
       }
 
       // Priority 2: Most recent meeting by date
-      const sortedMeetings = safeMeetings.sort((a, b) =>
+      // Create a copy to avoid mutating the original array
+      const sortedMeetings = [...safeMeetings].sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       logger.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
