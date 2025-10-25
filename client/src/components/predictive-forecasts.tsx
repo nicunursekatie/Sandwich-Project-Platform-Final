@@ -554,8 +554,12 @@ export default function PredictiveForecasts() {
                 </>
               ) : (
                 <>
-                  <p className="text-gray-700">• <strong>Priority:</strong> Add one more collection event or send out volunteer reminder for {forecasts.weekly.daysRemaining} remaining days</p>
-                  <p className="text-gray-700">• <strong>Goal:</strong> Recruit ~{Math.round((forecasts.weekly.average - forecasts.weekly.projected) / forecasts.weekly.daysRemaining)} sandwiches/day for remaining {forecasts.weekly.daysRemaining} days</p>
+                  <p className="text-gray-700">• <strong>Priority:</strong> Add one more collection event or send out volunteer reminder for {forecasts.weekly.daysRemaining} remaining day{forecasts.weekly.daysRemaining !== 1 ? 's' : ''}</p>
+                  {forecasts.weekly.daysRemaining > 0 ? (
+                    <p className="text-gray-700">• <strong>Goal:</strong> Recruit ~{Math.round((forecasts.weekly.average - forecasts.weekly.projected) / forecasts.weekly.daysRemaining)} sandwiches/day for remaining {forecasts.weekly.daysRemaining} day{forecasts.weekly.daysRemaining !== 1 ? 's' : ''}</p>
+                  ) : (
+                    <p className="text-gray-700">• <strong>Goal:</strong> Final push needed today - {Math.round(forecasts.weekly.average - forecasts.weekly.projected)} sandwiches to reach weekly average</p>
+                  )}
                 </>
               )}
               <p className="text-gray-700">• <strong>Scheduled events:</strong> {forecasts.weekly.scheduledEventCount} event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
@@ -706,7 +710,11 @@ export default function PredictiveForecasts() {
               ) : forecasts.monthly.vsAvg < 0 && forecasts.monthly.gap > 0 ? (
                 <>
                   <p className="text-gray-700">• <strong>Priority:</strong> Schedule additional events to close the {forecasts.monthly.gap.toLocaleString()}-sandwich gap</p>
-                  <p className="text-gray-700">• <strong>Target:</strong> Aim for {Math.round((forecasts.monthly.gap / (forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth)) * 7).toLocaleString()} sandwiches per remaining week</p>
+                  {(forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth) > 0 ? (
+                    <p className="text-gray-700">• <strong>Target:</strong> Aim for {Math.round((forecasts.monthly.gap / (forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth)) * 7).toLocaleString()} sandwiches per remaining week</p>
+                  ) : (
+                    <p className="text-gray-700">• <strong>Target:</strong> Final day - need {forecasts.monthly.gap.toLocaleString()} sandwiches to reach monthly average</p>
+                  )}
                   <p className="text-gray-700">• <strong>Strategy:</strong> Focus on high-volume group collections and event partnerships</p>
                 </>
               ) : (

@@ -669,8 +669,8 @@ export default function ActionCenter() {
           </p>
         </div>
 
-        {/* Priority Summary Banner */}
-        {actionItems.length > 0 && (
+        {/* Priority Summary or Success Banner - Mutually Exclusive */}
+        {actionItems.filter(a => a.priority === 'high').length > 0 ? (
           <Card className="bg-gradient-to-r from-brand-primary to-brand-teal text-white">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -687,10 +687,7 @@ export default function ActionCenter() {
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Success Highlights */}
-        {actionItems.length === 0 || (actionItems.filter(a => a.priority === 'high').length === 0 && actionItems.length > 0) ? (
+        ) : actionItems.length === 0 ? (
           <Card className="bg-gradient-to-r from-green-500 to-teal-500 text-white">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -698,13 +695,27 @@ export default function ActionCenter() {
                 <div>
                   <h3 className="text-xl font-bold mb-1">Great Work! Everything On Track</h3>
                   <p className="text-white/90">
-                    ✓ No high-priority items • ✓ Events well-staffed • ✓ Follow-ups current
+                    ✓ No urgent items • ✓ Events well-staffed • ✓ Follow-ups current • ✓ Collections on pace
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-        ) : null}
+        ) : (
+          <Card className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <CheckCircle className="h-12 w-12 flex-shrink-0" />
+                <div>
+                  <h3 className="text-xl font-bold mb-1">Looking Good! No Urgent Items</h3>
+                  <p className="text-white/90">
+                    {actionItems.length} medium/low priority {actionItems.length === 1 ? 'item' : 'items'} to address when you have time
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
