@@ -39,18 +39,51 @@ const religiousPatterns: RegExp[] = [
 ];
 
 const categoryPatterns: CategoryPattern[] = [
-  // Schools - Elementary
+  // Schools - Private indicators (CHECK FIRST before generic patterns)
+  {
+    category: 'school',
+    schoolClassification: 'private',
+    patterns: [
+      /\bprivate school\b/i,
+      /\bprep school\b/i,
+      /\bpreparatory\b/i,
+      /\bmontessori\b/i,
+      /\bchristian\s+(elementary|middle|high|school)\b/i,
+      /\bcatholic\s+(elementary|middle|high|school)\b/i,
+      /\bepiscopal\s+(elementary|middle|high|school)\b/i,
+      /\blutheran\s+(elementary|middle|high|school)\b/i,
+      /\bmethodist\s+(elementary|middle|high|school)\b/i,
+      /\bpresbyterian\s+(elementary|middle|high|school)\b/i,
+      /\bbaptist\s+(elementary|middle|high|school)\b/i,
+      /\bst\.?\s+\w+'?s?\s+(elementary|middle|high|school)\b/i, // St. Mary's Elementary/Middle/High/School
+      /\bsaint\s+\w+'?s?\s+(elementary|middle|high|school)\b/i,
+      /\bparochial\b/i,
+      /\bwesleyan\s+(school|university|college|academy)\b/i, // Wesleyan School/University, not "First Wesleyan Church"
+    ],
+  },
+  // Schools - Charter (CHECK SECOND)
+  {
+    category: 'school',
+    schoolClassification: 'charter',
+    patterns: [
+      /\bcharter\s+school\b/i,
+      /\bcharter\s+(elementary|middle|high)\b/i,
+      /\bcharter\b/i,
+    ],
+  },
+  // Schools - Elementary (Public - checked AFTER private/charter)
   {
     category: 'school',
     schoolClassification: 'public',
     patterns: [
-      /\belementary\b/i,
-      /\belem\.?\b/i,
+      /\belementary\s+school\b/i,
+      /\belem\.?\s+school\b/i,
       /\bgrade school\b/i,
       /\bprimary school\b/i,
+      /\belementary\b/i, // More generic, so check last
     ],
   },
-  // Schools - Middle
+  // Schools - Middle (Public)
   {
     category: 'school',
     schoolClassification: 'public',
@@ -60,17 +93,16 @@ const categoryPatterns: CategoryPattern[] = [
       /\bintermediate school\b/i,
     ],
   },
-  // Schools - High School
+  // Schools - High School (Public)
   {
     category: 'school',
     schoolClassification: 'public',
     patterns: [
       /\bhigh school\b/i,
       /\bsecondary school\b/i,
-      /\bhigh\b.*\bschool\b/i,
     ],
   },
-  // Schools - University/College
+  // Schools - University/College (Public by default, though many are private)
   {
     category: 'school',
     schoolClassification: 'public',
@@ -79,30 +111,6 @@ const categoryPatterns: CategoryPattern[] = [
       /\bcollege\b/i,
       /\bacademy\b/i,
       /\binstitute\b/i,
-    ],
-  },
-  // Schools - Private indicators
-  {
-    category: 'school',
-    schoolClassification: 'private',
-    patterns: [
-      /\bprivate school\b/i,
-      /\bprep school\b/i,
-      /\bpreparatory\b/i,
-      /\bmontessori\b/i,
-      /\bchristian school\b/i,
-      /\bcatholic school\b/i,
-      /\bst\.?\s+\w+'?s?\s+school\b/i,
-      /\bsaint\s+\w+'?s?\s+school\b/i,
-    ],
-  },
-  // Schools - Charter
-  {
-    category: 'school',
-    schoolClassification: 'charter',
-    patterns: [
-      /\bcharter school\b/i,
-      /\bcharter\b/i,
     ],
   },
   // Churches and Faith Organizations
@@ -151,17 +159,21 @@ const categoryPatterns: CategoryPattern[] = [
     category: 'club',
     patterns: [
       /\bclub\b/i,
+      /\brotary\s+club\b/i,
       /\brotary\b/i,
       /\bkiwanis\b/i,
-      /\blions\s+club\b/i,
-      /\bboy\s+scouts\b/i,
-      /\bgirl\s+scouts\b/i,
+      /\blions\s+club\b/i, // Only "Lions Club", not just "Lions"
+      /\bboy\s+scouts?\b/i, // Boy Scout or Boy Scouts
+      /\bgirl\s+scouts?\b/i, // Girl Scout or Girl Scouts
+      /\bcub\s+scouts?\b/i, // Cub Scouts
+      /\beagle\s+scouts?\b/i,
+      /\bventure\s+scouts?\b/i,
       /\b4-h\b/i,
       /\byouth\s+group\b/i,
       /\bsports\s+club\b/i,
       /\bathletic\s+club\b/i,
       /\bsocial\s+club\b/i,
-      /\brecreation\b/i,
+      /\brecreation\s+center\b/i,
     ],
   },
   // Large Corporations
@@ -173,13 +185,24 @@ const categoryPatterns: CategoryPattern[] = [
       /\binc\.?\b/i,
       /\bllc\b/i,
       /\bltd\.?\b/i,
-      /\benterprise\b/i,
+      /\benterprise\s+(corporation|corp|inc|llc)\b/i, // Enterprise + corp indicator
+      /\benterprise\s+holdings\b/i,
       /\bglobal\b/i,
       /\binternational\b/i,
       /\bgroup\b/i,
       /\bholdings\b/i,
       /\bcompany\b/i,
       /\bindustries\b/i,
+      /\bstudios?\b/i,
+      /\bbroadcasting\s+(corporation|corp|company|network)\b/i,
+      /\bproductions?\b/i,
+      /\bpictures\b/i,
+      /\bfilms?\b/i,
+      /\bwarner\s+bros\.?\b/i, // Warner Bros. (specific company)
+      /\bwarner\s+bros\.?\s+discovery\b/i, // Warner Bros. Discovery (specific)
+      /\btechnologies\b/i,
+      /\bsystems?\b/i,
+      /\bnetworks?\b/i,
     ],
   },
   // Small/Medium Corporations
@@ -262,17 +285,28 @@ function categorizeOrganization(
 
 // Test cases
 const testOrganizations = [
-  // Schools
+  // Schools - Public
   'Lincoln Elementary School',
   'Roosevelt Middle School',
   'Washington High School',
   'Harvard University',
+
+  // Schools - Private/Religious (should NOT be marked as public)
   'St. Mary\'s School',
+  'St. Mary\'s Elementary School',
+  'Catholic Middle School',
+  'Christian High School',
+  'Holy Innocents Episcopal School',
+  'Wesleyan',
   'Montessori Academy',
+
+  // Schools - Charter
   'Summit Charter School',
+  'Charter Elementary',
 
   // Churches
   'First Baptist Church',
+  'First Wesleyan Church', // Should be church, NOT school
   'St. John\'s Cathedral',
   'Temple Beth Shalom',
   'Islamic Center',
@@ -286,16 +320,24 @@ const testOrganizations = [
   // Clubs
   'Rotary Club',
   'Boy Scouts Troop 123',
+  'Boy Scouts',
+  'Girl Scouts',
   'Lions Club',
   'Youth Sports Club',
 
   // Corporations
   'Acme Corporation',
   'Global Industries Inc.',
+  'Warner Bros. Discovery',
+  'Fleetcor',
   'Smith Consulting Services',
   'Local Business Partners',
 
-  // Edge cases
+  // Edge cases - would be misclassified by overly broad patterns
+  'Detroit Lions', // Sports team, NOT a club (would match /\blions\b/i)
+  'Talent Scouts Inc.', // Company, NOT a youth club (would match /\bscouts?\b/i)
+  'Discovery Museum', // Museum/Educational, NOT a large corp (would match /\bdiscovery\b/i)
+  'Social Media Marketing LLC', // Small business, NOT media corp (would match /\bmedia\b/i)
   'Random Organization Name',
   'The Community',
 ];
