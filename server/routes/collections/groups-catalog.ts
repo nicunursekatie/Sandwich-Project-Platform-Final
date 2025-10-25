@@ -188,6 +188,22 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         }
       });
 
+      // Build a lookup of event requests by canonical org name and date for deduplication
+      // This prevents double-counting events that exist in both event_requests AND sandwich_collections
+      const eventRequestLookup = new Map<string, Set<string>>();
+      
+      allEventRequests.forEach((request) => {
+        if (!request.organizationName || !request.desiredEventDate) return;
+        
+        const canonicalOrgName = canonicalizeOrgName(request.organizationName);
+        const eventDateStr = new Date(request.desiredEventDate).toISOString().split('T')[0];
+        
+        if (!eventRequestLookup.has(canonicalOrgName)) {
+          eventRequestLookup.set(canonicalOrgName, new Set());
+        }
+        eventRequestLookup.get(canonicalOrgName)!.add(eventDateStr);
+      });
+
       // Calculate actual sandwich totals and event counts from collections
       const organizationSandwichData = new Map();
 
@@ -211,6 +227,26 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
           const cleanOrgName = orgName.trim();
           const canonicalOrgName = canonicalizeOrgName(cleanOrgName);
+          
+          // DEDUPLICATION: Check if this collection matches an event request within ±7 days
+          // If yes, skip it (already counted via event_requests)
+          if (collectionDate && eventRequestLookup.has(canonicalOrgName)) {
+            const collectionDateObj = new Date(collectionDate);
+            const requestDates = eventRequestLookup.get(canonicalOrgName)!;
+            
+            // Check if any event request is within 7 days of this collection
+            for (const requestDateStr of requestDates) {
+              const requestDateObj = new Date(requestDateStr);
+              const daysDiff = Math.abs(
+                (collectionDateObj.getTime() - requestDateObj.getTime()) / (1000 * 60 * 60 * 24)
+              );
+              
+              if (daysDiff <= 7) {
+                // This collection matches an event request - skip to avoid double-counting
+                return;
+              }
+            }
+          }
 
           // Track sandwich totals using canonical name for matching
           if (!organizationSandwichData.has(canonicalOrgName)) {
