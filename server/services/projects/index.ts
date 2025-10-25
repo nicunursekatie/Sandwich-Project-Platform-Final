@@ -7,10 +7,14 @@ import {
   type archivedProjects,
   type projectTasks,
   type taskCompletions,
+  users,
 } from '@shared/schema';
 import { hasPermission, isProjectOwnerOrAssignee } from '@shared/auth-utils';
 import type { z } from 'zod';
 import { logger } from '../../utils/production-safe-logger';
+import { NotificationService } from '../../notification-service';
+import { db } from '../../db';
+import { inArray } from 'drizzle-orm';
 
 // Types
 export type Project = typeof projects.$inferSelect;
@@ -171,6 +175,57 @@ export class ProjectService implements IProjectService {
     const validUpdates = this.sanitizeProjectUpdates(updates);
 
     const updatedProject = await this.storage.updateProject(id, validUpdates);
+
+    // Check if assignment changed and send email notifications
+    if (updates.assigneeIds && updatedProject) {
+      const oldAssigneeIds = existingProject.assigneeIds || [];
+      const newAssigneeIds = updates.assigneeIds;
+
+      // Find newly assigned users (those not previously assigned)
+      const newlyAssignedUserIds = newAssigneeIds.filter(
+        (userId: string) => !oldAssigneeIds.includes(userId)
+      );
+
+      // Send email notifications to newly assigned users
+      if (newlyAssignedUserIds.length > 0) {
+        try {
+          // Fetch email addresses for newly assigned users
+          const assignedUsers = await db
+            .select({ email: users.email, preferredEmail: users.preferredEmail })
+            .from(users)
+            .where(inArray(users.id, newlyAssignedUserIds));
+
+          const assigneeEmails = assignedUsers
+            .map((u) => u.preferredEmail || u.email)
+            .filter((email): email is string => email !== null);
+
+          if (assigneeEmails.length > 0) {
+            const assignerName =
+              user.firstName && user.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : user.email;
+
+            // Send notifications asynchronously (don't block the response)
+            NotificationService.sendProjectAssignmentNotification(
+              String(id),
+              updatedProject.title,
+              assigneeEmails,
+              assignerName
+            ).catch((error) => {
+              logger.error('Failed to send project assignment notification', error);
+            });
+
+            logger.info('Project assignment notifications queued', {
+              projectId: id,
+              newlyAssignedCount: newlyAssignedUserIds.length,
+            });
+          }
+        } catch (error) {
+          logger.error('Failed to send project assignment notifications', error);
+          // Don't fail the update if notification fails
+        }
+      }
+    }
 
     // Handle Google Sheets sync for support people updates
     if (updates.supportPeople !== undefined && updatedProject) {

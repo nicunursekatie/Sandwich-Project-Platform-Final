@@ -14,6 +14,7 @@ import {
   users
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
+import { EmailNotificationService } from '../services/email-notification-service';
 
 // Type definitions for authenticated requests
 interface AuthenticatedRequest extends Request {
@@ -241,6 +242,17 @@ teamBoardRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) =
       status: updateData.status 
     });
 
+    // Get the existing item before updating to check for assignment changes
+    const [existingItem] = await db
+      .select()
+      .from(teamBoardItems)
+      .where(eq(teamBoardItems.id, itemId))
+      .limit(1);
+
+    if (!existingItem) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
     // Update the item
     const [updatedItem] = await db
       .update(teamBoardItems)
@@ -253,6 +265,40 @@ teamBoardRouter.patch('/:id', async (req: AuthenticatedRequest, res: Response) =
 
     if (!updatedItem) {
       return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Check if assignment changed and send email notifications to newly assigned users
+    if (updateData.assignedTo && updateData.assignedTo.length > 0) {
+      const oldAssignedTo = existingItem.assignedTo || [];
+      const newAssignedTo = updateData.assignedTo;
+      
+      // Find newly assigned users (those not previously assigned)
+      const newlyAssignedUsers = newAssignedTo.filter(
+        (userId) => !oldAssignedTo.includes(userId)
+      );
+
+      // Send email notifications to newly assigned users
+      if (newlyAssignedUsers.length > 0) {
+        const assignerName = req.user.displayName || 
+                            `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 
+                            req.user.email;
+        
+        // Send notifications asynchronously (don't block the response)
+        EmailNotificationService.sendTeamBoardAssignmentNotification(
+          newlyAssignedUsers,
+          updatedItem.id,
+          updatedItem.content,
+          updatedItem.type,
+          assignerName
+        ).catch((error) => {
+          logger.error('Failed to send team board assignment notification', error);
+        });
+
+        logger.info('Team board assignment notifications queued', {
+          itemId: updatedItem.id,
+          newlyAssignedCount: newlyAssignedUsers.length
+        });
+      }
     }
 
     logger.info('Successfully updated team board item', { 

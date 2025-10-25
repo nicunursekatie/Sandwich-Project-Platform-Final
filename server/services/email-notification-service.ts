@@ -494,6 +494,131 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
   }
 
   /**
+   * Send email notification when a user is assigned to a team board item
+   */
+  static async sendTeamBoardAssignmentNotification(
+    assignedUserIds: string[],
+    itemId: number,
+    itemContent: string,
+    itemType: string,
+    assignedBy: string
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping team board assignment notification');
+      return false;
+    }
+
+    try {
+      // Fetch user details from database for all assigned users
+      const assignedUsers = await db
+        .select()
+        .from(users)
+        .where(inArray(users.id, assignedUserIds));
+
+      if (!assignedUsers || assignedUsers.length === 0) {
+        logger.warn(`No valid users found for team board assignment - IDs: ${assignedUserIds.join(', ')}`);
+        return false;
+      }
+
+      // Send email to each assigned user
+      for (const user of assignedUsers) {
+        if (!user.email) {
+          logger.warn(`User ${user.id} has no email - cannot send team board assignment notification`);
+          continue;
+        }
+
+        // Use preferred email if available, otherwise use regular email
+        const userEmail = user.preferredEmail || user.email;
+        const userName = user.displayName || user.firstName || userEmail.split('@')[0];
+
+        // Truncate content if too long for email
+        const displayContent = itemContent.length > 200 
+          ? itemContent.substring(0, 200) + '...' 
+          : itemContent;
+
+        // Format item type for display
+        const itemTypeDisplay = itemType === 'task' ? 'Task'
+                              : itemType === 'note' ? 'Note'
+                              : itemType === 'idea' ? 'Idea'
+                              : itemType === 'reminder' ? 'Reminder'
+                              : 'Item';
+
+        // Generate team board URL
+        const teamBoardUrl = this.getTeamBoardUrl();
+
+        const msg = {
+          to: userEmail,
+          from: 'noreply@sandwichproject.org',
+          subject: `You've been assigned to a team board ${itemTypeDisplay.toLowerCase()} - The Sandwich Project`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #236383; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+                .item-details { background: white; padding: 15px; border-left: 4px solid #FBAD3F; margin: 15px 0; }
+                .btn { display: inline-block; background: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 15px 0; }
+                .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>📋 You've been assigned to a team board ${itemTypeDisplay.toLowerCase()}!</h1>
+                </div>
+                <div class="content">
+                  <p>Hello ${userName}!</p>
+                  <p>You have been assigned to the following team board ${itemTypeDisplay.toLowerCase()} by <strong>${assignedBy}</strong>:</p>
+                  
+                  <div class="item-details">
+                    <strong>${itemTypeDisplay}:</strong><br>
+                    ${displayContent}
+                  </div>
+                  
+                  <p>Please review the ${itemTypeDisplay.toLowerCase()} details and take any necessary action.</p>
+                  
+                  <p>Click the button below to view the team board:</p>
+                  <a href="${teamBoardUrl}" class="btn">View Team Board</a>
+                  
+                  ${EMAIL_FOOTER_HTML}
+                </div>
+              </div>
+            </body>
+            </html>
+          `,
+          text: `
+Hello ${userName}!
+
+You have been assigned to the following team board ${itemTypeDisplay.toLowerCase()} by ${assignedBy}:
+
+${itemTypeDisplay}: ${displayContent}
+
+Please review the ${itemTypeDisplay.toLowerCase()} details and take any necessary action.
+
+View team board: ${teamBoardUrl}
+
+---
+The Sandwich Project - Fighting food insecurity one sandwich at a time
+
+To unsubscribe from these emails, please contact us at katie@thesandwichproject.org or reply STOP.
+          `.trim(),
+        };
+
+        await sgMail.send(msg);
+        logger.log(`Team board assignment notification sent to ${userEmail} for item ${itemId}`);
+      }
+
+      return true;
+    } catch (error) {
+      logger.error('Error sending team board assignment notification:', error);
+      return false;
+    }
+  }
+
+  /**
    * Generate event URL for the notification
    */
   private static getEventUrl(eventId: number): string {
@@ -503,5 +628,17 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         : 'http://localhost:5000';
 
     return `${baseUrl}/event-requests-v2?eventId=${eventId}`;
+  }
+
+  /**
+   * Generate team board URL for the notification
+   */
+  private static getTeamBoardUrl(): string {
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? 'https://sandwich-project-platform-katielong2316.replit.app'
+        : 'http://localhost:5000';
+
+    return `${baseUrl}/dashboard?section=team-board`;
   }
 }
