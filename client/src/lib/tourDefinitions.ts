@@ -758,6 +758,259 @@ export const TOURS: Tour[] = [
         highlightPadding: 8
       }
     ]
+  },
+  {
+    id: 'projects-guide',
+    title: 'Projects Management',
+    description: 'Create and manage team projects',
+    category: 'my-work',
+    icon: 'ListTodo',
+    estimatedTime: '3 min',
+    steps: [
+      {
+        id: 'projects-intro',
+        title: 'Project Management Hub',
+        description: 'Projects help organize major initiatives and ongoing work. Let me show you how to use the project management system!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'projects-nav',
+        title: 'Navigate to Projects',
+        description: 'Click on "Projects" in the navigation menu to access all team projects.',
+        targetSelector: '[data-nav-id="projects"]',
+        position: 'right',
+        navigationAction: {
+          section: 'projects'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="projects"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'projects-create',
+        title: 'Create New Project',
+        description: 'Click here to create a new project. You\'ll set a title, description, timeline, and assign team members.',
+        targetSelector: '[data-testid="new-project-button"]',
+        position: 'bottom',
+        highlightPadding: 8
+      },
+      {
+        id: 'projects-list',
+        title: 'Browse Projects',
+        description: 'All projects are listed here. You can filter by status (Active, Completed, Archived) and see key details at a glance.',
+        targetSelector: '[data-testid="projects-list"]',
+        position: 'top',
+        highlightPadding: 16
+      },
+      {
+        id: 'projects-detail',
+        title: 'Project Details',
+        description: 'Click on any project to view tasks, milestones, team members, and updates. This is where collaboration happens!',
+        targetSelector: '[data-testid="project-card"]',
+        position: 'bottom',
+        highlightPadding: 12
+      }
+    ]
+  },
+  {
+    id: 'hosts-management-guide',
+    title: 'Managing Host Organizations',
+    description: 'Add and manage host organizations for sandwich collections',
+    category: 'events-calendar',
+    icon: 'Building2',
+    estimatedTime: '2 min',
+    steps: [
+      {
+        id: 'hosts-intro',
+        title: 'Host Organizations',
+        description: 'Host organizations are the groups that collect sandwiches for TSP. Let me show you how to manage their contacts!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'hosts-nav',
+        title: 'Open Hosts Section',
+        description: 'Navigate to "Hosts" from the menu.',
+        targetSelector: '[data-nav-id="hosts"]',
+        position: 'right',
+        navigationAction: {
+          section: 'hosts'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="hosts"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'hosts-search',
+        title: 'Search Hosts',
+        description: 'Use the search bar to find specific host organizations or contacts by name, location, or role.',
+        targetSelector: 'input[placeholder*="Search"]',
+        position: 'bottom',
+        highlightPadding: 8
+      },
+      {
+        id: 'hosts-contacts',
+        title: 'Host Contacts',
+        description: 'Browse all host contacts here. You can see their role, phone number, and availability for coordinating collection events.',
+        targetSelector: '.grid.gap-4, .space-y-4',
+        position: 'top',
+        highlightPadding: 16
+      }
+    ]
+  },
+  {
+    id: 'event-reminders-guide',
+    title: 'Setting Up Event Reminders',
+    description: 'Create automated reminders for upcoming events',
+    category: 'events-calendar',
+    icon: 'Clock',
+    estimatedTime: '2 min',
+    steps: [
+      {
+        id: 'reminders-intro',
+        title: 'Event Reminders System',
+        description: 'Event Reminders help you stay on top of upcoming events with automated notifications. Let\'s explore!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'reminders-nav',
+        title: 'Navigate to Event Reminders',
+        description: 'Find "Event Reminders" in the navigation menu.',
+        targetSelector: '[data-nav-id="event-reminders"]',
+        position: 'right',
+        navigationAction: {
+          section: 'event-reminders'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="event-reminders"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'reminders-create',
+        title: 'Create New Reminder',
+        description: 'Click here to set up a reminder. Choose the event, when to send the reminder, and who should receive it.',
+        targetSelector: '[data-testid="create-reminder-btn"]',
+        position: 'bottom',
+        highlightPadding: 8
+      },
+      {
+        id: 'reminders-list',
+        title: 'Active Reminders',
+        description: 'View all scheduled reminders. You can edit, delete, or manually trigger reminders from this list.',
+        targetSelector: '[data-testid="tab-pending"]',
+        position: 'top',
+        highlightPadding: 16
+      }
+    ]
+  },
+  {
+    id: 'my-availability-guide',
+    title: 'Setting Your Availability',
+    description: 'Manage when you\'re available for volunteer activities',
+    category: 'my-work',
+    icon: 'Calendar',
+    estimatedTime: '1 min',
+    steps: [
+      {
+        id: 'availability-intro',
+        title: 'Your Availability Calendar',
+        description: 'Let your team know when you\'re available to help! This makes scheduling and event coordination much easier.',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'availability-nav',
+        title: 'Open My Availability',
+        description: 'Navigate to "My Availability" from the menu to set when you\'re available for volunteer activities.',
+        targetSelector: '[data-nav-id="my-availability"]',
+        position: 'right',
+        navigationAction: {
+          section: 'my-availability'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="my-availability"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'availability-form',
+        title: 'Set Your Availability',
+        description: 'Use this page to indicate when you\'re available for volunteer work. Your team coordinators can see this when planning events.',
+        targetSelector: 'main, .container',
+        position: 'center',
+        highlightPadding: 16
+      }
+    ]
+  },
+  {
+    id: 'volunteers-management-guide',
+    title: 'Managing Volunteers',
+    description: 'Add and manage volunteer information',
+    category: 'team-management',
+    icon: 'Users',
+    estimatedTime: '3 min',
+    steps: [
+      {
+        id: 'volunteers-intro',
+        title: 'Volunteer Management',
+        description: 'Keep track of all volunteers who support TSP. Let me show you how the volunteer management system works!',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right'
+      },
+      {
+        id: 'volunteers-nav',
+        title: 'Navigate to Volunteers',
+        description: 'Click on "Volunteers" in the navigation menu.',
+        targetSelector: '[data-nav-id="volunteers"]',
+        position: 'right',
+        navigationAction: {
+          section: 'volunteers'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="volunteers"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'volunteers-add',
+        title: 'Add New Volunteer',
+        description: 'Click here to register a new volunteer. Enter their contact info, skills, availability, and preferences.',
+        targetSelector: '[data-testid="add-volunteer"]',
+        position: 'bottom',
+        highlightPadding: 8
+      },
+      {
+        id: 'volunteers-directory',
+        title: 'Volunteer Directory',
+        description: 'Browse all registered volunteers. Search by name, filter by skills or availability, and view participation history.',
+        targetSelector: '[data-testid="volunteers-list"]',
+        position: 'top',
+        highlightPadding: 16
+      },
+      {
+        id: 'volunteers-profile',
+        title: 'Volunteer Profiles',
+        description: 'Click on any volunteer to view their full profile, volunteer history, skills, and contact information.',
+        targetSelector: '[data-testid="volunteer-card"]',
+        position: 'bottom',
+        highlightPadding: 12
+      }
+    ]
   }
 ];
 

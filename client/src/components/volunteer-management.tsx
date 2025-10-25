@@ -392,7 +392,11 @@ export default function VolunteerManagement() {
           </Button>
           {canAdd && (
             <ButtonTooltip explanation="Add a new volunteer to your database. You can track their contact information, skills, and availability for scheduling.">
-              <Button onClick={handleAdd} className="flex items-center gap-2">
+              <Button
+                onClick={handleAdd}
+                className="flex items-center gap-2"
+                data-testid="add-volunteer"
+              >
                 <Plus className="w-4 h-4" />
                 Add Volunteer
               </Button>
@@ -431,7 +435,7 @@ export default function VolunteerManagement() {
       </Card>
 
       {/* Volunteers List */}
-      <div className="grid gap-4">
+      <div className="grid gap-4" data-testid="volunteers-list">
         {isLoading ? (
           <div className="text-center py-8">
             <div className="text-gray-500">Loading volunteers...</div>
@@ -457,6 +461,7 @@ export default function VolunteerManagement() {
             <Card
               key={volunteer.id}
               className="hover:shadow-md transition-shadow"
+              data-testid="volunteer-card"
             >
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">
