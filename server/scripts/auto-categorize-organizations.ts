@@ -164,20 +164,21 @@ const categoryPatterns: CategoryPattern[] = [
     category: 'club',
     patterns: [
       /\bclub\b/i,
+      /\brotary\s+club\b/i,
       /\brotary\b/i,
       /\bkiwanis\b/i,
-      /\blions\b/i, // Lions Club or just Lions
+      /\blions\s+club\b/i, // Only "Lions Club", not just "Lions"
       /\bboy\s+scouts?\b/i, // Boy Scout or Boy Scouts
       /\bgirl\s+scouts?\b/i, // Girl Scout or Girl Scouts
-      /\bscouts?\b/i, // Scouts, Scout (catch standalone)
       /\bcub\s+scouts?\b/i, // Cub Scouts
       /\beagle\s+scouts?\b/i,
+      /\bventure\s+scouts?\b/i,
       /\b4-h\b/i,
       /\byouth\s+group\b/i,
       /\bsports\s+club\b/i,
       /\bathletic\s+club\b/i,
       /\bsocial\s+club\b/i,
-      /\brecreation\b/i,
+      /\brecreation\s+center\b/i,
     ],
   },
   // Large Corporations
@@ -189,21 +190,21 @@ const categoryPatterns: CategoryPattern[] = [
       /\binc\.?\b/i,
       /\bllc\b/i,
       /\bltd\.?\b/i,
-      /\benterprise\b/i,
+      /\benterprise\s+(corporation|corp|inc|llc)\b/i, // Enterprise + corp indicator
+      /\benterprise\s+holdings\b/i,
       /\bglobal\b/i,
       /\binternational\b/i,
       /\bgroup\b/i,
       /\bholdings\b/i,
       /\bcompany\b/i,
       /\bindustries\b/i,
-      /\bmedia\b/i,
       /\bstudios?\b/i,
-      /\bbroadcasting\b/i,
+      /\bbroadcasting\s+(corporation|corp|company|network)\b/i,
       /\bproductions?\b/i,
       /\bpictures\b/i,
       /\bfilms?\b/i,
-      /\bwarner\s+bros\.?\b/i, // Warner Bros.
-      /\bdiscovery\b/i, // Discovery, Warner Bros. Discovery
+      /\bwarner\s+bros\.?\b/i, // Warner Bros. (specific company)
+      /\bwarner\s+bros\.?\s+discovery\b/i, // Warner Bros. Discovery (specific)
       /\btechnologies\b/i,
       /\bsystems?\b/i,
       /\bnetworks?\b/i,
