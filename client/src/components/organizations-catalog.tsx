@@ -49,6 +49,9 @@ import { logger } from '@/lib/logger';
 
 interface Group {
   name: string;
+  category?: string | null;
+  schoolClassification?: string | null;
+  isReligious?: boolean;
   contacts: Array<{
     name: string;
     email?: string;
@@ -101,6 +104,36 @@ interface GroupCatalogProps {
   onNavigateToEventPlanning?: () => void;
 }
 
+// Helper function to get category display label
+const getCategoryLabel = (category: string | null | undefined): string => {
+  if (!category) return 'Uncategorized';
+  const labels: Record<string, string> = {
+    school: 'School',
+    church_faith: 'Church/Faith',
+    club: 'Club',
+    neighborhood: 'Neighborhood',
+    large_corp: 'Corporation',
+    small_medium_corp: 'Small Business',
+    other: 'Other',
+  };
+  return labels[category] || category;
+};
+
+// Helper function to get category badge color
+const getCategoryBadgeColor = (category: string | null | undefined): string => {
+  if (!category) return 'bg-gray-100 text-gray-700';
+  const colors: Record<string, string> = {
+    school: 'bg-blue-100 text-blue-700',
+    church_faith: 'bg-purple-100 text-purple-700',
+    club: 'bg-green-100 text-green-700',
+    neighborhood: 'bg-yellow-100 text-yellow-700',
+    large_corp: 'bg-orange-100 text-orange-700',
+    small_medium_corp: 'bg-teal-100 text-teal-700',
+    other: 'bg-gray-100 text-gray-700',
+  };
+  return colors[category] || 'bg-gray-100 text-gray-700';
+};
+
 export default function GroupCatalog({
   onNavigateToEventPlanning,
 }: GroupCatalogProps = {}) {
@@ -109,6 +142,7 @@ export default function GroupCatalog({
   const [sortBy, setSortBy] = useState('groupName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [statusFilter, setStatusFilter] = useState<string[]>(['contacted', 'scheduled', 'completed', 'declined', 'past']); // Exclude new and in_process by default
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]); // Empty = show all categories
   const [dateFilterStart, setDateFilterStart] = useState<string>('');
   const [dateFilterEnd, setDateFilterEnd] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -218,6 +252,16 @@ export default function GroupCatalog({
   // Extract and flatten groups from response
   const rawGroups = groupsResponse?.groups || [];
 
+  // Create category lookup map by organization name
+  const organizationCategoryMap = new Map<string, { category: string | null, schoolClassification: string | null, isReligious: boolean }>();
+  rawGroups.forEach((org: any) => {
+    organizationCategoryMap.set(org.name, {
+      category: org.category || null,
+      schoolClassification: org.schoolClassification || null,
+      isReligious: org.isReligious || false,
+    });
+  });
+
   // Convert to flat structure and separate active vs historical organizations
   // Combine departments and contacts but deduplicate by unique key
   const allContactsAndDepartments = rawGroups.flatMap((org: any) => {
@@ -245,6 +289,9 @@ export default function GroupCatalog({
       tspContactAssigned: contact.tspContactAssigned || null,
       assignedTo: contact.assignedTo || null,
       assignedToName: contact.assignedToName || null,
+      category: org.category || null,
+      schoolClassification: org.schoolClassification || null,
+      isReligious: org.isReligious || false,
     }));
   });
 
@@ -901,7 +948,7 @@ export default function GroupCatalog({
                                         {getStatusText(org.status)}
                                       </Badge>
                                       <span className="text-gray-600 font-medium">
-                                        {org.totalRequests} request{org.totalRequests !== 1 ? 's' : ''}
+                                        {org.totalRequests} {org.totalRequests === 1 ? 'request' : 'requests'}
                                       </span>
                                     </div>
 

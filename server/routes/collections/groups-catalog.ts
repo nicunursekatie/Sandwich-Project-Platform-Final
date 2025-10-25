@@ -37,6 +37,19 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         userIdToName.set(u.id, name);
       });
 
+      // Get all organizations from database for category information
+      const allOrganizations = await storage.getAllOrganizations();
+      const organizationCategoryMap = new Map();
+      allOrganizations.forEach(org => {
+        const canonicalKey = canonicalizeOrgName(org.name);
+        organizationCategoryMap.set(canonicalKey, {
+          category: org.category,
+          schoolClassification: org.schoolClassification,
+          isReligious: org.isReligious,
+          department: org.department,
+        });
+      });
+
       // Create a map to aggregate data by organization and department
       const departmentsMap = new Map();
 
@@ -489,16 +502,25 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
       // Convert to final format and sort
       const organizations = Array.from(organizationsMap.entries()).map(
-        ([_, org]) => ({
-          name: org.displayName,
-          canonicalName: org.canonicalName,
-          nameVariations: Array.from(org.nameVariations),
-          departments: org.departments.sort(
-            (a: { latestActivityDate: Date | string }, b: { latestActivityDate: Date | string }) =>
-              new Date(b.latestActivityDate).getTime() -
-              new Date(a.latestActivityDate).getTime()
-          ),
-        })
+        ([_, org]) => {
+          // Look up category information for this organization
+          const categoryInfo = organizationCategoryMap.get(org.canonicalName);
+          
+          return {
+            name: org.displayName,
+            canonicalName: org.canonicalName,
+            nameVariations: Array.from(org.nameVariations),
+            // Add category fields from organizations table
+            category: categoryInfo?.category || null,
+            schoolClassification: categoryInfo?.schoolClassification || null,
+            isReligious: categoryInfo?.isReligious || false,
+            departments: org.departments.sort(
+              (a: { latestActivityDate: Date | string }, b: { latestActivityDate: Date | string }) =>
+                new Date(b.latestActivityDate).getTime() -
+                new Date(a.latestActivityDate).getTime()
+            ),
+          };
+        }
       );
 
       // Sort organizations by most recent activity across all departments
