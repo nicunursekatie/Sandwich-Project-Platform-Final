@@ -1,7 +1,7 @@
 /**
  * OpenAPI documentation for Authentication endpoints
  */
-import { z } from 'zod';
+import { z } from '../lib/zod-openapi';
 import { registry } from '../config/openapi';
 
 // Define request/response schemas

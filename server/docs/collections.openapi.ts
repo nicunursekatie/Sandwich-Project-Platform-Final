@@ -1,7 +1,7 @@
 /**
  * OpenAPI documentation for Collections endpoints
  */
-import { z } from 'zod';
+import { z } from '../lib/zod-openapi';
 import { registry, commonErrorResponses } from '../config/openapi';
 
 // Collection schema

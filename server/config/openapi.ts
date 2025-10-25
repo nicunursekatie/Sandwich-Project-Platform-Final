@@ -1,22 +1,30 @@
 import {
   OpenAPIRegistry,
   OpenApiGeneratorV3,
-  extendZodWithOpenApi,
 } from '@asteasolutions/zod-to-openapi';
-import { z } from 'zod';
+import { z } from '../lib/zod-openapi';
 
-// Extend Zod with OpenAPI methods
-extendZodWithOpenApi(z);
+// Note: The z import above comes from lib/zod-openapi which extends Zod with OpenAPI support
+// This ensures all .openapi() calls work correctly throughout the application
 
-// Create the OpenAPI registry BEFORE importing docs
-// This prevents circular dependency issues since docs import and use the registry
+// Create the OpenAPI registry
 export const registry = new OpenAPIRegistry();
 
-// Import endpoint documentation (this registers routes with the registry)
-import '../docs/auth.openapi';
-import '../docs/recipients.openapi';
-import '../docs/users.openapi';
-import '../docs/collections.openapi';
+// Flag to track if docs have been loaded
+let docsLoaded = false;
+
+// Lazy load documentation files to avoid circular dependency issues
+// These files register their routes/schemas when imported
+async function loadDocs() {
+  if (docsLoaded) return;
+  
+  await import('../docs/auth.openapi');
+  await import('../docs/recipients.openapi');
+  await import('../docs/users.openapi');
+  await import('../docs/collections.openapi');
+  
+  docsLoaded = true;
+}
 
 // Define common security schemes
 registry.registerComponent('securitySchemes', 'sessionAuth', {
@@ -92,7 +100,10 @@ export const commonErrorResponses = {
 };
 
 // Helper function to generate OpenAPI documentation
-export function generateOpenAPIDocument() {
+export async function generateOpenAPIDocument() {
+  // Load all documentation files first
+  await loadDocs();
+  
   const generator = new OpenApiGeneratorV3(registry.definitions);
 
   return generator.generateDocument({

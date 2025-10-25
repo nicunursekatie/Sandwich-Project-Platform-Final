@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   EventRequestProvider,
   useEventRequestContext,
@@ -160,6 +160,16 @@ const EventRequestsManagementContent: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  // Memoize tab children to prevent recreation on every render
+  const tabChildren = useMemo(() => ({
+    new: <NewRequestsTab />,
+    in_process: <InProcessTab />,
+    scheduled: <ScheduledTab />,
+    completed: <CompletedTab />,
+    declined: <DeclinedTab />,
+    my_assignments: <MyAssignmentsTab />,
+  }), []);
+
   const handleScheduleCall = () => {
     if (!selectedEventRequest || !scheduleCallDate || !scheduleCallTime) return;
 
@@ -310,14 +320,7 @@ const EventRequestsManagementContent: React.FC = () => {
             statusCounts={statusCounts}
             totalItems={totalItems}
             totalPages={totalPages}
-            children={{
-              new: <NewRequestsTab />,
-              in_process: <InProcessTab />,
-              scheduled: <ScheduledTab />,
-              completed: <CompletedTab />,
-              declined: <DeclinedTab />,
-              my_assignments: <MyAssignmentsTab />,
-            }}
+            children={tabChildren}
           />
         )}
 
