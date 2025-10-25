@@ -764,16 +764,16 @@ export default function GroupCatalog({
                     <div className="mb-4 pb-3 border-b border-gray-200">
                       <div className="flex items-center space-x-2 mb-3">
                         <Building
-                          className="w-5 h-5"
+                          className="w-6 h-6"
                           style={{ color: '#236383' }}
                         />
-                        <h2 className="text-lg font-bold text-gray-900 truncate">
+                        <h2 className="text-xl font-bold text-gray-900 truncate">
                           {group.groupName}
                         </h2>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-gray-600">
+                      <div className="flex items-center justify-between text-sm text-gray-600">
                         <span className="flex items-center space-x-1">
-                          <Users className="w-3 h-3" />
+                          <Users className="w-4 h-4" />
                           <span>
                             {group.totalDepartments}{' '}
                             {group.totalDepartments === 1
@@ -782,7 +782,7 @@ export default function GroupCatalog({
                           </span>
                         </span>
                         <span className="flex items-center space-x-1">
-                          <Calendar className="w-3 h-3" />
+                          <Calendar className="w-4 h-4" />
                           <span>{group.totalRequests} request{group.totalRequests !== 1 ? 's' : ''}</span>
                         </span>
                       </div>
@@ -807,11 +807,11 @@ export default function GroupCatalog({
                           {deptName !== 'General' && (
                             <div className="mb-3 pb-2 border-b border-gray-300">
                               <div className="flex items-center space-x-2">
-                                <Building className="w-4 h-4 text-purple-600" />
-                                <h3 className="text-sm font-semibold text-gray-800 truncate">
+                                <Building className="w-5 h-5 text-purple-600" />
+                                <h3 className="text-base font-semibold text-gray-800 truncate">
                                   {deptName}
                                 </h3>
-                                <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                <Badge className="bg-purple-100 text-purple-700 text-sm">
                                   {deptEvents.length}
                                 </Badge>
                               </div>
@@ -841,25 +841,36 @@ export default function GroupCatalog({
                                 }
                               >
                                 <CardHeader className="pb-3 px-4 pt-4">
-                                  {/* Event Date - Primary Focus */}
-                                  {org.eventDate ? (
-                                    <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
-                                      <Calendar className="w-4 h-4 text-teal-600" />
-                                      <span className="font-medium">
-                                        {formatDateForDisplay(org.eventDate)}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-3">
-                                      <Calendar className="w-4 h-4 text-gray-400" />
-                                      <span>No date specified</span>
-                                    </div>
-                                  )}
+                                  {/* Department Name and Event Date - Top of Card */}
+                                  <div className="mb-4 pb-3 border-b border-gray-200">
+                                    {org.department && org.department !== 'General' && (
+                                      <div className="flex items-center space-x-2 mb-2">
+                                        <Building className="w-5 h-5 text-purple-600" />
+                                        <h4 className="text-base font-semibold text-gray-800 truncate">
+                                          {org.department}
+                                        </h4>
+                                      </div>
+                                    )}
+                                    {/* Event Date */}
+                                    {org.eventDate ? (
+                                      <div className="flex items-center space-x-2 text-base text-gray-700">
+                                        <Calendar className="w-5 h-5 text-teal-600" />
+                                        <span className="font-semibold">
+                                          {formatDateForDisplay(org.eventDate)}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center space-x-2 text-base text-gray-500">
+                                        <Calendar className="w-5 h-5 text-gray-400" />
+                                        <span>No date specified</span>
+                                      </div>
+                                    )}
+                                  </div>
 
                                   {/* Contact Information */}
-                                  <div className="space-y-1 mb-3">
-                                    <div className="flex items-center space-x-1 text-sm">
-                                      <User className="w-4 h-4 text-teal-600" />
+                                  <div className="space-y-2 mb-3">
+                                    <div className="flex items-center space-x-2 text-base">
+                                      <User className="w-5 h-5 text-teal-600" />
                                       <button
                                         onClick={() => {
                                           setSelectedContact(org);
@@ -872,47 +883,39 @@ export default function GroupCatalog({
                                       </button>
                                     </div>
                                     {org.email && (
-                                      <div className="flex items-center space-x-1 text-xs">
-                                        <Mail className="w-3 h-3 text-teal-500" />
+                                      <div className="flex items-center space-x-2 text-sm">
+                                        <Mail className="w-4 h-4 text-teal-500" />
                                         <span className="text-teal-700 hover:text-teal-800 truncate">
                                           {org.email}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {org.department && deptName !== 'General' && (
-                                      <div className="flex items-center space-x-1 text-xs">
-                                        <Building className="w-3 h-3 text-purple-500" />
-                                        <span className="text-purple-700 truncate">
-                                          {org.department}
                                         </span>
                                       </div>
                                     )}
                                   </div>
 
                                   {/* Status and Metrics */}
-                                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-2 border border-orange-200 rounded text-xs mt-3">
-                                    <div className="flex items-center justify-between mb-1">
+                                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 border border-orange-200 rounded text-sm mt-3">
+                                    <div className="flex items-center justify-between mb-2">
                                       <Badge
                                         className={getStatusBadgeColor(org.status)}
                                         variant="outline"
                                       >
                                         {getStatusText(org.status)}
                                       </Badge>
-                                      <span className="text-gray-500">
+                                      <span className="text-gray-600 font-medium">
                                         {org.totalRequests} request{org.totalRequests !== 1 ? 's' : ''}
                                       </span>
                                     </div>
 
                                     <div className="flex items-center justify-between">
-                                      <div className="flex items-center space-x-1">
-                                        <span>🥪</span>
-                                        <span className="font-semibold text-orange-700">
+                                      <div className="flex items-center space-x-1.5">
+                                        <span className="text-lg">🥪</span>
+                                        <span className="font-semibold text-orange-700 text-base">
                                           {org.actualSandwichTotal || org.totalSandwiches || 0}
                                         </span>
                                       </div>
-                                      <div className="flex items-center space-x-1">
-                                        <span>📦</span>
-                                        <span className="font-semibold text-brand-primary">
+                                      <div className="flex items-center space-x-1.5">
+                                        <span className="text-lg">📦</span>
+                                        <span className="font-semibold text-brand-primary text-base">
                                           {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
                                         </span>
                                       </div>
@@ -921,9 +924,9 @@ export default function GroupCatalog({
                                     {/* TSP Contact Display */}
                                     {(() => {
                                       let tspContactName = null;
-                                      
-                                      if (org.assignedToName && org.assignedToName.trim() && 
-                                          !org.assignedToName.includes('@') && 
+
+                                      if (org.assignedToName && org.assignedToName.trim() &&
+                                          !org.assignedToName.includes('@') &&
                                           !org.assignedToName.match(/^[a-f0-9-]{8,}$/i)) {
                                         tspContactName = org.assignedToName;
                                       } else if (org.tspContactAssigned && org.tspContactAssigned.trim()) {
@@ -931,10 +934,10 @@ export default function GroupCatalog({
                                       } else if (org.tspContact && org.tspContact.trim()) {
                                         tspContactName = org.tspContact;
                                       }
-                                      
+
                                       return tspContactName ? (
-                                        <div className="flex items-center space-x-1 text-xs mt-2 pt-2 border-t border-orange-300">
-                                          <UserCheck className="w-3 h-3 text-purple-500" />
+                                        <div className="flex items-center space-x-1.5 text-sm mt-2 pt-2 border-t border-orange-300">
+                                          <UserCheck className="w-4 h-4 text-purple-500" />
                                           <span className="text-purple-700 font-medium truncate">
                                             TSP: {tspContactName}
                                           </span>
@@ -945,29 +948,29 @@ export default function GroupCatalog({
                                     {/* Past Events List - Compact */}
                                     {org.pastEvents && org.pastEvents.length > 0 && (
                                       <div className="mt-2 pt-2 border-t border-orange-300">
-                                        <div className="text-xs font-semibold text-gray-700 mb-1">
+                                        <div className="text-sm font-semibold text-gray-700 mb-2">
                                           Past Events:
                                         </div>
-                                        <div className="space-y-1 max-h-24 overflow-y-auto">
+                                        <div className="space-y-1.5 max-h-28 overflow-y-auto">
                                           {org.pastEvents.map((event, idx) => (
                                             <div
                                               key={idx}
-                                              className="flex items-center justify-between bg-white/60 px-1.5 py-0.5 rounded"
+                                              className="flex items-center justify-between bg-white/60 px-2 py-1 rounded"
                                             >
-                                              <div className="flex items-center space-x-1">
-                                                <Calendar className="w-2.5 h-2.5 text-teal-600" />
-                                                <span className="text-gray-700" style={{ fontSize: '10px' }}>
+                                              <div className="flex items-center space-x-1.5">
+                                                <Calendar className="w-3.5 h-3.5 text-teal-600" />
+                                                <span className="text-gray-700 text-xs">
                                                   {formatDateForDisplay(event.date)}
                                                 </span>
                                               </div>
-                                              <div className="flex items-center space-x-1">
-                                                <span className="font-semibold text-orange-700" style={{ fontSize: '10px' }}>
+                                              <div className="flex items-center space-x-1.5">
+                                                <span className="font-semibold text-orange-700 text-xs">
                                                   {event.sandwichCount}
                                                 </span>
-                                                <img 
-                                                  src="/attached_assets/LOGOS/sandwich logo.png" 
-                                                  alt="sandwich" 
-                                                  className="w-2.5 h-2.5 object-contain"
+                                                <img
+                                                  src="/attached_assets/LOGOS/sandwich logo.png"
+                                                  alt="sandwich"
+                                                  className="w-3.5 h-3.5 object-contain"
                                                 />
                                               </div>
                                             </div>
@@ -988,9 +991,9 @@ export default function GroupCatalog({
                                     }}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full text-xs bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-1"
+                                    className="w-full text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-2"
                                   >
-                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    <ExternalLink className="w-4 h-4 mr-1.5" />
                                     View Complete History
                                   </Button>
                                 </CardContent>
@@ -999,7 +1002,7 @@ export default function GroupCatalog({
                             {/* Show indicator if there are more events */}
                             {deptEvents.length > 3 && (
                               <div className="text-center py-2 px-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded border border-orange-200">
-                                <p className="text-xs text-gray-600">
+                                <p className="text-sm text-gray-600 font-medium">
                                   + {deptEvents.length - 3} more event{deptEvents.length - 3 !== 1 ? 's' : ''} (click "View History" to see all)
                                 </p>
                               </div>
