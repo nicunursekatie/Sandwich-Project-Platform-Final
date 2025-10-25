@@ -63,7 +63,7 @@ const categoryPatterns: CategoryPattern[] = [
       /\bst\.?\s+\w+'?s?\s+(elementary|middle|high|school)\b/i, // St. Mary's Elementary/Middle/High/School
       /\bsaint\s+\w+'?s?\s+(elementary|middle|high|school)\b/i,
       /\bparochial\b/i,
-      /\bwesleyan\b/i, // Wesleyan schools/universities
+      /\bwesleyan\s+(school|university|college|academy)\b/i, // Wesleyan School/University, not "First Wesleyan Church"
     ],
   },
   // Schools - Charter (CHECK SECOND)
