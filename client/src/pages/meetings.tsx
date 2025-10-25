@@ -12,7 +12,7 @@ export default function MeetingsPage({ onNavigate }: MeetingsPageProps) {
   // Track that user has viewed meetings page
   useEffect(() => {
     track('view_meetings');
-  }, []);
+  }, [track]);
 
   return <EnhancedMeetingDashboard />;
 }

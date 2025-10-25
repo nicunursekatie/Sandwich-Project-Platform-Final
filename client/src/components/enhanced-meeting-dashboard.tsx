@@ -249,25 +249,35 @@ export default function EnhancedMeetingDashboard() {
       const planningMeetings = safeMeetings.filter(m => m.status === 'planning');
       if (planningMeetings.length > 0) {
         // Sort by date (most recent first) and select the first one
-        const sortedPlanning = planningMeetings.sort((a, b) => 
+        const sortedPlanning = planningMeetings.sort((a, b) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         logger.log('[Meeting Auto-Selection] Selected planning meeting:', sortedPlanning[0]);
         setSelectedMeeting(sortedPlanning[0]);
         return;
       }
-      
+
       // Priority 2: Most recent meeting by date
-      const sortedMeetings = safeMeetings.sort((a, b) => 
+      const sortedMeetings = safeMeetings.sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       logger.log('[Meeting Auto-Selection] Selected most recent meeting:', sortedMeetings[0]);
       setSelectedMeeting(sortedMeetings[0]);
     }
-  }, [safeMeetings, selectedMeeting]);
+    // Only depend on safeMeetings - selectedMeeting is checked inside the effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safeMeetings]);
 
   // Debounced handlers for auto-save
   const debouncedUpdateRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
+
+  // Cleanup debounced timeouts on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      debouncedUpdateRef.current.forEach(timeout => clearTimeout(timeout));
+      debouncedUpdateRef.current.clear();
+    };
+  }, []);
 
   const handleUpdateProjectDiscussion = useCallback(
     (
@@ -573,11 +583,17 @@ export default function EnhancedMeetingDashboard() {
 
   const handleDeleteMeeting = () => {
     if (!editingMeeting) return;
-    
+
     if (window.confirm(`Are you sure you want to delete "${editingMeeting.title}"? This action cannot be undone.`)) {
+      const deletedMeetingId = editingMeeting.id;
       deleteMeetingMutation.mutate(editingMeeting.id);
       setShowEditMeetingDialog(false);
       setEditingMeeting(null);
+
+      // Clear selectedMeeting if it's the one being deleted
+      if (selectedMeeting?.id === deletedMeetingId) {
+        setSelectedMeeting(null);
+      }
     }
   };
 
