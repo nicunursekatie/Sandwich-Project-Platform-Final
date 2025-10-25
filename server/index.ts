@@ -14,13 +14,30 @@ import { setupSocketChat } from './socket-chat';
 import { startBackgroundSync } from './background-sync-service';
 import { smartDeliveryService } from './services/notifications/smart-delivery';
 import logger, { createServiceLogger, logRequest } from './utils/logger.js';
+import {
+  performanceMonitoringMiddleware,
+  errorTrackingMiddleware,
+  createMonitoringRoutes,
+  monitorSocketIO,
+  monitorWebSocket,
+  startMetricsUpdates,
+  sentryErrorHandler,
+} from './monitoring';
 
 const app = express();
 const serverLogger = createServiceLogger('server');
 
+// Initialize Sentry error tracking (must be before any other middleware)
+initializeSentry(app);
+serverLogger.info('Sentry monitoring initialized');
+
 // CRITICAL: Health check route BEFORE any middleware - for deployment health checks
 // Use /healthz instead of / to avoid blocking the frontend
 app.get('/healthz', (_req: Request, res: Response) => res.sendStatus(200));
+
+// Performance monitoring middleware (should be early in the chain)
+app.use(performanceMonitoringMiddleware);
+serverLogger.info('Performance monitoring middleware enabled');
 
 // Enable gzip/brotli compression for performance
 app.use(
@@ -114,8 +131,14 @@ app.use((req, res, next) => {
 
 // Debug process exit
 process.on('exit', (code) => logger.log('⚠️ Process exiting with code:', code));
-process.on('uncaughtException', (e) => logger.error('❌ Uncaught exception:', e));
-process.on('unhandledRejection', (e) => logger.error('❌ Unhandled rejection:', e));
+process.on('uncaughtException', (e) => {
+  logger.error('❌ Uncaught exception:', e);
+  captureException(e instanceof Error ? e : new Error(String(e)));
+});
+process.on('unhandledRejection', (e) => {
+  logger.error('❌ Unhandled rejection:', e);
+  captureException(e instanceof Error ? e : new Error(String(e)));
+});
 
 async function bootstrap() {
   try {
@@ -172,6 +195,10 @@ async function bootstrap() {
     // Set up Socket.io for chat system
     const io = setupSocketChat(httpServer);
 
+    // Monitor Socket.IO performance
+    monitorSocketIO(io);
+    serverLogger.info('✅ Socket.IO monitoring enabled');
+
     // Configure smart delivery service with Socket.IO for real-time notifications
     smartDeliveryService.setSocketIO(io);
 
@@ -181,19 +208,33 @@ async function bootstrap() {
       path: '/notifications',
     });
 
+    // Monitor native WebSocket performance
+    monitorWebSocket(wss);
+    serverLogger.info('✅ WebSocket monitoring enabled');
+
     // Simple API request logging (without interfering with responses)
     app.use('/api', (req: Request, res: Response, next: NextFunction) => {
       serverLogger.debug(`API Request: ${req.method} ${req.originalUrl}`);
       next();
     });
 
+    // Register monitoring routes (metrics, health checks, dashboard)
+    const monitoringRouter = createMonitoringRoutes();
+    app.use('/monitoring', monitoringRouter);
+    serverLogger.info('✅ Monitoring routes registered at /monitoring');
+
     // CRITICAL FIX: Register all API routes FIRST to prevent route interception
+    let sessionStore: any;
     try {
-      await registerRoutes(app);
+      sessionStore = await registerRoutes(app);
       serverLogger.info('✅ API routes registered FIRST - before static files');
     } catch (error) {
       serverLogger.error('Route registration failed:', error);
+      captureException(error instanceof Error ? error : new Error(String(error)));
     }
+
+    // Error tracking middleware (before final error handler)
+    app.use(errorTrackingMiddleware);
 
     // CRITICAL FIX: Add JSON 404 catch-all for unmatched API routes
     // This prevents API routes from falling through to Vite/SPA and returning HTML
@@ -205,6 +246,9 @@ async function bootstrap() {
         path: req.originalUrl,
       });
     });
+
+    // Sentry error handler (must be after all routes)
+    app.use(sentryErrorHandler());
 
     // IMPORTANT: Static files and SPA fallback MUST come AFTER API routes
     if (process.env.NODE_ENV === 'production') {
@@ -346,21 +390,28 @@ async function bootstrap() {
           // Initialize cron jobs for scheduled tasks
           const { initializeCronJobs } = await import('./services/cron-jobs');
           initializeCronJobs();
-          logger.log({
-            message: '✓ Cron jobs initialized (host availability scraper scheduled)',
-            level: 'info'
-          });
+          logger.log(
+            '✓ Cron jobs initialized (host availability scraper scheduled)'
+          );
 
-          logger.log({
-            message: '✓ The Sandwich Project server is fully ready to handle requests',
-            level: 'info'
-          });
-          logger.log({
-            message: '🚀 SERVER INITIALIZATION COMPLETE 🚀',
-            level: 'info'
-          });
+          // Start periodic metrics updates (active users, sessions, etc.)
+          if (sessionStore) {
+            startMetricsUpdates(storage as any, sessionStore);
+            logger.log('✓ Periodic metrics updates started');
+          } else {
+            logger.warn('⚠ Session store not available - skipping session metrics');
+          }
+
+          logger.log(
+            '✓ The Sandwich Project server is fully ready to handle requests'
+          );
+          logger.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
+          logger.log(`📊 Monitoring Dashboard: http://${host}:${port}/monitoring/dashboard`);
+          logger.log(`📈 Metrics Endpoint: http://${host}:${port}/monitoring/metrics`);
+          logger.log(`💚 Health Check: http://${host}:${port}/monitoring/health/detailed`);
         } catch (initError) {
           serverLogger.error('✗ Background initialization failed:', initError);
+          captureException(initError instanceof Error ? initError : new Error(String(initError)));
           serverLogger.error(
             'This is a fatal error - exiting to allow Replit to restart'
           );

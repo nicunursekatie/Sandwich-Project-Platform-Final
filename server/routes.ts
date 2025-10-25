@@ -34,7 +34,7 @@ import { logger } from './utils/production-safe-logger';
  * the modular routing system in server/routes/index.ts.
  */
 
-export async function registerRoutes(app: Express): Promise<void> {
+export async function registerRoutes(app: Express): Promise<any> {
   // Use database-backed session store for deployment persistence
   // Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
   const databaseUrl =
@@ -209,4 +209,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // HTTP server is created by the caller (server/index.ts)
   // This function only registers routes and middleware
+
+  // Return the session store so it can be used for monitoring
+  return sessionStore;
 }
