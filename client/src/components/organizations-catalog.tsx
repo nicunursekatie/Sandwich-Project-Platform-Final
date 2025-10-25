@@ -843,7 +843,7 @@ export default function GroupCatalog({
                                 <CardHeader className="pb-3 px-4 pt-4">
                                   {/* Department Name and Event Date - Top of Card */}
                                   <div className="mb-4 pb-3 border-b border-gray-200">
-                                    {org.department && (
+                                    {org.department && org.department !== 'General' && (
                                       <div className="flex items-center space-x-2 mb-2">
                                         <Building className="w-5 h-5 text-purple-600" />
                                         <h4 className="text-base font-semibold text-gray-800 truncate">
