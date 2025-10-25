@@ -14,7 +14,7 @@ import { initializeDatabase } from './db-init';
 import { setupSocketChat } from './socket-chat';
 import { startBackgroundSync } from './background-sync-service';
 import { smartDeliveryService } from './services/notifications/smart-delivery';
-import logger, { createServiceLogger, logRequest } from './utils/logger.js';
+import baseLogger, { createServiceLogger, logRequest } from './utils/logger.js';
 import { logger } from './utils/production-safe-logger';
 import {
   performanceMonitoringMiddleware,
@@ -226,8 +226,9 @@ async function bootstrap() {
     serverLogger.info('✅ Monitoring routes registered at /monitoring');
 
     // CRITICAL FIX: Register all API routes FIRST to prevent route interception
+    let sessionStore: any;
     try {
-      await registerRoutes(app);
+      sessionStore = await registerRoutes(app);
       serverLogger.info('✅ API routes registered FIRST - before static files');
     } catch (error) {
       serverLogger.error('Route registration failed:', error);
@@ -396,9 +397,12 @@ async function bootstrap() {
           );
 
           // Start periodic metrics updates (active users, sessions, etc.)
-          const sessionStore = (app as any).sessionStore;
-          startMetricsUpdates(storage as any, sessionStore);
-          logger.log('✓ Periodic metrics updates started');
+          if (sessionStore) {
+            startMetricsUpdates(storage as any, sessionStore);
+            logger.log('✓ Periodic metrics updates started');
+          } else {
+            logger.warn('⚠ Session store not available - skipping session metrics');
+          }
 
           logger.log(
             '✓ The Sandwich Project server is fully ready to handle requests'

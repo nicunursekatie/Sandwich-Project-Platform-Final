@@ -191,6 +191,6 @@ export const sentryErrorHandler = Sentry.setupExpressErrorHandler;
  * Express request handler middleware
  * Should be registered BEFORE all routes
  */
-export const sentryRequestHandler = Sentry.setupExpressErrorHandler;
+export const sentryRequestHandler = Sentry.setupExpressRequestHandler;
 
 export { Sentry };
