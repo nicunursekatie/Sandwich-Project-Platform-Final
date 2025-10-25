@@ -107,7 +107,12 @@ export function useIsDesktop(): boolean {
 
 /**
  * Responsive value helper
- * Returns different values based on current breakpoint
+ * Returns different values based on current breakpoint with proper cascading fallback
+ *
+ * Example:
+ * - Breakpoint: xl, Values: { base: 'A', lg: 'B' }
+ * - Returns: 'B' (cascades from xl → lg, finds 'B')
+ *
  * SSR-safe: Uses base value during SSR
  */
 export function useResponsiveValue<T>(values: {
@@ -120,15 +125,27 @@ export function useResponsiveValue<T>(values: {
 }): T {
   const breakpoint = useCurrentBreakpoint();
 
-  // Return the most specific value available
-  if (breakpoint === '2xl' && values['2xl']) return values['2xl'];
-  if (breakpoint === 'xl' && values.xl) return values.xl;
-  if (breakpoint === 'lg' && values.lg) return values.lg;
-  if (breakpoint === 'md' && values.md) return values.md;
-  if (breakpoint === 'sm' && values.sm) return values.sm;
-
-  // Fall back to base value
-  return values.base;
+  // Cascade down from current breakpoint to find the first defined value
+  // This ensures proper fallback behavior (e.g., xl falls back to lg, not base)
+  switch (breakpoint) {
+    case '2xl':
+      if (values['2xl'] !== undefined) return values['2xl'];
+      // Fall through to xl
+    case 'xl':
+      if (values.xl !== undefined) return values.xl;
+      // Fall through to lg
+    case 'lg':
+      if (values.lg !== undefined) return values.lg;
+      // Fall through to md
+    case 'md':
+      if (values.md !== undefined) return values.md;
+      // Fall through to sm
+    case 'sm':
+      if (values.sm !== undefined) return values.sm;
+      // Fall through to base
+    default:
+      return values.base;
+  }
 }
 
 /**
