@@ -771,7 +771,7 @@ export default function GroupCatalog({
                           {group.groupName}
                         </h2>
                       </div>
-                      <div className="flex items-center justify-between text-sm text-gray-600">
+                      <div className="flex items-center text-sm text-gray-600">
                         <span className="flex items-center space-x-1">
                           <Users className="w-4 h-4" />
                           <span>
@@ -780,10 +780,6 @@ export default function GroupCatalog({
                               ? 'contact'
                               : 'depts'}
                           </span>
-                        </span>
-                        <span className="flex items-center space-x-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{group.totalRequests} request{group.totalRequests !== 1 ? 's' : ''}</span>
                         </span>
                       </div>
                     </div>
