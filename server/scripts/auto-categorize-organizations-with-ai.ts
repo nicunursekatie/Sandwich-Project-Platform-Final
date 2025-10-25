@@ -1,6 +1,5 @@
 import { db } from '../db';
 import { organizations } from '../../shared/schema';
-import { logger } from '../middleware/logger';
 import { eq, isNull, or } from 'drizzle-orm';
 import OpenAI from 'openai';
 
@@ -10,6 +9,12 @@ import OpenAI from 'openai';
  *
  * Requires OPENAI_API_KEY environment variable
  */
+
+// Simple console logger for scripts (avoids Winston initialization issues)
+const logger = {
+  info: (...args: any[]) => console.log(...args),
+  error: (...args: any[]) => console.error(...args),
+};
 
 // Import the pattern-based categorization logic from the main script
 import { categorizeOrganization as patternCategorize } from './auto-categorize-organizations';
