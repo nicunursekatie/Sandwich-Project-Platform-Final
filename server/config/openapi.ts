@@ -8,14 +8,15 @@ import { z } from 'zod';
 // Extend Zod with OpenAPI methods
 extendZodWithOpenApi(z);
 
+// Create the OpenAPI registry BEFORE importing docs
+// This prevents circular dependency issues since docs import and use the registry
+export const registry = new OpenAPIRegistry();
+
 // Import endpoint documentation (this registers routes with the registry)
 import '../docs/auth.openapi';
 import '../docs/recipients.openapi';
 import '../docs/users.openapi';
 import '../docs/collections.openapi';
-
-// Create the OpenAPI registry
-export const registry = new OpenAPIRegistry();
 
 // Define common security schemes
 registry.registerComponent('securitySchemes', 'sessionAuth', {
