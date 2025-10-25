@@ -61,6 +61,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { logger } from '@/lib/logger';
+import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 
 interface CompletedCardProps {
   request: EventRequest;
@@ -2083,29 +2084,88 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         <div className="space-y-2 mb-3">
           <div className="bg-white rounded-lg p-2 space-y-2">
             {/* Assigned Recipients */}
-            {assignedRecipientInfo.length > 0 && (
-              <div className="bg-[#e6f2f5] rounded-lg p-3">
-                <div className="flex items-start gap-2 text-sm">
-                  <Building className="w-4 h-4 text-[#236383] mt-0.5" />
-                  <div className="flex-1">
-                    <span className="font-medium text-[#236383]">Recipients & Hosts:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {assignedRecipientInfo.map((item, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="bg-white text-[#236383] border border-[#236383]/30 text-xs flex items-center gap-1"
-                          data-testid={`badge-${item.type}-${index}`}
+            <div className="bg-[#e6f2f5] rounded-lg p-3">
+              <div className="flex items-start gap-2 text-sm">
+                <Building className="w-4 h-4 text-[#236383] mt-0.5" />
+                <div className="flex-1">
+                  <span className="font-medium text-[#236383]">Recipients & Hosts:</span>
+                  {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+                    <div className="space-y-2 mt-2">
+                      <MultiRecipientSelector
+                        value={editingValue ? JSON.parse(editingValue) : []}
+                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                        placeholder="Select recipient organizations..."
+                        data-testid="assigned-recipients-editor"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={cancelEdit}
                         >
-                          {item.icon}
-                          {item.name}
-                        </Badge>
-                      ))}
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex items-start gap-2 mt-1">
+                      {assignedRecipientInfo.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 flex-1">
+                          {assignedRecipientInfo.map((item, index) => (
+                            <Badge
+                              key={index}
+                              variant="secondary"
+                              className="bg-white text-[#236383] border border-[#236383]/30 text-xs flex items-center gap-1"
+                              data-testid={`badge-${item.type}-${index}`}
+                            >
+                              {item.icon}
+                              {item.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        canEditOrgDetails && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              startEditing(
+                                'assignedRecipientIds',
+                                (request as any).assignedRecipientIds ? JSON.stringify((request as any).assignedRecipientIds) : '[]'
+                              )
+                            }
+                            className="text-[#236383] border-[#236383]/30 hover:bg-[#236383]/10"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Add Recipients
+                          </Button>
+                        )
+                      )}
+                      {canEditOrgDetails && assignedRecipientInfo.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            startEditing(
+                              'assignedRecipientIds',
+                              (request as any).assignedRecipientIds ? JSON.stringify((request as any).assignedRecipientIds) : '[]'
+                            )
+                          }
+                          className="h-6 px-2 opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Event Address - with inline editing */}
             {(request.eventAddress || isEditingField && editingField === 'eventAddress' || canEditOrgDetails) && (
