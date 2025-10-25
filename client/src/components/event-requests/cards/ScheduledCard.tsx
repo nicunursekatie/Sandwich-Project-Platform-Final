@@ -289,7 +289,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     name: string;
     hostLocationName: string;
   }>>({
-    queryKey: ['/api/host-contacts'],
+    queryKey: ['/api/hosts/host-contacts'],
     staleTime: 1 * 60 * 1000, // Reduced to 1 minute
   });
 
@@ -306,9 +306,38 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   // Helper to resolve recipient display name from ID
   const resolveRecipientName = (recipientId: string): { name: string; type: string } => {
     if (recipientId.includes(':')) {
-      // New format: "host:Name" or "recipient:Name" or "custom:Text"
+      // New format: "host:16" or "recipient:23" or "custom:Custom Text"
       const [type, ...rest] = recipientId.split(':');
-      return { name: rest.join(':'), type };
+      const value = rest.join(':');
+      
+      // If it's a numeric ID after the colon, look it up
+      if (!isNaN(Number(value))) {
+        const numId = Number(value);
+        
+        if (type === 'host') {
+          // Look up in host contacts first
+          const hostContact = hostContacts.find(hc => hc.id === numId);
+          if (hostContact) {
+            const resolvedName = hostContact.displayName || hostContact.name || hostContact.hostLocationName;
+            return { name: resolvedName || `Host Contact ${numId}`, type };
+          }
+          // Then try host locations
+          const hostLocation = hostLocations.find(h => h.id === numId);
+          if (hostLocation) {
+            return { name: hostLocation.name || `Host Location ${numId}`, type };
+          }
+          return { name: `Unknown Host (${numId})`, type };
+        } else if (type === 'recipient') {
+          const recipient = recipients.find(r => r.id === numId);
+          if (recipient) {
+            return { name: recipient.name || `Recipient ${numId}`, type };
+          }
+          return { name: `Unknown Recipient (${numId})`, type };
+        }
+      }
+      
+      // Not numeric or custom type - return as-is
+      return { name: value, type };
     }
 
     // Legacy format: just a number

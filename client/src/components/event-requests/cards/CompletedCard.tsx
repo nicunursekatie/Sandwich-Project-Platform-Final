@@ -1687,6 +1687,12 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     staleTime: 10 * 60 * 1000,
   });
 
+  // Fetch host contacts for name lookup (individual host people)
+  const { data: hostContacts = [] } = useQuery<{ id: number; name: string; hostLocation: string }[]>({
+    queryKey: ['/api/hosts/host-contacts'],
+    staleTime: 10 * 60 * 1000,
+  });
+
   // Fetch users for TSP contact assignment
   const { data: users = [] } = useQuery<{ id: number; name: string; email: string }[]>({
     queryKey: ['/api/users/basic'],
@@ -1761,6 +1767,15 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       // Check for prefixed format
       if (idStr.startsWith('host:')) {
         const hostId = parseInt(idStr.replace('host:', ''));
+        // Check host_contacts first (individual people), then hosts table (locations)
+        const hostContact = hostContacts.find(hc => hc.id === hostId);
+        if (hostContact) {
+          return {
+            name: `${hostContact.name} (${hostContact.hostLocation})`,
+            type: 'host',
+            icon: <Home className="w-3 h-3 mr-1" />
+          };
+        }
         const host = hosts.find(h => h.id === hostId);
         return {
           name: host?.name || `Unknown Host (${hostId})`,
