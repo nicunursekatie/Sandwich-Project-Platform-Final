@@ -25,11 +25,11 @@ const badgeVariants = cva(
         pending:
           'border-transparent bg-gray-200 text-gray-700 hover:bg-gray-300',
         'in-progress':
-          'border-transparent bg-blue-100 text-blue-700 border-blue-200',
+          'bg-blue-100 text-blue-700 border-blue-200',
         completed:
-          'border-transparent bg-green-100 text-green-700 border-green-200',
+          'bg-green-100 text-green-700 border-green-200',
         cancelled:
-          'border-transparent bg-red-100 text-red-700 border-red-200',
+          'bg-red-100 text-red-700 border-red-200',
       },
     },
     defaultVariants: {

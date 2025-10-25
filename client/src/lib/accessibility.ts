@@ -222,9 +222,11 @@ export function announceToScreenReader(
 
   document.body.appendChild(announcement);
 
-  // Remove after announcement
+  // Remove after announcement (safely check if still in DOM)
   setTimeout(() => {
-    document.body.removeChild(announcement);
+    if (announcement.parentNode) {
+      announcement.remove();
+    }
   }, 1000);
 }
 
