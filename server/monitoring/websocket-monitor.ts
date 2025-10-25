@@ -100,6 +100,21 @@ export function monitorSocketIO(io: SocketIOServer): void {
       return originalOn.call(this, event, wrappedListener);
     };
 
+    // Track chat-specific events (using original socket.on to avoid double-wrapping)
+    originalOn.call(socket, 'send-message', (data) => {
+      const channel = data.channel || 'unknown';
+      chatMessagesTotal.inc({ channel, type: 'user' });
+    });
+
+    originalOn.call(socket, 'join-channel', (data) => {
+      const channel = data.channel || 'unknown';
+      logger.debug('User joined channel', {
+        socketId: socket.id,
+        channel,
+        userId: (socket.data as any)?.userId,
+      });
+    });
+
     // Track disconnections
     socket.on('disconnect', (reason) => {
       websocketConnections.dec({ type: 'socket.io' });
@@ -116,23 +131,6 @@ export function monitorSocketIO(io: SocketIOServer): void {
       logger.error('Socket.IO error', {
         socketId: socket.id,
         error: error.message,
-        userId: (socket.data as any)?.userId,
-      });
-    });
-  });
-
-  // Monitor chat-specific events
-  io.on('connection', (socket: Socket) => {
-    socket.on('send-message', (data) => {
-      const channel = data.channel || 'unknown';
-      chatMessagesTotal.inc({ channel, type: 'user' });
-    });
-
-    socket.on('join-channel', (data) => {
-      const channel = data.channel || 'unknown';
-      logger.debug('User joined channel', {
-        socketId: socket.id,
-        channel,
         userId: (socket.data as any)?.userId,
       });
     });
