@@ -912,9 +912,9 @@ export default function GroupCatalog({
                                       </div>
                                       <div className="flex items-center space-x-1">
                                         <span>📦</span>
-                                        <span className="font-semibold text-brand-primary">
-                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
-                                        </span>
+                                          <span className="font-semibold text-brand-primary">
+                                            {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
+                                          </span>
                                       </div>
                                     </div>
 
@@ -1159,9 +1159,9 @@ export default function GroupCatalog({
                                     </div>
                                     <div className="flex items-center space-x-1">
                                       <span>📦</span>
-                                      <span className="font-semibold text-brand-primary">
-                                        {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
-                                      </span>
+                                          <span className="font-semibold text-brand-primary">
+                                            {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
+                                          </span>
                                     </div>
                                   </div>
 
