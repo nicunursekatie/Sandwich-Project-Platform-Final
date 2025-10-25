@@ -10,6 +10,7 @@
     "check": "tsc",
     "check:routes": "node scripts/check-legacy-routes.js",
     "db:push": "drizzle-kit push",
+    "db:migrate": "tsx server/run-migrations.ts",
     "test": "jest",
     "test:integration": "jest --config tests/integration/jest.config.cjs"
   },

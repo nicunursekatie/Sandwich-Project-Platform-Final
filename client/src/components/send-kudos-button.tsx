@@ -82,7 +82,7 @@ export default function SendKudosButton({
   }
 
   // Don't render if user doesn't have permission to send kudos
-  if (!hasPermission(user, PERMISSIONS.KUDOS_SEND)) {
+  if (!hasPermission(user as any, PERMISSIONS.KUDOS_SEND)) {
     logger.warn('SendKudosButton: User lacks KUDOS_SEND permission', {
       user: user ? { id: (user as any).id, email: (user as any).email } : null,
       KUDOS_SEND: PERMISSIONS.KUDOS_SEND,

@@ -35,6 +35,7 @@ import ToolkitSentDialog from '@/components/event-requests/ToolkitSentDialog';
 import FollowUpDialog from '@/components/event-requests/FollowUpDialog';
 import { ScheduleCallDialog } from '@/components/event-requests/ScheduleCallDialog';
 import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
+import LogContactAttemptDialog from '@/components/LogContactAttemptDialog';
 import SandwichForecastWidget from '@/components/sandwich-forecast-widget';
 import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 
@@ -101,6 +102,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowSandwichPlanningModal,
     showStaffingPlanningModal,
     setShowStaffingPlanningModal,
+    showLogContactDialog,
+    setShowLogContactDialog,
 
     // Assignment dialog state
     assignmentType,
@@ -125,6 +128,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setContactEventRequest,
     tspContactEventRequest,
     setTspContactEventRequest,
+    logContactEventRequest,
+    setLogContactEventRequest,
 
     // Other states
     scheduleCallDate,
@@ -447,6 +452,23 @@ const EventRequestsManagementContent: React.FC = () => {
             setContactEventRequest(null);
           }}
           eventRequest={contactEventRequest}
+        />
+
+        {/* Log Contact Attempt Dialog */}
+        <LogContactAttemptDialog
+          isOpen={showLogContactDialog}
+          onClose={() => {
+            setShowLogContactDialog(false);
+            setLogContactEventRequest(null);
+          }}
+          eventRequest={logContactEventRequest}
+          onLogContact={async (data) => {
+            if (!logContactEventRequest) return;
+            await updateEventRequestMutation.mutateAsync({
+              id: logContactEventRequest.id,
+              data,
+            });
+          }}
         />
 
         {/* TSP Contact Assignment Dialog */}

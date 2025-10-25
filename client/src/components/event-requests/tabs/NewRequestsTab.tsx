@@ -27,6 +27,8 @@ export const NewRequestsTab: React.FC = () => {
     setContactEventRequest,
     setShowTspContactAssignmentDialog,
     setTspContactEventRequest,
+    setShowLogContactDialog,
+    setLogContactEventRequest,
   } = useEventRequestContext();
 
   const newRequests = filterRequestsByStatus('new');
@@ -88,6 +90,10 @@ export const NewRequestsTab: React.FC = () => {
           }}
           onApprove={() => handleStatusChange(request.id, 'in_process')}
           onDecline={() => handleStatusChange(request.id, 'declined')}
+          onLogContact={() => {
+            setLogContactEventRequest(request);
+            setShowLogContactDialog(true);
+          }}
         />
       ))}
       {newRequests.length === 0 && (

@@ -24,6 +24,7 @@ import {
   History,
   ChevronDown,
   ChevronUp,
+  MessageSquare,
 } from 'lucide-react';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
@@ -48,6 +49,7 @@ interface NewRequestCardProps {
   onEditTspContact: () => void;
   onApprove: () => void;
   onDecline: () => void;
+  onLogContact: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -325,6 +327,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onEditTspContact,
   onApprove,
   onDecline,
+  onLogContact,
   canEdit = true,
   canDelete = true,
 }) => {
@@ -526,6 +529,15 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           >
             <Phone className="w-4 h-4 mr-1" />
             Schedule Call
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onLogContact}
+            className="text-[16px] border-blue-500 text-blue-700 hover:bg-blue-50"
+          >
+            <MessageSquare className="w-4 h-4 mr-1" />
+            Log Contact
           </Button>
 
           <div className="flex-1" />

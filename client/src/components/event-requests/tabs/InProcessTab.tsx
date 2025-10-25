@@ -27,6 +27,8 @@ export const InProcessTab: React.FC = () => {
     setContactEventRequest,
     setTspContactEventRequest,
     setShowTspContactAssignmentDialog,
+    setShowLogContactDialog,
+    setLogContactEventRequest,
   } = useEventRequestContext();
 
   const inProcessRequests = filterRequestsByStatus('in_process');
@@ -104,6 +106,10 @@ export const InProcessTab: React.FC = () => {
             onEditTspContact={() => {
               setTspContactEventRequest(request);
               setShowTspContactAssignmentDialog(true);
+            }}
+            onLogContact={() => {
+              setLogContactEventRequest(request);
+              setShowLogContactDialog(true);
             }}
           />
         ))
