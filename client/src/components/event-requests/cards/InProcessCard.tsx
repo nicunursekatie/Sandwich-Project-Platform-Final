@@ -662,7 +662,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onLogContact}
-            className="text-[16px] border-blue-500 text-blue-700 hover:bg-blue-50"
+            className="text-[16px] border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
           >
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
