@@ -593,11 +593,14 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   const speakersNeeded = request.speakersNeeded || 0;
   const volunteersNeeded = request.volunteersNeeded || 0;
 
-  // Count regular drivers only (excluding van driver) for staffing gap calculation
-  const regularDriversCount = parsePostgresArray(request.assignedDriverIds).length;
+  // Count ALL drivers (regular + van driver) for staffing gap calculation, avoiding double-counting
+  const regularDriverIds = parsePostgresArray(request.assignedDriverIds);
+  const regularDriversCount = regularDriverIds.length;
+  const isVanDriverUnique = request.assignedVanDriverId && !regularDriverIds.includes(request.assignedVanDriverId);
+  const totalDriversCount = regularDriversCount + (isVanDriverUnique ? 1 : 0);
   
-  if (driversNeeded > regularDriversCount) {
-    staffingGaps.push(`Needed ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} (had ${regularDriversCount})`);
+  if (driversNeeded > totalDriversCount) {
+    staffingGaps.push(`Needed ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} (had ${totalDriversCount})`);
   }
   if (speakersNeeded > speakers.length) {
     staffingGaps.push(`Needed ${speakersNeeded} speaker${speakersNeeded > 1 ? 's' : ''} (had ${speakers.length})`);
