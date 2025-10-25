@@ -165,9 +165,17 @@ export function createDbWrapper(storage: any): any {
         table = methodName.slice(6).replace(/([A-Z])/g, '_$1').toLowerCase();
       }
 
-      // Return wrapped function
-      return async function (...args: any[]) {
-        return monitorDbOperation(operation, table, () => original.apply(target, args));
+      // Return wrapped function that preserves sync/async behavior
+      return function (...args: any[]) {
+        const result = original.apply(target, args);
+
+        // If the original method returns a Promise, monitor it asynchronously
+        if (result instanceof Promise) {
+          return monitorDbOperation(operation, table, () => result);
+        }
+
+        // If the original method is synchronous, monitor it synchronously
+        return monitorDbOperationSync(operation, table, () => result);
       };
     },
   });

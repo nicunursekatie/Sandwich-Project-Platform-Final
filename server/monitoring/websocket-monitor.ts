@@ -115,8 +115,8 @@ export function monitorSocketIO(io: SocketIOServer): void {
       });
     });
 
-    // Track disconnections
-    socket.on('disconnect', (reason) => {
+    // Track disconnections (use originalOn to avoid counting as inbound message)
+    originalOn.call(socket, 'disconnect', (reason) => {
       websocketConnections.dec({ type: 'socket.io' });
       logger.debug('Socket.IO client disconnected', {
         socketId: socket.id,
@@ -125,8 +125,8 @@ export function monitorSocketIO(io: SocketIOServer): void {
       });
     });
 
-    // Track errors
-    socket.on('error', (error) => {
+    // Track errors (use originalOn to avoid counting as inbound message)
+    originalOn.call(socket, 'error', (error) => {
       websocketErrors.inc({ type: 'socket.io', error_type: error.name || 'UnknownError' });
       logger.error('Socket.IO error', {
         socketId: socket.id,
