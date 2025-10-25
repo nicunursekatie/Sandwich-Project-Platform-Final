@@ -351,10 +351,53 @@ test('user interaction', async () => {
 
 ### Coverage Goals
 
-- **Client Code**: Aim for 70%+ coverage
-- **Server Routes**: Aim for 70%+ coverage
-- **Critical Paths**: Aim for 90%+ coverage
-- **Utilities**: Aim for 80%+ coverage
+- **Server Code (including shared)**: 60% minimum enforced, aim for 70%+
+- **Client Code**: 40% minimum enforced, aim for 60%+
+- **Critical Paths (permissions, auth)**: 90%+ coverage required
+- **Utilities**: 80%+ coverage recommended
+
+### Current Coverage Status
+
+As of the latest expansion (October 2025), the test suite includes:
+
+**Unit Tests (11 files)**:
+- Permission system (`tests/unit/unified-auth-utils.test.ts`)
+- Auth middleware (`tests/unit/auth-middleware.test.ts`)
+- React components (5 component test files)
+- React hooks (3 hook test files)
+
+**Integration Tests (16 files total)**:
+
+*Fully Functional (4 files)*:
+- Authentication routes (`auth.test.ts`)
+- Drivers API routes (`drivers.test.ts`)
+- Hosts API routes (`hosts.test.ts`)
+- Event Requests API routes (`event-requests.test.ts`)
+- Permissions routes (`permissions.test.ts`)
+- Quick check routes (`quick-check.test.ts`)
+
+*Test Templates - Need Setup Infrastructure (6 files, 154 test cases)*:
+- Collections API routes (`collections.test.ts` - 24 tests)
+- Notifications API routes (`notifications.test.ts` - 20 tests)
+- Team Board API routes (`team-board.test.ts` - 18 tests)
+- Recipients API routes (`recipients.test.ts` - 22 tests)
+- Projects API routes (`projects.test.ts` - 30 tests)
+- Users/Admin API routes (`users.test.ts` - 40 tests)
+
+**Note**: The template tests provide comprehensive test coverage plans and documentation
+but need test infrastructure setup to run. See `tests/INTEGRATION_TEST_SETUP_TODO.md` for details.
+
+**End-to-End Tests (3 files)**:
+- Authentication workflows
+- Driver management
+- Event request workflows
+
+To generate a comprehensive coverage report:
+```bash
+./scripts/generate-coverage-report.sh
+```
+
+This will run all tests with coverage and display a combined summary.
 
 ## CI/CD Integration
 

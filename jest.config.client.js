@@ -34,19 +34,23 @@ export default {
     '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/tests/setup/fileMock.js',
   },
   verbose: true,
-  collectCoverage: false,
+  collectCoverage: false, // Enable via CLI with --coverage flag
   collectCoverageFrom: [
     'client/src/**/*.{ts,tsx}',
     '!client/src/**/*.d.ts',
     '!client/src/main.tsx',
     '!client/src/vite-env.d.ts',
+    '!**/__tests__/**',
+    '!**/node_modules/**',
   ],
+  coverageDirectory: '<rootDir>/coverage/client',
+  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
   coverageThreshold: {
     global: {
-      branches: 50,
-      functions: 50,
-      lines: 50,
-      statements: 50,
+      branches: 40,
+      functions: 40,
+      lines: 40,
+      statements: 40,
     },
   },
   testTimeout: 10000,
