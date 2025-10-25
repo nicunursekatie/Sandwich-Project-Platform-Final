@@ -5,12 +5,16 @@ export default {
   // darkMode disabled per user request
   content: ['./client/index.html', './client/src/**/*.{js,jsx,ts,tsx}'],
   safelist: [
-    // Ensure brand colors used in dynamic contexts are always generated
+    // Ensure brand colors and sidebar styles used in dynamic contexts are always generated
     'bg-brand-primary',
     'border-brand-primary-dark',
     'ring-brand-primary',
     'text-brand-primary',
     'hover:bg-brand-primary',
+    'border-l-4',
+    'border-transparent',
+    'font-semibold',
+    'shadow-sm',
   ],
   theme: {
     screens: TAILWIND_SCREENS,
