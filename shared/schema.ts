@@ -1731,6 +1731,7 @@ export const organizations = pgTable(
     alternateNames: text('alternate_names').array(), // Array of variations/aliases
     addresses: text('addresses').array(), // Array of known addresses
     domains: text('domains').array(), // Array of email domains associated with this org
+    department: text
 
     // Organization categorization
     category: varchar('category'), // 'small_medium_corp', 'large_corp', 'church_faith', 'school', 'neighborhood', 'club', 'other'
