@@ -1,6 +1,5 @@
 import { db } from '../db';
 import { organizations, eventRequests } from '../../shared/schema';
-import { logger } from '../middleware/logger';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -8,6 +7,12 @@ import { sql } from 'drizzle-orm';
  * This creates organization records for all unique organization names found in event requests
  * Run this with: npx tsx server/scripts/populate-organizations-from-events.ts
  */
+
+// Simple console logger for scripts (avoids Winston initialization issues)
+const logger = {
+  info: (...args: any[]) => console.log(...args),
+  error: (...args: any[]) => console.error(...args),
+};
 
 async function populateOrganizations() {
   try {
