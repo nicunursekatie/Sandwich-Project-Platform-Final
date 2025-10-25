@@ -1,15 +1,33 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { isAuthenticated } from '../auth';
 import { storage } from '../storage-wrapper';
 import logger from '../utils/logger';
 import { z } from 'zod';
-import { insertMeetingNoteSchema } from '@shared/schema';
+import { insertMeetingNoteSchema, type MeetingNote } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
+import type { AuthenticatedRequest } from '../types/express';
+
+// Type for project objects used in agenda compilation
+interface AgendaProject {
+  id?: number;
+  title: string;
+  status?: string;
+  priority?: string;
+  description?: string;
+  discussionPoints?: string;
+  decisionItems?: string;
+  owner?: string;
+  supportPeople?: string;
+  tasks?: unknown[];
+  attachments?: unknown[];
+  reason?: string;
+  reviewInNextMeeting?: boolean;
+}
 
 const router = Router();
 
 // Get all meetings
-router.get('/', isAuthenticated, async (req: any, res) => {
+router.get('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     logger.log('[Meetings API] Getting all meetings');
     const meetings = await storage.getAllMeetings();
@@ -40,7 +58,7 @@ router.get('/', isAuthenticated, async (req: any, res) => {
 });
 
 // Get meetings by type
-router.get('/type/:type', isAuthenticated, async (req: any, res) => {
+router.get('/type/:type', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { type } = req.params;
     logger.log(`[Meetings API] Getting meetings by type: ${type}`);
@@ -61,7 +79,7 @@ router.get('/type/:type', isAuthenticated, async (req: any, res) => {
 });
 
 // Get current meeting
-router.get('/current', isAuthenticated, async (req: any, res) => {
+router.get('/current', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     logger.log('[Meetings API] Getting current meeting');
     
@@ -81,7 +99,7 @@ router.get('/current', isAuthenticated, async (req: any, res) => {
 });
 
 // Create a new meeting
-router.post('/', isAuthenticated, async (req: any, res) => {
+router.post('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -119,7 +137,7 @@ router.post('/', isAuthenticated, async (req: any, res) => {
 });
 
 // Update a meeting
-router.patch('/:id', isAuthenticated, async (req: any, res) => {
+router.patch('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -147,7 +165,7 @@ router.patch('/:id', isAuthenticated, async (req: any, res) => {
 });
 
 // Update meeting agenda
-router.patch('/:id/agenda', isAuthenticated, async (req: any, res) => {
+router.patch('/:id/agenda', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -175,7 +193,7 @@ router.patch('/:id/agenda', isAuthenticated, async (req: any, res) => {
 });
 
 // Delete a meeting
-router.delete('/:id', isAuthenticated, async (req: any, res) => {
+router.delete('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -202,7 +220,7 @@ router.delete('/:id', isAuthenticated, async (req: any, res) => {
 
 // Simple One-Off Agenda Items - Fresh Implementation
 // GET agenda items for a meeting
-router.get('/agenda-items', isAuthenticated, async (req: any, res) => {
+router.get('/agenda-items', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     logger.log('🟢 Simple Agenda API - GET request:', req.query);
     const { meetingId } = req.query;
@@ -223,7 +241,7 @@ router.get('/agenda-items', isAuthenticated, async (req: any, res) => {
 });
 
 // POST create agenda item
-router.post('/agenda-items', isAuthenticated, async (req: any, res) => {
+router.post('/agenda-items', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     logger.log('🟢 Simple Agenda API - POST request:', req.body);
     
@@ -250,7 +268,7 @@ router.post('/agenda-items', isAuthenticated, async (req: any, res) => {
 });
 
 // POST /api/meetings/finalize-agenda-pdf - Generate and download agenda PDF
-router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
+router.post('/finalize-agenda-pdf', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     logger.log('📄 Generating agenda PDF...');
     
@@ -279,7 +297,7 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
       agendaSections.push({
         id: 1,
         title: 'Needs Discussion',
-        items: agendaData.agendaProjects.map((project: any, index: number) => ({
+        items: agendaData.agendaProjects.map((project: AgendaProject, index: number) => ({
           id: index + 1,
           title: project.title,
           description: project.discussionPoints || project.decisionItems || '',
@@ -309,7 +327,7 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
       agendaSections.push({
         id: agendaSections.length + 1,
         title: 'Tabled Items',
-        items: agendaData.tabledProjects.map((project: any, index: number) => ({
+        items: agendaData.tabledProjects.map((project: AgendaProject, index: number) => ({
           id: index + 1,
           title: project.title,
           description: project.reason || 'No reason specified',
@@ -348,17 +366,17 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
           if (!acc[section]) acc[section] = [];
           acc[section].push(item);
           return acc;
-        }, {} as any);
-        
+        }, {} as Record<string, typeof currentMeetingItems>);
+
         // Add each section
-        Object.entries(itemsBySection).forEach(([sectionName, items]: [string, any]) => {
+        Object.entries(itemsBySection).forEach(([sectionName, items]) => {
           const sectionTitle = sectionName.replace(/_/g, ' ')
             .replace(/\b\w/g, l => l.toUpperCase());
           
           agendaSections.push({
             id: agendaSections.length + 1,
             title: sectionTitle,
-            items: items.map((item: any, index: number) => ({
+            items: items.map((item, index: number) => ({
               id: index + 1,
               title: item.title,
               description: item.description || '',
@@ -409,7 +427,7 @@ router.post('/finalize-agenda-pdf', isAuthenticated, async (req: any, res) => {
 });
 
 // GET /api/meetings/:id/download-pdf - Download existing meeting PDF
-router.get('/:id/download-pdf', isAuthenticated, async (req: any, res) => {
+router.get('/:id/download-pdf', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const meetingId = parseInt(req.params.id);
     logger.log('📄 Downloading PDF for meeting:', meetingId);
@@ -469,12 +487,12 @@ router.get('/:id/download-pdf', isAuthenticated, async (req: any, res) => {
 // Meeting Notes API Endpoints
 
 // GET /api/meetings/notes - Get all meeting notes with optional query filters
-router.get('/notes', isAuthenticated, async (req: any, res) => {
+router.get('/notes', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     logger.log('[Meeting Notes API] Getting meeting notes with filters:', req.query);
     const { projectId, meetingId, type, status } = req.query;
 
-    const filters: any = {};
+    const filters: Partial<MeetingNote> = {};
     if (projectId) filters.projectId = parseInt(projectId as string);
     if (meetingId) filters.meetingId = parseInt(meetingId as string);
     if (type) filters.type = type as string;
@@ -510,7 +528,7 @@ router.get('/notes', isAuthenticated, async (req: any, res) => {
 });
 
 // POST /api/meetings/notes - Create a new meeting note
-router.post('/notes', isAuthenticated, async (req: any, res) => {
+router.post('/notes', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -554,7 +572,7 @@ router.post('/notes', isAuthenticated, async (req: any, res) => {
 });
 
 // GET /api/meetings/notes/:id - Get a single meeting note by ID
-router.get('/notes/:id', isAuthenticated, async (req: any, res) => {
+router.get('/notes/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -579,7 +597,7 @@ router.get('/notes/:id', isAuthenticated, async (req: any, res) => {
 });
 
 // PATCH /api/meetings/notes/:id - Update a meeting note
-router.patch('/notes/:id', isAuthenticated, async (req: any, res) => {
+router.patch('/notes/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
@@ -595,11 +613,11 @@ router.patch('/notes/:id', isAuthenticated, async (req: any, res) => {
 
     // Validate that only allowed fields are being updated
     const allowedUpdates = ['content', 'type', 'status'];
-    const updates: any = {};
-    
+    const updates: Partial<MeetingNote> = {};
+
     for (const key of allowedUpdates) {
       if (req.body[key] !== undefined) {
-        updates[key] = req.body[key];
+        updates[key as keyof MeetingNote] = req.body[key];
       }
     }
     
@@ -622,7 +640,7 @@ router.patch('/notes/:id', isAuthenticated, async (req: any, res) => {
 });
 
 // DELETE /api/meetings/notes/:id - Delete a meeting note
-router.delete('/notes/:id', isAuthenticated, async (req: any, res) => {
+router.delete('/notes/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;
     if (!user?.id) {
