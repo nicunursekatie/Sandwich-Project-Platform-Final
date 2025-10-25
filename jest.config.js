@@ -1,8 +1,12 @@
 export default {
+  displayName: 'server',
   preset: 'ts-jest',
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
-  testMatch: ['**/test/**/*.test.(js|ts)'],
+  testMatch: [
+    '**/tests/**/*.test.(js|ts)',
+    '**/server/**/__tests__/**/*.test.(js|ts)',
+    '!**/client/**',
+  ],
   transform: {
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
@@ -20,5 +24,18 @@ export default {
   },
   verbose: true,
   collectCoverage: false,
+  collectCoverageFrom: [
+    'server/**/*.ts',
+    '!server/**/*.d.ts',
+    '!server/index.ts',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50,
+    },
+  },
   testTimeout: 30000,
 };
