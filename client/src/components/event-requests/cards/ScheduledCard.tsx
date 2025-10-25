@@ -1436,10 +1436,27 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                             {request.deliveryDestination}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-300 italic">Not specified</span>
+                          canEdit ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                startEditing(
+                                  'assignedRecipientIds',
+                                  request.assignedRecipientIds ? JSON.stringify(request.assignedRecipientIds) : '[]'
+                                )
+                              }
+                              className="text-gray-300 border-gray-300/50 hover:bg-white/10 hover:text-white hover:border-white/40"
+                            >
+                              <Edit2 className="w-3 h-3 mr-1" />
+                              Add Recipients
+                            </Button>
+                          ) : (
+                            <span className="text-sm text-gray-300 italic">Not specified</span>
+                          )
                         )}
                       </div>
-                      {canEdit && (
+                      {canEdit && (request.assignedRecipientIds && request.assignedRecipientIds.length > 0) && (
                         <Button
                           size="sm"
                           variant="ghost"
