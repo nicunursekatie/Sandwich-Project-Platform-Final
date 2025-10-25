@@ -442,8 +442,13 @@ export function NotesTab({
 
       // If it's not our structured format, return the parsed content as-is
       return <p className="text-gray-900 whitespace-pre-wrap">{note.content}</p>;
-    } catch {
+    } catch (error) {
       // If it's not JSON, render as plain text
+      logger.warn('[NotesTab] Failed to parse note content as JSON:', {
+        noteId: note.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        contentPreview: note.content.substring(0, 100),
+      });
       return (
         <div className="text-gray-900 leading-relaxed whitespace-pre-wrap">
           {expandedNotes.has(note.id)
