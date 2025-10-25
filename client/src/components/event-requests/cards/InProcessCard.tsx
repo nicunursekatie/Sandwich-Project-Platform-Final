@@ -61,6 +61,7 @@ interface InProcessCardProps {
   onResendToolkit?: () => void;
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
+  onLogContact: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
 }
@@ -361,6 +362,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onResendToolkit,
   onAssignTspContact,
   onEditTspContact,
+  onLogContact,
   canEdit = true,
   canDelete = true,
 }) => {
@@ -655,6 +657,15 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           >
             <Phone className="w-4 h-4 mr-1" />
             {request.scheduledCallDate ? 'Reschedule Call' : 'Schedule Call'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onLogContact}
+            className="text-[16px] border-blue-500 text-blue-700 hover:bg-blue-50"
+          >
+            <MessageSquare className="w-4 h-4 mr-1" />
+            Log Contact
           </Button>
           {onResendToolkit && (
             <Button size="sm" variant="outline" onClick={onResendToolkit}>

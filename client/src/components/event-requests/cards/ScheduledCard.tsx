@@ -188,6 +188,7 @@ interface ScheduledCardProps {
   onReschedule: () => void;
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
+  onLogContact: () => void;
 
   // Inline editing actions
   startEditing: (field: string, value: string) => void;
@@ -253,6 +254,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   onReschedule,
   onAssignTspContact,
   onEditTspContact,
+  onLogContact,
   startEditing,
   saveEdit,
   cancelEdit,
@@ -2073,6 +2075,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               className="!bg-[#007e8c] !text-[#ffffff] !border-[#007e8c] hover:!bg-[#006975] hover:!text-white"
             >
               Contact Organizer
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onLogContact}
+              className="text-[16px] border-blue-500 text-blue-700 hover:bg-blue-50"
+            >
+              <MessageSquare className="w-4 h-4 mr-1" />
+              Log Contact
             </Button>
             <Button size="sm" variant="outline" onClick={onReschedule}>
               Reschedule

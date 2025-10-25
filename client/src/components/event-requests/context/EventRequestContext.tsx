@@ -59,6 +59,8 @@ interface EventRequestContextType {
   setShowSandwichPlanningModal: (show: boolean) => void;
   showStaffingPlanningModal: boolean;
   setShowStaffingPlanningModal: (show: boolean) => void;
+  showLogContactDialog: boolean;
+  setShowLogContactDialog: (show: boolean) => void;
 
   // Event being acted upon
   schedulingEventRequest: EventRequest | null;
@@ -71,6 +73,8 @@ interface EventRequestContextType {
   setContactEventRequest: (event: EventRequest | null) => void;
   tspContactEventRequest: EventRequest | null;
   setTspContactEventRequest: (event: EventRequest | null) => void;
+  logContactEventRequest: EventRequest | null;
+  setLogContactEventRequest: (event: EventRequest | null) => void;
 
   // Assignment state
   assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
@@ -213,6 +217,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [showTspContactAssignmentDialog, setShowTspContactAssignmentDialog] = useState(false);
   const [showSandwichPlanningModal, setShowSandwichPlanningModal] = useState(false);
   const [showStaffingPlanningModal, setShowStaffingPlanningModal] = useState(false);
+  const [showLogContactDialog, setShowLogContactDialog] = useState(false);
 
   // Event being acted upon
   const [schedulingEventRequest, setSchedulingEventRequest] = useState<EventRequest | null>(null);
@@ -220,6 +225,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [collectionLogEventRequest, setCollectionLogEventRequest] = useState<EventRequest | null>(null);
   const [contactEventRequest, setContactEventRequest] = useState<EventRequest | null>(null);
   const [tspContactEventRequest, setTspContactEventRequest] = useState<EventRequest | null>(null);
+  const [logContactEventRequest, setLogContactEventRequest] = useState<EventRequest | null>(null);
 
   // Assignment state
   const [assignmentType, setAssignmentType] = useState<'driver' | 'speaker' | 'volunteer' | null>(null);
@@ -480,6 +486,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setShowSandwichPlanningModal,
     showStaffingPlanningModal,
     setShowStaffingPlanningModal,
+    showLogContactDialog,
+    setShowLogContactDialog,
 
     // Event references
     schedulingEventRequest,
@@ -492,6 +500,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setContactEventRequest,
     tspContactEventRequest,
     setTspContactEventRequest,
+    logContactEventRequest,
+    setLogContactEventRequest,
 
     // Assignment
     assignmentType,
