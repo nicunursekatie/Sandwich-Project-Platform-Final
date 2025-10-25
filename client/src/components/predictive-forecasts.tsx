@@ -687,10 +687,17 @@ export default function PredictiveForecasts() {
                 Need {forecasts.monthly.gap.toLocaleString()} more sandwiches over the remaining{' '}
                 {forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth} days to reach monthly average.
               </p>
-              <p className="text-sm text-gray-700 mt-1">
-                <span className="font-semibold">Weekly target: </span>
-                ~{Math.round((forecasts.monthly.gap / (forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth)) * 7).toLocaleString()} sandwiches/week for remaining weeks
-              </p>
+              {(forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth) > 0 ? (
+                <p className="text-sm text-gray-700 mt-1">
+                  <span className="font-semibold">Weekly target: </span>
+                  ~{Math.round((forecasts.monthly.gap / (forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth)) * 7).toLocaleString()} sandwiches/week for remaining weeks
+                </p>
+              ) : (
+                <p className="text-sm text-gray-700 mt-1">
+                  <span className="font-semibold">Final day: </span>
+                  Collection period ends today - results finalize tomorrow
+                </p>
+              )}
             </div>
           )}
 

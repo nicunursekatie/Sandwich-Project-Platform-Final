@@ -717,64 +717,66 @@ export default function ActionCenter() {
           </Card>
         )}
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">High Priority</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {actionItems.filter((a) => a.priority === 'high').length}
-                </p>
+      {/* Summary Stats - only show when there are action items */}
+      {actionItems.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">High Priority</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {actionItems.filter((a) => a.priority === 'high').length}
+                  </p>
+                </div>
+                <AlertTriangle className="h-8 w-8 text-red-600" />
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Recruitment</p>
-                <p className="text-2xl font-bold text-brand-primary">
-                  {actionItems.filter((a) => a.category === 'volunteer-recruitment').length}
-                </p>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Recruitment</p>
+                  <p className="text-2xl font-bold text-brand-primary">
+                    {actionItems.filter((a) => a.category === 'volunteer-recruitment').length}
+                  </p>
+                </div>
+                <Users className="h-8 w-8 text-brand-primary" />
               </div>
-              <Users className="h-8 w-8 text-brand-primary" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Scheduling</p>
-                <p className="text-2xl font-bold text-brand-teal">
-                  {actionItems.filter((a) => a.category === 'scheduling').length}
-                </p>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Scheduling</p>
+                  <p className="text-2xl font-bold text-brand-teal">
+                    {actionItems.filter((a) => a.category === 'scheduling').length}
+                  </p>
+                </div>
+                <Calendar className="h-8 w-8 text-brand-teal" />
               </div>
-              <Calendar className="h-8 w-8 text-brand-teal" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Recognition</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {actionItems.filter((a) => a.category === 'recognition').length}
-                </p>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Recognition</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {actionItems.filter((a) => a.category === 'recognition').length}
+                  </p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Action Items */}
       <div className="space-y-4">
