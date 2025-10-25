@@ -139,9 +139,17 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
               // Helper function to make descriptions more readable
               const getReadableDescription = () => {
                 if (log.details) {
-                  // Already has a good description, just improve it
-                  // Ensure desc is a string (handle cases where details might be an object)
-                  let desc = typeof log.details === 'string' ? log.details : JSON.stringify(log.details);
+                  // Ensure desc is always a string (handle objects, undefined, etc.)
+                  let desc: string;
+                  if (typeof log.details === 'string') {
+                    desc = log.details;
+                  } else {
+                    try {
+                      desc = JSON.stringify(log.details) || 'Activity';
+                    } catch {
+                      desc = 'Activity';
+                    }
+                  }
                   
                   // Make "Viewed X content" more meaningful
                   if (desc.includes('Viewed kudos system')) {
