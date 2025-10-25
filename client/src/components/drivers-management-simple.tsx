@@ -532,7 +532,7 @@ export default function DriversManagement() {
                   value={agreementFilter}
                   onValueChange={setAgreementFilter}
                 >
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -548,7 +548,7 @@ export default function DriversManagement() {
                   Van Status
                 </Label>
                 <Select value={vanFilter} onValueChange={setVanFilter}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -564,7 +564,7 @@ export default function DriversManagement() {
               <div>
                 <Label htmlFor="weeklyFilter">Weekly Driver</Label>
                 <Select value={weeklyDriverFilter} onValueChange={setWeeklyDriverFilter}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

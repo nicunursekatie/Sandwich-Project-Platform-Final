@@ -1354,7 +1354,7 @@ export default function HostsManagementConsolidated() {
                 Contacts
               </Label>
               <Select value={contactFilter} onValueChange={setContactFilter}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full sm:w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

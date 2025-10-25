@@ -1330,7 +1330,7 @@ export default function RecipientsManagement() {
                   value={contractFilter}
                   onValueChange={setContractFilter}
                 >
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

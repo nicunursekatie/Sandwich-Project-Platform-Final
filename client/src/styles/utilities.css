@@ -107,12 +107,13 @@
   }
 }
 
-@media (max-width: 1279px) {
+/* Sidebar toggle at lg breakpoint (1024px) to prevent layout gaps */
+@media (max-width: 1023px) {
   .force-hide-sidebar { display: none; }
   .force-show-mobile-menu { display: flex; }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .force-hide-mobile-menu { display: none; }
   .force-show-sidebar { display: flex; }
 }

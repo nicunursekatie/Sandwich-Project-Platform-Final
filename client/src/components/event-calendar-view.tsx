@@ -257,7 +257,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
             <Button variant="outline" size="icon" onClick={goToPreviousMonth} className="w-10 h-10">
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            <div className="min-w-[250px] text-center font-bold text-lg">
+            <div className="flex-1 min-w-0 text-center font-bold text-base sm:text-lg truncate px-2">
               {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
             </div>
             <Button variant="outline" size="icon" onClick={goToNextMonth} className="w-10 h-10">

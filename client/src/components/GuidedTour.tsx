@@ -262,7 +262,7 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
           onClick={toggleMenu}
         >
           <Card
-            className="fixed bottom-24 right-6 w-[440px] max-w-[calc(100vw-3rem)] shadow-2xl z-50"
+            className="fixed bottom-24 right-6 w-[calc(100vw-3rem)] sm:w-96 md:w-[440px] max-w-[calc(100vw-3rem)] shadow-2xl z-50"
             onClick={(e) => e.stopPropagation()}
           >
             <CardHeader className="pb-4 bg-gradient-to-r from-[#236383] to-[#007e8c] text-white rounded-t-lg">

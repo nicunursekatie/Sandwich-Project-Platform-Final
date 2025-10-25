@@ -277,7 +277,7 @@ export function DetailedActivityAnalytics() {
               value={timeFilter}
               onValueChange={(value) => handleFilterChange('time', value)}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="Time Range" />
               </SelectTrigger>
               <SelectContent>
@@ -294,7 +294,7 @@ export function DetailedActivityAnalytics() {
               value={sectionFilter}
               onValueChange={(value) => handleFilterChange('section', value)}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="Section" />
               </SelectTrigger>
               <SelectContent>
@@ -311,7 +311,7 @@ export function DetailedActivityAnalytics() {
               value={actionFilter}
               onValueChange={(value) => handleFilterChange('action', value)}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="Action" />
               </SelectTrigger>
               <SelectContent>
