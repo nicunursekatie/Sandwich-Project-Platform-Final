@@ -4,7 +4,6 @@ import type { IStorage } from '../storage';
 import { storage } from '../storage-wrapper';
 import { logger } from '../utils/production-safe-logger';
 import type { AuthenticatedRequest } from '../types/express';
-import type { Project, ProjectTask, EventRequest, User } from '@shared/schema';
 
 interface DashboardItem {
   id: number;
