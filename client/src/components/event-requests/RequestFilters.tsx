@@ -308,8 +308,8 @@ export default function RequestFilters({
                 >
                   <div className="flex items-center space-x-1">
                     <tab.icon className="w-3 h-3 flex-shrink-0" />
-                    <span className="hidden lg:inline">{tab.label}</span>
-                    <span className="lg:hidden">{tab.shortLabel}</span>
+                    <span className="hidden md:inline">{tab.label}</span>
+                    <span className="md:hidden">{tab.shortLabel}</span>
                     <span className="text-xs opacity-70">({tab.count})</span>
                   </div>
                   {tab.hasNotification && (
