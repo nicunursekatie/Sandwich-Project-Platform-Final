@@ -314,9 +314,13 @@ export default function GroupCatalog({
       (org.email && org.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (org.department && org.department.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    // For organizations without email/status (from collections only), only apply search filter
+    // Category filter - empty array means show all categories
+    const orgCategory = org.category || null;
+    const matchesCategory = categoryFilter.length === 0 || categoryFilter.includes(orgCategory || '');
+
+    // For organizations without email/status (from collections only), only apply search and category filter
     if (!org.email || org.contactName === 'Historical Organization' || org.contactName === 'Collection Logged Only') {
-      return matchesSearch;
+      return matchesSearch && matchesCategory;
     }
 
     // For organizations with event requests, apply all filters
@@ -327,7 +331,7 @@ export default function GroupCatalog({
     const matchesDateStart = !dateFilterStart || !eventDate || eventDate >= new Date(dateFilterStart);
     const matchesDateEnd = !dateFilterEnd || !eventDate || eventDate <= new Date(dateFilterEnd + 'T23:59:59');
 
-    return matchesSearch && matchesStatus && matchesDateStart && matchesDateEnd;
+    return matchesSearch && matchesCategory && matchesStatus && matchesDateStart && matchesDateEnd;
   });
 
   // Group entries by group name
@@ -454,7 +458,7 @@ export default function GroupCatalog({
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, dateFilterStart, dateFilterEnd, sortBy, sortOrder]);
+  }, [searchTerm, statusFilter, categoryFilter, dateFilterStart, dateFilterEnd, sortBy, sortOrder]);
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -678,6 +682,73 @@ export default function GroupCatalog({
             </Popover>
           </div>
 
+          {/* Category Filter - Multi-select */}
+          <div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start">
+                  <Filter className="w-4 h-4 mr-2" />
+                  {categoryFilter.length === 0
+                    ? 'All Categories'
+                    : `${categoryFilter.length} categor${categoryFilter.length > 1 ? 'ies' : 'y'} selected`}
+                  <ChevronDown className="w-4 h-4 ml-auto" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56">
+                <div className="space-y-2">
+                  <div className="font-medium text-sm mb-2">Filter by Category</div>
+                  {[
+                    { value: 'school', label: 'School' },
+                    { value: 'church_faith', label: 'Church/Faith' },
+                    { value: 'club', label: 'Club' },
+                    { value: 'neighborhood', label: 'Neighborhood' },
+                    { value: 'large_corp', label: 'Corporation' },
+                    { value: 'small_medium_corp', label: 'Small Business' },
+                    { value: 'other', label: 'Other' },
+                  ].map((category) => (
+                    <div key={category.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`category-${category.value}`}
+                        checked={categoryFilter.includes(category.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setCategoryFilter([...categoryFilter, category.value]);
+                          } else {
+                            setCategoryFilter(categoryFilter.filter((c) => c !== category.value));
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`category-${category.value}`}
+                        className="text-sm cursor-pointer"
+                      >
+                        {category.label}
+                      </label>
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setCategoryFilter(['school', 'church_faith', 'club', 'neighborhood', 'large_corp', 'small_medium_corp', 'other'])}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setCategoryFilter([])}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           {/* Date Range Filters */}
           <div className="md:col-span-1">
             <Input
@@ -817,6 +888,15 @@ export default function GroupCatalog({
                         <h2 className="text-xl font-bold text-gray-900 truncate">
                           {group.groupName}
                         </h2>
+                        {(() => {
+                          const orgInfo = organizationCategoryMap.get(group.groupName);
+                          const category = orgInfo?.category;
+                          return category ? (
+                            <Badge className={getCategoryBadgeColor(category)}>
+                              {getCategoryLabel(category)}
+                            </Badge>
+                          ) : null;
+                        })()}
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <span className="flex items-center space-x-1">
@@ -941,12 +1021,19 @@ export default function GroupCatalog({
                                   {/* Status and Metrics */}
                                   <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 border border-orange-200 rounded text-sm mt-3">
                                     <div className="flex items-center justify-between mb-2">
-                                      <Badge
-                                        className={getStatusBadgeColor(org.status)}
-                                        variant="outline"
-                                      >
-                                        {getStatusText(org.status)}
-                                      </Badge>
+                                      <div className="flex items-center gap-2">
+                                        <Badge
+                                          className={getStatusBadgeColor(org.status)}
+                                          variant="outline"
+                                        >
+                                          {getStatusText(org.status)}
+                                        </Badge>
+                                        {org.category && (
+                                          <Badge className={getCategoryBadgeColor(org.category)}>
+                                            {getCategoryLabel(org.category)}
+                                          </Badge>
+                                        )}
+                                      </div>
                                       <span className="text-gray-600 font-medium">
                                         {org.totalRequests} {org.totalRequests === 1 ? 'request' : 'requests'}
                                       </span>
