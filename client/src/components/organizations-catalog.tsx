@@ -802,17 +802,20 @@ export default function GroupCatalog({
                       });
 
                       return Array.from(departmentGroups.entries()).map(([deptName, deptEvents], deptIndex) => (
-                        <div key={`dept-${deptName}-${deptIndex}`} className="mb-4">
-                          {/* Department Header */}
+                        <div 
+                          key={`dept-${deptName}-${deptIndex}`} 
+                          className={`mb-4 ${deptName !== 'General' ? 'p-3 bg-purple-50/50 border-2 border-purple-200 rounded-lg' : ''}`}
+                        >
+                          {/* Department Header - Only show for non-General departments */}
                           {deptName !== 'General' && (
-                            <div className="mb-3 pb-2 border-b border-gray-300">
+                            <div className="mb-3 pb-2 border-b border-purple-300">
                               <div className="flex items-center space-x-2">
                                 <Building className="w-5 h-5 text-purple-600" />
-                                <h3 className="text-base font-semibold text-gray-800 truncate">
+                                <h3 className="text-base font-semibold text-purple-900 truncate">
                                   {deptName}
                                 </h3>
-                                <Badge className="bg-purple-100 text-purple-700 text-sm">
-                                  {deptEvents.length}
+                                <Badge className="bg-purple-200 text-purple-800 text-sm font-semibold">
+                                  {deptEvents.length} event{deptEvents.length !== 1 ? 's' : ''}
                                 </Badge>
                               </div>
                             </div>
