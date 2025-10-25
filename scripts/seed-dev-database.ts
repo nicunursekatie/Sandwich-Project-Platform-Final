@@ -98,31 +98,40 @@ async function seedProjects() {
 
   const projects = [
     {
-      name: 'Thanksgiving Meal Drive 2025',
+      title: 'Thanksgiving Meal Drive 2025',
       description: 'Annual Thanksgiving meal distribution to families in need',
       status: 'in-progress',
       priority: 'high',
-      startDate: new Date('2025-11-01'),
-      dueDate: new Date('2025-11-28'),
+      category: 'events',
+      startDate: '2025-11-01',
+      dueDate: '2025-11-28',
       createdBy: 'admin-001',
+      createdByName: 'Admin User',
+      progressPercentage: 25,
     },
     {
-      name: 'Winter Coat Collection',
+      title: 'Winter Coat Collection',
       description: 'Collecting and distributing winter coats to homeless shelters',
-      status: 'planning',
+      status: 'waiting',
       priority: 'medium',
-      startDate: new Date('2025-11-15'),
-      dueDate: new Date('2025-12-20'),
+      category: 'outreach',
+      startDate: '2025-11-15',
+      dueDate: '2025-12-20',
       createdBy: 'coordinator-001',
+      createdByName: 'Jane Coordinator',
+      progressPercentage: 0,
     },
     {
-      name: 'Weekly Sandwich Distribution - Route A',
+      title: 'Weekly Sandwich Distribution - Route A',
       description: 'Regular sandwich distribution for downtown area',
       status: 'in-progress',
       priority: 'high',
-      startDate: new Date('2025-10-01'),
-      dueDate: new Date('2025-12-31'),
+      category: 'events',
+      startDate: '2025-10-01',
+      dueDate: '2025-12-31',
       createdBy: 'admin-001',
+      createdByName: 'Admin User',
+      progressPercentage: 60,
     },
   ];
 
@@ -140,23 +149,29 @@ async function seedHosts() {
     {
       name: 'Community Center North',
       address: '123 Main St, Cityville',
+      email: 'contact@ccnorth.org',
+      phone: '555-0300',
       latitude: '40.7128',
       longitude: '-74.0060',
-      isActive: true,
+      status: 'active',
     },
     {
       name: 'Shelter House South',
       address: '456 Oak Ave, Cityville',
+      email: 'info@sheltersouth.org',
+      phone: '555-0301',
       latitude: '40.7589',
       longitude: '-73.9851',
-      isActive: true,
+      status: 'active',
     },
     {
       name: 'Faith Community Church',
       address: '789 Elm St, Cityville',
+      email: 'office@faithcommunity.org',
+      phone: '555-0302',
       latitude: '40.7614',
       longitude: '-73.9776',
-      isActive: true,
+      status: 'active',
     },
   ];
 
@@ -177,7 +192,8 @@ async function seedDrivers() {
       email: 'driver@sandwich.dev',
       phone: '555-0104',
       isActive: true,
-      vehicleInfo: 'Honda Civic - Blue',
+      vehicleType: 'Honda Civic - Blue',
+      availability: 'available',
       notes: 'Available weekdays',
     },
     {
@@ -185,7 +201,8 @@ async function seedDrivers() {
       email: 'lisa@sandwich.dev',
       phone: '555-0105',
       isActive: true,
-      vehicleInfo: 'Toyota Camry - Silver',
+      vehicleType: 'Toyota Camry - Silver',
+      availability: 'available',
       notes: 'Prefers weekend deliveries',
     },
   ];
@@ -203,42 +220,60 @@ async function seedRecipients() {
 
   const recipients = [
     {
-      firstName: 'Maria',
-      lastName: 'Garcia',
-      email: 'maria.g@example.com',
+      name: 'Hope Community Center',
+      contactPersonName: 'Maria Garcia',
+      contactPersonPhone: '555-0200',
+      contactPersonEmail: 'maria.g@hopecenter.org',
+      contactPersonRole: 'Program Director',
       phone: '555-0200',
-      address: '100 First St, Apt 2B',
-      city: 'Cityville',
-      state: 'NY',
-      zipCode: '10001',
-      householdSize: 4,
-      dietary: 'None',
-      isActive: true,
+      email: 'info@hopecenter.org',
+      address: '100 First St, Apt 2B, Cityville',
+      region: 'Downtown',
+      weeklyEstimate: 50,
+      sandwichType: 'Mixed',
+      focusArea: 'families',
+      status: 'active',
+      collectionDay: 'Monday',
+      collectionTime: '10:00 AM',
+      feedingDay: 'Monday',
+      feedingTime: '12:00 PM',
     },
     {
-      firstName: 'Robert',
-      lastName: 'Johnson',
-      email: 'robert.j@example.com',
+      name: 'Veterans Support Services',
+      contactPersonName: 'Robert Johnson',
+      contactPersonPhone: '555-0201',
+      contactPersonEmail: 'robert.j@vetssupport.org',
+      contactPersonRole: 'Volunteer Coordinator',
       phone: '555-0201',
-      address: '200 Second Ave',
-      city: 'Cityville',
-      state: 'NY',
-      zipCode: '10002',
-      householdSize: 2,
-      dietary: 'Vegetarian',
-      isActive: true,
+      email: 'contact@vetssupport.org',
+      address: '200 Second Ave, Cityville',
+      region: 'North Side',
+      weeklyEstimate: 30,
+      sandwichType: 'Vegetarian',
+      focusArea: 'veterans',
+      status: 'active',
+      collectionDay: 'Wednesday',
+      collectionTime: '2:00 PM',
+      feedingDay: 'Thursday',
+      feedingTime: '6:00 PM',
     },
     {
-      firstName: 'Chen',
-      lastName: 'Wei',
+      name: 'Youth Outreach Program',
+      contactPersonName: 'Chen Wei',
+      contactPersonPhone: '555-0202',
+      contactPersonEmail: 'chen.w@youthreach.org',
+      contactPersonRole: 'Director',
       phone: '555-0202',
-      address: '300 Third Blvd, Unit 5',
-      city: 'Cityville',
-      state: 'NY',
-      zipCode: '10003',
-      householdSize: 3,
-      dietary: 'Halal',
-      isActive: true,
+      address: '300 Third Blvd, Unit 5, Cityville',
+      region: 'East Side',
+      weeklyEstimate: 40,
+      sandwichType: 'Halal',
+      focusArea: 'youth',
+      status: 'active',
+      collectionDay: 'Friday',
+      collectionTime: '11:00 AM',
+      feedingDay: 'Friday',
+      feedingTime: '5:00 PM',
     },
   ];
 
@@ -250,33 +285,45 @@ async function seedRecipients() {
 /**
  * Generate sample sandwich distributions
  */
-async function seedSandwichDistributions(hosts: any[]) {
+async function seedSandwichDistributions(hosts: any[], recipients: any[]) {
   console.log('🌱 Seeding sandwich distributions...');
 
   const distributions = [
     {
-      date: new Date('2025-10-20'),
+      distributionDate: '2025-10-20',
+      weekEnding: '2025-10-26',
       hostId: hosts[0].id,
+      hostName: hosts[0].name,
+      recipientId: recipients[0].id,
+      recipientName: recipients[0].name,
       sandwichCount: 50,
-      recipientCount: 25,
-      status: 'completed',
       notes: 'Great turnout, ran out early',
+      createdBy: 'admin-001',
+      createdByName: 'Admin User',
     },
     {
-      date: new Date('2025-10-21'),
+      distributionDate: '2025-10-21',
+      weekEnding: '2025-10-26',
       hostId: hosts[1].id,
+      hostName: hosts[1].name,
+      recipientId: recipients[1].id,
+      recipientName: recipients[1].name,
       sandwichCount: 40,
-      recipientCount: 20,
-      status: 'completed',
       notes: 'Smooth distribution',
+      createdBy: 'coordinator-001',
+      createdByName: 'Jane Coordinator',
     },
     {
-      date: new Date('2025-10-27'),
-      hostId: hosts[0].id,
-      sandwichCount: 60,
-      recipientCount: 0,
-      status: 'scheduled',
-      notes: 'Expecting high demand',
+      distributionDate: '2025-10-22',
+      weekEnding: '2025-10-26',
+      hostId: hosts[2].id,
+      hostName: hosts[2].name,
+      recipientId: recipients[2].id,
+      recipientName: recipients[2].name,
+      sandwichCount: 40,
+      notes: 'Regular weekly distribution',
+      createdBy: 'volunteer-001',
+      createdByName: 'John Volunteer',
     },
   ];
 
@@ -329,25 +376,22 @@ async function seedTeamBoardItems() {
 
   const items = [
     {
-      title: 'Need volunteers for Saturday distribution',
-      description: 'Looking for 5 volunteers to help with sandwich prep and distribution',
-      type: 'request',
+      content: 'Need volunteers for Saturday distribution - Looking for 5 volunteers to help with sandwich prep and distribution',
+      type: 'task',
       status: 'open',
       createdBy: 'coordinator-001',
       createdByName: 'Jane Coordinator',
     },
     {
-      title: 'Extra coolers available',
-      description: 'We have 3 extra coolers in storage if anyone needs them',
-      type: 'offer',
+      content: 'Extra coolers available - We have 3 extra coolers in storage if anyone needs them',
+      type: 'note',
       status: 'open',
       createdBy: 'volunteer-001',
       createdByName: 'John Volunteer',
     },
     {
-      title: 'Transportation needed for next week',
-      description: 'Need a driver for the downtown route next Wednesday',
-      type: 'request',
+      content: 'Transportation needed for next week - Need a driver for the downtown route next Wednesday',
+      type: 'task',
       status: 'open',
       createdBy: 'admin-001',
       createdByName: 'Admin User',
@@ -364,21 +408,27 @@ async function seedTeamBoardItems() {
 async function seedAnnouncements() {
   console.log('🌱 Seeding announcements...');
 
+  const now = new Date();
+  const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
   const announcements = [
     {
       title: 'Holiday Schedule Updated',
-      content: 'Please check the updated holiday distribution schedule in the calendar',
+      message: 'Please check the updated holiday distribution schedule in the calendar',
+      type: 'alert',
       priority: 'high',
-      userId: 'admin-001',
-      userName: 'Admin User',
+      startDate: now,
+      endDate: oneWeekFromNow,
       isActive: true,
     },
     {
       title: 'New Safety Guidelines',
-      content: 'Updated COVID-19 safety protocols are now available in the documents section',
+      message: 'Updated COVID-19 safety protocols are now available in the documents section',
+      type: 'general',
       priority: 'medium',
-      userId: 'coordinator-001',
-      userName: 'Jane Coordinator',
+      startDate: now,
+      endDate: twoWeeksFromNow,
       isActive: true,
     },
   ];
@@ -398,8 +448,8 @@ async function main() {
     await seedProjects();
     const hosts = await seedHosts();
     await seedDrivers();
-    await seedRecipients();
-    await seedSandwichDistributions(hosts);
+    const recipients = await seedRecipients();
+    await seedSandwichDistributions(hosts, recipients);
     await seedChatMessages();
     await seedTeamBoardItems();
     await seedAnnouncements();

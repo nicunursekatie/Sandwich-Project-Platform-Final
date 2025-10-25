@@ -68,13 +68,15 @@ npm run db:seed
 ```
 
 This creates:
-- 5 test users (admin, coordinator, volunteers, driver)
-- Sample projects
-- Hosts, drivers, and recipients
-- Sandwich distributions
-- Chat messages
-- Team board items
-- Announcements
+- 5 test users (admin, coordinator, volunteers, driver) with hashed passwords
+- 3 sample projects (Thanksgiving Drive, Winter Coats, Weekly Distribution)
+- 3 host locations with addresses and coordinates
+- 2 drivers with vehicle information
+- 3 recipient organizations with contact details and schedules
+- 3 sandwich distribution records
+- 4 chat messages across different channels
+- 3 team board items (tasks and notes)
+- 2 active announcements
 
 **Test Credentials** (all use password: `password123`):
 - Admin: `admin@sandwich.dev`
