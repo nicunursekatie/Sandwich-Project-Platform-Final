@@ -40,6 +40,7 @@ export default function LargeEventLogisticsModal({
 
   const needsSandwichOrder = (event: EventRequest) => {
     const dayOfWeek = getDayOfWeek(event.scheduledEventDate || event.desiredEventDate);
+    if (!dayOfWeek) return null; // Unknown - no valid date
     return dayOfWeek !== 'Tuesday' && dayOfWeek !== 'Wednesday';
   };
 
@@ -159,7 +160,7 @@ export default function LargeEventLogisticsModal({
                         </div>
 
                         {/* Sandwich Order */}
-                        {needsOrder && (
+                        {needsOrder === true && (
                           <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
                             <Package className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
@@ -173,7 +174,7 @@ export default function LargeEventLogisticsModal({
                           </div>
                         )}
 
-                        {!needsOrder && (
+                        {needsOrder === false && (
                           <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
                             <Package className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
@@ -182,6 +183,19 @@ export default function LargeEventLogisticsModal({
                                 Event is on {getDayOfWeek(event.scheduledEventDate || event.desiredEventDate)}.
                                 Can potentially use regular Tuesday/Wednesday collection sandwiches, but verify capacity
                                 for {event.estimatedSandwichCount?.toLocaleString()} sandwiches.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {needsOrder === null && (
+                          <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <Package className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">Event Date Needed</p>
+                              <p className="text-sm text-gray-700">
+                                Set an event date to determine sandwich order requirements. Events on non-collection days
+                                (not Tuesday/Wednesday) will need a large order placed in advance.
                               </p>
                             </div>
                           </div>
