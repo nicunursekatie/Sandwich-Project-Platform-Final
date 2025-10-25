@@ -98,8 +98,8 @@ router.get('/admin/users-progress', isAuthenticated, async (req: any, res) => {
 // Admin: Initialize default challenges
   router.post('/admin/initialize', isAuthenticated, async (req: any, res) => {
   try {
-    // Check if user is admin
-    if (req.user?.role !== 'admin') {
+    // Check if user is admin or super_admin
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
