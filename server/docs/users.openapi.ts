@@ -1,7 +1,7 @@
 /**
  * OpenAPI documentation for Users endpoints
  */
-import { z } from 'zod';
+import { z } from '../lib/zod-openapi';
 import { registry, commonErrorResponses } from '../config/openapi';
 
 // User schema

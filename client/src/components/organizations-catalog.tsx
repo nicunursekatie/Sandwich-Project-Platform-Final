@@ -72,6 +72,9 @@ interface OrganizationContact {
   email?: string;
   phone?: string;
   department?: string;
+  category?: string | null;
+  schoolClassification?: string | null;
+  isReligious?: boolean;
   latestRequestDate: string;
   latestActivityDate: string;
   totalRequests: number;
@@ -397,6 +400,16 @@ export default function GroupCatalog({
         : aName.localeCompare(bName);
     }
 
+    if (sortBy === 'category') {
+      const aInfo = organizationCategoryMap.get(a.groupName);
+      const bInfo = organizationCategoryMap.get(b.groupName);
+      const aCategory = getCategoryLabel(aInfo?.category);
+      const bCategory = getCategoryLabel(bInfo?.category);
+      return sortOrder === 'desc'
+        ? bCategory.localeCompare(aCategory)
+        : aCategory.localeCompare(bCategory);
+    }
+
     // Default sort by latest activity date (includes both requests and collections)
     const aDate = new Date(a.latestActivityDate).getTime();
     const bDate = new Date(b.latestActivityDate).getTime();
@@ -424,6 +437,14 @@ export default function GroupCatalog({
         return sortOrder === 'desc'
           ? b.totalRequests - a.totalRequests
           : a.totalRequests - b.totalRequests;
+      }
+
+      if (sortBy === 'category') {
+        const aCategory = getCategoryLabel(a.category);
+        const bCategory = getCategoryLabel(b.category);
+        return sortOrder === 'desc'
+          ? bCategory.localeCompare(aCategory)
+          : aCategory.localeCompare(bCategory);
       }
 
       // Sort by contact name or department
@@ -785,6 +806,7 @@ export default function GroupCatalog({
                 <SelectItem value="contactName">Contact Name</SelectItem>
                 <SelectItem value="eventDate">Event Date</SelectItem>
                 <SelectItem value="totalRequests">Total Requests</SelectItem>
+                <SelectItem value="category">Category</SelectItem>
               </SelectContent>
             </Select>
             <Button
