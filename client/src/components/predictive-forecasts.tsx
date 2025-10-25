@@ -53,10 +53,27 @@ export default function PredictiveForecasts() {
     },
   });
 
+  // Fetch weekly monitoring status to check if core hosts have reported
+  const { data: weeklyMonitoring } = useQuery<any[]>({
+    queryKey: ['/api/core/monitoring/weekly-status', 0], // 0 = current week
+    queryFn: async () => {
+      const response = await fetch('/api/core/monitoring/weekly-status/0');
+      if (!response.ok) throw new Error('Failed to fetch weekly monitoring');
+      return response.json();
+    },
+  });
+
   const collections = collectionsData?.collections || [];
 
   const forecasts = useMemo(() => {
     if (!collections.length) return null;
+
+    // Check if core hosts have reported for current week
+    const coreHostsReported = weeklyMonitoring ? 
+      weeklyMonitoring.filter((status: any) => status.hasSubmitted).length : 0;
+    const totalCoreHosts = weeklyMonitoring ? weeklyMonitoring.length : 8; // Default to 8 expected hosts
+    const reportingPercentage = totalCoreHosts > 0 ? (coreHostsReported / totalCoreHosts) * 100 : 100;
+    const hasIncompleteReporting = reportingPercentage < 80; // Flag if less than 80% have reported
 
     const today = new Date();
 
@@ -326,6 +343,11 @@ export default function PredictiveForecasts() {
         isComplete: isCurrentWeekComplete,
         weekStart: formatDate(currentWeekStart),
         weekEnd: formatDate(currentWeekEnd),
+        // Host reporting status
+        coreHostsReported,
+        totalCoreHosts,
+        reportingPercentage,
+        hasIncompleteReporting,
       },
       monthly: {
         current: currentMonthTotal,
@@ -345,7 +367,7 @@ export default function PredictiveForecasts() {
         data: trendData,
       },
     };
-  }, [collections, eventRequests]);
+  }, [collections, eventRequests, weeklyMonitoring]);
 
   if (!forecasts) {
     return (
@@ -502,6 +524,23 @@ export default function PredictiveForecasts() {
                 <p className="font-semibold text-[#007E8C]">Excellent Week!</p>
                 <p className="text-sm text-gray-700 mt-1">
                   On track to exceed weekly average by {Math.round(forecasts.weekly.projected - forecasts.weekly.average).toLocaleString()} sandwiches.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {/* Host Reporting Warning */}
+          {forecasts.weekly.hasIncompleteReporting && forecasts.weekly.vsAvg < 0 && (
+            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+              <div>
+                <p className="font-semibold text-yellow-800">Incomplete Host Reporting</p>
+                <p className="text-sm text-gray-700 mt-1">
+                  Only {forecasts.weekly.coreHostsReported} of {forecasts.weekly.totalCoreHosts} core hosts ({Math.round(forecasts.weekly.reportingPercentage)}%) have reported this week. 
+                  Low count may be due to missing data rather than actual performance issues.
+                </p>
+                <p className="text-xs text-gray-600 mt-2 italic">
+                  Check the Weekly Monitoring dashboard to see which hosts haven't reported yet.
                 </p>
               </div>
             </div>
