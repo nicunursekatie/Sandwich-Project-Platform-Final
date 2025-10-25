@@ -586,14 +586,18 @@ export default function EnhancedMeetingDashboard() {
 
     if (window.confirm(`Are you sure you want to delete "${editingMeeting.title}"? This action cannot be undone.`)) {
       const deletedMeetingId = editingMeeting.id;
-      deleteMeetingMutation.mutate(editingMeeting.id);
-      setShowEditMeetingDialog(false);
-      setEditingMeeting(null);
+      deleteMeetingMutation.mutate(editingMeeting.id, {
+        onSuccess: () => {
+          // Only clear state after successful deletion
+          setShowEditMeetingDialog(false);
+          setEditingMeeting(null);
 
-      // Clear selectedMeeting if it's the one being deleted
-      if (selectedMeeting?.id === deletedMeetingId) {
-        setSelectedMeeting(null);
-      }
+          // Clear selectedMeeting if it's the one being deleted
+          if (selectedMeeting?.id === deletedMeetingId) {
+            setSelectedMeeting(null);
+          }
+        }
+      });
     }
   };
 

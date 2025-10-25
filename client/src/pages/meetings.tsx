@@ -10,9 +10,12 @@ export default function MeetingsPage({ onNavigate }: MeetingsPageProps) {
   const { track } = useOnboardingTracker();
 
   // Track that user has viewed meetings page
+  // Note: track is not memoized in useOnboardingTracker, so we intentionally
+  // use an empty dependency array to only track once on mount
   useEffect(() => {
     track('view_meetings');
-  }, [track]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return <EnhancedMeetingDashboard />;
 }
