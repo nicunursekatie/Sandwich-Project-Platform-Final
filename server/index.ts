@@ -420,7 +420,9 @@ async function bootstrap() {
     logger.log('✅ Health endpoint ready: /healthz');
     logger.log('✅ Server startup complete - ready for traffic');
   } catch (error) {
-    serverLogger.error('✗ Server startup failed:', error);
+    serverLogger.error('✗ Server startup failed:');
+    console.error('Error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     process.exit(1);
   }
 }
