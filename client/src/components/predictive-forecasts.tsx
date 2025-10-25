@@ -268,12 +268,16 @@ export default function PredictiveForecasts() {
     })));
 
     const weeklyVsAvg = avgWeekly > 0 ? ((weeklyProjected - avgWeekly) / avgWeekly) * 100 : 0;
+    const weeklyAbsDiff = Math.abs(weeklyProjected - avgWeekly);
+    const isWeeklyWithinRange = weeklyAbsDiff <= 300;
 
     // Monthly projection
     const monthlyProjected = monthProgress > 0
       ? Math.round(currentMonthTotal / monthProgress)
       : currentMonthTotal;
     const monthlyVsAvg = ((monthlyProjected - avgMonthly) / avgMonthly) * 100;
+    const monthlyAbsDiff = Math.abs(monthlyProjected - avgMonthly);
+    const isMonthlyWithinRange = monthlyAbsDiff <= 300;
 
     // Calculate remaining days needed for monthly average
     const monthlyGap = avgMonthly - currentMonthTotal;
@@ -315,6 +319,8 @@ export default function PredictiveForecasts() {
         expectedIndividual: baselineIndividualExpectation,
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
+        absDiff: weeklyAbsDiff,
+        isWithinRange: isWeeklyWithinRange,
         dayOfWeek: todayDayOfWeek,
         daysRemaining: 7 - daysElapsedInWeek,
         isComplete: isCurrentWeekComplete,
@@ -326,6 +332,8 @@ export default function PredictiveForecasts() {
         projected: monthlyProjected,
         average: Math.round(avgMonthly),
         vsAvg: monthlyVsAvg,
+        absDiff: monthlyAbsDiff,
+        isWithinRange: isMonthlyWithinRange,
         progress: monthProgress * 100,
         dayOfMonth,
         daysInMonth,
@@ -394,7 +402,7 @@ export default function PredictiveForecasts() {
             <div className={`text-center p-4 rounded-lg border-2 ${
               forecasts.weekly.vsAvg >= 10
                 ? 'bg-[#007E8C]/10 border-[#007E8C]'
-                : forecasts.weekly.vsAvg >= 0
+                : forecasts.weekly.isWithinRange || forecasts.weekly.vsAvg >= 0
                 ? 'bg-brand-primary/10 border-brand-primary'
                 : forecasts.weekly.vsAvg >= -10
                 ? 'bg-brand-orange/20 border-brand-orange'
@@ -403,7 +411,7 @@ export default function PredictiveForecasts() {
               <p className="text-sm text-gray-600 mb-1">Projected Week Total</p>
               <p className={`text-3xl font-bold ${
                 forecasts.weekly.vsAvg >= 10 ? 'text-[#007E8C]' :
-                forecasts.weekly.vsAvg >= 0 ? 'text-brand-primary' :
+                forecasts.weekly.isWithinRange || forecasts.weekly.vsAvg >= 0 ? 'text-brand-primary' :
                 forecasts.weekly.vsAvg >= -10 ? 'text-brand-orange' :
                 'text-[#A31C41]'
               }`}>
@@ -427,7 +435,7 @@ export default function PredictiveForecasts() {
               <div className={`mt-3 px-3 py-2 rounded-md font-semibold text-sm ${
                 forecasts.weekly.vsAvg >= 10
                   ? 'bg-[#007E8C] text-white'
-                  : forecasts.weekly.vsAvg >= 0
+                  : forecasts.weekly.isWithinRange || forecasts.weekly.vsAvg >= 0
                   ? 'bg-brand-primary text-white'
                   : forecasts.weekly.vsAvg >= -10
                   ? 'bg-brand-orange text-white'
@@ -438,10 +446,10 @@ export default function PredictiveForecasts() {
                     <TrendingUp className="inline h-4 w-4 mr-1" />
                     Exceeding Average (+{Math.round(forecasts.weekly.vsAvg)}%)
                   </>
-                ) : forecasts.weekly.vsAvg >= 0 ? (
+                ) : forecasts.weekly.isWithinRange || forecasts.weekly.vsAvg >= 0 ? (
                   <>
                     <Target className="inline h-4 w-4 mr-1" />
-                    On Track (Meeting Average)
+                    On Track (Within Range)
                   </>
                 ) : forecasts.weekly.vsAvg >= -10 ? (
                   <>
@@ -536,7 +544,7 @@ export default function PredictiveForecasts() {
             <div className={`text-center p-4 rounded-lg border-2 ${
               forecasts.monthly.vsAvg >= 10
                 ? 'bg-[#007E8C]/10 border-[#007E8C]'
-                : forecasts.monthly.vsAvg >= 0
+                : forecasts.monthly.isWithinRange || forecasts.monthly.vsAvg >= 0
                 ? 'bg-brand-teal/10 border-brand-teal'
                 : forecasts.monthly.vsAvg >= -10
                 ? 'bg-brand-orange/20 border-brand-orange'
@@ -545,7 +553,7 @@ export default function PredictiveForecasts() {
               <p className="text-sm text-gray-600 mb-1">Projected Month Total</p>
               <p className={`text-3xl font-bold ${
                 forecasts.monthly.vsAvg >= 10 ? 'text-[#007E8C]' :
-                forecasts.monthly.vsAvg >= 0 ? 'text-brand-teal' :
+                forecasts.monthly.isWithinRange || forecasts.monthly.vsAvg >= 0 ? 'text-brand-teal' :
                 forecasts.monthly.vsAvg >= -10 ? 'text-brand-orange' :
                 'text-[#A31C41]'
               }`}>
@@ -557,7 +565,7 @@ export default function PredictiveForecasts() {
               <div className={`mt-3 px-3 py-2 rounded-md font-semibold text-sm ${
                 forecasts.monthly.vsAvg >= 10
                   ? 'bg-[#007E8C] text-white'
-                  : forecasts.monthly.vsAvg >= 0
+                  : forecasts.monthly.isWithinRange || forecasts.monthly.vsAvg >= 0
                   ? 'bg-brand-teal text-white'
                   : forecasts.monthly.vsAvg >= -10
                   ? 'bg-brand-orange text-white'
@@ -568,10 +576,10 @@ export default function PredictiveForecasts() {
                     <TrendingUp className="inline h-4 w-4 mr-1" />
                     Exceeding Average (+{Math.round(forecasts.monthly.vsAvg)}%)
                   </>
-                ) : forecasts.monthly.vsAvg >= 0 ? (
+                ) : forecasts.monthly.isWithinRange || forecasts.monthly.vsAvg >= 0 ? (
                   <>
                     <Target className="inline h-4 w-4 mr-1" />
-                    On Track (Meeting Average)
+                    On Track (Within Range)
                   </>
                 ) : forecasts.monthly.vsAvg >= -10 ? (
                   <>
