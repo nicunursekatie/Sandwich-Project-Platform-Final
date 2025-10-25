@@ -21,13 +21,14 @@ interface QueryContext {
 export function startDbQuery(operation: string, table: string, req?: any): QueryContext {
   const startTime = process.hrtime.bigint();
 
-  // Create Sentry span if request is available
+  // Create Sentry span if request is available (using modern API)
   let span;
-  if (req?.sentryTransaction) {
-    span = req.sentryTransaction.startChild({
+  if (req?.sentrySpan) {
+    // Start a child span using modern Sentry API
+    span = Sentry.startSpan({
       op: 'db.query',
-      description: `${operation} ${table}`,
-    });
+      name: `${operation} ${table}`,
+    }, (s) => s);
   }
 
   return {
@@ -48,15 +49,16 @@ export function endDbQuery(context: QueryContext, error?: Error): void {
   // Record metrics
   recordDbQuery(context.operation, context.table, duration, !error, error);
 
-  // Finish Sentry span
+  // Finish Sentry span (modern API)
   if (context.span) {
     if (error) {
-      context.span.setStatus('internal_error');
-      context.span.setData('error', error.message);
+      context.span.setStatus('error');
+      context.span.setAttribute('error.message', error.message);
+      context.span.setAttribute('error.type', error.name);
     } else {
       context.span.setStatus('ok');
     }
-    context.span.finish();
+    // Modern API spans are automatically finished when out of scope
   }
 
   // Log slow queries
