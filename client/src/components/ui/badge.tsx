@@ -15,6 +15,21 @@ const badgeVariants = cva(
         destructive:
           'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
         outline: 'text-foreground',
+        success:
+          'border-transparent bg-green-600 text-white hover:bg-green-700',
+        warning:
+          'border-transparent bg-yellow-500 text-white hover:bg-yellow-600',
+        info:
+          'border-transparent bg-blue-600 text-white hover:bg-blue-700',
+        // Status badges for common states
+        pending:
+          'border-transparent bg-gray-200 text-gray-700 hover:bg-gray-300',
+        'in-progress':
+          'border-transparent bg-blue-100 text-blue-700 border-blue-200',
+        completed:
+          'border-transparent bg-green-100 text-green-700 border-green-200',
+        cancelled:
+          'border-transparent bg-red-100 text-red-700 border-red-200',
       },
     },
     defaultVariants: {

@@ -1,6 +1,46 @@
 @tailwind components;
 
 @layer components {
+  /* Design System: Consistent Spacing Scale */
+  .space-xs { gap: 0.25rem; } /* 4px */
+  .space-sm { gap: 0.5rem; }  /* 8px */
+  .space-md { gap: 1rem; }    /* 16px */
+  .space-lg { gap: 1.5rem; }  /* 24px */
+  .space-xl { gap: 2rem; }    /* 32px */
+
+  .p-xs { padding: 0.25rem; }
+  .p-sm { padding: 0.5rem; }
+  .p-md { padding: 1rem; }
+  .p-lg { padding: 1.5rem; }
+  .p-xl { padding: 2rem; }
+
+  /* Design System: Consistent Card Styles */
+  .card-elevated {
+    @apply bg-card border border-border rounded-lg shadow-sm;
+  }
+
+  .card-flat {
+    @apply bg-card border border-border rounded-lg;
+  }
+
+  /* Design System: Improved Focus States */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2;
+  }
+
+  .focus-ring-destructive {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2;
+  }
+
+  /* Design System: Interactive States */
+  .interactive-element {
+    @apply transition-colors duration-200 focus-ring;
+  }
+
+  .interactive-element:hover {
+    @apply bg-muted;
+  }
+
   /* Force clean tab styling */
   [role="tablist"] {
     @apply bg-transparent border-0 shadow-none;
