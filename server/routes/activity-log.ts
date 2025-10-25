@@ -27,16 +27,19 @@ export function createActivityLogRoutes(storage: IStorage) {
       }
 
       // Create activity log entry using existing storage method
-      await storage.logUserActivity(
-        user.id,
-        validatedData.action,
-        validatedData.section,
-        validatedData.feature,
-        validatedData.page || req.headers.referer || 'unknown',
-        validatedData.details || '',
-        null, // duration
-        validatedData.metadata
-      );
+      await storage.logUserActivity({
+        userId: user.id,
+        action: validatedData.action,
+        section: validatedData.section,
+        feature: validatedData.feature,
+        page: validatedData.page || req.headers.referer || 'unknown',
+        details: validatedData.details ? { message: validatedData.details } : {},
+        duration: null,
+        metadata: validatedData.metadata || {},
+        sessionId: (req as any).sessionID || null,
+        ipAddress: req.ip || null,
+        userAgent: req.headers['user-agent'] || null,
+      });
 
       res.json({ success: true });
     } catch (error) {

@@ -172,7 +172,8 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
       // Priority 1: Most recent upcoming meeting
       if (upcomingMeetings.length > 0) {
         // Sort by date ascending (earliest first) for upcoming meetings
-        const targetMeeting = upcomingMeetings.sort((a, b) => {
+        // Create a copy to avoid mutating the array
+        const targetMeeting = [...upcomingMeetings].sort((a, b) => {
           try {
             const dateA = new Date(normalizeDate(a.date) + 'T12:00:00');
             const dateB = new Date(normalizeDate(b.date) + 'T12:00:00');
@@ -189,7 +190,8 @@ export function useAgenda(selectedMeetingId?: number | null, meetings?: Meeting[
       // Priority 2: Most recent past meeting
       if (pastMeetings.length > 0) {
         // Sort by date descending (most recent first) for past meetings
-        const targetMeeting = pastMeetings.sort((a, b) => {
+        // Create a copy to avoid mutating the array
+        const targetMeeting = [...pastMeetings].sort((a, b) => {
           try {
             const dateA = new Date(normalizeDate(a.date) + 'T12:00:00');
             const dateB = new Date(normalizeDate(b.date) + 'T12:00:00');

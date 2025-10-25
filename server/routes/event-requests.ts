@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage-wrapper';
 import {
@@ -6,6 +6,8 @@ import {
   insertOrganizationSchema,
   insertEventVolunteerSchema,
   auditLogs,
+  type EventRequest,
+  type User,
 } from '@shared/schema';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
@@ -16,6 +18,7 @@ import { db } from '../db';
 import { eq, desc, and, sql, gte } from 'drizzle-orm';
 import { EmailNotificationService } from '../services/email-notification-service';
 import { logger } from '../middleware/logger';
+import type { AuthenticatedRequest } from '../types/express';
 
 const router = Router();
 
@@ -68,7 +71,7 @@ const extractTimeFromDateTime = (dateTimeStr: string): string | null => {
 };
 
 // Data migration logic for pickup time fields
-const processPickupTimeFields = (updates: any, existingData?: any) => {
+const processPickupTimeFields = (updates: Partial<EventRequest>, existingData?: Partial<EventRequest>) => {
   const result = { ...updates };
   
   // Get existing values for reference
@@ -163,7 +166,7 @@ router.get(
       // Get event request matching the organization and contact
       const allEventRequests = await storage.getAllEventRequests();
       const eventRequest = allEventRequests.find(
-        (request: any) =>
+        (request) =>
           request.organizationName === organizationName &&
           request.firstName + ' ' + request.lastName === contactName
       );
@@ -184,11 +187,11 @@ router.get(
 
 // Enhanced logging function for activity tracking with audit details
 const logActivity = async (
-  req: any,
-  res: any,
+  req: AuthenticatedRequest,
+  res: Response,
   permission: string,
   message: string,
-  metadata?: any
+  metadata?: Record<string, unknown>
 ) => {
   // Store audit details in res.locals for the activity logger middleware to capture
   if (metadata) {
@@ -221,7 +224,7 @@ const validateEventRequestStatus = (status: string): string | null => {
   const normalizedStatus = status.toLowerCase();
   const mappedStatus = statusMap[normalizedStatus] || normalizedStatus;
   
-  if (VALID_EVENT_REQUEST_STATUSES.includes(mappedStatus as any)) {
+  if (VALID_EVENT_REQUEST_STATUSES.includes(mappedStatus as typeof VALID_EVENT_REQUEST_STATUSES[number])) {
     return mappedStatus;
   }
   
@@ -233,10 +236,10 @@ const validateEventRequestStatus = (status: string): string | null => {
 const logEventRequestAudit = async (
   action: string,
   eventId: string,
-  oldData: any,
-  newData: any,
-  req: any,
-  additionalContext?: any
+  oldData: Partial<EventRequest> | null,
+  newData: Partial<EventRequest>,
+  req: AuthenticatedRequest,
+  additionalContext?: Record<string, unknown>
 ) => {
   try {
     // PROBLEM 1 FIX: Ensure we have complete event request data
@@ -300,10 +303,10 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
 
     const allEventRequests = await storage.getAllEventRequests();
     const users = await storage.getAllUsers();
-    const currentUser = users.find((u: any) => u.id === userId);
+    const currentUser = users.find((u) => u.id === userId);
 
     // Filter event requests assigned to this user via multiple assignment methods
-    const assignedEvents = allEventRequests.filter((event: any) => {
+    const assignedEvents = allEventRequests.filter((event) => {
       // Method 1: Direct assignment via assignedTo field
       if (event.assignedTo === userId) return true;
 
@@ -381,7 +384,7 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
 
     // Add follow-up tracking for past events
     const now = new Date();
-    const eventsWithFollowUp = assignedEvents.map((event: any) => {
+    const eventsWithFollowUp = assignedEvents.map((event) => {
       let followUpNeeded = false;
       let followUpReason = '';
 
@@ -436,9 +439,9 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
 
 // Helper function to determine assignment type
 function getAssignmentType(
-  event: any,
+  event: EventRequest,
   userId: string,
-  currentUser: any
+  currentUser: User | undefined
 ): string[] {
   const types: string[] = [];
 
@@ -571,7 +574,7 @@ router.get('/organization-counts', isAuthenticated, async (req, res) => {
     // Count completed events by organization
     const organizationCounts = new Map();
 
-    allEventRequests.forEach((event: any) => {
+    allEventRequests.forEach((event) => {
       // Only count completed events
       if (event.status === 'completed' && event.organizationName) {
         const orgName = event.organizationName.trim();
@@ -647,23 +650,26 @@ router.post(
       let validatedData;
       try {
         validatedData = insertEventRequestSchema.parse(requestData);
-      } catch (validationError: any) {
+      } catch (validationError: unknown) {
+        const errorDetails = validationError instanceof z.ZodError
+          ? validationError.errors
+          : (validationError as Error).message;
         return res.status(400).json({
           error: 'Validation failed',
-          details: validationError.errors || validationError.message,
+          details: errorDetails,
           message: 'Please check your input and try again. Make sure you provide at least an organization name or contact information.'
         });
       }
 
       // Check for organization duplicates
-      const duplicateCheck = { exists: false, matches: [] as any[] };
+      const duplicateCheck = { exists: false, matches: [] as Array<{ name: string }> };
 
       const newEventRequest = await storage.createEventRequest({
         ...validatedData,
         organizationExists: duplicateCheck.exists,
         duplicateNotes: duplicateCheck.exists
           ? `Potential matches found: ${duplicateCheck.matches
-              .map((m: any) => m.name)
+              .map((m) => m.name)
               .join(', ')}`
           : null,
         duplicateCheckDate: new Date(),
@@ -903,7 +909,7 @@ router.post(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      const updates: any = {
+      const updates: Partial<EventRequest> = {
         followUpMethod: method,
         followUpDate: new Date(),
         updatedAt: new Date(),
@@ -1031,13 +1037,13 @@ router.patch(
         : 'contact';
       
       // Prepare audit details for activity logging
-      const auditDetails: any = {};
+      const auditDetails: Record<string, { from: unknown; to: unknown }> = {};
       const changeDescriptions: string[] = [];
-      
+
       for (const [key, newValue] of Object.entries(updates)) {
         if (key !== 'updatedAt') {
           // Skip timestamp field
-          const oldValue = (originalEvent as any)[key];
+          const oldValue = originalEvent[key as keyof EventRequest];
           if (oldValue !== newValue && newValue !== undefined) {
             auditDetails[key] = {
               from: oldValue,
@@ -1331,23 +1337,24 @@ router.patch(
       );
 
       res.json(updatedEventRequest);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       logger.error('Error updating event request:', error);
-      logger.error('Error stack:', error?.stack);
+      logger.error('Error stack:', err?.stack);
 
       // Check for specific database errors
-      if (error?.message?.includes('invalid input syntax')) {
+      if (err?.message?.includes('invalid input syntax')) {
         return res.status(400).json({
           message: 'Invalid data format',
-          error: error.message,
+          error: err.message,
           details: 'Please check that all fields contain valid data'
         });
       }
 
       res.status(500).json({
         message: 'Failed to update event request',
-        error: error?.message || 'Unknown error',
-        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+        error: err?.message || 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? err?.stack : undefined
       });
     }
   }
@@ -1627,7 +1634,7 @@ router.put(
 
       // Determine action type based on changes
       let actionType = 'EVENT_REQUEST_UPDATED';
-      let actionContext: any = {
+      let actionContext: Record<string, unknown> = {
         organizationName: originalEvent.organizationName,
         contactName: `${originalEvent.firstName} ${originalEvent.lastName}`,
         fieldsUpdated: Object.keys(processedUpdates),
@@ -2071,7 +2078,7 @@ router.patch(
       }
 
       // Prepare update data based on follow-up type
-      const updateData: any = {
+      const updateData: Partial<EventRequest> = {
         followUpNotes: notes || eventRequest.followUpNotes,
       };
 
@@ -2147,7 +2154,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
     }
 
     // Update the event with driver assignments
-    const updateData: any = {
+    const updateData: Partial<EventRequest> = {
       assignedDriverIds: assignedDriverIds || [],
       driverPickupTime: driverPickupTime || null,
       driverNotes: driverNotes || null,
@@ -2342,7 +2349,7 @@ router.patch(
       // Parse the toolkit sent date
       const sentDate = toolkitSentDate ? new Date(toolkitSentDate) : new Date();
 
-      const updates: any = {
+      const updates: Partial<EventRequest> = {
         toolkitSent: true,
         toolkitSentDate: sentDate,
         toolkitStatus: 'sent',
@@ -2469,7 +2476,7 @@ router.patch(
         return res.status(400).json({ error: 'Valid event ID required' });
       }
 
-      const updates: any = {};
+      const updates: Partial<EventRequest> = {};
 
       if (socialMediaPostRequested !== undefined) {
         updates.socialMediaPostRequested = socialMediaPostRequested;
@@ -2800,7 +2807,7 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
     }
 
     // Prepare updates object
-    const updates: any = {
+    const updates: Partial<EventRequest> = {
       tspContact: validatedData.tspContact || null,
       updatedAt: new Date(),
     };
@@ -2960,16 +2967,16 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
     const eventMap = new Map(allEventRequests.map((e) => [String(e.id), e]));
 
     // Helper to pull from camelCase or snake_case
-    const getField = (row: any, camel: string, snake: string) =>
+    const getField = (row: Record<string, unknown>, camel: string, snake: string) =>
       row[camel] !== undefined ? row[camel] : row[snake];
 
     // Transform raw logs to the expected format
-    const enrichedLogs = rawLogs.map((log: any) => {
+    const enrichedLogs = rawLogs.map((log) => {
       const recordId = String(getField(log, 'recordId', 'record_id'));
       const userId = String(getField(log, 'userId', 'user_id'));
 
-      let newData: any = null;
-      let oldData: any = null;
+      let newData: Partial<EventRequest> | null = null;
+      let oldData: Partial<EventRequest> | null = null;
       try {
         newData = getField(log, 'newData', 'new_data')
           ? JSON.parse(getField(log, 'newData', 'new_data'))
@@ -3060,12 +3067,13 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       offset,
       limit,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     logger.error('Failed to fetch audit logs', error);
 
     res.status(500).json({
       error: 'Failed to fetch audit logs',
-      message: error?.message || 'Unknown error occurred'
+      message: err?.message || 'Unknown error occurred'
     });
   }
 });
@@ -3199,11 +3207,12 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
       success: true, 
       message: 'Email sent successfully' 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     logger.error('❌ Error sending email:', error);
-    res.status(500).json({ 
-      error: 'Failed to send email', 
-      message: error?.message || 'Unknown error occurred' 
+    res.status(500).json({
+      error: 'Failed to send email',
+      message: err?.message || 'Unknown error occurred'
     });
   }
 });

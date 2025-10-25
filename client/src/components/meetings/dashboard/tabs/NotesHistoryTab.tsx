@@ -99,7 +99,8 @@ export function NotesHistoryTab({ selectedMeeting }: NotesHistoryTabProps) {
     }
 
     // Sort by created date (newest first)
-    return filtered.sort((a, b) => 
+    // Create a copy to avoid mutating the filtered array
+    return [...filtered].sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }, [notes, filterProject, filterMeeting, filterStatus, filterType, searchText, startDate, endDate]);

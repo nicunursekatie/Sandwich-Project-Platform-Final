@@ -1,6 +1,11 @@
 // Clean error handling for Replit - let Replit handle restarts
 // Replit already monitors and restarts crashed apps automatically
 
+// CRITICAL: Extend Zod with OpenAPI support BEFORE any schema imports
+import { z } from 'zod';
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+extendZodWithOpenApi(z);
+
 import express, { type Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
