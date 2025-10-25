@@ -47,7 +47,7 @@ async function populateOrganizations() {
       const stats = await db
         .select({
           totalEvents: sql<number>`COUNT(*)::int`,
-          lastEventDate: sql<Date>`MAX(COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}))`,
+          lastEventDate: sql<string>`MAX(COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}))`,
         })
         .from(eventRequests)
         .where(sql`LOWER(${eventRequests.organizationName}) = LOWER(${org.organizationName})`)
@@ -57,7 +57,7 @@ async function populateOrganizations() {
       await db.insert(organizations).values({
         name: org.organizationName,
         totalEvents: stats?.totalEvents || 0,
-        lastEventDate: stats?.lastEventDate || null,
+        lastEventDate: stats?.lastEventDate ? new Date(stats.lastEventDate) : null,
       });
 
       logger.info(
