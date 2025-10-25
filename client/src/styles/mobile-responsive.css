@@ -378,16 +378,110 @@
   }
 }
 
-/* Tablet-specific improvements */
+/* ==========================================
+   INTERMEDIATE BREAKPOINT: TABLET RANGE (769px-1024px)
+   Prevents overlapping at intermediate widths
+   ========================================== */
 @media (min-width: 769px) and (max-width: 1024px) {
+  /* Tablet-specific tab layout */
   .tablet-tabs-list {
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 0.5rem !important;
   }
-  
+
   .tablet-tab-trigger {
     font-size: 0.875rem !important;
     padding: 0.75rem 0.5rem !important;
+  }
+
+  /* Reduce container padding to prevent overflow */
+  .container, .max-w-7xl, .max-w-6xl {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+
+  /* Flexible grid layouts - allow wrapping */
+  .tablet-grid-wrap {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 1rem !important;
+  }
+
+  /* Stack flex containers when needed */
+  .tablet-flex-wrap {
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+  }
+
+  /* Responsive dialogs */
+  .tablet-dialog {
+    max-width: 90vw !important;
+    margin: 2rem auto !important;
+  }
+
+  /* Limit fixed widths */
+  .tablet-max-width {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  /* Text truncation for long content */
+  .tablet-text-truncate {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Allow text wrapping for emails and long labels */
+  .tablet-text-wrap {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+}
+
+/* ==========================================
+   INTERMEDIATE BREAKPOINT: WIDE TABLET (900px-1100px)
+   Additional layer to handle specific collision points
+   ========================================== */
+@media (min-width: 900px) and (max-width: 1100px) {
+  /* Reduce sidebar width if shown */
+  .intermediate-sidebar {
+    width: 12rem !important; /* Narrower than desktop 16rem */
+  }
+
+  /* Adjust main content margin when sidebar present */
+  .intermediate-main-content {
+    margin-left: 12rem !important;
+  }
+
+  /* Compact button groups */
+  .intermediate-button-group {
+    gap: 0.5rem !important;
+  }
+
+  /* Smaller select dropdowns */
+  .intermediate-select {
+    font-size: 0.875rem !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  /* Reduce card padding */
+  .intermediate-card-padding {
+    padding: 1.25rem !important;
+  }
+
+  /* Flexible panels that can stack */
+  .intermediate-panel-stack {
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  /* Ensure badges and labels wrap */
+  .intermediate-badge-wrap {
+    display: inline-flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
   }
 }
 
@@ -882,3 +976,41 @@
     perspective: 1000px !important;
   }
 }
+
+/* ==========================================
+   17. MOBILE SELECT & DROPDOWN IMPROVEMENTS
+   ========================================== */
+@media (max-width: 768px) {
+  /* Full-width selects and dropdowns */
+  select,
+  [role="combobox"] {
+    width: 100% !important;
+  }
+}
+
+/* ==========================================
+   18. RESPONSIVE CONTAINER IMPROVEMENTS
+   Prevents horizontal overflow
+   ========================================== */
+@media (max-width: 1024px) {
+  /* Prevent horizontal overflow on root elements only */
+  html,
+  body {
+    overflow-x: hidden !important;
+  }
+}
+
+/* ==========================================
+   19. RESPONSIVE TEXT HANDLING
+   Prevents text overflow for emails and labels
+   ========================================== */
+@media (max-width: 1024px) {
+  /* Allow emails and long labels to wrap */
+  [type="email"],
+  .email-text,
+  .label-text {
+    word-break: break-all !important;
+    overflow-wrap: break-word !important;
+  }
+}
+

@@ -332,7 +332,7 @@ export default function RouteMapView() {
                 data-testid={`marker-host-${contact.id}`}
               >
                 <Popup>
-                  <div className="p-2 min-w-[200px]">
+                  <div className="p-2 min-w-0 w-48 sm:min-w-[200px]">
                     <div className="font-semibold text-[#007E8C] mb-1">
                       {contact.contactName}
                     </div>
