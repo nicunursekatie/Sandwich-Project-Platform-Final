@@ -22,7 +22,7 @@ if (process.env.SENDGRID_API_KEY) {
 }
 
 export class NotificationService {
-  private static readonly FROM_EMAIL = 'noreply@thesandwichproject.org';
+  private static readonly FROM_EMAIL = 'katie@thesandwichproject.org';
 
   /**
    * Send email notification for direct messages

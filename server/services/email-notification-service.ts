@@ -114,7 +114,7 @@ export class EmailNotificationService {
     try {
       const msg = {
         to: notification.mentionedUserEmail,
-        from: 'noreply@sandwichproject.org', // Use your verified sender email
+        from: 'katie@thesandwichproject.org',
         subject: `You were mentioned in ${notification.channel} chat - The Sandwich Project`,
         html: `
           <!DOCTYPE html>
@@ -233,7 +233,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
 
       const msg = {
         to: userEmail,
-        from: 'noreply@sandwichproject.org',
+        from: 'katie@thesandwichproject.org',
         subject: "You've been assigned as TSP Contact - The Sandwich Project",
         html: `
           <!DOCTYPE html>
@@ -345,7 +345,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
 
       const msg = {
         to: volunteerEmail,
-        from: 'noreply@sandwichproject.org',
+        from: 'katie@thesandwichproject.org',
         subject: `Reminder: Event tomorrow at ${organizationName} - The Sandwich Project`,
         html: `
           <!DOCTYPE html>
@@ -548,7 +548,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
 
         const msg = {
           to: userEmail,
-          from: 'noreply@sandwichproject.org',
+          from: 'katie@thesandwichproject.org',
           subject: `You've been assigned to a team board ${itemTypeDisplay.toLowerCase()} - The Sandwich Project`,
           html: `
             <!DOCTYPE html>
