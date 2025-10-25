@@ -169,16 +169,15 @@ const categoryPatterns: CategoryPattern[] = [
     category: 'club',
     patterns: [
       /\bclub\b/i,
-      /\brotary\s+club\b/i,
-      /\brotary\b/i,
+      /\brotary\b/i, // Rotary Club, Rotary of [City] - usually local chapters
       /\bkiwanis\b/i,
-      /\blions\s+club\b/i, // Only "Lions Club", not just "Lions"
+      /\blions\s+club\b/i, // Only "Lions Club", not just "Lions" (sports teams)
       /\bboy\s+scouts?\b/i, // Boy Scout or Boy Scouts
       /\bgirl\s+scouts?\b/i, // Girl Scout or Girl Scouts
       /\bcub\s+scouts?\b/i, // Cub Scouts
       /\beagle\s+scouts?\b/i,
       /\bventure\s+scouts?\b/i,
-      /\b4-h\b/i,
+      /\b4-h\s+club\b/i,
       /\byouth\s+group\b/i,
       /\bsports\s+club\b/i,
       /\bathletic\s+club\b/i,
