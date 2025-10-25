@@ -123,15 +123,17 @@ export default function SimpleNav({
     };
 
     return (
-      <nav className="flex flex-col gap-1 p-2" data-tour="navigation">
+      <nav className="flex flex-col gap-1.5 p-3" data-tour="navigation">
         {groupedItems.map((groupItem, index) => {
           if (groupItem.type === 'separator') {
             return !isCollapsed ? (
-              <div key={`separator-${groupItem.group}-${index}`} className="my-2">
-                <div className="text-sm font-semibold text-muted-foreground px-2 mb-1 text-right">
-                  {getGroupLabel(groupItem.group)}
+              <div key={`separator-${groupItem.group}-${index}`} className="mt-4 mb-3">
+                <div className="bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light rounded-lg px-3 py-2 mb-2 shadow-sm">
+                  <div className="text-xs font-bold text-brand-primary tracking-wide">
+                    {getGroupLabel(groupItem.group)}
+                  </div>
                 </div>
-                <div className="border-t border-border" />
+                <div className="border-t-2 border-brand-primary-border mx-2" />
               </div>
             ) : null;
           }
@@ -149,20 +151,20 @@ export default function SimpleNav({
               w-full ${
                 isCollapsed
                   ? 'justify-center px-2'
-                  : item.isSubItem 
-                    ? 'justify-start pl-8 pr-2 sm:pr-3' 
+                  : item.isSubItem
+                    ? 'justify-start pl-8 pr-2 sm:pr-3'
                     : 'justify-start px-2 sm:px-3'
               } text-left h-11 touch-manipulation relative ${
                 item.isSubItem ? 'text-sm font-normal' : 'text-base font-medium'
               }
               ${
                 active
-                  ? 'bg-brand-primary hover:bg-brand-primary-dark text-white shadow-sm border-l-4 border-l-brand-orange'
+                  ? 'bg-gradient-to-r from-brand-primary to-brand-primary-dark hover:shadow-lg text-white shadow-md border-l-4 border-l-brand-orange rounded-lg transition-all duration-200'
                   : item.highlighted
-                    ? 'hover:bg-orange-50 text-brand-orange font-semibold'
+                    ? 'hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 text-brand-orange font-semibold rounded-lg hover:shadow-sm transition-all duration-200'
                     : item.isSubItem
-                      ? 'hover:bg-slate-50 text-slate-600 ml-4 mr-1 rounded-md'
-                      : 'hover:bg-slate-100 text-slate-700'
+                      ? 'hover:bg-slate-50 text-slate-600 ml-4 mr-1 rounded-md hover:shadow-sm transition-all duration-200'
+                      : 'hover:bg-gradient-to-br hover:from-slate-50 hover:to-slate-100 text-slate-700 rounded-lg hover:shadow-sm transition-all duration-200'
               }
             `}
               onClick={(e) => {
