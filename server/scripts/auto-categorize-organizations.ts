@@ -1,12 +1,17 @@
 import { db } from '../db';
 import { organizations } from '../../shared/schema';
-import { logger } from '../middleware/logger';
 import { eq, isNull, or } from 'drizzle-orm';
 
 /**
  * Auto-categorize organizations based on their name patterns
  * Run this with: npx tsx server/scripts/auto-categorize-organizations.ts
  */
+
+// Simple console logger for scripts (avoids Winston initialization issues)
+const logger = {
+  info: (...args: any[]) => console.log(...args),
+  error: (...args: any[]) => console.error(...args),
+};
 
 interface CategoryPattern {
   category: string;
