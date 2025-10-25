@@ -351,10 +351,44 @@ test('user interaction', async () => {
 
 ### Coverage Goals
 
-- **Client Code**: Aim for 70%+ coverage
-- **Server Routes**: Aim for 70%+ coverage
-- **Critical Paths**: Aim for 90%+ coverage
-- **Utilities**: Aim for 80%+ coverage
+- **Server Code (including shared)**: 60% minimum enforced, aim for 70%+
+- **Client Code**: 40% minimum enforced, aim for 60%+
+- **Critical Paths (permissions, auth)**: 90%+ coverage required
+- **Utilities**: 80%+ coverage recommended
+
+### Current Coverage Status
+
+As of the latest expansion (October 2025), the test suite includes:
+
+**Unit Tests (11 files)**:
+- Permission system (`tests/unit/unified-auth-utils.test.ts`)
+- Auth middleware (`tests/unit/auth-middleware.test.ts`)
+- React components (5 component test files)
+- React hooks (3 hook test files)
+
+**Integration Tests (10 files)**:
+- Collections API routes
+- Notifications API routes
+- Team Board API routes
+- Recipients API routes
+- Drivers API routes
+- Hosts API routes
+- Event Requests API routes
+- Authentication routes
+- Permissions routes
+- Quick check routes
+
+**End-to-End Tests (3 files)**:
+- Authentication workflows
+- Driver management
+- Event request workflows
+
+To generate a comprehensive coverage report:
+```bash
+./scripts/generate-coverage-report.sh
+```
+
+This will run all tests with coverage and display a combined summary.
 
 ## CI/CD Integration
 
