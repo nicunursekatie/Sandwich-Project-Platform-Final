@@ -537,28 +537,25 @@ export default function PredictiveForecasts() {
               What to do this week
             </h4>
             <div className="space-y-2 text-sm">
-              {forecasts.weekly.vsAvg < -10 && (
+              {forecasts.weekly.vsAvg >= 10 ? (
                 <>
-                  <p className="text-gray-700">• <strong>Priority:</strong> Add one more collection event or send out volunteer reminder to {forecasts.weekly.daysRemaining} remaining days</p>
-                  <p className="text-gray-700">• <strong>Goal:</strong> Recruit ~{Math.round((forecasts.weekly.average - forecasts.weekly.projected) / forecasts.weekly.daysRemaining)} sandwiches/day for remaining {forecasts.weekly.daysRemaining} days</p>
+                  <p className="text-gray-700">• <strong>Celebrate:</strong> Share this success with your team and volunteers!</p>
+                  <p className="text-gray-700">• <strong>Opportunity:</strong> Document what worked well this week to replicate in future weeks</p>
                 </>
-              )}
-              {forecasts.weekly.vsAvg >= -10 && forecasts.weekly.vsAvg < 0 && (
-                <>
-                  <p className="text-gray-700">• <strong>Action:</strong> Light outreach to individual volunteers could close the gap</p>
-                  <p className="text-gray-700">• <strong>Target:</strong> {Math.round(forecasts.weekly.average - forecasts.weekly.projected)} more sandwiches needed this week</p>
-                </>
-              )}
-              {forecasts.weekly.isWithinRange && forecasts.weekly.vsAvg >= 0 && forecasts.weekly.vsAvg < 10 && (
+              ) : forecasts.weekly.isWithinRange && forecasts.weekly.vsAvg >= 0 ? (
                 <>
                   <p className="text-gray-700">• <strong>Status:</strong> On track! Maintain current momentum</p>
                   <p className="text-gray-700">• <strong>Recommendation:</strong> Continue regular host check-ins and event coordination</p>
                 </>
-              )}
-              {forecasts.weekly.vsAvg >= 10 && (
+              ) : forecasts.weekly.vsAvg >= -10 && forecasts.weekly.vsAvg < 0 ? (
                 <>
-                  <p className="text-gray-700">• <strong>Celebrate:</strong> Share this success with your team and volunteers!</p>
-                  <p className="text-gray-700">• <strong>Opportunity:</strong> Document what worked well this week to replicate in future weeks</p>
+                  <p className="text-gray-700">• <strong>Action:</strong> Light outreach to individual volunteers could close the gap</p>
+                  <p className="text-gray-700">• <strong>Target:</strong> {Math.round(forecasts.weekly.average - forecasts.weekly.projected)} more sandwiches needed this week</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-700">• <strong>Priority:</strong> Add one more collection event or send out volunteer reminder for {forecasts.weekly.daysRemaining} remaining days</p>
+                  <p className="text-gray-700">• <strong>Goal:</strong> Recruit ~{Math.round((forecasts.weekly.average - forecasts.weekly.projected) / forecasts.weekly.daysRemaining)} sandwiches/day for remaining {forecasts.weekly.daysRemaining} days</p>
                 </>
               )}
               <p className="text-gray-700">• <strong>Scheduled events:</strong> {forecasts.weekly.scheduledEventCount} event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
@@ -700,24 +697,23 @@ export default function PredictiveForecasts() {
               What to do this month
             </h4>
             <div className="space-y-2 text-sm">
-              {forecasts.monthly.vsAvg < 0 && forecasts.monthly.gap > 0 && (
+              {forecasts.monthly.vsAvg >= 10 ? (
+                <>
+                  <p className="text-gray-700">• <strong>Celebrate:</strong> Exceeding monthly average - great momentum!</p>
+                  <p className="text-gray-700">• <strong>Opportunity:</strong> Use this success to recruit new hosts and volunteers</p>
+                  <p className="text-gray-700">• <strong>Planning:</strong> Start recruiting for next month's events now</p>
+                </>
+              ) : forecasts.monthly.vsAvg < 0 && forecasts.monthly.gap > 0 ? (
                 <>
                   <p className="text-gray-700">• <strong>Priority:</strong> Schedule additional events to close the {forecasts.monthly.gap.toLocaleString()}-sandwich gap</p>
                   <p className="text-gray-700">• <strong>Target:</strong> Aim for {Math.round((forecasts.monthly.gap / (forecasts.monthly.daysInMonth - forecasts.monthly.dayOfMonth)) * 7).toLocaleString()} sandwiches per remaining week</p>
                   <p className="text-gray-700">• <strong>Strategy:</strong> Focus on high-volume group collections and event partnerships</p>
                 </>
-              )}
-              {forecasts.monthly.isWithinRange || forecasts.monthly.vsAvg >= 0 && (
+              ) : (
                 <>
                   <p className="text-gray-700">• <strong>Status:</strong> Monthly goals on track!</p>
                   <p className="text-gray-700">• <strong>Recommendation:</strong> Maintain current collection pace and event schedule</p>
                   <p className="text-gray-700">• <strong>Planning:</strong> Start recruiting for next month's events now</p>
-                </>
-              )}
-              {forecasts.monthly.vsAvg >= 10 && (
-                <>
-                  <p className="text-gray-700">• <strong>Celebrate:</strong> Exceeding monthly average - great momentum!</p>
-                  <p className="text-gray-700">• <strong>Opportunity:</strong> Use this success to recruit new hosts and volunteers</p>
                 </>
               )}
             </div>
