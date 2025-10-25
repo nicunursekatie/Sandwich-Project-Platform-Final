@@ -29,10 +29,17 @@ import {
   Target,
   Clock,
   Star,
+  HelpCircle,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 
 interface WeeklyReportData {
   id?: string;
@@ -353,54 +360,113 @@ export default function WeeklyImpactReport() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-brand-primary-lighter rounded-lg">
-                  <div className="text-2xl md:text-3xl font-bold text-brand-primary">
-                    {formatNumber(reportData.summary.total_sandwiches)}
+              <TooltipProvider>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-brand-primary-lighter rounded-lg">
+                    <div className="text-2xl md:text-3xl font-bold text-brand-primary">
+                      {formatNumber(reportData.summary.total_sandwiches)}
+                    </div>
+                    <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+                      Total Collected
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <HelpCircle className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">Total sandwiches collected this week from all locations (individual + group collections)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">Total Collected</div>
+                  <div className="text-center p-4 bg-orange-50 rounded-lg">
+                    <div className="text-2xl md:text-3xl font-bold text-brand-orange">
+                      {reportData.summary.active_locations}/
+                      {reportData.summary.total_locations}
+                    </div>
+                    <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+                      Active Locations
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <HelpCircle className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">Number of host locations that submitted collections this week. High participation indicates strong volunteer engagement.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {formatPercentage(reportData.summary.participation_rate)}{' '}
+                      participation
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <div
+                        className={`text-2xl md:text-3xl font-bold flex items-center gap-1 ${
+                          reportData.summary.week_over_week_change >= 0
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
+                        {reportData.summary.week_over_week_change >= 0 ? (
+                          <ArrowUp className="h-6 w-6" />
+                        ) : (
+                          <ArrowDown className="h-6 w-6" />
+                        )}
+                        {Math.abs(reportData.summary.week_over_week_change * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+                      Week-over-Week Change
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <HelpCircle className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">Percentage change from last week. Positive trends indicate growth; negative may signal need for additional outreach or event scheduling.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className={`text-xs mt-1 font-semibold ${reportData.summary.week_over_week_change >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {reportData.summary.week_over_week_change >= 0 ? 'Growth' : 'Decline'} from previous week
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-teal-50 rounded-lg">
+                    <div className="text-xl md:text-2xl font-bold text-brand-light-blue">
+                      {formatNumber(reportData.summary.monthly_progress.current)}
+                    </div>
+                    <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
+                      Monthly Progress
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <HelpCircle className="w-4 h-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p className="text-sm">Current month's total collections vs. monthly goal. Helps track if you're on pace to meet monthly targets.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Progress
+                      value={reportData.summary.monthly_progress.percentage * 100}
+                      className="mt-2 h-2"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {formatPercentage(
+                        reportData.summary.monthly_progress.percentage
+                      )}{' '}
+                      of {formatNumber(reportData.summary.monthly_progress.goal)}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <div className="text-2xl md:text-3xl font-bold text-brand-orange">
-                    {reportData.summary.active_locations}/
-                    {reportData.summary.total_locations}
-                  </div>
-                  <div className="text-sm text-gray-600">Active Locations</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {formatPercentage(reportData.summary.participation_rate)}{' '}
-                    participation
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div
-                    className={`text-2xl md:text-3xl font-bold ${
-                      reportData.summary.week_over_week_change >= 0
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }`}
-                  >
-                    {reportData.summary.week_over_week_change >= 0 ? '+' : ''}
-                    {formatPercentage(reportData.summary.week_over_week_change)}
-                  </div>
-                  <div className="text-sm text-gray-600">Week-over-Week</div>
-                </div>
-                <div className="text-center p-4 bg-teal-50 rounded-lg">
-                  <div className="text-xl md:text-2xl font-bold text-brand-light-blue">
-                    {formatNumber(reportData.summary.monthly_progress.current)}
-                  </div>
-                  <div className="text-sm text-gray-600">Monthly Progress</div>
-                  <Progress
-                    value={reportData.summary.monthly_progress.percentage * 100}
-                    className="mt-2 h-2"
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    {formatPercentage(
-                      reportData.summary.monthly_progress.percentage
-                    )}{' '}
-                    of {formatNumber(reportData.summary.monthly_progress.goal)}
-                  </div>
-                </div>
-              </div>
+              </TooltipProvider>
             </CardContent>
           </Card>
 
