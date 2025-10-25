@@ -50,9 +50,15 @@ const categoryPatterns: CategoryPattern[] = [
       /\bmontessori\b/i,
       /\bchristian\s+(elementary|middle|high|school)\b/i,
       /\bcatholic\s+(elementary|middle|high|school)\b/i,
+      /\bepiscopal\s+(elementary|middle|high|school)\b/i,
+      /\blutheran\s+(elementary|middle|high|school)\b/i,
+      /\bmethodist\s+(elementary|middle|high|school)\b/i,
+      /\bpresbyterian\s+(elementary|middle|high|school)\b/i,
+      /\bbaptist\s+(elementary|middle|high|school)\b/i,
       /\bst\.?\s+\w+'?s?\s+(elementary|middle|high|school)\b/i, // St. Mary's Elementary/Middle/High/School
       /\bsaint\s+\w+'?s?\s+(elementary|middle|high|school)\b/i,
       /\bparochial\b/i,
+      /\bwesleyan\b/i, // Wesleyan schools/universities
     ],
   },
   // Schools - Charter (CHECK SECOND)
@@ -155,9 +161,12 @@ const categoryPatterns: CategoryPattern[] = [
       /\bclub\b/i,
       /\brotary\b/i,
       /\bkiwanis\b/i,
-      /\blions\s+club\b/i,
-      /\bboy\s+scouts\b/i,
-      /\bgirl\s+scouts\b/i,
+      /\blions\b/i, // Lions Club or just Lions
+      /\bboy\s+scouts?\b/i, // Boy Scout or Boy Scouts
+      /\bgirl\s+scouts?\b/i, // Girl Scout or Girl Scouts
+      /\bscouts?\b/i, // Scouts, Scout (catch standalone)
+      /\bcub\s+scouts?\b/i, // Cub Scouts
+      /\beagle\s+scouts?\b/i,
       /\b4-h\b/i,
       /\byouth\s+group\b/i,
       /\bsports\s+club\b/i,
@@ -182,6 +191,17 @@ const categoryPatterns: CategoryPattern[] = [
       /\bholdings\b/i,
       /\bcompany\b/i,
       /\bindustries\b/i,
+      /\bmedia\b/i,
+      /\bstudios?\b/i,
+      /\bbroadcasting\b/i,
+      /\bproductions?\b/i,
+      /\bpictures\b/i,
+      /\bfilms?\b/i,
+      /\bwarner\s+bros\.?\b/i, // Warner Bros.
+      /\bdiscovery\b/i, // Discovery, Warner Bros. Discovery
+      /\btechnologies\b/i,
+      /\bsystems?\b/i,
+      /\bnetworks?\b/i,
     ],
   },
   // Small/Medium Corporations
@@ -275,6 +295,8 @@ const testOrganizations = [
   'St. Mary\'s Elementary School',
   'Catholic Middle School',
   'Christian High School',
+  'Holy Innocents Episcopal School',
+  'Wesleyan',
   'Montessori Academy',
 
   // Schools - Charter
@@ -296,12 +318,16 @@ const testOrganizations = [
   // Clubs
   'Rotary Club',
   'Boy Scouts Troop 123',
+  'Boy Scouts',
+  'Girl Scouts',
   'Lions Club',
   'Youth Sports Club',
 
   // Corporations
   'Acme Corporation',
   'Global Industries Inc.',
+  'Warner Bros. Discovery',
+  'Fleetcor',
   'Smith Consulting Services',
   'Local Business Partners',
 
