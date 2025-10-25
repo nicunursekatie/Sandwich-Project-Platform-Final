@@ -20,7 +20,7 @@ export const ProjectsTab: React.FC<ProjectsTabProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="projects-list">
       {projects.map((project) => (
         <ProjectCard key={project.id} project={project} />
       ))}

@@ -794,7 +794,7 @@ export const TOURS: Tour[] = [
         id: 'projects-create',
         title: 'Create New Project',
         description: 'Click here to create a new project. You\'ll set a title, description, timeline, and assign team members.',
-        targetSelector: '[data-testid="create-project"], [data-testid="new-project-button"]',
+        targetSelector: '[data-testid="new-project-button"]',
         position: 'bottom',
         highlightPadding: 8
       },
@@ -802,7 +802,7 @@ export const TOURS: Tour[] = [
         id: 'projects-list',
         title: 'Browse Projects',
         description: 'All projects are listed here. You can filter by status (Active, Completed, Archived) and see key details at a glance.',
-        targetSelector: '[data-testid="projects-list"], [data-testid="project-cards"]',
+        targetSelector: '[data-testid="projects-list"]',
         position: 'top',
         highlightPadding: 16
       },
@@ -810,7 +810,7 @@ export const TOURS: Tour[] = [
         id: 'projects-detail',
         title: 'Project Details',
         description: 'Click on any project to view tasks, milestones, team members, and updates. This is where collaboration happens!',
-        targetSelector: '[data-testid="project-card"]:first-child',
+        targetSelector: '[data-testid="project-card"]',
         position: 'bottom',
         highlightPadding: 12
       }
@@ -822,12 +822,12 @@ export const TOURS: Tour[] = [
     description: 'Add and manage host organizations for sandwich collections',
     category: 'events-calendar',
     icon: 'Building2',
-    estimatedTime: '3 min',
+    estimatedTime: '2 min',
     steps: [
       {
         id: 'hosts-intro',
         title: 'Host Organizations',
-        description: 'Host organizations are the groups that collect sandwiches for TSP. Let me show you how to manage them!',
+        description: 'Host organizations are the groups that collect sandwiches for TSP. Let me show you how to manage their contacts!',
         targetSelector: '[data-tour="navigation"]',
         position: 'right'
       },
@@ -848,28 +848,20 @@ export const TOURS: Tour[] = [
         }
       },
       {
-        id: 'hosts-add',
-        title: 'Add New Host',
-        description: 'Click here to register a new host organization. Enter their name, contact info, location, and collection details.',
-        targetSelector: '[data-testid="add-host"], [data-testid="new-host-button"]',
+        id: 'hosts-search',
+        title: 'Search Hosts',
+        description: 'Use the search bar to find specific host organizations or contacts by name, location, or role.',
+        targetSelector: 'input[placeholder*="Search"]',
         position: 'bottom',
         highlightPadding: 8
       },
       {
-        id: 'hosts-directory',
-        title: 'Host Directory',
-        description: 'Browse all registered hosts. You can search, filter by status, and view collection history for each host.',
-        targetSelector: '[data-testid="hosts-table"], [data-testid="hosts-list"]',
+        id: 'hosts-contacts',
+        title: 'Host Contacts',
+        description: 'Browse all host contacts here. You can see their role, phone number, and availability for coordinating collection events.',
+        targetSelector: '.grid.gap-4, .space-y-4',
         position: 'top',
         highlightPadding: 16
-      },
-      {
-        id: 'hosts-profile',
-        title: 'Host Profiles',
-        description: 'Click on any host to view their complete profile: contact details, collection history, upcoming events, and performance metrics.',
-        targetSelector: '[data-testid="host-row"]:first-child, [data-testid="host-card"]:first-child',
-        position: 'bottom',
-        highlightPadding: 12
       }
     ]
   },
@@ -908,7 +900,7 @@ export const TOURS: Tour[] = [
         id: 'reminders-create',
         title: 'Create New Reminder',
         description: 'Click here to set up a reminder. Choose the event, when to send the reminder, and who should receive it.',
-        targetSelector: '[data-testid="create-reminder"], [data-testid="new-reminder-button"]',
+        targetSelector: '[data-testid="create-reminder-btn"]',
         position: 'bottom',
         highlightPadding: 8
       },
@@ -916,17 +908,9 @@ export const TOURS: Tour[] = [
         id: 'reminders-list',
         title: 'Active Reminders',
         description: 'View all scheduled reminders. You can edit, delete, or manually trigger reminders from this list.',
-        targetSelector: '[data-testid="reminders-list"], [data-testid="reminders-table"]',
+        targetSelector: '[data-testid="tab-pending"]',
         position: 'top',
         highlightPadding: 16
-      },
-      {
-        id: 'reminders-timing',
-        title: 'Reminder Timing',
-        description: 'Set reminders for specific times before events: 1 day, 1 week, custom intervals. Great for coordinating volunteers!',
-        targetSelector: '[data-testid="reminder-timing"], [data-testid="timing-selector"]',
-        position: 'bottom',
-        highlightPadding: 12
       }
     ]
   },
@@ -936,7 +920,7 @@ export const TOURS: Tour[] = [
     description: 'Manage when you\'re available for volunteer activities',
     category: 'my-work',
     icon: 'Calendar',
-    estimatedTime: '2 min',
+    estimatedTime: '1 min',
     steps: [
       {
         id: 'availability-intro',
@@ -948,7 +932,7 @@ export const TOURS: Tour[] = [
       {
         id: 'availability-nav',
         title: 'Open My Availability',
-        description: 'Navigate to "My Availability" from the menu.',
+        description: 'Navigate to "My Availability" from the menu to set when you\'re available for volunteer activities.',
         targetSelector: '[data-nav-id="my-availability"]',
         position: 'right',
         navigationAction: {
@@ -962,28 +946,12 @@ export const TOURS: Tour[] = [
         }
       },
       {
-        id: 'availability-calendar',
-        title: 'Your Availability Calendar',
-        description: 'This calendar shows your availability. Green means available, red means unavailable. Click dates to update.',
-        targetSelector: '[data-testid="availability-calendar"], [data-testid="calendar-view"]',
-        position: 'top',
+        id: 'availability-form',
+        title: 'Set Your Availability',
+        description: 'Use this page to indicate when you\'re available for volunteer work. Your team coordinators can see this when planning events.',
+        targetSelector: 'main, .container',
+        position: 'center',
         highlightPadding: 16
-      },
-      {
-        id: 'availability-set',
-        title: 'Update Availability',
-        description: 'Click on any date to mark yourself as available or unavailable. You can set specific time ranges too!',
-        targetSelector: '[data-testid="date-cell"]:first-child, [data-testid="availability-toggle"]',
-        position: 'bottom',
-        highlightPadding: 8
-      },
-      {
-        id: 'availability-recurring',
-        title: 'Recurring Availability',
-        description: 'Set recurring patterns like "Every Tuesday" or "First Saturday of the month" to save time!',
-        targetSelector: '[data-testid="recurring-availability"], [data-testid="pattern-selector"]',
-        position: 'bottom',
-        highlightPadding: 12
       }
     ]
   },
@@ -1022,7 +990,7 @@ export const TOURS: Tour[] = [
         id: 'volunteers-add',
         title: 'Add New Volunteer',
         description: 'Click here to register a new volunteer. Enter their contact info, skills, availability, and preferences.',
-        targetSelector: '[data-testid="add-volunteer"], [data-testid="new-volunteer-button"]',
+        targetSelector: '[data-testid="add-volunteer"]',
         position: 'bottom',
         highlightPadding: 8
       },
@@ -1030,7 +998,7 @@ export const TOURS: Tour[] = [
         id: 'volunteers-directory',
         title: 'Volunteer Directory',
         description: 'Browse all registered volunteers. Search by name, filter by skills or availability, and view participation history.',
-        targetSelector: '[data-testid="volunteers-table"], [data-testid="volunteers-list"]',
+        targetSelector: '[data-testid="volunteers-list"]',
         position: 'top',
         highlightPadding: 16
       },
@@ -1038,7 +1006,7 @@ export const TOURS: Tour[] = [
         id: 'volunteers-profile',
         title: 'Volunteer Profiles',
         description: 'Click on any volunteer to view their full profile, volunteer history, skills, and contact information.',
-        targetSelector: '[data-testid="volunteer-row"]:first-child, [data-testid="volunteer-card"]:first-child',
+        targetSelector: '[data-testid="volunteer-card"]',
         position: 'bottom',
         highlightPadding: 12
       }

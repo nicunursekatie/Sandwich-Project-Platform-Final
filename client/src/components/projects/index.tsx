@@ -70,6 +70,7 @@ const ProjectsManagementContent: React.FC = () => {
             <Button
               onClick={() => setShowCreateDialog(true)}
               className="bg-brand-orange hover:bg-brand-orange-dark text-white font-roboto font-medium shadow-sm"
+              data-testid="new-project-button"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Project

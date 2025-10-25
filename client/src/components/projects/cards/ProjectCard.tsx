@@ -199,10 +199,13 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     project.status !== 'archived';
 
   return (
-    <Card className={`group hover:shadow-lg transition-all duration-200 ${
-      project.googleSheetRowId ? 'border-l-4 border-l-[#236383]' :
-      'border-l-4 border-l-[#FBAD3F]'
-    }`}>
+    <Card
+      className={`group hover:shadow-lg transition-all duration-200 ${
+        project.googleSheetRowId ? 'border-l-4 border-l-[#236383]' :
+        'border-l-4 border-l-[#FBAD3F]'
+      }`}
+      data-testid="project-card"
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
