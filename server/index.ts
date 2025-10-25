@@ -1,10 +1,7 @@
 // Clean error handling for Replit - let Replit handle restarts
 // Replit already monitors and restarts crashed apps automatically
 
-// CRITICAL: Extend Zod with OpenAPI support BEFORE any schema imports
-import { z } from 'zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-extendZodWithOpenApi(z);
+// Note: OpenAPI extension removed due to platform compatibility issues
 
 import express, { type Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
@@ -349,14 +346,19 @@ async function bootstrap() {
           // Initialize cron jobs for scheduled tasks
           const { initializeCronJobs } = await import('./services/cron-jobs');
           initializeCronJobs();
-          logger.log(
-            '✓ Cron jobs initialized (host availability scraper scheduled)'
-          );
+          logger.log({
+            message: '✓ Cron jobs initialized (host availability scraper scheduled)',
+            level: 'info'
+          });
 
-          logger.log(
-            '✓ The Sandwich Project server is fully ready to handle requests'
-          );
-          logger.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
+          logger.log({
+            message: '✓ The Sandwich Project server is fully ready to handle requests',
+            level: 'info'
+          });
+          logger.log({
+            message: '🚀 SERVER INITIALIZATION COMPLETE 🚀',
+            level: 'info'
+          });
         } catch (initError) {
           serverLogger.error('✗ Background initialization failed:', initError);
           serverLogger.error(
@@ -391,34 +393,34 @@ async function bootstrap() {
 
     // PRODUCTION MODE: Aggressive exit prevention
     if (process.env.NODE_ENV === 'production') {
-      logger.log('✅ Production exit prevention installed');
+      logger.log({ message: '✅ Production exit prevention installed', level: 'info' });
 
       // Strategy 1: Keep stdin open
       process.stdin.resume();
 
       // Strategy 2: Prevent beforeExit
       process.on('beforeExit', (code) => {
-        logger.log(`⚠ Prevented process exit with code ${code} - keeping alive`);
+        logger.log({ message: `⚠ Prevented process exit with code ${code} - keeping alive`, level: 'warn' });
         setTimeout(() => {}, 1000);
       });
 
       // Strategy 3: Override process.exit
       const originalExit = process.exit;
       process.exit = ((code?: number) => {
-        logger.log(`⚠ Prevented process.exit(${code}) in production mode`);
+        logger.log({ message: `⚠ Prevented process.exit(${code}) in production mode`, level: 'warn' });
         return undefined as never;
       }) as typeof process.exit;
 
       // Production heartbeat
       setInterval(() => {
-        logger.log(`✅ Production heartbeat - uptime: ${Math.floor(process.uptime())}s`);
+        logger.log({ message: `✅ Production heartbeat - uptime: ${Math.floor(process.uptime())}s`, level: 'info' });
       }, 60000);
 
-      logger.log('✅ Production infinite keep-alive loop started');
+      logger.log({ message: '✅ Production infinite keep-alive loop started', level: 'info' });
     }
 
-    logger.log('✅ Health endpoint ready: /healthz');
-    logger.log('✅ Server startup complete - ready for traffic');
+    logger.log({ message: '✅ Health endpoint ready: /healthz', level: 'info' });
+    logger.log({ message: '✅ Server startup complete - ready for traffic', level: 'info' });
   } catch (error) {
     serverLogger.error('✗ Server startup failed:', error);
     process.exit(1);
