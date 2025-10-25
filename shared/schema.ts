@@ -1727,6 +1727,7 @@ export const organizations = pgTable(
   {
     id: serial('id').primaryKey(),
     name: varchar('name').notNull(),
+    department: varchar('department'), // Department within organization (e.g., "4th & 5th Graders")
     alternateNames: text('alternate_names').array(), // Array of variations/aliases
     addresses: text('addresses').array(), // Array of known addresses
     domains: text('domains').array(), // Array of email domains associated with this org

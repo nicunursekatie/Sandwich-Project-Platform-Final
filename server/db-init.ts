@@ -14,6 +14,7 @@ import {
 } from '@shared/schema';
 import { eq, count, sql } from 'drizzle-orm';
 import { ensureSessionsTable } from './session-migrate';
+import { runMigrationsAutomatically } from './migrate';
 import { createServiceLogger } from './utils/logger.js';
 import { logger } from './utils/production-safe-logger';
 
@@ -30,6 +31,9 @@ export async function initializeDatabase() {
         ? process.env.DATABASE_URL.substring(0, 20) + '...'
         : 'not set',
     });
+
+    // Run any pending database migrations
+    await runMigrationsAutomatically();
 
     // Ensure sessions table exists for PostgreSQL session storage
     // This resolves the "MemoryStore is not designed for a production environment" warning
