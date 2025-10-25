@@ -229,7 +229,7 @@ function checkReligiousAffiliation(name: string): boolean {
   return religiousPatterns.some((pattern) => pattern.test(nameLower));
 }
 
-async function categorizeOrganization(
+export async function categorizeOrganization(
   name: string
 ): Promise<{
   category: string;
