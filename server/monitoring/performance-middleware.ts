@@ -22,7 +22,7 @@ function normalizeRoute(path: string): string {
     // Replace MongoDB-style IDs
     .replace(/\/[0-9a-f]{24}/gi, '/:id')
     // Normalize trailing slashes
-    .replace(/\/$/, '');
+    .replace(/\/$/,  '');
 }
 
 /**
@@ -64,19 +64,20 @@ export function performanceMonitoringMiddleware(req: Request, res: Response, nex
   const startMemory = process.memoryUsage();
   const requestSize = getRequestSize(req);
 
-  // Start Sentry transaction for this request
-  const transaction = Sentry.startTransaction({
+  // Start Sentry span for this request using modern API
+  const activeSpan = Sentry.startSpan({
     op: 'http.server',
     name: `${req.method} ${normalizeRoute(req.path)}`,
-    data: {
-      url: req.url,
-      method: req.method,
-      'http.query': req.query,
+    attributes: {
+      'http.url': req.url,
+      'http.method': req.method,
+      'http.query': JSON.stringify(req.query),
     },
+  }, (span) => {
+    // Store span on request for child spans
+    (req as any).sentrySpan = span;
+    return span;
   });
-
-  // Set transaction on request for child spans
-  (req as any).sentryTransaction = transaction;
 
   // Store original end function
   const originalEnd = res.end;
@@ -132,12 +133,14 @@ export function performanceMonitoringMiddleware(req: Request, res: Response, nex
           });
         }
 
-        // Add transaction data
-        transaction.setHttpStatus(statusCode);
-        transaction.setData('response_size', responseSize);
-        transaction.setData('request_size', requestSize);
-        transaction.setData('memory_delta', memoryDelta);
-        transaction.finish();
+        // Add span data using modern API
+        if (activeSpan) {
+          activeSpan.setStatus(statusCode >= 200 && statusCode < 400 ? 'ok' : 'error');
+          activeSpan.setAttribute('http.status_code', statusCode);
+          activeSpan.setAttribute('http.response_size', responseSize);
+          activeSpan.setAttribute('http.request_size', requestSize);
+          activeSpan.setAttribute('memory_delta', memoryDelta);
+        }
       } catch (error) {
         logger.error('Failed to record performance metrics', { error });
       }
@@ -178,31 +181,27 @@ export function errorTrackingMiddleware(err: Error, req: Request, res: Response,
 }
 
 /**
- * Create a child span for database operations
+ * Create a child span for database operations using modern Sentry API
  */
-export function createDbSpan(req: Request, operation: string, table: string): any {
-  const transaction = (req as any).sentryTransaction;
-  if (transaction) {
-    return transaction.startChild({
-      op: 'db.query',
-      description: `${operation} ${table}`,
-    });
-  }
-  return null;
+export function createDbSpan(req: Request, operation: string, table: string): void {
+  return Sentry.startSpan({
+    op: 'db.query',
+    name: `${operation} ${table}`,
+  }, () => {
+    // Span is automatically managed by Sentry
+  });
 }
 
 /**
- * Create a child span for external API calls
+ * Create a child span for external API calls using modern Sentry API
  */
-export function createExternalApiSpan(req: Request, service: string, endpoint: string): any {
-  const transaction = (req as any).sentryTransaction;
-  if (transaction) {
-    return transaction.startChild({
-      op: 'http.client',
-      description: `${service} ${endpoint}`,
-    });
-  }
-  return null;
+export function createExternalApiSpan(req: Request, service: string, endpoint: string): void {
+  return Sentry.startSpan({
+    op: 'http.client',
+    name: `${service} ${endpoint}`,
+  }, () => {
+    // Span is automatically managed by Sentry
+  });
 }
 
 /**

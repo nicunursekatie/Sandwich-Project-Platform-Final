@@ -158,13 +158,14 @@ export function addBreadcrumb(message: string, category: string, data?: Record<s
 }
 
 /**
- * Start a new transaction for performance tracking
+ * Start a new span for performance tracking (modern API)
+ * @deprecated Use Sentry.startSpan() directly instead
  */
-export function startTransaction(name: string, op: string): ReturnType<typeof Sentry.startTransaction> {
-  return Sentry.startTransaction({
+export function startSpan(name: string, op: string, callback: (span: any) => void): void {
+  return Sentry.startSpan({
     name,
     op,
-  });
+  }, callback);
 }
 
 /**
