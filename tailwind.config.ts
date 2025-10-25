@@ -4,6 +4,14 @@ import { TAILWIND_SCREENS } from './shared/breakpoints';
 export default {
   // darkMode disabled per user request
   content: ['./client/index.html', './client/src/**/*.{js,jsx,ts,tsx}'],
+  safelist: [
+    // Ensure brand colors used in dynamic contexts are always generated
+    'bg-brand-primary',
+    'border-brand-primary-dark',
+    'ring-brand-primary',
+    'text-brand-primary',
+    'hover:bg-brand-primary',
+  ],
   theme: {
     screens: TAILWIND_SCREENS,
     extend: {
