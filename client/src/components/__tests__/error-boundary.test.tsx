@@ -117,28 +117,36 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText('Refresh Page')).toBeInTheDocument();
   });
 
-  it('should attempt to recover when Try Again is clicked', async () => {
+  it('should reset error state when Try Again is clicked', async () => {
     const user = userEvent.setup();
-    let shouldThrow = true;
 
-    const { rerender } = render(
+    // Component that throws once, then succeeds
+    let throwCount = 0;
+    const ThrowOnce = () => {
+      if (throwCount === 0) {
+        throwCount++;
+        throw new Error('First render error');
+      }
+      return <div>Recovered content</div>;
+    };
+
+    render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={shouldThrow} />
+        <ThrowOnce />
       </ErrorBoundary>
     );
 
+    // Should show error UI
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
 
+    // Click Try Again - this should reset the error boundary's internal state
     const tryAgainButton = screen.getByText('Try Again');
     await user.click(tryAgainButton);
 
-    // After clicking, we'd need to rerender with no error
-    shouldThrow = false;
-    rerender(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={shouldThrow} />
-      </ErrorBoundary>
-    );
+    // After clicking Try Again, the component should attempt to re-render
+    // Since throwCount is now 1, it won't throw again and should show recovered content
+    expect(screen.getByText('Recovered content')).toBeInTheDocument();
+    expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
   });
 
   it('should reload page when Refresh Page is clicked', async () => {

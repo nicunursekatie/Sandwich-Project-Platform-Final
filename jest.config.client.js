@@ -12,8 +12,8 @@ export default {
     },
   },
   testMatch: [
-    '**/client/**/__tests__/**/*.test.(ts|tsx)',
-    '**/client/**/*.test.(ts|tsx)',
+    '**/client/**/__tests__/**/*.test.{ts,tsx}',
+    '**/client/**/*.test.{ts,tsx}',
   ],
   transform: {
     '^.+\\.(ts|tsx)$': [

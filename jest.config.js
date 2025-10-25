@@ -3,8 +3,8 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   testMatch: [
-    '**/tests/**/*.test.(js|ts)',
-    '**/server/**/__tests__/**/*.test.(js|ts)',
+    '**/tests/**/*.test.{js,ts}',
+    '**/server/**/__tests__/**/*.test.{js,ts}',
     '!**/client/**',
   ],
   transform: {
