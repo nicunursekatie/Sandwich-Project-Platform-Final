@@ -2092,7 +2092,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 <Building className="w-4 h-4 text-[#236383] mt-0.5" />
                 <div className="flex-1">
                   <span className="font-medium text-[#236383]">Recipients & Hosts:</span>
-                  {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+                  {isEditingField && editingField === 'assignedRecipientIds' ? (
                     <div className="space-y-2 mt-2">
                       <MultiRecipientSelector
                         value={editingValue ? JSON.parse(editingValue) : []}
@@ -2101,14 +2101,14 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                         data-testid="assigned-recipients-editor"
                       />
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit}>
+                        <Button size="sm" onClick={handleSaveEdit}>
                           <Save className="w-3 h-3 mr-1" />
                           Save
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={cancelEdit}
+                          onClick={handleCancelEdit}
                         >
                           <X className="w-3 h-3 mr-1" />
                           Cancel
@@ -2136,12 +2136,11 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() =>
-                              startEditing(
-                                'assignedRecipientIds',
-                                (request as any).assignedRecipientIds ? JSON.stringify((request as any).assignedRecipientIds) : '[]'
-                              )
-                            }
+                            onClick={() => {
+                              setEditingField('assignedRecipientIds');
+                              setEditingValue((request as any).assignedRecipientIds ? JSON.stringify((request as any).assignedRecipientIds) : '[]');
+                              setIsEditingField(true);
+                            }}
                             className="text-[#236383] border-[#236383]/30 hover:bg-[#236383]/10"
                           >
                             <Edit2 className="w-3 h-3 mr-1" />
@@ -2153,12 +2152,11 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() =>
-                            startEditing(
-                              'assignedRecipientIds',
-                              (request as any).assignedRecipientIds ? JSON.stringify((request as any).assignedRecipientIds) : '[]'
-                            )
-                          }
+                          onClick={() => {
+                            setEditingField('assignedRecipientIds');
+                            setEditingValue((request as any).assignedRecipientIds ? JSON.stringify((request as any).assignedRecipientIds) : '[]');
+                            setIsEditingField(true);
+                          }}
                           className="h-6 px-2 opacity-70 hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-3 h-3" />
