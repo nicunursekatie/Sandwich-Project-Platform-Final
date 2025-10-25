@@ -891,22 +891,22 @@ export default function TeamBoard() {
                       <Button
                         onClick={() => handleComplete(item)}
                         disabled={updateItemMutation.isPending}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-sm min-w-0"
                         size="sm"
                         data-testid={`button-complete-${item.id}`}
                       >
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
-                        Mark Done
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" />
+                        <span className="truncate">Mark Done</span>
                       </Button>
                       <Button
                         onClick={() => handleReopen(item)}
                         disabled={updateItemMutation.isPending}
                         variant="outline"
                         size="sm"
-                        className="text-sm"
+                        className="flex-1 text-sm min-w-0"
                         data-testid={`button-reopen-${item.id}`}
                       >
-                        Reopen
+                        <span className="truncate">Reopen</span>
                       </Button>
                     </div>
 
