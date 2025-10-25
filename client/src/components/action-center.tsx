@@ -119,9 +119,26 @@ export default function ActionCenter() {
 
     // Calculate days elapsed in week (Fri=1, Sat=2, ..., Thu=7)
     const daysElapsedInWeek = daysFromFriday + 1;
-    const projectedWeekTotal = currentWeekTotal > 0
-      ? Math.round((currentWeekTotal / daysElapsedInWeek) * 7)
-      : currentWeekTotal;
+
+    // Get scheduled events for current week (match Forecasts calculation)
+    const scheduledThisWeek = (eventRequests || []).filter((event) => {
+      if (!event.desiredEventDate) return false;
+      if (!['in_process', 'scheduled', 'completed'].includes(event.status)) return false;
+      const eventDate = new Date(event.desiredEventDate);
+      return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
+    });
+
+    const scheduledWeeklyTotal = scheduledThisWeek.reduce(
+      (sum, event) => sum + (event.estimatedSandwichCount || 0),
+      0
+    );
+
+    // Baseline expectation for individual donations per week (5k sandwiches)
+    const baselineIndividualExpectation = 5000;
+
+    // Combined projection: Already collected + Scheduled events + Baseline individual expectation
+    // This matches the Forecasts tab calculation for consistency
+    const projectedWeekTotal = currentWeekTotal + scheduledWeeklyTotal + baselineIndividualExpectation;
 
     const actions: ActionItem[] = [];
 
@@ -144,13 +161,16 @@ export default function ActionCenter() {
     });
 
     if (completedEventsNeeding1Day.length > 0) {
+      const estimatedRetention = Math.round(completedEventsNeeding1Day.length * 0.75); // 75% retention with follow-up
+      const totalEventSandwiches = completedEventsNeeding1Day.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
+
       actions.push({
         id: 'followup-1day-needed',
         priority: 'high',
         category: 'recognition',
         title: `${completedEventsNeeding1Day.length} Event${completedEventsNeeding1Day.length !== 1 ? 's' : ''} Need 1-Day Follow-Up`,
         description: `Completed events waiting for immediate post-event feedback`,
-        impact: `Timely follow-up improves retention and captures fresh feedback`,
+        impact: `Follow-up could retain ${estimatedRetention} of ${completedEventsNeeding1Day.length} hosts (75% retention rate) → potential ${Math.round(totalEventSandwiches * 0.75).toLocaleString()} sandwiches in repeat events`,
         action: `Contact ${completedEventsNeeding1Day.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Day.length > 3 ? ` and ${completedEventsNeeding1Day.length - 3} more` : ''}`,
         data: { events: completedEventsNeeding1Day },
       });
@@ -170,13 +190,16 @@ export default function ActionCenter() {
     });
 
     if (completedEventsNeeding1Month.length > 0) {
+      const potentialRepeatEvents = Math.round(completedEventsNeeding1Month.length * 0.60); // 60% repeat rate with good follow-up
+      const totalEventSandwiches = completedEventsNeeding1Month.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
+
       actions.push({
         id: 'followup-1month-needed',
         priority: 'medium',
         category: 'recognition',
         title: `${completedEventsNeeding1Month.length} Event${completedEventsNeeding1Month.length !== 1 ? 's' : ''} Need 1-Month Follow-Up`,
         description: `Events from 30+ days ago waiting for long-term feedback`,
-        impact: `Monthly follow-ups help assess long-term impact and build relationships`,
+        impact: `Could secure ${potentialRepeatEvents} repeat events (60% conversion) → estimated ${Math.round(totalEventSandwiches * 0.60).toLocaleString()} sandwiches annually`,
         action: `Schedule follow-up calls with ${completedEventsNeeding1Month.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Month.length > 3 ? ` and ${completedEventsNeeding1Month.length - 3} more` : ''}`,
         data: { events: completedEventsNeeding1Month },
       });
@@ -250,13 +273,15 @@ export default function ActionCenter() {
         return sum + (needed - assigned);
       }, 0);
 
+      const atRiskSandwiches = upcomingEventsMissingDrivers.reduce((sum, e) => sum + (e.estimatedSandwichCount || 0), 0);
+
       actions.push({
         id: 'missing-drivers',
         priority: 'high',
         category: 'scheduling',
         title: `${upcomingEventsMissingDrivers.length} Upcoming Event${upcomingEventsMissingDrivers.length !== 1 ? 's' : ''} Need Driver${totalDriversNeeded !== 1 ? 's' : ''}`,
         description: `Events in next 2 weeks need ${totalDriversNeeded} more driver${totalDriversNeeded !== 1 ? 's' : ''}`,
-        impact: `Transportation is critical - events can't happen without drivers`,
+        impact: `HIGH RISK: ${atRiskSandwiches.toLocaleString()} sandwiches at risk of cancellation without drivers`,
         action: `Assign drivers for ${upcomingEventsMissingDrivers.slice(0, 3).map(e => e.organizationName).join(', ')}${upcomingEventsMissingDrivers.length > 3 ? ` and ${upcomingEventsMissingDrivers.length - 3} more` : ''}`,
         data: { events: upcomingEventsMissingDrivers, driversNeeded: totalDriversNeeded },
       });
@@ -484,17 +509,19 @@ export default function ActionCenter() {
     } else if (!isEarlyWeek && !alreadyFlaggedThisWeek) {
       // Later in week (Fri-Tue): Show pace warnings if behind
       const weeklyGap = avgWeekly - projectedWeekTotal;
+      const weeklyAbsDiff = Math.abs(weeklyGap);
 
-      if (weeklyGap > 500) {
+      // Only flag if more than 300 sandwiches below average (matching Forecasts threshold)
+      if (weeklyGap > 300) {
         actions.push({
           id: 'weekly-pace',
-          priority: 'high',
+          priority: weeklyGap > 1000 ? 'high' : 'medium',
           category: 'volunteer-recruitment',
           title: 'Weekly Collections Below Average Pace',
           description: `Currently tracking ${Math.abs(Math.round((weeklyGap / avgWeekly) * 100))}% below typical weekly collections`,
           impact: `Need ~${Math.round(weeklyGap)} more sandwiches to reach average week`,
           action: 'Recruit volunteers for end-of-week collections',
-          data: { currentWeekTotal, projectedWeekTotal, avgWeekly, gap: weeklyGap },
+          data: { currentWeekTotal, projectedWeekTotal, avgWeekly, gap: weeklyGap, scheduledWeeklyTotal, baselineIndividualExpectation },
         });
       }
     }
@@ -636,6 +663,43 @@ export default function ActionCenter() {
             Strategic opportunities for volunteer recruitment and program growth • {actionItems.length} insights
           </p>
         </div>
+
+        {/* Priority Summary Banner */}
+        {actionItems.length > 0 && (
+          <Card className="bg-gradient-to-r from-brand-primary to-brand-teal text-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <AlertTriangle className="h-12 w-12 flex-shrink-0" />
+                <div>
+                  <h3 className="text-xl font-bold mb-1">
+                    {actionItems.filter(a => a.priority === 'high').length} High-Priority {actionItems.filter(a => a.priority === 'high').length === 1 ? 'Item' : 'Items'} Need Attention This Week
+                  </h3>
+                  <p className="text-white/90">
+                    Focus on: {actionItems.filter(a => a.priority === 'high').slice(0, 3).map(a => a.category.replace(/-/g, ' ')).join(', ')}
+                    {actionItems.filter(a => a.priority === 'high').length > 3 && ', and more'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Success Highlights */}
+        {actionItems.length === 0 || (actionItems.filter(a => a.priority === 'high').length === 0 && actionItems.length > 0) ? (
+          <Card className="bg-gradient-to-r from-green-500 to-teal-500 text-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <CheckCircle className="h-12 w-12 flex-shrink-0" />
+                <div>
+                  <h3 className="text-xl font-bold mb-1">Great Work! Everything On Track</h3>
+                  <p className="text-white/90">
+                    ✓ No high-priority items • ✓ Events well-staffed • ✓ Follow-ups current
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
