@@ -366,17 +366,26 @@ As of the latest expansion (October 2025), the test suite includes:
 - React components (5 component test files)
 - React hooks (3 hook test files)
 
-**Integration Tests (10 files)**:
-- Collections API routes
-- Notifications API routes
-- Team Board API routes
-- Recipients API routes
-- Drivers API routes
-- Hosts API routes
-- Event Requests API routes
-- Authentication routes
-- Permissions routes
-- Quick check routes
+**Integration Tests (16 files total)**:
+
+*Fully Functional (4 files)*:
+- Authentication routes (`auth.test.ts`)
+- Drivers API routes (`drivers.test.ts`)
+- Hosts API routes (`hosts.test.ts`)
+- Event Requests API routes (`event-requests.test.ts`)
+- Permissions routes (`permissions.test.ts`)
+- Quick check routes (`quick-check.test.ts`)
+
+*Test Templates - Need Setup Infrastructure (6 files, 154 test cases)*:
+- Collections API routes (`collections.test.ts` - 24 tests)
+- Notifications API routes (`notifications.test.ts` - 20 tests)
+- Team Board API routes (`team-board.test.ts` - 18 tests)
+- Recipients API routes (`recipients.test.ts` - 22 tests)
+- Projects API routes (`projects.test.ts` - 30 tests)
+- Users/Admin API routes (`users.test.ts` - 40 tests)
+
+**Note**: The template tests provide comprehensive test coverage plans and documentation
+but need test infrastructure setup to run. See `tests/INTEGRATION_TEST_SETUP_TODO.md` for details.
 
 **End-to-End Tests (3 files)**:
 - Authentication workflows
