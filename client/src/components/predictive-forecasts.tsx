@@ -233,7 +233,7 @@ export default function PredictiveForecasts() {
     logger.log('Planned collections detail:', plannedThisWeek.map(c => ({
       date: c.collectionDate,
       total: calculateTotalSandwiches(c),
-      individual: c.individualCount || 0,
+      individual: c.individualSandwiches || 0,
       groups: c.groupCollections || []
     })));
     logger.log('---');

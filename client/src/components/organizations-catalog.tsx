@@ -820,7 +820,7 @@ export default function GroupCatalog({
                           {/* Events Grid for this Department */}
                           <div className="space-y-2">
                             {/* Show only first 3 events to prevent cards from being too tall */}
-                            {deptEvents.slice(0, 3).map((org, index) => (
+                            {deptEvents.slice(0, 3).map((org: OrganizationContact, index: number) => (
                               <Card
                                 key={`${org.organizationName}-${org.contactName}-${index}`}
                                 className={`hover:shadow-lg transition-all duration-300 border-l-4 w-full ${
@@ -1716,7 +1716,7 @@ export default function GroupCatalog({
                   <div className="border-t pt-3 mt-3">
                     <p className="text-sm text-gray-600 mb-2">Event History</p>
                     <div className="grid grid-cols-2 gap-4">
-                      {selectedContact.actualEventCount > 0 && (
+                      {selectedContact.actualEventCount && selectedContact.actualEventCount > 0 && (
                         <div>
                           <p className="text-2xl font-bold text-brand-primary">
                             {selectedContact.actualEventCount}
