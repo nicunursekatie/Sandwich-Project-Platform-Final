@@ -47,7 +47,7 @@ async function populateOrganizations() {
       const stats = await db
         .select({
           totalEvents: sql<number>`COUNT(*)::int`,
-          lastEventDate: sql<Date>`MAX(${eventRequests.eventDate})`,
+          lastEventDate: sql<Date>`MAX(COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}))`,
         })
         .from(eventRequests)
         .where(sql`LOWER(${eventRequests.organizationName}) = LOWER(${org.organizationName})`)
