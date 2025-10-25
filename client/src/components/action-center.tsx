@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Card,
@@ -27,12 +27,13 @@ import {
   MapPin,
   HelpCircle,
 } from 'lucide-react';
-import type { SandwichCollection } from '@shared/schema';
+import type { SandwichCollection, EventRequest } from '@shared/schema';
 import {
   calculateTotalSandwiches,
   parseCollectionDate,
 } from '@/lib/analytics-utils';
 import { logger } from '@/lib/logger';
+import LargeEventLogisticsModal from '@/components/modals/large-event-logistics-modal';
 
 interface ActionItem {
   id: string;
@@ -46,6 +47,10 @@ interface ActionItem {
 }
 
 export default function ActionCenter() {
+  // State for large event logistics modal
+  const [isLogisticsModalOpen, setIsLogisticsModalOpen] = useState(false);
+  const [selectedLargeEvents, setSelectedLargeEvents] = useState<EventRequest[]>([]);
+
   // Fetch collections data
   const { data: collectionsData } = useQuery<{ collections: SandwichCollection[] }>({
     queryKey: ['/api/sandwich-collections/all'],
@@ -832,7 +837,16 @@ export default function ActionCenter() {
                 )}
 
                 <div className="mt-4">
-                  <Button className="w-full" size="lg">
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={() => {
+                      if (item.id === 'large-events-support' && item.data?.events) {
+                        setSelectedLargeEvents(item.data.events);
+                        setIsLogisticsModalOpen(true);
+                      }
+                    }}
+                  >
                     {item.action}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -857,6 +871,13 @@ export default function ActionCenter() {
         )}
       </div>
     </div>
+
+    {/* Large Event Logistics Modal */}
+    <LargeEventLogisticsModal
+      open={isLogisticsModalOpen}
+      onOpenChange={setIsLogisticsModalOpen}
+      events={selectedLargeEvents}
+    />
     </TooltipProvider>
   );
 }

@@ -297,16 +297,16 @@ export default function RequestFilters({
       <div className="hidden md:block">
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
           <div className="w-full overflow-x-auto pb-1">
-            <TabsList className="w-full inline-flex sm:grid sm:grid-cols-3 lg:grid-cols-7 gap-1 min-w-full">
+            <TabsList className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
               {tabConfig.map((tab) => (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="relative text-xs sm:text-sm whitespace-nowrap flex-shrink-0"
+                  className="relative text-xs sm:text-sm whitespace-nowrap"
                   data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
                   data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
                 >
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center justify-center space-x-1">
                     <tab.icon className="w-3 h-3 flex-shrink-0" />
                     <span className="hidden md:inline">{tab.label}</span>
                     <span className="md:hidden">{tab.shortLabel}</span>
