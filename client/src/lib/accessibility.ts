@@ -171,6 +171,12 @@ export function trapFocus(
     'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
   );
 
+  // Guard: if no focusable elements exist, prevent default tab behavior
+  if (focusableElements.length === 0) {
+    event.preventDefault();
+    return;
+  }
+
   const firstElement = focusableElements[0];
   const lastElement = focusableElements[focusableElements.length - 1];
 
