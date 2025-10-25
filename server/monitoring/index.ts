@@ -12,7 +12,6 @@ export {
   captureMessage,
   setUser,
   addBreadcrumb,
-  startTransaction,
   wrapAsync,
   sentryErrorHandler,
   sentryRequestHandler,
@@ -65,15 +64,11 @@ export {
 export {
   performanceMonitoringMiddleware,
   errorTrackingMiddleware,
-  createDbSpan,
-  createExternalApiSpan,
   trackActiveUsers,
 } from './performance-middleware';
 
 // Database Monitoring
 export {
-  startDbQuery,
-  endDbQuery,
   monitorDbOperation,
   monitorDbOperationSync,
   createDbWrapper,

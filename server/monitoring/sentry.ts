@@ -157,16 +157,6 @@ export function addBreadcrumb(message: string, category: string, data?: Record<s
   });
 }
 
-/**
- * Start a new span for performance tracking (modern API)
- * @deprecated Use Sentry.startSpan() directly instead
- */
-export function startSpan(name: string, op: string, callback: (span: any) => void): void {
-  return Sentry.startSpan({
-    name,
-    op,
-  }, callback);
-}
 
 /**
  * Wrap async function with error handling

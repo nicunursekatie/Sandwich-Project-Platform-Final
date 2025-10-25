@@ -8,127 +8,146 @@ import { recordDbQuery } from './metrics';
 import { logger } from '../utils/logger';
 import * as Sentry from '@sentry/node';
 
-interface QueryContext {
-  operation: string;
-  table: string;
-  startTime: bigint;
-  span?: any;
-}
-
 /**
- * Start monitoring a database query
- */
-export function startDbQuery(operation: string, table: string, req?: any): QueryContext {
-  const startTime = process.hrtime.bigint();
-
-  // Create Sentry span if request is available (using modern API)
-  let span;
-  if (req?.sentrySpan) {
-    // Start a child span using modern Sentry API
-    span = Sentry.startSpan({
-      op: 'db.query',
-      name: `${operation} ${table}`,
-    }, (s) => s);
-  }
-
-  return {
-    operation,
-    table,
-    startTime,
-    span,
-  };
-}
-
-/**
- * End monitoring a database query
- */
-export function endDbQuery(context: QueryContext, error?: Error): void {
-  const endTime = process.hrtime.bigint();
-  const duration = Number(endTime - context.startTime) / 1e9; // Convert to seconds
-
-  // Record metrics
-  recordDbQuery(context.operation, context.table, duration, !error, error);
-
-  // Finish Sentry span (modern API)
-  if (context.span) {
-    if (error) {
-      context.span.setStatus('error');
-      context.span.setAttribute('error.message', error.message);
-      context.span.setAttribute('error.type', error.name);
-    } else {
-      context.span.setStatus('ok');
-    }
-    // Modern API spans are automatically finished when out of scope
-  }
-
-  // Log slow queries
-  if (duration > 0.5) {
-    logger.warn('Slow database query detected', {
-      operation: context.operation,
-      table: context.table,
-      duration: `${duration.toFixed(3)}s`,
-      error: error?.message,
-    });
-  }
-
-  // Capture errors
-  if (error) {
-    logger.error('Database query error', {
-      operation: context.operation,
-      table: context.table,
-      duration: `${duration.toFixed(3)}s`,
-      error: error.message,
-      stack: error.stack,
-    });
-
-    Sentry.captureException(error, {
-      extra: {
-        operation: context.operation,
-        table: context.table,
-        duration,
-      },
-    });
-  }
-}
-
-/**
- * Wrap a database operation with monitoring
+ * Wrap a database operation with monitoring (async version)
+ * Executes the query INSIDE a Sentry span for proper tracing
  */
 export async function monitorDbOperation<T>(
   operation: string,
   table: string,
   fn: () => Promise<T>,
-  req?: any
 ): Promise<T> {
-  const context = startDbQuery(operation, table, req);
-  try {
-    const result = await fn();
-    endDbQuery(context);
-    return result;
-  } catch (error) {
-    endDbQuery(context, error as Error);
-    throw error;
-  }
+  return Sentry.startSpan({
+    op: 'db.query',
+    name: `${operation} ${table}`,
+    attributes: {
+      'db.operation': operation,
+      'db.table': table,
+    },
+  }, async () => {
+    const startTime = process.hrtime.bigint();
+    
+    try {
+      // Execute the database query INSIDE the span
+      const result = await fn();
+      
+      // Calculate duration
+      const endTime = process.hrtime.bigint();
+      const duration = Number(endTime - startTime) / 1e9;
+      
+      // Record metrics
+      recordDbQuery(operation, table, duration, true);
+      
+      // Log slow queries
+      if (duration > 0.5) {
+        logger.warn('Slow database query detected', {
+          operation,
+          table,
+          duration: `${duration.toFixed(3)}s`,
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      // Calculate duration even on error
+      const endTime = process.hrtime.bigint();
+      const duration = Number(endTime - startTime) / 1e9;
+      
+      // Record error metrics
+      recordDbQuery(operation, table, duration, false, error as Error);
+      
+      // Log error
+      logger.error('Database query error', {
+        operation,
+        table,
+        duration: `${duration.toFixed(3)}s`,
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+      });
+      
+      // Capture in Sentry
+      Sentry.captureException(error, {
+        extra: {
+          operation,
+          table,
+          duration,
+        },
+      });
+      
+      throw error;
+    }
+  });
 }
 
 /**
  * Wrap a database operation with monitoring (sync version)
+ * Executes the query INSIDE a Sentry span for proper tracing
  */
 export function monitorDbOperationSync<T>(
   operation: string,
   table: string,
   fn: () => T,
-  req?: any
 ): T {
-  const context = startDbQuery(operation, table, req);
-  try {
-    const result = fn();
-    endDbQuery(context);
-    return result;
-  } catch (error) {
-    endDbQuery(context, error as Error);
-    throw error;
-  }
+  return Sentry.startSpan({
+    op: 'db.query',
+    name: `${operation} ${table}`,
+    attributes: {
+      'db.operation': operation,
+      'db.table': table,
+    },
+  }, () => {
+    const startTime = process.hrtime.bigint();
+    
+    try {
+      // Execute the database query INSIDE the span
+      const result = fn();
+      
+      // Calculate duration
+      const endTime = process.hrtime.bigint();
+      const duration = Number(endTime - startTime) / 1e9;
+      
+      // Record metrics
+      recordDbQuery(operation, table, duration, true);
+      
+      // Log slow queries
+      if (duration > 0.5) {
+        logger.warn('Slow database query detected', {
+          operation,
+          table,
+          duration: `${duration.toFixed(3)}s`,
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      // Calculate duration even on error
+      const endTime = process.hrtime.bigint();
+      const duration = Number(endTime - startTime) / 1e9;
+      
+      // Record error metrics
+      recordDbQuery(operation, table, duration, false, error as Error);
+      
+      // Log error
+      logger.error('Database query error', {
+        operation,
+        table,
+        duration: `${duration.toFixed(3)}s`,
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+      });
+      
+      // Capture in Sentry
+      Sentry.captureException(error, {
+        extra: {
+          operation,
+          table,
+          duration,
+        },
+      });
+      
+      throw error;
+    }
+  });
 }
 
 /**

@@ -2,6 +2,7 @@
  * Performance Monitoring Middleware
  *
  * Tracks API response times, request sizes, and other performance metrics
+ * Note: Sentry HTTP tracing is handled by setupExpressRequestHandler()
  */
 
 import type { Request, Response, NextFunction } from 'express';
@@ -52,6 +53,9 @@ function getRequestSize(req: Request): number {
 /**
  * Performance monitoring middleware
  * Should be registered early in the middleware chain
+ * 
+ * Note: HTTP request tracing is automatically handled by Sentry's Express integration
+ * (sentryRequestHandler). This middleware focuses on Prometheus metrics collection.
  */
 export function performanceMonitoringMiddleware(req: Request, res: Response, next: NextFunction): void {
   // Skip monitoring for certain paths
@@ -63,21 +67,6 @@ export function performanceMonitoringMiddleware(req: Request, res: Response, nex
   const startTime = process.hrtime.bigint();
   const startMemory = process.memoryUsage();
   const requestSize = getRequestSize(req);
-
-  // Start Sentry span for this request using modern API
-  const activeSpan = Sentry.startSpan({
-    op: 'http.server',
-    name: `${req.method} ${normalizeRoute(req.path)}`,
-    attributes: {
-      'http.url': req.url,
-      'http.method': req.method,
-      'http.query': JSON.stringify(req.query),
-    },
-  }, (span) => {
-    // Store span on request for child spans
-    (req as any).sentrySpan = span;
-    return span;
-  });
 
   // Store original end function
   const originalEnd = res.end;
@@ -116,7 +105,7 @@ export function performanceMonitoringMiddleware(req: Request, res: Response, nex
       const method = req.method;
       const statusCode = res.statusCode;
 
-      // Record metrics
+      // Record Prometheus metrics
       try {
         recordHttpRequest(method, route, statusCode, duration, requestSize, responseSize);
 
@@ -131,15 +120,6 @@ export function performanceMonitoringMiddleware(req: Request, res: Response, nex
             responseSize,
             memoryDelta: `${(memoryDelta / 1024 / 1024).toFixed(2)} MB`,
           });
-        }
-
-        // Add span data using modern API
-        if (activeSpan) {
-          activeSpan.setStatus(statusCode >= 200 && statusCode < 400 ? 'ok' : 'error');
-          activeSpan.setAttribute('http.status_code', statusCode);
-          activeSpan.setAttribute('http.response_size', responseSize);
-          activeSpan.setAttribute('http.request_size', requestSize);
-          activeSpan.setAttribute('memory_delta', memoryDelta);
         }
       } catch (error) {
         logger.error('Failed to record performance metrics', { error });
@@ -178,30 +158,6 @@ export function errorTrackingMiddleware(err: Error, req: Request, res: Response,
   });
 
   next(err);
-}
-
-/**
- * Create a child span for database operations using modern Sentry API
- */
-export function createDbSpan(req: Request, operation: string, table: string): void {
-  return Sentry.startSpan({
-    op: 'db.query',
-    name: `${operation} ${table}`,
-  }, () => {
-    // Span is automatically managed by Sentry
-  });
-}
-
-/**
- * Create a child span for external API calls using modern Sentry API
- */
-export function createExternalApiSpan(req: Request, service: string, endpoint: string): void {
-  return Sentry.startSpan({
-    op: 'http.client',
-    name: `${service} ${endpoint}`,
-  }, () => {
-    // Span is automatically managed by Sentry
-  });
 }
 
 /**
