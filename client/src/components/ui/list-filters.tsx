@@ -14,9 +14,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export interface FilterOption {
+  /** Unique identifier used for filtering logic */
   id: string;
+  /** Display label shown to users */
   label: string;
-  value: string;
 }
 
 export interface FilterGroup {

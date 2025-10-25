@@ -218,8 +218,8 @@ const filterGroups = [
     id: 'status',
     label: 'Status',
     options: [
-      { id: 'pending', label: 'Pending', value: 'pending' },
-      { id: 'completed', label: 'Completed', value: 'completed' },
+      { id: 'pending', label: 'Pending' },
+      { id: 'completed', label: 'Completed' },
     ]
   }
 ];
@@ -425,8 +425,8 @@ function EventsPage() {
       id: 'status',
       label: 'Status',
       options: [
-        { id: 'pending', label: 'Pending', value: 'pending' },
-        { id: 'completed', label: 'Completed', value: 'completed' },
+        { id: 'pending', label: 'Pending' },
+        { id: 'completed', label: 'Completed' },
       ]
     }
   ];

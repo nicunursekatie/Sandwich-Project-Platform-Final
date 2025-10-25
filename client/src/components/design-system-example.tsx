@@ -78,19 +78,19 @@ const FILTER_GROUPS = [
     id: 'status',
     label: 'Status',
     options: [
-      { id: 'pending', label: 'Pending', value: 'pending' },
-      { id: 'in-progress', label: 'In Progress', value: 'in-progress' },
-      { id: 'completed', label: 'Completed', value: 'completed' },
-      { id: 'cancelled', label: 'Cancelled', value: 'cancelled' },
+      { id: 'pending', label: 'Pending' },
+      { id: 'in-progress', label: 'In Progress' },
+      { id: 'completed', label: 'Completed' },
+      { id: 'cancelled', label: 'Cancelled' },
     ],
   },
   {
     id: 'category',
     label: 'Category',
     options: [
-      { id: 'meetings', label: 'Meetings', value: 'meetings' },
-      { id: 'events', label: 'Events', value: 'events' },
-      { id: 'training', label: 'Training', value: 'training' },
+      { id: 'meetings', label: 'Meetings' },
+      { id: 'events', label: 'Events' },
+      { id: 'training', label: 'Training' },
     ],
   },
 ];

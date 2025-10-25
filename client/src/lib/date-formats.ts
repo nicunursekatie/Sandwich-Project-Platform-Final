@@ -106,6 +106,9 @@ export function formatTimeAgo(date: Date | string | number): string {
 /**
  * Format a date range with explicit start and end dates
  * e.g., "Sep 19 - Sep 25, 2024" or "Sep 19, 2024 - Oct 3, 2024"
+ *
+ * When using the default format, the output is optimized for readability.
+ * Custom formats are always respected without optimization.
  */
 export function formatDateRange(
   startDate: Date | string | number,
@@ -119,20 +122,23 @@ export function formatDateRange(
     return 'Invalid date range';
   }
 
+  // Only optimize format when using the default SHORT format
+  // Custom formats are always respected
+  if (formatString === DateFormats.SHORT) {
+    // If same year and month, optimize format
+    if (start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth()) {
+      return `${format(start, 'MMM d')} - ${format(end, 'd, yyyy')}`;
+    }
+
+    // If same year but different months
+    if (start.getFullYear() === end.getFullYear()) {
+      return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
+    }
+  }
+
+  // Use custom format string for both dates
   const startFormatted = format(start, formatString);
   const endFormatted = format(end, formatString);
-
-  // If same year and month, optimize format
-  if (start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth()) {
-    return `${format(start, 'MMM d')} - ${format(end, 'd, yyyy')}`;
-  }
-
-  // If same year but different months
-  if (start.getFullYear() === end.getFullYear()) {
-    return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
-  }
-
-  // Different years
   return `${startFormatted} - ${endFormatted}`;
 }
 
