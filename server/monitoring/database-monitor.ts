@@ -151,9 +151,12 @@ export function createDbWrapper(storage: any): any {
       if (methodName.startsWith('get')) {
         operation = 'SELECT';
         table = methodName.slice(3).replace(/([A-Z])/g, '_$1').toLowerCase();
-      } else if (methodName.startsWith('create') || methodName.startsWith('add')) {
+      } else if (methodName.startsWith('create')) {
         operation = 'INSERT';
         table = methodName.slice(6).replace(/([A-Z])/g, '_$1').toLowerCase();
+      } else if (methodName.startsWith('add')) {
+        operation = 'INSERT';
+        table = methodName.slice(3).replace(/([A-Z])/g, '_$1').toLowerCase();
       } else if (methodName.startsWith('update')) {
         operation = 'UPDATE';
         table = methodName.slice(6).replace(/([A-Z])/g, '_$1').toLowerCase();
