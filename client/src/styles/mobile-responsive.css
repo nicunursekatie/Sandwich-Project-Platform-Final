@@ -978,58 +978,9 @@
 }
 
 /* ==========================================
-   17. GLOBAL RESPONSIVE WIDTH FIXES
-   Prevents overlapping from hardcoded widths
+   17. MOBILE SELECT & DROPDOWN IMPROVEMENTS
    ========================================== */
-
-/* Fix hardcoded widths at all responsive breakpoints */
-@media (max-width: 1024px) {
-  /* Override hardcoded fixed widths with max-width */
-  [class*="w-[440px]"],
-  [class*="w-[400px]"],
-  [class*="w-[350px]"],
-  [class*="w-[300px]"],
-  [class*="w-[250px]"],
-  [class*="w-[200px]"] {
-    max-width: 100% !important;
-    width: auto !important;
-  }
-
-  /* Ensure min-width items can wrap */
-  [class*="min-w-[250px]"],
-  [class*="min-w-[200px]"],
-  [class*="min-w-[160px]"],
-  [class*="min-w-[140px]"] {
-    min-width: 0 !important;
-    width: 100% !important;
-  }
-
-  /* Allow flex items to wrap */
-  .flex[class*="gap-"] {
-    flex-wrap: wrap !important;
-  }
-
-  /* Make grid layouts responsive */
-  .grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* Tablet-specific responsive adjustments */
-@media (min-width: 769px) and (max-width: 1024px) {
-  /* Allow 2-column grids on tablet */
-  .grid[class*="grid-cols-"] {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
-  }
-}
-
-/* Mobile-specific responsive adjustments */
 @media (max-width: 768px) {
-  /* Force single column on mobile */
-  .grid {
-    grid-template-columns: 1fr !important;
-  }
-
   /* Full-width selects and dropdowns */
   select,
   [role="combobox"] {
@@ -1038,71 +989,22 @@
 }
 
 /* ==========================================
-   18. RESPONSIVE POSITIONING FIXES
-   Prevents absolute positioning overlap
+   18. RESPONSIVE CONTAINER IMPROVEMENTS
+   Prevents horizontal overflow
    ========================================== */
 @media (max-width: 1024px) {
-  /* Convert problematic absolute positioning to relative */
-  .absolute[class*="bottom-"],
-  .absolute[class*="right-"] {
-    position: relative !important;
-    inset: auto !important;
-    margin-top: 1rem !important;
-  }
-
-  /* Ensure fixed elements don't overlap content */
-  .fixed:not([role="dialog"]):not([data-radix-popper-content-wrapper]) {
-    position: relative !important;
-  }
-}
-
-/* ==========================================
-   19. RESPONSIVE CONTAINER IMPROVEMENTS
-   Ensures flexible containers
-   ========================================== */
-@media (max-width: 1024px) {
-  /* Containers should use flexbox with wrap */
-  .container {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
-
-  /* Prevent horizontal overflow */
-  * {
-    max-width: 100vw !important;
-  }
-
+  /* Prevent horizontal overflow on root elements only */
   html,
   body {
     overflow-x: hidden !important;
   }
-
-  /* Allow content to wrap */
-  .flex {
-    flex-wrap: wrap !important;
-  }
-
-  /* Stack button groups vertically */
-  .flex.gap-2 > button,
-  .flex.gap-4 > button {
-    width: 100% !important;
-  }
 }
 
 /* ==========================================
-   20. RESPONSIVE TEXT HANDLING
-   Prevents text overflow and collision
+   19. RESPONSIVE TEXT HANDLING
+   Prevents text overflow for emails and labels
    ========================================== */
 @media (max-width: 1024px) {
-  /* Truncate long text with ellipsis */
-  .text-sm,
-  .text-base,
-  .text-lg {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
   /* Allow emails and long labels to wrap */
   [type="email"],
   .email-text,
@@ -1110,75 +1012,5 @@
     word-break: break-all !important;
     overflow-wrap: break-word !important;
   }
-
-  /* Responsive font sizes */
-  .text-2xl {
-    font-size: 1.5rem !important;
-  }
-
-  .text-xl {
-    font-size: 1.25rem !important;
-  }
-
-  .text-lg {
-    font-size: 1.125rem !important;
-  }
 }
 
-/* ==========================================
-   21. RESPONSIVE DIALOG & MODAL IMPROVEMENTS
-   Prevents overlap in dialogs
-   ========================================== */
-@media (max-width: 1024px) {
-  /* Responsive dialog sizing */
-  [role="dialog"] {
-    max-width: calc(100vw - 2rem) !important;
-    max-height: calc(100vh - 2rem) !important;
-    margin: 1rem !important;
-  }
-
-  /* Dialog content overflow */
-  [role="dialog"] > div {
-    max-height: calc(100vh - 4rem) !important;
-    overflow-y: auto !important;
-  }
-
-  /* Close buttons in dialogs */
-  [role="dialog"] button[aria-label*="Close"],
-  [role="dialog"] button[aria-label*="close"] {
-    position: absolute !important;
-    top: 0.75rem !important;
-    right: 0.75rem !important;
-    z-index: 10 !important;
-  }
-}
-
-/* ==========================================
-   22. RESPONSIVE SIDEBAR IMPROVEMENTS
-   ========================================== */
-@media (max-width: 1023px) {
-  /* Hide desktop sidebar */
-  aside[class*="sidebar"],
-  [data-sidebar="sidebar"] {
-    display: none !important;
-  }
-
-  /* Full-width main content when sidebar hidden */
-  main {
-    width: 100% !important;
-    margin-left: 0 !important;
-  }
-}
-
-@media (min-width: 1024px) and (max-width: 1280px) {
-  /* Narrower sidebar at intermediate widths */
-  aside[class*="sidebar"],
-  [data-sidebar="sidebar"] {
-    width: 12rem !important;
-  }
-
-  /* Adjust main content margin */
-  main {
-    margin-left: 12rem !important;
-  }
-}
