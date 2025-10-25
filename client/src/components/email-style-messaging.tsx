@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,169 @@ interface EmailMessage {
 
 // Real-time messages from API
 
+// Memoized utility functions
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
+const formatDate = (timestamp: string) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+
+  if (isToday) {
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+  return date.toLocaleDateString();
+};
+
+// Memoized MessageListItem component
+interface MessageListItemProps {
+  message: EmailMessage;
+  isSelected: boolean;
+  isChecked: boolean;
+  activeFolder: 'inbox' | 'sent' | 'drafts' | 'trash';
+  onMessageClick: (message: EmailMessage) => void;
+  onToggleSelection: (messageId: string) => void;
+}
+
+const MessageListItem = memo(({
+  message,
+  isSelected,
+  isChecked,
+  activeFolder,
+  onMessageClick,
+  onToggleSelection,
+}: MessageListItemProps) => {
+  const initials = useMemo(() => getInitials(message.from.name), [message.from.name]);
+  const formattedDate = useMemo(() => formatDate(message.timestamp), [message.timestamp]);
+
+  const className = useMemo(() => {
+    const baseClass = 'px-3 py-4 cursor-pointer transition-colors border-b border-gray-100';
+    const selectedClass = isSelected
+      ? 'bg-brand-primary-lighter border-l-4 border-l-blue-500'
+      : !message.read
+        ? 'bg-blue-25 hover:bg-brand-primary-lighter'
+        : 'bg-white hover:bg-gray-50';
+    const checkedClass = isChecked ? 'bg-blue-25' : '';
+    const unreadShadow = !message.read ? 'shadow-sm' : '';
+
+    return `${baseClass} ${selectedClass} ${checkedClass} ${unreadShadow}`;
+  }, [isSelected, isChecked, message.read]);
+
+  return (
+    <div
+      className={className}
+      onClick={() => onMessageClick(message)}
+    >
+      <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          checked={isChecked}
+          onChange={() => onToggleSelection(message.id)}
+          onClick={(e) => e.stopPropagation()}
+          className="w-4 h-4 text-brand-primary bg-gray-100 border-gray-300 rounded focus:ring-brand-primary-muted mt-1"
+        />
+
+        <Avatar className="h-8 w-8 flex-shrink-0">
+          <AvatarFallback className="text-xs bg-gray-200 text-gray-600">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1 min-w-0">
+          {/* Header Row - Fix timestamp cutoff */}
+          <div className="flex items-center justify-between mb-1 gap-3">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span
+                className={`text-sm truncate ${
+                  !message.read
+                    ? 'font-bold text-gray-900'
+                    : 'font-normal text-gray-600'
+                }`}
+              >
+                {activeFolder === 'sent'
+                  ? Array.isArray(message.to)
+                    ? message.to.join(', ')
+                    : message.to || 'Unknown Recipient'
+                  : message.from.name}
+              </span>
+              {!message.read && (
+                <div className="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0"></div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1 flex-shrink-0 min-w-0">
+              {message.starred && (
+                <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />
+              )}
+              {message.attachments &&
+                message.attachments.length > 0 && (
+                  <Paperclip className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                )}
+              <span
+                className={`text-xs whitespace-nowrap ${
+                  !message.read
+                    ? 'text-gray-700 font-semibold'
+                    : 'text-gray-500 font-normal'
+                }`}
+              >
+                {formattedDate}
+              </span>
+            </div>
+          </div>
+
+          {/* Subject Line */}
+          <div className="mb-2">
+            <h4
+              className={`text-sm truncate ${
+                !message.read
+                  ? 'font-bold text-gray-900'
+                  : 'font-normal text-gray-700'
+              }`}
+            >
+              {message.subject || '(No Subject)'}
+            </h4>
+          </div>
+
+          {/* Message Preview */}
+          <p
+            className={`text-xs leading-relaxed line-clamp-2 pr-4 ${
+              !message.read
+                ? 'text-gray-700 font-medium'
+                : 'text-gray-500 font-normal'
+            }`}
+          >
+            {message.content}
+          </p>
+
+          {/* Tags and Status */}
+          <div className="flex items-center gap-2 mt-2">
+            {!message.read && (
+              <Badge
+                variant="secondary"
+                className="text-xs px-2 py-1 bg-brand-primary-light text-brand-primary font-medium"
+              >
+                New
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+MessageListItem.displayName = 'MessageListItem';
+
 export default function EmailStyleMessaging() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -80,28 +243,6 @@ export default function EmailStyleMessaging() {
   });
   const [replyData, setReplyData] = useState<EmailMessage | null>(null);
 
-  const formatDate = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-
-    if (isToday) {
-      return date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    }
-    return date.toLocaleDateString();
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   // Get messages from API with error handling
   const {
@@ -574,116 +715,15 @@ export default function EmailStyleMessaging() {
                     </div>
                   ) : (
                     filteredMessages.map((message: EmailMessage) => (
-                      <div
+                      <MessageListItem
                         key={message.id}
-                        className={`px-3 py-4 cursor-pointer transition-colors border-b border-gray-100 ${
-                          selectedMessage?.id === message.id
-                            ? 'bg-brand-primary-lighter border-l-4 border-l-blue-500'
-                            : !message.read
-                              ? 'bg-blue-25 hover:bg-brand-primary-lighter'
-                              : 'bg-white hover:bg-gray-50'
-                        } ${
-                          selectedMessages.includes(message.id)
-                            ? 'bg-blue-25'
-                            : ''
-                        } ${!message.read ? 'shadow-sm' : ''}`}
-                        onClick={() => handleMessageClick(message)}
-                      >
-                        <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedMessages.includes(message.id)}
-                            onChange={() => toggleMessageSelection(message.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-4 h-4 text-brand-primary bg-gray-100 border-gray-300 rounded focus:ring-brand-primary-muted mt-1"
-                          />
-
-                          <Avatar className="h-8 w-8 flex-shrink-0">
-                            <AvatarFallback className="text-xs bg-gray-200 text-gray-600">
-                              {getInitials(message.from.name)}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          <div className="flex-1 min-w-0">
-                            {/* Header Row - Fix timestamp cutoff */}
-                            <div className="flex items-center justify-between mb-1 gap-3">
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <span
-                                  className={`text-sm truncate ${
-                                    !message.read
-                                      ? 'font-bold text-gray-900'
-                                      : 'font-normal text-gray-600'
-                                  }`}
-                                >
-                                  {activeFolder === 'sent'
-                                    ? Array.isArray(message.to)
-                                      ? message.to.join(', ')
-                                      : message.to || 'Unknown Recipient'
-                                    : message.from.name}
-                                </span>
-                                {!message.read && (
-                                  <div className="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0"></div>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-1 flex-shrink-0 min-w-0">
-                                {message.starred && (
-                                  <Star className="h-4 w-4 text-yellow-500 fill-current flex-shrink-0" />
-                                )}
-                                {message.attachments &&
-                                  message.attachments.length > 0 && (
-                                    <Paperclip className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                  )}
-                                <span
-                                  className={`text-xs whitespace-nowrap ${
-                                    !message.read
-                                      ? 'text-gray-700 font-semibold'
-                                      : 'text-gray-500 font-normal'
-                                  }`}
-                                >
-                                  {formatDate(message.timestamp)}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Subject Line */}
-                            <div className="mb-2">
-                              <h4
-                                className={`text-sm truncate ${
-                                  !message.read
-                                    ? 'font-bold text-gray-900'
-                                    : 'font-normal text-gray-700'
-                                }`}
-                              >
-                                {message.subject || '(No Subject)'}
-                              </h4>
-                            </div>
-
-                            {/* Message Preview */}
-                            <p
-                              className={`text-xs leading-relaxed line-clamp-2 pr-4 ${
-                                !message.read
-                                  ? 'text-gray-700 font-medium'
-                                  : 'text-gray-500 font-normal'
-                              }`}
-                            >
-                              {message.content}
-                            </p>
-
-                            {/* Tags and Status */}
-                            <div className="flex items-center gap-2 mt-2">
-                              {!message.read && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-xs px-2 py-1 bg-brand-primary-light text-brand-primary font-medium"
-                                >
-                                  New
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        message={message}
+                        isSelected={selectedMessage?.id === message.id}
+                        isChecked={selectedMessages.includes(message.id)}
+                        activeFolder={activeFolder}
+                        onMessageClick={handleMessageClick}
+                        onToggleSelection={toggleMessageSelection}
+                      />
                     ))
                   )}
                 </div>
