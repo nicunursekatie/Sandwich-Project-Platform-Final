@@ -12,7 +12,6 @@ import { setupSocketChat } from './socket-chat';
 import { startBackgroundSync } from './background-sync-service';
 import { smartDeliveryService } from './services/notifications/smart-delivery';
 import logger, { createServiceLogger, logRequest } from './utils/logger.js';
-import { logger } from './utils/production-safe-logger';
 
 const app = express();
 const serverLogger = createServiceLogger('server');
@@ -332,7 +331,7 @@ async function bootstrap() {
       setImmediate(async () => {
         try {
           await initializeDatabase();
-          logger.log('✓ Database initialization complete');
+          logger.log({ message: '✓ Database initialization complete', level: 'info' });
 
           // Background Google Sheets sync re-enabled
           const { storage } = await import('./storage-wrapper');
@@ -340,7 +339,7 @@ async function bootstrap() {
             './background-sync-service'
           );
           startBackgroundSync(storage as any); // TODO: Fix storage interface types
-          logger.log('✓ Background Google Sheets sync service started');
+          logger.log({ message: '✓ Background Google Sheets sync service started', level: 'info' });
 
           // Initialize cron jobs for scheduled tasks
           const { initializeCronJobs } = await import('./services/cron-jobs');
