@@ -450,6 +450,15 @@ export class OnboardingService {
         icon: 'Calendar',
         order: 10,
       },
+      {
+        actionKey: 'submit_collection_log',
+        title: 'Submit a Collection Log Entry',
+        description: 'Record your impact! Submit a sandwich collection log entry.',
+        category: 'projects',
+        points: 20,
+        icon: 'FileText',
+        order: 11,
+      },
     ];
 
     // Insert challenges if they don't exist

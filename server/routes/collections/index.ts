@@ -13,6 +13,7 @@ import { QueryOptimizer } from '../../performance/query-optimizer';
 import { insertSandwichCollectionSchema } from '@shared/schema';
 import historicalImportRouter from './historical-import';
 import { logger } from '../../utils/production-safe-logger';
+import { onboardingService } from '../../services/onboarding-service';
 
 const collectionsRouter = Router();
 
@@ -178,6 +179,19 @@ collectionsRouter.post(
       // Invalidate cache when new collection is created
       QueryOptimizer.invalidateCache('sandwich-collections');
       QueryOptimizer.invalidateCache('sandwich-collections-stats');
+
+      // Track onboarding challenge completion for submitting a collection log
+      if (user?.id) {
+        try {
+          await onboardingService.trackChallengeCompletion(
+            user.id,
+            'submit_collection_log'
+          );
+        } catch (onboardingError) {
+          logger.error('Error tracking onboarding challenge:', onboardingError);
+          // Don't fail collection creation if onboarding tracking fails
+        }
+      }
 
       // Check for sandwich collection milestones
       try {
