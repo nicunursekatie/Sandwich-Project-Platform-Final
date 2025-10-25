@@ -34,6 +34,12 @@ async function runAllMigrations() {
 
     // Get list of migration files from the migrations directory
     const migrationsDir = path.join(__dirname, '..', 'migrations');
+
+    if (!fs.existsSync(migrationsDir)) {
+      logger.error('❌ Migrations directory not found at:', migrationsDir);
+      process.exit(1);
+    }
+
     const files = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort(); // Sort to ensure migrations run in order
