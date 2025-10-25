@@ -42,25 +42,47 @@ Created a script to mark this challenge as completed for users who have already 
 
 ## Deployment Steps
 
-### Step 1: Initialize the New Challenge
-After deploying the code, an admin must initialize the new challenge in the database:
+### Easy Method: Run the Combined Script (Recommended)
 
+The easiest way to deploy is to run the combined initialization and migration script:
+
+```bash
+cd /home/user/Sandwich-Project-Platform-Final
+npx tsx server/scripts/initialize-and-migrate-collection-challenge.ts
+```
+
+This script will:
+1. Initialize the new challenge in the database
+2. Mark it as completed for users who have already submitted collection logs
+3. Provide detailed progress output
+
+### Alternative: Manual Steps
+
+If you prefer to run the steps separately:
+
+#### Step 1: Initialize the New Challenge
+After deploying the code, initialize the new challenge in the database:
+
+**Option A: Using the API endpoint (requires admin login)**
 1. Log in as an admin user
 2. Make a POST request to: `/api/onboarding/admin/initialize`
-   - Or use the admin interface if available
 
-This will add the new challenge to the `onboarding_challenges` table.
+**Option B: Using browser console (requires admin login)**
+1. Log in as admin in your browser
+2. Open developer console (F12)
+3. Run:
+   ```javascript
+   fetch('/api/onboarding/admin/initialize', {
+     method: 'POST',
+     credentials: 'include'
+   }).then(r => r.json()).then(console.log);
+   ```
 
-### Step 2: Run Migration Script (Optional but Recommended)
+#### Step 2: Run Migration Script
 To mark the challenge as completed for users who have already submitted collection logs:
 
 ```bash
-tsx server/scripts/mark-collection-challenge-complete.ts
-```
-
-Or using npm:
-```bash
-npm run -- tsx server/scripts/mark-collection-challenge-complete.ts
+npx tsx server/scripts/mark-collection-challenge-complete.ts
 ```
 
 **Note:** This step is optional but recommended to give credit to users who have already been actively submitting collection logs.
