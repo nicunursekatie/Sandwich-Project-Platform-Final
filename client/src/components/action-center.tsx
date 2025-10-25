@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Card,
@@ -27,12 +27,13 @@ import {
   MapPin,
   HelpCircle,
 } from 'lucide-react';
-import type { SandwichCollection } from '@shared/schema';
+import type { SandwichCollection, EventRequest } from '@shared/schema';
 import {
   calculateTotalSandwiches,
   parseCollectionDate,
 } from '@/lib/analytics-utils';
 import { logger } from '@/lib/logger';
+import LargeEventLogisticsModal from '@/components/modals/large-event-logistics-modal';
 
 interface ActionItem {
   id: string;
@@ -46,6 +47,10 @@ interface ActionItem {
 }
 
 export default function ActionCenter() {
+  // State for large event logistics modal
+  const [isLogisticsModalOpen, setIsLogisticsModalOpen] = useState(false);
+  const [selectedLargeEvents, setSelectedLargeEvents] = useState<EventRequest[]>([]);
+
   // Fetch collections data
   const { data: collectionsData } = useQuery<{ collections: SandwichCollection[] }>({
     queryKey: ['/api/sandwich-collections/all'],
@@ -128,59 +133,6 @@ export default function ActionCenter() {
     // ============================================================
     // CATEGORY 1: FOLLOW-UP & ENGAGEMENT
     // ============================================================
-
-    // Find completed events needing 1-day follow-up
-    const completedEventsNeeding1Day = (eventRequests || []).filter((event) => {
-      if (event.status !== 'completed') return false;
-      if (!event.desiredEventDate) return false;
-      if (event.followUpOneDayCompleted) return false;
-
-      const eventDate = new Date(event.desiredEventDate);
-      const oneDayAgo = new Date(today);
-      oneDayAgo.setDate(today.getDate() - 1);
-
-      // Flag events from yesterday or earlier that need 1-day follow-up
-      return eventDate <= oneDayAgo;
-    });
-
-    if (completedEventsNeeding1Day.length > 0) {
-      actions.push({
-        id: 'followup-1day-needed',
-        priority: 'high',
-        category: 'recognition',
-        title: `${completedEventsNeeding1Day.length} Event${completedEventsNeeding1Day.length !== 1 ? 's' : ''} Need 1-Day Follow-Up`,
-        description: `Completed events waiting for immediate post-event feedback`,
-        impact: `Timely follow-up improves retention and captures fresh feedback`,
-        action: `Contact ${completedEventsNeeding1Day.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Day.length > 3 ? ` and ${completedEventsNeeding1Day.length - 3} more` : ''}`,
-        data: { events: completedEventsNeeding1Day },
-      });
-    }
-
-    // Find completed events needing 1-month follow-up (events 30+ days ago)
-    const oneMonthAgo = new Date(today);
-    oneMonthAgo.setDate(today.getDate() - 30);
-
-    const completedEventsNeeding1Month = (eventRequests || []).filter((event) => {
-      if (event.status !== 'completed') return false;
-      if (!event.desiredEventDate) return false;
-      if (event.followUpOneMonthCompleted) return false;
-
-      const eventDate = new Date(event.desiredEventDate);
-      return eventDate <= oneMonthAgo;
-    });
-
-    if (completedEventsNeeding1Month.length > 0) {
-      actions.push({
-        id: 'followup-1month-needed',
-        priority: 'medium',
-        category: 'recognition',
-        title: `${completedEventsNeeding1Month.length} Event${completedEventsNeeding1Month.length !== 1 ? 's' : ''} Need 1-Month Follow-Up`,
-        description: `Events from 30+ days ago waiting for long-term feedback`,
-        impact: `Monthly follow-ups help assess long-term impact and build relationships`,
-        action: `Schedule follow-up calls with ${completedEventsNeeding1Month.slice(0, 3).map(e => e.organizationName).join(', ')}${completedEventsNeeding1Month.length > 3 ? ` and ${completedEventsNeeding1Month.length - 3} more` : ''}`,
-        data: { events: completedEventsNeeding1Month },
-      });
-    }
 
     // Find inactive hosts (haven't collected in 30+ days)
     const thirtyDaysAgo = new Date(today);
@@ -768,7 +720,16 @@ export default function ActionCenter() {
                 )}
 
                 <div className="mt-4">
-                  <Button className="w-full" size="lg">
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={() => {
+                      if (item.id === 'large-events-support' && item.data?.events) {
+                        setSelectedLargeEvents(item.data.events);
+                        setIsLogisticsModalOpen(true);
+                      }
+                    }}
+                  >
                     {item.action}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -793,6 +754,13 @@ export default function ActionCenter() {
         )}
       </div>
     </div>
+
+    {/* Large Event Logistics Modal */}
+    <LargeEventLogisticsModal
+      open={isLogisticsModalOpen}
+      onOpenChange={setIsLogisticsModalOpen}
+      events={selectedLargeEvents}
+    />
     </TooltipProvider>
   );
 }
