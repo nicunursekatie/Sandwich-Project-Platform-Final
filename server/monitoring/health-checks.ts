@@ -6,7 +6,7 @@
 
 import type { Request, Response } from 'express';
 import { db } from '../db';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 import { systemHealth } from './metrics';
 import { sql } from 'drizzle-orm';
 

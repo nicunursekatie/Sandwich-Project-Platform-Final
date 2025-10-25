@@ -22,6 +22,7 @@ import {
   monitorWebSocket,
   startMetricsUpdates,
   sentryErrorHandler,
+  initializeSentry,
 } from './monitoring';
 
 const app = express();
@@ -130,14 +131,12 @@ app.use((req, res, next) => {
 });
 
 // Debug process exit
-process.on('exit', (code) => logger.log('⚠️ Process exiting with code:', code));
+process.on('exit', (code) => logger.warn(`Process exiting with code: ${code}`));
 process.on('uncaughtException', (e) => {
-  logger.error('❌ Uncaught exception:', e);
-  captureException(e instanceof Error ? e : new Error(String(e)));
+  logger.error('Uncaught exception:', e);
 });
 process.on('unhandledRejection', (e) => {
-  logger.error('❌ Unhandled rejection:', e);
-  captureException(e instanceof Error ? e : new Error(String(e)));
+  logger.error('Unhandled rejection:', e);
 });
 
 async function bootstrap() {
@@ -247,8 +246,11 @@ async function bootstrap() {
       });
     });
 
-    // Sentry error handler (must be after all routes)
-    app.use(sentryErrorHandler());
+    // Sentry error handler (must be after all routes) - only if Sentry is initialized
+    if (process.env.SENTRY_DSN) {
+      app.use(sentryErrorHandler());
+      serverLogger.info('✅ Sentry error handler registered');
+    }
 
     // IMPORTANT: Static files and SPA fallback MUST come AFTER API routes
     if (process.env.NODE_ENV === 'production') {
@@ -473,7 +475,15 @@ async function bootstrap() {
     logger.log({ message: '✅ Health endpoint ready: /healthz', level: 'info' });
     logger.log({ message: '✅ Server startup complete - ready for traffic', level: 'info' });
   } catch (error) {
-    serverLogger.error('✗ Server startup failed:', error);
+    console.error('SERVER STARTUP FAILED:');
+    console.error(error);
+    serverLogger.error('✗ Server startup failed:');
+    if (error instanceof Error) {
+      serverLogger.error('Error message:', error.message);
+      serverLogger.error('Error stack:', error.stack);
+    } else {
+      serverLogger.error('Error details:', String(error));
+    }
     process.exit(1);
   }
 }

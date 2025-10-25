@@ -13,7 +13,7 @@ import {
   readinessCheck,
   livenessCheck,
 } from './health-checks';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 /**
  * Create monitoring routes

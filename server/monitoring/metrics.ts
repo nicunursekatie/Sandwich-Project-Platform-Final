@@ -6,7 +6,7 @@
  */
 
 import { Registry, Counter, Histogram, Gauge, collectDefaultMetrics } from 'prom-client';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 // Create a custom registry
 export const register = new Registry();

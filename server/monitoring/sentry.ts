@@ -8,7 +8,7 @@
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import type { Application } from 'express';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 /**
  * Initialize Sentry monitoring

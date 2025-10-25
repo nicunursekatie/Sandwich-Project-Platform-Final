@@ -13,7 +13,7 @@ import {
   chatMessagesTotal,
   chatMessageLatency,
 } from './metrics';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 import * as Sentry from '@sentry/node';
 
 /**

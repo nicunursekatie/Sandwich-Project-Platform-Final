@@ -20,7 +20,7 @@ import {
   backgroundJobsTotal,
   backgroundJobDuration,
 } from './metrics';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 /**
  * Track active user count
