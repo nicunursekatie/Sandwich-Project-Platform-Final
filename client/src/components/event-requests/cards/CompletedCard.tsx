@@ -1469,6 +1469,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       updateOrgDetailsMutation.mutate({ department: editingValue });
     } else if (editingField === 'eventAddress') {
       updateOrgDetailsMutation.mutate({ eventAddress: editingValue });
+    } else if (editingField === 'assignedRecipientIds') {
+      updateOrgDetailsMutation.mutate({ assignedRecipientIds: JSON.parse(editingValue) });
     } else if (editingField === 'desiredEventDate' || editingField === 'scheduledEventDate') {
       // When saving a date, also save the confirmation status
       // Completed events are always confirmed
@@ -2101,14 +2103,14 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                         data-testid="assigned-recipients-editor"
                       />
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={handleSaveEdit}>
+                        <Button size="sm" onClick={saveEdit}>
                           <Save className="w-3 h-3 mr-1" />
                           Save
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={handleCancelEdit}
+                          onClick={cancelEdit}
                         >
                           <X className="w-3 h-3 mr-1" />
                           Cancel
