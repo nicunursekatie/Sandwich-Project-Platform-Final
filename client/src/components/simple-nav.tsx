@@ -129,7 +129,7 @@ export default function SimpleNav({
             return !isCollapsed ? (
               <div key={`separator-${groupItem.group}-${index}`} className="mt-4 mb-3">
                 <div className="bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light rounded-lg px-3 py-2 mb-2 shadow-sm">
-                  <div className="text-xs font-bold text-brand-primary tracking-wide">
+                  <div className="font-bold text-brand-primary tracking-wide text-[14px]">
                     {getGroupLabel(groupItem.group)}
                   </div>
                 </div>

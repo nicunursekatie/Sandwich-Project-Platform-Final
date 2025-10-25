@@ -229,7 +229,6 @@ async function bootstrap() {
       serverLogger.info('✅ API routes registered FIRST - before static files');
     } catch (error) {
       serverLogger.error('Route registration failed:', error);
-      captureException(error instanceof Error ? error : new Error(String(error)));
     }
 
     // Error tracking middleware (before final error handler)
@@ -392,28 +391,23 @@ async function bootstrap() {
           // Initialize cron jobs for scheduled tasks
           const { initializeCronJobs } = await import('./services/cron-jobs');
           initializeCronJobs();
-          logger.log(
-            '✓ Cron jobs initialized (host availability scraper scheduled)'
-          );
+          logger.info('Cron jobs initialized (host availability scraper scheduled)');
 
           // Start periodic metrics updates (active users, sessions, etc.)
           if (sessionStore) {
             startMetricsUpdates(storage as any, sessionStore);
-            logger.log('✓ Periodic metrics updates started');
+            logger.info('Periodic metrics updates started');
           } else {
-            logger.warn('⚠ Session store not available - skipping session metrics');
+            logger.warn('Session store not available - skipping session metrics');
           }
 
-          logger.log(
-            '✓ The Sandwich Project server is fully ready to handle requests'
-          );
-          logger.log('🚀 SERVER INITIALIZATION COMPLETE 🚀');
-          logger.log(`📊 Monitoring Dashboard: http://${host}:${port}/monitoring/dashboard`);
-          logger.log(`📈 Metrics Endpoint: http://${host}:${port}/monitoring/metrics`);
-          logger.log(`💚 Health Check: http://${host}:${port}/monitoring/health/detailed`);
+          logger.info('The Sandwich Project server is fully ready to handle requests');
+          logger.info('SERVER INITIALIZATION COMPLETE');
+          logger.info(`Monitoring Dashboard: http://${host}:${port}/monitoring/dashboard`);
+          logger.info(`Metrics Endpoint: http://${host}:${port}/monitoring/metrics`);
+          logger.info(`Health Check: http://${host}:${port}/monitoring/health/detailed`);
         } catch (initError) {
           serverLogger.error('✗ Background initialization failed:', initError);
-          captureException(initError instanceof Error ? initError : new Error(String(initError)));
           serverLogger.error(
             'This is a fatal error - exiting to allow Replit to restart'
           );
