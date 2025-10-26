@@ -54,6 +54,7 @@ import { createAnnouncementsRouter } from './announcements';
 import { createPerformanceRouter } from './performance';
 import { createAuditLogsRouter } from './audit-logs';
 import { createApiDocsRouter } from './api-docs';
+import featureFlagsRouter from './feature-flags';
 
 // Import centralized middleware
 import {
@@ -626,6 +627,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     performanceRouter
   );
   router.use('/api/performance', createErrorHandler('performance'));
+
+  // Feature Flags (Admin only)
+  router.use(
+    '/api/feature-flags',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    featureFlagsRouter
+  );
+  router.use('/api/feature-flags', createErrorHandler('feature-flags'));
 
   // API Documentation (OpenAPI/Swagger)
   // Public route - no authentication required to view API docs
