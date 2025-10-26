@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Shield, FileText, Trophy, Database } from 'lucide-react';
+import { Settings, Shield, FileText, Trophy, Database, MessageSquare } from 'lucide-react';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { ComprehensiveAuditLog } from '@/components/comprehensive-audit-log';
 import { DashboardDocumentSelector } from '@/components/dashboard-document-selector';
 import AdminOnboardingKudos from '@/components/admin-onboarding-kudos';
+import { TollFreeVerificationPanel } from '@/components/toll-free-verification-panel';
 import { adminDocuments } from '@/pages/important-documents';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
@@ -82,7 +83,7 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="entity-audit-log" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
+          <TabsList className="grid w-full grid-cols-5 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
             <TabsTrigger
               value="entity-audit-log"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
@@ -119,6 +120,15 @@ export default function AdminSettings() {
               <Trophy className="h-4 w-4" />
               Onboarding Kudos
             </TabsTrigger>
+            <TabsTrigger
+              value="sms-settings"
+              className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+              data-testid="tab-sms-settings"
+              onClick={() => trackClick('SMS Settings Tab', 'Admin', 'Tab Navigation', 'Switched to SMS settings tab')}
+            >
+              <MessageSquare className="h-4 w-4" />
+              SMS Settings
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="entity-audit-log" className="space-y-6">
@@ -135,6 +145,10 @@ export default function AdminSettings() {
 
           <TabsContent value="onboarding-kudos" className="space-y-8">
             <AdminOnboardingKudos />
+          </TabsContent>
+
+          <TabsContent value="sms-settings" className="space-y-8">
+            <TollFreeVerificationPanel />
           </TabsContent>
         </Tabs>
       </div>
