@@ -194,7 +194,7 @@ export class SmartDeliveryService {
   /**
    * Deliver notification immediately through appropriate channel
    */
-  private async deliverNotificationNow(
+  async deliverNotificationNow(
     notification: any,
     channel: string,
     abTestVariant?: string
