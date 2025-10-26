@@ -7,6 +7,12 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/glo
 import request from 'supertest';
 import express from 'express';
 import { PERMISSIONS } from '../../../shared/auth-utils';
+import {
+  createTestServer,
+  createTestUser,
+  createAuthenticatedAgent,
+  createAdminAgent,
+} from '../../setup/test-server';
 
 let app: express.Application;
 let testUser: any;
@@ -16,7 +22,25 @@ let adminAgent: request.SuperAgentTest;
 
 describe('Notifications Routes', () => {
   beforeAll(async () => {
-    // Setup will be implemented
+    // Create test server
+    app = await createTestServer();
+
+    // Create test users
+    testUser = await createTestUser({
+      role: 'volunteer',
+    });
+
+    adminUser = await createTestUser({
+      role: 'admin',
+    });
+
+    // Create authenticated agents
+    authenticatedAgent = await createAuthenticatedAgent(app, {
+      email: testUser.email,
+      password: testUser.password,
+    });
+
+    adminAgent = await createAdminAgent(app);
   });
 
   afterAll(async () => {

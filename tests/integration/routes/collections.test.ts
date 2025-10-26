@@ -6,8 +6,13 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import session from 'express-session';
 import { PERMISSIONS } from '../../../shared/auth-utils';
+import {
+  createTestServer,
+  createTestUser,
+  createAuthenticatedAgent,
+  createAdminAgent,
+} from '../../setup/test-server';
 
 // This will be populated by setup
 let app: express.Application;
@@ -18,8 +23,31 @@ let adminAgent: request.SuperAgentTest;
 
 describe('Collections Routes', () => {
   beforeAll(async () => {
-    // Setup will initialize the app and test users
-    // This matches the pattern from other integration tests
+    // Create test server
+    app = await createTestServer();
+
+    // Create test users with appropriate permissions
+    testUser = await createTestUser({
+      role: 'volunteer',
+      permissions: [
+        PERMISSIONS.COLLECTIONS_VIEW,
+        PERMISSIONS.COLLECTIONS_ADD,
+        PERMISSIONS.COLLECTIONS_EDIT_OWN,
+        PERMISSIONS.COLLECTIONS_DELETE_OWN,
+      ],
+    });
+
+    adminUser = await createTestUser({
+      role: 'admin',
+    });
+
+    // Create authenticated agents
+    authenticatedAgent = await createAuthenticatedAgent(app, {
+      email: testUser.email,
+      password: testUser.password,
+    });
+
+    adminAgent = await createAdminAgent(app);
   });
 
   beforeEach(() => {

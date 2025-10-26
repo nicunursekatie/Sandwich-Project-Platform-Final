@@ -865,6 +865,7 @@ export class MemStorage implements IStorage {
     const newUser: User = {
       id: userData.id,
       email: userData.email || null,
+      password: userData.password || null,
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
       profileImageUrl: userData.profileImageUrl || null,
@@ -895,6 +896,7 @@ export class MemStorage implements IStorage {
       const newUser: User = {
         id: userData.id,
         email: userData.email || null,
+        password: userData.password || null,
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
         profileImageUrl: userData.profileImageUrl || null,
