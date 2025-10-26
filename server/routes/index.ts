@@ -637,6 +637,15 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/performance', createErrorHandler('performance'));
 
+  // Feature Flags (Admin only)
+  router.use(
+    '/api/feature-flags',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    featureFlagsRouter
+  );
+  router.use('/api/feature-flags', createErrorHandler('feature-flags'));
+
   // API Documentation (OpenAPI/Swagger)
   // Public route - no authentication required to view API docs
   const apiDocsRouter = createApiDocsRouter();
