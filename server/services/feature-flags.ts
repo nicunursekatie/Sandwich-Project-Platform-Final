@@ -115,12 +115,18 @@ export class FeatureFlagService {
 
     if (existing.length > 0) {
       // Update existing flag
+      // Filter out undefined values to avoid nulling out existing data
+      const updateData: any = { updatedAt: new Date() };
+      if (options.description !== undefined) updateData.description = options.description;
+      if (options.enabled !== undefined) updateData.enabled = options.enabled;
+      if (options.enabledForUsers !== undefined) updateData.enabledForUsers = options.enabledForUsers;
+      if (options.enabledForRoles !== undefined) updateData.enabledForRoles = options.enabledForRoles;
+      if (options.enabledPercentage !== undefined) updateData.enabledPercentage = options.enabledPercentage;
+      if (options.metadata !== undefined) updateData.metadata = options.metadata;
+
       await db
         .update(featureFlags)
-        .set({
-          ...options,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(featureFlags.flagName, flagName));
 
       logger.log(`Feature flag updated: ${flagName}`);

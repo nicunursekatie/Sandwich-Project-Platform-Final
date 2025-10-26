@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getQueryFn } from '@/lib/queryClient';
+import { getQueryFn, apiRequest } from '@/lib/queryClient';
 import { useAuth } from './useAuth';
 import { logger } from '@/lib/logger';
 
@@ -34,7 +34,7 @@ export function useFeatureFlag(
     isLoading,
     error,
   } = useQuery<FeatureFlagCheck>({
-    queryKey: ['/api/feature-flags/check', flagName, user?.id],
+    queryKey: [`/api/feature-flags/check/${flagName}`, user?.id],
     queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: options?.enabled !== false && !!flagName,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
@@ -74,7 +74,18 @@ export function useFeatureFlags(flagNames: string[]) {
     error,
   } = useQuery<Record<string, boolean>>({
     queryKey: ['/api/feature-flags/check-multiple', flagNames, user?.id],
-    queryFn: getQueryFn({ on401: 'returnNull' }),
+    queryFn: async () => {
+      try {
+        return await apiRequest('POST', '/api/feature-flags/check-multiple', {
+          flags: flagNames,
+        });
+      } catch (error: any) {
+        if (error.message === 'AUTH_EXPIRED') {
+          return null;
+        }
+        throw error;
+      }
+    },
     enabled: flagNames.length > 0,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
