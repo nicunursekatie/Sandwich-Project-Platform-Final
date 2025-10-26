@@ -7,6 +7,12 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/glo
 import request from 'supertest';
 import express from 'express';
 import { PERMISSIONS } from '../../../shared/auth-utils';
+import {
+  createTestServer,
+  createTestUser,
+  createAuthenticatedAgent,
+  createAdminAgent,
+} from '../../setup/test-server';
 
 let app: express.Application;
 let testUser: any;
@@ -16,7 +22,34 @@ let adminAgent: request.SuperAgentTest;
 
 describe('Team Board Routes', () => {
   beforeAll(async () => {
-    // Setup
+    // Create test server
+    app = await createTestServer();
+
+    // Create test users
+    testUser = await createTestUser({
+      role: 'volunteer',
+      permissions: [
+        PERMISSIONS.TEAM_BOARD_VIEW,
+        PERMISSIONS.TEAM_BOARD_ADD,
+        PERMISSIONS.TEAM_BOARD_EDIT,
+      ],
+    });
+
+    adminUser = await createTestUser({
+      role: 'admin',
+      email: 'admin_teamboard@example.com',
+    });
+
+    // Create authenticated agents using the same user credentials
+    authenticatedAgent = await createAuthenticatedAgent(app, {
+      email: testUser.email,
+      password: testUser.password,
+    });
+
+    adminAgent = await createAuthenticatedAgent(app, {
+      email: adminUser.email,
+      password: adminUser.password,
+    });
   });
 
   afterAll(async () => {
