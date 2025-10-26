@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { generateVerificationCode, sendConfirmationSMS, submitTollFreeVerification, checkTollFreeVerificationStatus } from '../sms-service';
 import twilio from 'twilio';
 import { logger } from '../utils/production-safe-logger';
+import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -658,9 +659,8 @@ router.post('/users/sms-webhook/status', async (req, res) => {
 router.post('/users/toll-free-verification/submit', isAuthenticated, async (req, res) => {
   try {
     // Only admin users can submit toll-free verification
-    const userPermissions = typeof req.user?.permissions === 'number' ? req.user.permissions : 0;
-    if (!req.user?.permissions || userPermissions < 80) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
+    if (!req.user || !hasPermission(req.user, PERMISSIONS.ADMIN_ACCESS)) {
+      return res.status(403).json({ error: 'PERMISSION_DENIED' });
     }
 
     const result = await submitTollFreeVerification();
@@ -693,9 +693,8 @@ router.post('/users/toll-free-verification/submit', isAuthenticated, async (req,
 router.get('/users/toll-free-verification/status', isAuthenticated, async (req, res) => {
   try {
     // Only admin users can check toll-free verification
-    const userPermissions = typeof req.user?.permissions === 'number' ? req.user.permissions : 0;
-    if (!req.user?.permissions || userPermissions < 80) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
+    if (!req.user || !hasPermission(req.user, PERMISSIONS.ADMIN_ACCESS)) {
+      return res.status(403).json({ error: 'PERMISSION_DENIED' });
     }
 
     const verificationSid = req.query.verificationSid as string;
