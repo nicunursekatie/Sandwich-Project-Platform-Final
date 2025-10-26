@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { featureFlagService } from '../services/feature-flags';
-import { isAuthenticated, requirePermission } from './auth';
+import { isAuthenticated } from '../auth';
 import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
