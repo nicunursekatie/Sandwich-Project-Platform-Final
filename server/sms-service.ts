@@ -553,7 +553,32 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
   }
 
   try {
-    // Submit toll-free verification using REST API directly
+    // First, look up the phone number SID
+    logger.log(`🔍 Looking up phone number SID for: ${twilioPhoneNumber}`);
+    const phoneNumberResponse = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(twilioPhoneNumber)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+        },
+      }
+    );
+
+    if (!phoneNumberResponse.ok) {
+      const errorText = await phoneNumberResponse.text();
+      throw new Error(`Failed to lookup phone number: ${phoneNumberResponse.status} ${errorText}`);
+    }
+
+    const phoneNumberData = await phoneNumberResponse.json();
+    if (!phoneNumberData.incoming_phone_numbers || phoneNumberData.incoming_phone_numbers.length === 0) {
+      throw new Error(`Phone number ${twilioPhoneNumber} not found in your Twilio account`);
+    }
+
+    const phoneNumberSid = phoneNumberData.incoming_phone_numbers[0].sid;
+    logger.log(`✅ Found phone number SID: ${phoneNumberSid}`);
+
+    // Submit toll-free verification using REST API directly with correct parameters
     const response = await fetch('https://messaging.twilio.com/v1/Tollfree/Verifications', {
       method: 'POST',
       headers: {
@@ -561,16 +586,16 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        TollfreePhoneNumber: twilioPhoneNumber,
+        TollfreePhoneNumberSid: phoneNumberSid,
         BusinessName: 'The Sandwich Project',
         BusinessWebsite: 'https://www.thesandwichproject.org',
         NotificationEmail: 'katie@thesandwichproject.org',
-        'UseCaseCategories': 'PUBLIC_SERVICE_ANNOUNCEMENT',
+        UseCaseCategories: 'PUBLIC_SERVICE_ANNOUNCEMENT',
         UseCaseSummary: 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.',
         MessageVolume: '1000',
         OptInType: 'WEB_FORM',
-        'OptInImageUrls': `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png`,
-        MessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
+        OptInImageUrls: `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png`,
+        ProductionMessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
         BusinessStreetAddress: '2870 Peachtree Rd NW, PMB 915-2217',
         BusinessCity: 'Atlanta',
         BusinessStateProvinceRegion: 'GA',
