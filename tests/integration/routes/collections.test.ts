@@ -18,8 +18,10 @@ import {
 let app: express.Application;
 let testUser: any;
 let adminUser: any;
+let noPermissionsUser: any;
 let authenticatedAgent: request.SuperAgentTest;
 let adminAgent: request.SuperAgentTest;
+let noPermissionsAgent: request.SuperAgentTest;
 
 describe('Collections Routes', () => {
   beforeAll(async () => {
@@ -37,8 +39,16 @@ describe('Collections Routes', () => {
       ],
     });
 
+    // Create admin user first, then create agent with same credentials
     adminUser = await createTestUser({
       role: 'admin',
+      email: 'admin_collections@example.com',
+    });
+
+    // Create user with no permissions for testing authorization
+    noPermissionsUser = await createTestUser({
+      role: 'viewer',
+      permissions: [], // No permissions
     });
 
     // Create authenticated agents
@@ -47,7 +57,15 @@ describe('Collections Routes', () => {
       password: testUser.password,
     });
 
-    adminAgent = await createAdminAgent(app);
+    adminAgent = await createAuthenticatedAgent(app, {
+      email: adminUser.email,
+      password: adminUser.password,
+    });
+
+    noPermissionsAgent = await createAuthenticatedAgent(app, {
+      email: noPermissionsUser.email,
+      password: noPermissionsUser.password,
+    });
   });
 
   beforeEach(() => {
@@ -71,10 +89,8 @@ describe('Collections Routes', () => {
     });
 
     it('should deny access for user without COLLECTIONS_VIEW permission', async () => {
-      // Create agent with user that has no collection permissions
-      const response = await request(app)
-        .get('/api/collections')
-        .set('Cookie', ['session=no-permissions']);
+      // Use authenticated agent for user with no collection permissions
+      const response = await noPermissionsAgent.get('/api/collections');
 
       expect(response.status).toBe(403);
     });
@@ -135,9 +151,8 @@ describe('Collections Routes', () => {
     });
 
     it('should deny access without COLLECTIONS_ADD permission', async () => {
-      const response = await request(app)
+      const response = await noPermissionsAgent
         .post('/api/collections')
-        .set('Cookie', ['session=no-add-permission'])
         .send({
           hostId: 1,
           collectionDate: '2025-10-25',

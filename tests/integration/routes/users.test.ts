@@ -33,15 +33,19 @@ describe('Users Routes', () => {
 
     adminUser = await createTestUser({
       role: 'admin',
+      email: 'admin_users@example.com',
     });
 
-    // Create authenticated agents
+    // Create authenticated agents using the same user credentials
     authenticatedAgent = await createAuthenticatedAgent(app, {
       email: testUser.email,
       password: testUser.password,
     });
 
-    adminAgent = await createAdminAgent(app);
+    adminAgent = await createAuthenticatedAgent(app, {
+      email: adminUser.email,
+      password: adminUser.password,
+    });
   });
 
   afterAll(async () => {
