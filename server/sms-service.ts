@@ -592,7 +592,7 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
         NotificationEmail: 'katie@thesandwichproject.org',
         UseCaseCategories: 'PUBLIC_SERVICE_ANNOUNCEMENT',
         UseCaseSummary: 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.',
-        MessageVolume: '500',
+        MessageVolume: '101-1000',
         OptInType: 'WEB_FORM',
         OptInImageUrls: `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png`,
         ProductionMessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
