@@ -290,11 +290,11 @@ export async function sendConfirmationSMS(
   logger.log('Phone number:', phoneNumber);
   logger.log('Verification code:', verificationCode);
   logger.log('Retry attempt:', retryCount);
-  logger.log('Twilio configured:', !!twilioClient);
+  logger.log('SMS Provider configured:', !!smsProvider);
   logger.log('Twilio phone:', process.env.TWILIO_PHONE_NUMBER);
 
-  if (!twilioClient) {
-    logger.error('❌ Twilio client not initialized');
+  if (!smsProvider) {
+    logger.error('❌ SMS provider not initialized');
     return {
       success: false,
       message: 'SMS service not configured - no provider available',
@@ -341,11 +341,20 @@ export async function sendConfirmationSMS(
     }
   } catch (error: any) {
     logger.error('Error sending confirmation SMS via provider:', error);
-    
+
     // Fallback to direct Twilio if provider fails
     logger.log('🔄 Falling back to direct Twilio...');
-    
+
     try {
+      // Get the Twilio client from the provider
+      const { TwilioProvider } = await import('./sms-providers/twilio-provider');
+      const twilioProvider = smsProvider as InstanceType<typeof TwilioProvider>;
+      const twilioClient = twilioProvider.getClient();
+
+      if (!twilioClient) {
+        throw new Error('Twilio client not available');
+      }
+
       // Format phone number with improved AT&T compatibility
       let formattedPhone = phoneNumber.replace(/[^\d+]/g, '');
       if (formattedPhone.startsWith('1') && formattedPhone.length === 11) {
@@ -553,32 +562,18 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
   }
 
   try {
-    // First, look up the phone number SID
-    logger.log(`🔍 Looking up phone number SID for: ${twilioPhoneNumber}`);
-    const phoneNumberResponse = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(twilioPhoneNumber)}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
-        },
-      }
-    );
+    // Get the phone number SID using the Twilio provider
+    const { TwilioProvider } = await import('./sms-providers/twilio-provider');
+    const twilioProvider = smsProvider as InstanceType<typeof TwilioProvider>;
 
-    if (!phoneNumberResponse.ok) {
-      const errorText = await phoneNumberResponse.text();
-      throw new Error(`Failed to lookup phone number: ${phoneNumberResponse.status} ${errorText}`);
+    const phoneNumberSid = await twilioProvider.getPhoneNumberSid();
+    if (!phoneNumberSid) {
+      throw new Error('Could not retrieve phone number SID from Twilio');
     }
 
-    const phoneNumberData = await phoneNumberResponse.json();
-    if (!phoneNumberData.incoming_phone_numbers || phoneNumberData.incoming_phone_numbers.length === 0) {
-      throw new Error(`Phone number ${twilioPhoneNumber} not found in your Twilio account`);
-    }
+    logger.log(`📱 Using phone number SID: ${phoneNumberSid}`);
 
-    const phoneNumberSid = phoneNumberData.incoming_phone_numbers[0].sid;
-    logger.log(`✅ Found phone number SID: ${phoneNumberSid}`);
-
-    // Submit toll-free verification using REST API directly with correct parameters
+    // Submit toll-free verification using REST API directly
     const response = await fetch('https://messaging.twilio.com/v1/Tollfree/Verifications', {
       method: 'POST',
       headers: {
@@ -594,7 +589,7 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
         UseCaseSummary: 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.',
         MessageVolume: '1000',
         OptInType: 'WEB_FORM',
-        OptInImageUrls: `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png`,
+        OptInImageUrls: `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png',
         ProductionMessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
         BusinessStreetAddress: '2870 Peachtree Rd NW, PMB 915-2217',
         BusinessCity: 'Atlanta',
@@ -617,7 +612,7 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
 
     const verification = await response.json();
     logger.log(`✅ Toll-free verification submitted: ${verification.sid}`);
-    
+
     return {
       success: true,
       message: `Toll-free verification submitted successfully. SID: ${verification.sid}`,
