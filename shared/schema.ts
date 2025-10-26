@@ -2828,3 +2828,30 @@ export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
 export type InsertOnboardingProgress = z.infer<
   typeof insertOnboardingProgressSchema
 >;
+
+// Feature Flags - Gradual feature rollout and A/B testing
+export const featureFlags = pgTable('feature_flags', {
+  id: serial('id').primaryKey(),
+  flagName: varchar('flag_name', { length: 255 }).notNull().unique(), // e.g., 'unified-activities', 'new-ui-v2'
+  description: text('description'), // Human-readable description of what this flag controls
+  enabled: boolean('enabled').notNull().default(false), // Global enable/disable
+  enabledForUsers: jsonb('enabled_for_users').default('[]'), // Array of user IDs who have access
+  enabledForRoles: jsonb('enabled_for_roles').default('[]'), // Array of roles that have access
+  enabledPercentage: integer('enabled_percentage').default(0), // For gradual rollout (0-100)
+  metadata: jsonb('metadata').default('{}'), // Additional configuration (variants, parameters, etc.)
+  createdBy: varchar('created_by'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('idx_feature_flags_enabled').on(table.enabled),
+  index('idx_feature_flags_flag_name').on(table.flagName),
+]);
+
+export const insertFeatureFlagSchema = createInsertSchema(featureFlags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type FeatureFlag = typeof featureFlags.$inferSelect;
+export type InsertFeatureFlag = z.infer<typeof insertFeatureFlagSchema>;

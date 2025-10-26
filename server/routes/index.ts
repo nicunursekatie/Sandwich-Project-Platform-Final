@@ -54,6 +54,7 @@ import { createAnnouncementsRouter } from './announcements';
 import { createPerformanceRouter } from './performance';
 import { createAuditLogsRouter } from './audit-logs';
 import { createApiDocsRouter } from './api-docs';
+import featureFlagsRouter from './feature-flags';
 
 // Import centralized middleware
 import {
@@ -319,6 +320,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     auditLogsRouter
   );
   router.use('/api/audit-logs', createErrorHandler('audit-logs'));
+
+  // Feature Flags router (for gradual rollout)
+  router.use(
+    '/api/feature-flags',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    featureFlagsRouter
+  );
+  router.use('/api/feature-flags', createErrorHandler('feature-flags'));
 
   // Event Requests routes
   router.use(
