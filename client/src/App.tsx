@@ -1,6 +1,6 @@
 import { Switch, Route } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, lazy } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -80,20 +80,26 @@ function Router() {
     );
   }
 
+  // Lazy-loaded components
+  const SMSOptIn = lazy(() => import('./pages/sms-opt-in'));
+  const SMSVerificationDocs = lazy(() => import('./pages/sms-verification-docs'));
+
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
     return (
       <Switch>
         <Route path="/signup" component={SignupPage} />
         <Route path="/reset-password" component={ResetPassword} />
-        <Route
-          path="/sms-opt-in"
-          component={lazy(() => import('./pages/sms-opt-in'))}
-        />
-        <Route
-          path="/sms-verification-docs"
-          component={lazy(() => import('./pages/sms-verification-docs'))}
-        />
+        <Route path="/sms-opt-in">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSOptIn />
+          </Suspense>
+        </Route>
+        <Route path="/sms-verification-docs">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSVerificationDocs />
+          </Suspense>
+        </Route>
         <Route path="/login">
           {() => {
             // Redirect to the backend login page
@@ -233,14 +239,16 @@ function Router() {
       <Route path="/route-map">
         {() => <Dashboard initialSection="route-map" />}
       </Route>
-      <Route
-        path="/sms-opt-in"
-        component={lazy(() => import('./pages/sms-opt-in'))}
-      />
-      <Route
-        path="/sms-verification-docs"
-        component={lazy(() => import('./pages/sms-verification-docs'))}
-      />
+      <Route path="/sms-opt-in">
+        <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+          <SMSOptIn />
+        </Suspense>
+      </Route>
+      <Route path="/sms-verification-docs">
+        <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+          <SMSVerificationDocs />
+        </Suspense>
+      </Route>
       <Route path="/profile">
         {() => <Dashboard initialSection="profile" />}
       </Route>
