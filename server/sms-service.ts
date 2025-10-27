@@ -586,65 +586,59 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
 
     const phoneNumberSid = phoneNumberData.incoming_phone_numbers[0].sid;
     logger.log(`📱 Using phone number SID: ${phoneNumberSid}`);
-    logger.log(`🔍 CODE VERSION: Using MessageVolume='10' (valid enum value)`);
+    logger.log(`🔍 Submitting toll-free verification with snake_case fields`);
 
-    // Submit toll-free verification using REST API directly
-    const params = {
-      TollfreePhoneNumberSid: phoneNumberSid,
-      BusinessName: 'The Sandwich Project',
-      BusinessWebsite: 'https://www.thesandwichproject.org',
-      NotificationEmail: 'katie@thesandwichproject.org',
-      UseCaseCategories: 'PUBLIC_SERVICE_ANNOUNCEMENT',
-      UseCaseSummary: 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.',
-      MessageVolume: '10',
-      OptInType: 'WEB_FORM',
-      OptInImageUrls: `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png`,
-      ProductionMessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
-      BusinessStreetAddress: '2870 Peachtree Rd NW, PMB 915-2217',
-      BusinessCity: 'Atlanta',
-      BusinessStateProvinceRegion: 'GA',
-      BusinessPostalCode: '30305',
-      BusinessCountry: 'US',
-      BusinessContactFirstName: 'Christine',
-      BusinessContactLastName: 'Cooper Nowicki',
-      BusinessContactEmail: 'christine@thesandwichproject.org',
-      BusinessContactPhone: '+14047868116',
-      BusinessRegistrationNumber: '87-0939484',
-      BusinessType: 'NON_PROFIT'
-    };
+    // Build form data with correct snake_case field names
+    const form = new URLSearchParams();
+    const baseUrl = process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app';
 
-    logger.log(`📤 Submitting with MessageVolume: ${params.MessageVolume}`);
+    // Required IDs
+    form.append('tollfree_phone_number_sid', phoneNumberSid);
 
-    // Submit toll-free verification using REST API directly with correct parameters
+    // Business + contacts
+    form.append('business_name', 'The Sandwich Project');
+    form.append('business_website', 'https://www.thesandwichproject.org');
+    form.append('notification_email', 'katie@thesandwichproject.org');
+
+    // Use case (array)
+    form.append('use_case_categories', 'PUBLIC_SERVICE_ANNOUNCEMENT');
+    form.append('use_case_summary', 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.');
+
+    // Message volume (string)
+    form.append('message_volume', '1000');
+
+    // Opt-in
+    form.append('opt_in_type', 'WEB_FORM');
+    form.append('opt_in_image_urls', `${baseUrl}/profile-notifications-signup.png`);
+
+    // Sample message
+    form.append('production_message_sample', 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.');
+
+    // Business address
+    form.append('business_street_address', '2870 Peachtree Rd NW, PMB 915-2217');
+    form.append('business_city', 'Atlanta');
+    form.append('business_state_province_region', 'GA');
+    form.append('business_postal_code', '30305');
+    form.append('business_country', 'US');
+
+    // Contact + registration
+    form.append('business_contact_first_name', 'Christine');
+    form.append('business_contact_last_name', 'Cooper Nowicki');
+    form.append('business_contact_email', 'christine@thesandwichproject.org');
+    form.append('business_contact_phone', '+14047868116');
+    form.append('business_registration_number', '87-0939484');
+    form.append('business_type', 'NON_PROFIT');
+
+    logger.log(`📤 Submitting with message_volume: 1000`);
+
+    // Submit toll-free verification using REST API with correct snake_case fields
     const response = await fetch('https://messaging.twilio.com/v1/Tollfree/Verifications', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        TollfreePhoneNumberSid: params.TollfreePhoneNumberSid,
-        BusinessName: params.BusinessName,
-        BusinessWebsite: params.BusinessWebsite,
-        NotificationEmail: params.NotificationEmail,
-        UseCaseCategories: params.UseCaseCategories,
-        UseCaseSummary: params.UseCaseSummary,
-        MessageVolume: params.MessageVolume,
-        OptInType: params.OptInType,
-        OptInImageUrls: params.OptInImageUrls,
-        ProductionMessageSample: params.ProductionMessageSample,
-        BusinessStreetAddress: params.BusinessStreetAddress,
-        BusinessCity: params.BusinessCity,
-        BusinessStateProvinceRegion: params.BusinessStateProvinceRegion,
-        BusinessPostalCode: params.BusinessPostalCode,
-        BusinessCountry: params.BusinessCountry,
-        BusinessContactFirstName: params.BusinessContactFirstName,
-        BusinessContactLastName: params.BusinessContactLastName,
-        BusinessContactEmail: params.BusinessContactEmail,
-        BusinessContactPhone: params.BusinessContactPhone,
-        BusinessRegistrationNumber: params.BusinessRegistrationNumber,
-        BusinessType: params.BusinessType
-      }),
+      body: form,
     });
 
     if (!response.ok) {
