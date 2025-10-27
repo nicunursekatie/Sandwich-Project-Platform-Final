@@ -78,6 +78,30 @@ router.get('/', isAuthenticated, async (req, res) => {
 });
 
 /**
+ * GET /api/activities/unread/count
+ * Get unread count for current user
+ * IMPORTANT: Must be defined before /:id route to avoid path collision
+ */
+router.get('/unread/count', isAuthenticated, async (req, res) => {
+  try {
+    const enabled = await checkActivityFeatureFlag(req);
+    if (!enabled) {
+      return res.json({ count: 0 }); // Return 0 if feature not enabled
+    }
+
+    const count = await activityService.getUnreadCount(req.user!.id);
+
+    res.json({ count });
+  } catch (error) {
+    logger.error('Error getting unread count:', error);
+    res.status(500).json({
+      error: 'Failed to get unread count',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/activities/:id
  * Get a single activity by ID with full details
  */
@@ -478,29 +502,6 @@ router.post('/:id/attachments', isAuthenticated, async (req, res) => {
     logger.error('Error adding attachment:', error);
     res.status(500).json({
       error: 'Failed to add attachment',
-      message: error.message,
-    });
-  }
-});
-
-/**
- * GET /api/activities/unread/count
- * Get unread count for current user
- */
-router.get('/unread/count', isAuthenticated, async (req, res) => {
-  try {
-    const enabled = await checkActivityFeatureFlag(req);
-    if (!enabled) {
-      return res.json({ count: 0 }); // Return 0 if feature not enabled
-    }
-
-    const count = await activityService.getUnreadCount(req.user!.id);
-
-    res.json({ count });
-  } catch (error) {
-    logger.error('Error getting unread count:', error);
-    res.status(500).json({
-      error: 'Failed to get unread count',
       message: error.message,
     });
   }
