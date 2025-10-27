@@ -348,7 +348,7 @@ export default function SMSVerificationDocs() {
             telecommunications regulations.
           </p>
           <p className="text-xs text-gray-400 mt-2">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: October 2025
           </p>
         </div>
       </div>
