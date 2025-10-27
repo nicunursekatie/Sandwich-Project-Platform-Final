@@ -321,6 +321,15 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/audit-logs', createErrorHandler('audit-logs'));
 
+  // Feature Flags router (for gradual rollout)
+  router.use(
+    '/api/feature-flags',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    featureFlagsRouter
+  );
+  router.use('/api/feature-flags', createErrorHandler('feature-flags'));
+
   // Event Requests routes
   router.use(
     '/api/event-requests',

@@ -562,13 +562,26 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
   }
 
   try {
-    // Get the phone number SID using the Twilio provider
-    const { TwilioProvider } = await import('./sms-providers/twilio-provider');
-    const twilioProvider = smsProvider as InstanceType<typeof TwilioProvider>;
+    // First, look up the phone number SID
+    logger.log(`🔍 Looking up phone number SID for: ${twilioPhoneNumber}`);
+    const phoneNumberResponse = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(twilioPhoneNumber)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+        },
+      }
+    );
 
-    const phoneNumberSid = await twilioProvider.getPhoneNumberSid();
-    if (!phoneNumberSid) {
-      throw new Error('Could not retrieve phone number SID from Twilio');
+    if (!phoneNumberResponse.ok) {
+      const errorText = await phoneNumberResponse.text();
+      throw new Error(`Failed to lookup phone number: ${phoneNumberResponse.status} ${errorText}`);
+    }
+
+    const phoneNumberData = await phoneNumberResponse.json();
+    if (!phoneNumberData.incoming_phone_numbers || phoneNumberData.incoming_phone_numbers.length === 0) {
+      throw new Error(`Phone number ${twilioPhoneNumber} not found in your Twilio account`);
     }
 
     logger.log(`📱 Using phone number SID: ${phoneNumberSid}`);
@@ -601,6 +614,10 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
 
     logger.log(`📤 Submitting with MessageVolume: ${params.MessageVolume}`);
 
+    const phoneNumberSid = phoneNumberData.incoming_phone_numbers[0].sid;
+    logger.log(`✅ Found phone number SID: ${phoneNumberSid}`);
+
+    // Submit toll-free verification using REST API directly with correct parameters
     const response = await fetch('https://messaging.twilio.com/v1/Tollfree/Verifications', {
       method: 'POST',
       headers: {
