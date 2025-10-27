@@ -7,6 +7,14 @@ import { logger } from '../utils/production-safe-logger';
 const router = Router();
 
 /**
+ * Safely extract error message from unknown error type
+ */
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+/**
  * Check if unified activities feature is enabled for user
  */
 async function checkActivityFeatureFlag(req: any): Promise<boolean> {
@@ -72,7 +80,7 @@ router.get('/', isAuthenticated, async (req, res) => {
     logger.error('Error getting activities:', error);
     res.status(500).json({
       error: 'Failed to get activities',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -96,7 +104,7 @@ router.get('/unread/count', isAuthenticated, async (req, res) => {
     logger.error('Error getting unread count:', error);
     res.status(500).json({
       error: 'Failed to get unread count',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -124,7 +132,7 @@ router.get('/:id', isAuthenticated, async (req, res) => {
     logger.error('Error getting activity:', error);
     res.status(500).json({
       error: 'Failed to get activity',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -148,7 +156,7 @@ router.get('/:id/thread', isAuthenticated, async (req, res) => {
     logger.error('Error getting activity thread:', error);
     res.status(500).json({
       error: 'Failed to get thread',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -213,7 +221,7 @@ router.post('/', isAuthenticated, async (req, res) => {
     logger.error('Error creating activity:', error);
     res.status(500).json({
       error: 'Failed to create activity',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -251,7 +259,7 @@ router.patch('/:id', isAuthenticated, async (req, res) => {
     logger.error('Error updating activity:', error);
     res.status(500).json({
       error: 'Failed to update activity',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -280,7 +288,7 @@ router.delete('/:id', isAuthenticated, async (req, res) => {
     logger.error('Error deleting activity:', error);
     res.status(500).json({
       error: 'Failed to delete activity',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -318,7 +326,7 @@ router.post('/:id/participants', isAuthenticated, async (req, res) => {
     logger.error('Error adding participant:', error);
     res.status(500).json({
       error: 'Failed to add participant',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -342,7 +350,7 @@ router.get('/:id/participants', isAuthenticated, async (req, res) => {
     logger.error('Error getting participants:', error);
     res.status(500).json({
       error: 'Failed to get participants',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -380,7 +388,7 @@ router.post('/:id/reactions', isAuthenticated, async (req, res) => {
     logger.error('Error adding reaction:', error);
     res.status(500).json({
       error: 'Failed to add reaction',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -409,7 +417,7 @@ router.delete('/:id/reactions/:reactionType', isAuthenticated, async (req, res) 
     logger.error('Error removing reaction:', error);
     res.status(500).json({
       error: 'Failed to remove reaction',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -433,7 +441,7 @@ router.get('/:id/reactions', isAuthenticated, async (req, res) => {
     logger.error('Error getting reactions:', error);
     res.status(500).json({
       error: 'Failed to get reactions',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -457,7 +465,7 @@ router.get('/:id/attachments', isAuthenticated, async (req, res) => {
     logger.error('Error getting attachments:', error);
     res.status(500).json({
       error: 'Failed to get attachments',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -502,7 +510,7 @@ router.post('/:id/attachments', isAuthenticated, async (req, res) => {
     logger.error('Error adding attachment:', error);
     res.status(500).json({
       error: 'Failed to add attachment',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
@@ -526,7 +534,7 @@ router.post('/:id/mark-read', isAuthenticated, async (req, res) => {
     logger.error('Error marking as read:', error);
     res.status(500).json({
       error: 'Failed to mark as read',
-      message: error.message,
+      message: getErrorMessage(error),
     });
   }
 });
