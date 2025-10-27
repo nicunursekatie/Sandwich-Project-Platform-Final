@@ -349,7 +349,10 @@ export class ActivityService {
   ): Promise<Activity> {
     try {
       // Filter out undefined values
-      const updateData: any = { updatedAt: new Date() };
+      const updateData: any = {
+        updatedAt: new Date(),
+        lastActivityAt: new Date(),
+      };
 
       if (updates.title !== undefined) updateData.title = updates.title;
       if (updates.content !== undefined) updateData.content = updates.content;
@@ -363,12 +366,6 @@ export class ActivityService {
         .set(updateData)
         .where(eq(activities.id, activityId))
         .returning();
-
-      // Update last activity timestamp
-      await db
-        .update(activities)
-        .set({ lastActivityAt: new Date() })
-        .where(eq(activities.id, activityId));
 
       logger.log(`Activity updated: ${activityId}`);
       return activity;
