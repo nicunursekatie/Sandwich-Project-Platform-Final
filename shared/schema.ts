@@ -2897,6 +2897,7 @@ export const activities = pgTable('activities', {
 
 export const insertActivitySchema = createInsertSchema(activities).omit({
   threadCount: true,
+  lastActivityAt: true,
   createdAt: true,
   updatedAt: true,
 });

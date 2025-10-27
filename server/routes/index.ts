@@ -55,6 +55,7 @@ import { createPerformanceRouter } from './performance';
 import { createAuditLogsRouter } from './audit-logs';
 import { createApiDocsRouter } from './api-docs';
 import featureFlagsRouter from './feature-flags';
+import activitiesRouter from './activities';
 
 // Import centralized middleware
 import {
@@ -329,6 +330,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     featureFlagsRouter
   );
   router.use('/api/feature-flags', createErrorHandler('feature-flags'));
+
+  // Activities router (unified task + communication system)
+  router.use(
+    '/api/activities',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    activitiesRouter
+  );
+  router.use('/api/activities', createErrorHandler('activities'));
 
   // Event Requests routes
   router.use(
