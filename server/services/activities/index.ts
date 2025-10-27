@@ -61,6 +61,7 @@ export interface GetActivitiesFilters {
   status?: string[];
   includeDeleted?: boolean;
   parentId?: string | null; // null = root activities only
+  rootId?: string; // Get all activities in a thread (including nested)
   limit?: number;
   offset?: number;
 }
@@ -170,6 +171,7 @@ export class ActivityService {
         status,
         includeDeleted = false,
         parentId,
+        rootId,
         limit = 50,
         offset = 0,
       } = filters;
@@ -215,6 +217,11 @@ export class ActivityService {
           // Get replies to specific activity
           conditions.push(eq(activities.parentId, parentId));
         }
+      }
+
+      if (rootId) {
+        // Get all activities in a thread (including nested replies)
+        conditions.push(eq(activities.rootId, rootId));
       }
 
       // Query activities
@@ -305,9 +312,9 @@ export class ActivityService {
         throw new Error('Activity not found');
       }
 
-      // Get all replies
+      // Get all replies (including nested) by querying rootId
       const replies = await this.getActivities({
-        parentId: rootId,
+        rootId: rootId,
         includeDeleted: false,
         limit: 1000, // High limit for threads
       });
@@ -604,13 +611,13 @@ export class ActivityService {
    */
   private async updateThreadMetrics(rootId: string): Promise<void> {
     try {
-      // Count direct replies
+      // Count ALL replies in thread (including nested replies)
       const result = await db
         .select({ count: sql<number>`count(*)` })
         .from(activities)
         .where(
           and(
-            eq(activities.parentId, rootId),
+            eq(activities.rootId, rootId),
             eq(activities.isDeleted, false)
           )
         );
