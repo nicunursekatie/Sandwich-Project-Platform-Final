@@ -584,6 +584,36 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
       throw new Error(`Phone number ${twilioPhoneNumber} not found in your Twilio account`);
     }
 
+    logger.log(`📱 Using phone number SID: ${phoneNumberSid}`);
+    logger.log(`🔍 CODE VERSION: Using MessageVolume='1000' (commit 084a034)`);
+
+    // Submit toll-free verification using REST API directly
+    const params = {
+      TollfreePhoneNumberSid: phoneNumberSid,
+      BusinessName: 'The Sandwich Project',
+      BusinessWebsite: 'https://www.thesandwichproject.org',
+      NotificationEmail: 'katie@thesandwichproject.org',
+      UseCaseCategories: 'PUBLIC_SERVICE_ANNOUNCEMENT',
+      UseCaseSummary: 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.',
+      MessageVolume: '1000',
+      OptInType: 'WEB_FORM',
+      OptInImageUrls: `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png`,
+      ProductionMessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
+      BusinessStreetAddress: '2870 Peachtree Rd NW, PMB 915-2217',
+      BusinessCity: 'Atlanta',
+      BusinessStateProvinceRegion: 'GA',
+      BusinessPostalCode: '30305',
+      BusinessCountry: 'US',
+      BusinessContactFirstName: 'Christine',
+      BusinessContactLastName: 'Cooper Nowicki',
+      BusinessContactEmail: 'christine@thesandwichproject.org',
+      BusinessContactPhone: '+14047868116',
+      BusinessRegistrationNumber: '87-0939484',
+      BusinessType: 'NON_PROFIT'
+    };
+
+    logger.log(`📤 Submitting with MessageVolume: ${params.MessageVolume}`);
+
     const phoneNumberSid = phoneNumberData.incoming_phone_numbers[0].sid;
     logger.log(`✅ Found phone number SID: ${phoneNumberSid}`);
 
@@ -595,27 +625,27 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        TollfreePhoneNumberSid: phoneNumberSid,
-        BusinessName: 'The Sandwich Project',
-        BusinessWebsite: 'https://www.thesandwichproject.org',
-        NotificationEmail: 'katie@thesandwichproject.org',
-        UseCaseCategories: 'PUBLIC_SERVICE_ANNOUNCEMENT',
-        UseCaseSummary: 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.',
-        MessageVolume: '101-1000',
-        OptInType: 'WEB_FORM',
-        OptInImageUrls: (process.env.REPLIT_DOMAIN ? 'https://' + process.env.REPLIT_DOMAIN : 'https://your-app.replit.app') + '/profile-notifications-signup.png',
-        ProductionMessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
-        BusinessStreetAddress: '2870 Peachtree Rd NW, PMB 915-2217',
-        BusinessCity: 'Atlanta',
-        BusinessStateProvinceRegion: 'GA',
-        BusinessPostalCode: '30305',
-        BusinessCountry: 'US',
-        BusinessContactFirstName: 'Christine',
-        BusinessContactLastName: 'Cooper Nowicki',
-        BusinessContactEmail: 'christine@thesandwichproject.org',
-        BusinessContactPhone: '+14047868116',
-        BusinessRegistrationNumber: '87-0939484',
-        BusinessType: 'NON_PROFIT'
+        TollfreePhoneNumberSid: params.TollfreePhoneNumberSid,
+        BusinessName: params.BusinessName,
+        BusinessWebsite: params.BusinessWebsite,
+        NotificationEmail: params.NotificationEmail,
+        UseCaseCategories: params.UseCaseCategories,
+        UseCaseSummary: params.UseCaseSummary,
+        MessageVolume: params.MessageVolume,
+        OptInType: params.OptInType,
+        OptInImageUrls: params.OptInImageUrls,
+        ProductionMessageSample: params.ProductionMessageSample,
+        BusinessStreetAddress: params.BusinessStreetAddress,
+        BusinessCity: params.BusinessCity,
+        BusinessStateProvinceRegion: params.BusinessStateProvinceRegion,
+        BusinessPostalCode: params.BusinessPostalCode,
+        BusinessCountry: params.BusinessCountry,
+        BusinessContactFirstName: params.BusinessContactFirstName,
+        BusinessContactLastName: params.BusinessContactLastName,
+        BusinessContactEmail: params.BusinessContactEmail,
+        BusinessContactPhone: params.BusinessContactPhone,
+        BusinessRegistrationNumber: params.BusinessRegistrationNumber,
+        BusinessType: params.BusinessType
       }),
     });
 
