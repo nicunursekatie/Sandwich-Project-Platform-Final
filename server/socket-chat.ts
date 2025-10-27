@@ -25,6 +25,17 @@ interface ConnectedUser {
   channels: string[];
 }
 
+// Module-level variable to store Socket.IO instance
+let socketInstance: SocketServer | null = null;
+
+/**
+ * Get the Socket.IO instance (for emitting events from routes)
+ * Returns null if Socket.IO hasn't been initialized yet
+ */
+export function getSocketInstance(): SocketServer | null {
+  return socketInstance;
+}
+
 export function setupSocketChat(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     cors: getSocketCorsConfig(),
@@ -32,6 +43,9 @@ export function setupSocketChat(httpServer: HttpServer) {
     transports: ['websocket', 'polling'],
     allowEIO3: true,
   });
+
+  // Store instance for access from routes
+  socketInstance = io;
 
   logger.log('✓ Socket.IO server initialized on /socket.io/ with secure CORS');
 
