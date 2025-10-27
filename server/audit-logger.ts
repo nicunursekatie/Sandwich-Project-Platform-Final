@@ -203,7 +203,6 @@ export class AuditLogger {
     contactName: 'Contact Name',
     contactEmail: 'Contact Email',
     contactPhone: 'Contact Phone',
-    isActive: 'Is Active',
 
     // Common timestamp fields
     createdAt: 'Created Date',
