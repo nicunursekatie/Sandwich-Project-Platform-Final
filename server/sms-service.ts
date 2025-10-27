@@ -584,6 +584,7 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
       throw new Error(`Phone number ${twilioPhoneNumber} not found in your Twilio account`);
     }
 
+    const phoneNumberSid = phoneNumberData.incoming_phone_numbers[0].sid;
     logger.log(`📱 Using phone number SID: ${phoneNumberSid}`);
     logger.log(`🔍 CODE VERSION: Using MessageVolume='1000' (commit 084a034)`);
 
@@ -613,9 +614,6 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
     };
 
     logger.log(`📤 Submitting with MessageVolume: ${params.MessageVolume}`);
-
-    const phoneNumberSid = phoneNumberData.incoming_phone_numbers[0].sid;
-    logger.log(`✅ Found phone number SID: ${phoneNumberSid}`);
 
     // Submit toll-free verification using REST API directly with correct parameters
     const response = await fetch('https://messaging.twilio.com/v1/Tollfree/Verifications', {
