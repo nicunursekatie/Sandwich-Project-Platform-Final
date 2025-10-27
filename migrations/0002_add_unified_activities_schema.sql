@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS activities (
 COMMENT ON TABLE activities IS 'Unified table for tasks, events, projects, messages, and more with built-in threading';
 COMMENT ON COLUMN activities.parent_id IS 'Points to parent activity for threaded replies. NULL = root activity';
 COMMENT ON COLUMN activities.root_id IS 'Denormalized ID of root activity for efficient thread queries';
-COMMENT ON COLUMN activities.thread_count IS 'Cached count of direct replies (updated by triggers or app logic)';
+COMMENT ON COLUMN activities.thread_count IS 'Cached count of all replies including nested (updated by app logic)';
 COMMENT ON COLUMN activities.last_activity_at IS 'Updated when activity or any reply is created/updated';
 
 -- Performance indexes for activities
