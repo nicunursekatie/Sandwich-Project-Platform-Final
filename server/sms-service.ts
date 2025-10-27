@@ -586,7 +586,7 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
 
     const phoneNumberSid = phoneNumberData.incoming_phone_numbers[0].sid;
     logger.log(`📱 Using phone number SID: ${phoneNumberSid}`);
-    logger.log(`🔍 CODE VERSION: Using MessageVolume='1000' (commit 084a034)`);
+    logger.log(`🔍 CODE VERSION: Using MessageVolume='10' (valid enum value)`);
 
     // Submit toll-free verification using REST API directly
     const params = {
@@ -596,7 +596,7 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
       NotificationEmail: 'katie@thesandwichproject.org',
       UseCaseCategories: 'PUBLIC_SERVICE_ANNOUNCEMENT',
       UseCaseSummary: 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.',
-      MessageVolume: '1000',
+      MessageVolume: '10',
       OptInType: 'WEB_FORM',
       OptInImageUrls: `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png`,
       ProductionMessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
