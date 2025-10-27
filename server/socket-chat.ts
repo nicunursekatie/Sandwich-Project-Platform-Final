@@ -25,6 +25,17 @@ interface ConnectedUser {
   channels: string[];
 }
 
+// Module-level variable to store Socket.IO instance
+let socketInstance: SocketServer | null = null;
+
+/**
+ * Get the Socket.IO instance (for emitting events from routes)
+ * Returns null if Socket.IO hasn't been initialized yet
+ */
+export function getSocketInstance(): SocketServer | null {
+  return socketInstance;
+}
+
 export function setupSocketChat(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     cors: getSocketCorsConfig(),
@@ -32,6 +43,9 @@ export function setupSocketChat(httpServer: HttpServer) {
     transports: ['websocket', 'polling'],
     allowEIO3: true,
   });
+
+  // Store instance for access from routes
+  socketInstance = io;
 
   logger.log('✓ Socket.IO server initialized on /socket.io/ with secure CORS');
 
@@ -384,6 +398,97 @@ export function setupSocketChat(httpServer: HttpServer) {
         logger.log(`User ${userName} left channel: ${channel}`);
       }
     );
+
+    // ========================================================================
+    // UNIFIED ACTIVITIES SYSTEM - Socket.IO Events
+    // ========================================================================
+
+    /**
+     * Subscribe to activity updates
+     * Join a room for real-time updates on a specific activity or context
+     */
+    socket.on('activity:subscribe', (data: { activityId?: string; contextType?: string; contextId?: string }) => {
+      try {
+        const { activityId, contextType, contextId } = data;
+
+        if (activityId) {
+          // Subscribe to specific activity (for thread views)
+          socket.join(`activity:${activityId}`);
+          logger.log(`Socket ${socket.id} subscribed to activity: ${activityId}`);
+        }
+
+        if (contextType && contextId) {
+          // Subscribe to all activities in a context (e.g., all tasks in a project)
+          const contextRoom = `context:${contextType}:${contextId}`;
+          socket.join(contextRoom);
+          logger.log(`Socket ${socket.id} subscribed to context: ${contextRoom}`);
+        }
+      } catch (error) {
+        logger.error('Error subscribing to activity:', error);
+      }
+    });
+
+    /**
+     * Unsubscribe from activity updates
+     */
+    socket.on('activity:unsubscribe', (data: { activityId?: string; contextType?: string; contextId?: string }) => {
+      try {
+        const { activityId, contextType, contextId } = data;
+
+        if (activityId) {
+          socket.leave(`activity:${activityId}`);
+          logger.log(`Socket ${socket.id} unsubscribed from activity: ${activityId}`);
+        }
+
+        if (contextType && contextId) {
+          socket.leave(`context:${contextType}:${contextId}`);
+          logger.log(`Socket ${socket.id} unsubscribed from context: ${contextType}:${contextId}`);
+        }
+      } catch (error) {
+        logger.error('Error unsubscribing from activity:', error);
+      }
+    });
+
+    /**
+     * Activity created event (emitted from server-side only)
+     * Clients subscribe to this via activity:subscribe
+     */
+    // Note: This is emitted from the backend API routes, not from client events
+    // Example usage in routes/activities.ts:
+    //   io.to(`context:${contextType}:${contextId}`).emit('activity:created', activity);
+
+    /**
+     * Activity updated event (emitted from server-side only)
+     */
+    // Example usage:
+    //   io.to(`activity:${activityId}`).emit('activity:updated', updatedActivity);
+
+    /**
+     * Activity reply event (emitted from server-side only)
+     */
+    // Example usage:
+    //   io.to(`activity:${rootId}`).emit('activity:reply', reply);
+
+    /**
+     * Activity reaction event (emitted from server-side only)
+     */
+    // Example usage:
+    //   io.to(`activity:${activityId}`).emit('activity:reaction', { activityId, userId, reactionType });
+
+    /**
+     * Typing indicator for activity threads (optional future feature)
+     */
+    socket.on('activity:typing', (data: { activityId: string; userName: string }) => {
+      try {
+        const { activityId, userName } = data;
+        socket.to(`activity:${activityId}`).emit('activity:user-typing', {
+          activityId,
+          userName,
+        });
+      } catch (error) {
+        logger.error('Error broadcasting typing indicator:', error);
+      }
+    });
 
     // Handle disconnect
     socket.on('disconnect', () => {

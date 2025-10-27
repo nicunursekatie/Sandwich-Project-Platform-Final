@@ -2855,3 +2855,129 @@ export const insertFeatureFlagSchema = createInsertSchema(featureFlags).omit({
 
 export type FeatureFlag = typeof featureFlags.$inferSelect;
 export type InsertFeatureFlag = z.infer<typeof insertFeatureFlagSchema>;
+
+// ============================================================================
+// UNIFIED TASK + COMMUNICATION SYSTEM (Phase 1)
+// ============================================================================
+
+/**
+ * Activities - Unified table for tasks, events, projects, messages, and more
+ * Replaces scattered task/event/message tables with one threaded conversation system
+ */
+export const activities = pgTable('activities', {
+  id: varchar('id').primaryKey().notNull(), // UUID from client or server
+  type: varchar('type', { length: 50 }).notNull(), // 'task', 'event', 'project', 'collection', 'message', 'kudos', 'system_log'
+  title: text('title').notNull(), // Main description or message preview
+  content: text('content'), // Detailed body - for messages or rich descriptions
+  createdBy: varchar('created_by').notNull(), // FK to users.id
+  assignedTo: jsonb('assigned_to').default('[]'), // Array of user IDs
+  status: varchar('status', { length: 50 }), // 'open', 'in_progress', 'done', 'declined', 'postponed', NULL for messages
+  priority: varchar('priority', { length: 20 }), // 'low', 'medium', 'high', 'urgent', NULL for non-tasks
+  parentId: varchar('parent_id'), // Self-referential FK for threading (replies)
+  rootId: varchar('root_id'), // Denormalized root of thread for efficient queries
+  contextType: varchar('context_type', { length: 50 }), // 'event_request', 'project', 'collection', 'kudos', 'direct', 'channel'
+  contextId: varchar('context_id'), // FK to eventRequests/projects/collections/etc
+  metadata: jsonb('metadata').default('{}'), // Flexible field for type-specific data
+  isDeleted: boolean('is_deleted').default(false), // Soft delete flag
+  threadCount: integer('thread_count').default(0), // Denormalized count of replies
+  lastActivityAt: timestamp('last_activity_at').defaultNow(), // For sorting threads by recent activity
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('idx_activities_type').on(table.type),
+  index('idx_activities_created_by').on(table.createdBy),
+  index('idx_activities_parent_id').on(table.parentId),
+  index('idx_activities_root_id').on(table.rootId),
+  index('idx_activities_context').on(table.contextType, table.contextId),
+  index('idx_activities_last_activity').on(table.lastActivityAt),
+  index('idx_activities_is_deleted').on(table.isDeleted),
+  index('idx_activities_status').on(table.status),
+  index('idx_activities_created_at').on(table.createdAt),
+]);
+
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  threadCount: true,
+  lastActivityAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
+
+/**
+ * Activity Participants - Track who's involved in each activity
+ * Used for permissions, notifications, and unread tracking
+ */
+export const activityParticipants = pgTable('activity_participants', {
+  id: serial('id').primaryKey(),
+  activityId: varchar('activity_id').notNull(), // FK to activities.id
+  userId: varchar('user_id').notNull(), // FK to users.id
+  role: varchar('role', { length: 50 }).notNull(), // 'assignee', 'follower', 'mentioned', 'creator'
+  lastReadAt: timestamp('last_read_at'), // For unread tracking
+  notificationsEnabled: boolean('notifications_enabled').default(true), // Per-thread notification preference
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_activity_participants_activity').on(table.activityId),
+  index('idx_activity_participants_user').on(table.userId),
+  index('idx_activity_participants_activity_user').on(table.activityId, table.userId),
+  unique().on(table.activityId, table.userId, table.role), // Prevent duplicate participant roles
+]);
+
+export const insertActivityParticipantSchema = createInsertSchema(activityParticipants).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ActivityParticipant = typeof activityParticipants.$inferSelect;
+export type InsertActivityParticipant = z.infer<typeof insertActivityParticipantSchema>;
+
+/**
+ * Activity Reactions - Likes, celebrates, helpful, etc.
+ * Lightweight engagement on activities and messages
+ */
+export const activityReactions = pgTable('activity_reactions', {
+  id: serial('id').primaryKey(),
+  activityId: varchar('activity_id').notNull(), // FK to activities.id
+  userId: varchar('user_id').notNull(), // FK to users.id
+  reactionType: varchar('reaction_type', { length: 50 }).notNull(), // 'like', 'celebrate', 'helpful', 'complete', 'question'
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_activity_reactions_activity').on(table.activityId),
+  index('idx_activity_reactions_user').on(table.userId),
+  unique().on(table.activityId, table.userId, table.reactionType), // One reaction type per user per activity
+]);
+
+export const insertActivityReactionSchema = createInsertSchema(activityReactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ActivityReaction = typeof activityReactions.$inferSelect;
+export type InsertActivityReaction = z.infer<typeof insertActivityReactionSchema>;
+
+/**
+ * Activity Attachments - File uploads on threads
+ * Links to storage service (Google Cloud Storage)
+ */
+export const activityAttachments = pgTable('activity_attachments', {
+  id: serial('id').primaryKey(),
+  activityId: varchar('activity_id').notNull(), // FK to activities.id
+  fileUrl: text('file_url').notNull(), // URL to file in storage
+  fileType: varchar('file_type', { length: 100 }), // MIME type
+  fileName: text('file_name').notNull(), // Original filename
+  fileSize: integer('file_size'), // Size in bytes
+  uploadedBy: varchar('uploaded_by').notNull(), // FK to users.id
+  uploadedAt: timestamp('uploaded_at').defaultNow(),
+}, (table) => [
+  index('idx_activity_attachments_activity').on(table.activityId),
+  index('idx_activity_attachments_uploaded_by').on(table.uploadedBy),
+]);
+
+export const insertActivityAttachmentSchema = createInsertSchema(activityAttachments).omit({
+  id: true,
+  uploadedAt: true,
+});
+
+export type ActivityAttachment = typeof activityAttachments.$inferSelect;
+export type InsertActivityAttachment = z.infer<typeof insertActivityAttachmentSchema>;
