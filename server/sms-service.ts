@@ -594,50 +594,54 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
 
     logger.log(`📱 Using toll-free phone number SID: ${phoneNumberSid}`);
     logger.log(`📞 Number: ${num.phone_number}`);
-    logger.log(`🔍 Submitting toll-free verification with snake_case fields`);
+    logger.log(`🔍 Submitting toll-free verification with PascalCase fields`);
 
-    // Build form data with correct snake_case field names
+    // Build form data with PascalCase field names (Twilio REST API format)
     const form = new URLSearchParams();
     const baseUrl = process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app';
 
     // Required IDs
-    form.append('tollfree_phone_number_sid', phoneNumberSid);
+    form.append('TollfreePhoneNumberSid', phoneNumberSid);
 
     // Business + contacts
-    form.append('business_name', 'The Sandwich Project');
-    form.append('business_website', 'https://www.thesandwichproject.org');
-    form.append('notification_email', 'katie@thesandwichproject.org');
+    form.append('BusinessName', 'The Sandwich Project');
+    form.append('BusinessWebsite', 'https://www.thesandwichproject.org');
+    form.append('NotificationEmail', 'katie@thesandwichproject.org');
 
-    // Use case (array) - ACCOUNT_NOTIFICATION is better fit for volunteer reminders
-    form.append('use_case_categories', 'ACCOUNT_NOTIFICATION');
-    form.append('use_case_summary', 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.');
+    // Use case (array) - repeat key for each category
+    ['ACCOUNT_NOTIFICATION'].forEach(v =>
+      form.append('UseCaseCategories', v)
+    );
+    form.append('UseCaseSummary', 'Volunteer-powered nonprofit sending weekly reminders to volunteers about sandwich collection submissions and outreach events.');
 
-    // Message volume (string) - explicitly ensure it's a string
-    form.append('message_volume', String(1000));
+    // Message volume (string tier)
+    form.append('MessageVolume', '1000');
 
-    // Opt-in
-    form.append('opt_in_type', 'WEB_FORM');
-    form.append('opt_in_image_urls', `${baseUrl}/profile-notifications-signup.png`);
+    // Opt-in - repeat key for each URL
+    form.append('OptInType', 'WEB_FORM');
+    [`${baseUrl}/profile-notifications-signup.png`].forEach(url =>
+      form.append('OptInImageUrls', url)
+    );
 
     // Sample message
-    form.append('production_message_sample', 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.');
+    form.append('ProductionMessageSample', 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.');
 
     // Business address
-    form.append('business_street_address', '2870 Peachtree Rd NW, PMB 915-2217');
-    form.append('business_city', 'Atlanta');
-    form.append('business_state_province_region', 'GA');
-    form.append('business_postal_code', '30305');
-    form.append('business_country', 'US');
+    form.append('BusinessStreetAddress', '2870 Peachtree Rd NW, PMB 915-2217');
+    form.append('BusinessCity', 'Atlanta');
+    form.append('BusinessStateProvinceRegion', 'GA');
+    form.append('BusinessPostalCode', '30305');
+    form.append('BusinessCountry', 'US');
 
     // Contact + registration
-    form.append('business_contact_first_name', 'Christine');
-    form.append('business_contact_last_name', 'Cooper Nowicki');
-    form.append('business_contact_email', 'christine@thesandwichproject.org');
-    form.append('business_contact_phone', '+14047868116');
-    form.append('business_registration_number', '87-0939484');
-    form.append('business_type', 'NON_PROFIT');
+    form.append('BusinessContactFirstName', 'Christine');
+    form.append('BusinessContactLastName', 'Cooper Nowicki');
+    form.append('BusinessContactEmail', 'christine@thesandwichproject.org');
+    form.append('BusinessContactPhone', '+14047868116');
+    form.append('BusinessRegistrationNumber', '87-0939484');
+    form.append('BusinessType', 'NON_PROFIT');
 
-    logger.log(`📤 Submitting TFV with message_volume: 1000, use_case: ACCOUNT_NOTIFICATION`);
+    logger.log(`📤 Submitting TFV with MessageVolume: 1000, UseCaseCategories: ACCOUNT_NOTIFICATION`);
     logger.log(`📷 Opt-in image URL: ${baseUrl}/profile-notifications-signup.png`);
 
     // Submit toll-free verification using REST API with correct snake_case fields
