@@ -100,6 +100,11 @@ function Router() {
             <SMSVerificationDocs />
           </Suspense>
         </Route>
+        <Route path="/sms-verification-doc">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSVerificationDocs />
+          </Suspense>
+        </Route>
         <Route path="/login">
           {() => {
             // Redirect to the backend login page
@@ -245,6 +250,11 @@ function Router() {
         </Suspense>
       </Route>
       <Route path="/sms-verification-docs">
+        <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+          <SMSVerificationDocs />
+        </Suspense>
+      </Route>
+      <Route path="/sms-verification-doc">
         <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
           <SMSVerificationDocs />
         </Suspense>
