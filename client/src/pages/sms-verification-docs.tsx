@@ -66,7 +66,7 @@ export default function SMSVerificationDocs() {
             <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-300">
               <div className="flex items-start gap-3">
                 <div className="mt-1">
-                  <input type="checkbox" checked readOnly className="w-4 h-4" />
+                  <input type="checkbox" defaultChecked disabled className="w-4 h-4" />
                 </div>
                 <div className="space-y-2">
                   <p className="font-medium text-gray-900">
@@ -151,14 +151,16 @@ export default function SMSVerificationDocs() {
                   
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Phone Number *</label>
-                    <input 
-                      type="tel" 
-                      placeholder="(XXX) XXX-XXXX" 
-                      className="w-full px-3 py-2 border rounded-md blur-sm"
-                      readOnly
-                    />
+                    <div className="relative">
+                      <input 
+                        type="tel" 
+                        value="(XXX) XXX-XXXX" 
+                        className="w-full px-3 py-2 border rounded-md"
+                        disabled
+                      />
+                    </div>
                     <p className="text-xs text-gray-500">
-                      Personal information has been blurred for privacy
+                      Example field - actual phone numbers are protected
                     </p>
                   </div>
                 </div>
