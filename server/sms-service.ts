@@ -584,8 +584,16 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
       throw new Error(`Phone number ${twilioPhoneNumber} not found in your Twilio account`);
     }
 
-    const phoneNumberSid = phoneNumberData.incoming_phone_numbers[0].sid;
-    logger.log(`📱 Using phone number SID: ${phoneNumberSid}`);
+    const num = phoneNumberData.incoming_phone_numbers[0];
+    const phoneNumberSid = num.sid;
+
+    // Validate that this is actually a toll-free number (8XX)
+    if (!/^\+1(800|833|844|855|866|877|888)\d{7}$/.test(num.phone_number)) {
+      throw new Error(`Number ${num.phone_number} is not toll-free; TFV requires an 8XX number (800, 833, 844, 855, 866, 877, or 888).`);
+    }
+
+    logger.log(`📱 Using toll-free phone number SID: ${phoneNumberSid}`);
+    logger.log(`📞 Number: ${num.phone_number}`);
     logger.log(`🔍 Submitting toll-free verification with snake_case fields`);
 
     // Build form data with correct snake_case field names
@@ -600,12 +608,12 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
     form.append('business_website', 'https://www.thesandwichproject.org');
     form.append('notification_email', 'katie@thesandwichproject.org');
 
-    // Use case (array)
-    form.append('use_case_categories', 'PUBLIC_SERVICE_ANNOUNCEMENT');
+    // Use case (array) - ACCOUNT_NOTIFICATION is better fit for volunteer reminders
+    form.append('use_case_categories', 'ACCOUNT_NOTIFICATION');
     form.append('use_case_summary', 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.');
 
-    // Message volume (string)
-    form.append('message_volume', '1000');
+    // Message volume (string) - explicitly ensure it's a string
+    form.append('message_volume', String(1000));
 
     // Opt-in
     form.append('opt_in_type', 'WEB_FORM');
@@ -629,7 +637,8 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
     form.append('business_registration_number', '87-0939484');
     form.append('business_type', 'NON_PROFIT');
 
-    logger.log(`📤 Submitting with message_volume: 1000`);
+    logger.log(`📤 Submitting TFV with message_volume: 1000, use_case: ACCOUNT_NOTIFICATION`);
+    logger.log(`📷 Opt-in image URL: ${baseUrl}/profile-notifications-signup.png`);
 
     // Submit toll-free verification using REST API with correct snake_case fields
     const response = await fetch('https://messaging.twilio.com/v1/Tollfree/Verifications', {
@@ -641,12 +650,21 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
       body: form,
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Twilio API error: ${response.status} ${errorText}`);
+      // Try to parse JSON error for better debugging
+      try {
+        const errorJson = JSON.parse(responseText);
+        logger.error('❌ Twilio TFV error details:', errorJson);
+        throw new Error(`Twilio API error: ${response.status} [${errorJson.code || 'NO_CODE'}] ${errorJson.message || responseText}`);
+      } catch (parseError) {
+        // If not JSON, throw the raw text
+        throw new Error(`Twilio API error: ${response.status} ${responseText}`);
+      }
     }
 
-    const verification = await response.json();
+    const verification = JSON.parse(responseText);
     logger.log(`✅ Toll-free verification submitted: ${verification.sid}`);
 
     return {
