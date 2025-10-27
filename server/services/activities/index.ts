@@ -313,11 +313,14 @@ export class ActivityService {
       }
 
       // Get all replies (including nested) by querying rootId
-      const replies = await this.getActivities({
+      const allActivities = await this.getActivities({
         rootId: rootId,
         includeDeleted: false,
         limit: 1000, // High limit for threads
       });
+
+      // Filter out the root activity itself from replies
+      const replies = allActivities.filter(activity => activity.id !== rootId);
 
       // Mark all as read for this user
       if (userId) {
