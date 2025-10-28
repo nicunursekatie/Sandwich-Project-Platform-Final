@@ -59,8 +59,8 @@ export default function Landing() {
   const recordWeek = 38828;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-100 p-4">
-      <div className="max-w-6xl mx-auto space-y-12 py-8">
+    <div className="min-h-screen premium-gradient-mesh p-4">
+      <div className="premium-container space-y-12 py-8">
         {/* Hero Section */}
         <div className="text-center space-y-6">
           <div className="flex justify-center">
@@ -70,38 +70,33 @@ export default function Landing() {
               className="h-24 w-auto"
             />
           </div>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="premium-text-body-lg text-gray-600 max-w-3xl mx-auto">
             A 501(c)(3) nonprofit organization serving Georgia communities by
             collecting and distributing sandwiches to fight food insecurity.
             Connecting volunteers, hosts, and nonprofit partners to make a
             lasting impact one sandwich at a time.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button
+            <button
               onClick={handleLogin}
-              size="lg"
-              className="bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-brand-primary/30 group"
+              className="premium-btn-primary premium-btn-lg group"
             >
-              <span className="flex items-center gap-2">
-                Enter Platform
-                <svg
-                  className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                  />
-                </svg>
-              </span>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
+              Enter Platform
+              <svg
+                className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </button>
+            <button
               onClick={() => {
                 logger.log(
                   'Toolkit button clicked, current state:',
@@ -109,68 +104,56 @@ export default function Landing() {
                 );
                 setShowToolkit(!showToolkit);
               }}
-              className="border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg active:scale-95 focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
+              className="premium-btn-outline premium-btn-lg"
             >
               {showToolkit ? 'Hide' : 'View'} Group Toolkit
-            </Button>
+            </button>
           </div>
         </div>
 
         {/* Real-time Statistics - Hidden when toolkit is shown */}
         {!showToolkit && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]">
-              <CardHeader>
-                <img
-                  src={tspTransparent}
-                  alt="TSP Logo"
-                  className="h-12 w-12 mx-auto mb-4 object-contain"
-                />
-                <CardTitle className="text-2xl font-bold">
-                  {totalSandwiches.toLocaleString()}
-                </CardTitle>
-                <CardDescription className="font-semibold">
-                  Sandwiches Delivered
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600">
-                  shared with community members
-                </p>
-              </CardContent>
-            </Card>
+          <div className="premium-grid md:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
+            <div className="premium-card premium-interactive text-center p-6">
+              <img
+                src={tspTransparent}
+                alt="TSP Logo"
+                className="h-12 w-12 mx-auto mb-4 object-contain"
+              />
+              <div className="premium-text-h2 mb-2">
+                {totalSandwiches.toLocaleString()}
+              </div>
+              <div className="premium-text-body font-semibold mb-3" style={{ color: '#236383' }}>
+                Sandwiches Delivered
+              </div>
+              <p className="premium-text-body-sm text-gray-600">
+                shared with community members
+              </p>
+            </div>
 
-            <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]">
-              <CardHeader>
-                <Calendar className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle className="text-2xl font-bold">
-                  {weeklyAverage.toLocaleString()}
-                </CardTitle>
-                <CardDescription className="font-semibold">
-                  Weekly Average
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600">collected each week</p>
-              </CardContent>
-            </Card>
+            <div className="premium-card premium-interactive text-center p-6">
+              <Calendar className="h-12 w-12 mx-auto mb-4" style={{ color: '#007E8C' }} />
+              <div className="premium-text-h2 mb-2">
+                {weeklyAverage.toLocaleString()}
+              </div>
+              <div className="premium-text-body font-semibold mb-3" style={{ color: '#007E8C' }}>
+                Weekly Average
+              </div>
+              <p className="premium-text-body-sm text-gray-600">collected each week</p>
+            </div>
 
-            <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]">
-              <CardHeader>
-                <TrendingUp className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-                <CardTitle className="text-2xl font-bold">
-                  {recordWeek.toLocaleString()}
-                </CardTitle>
-                <CardDescription className="font-semibold">
-                  Record Week
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600">
-                  weekly sandwich collection
-                </p>
-              </CardContent>
-            </Card>
+            <div className="premium-card premium-interactive text-center p-6">
+              <TrendingUp className="h-12 w-12 mx-auto mb-4" style={{ color: '#FBAD3F' }} />
+              <div className="premium-text-h2 mb-2">
+                {recordWeek.toLocaleString()}
+              </div>
+              <div className="premium-text-body font-semibold mb-3" style={{ color: '#FBAD3F' }}>
+                Record Week
+              </div>
+              <p className="premium-text-body-sm text-gray-600">
+                weekly sandwich collection
+              </p>
+            </div>
           </div>
         )}
 
@@ -188,13 +171,12 @@ export default function Landing() {
             </CardHeader>
             <CardContent>
               <div className="mb-4 text-center">
-                <Button
+                <button
                   onClick={handleLogin}
-                  variant="outline"
-                  className="mb-4"
+                  className="premium-btn-outline mb-4"
                 >
                   ← Access Full Platform
-                </Button>
+                </button>
               </div>
               <DocumentsBrowser />
             </CardContent>
@@ -202,123 +184,112 @@ export default function Landing() {
         )}
 
         {/* Efficiency Metrics Section */}
-        <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-green-800">
+        <div className="premium-card-featured p-8">
+          <div className="text-center mb-6">
+            <h2 className="premium-text-h2 mb-2" style={{ color: '#007E8C' }}>
               Proven Impact Efficiency
-            </CardTitle>
-            <CardDescription className="text-lg text-green-700">
+            </h2>
+            <p className="premium-text-body text-gray-600">
               Data-backed claims with measurable results
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center p-4 bg-white/60 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">449K</div>
-                <div className="text-sm font-medium text-gray-700">
-                  Year Output
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  2024 verified weekly totals
-                </div>
+            </p>
+          </div>
+          <div className="premium-grid md:grid-cols-3">
+            <div className="text-center p-6 bg-white rounded-xl elevation-1">
+              <div className="premium-text-h2 mb-1" style={{ color: '#A31C41' }}>449K</div>
+              <div className="premium-text-body-sm font-semibold text-gray-700 mb-1">
+                Year Output
               </div>
-              <div className="text-center p-4 bg-white/60 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">47+</div>
-                <div className="text-sm font-medium text-gray-700">
-                  Mile Radius
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  verified geographic coverage
-                </div>
-              </div>
-              <div className="text-center p-4 bg-white/60 rounded-lg">
-                <div className="text-2xl font-bold text-brand-primary">1,800+</div>
-                <div className="text-sm font-medium text-gray-700">
-                  Weekly Data Points
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  weekly data points tracked
-                </div>
+              <div className="premium-text-caption text-gray-600">
+                2024 verified weekly totals
               </div>
             </div>
-            <div className="mt-6 text-center">
-              <div className="inline-flex items-center gap-2 bg-white/80 px-4 py-2 rounded-full">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-gray-700">
-                  Crisis Response: +100% surge capacity proven during Hurricane
-                  week
-                </span>
+            <div className="text-center p-6 bg-white rounded-xl elevation-1">
+              <div className="premium-text-h2 mb-1" style={{ color: '#FBAD3F' }}>47+</div>
+              <div className="premium-text-body-sm font-semibold text-gray-700 mb-1">
+                Mile Radius
+              </div>
+              <div className="premium-text-caption text-gray-600">
+                verified geographic coverage
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-center p-6 bg-white rounded-xl elevation-1">
+              <div className="premium-text-h2 mb-1" style={{ color: '#236383' }}>1,800+</div>
+              <div className="premium-text-body-sm font-semibold text-gray-700 mb-1">
+                Weekly Data Points
+              </div>
+              <div className="premium-text-caption text-gray-600">
+                weekly data points tracked
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 text-center">
+            <div className="inline-flex items-center gap-2 premium-badge-success px-4 py-2">
+              <TrendingUp className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Crisis Response: +100% surge capacity proven during Hurricane week
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] group">
-            <CardHeader>
-              <div className="w-16 h-16 bg-brand-primary-light rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-primary-soft transition-colors duration-300">
-                <Users className="h-8 w-8 text-brand-primary" />
-              </div>
-              <CardTitle className="group-hover:text-brand-primary transition-colors duration-300">
-                Team Management
-              </CardTitle>
-              <CardDescription>
-                Manage hosts, volunteers, and drivers with comprehensive contact
-                and role management
-              </CardDescription>
-            </CardHeader>
-          </Card>
+        <div className="premium-grid md:grid-cols-3">
+          <div className="premium-card premium-interactive text-center p-6 group">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-all duration-300" style={{ backgroundColor: 'rgba(35, 99, 131, 0.1)' }}>
+              <Users className="h-8 w-8" style={{ color: '#236383' }} />
+            </div>
+            <h3 className="premium-text-h4 mb-3 transition-colors duration-300" style={{ color: '#236383' }}>
+              Team Management
+            </h3>
+            <p className="premium-text-body-sm text-gray-600">
+              Manage hosts, volunteers, and drivers with comprehensive contact
+              and role management
+            </p>
+          </div>
 
-          <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] group">
-            <CardHeader>
-              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors duration-300">
-                <Calendar className="h-8 w-8 text-green-600" />
-              </div>
-              <CardTitle className="group-hover:text-green-600 transition-colors duration-300">
-                Project Coordination
-              </CardTitle>
-              <CardDescription>
-                Track sandwich collections, coordinate meetings, and manage
-                project workflows
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="premium-card premium-interactive text-center p-6 group">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-all duration-300" style={{ backgroundColor: 'rgba(0, 126, 140, 0.1)' }}>
+              <Calendar className="h-8 w-8" style={{ color: '#007E8C' }} />
+            </div>
+            <h3 className="premium-text-h4 mb-3 transition-colors duration-300" style={{ color: '#007E8C' }}>
+              Project Coordination
+            </h3>
+            <p className="premium-text-body-sm text-gray-600">
+              Track sandwich collections, coordinate meetings, and manage
+              project workflows
+            </p>
+          </div>
 
-          <Card className="text-center bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] group">
-            <CardHeader>
-              <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-200 transition-colors duration-300">
-                <MessageSquare className="h-8 w-8 text-purple-600" />
-              </div>
-              <CardTitle className="group-hover:text-purple-600 transition-colors duration-300">
-                Communication Hub
-              </CardTitle>
-              <CardDescription>
-                Real-time messaging, committee discussions, and comprehensive
-                reporting tools
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="premium-card premium-interactive text-center p-6 group">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-all duration-300" style={{ backgroundColor: 'rgba(163, 28, 65, 0.1)' }}>
+              <MessageSquare className="h-8 w-8" style={{ color: '#A31C41' }} />
+            </div>
+            <h3 className="premium-text-h4 mb-3 transition-colors duration-300" style={{ color: '#A31C41' }}>
+              Communication Hub
+            </h3>
+            <p className="premium-text-body-sm text-gray-600">
+              Real-time messaging, committee discussions, and comprehensive
+              reporting tools
+            </p>
+          </div>
         </div>
 
         {/* Contact Information */}
-        <Card className="max-w-md mx-auto">
-          <CardHeader className="text-center">
-            <CardTitle>Get Involved</CardTitle>
-            <CardDescription>
-              Ready to make a difference in your community?
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center space-y-2">
-            <p className="text-sm text-gray-600">
+        <div className="premium-card max-w-md mx-auto text-center p-8">
+          <h3 className="premium-text-h3 mb-2" style={{ color: '#236383' }}>Get Involved</h3>
+          <p className="premium-text-body text-gray-600 mb-4">
+            Ready to make a difference in your community?
+          </p>
+          <div className="space-y-2">
+            <p className="premium-text-body-sm text-gray-600">
               Contact us to learn about volunteer opportunities
             </p>
-            <p className="text-sm font-medium">
+            <p className="premium-text-body font-medium">
               Visit:{' '}
-              <span className="text-brand-primary">thesandwichproject.org</span>
+              <span style={{ color: '#236383' }}>thesandwichproject.org</span>
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
