@@ -1282,7 +1282,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Sandwich Information */}
-            <div className="bg-[#FBAD3F] text-white rounded-lg p-5 shadow-md">
+            <div className="bg-[#A31C41] text-white rounded-lg p-5 shadow-md">
               <div className="flex items-center gap-3 mb-1">
                 <Package className="w-4 h-4" />
                 <span className="font-black text-lg sm:text-xl md:text-2xl">
