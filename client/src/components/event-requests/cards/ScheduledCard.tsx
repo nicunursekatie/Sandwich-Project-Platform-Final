@@ -768,18 +768,18 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   return (
     <Card
       id={`event-card-${request.id}`}
-      className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg hover:shadow-xl transition-shadow`}
+      className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} bg-white border-l-4 ${getStatusBorderColor(request.status)} shadow-sm hover:shadow-md transition-shadow`}
     >
       <CardContent className={`${isMobile ? 'p-4' : 'p-6'} space-y-4`}>
         {/* Header Section */}
-        <div className="flex items-start justify-between gap-4 pb-4">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-200">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#236383]">
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {request.organizationName}
               </h2>
               {request.department && (
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-gray-500">
                   {request.department}
                 </span>
               )}
@@ -914,8 +914,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Contact Information Section */}
         {(request.contactName || request.contactEmail || request.contactPhone || (request.tspContact || request.customTspContact)) && (
-          <div className="bg-[#236383] text-white rounded-lg p-4 space-y-2">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <Users className="w-4 h-4" />
               Contact Information
             </h3>
@@ -947,8 +947,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Event Details Section */}
-        <div className="bg-[#47B3CB] text-white rounded-lg p-4 space-y-3">
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+        <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             Event Details
           </h3>
@@ -1233,8 +1233,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Delivery & Logistics Section */}
-        <div className="bg-[#A31C41] text-white rounded-lg p-4 space-y-3">
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+        <div className="bg-teal-50 rounded-lg p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <Package className="w-4 h-4" />
             Delivery & Logistics
           </h3>
@@ -1313,8 +1313,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Assignments Section */}
         {(driverNeeded > 0 || speakerNeeded > 0 || volunteerNeeded > 0) && (
-          <div className="bg-[#47B3CB] text-white rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <div className="bg-purple-50 rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <Users className="w-4 h-4" />
               Team Assignments
             </h3>
@@ -1515,8 +1515,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           request.duplicateNotes ||
           request.unresponsiveNotes ||
           request.socialMediaPostNotes) && (
-          <div className="bg-[#47B3CB] text-white rounded-lg p-4">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <div className="bg-amber-50 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Notes & Requirements
             </h3>
