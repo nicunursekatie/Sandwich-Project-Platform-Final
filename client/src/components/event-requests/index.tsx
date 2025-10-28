@@ -194,100 +194,91 @@ const EventRequestsManagementContent: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">
+      <div className="space-y-4 premium-gradient-subtle min-h-screen p-4">
         {/* Header */}
-        <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Event Requests Management</h1>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="text-teal-600 hover:text-teal-800 transition-colors">
-                    <HelpCircle className="w-5 h-5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p className="font-semibold mb-1">Event Requests Help</p>
-                  <p className="text-sm">Track and manage all event requests from organizations. Use tabs to filter by status, assign TSP contacts, schedule events, and plan sandwich deliveries.</p>
-                </TooltipContent>
-              </Tooltip>
+        <div className="premium-card p-6">
+          <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex items-center justify-between'}`}>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className={`premium-text-h1 ${isMobile ? '' : ''}`}>Event Requests Management</h1>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs premium-tooltip">
+                    <p className="font-semibold mb-1">Event Requests Help</p>
+                    <p className="text-sm">Track and manage all event requests from organizations. Use tabs to filter by status, assign TSP contacts, schedule events, and plan sandwich deliveries.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="premium-text-body text-brand-primary">
+                {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
+              </p>
             </div>
-            <p className="text-[#236383]">
-              {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
-            </p>
-          </div>
-          <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
             <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
-              <Button
-                onClick={() => {
-                  setShowScheduleCallDialog(false);
-                  setShowOneDayFollowUpDialog(false);
-                  setShowOneMonthFollowUpDialog(false);
-                  setShowToolkitSentDialog(false);
-                  setSelectedEventRequest(null);
-                  setIsEditing(true);
-                  setShowEventDetails(true);
-                }}
-                className="text-white w-full"
-                style={{ backgroundColor: '#007E8C' }}
-                data-testid="button-add-manual-event"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {isMobile ? 'Add Event' : 'Add Manual Event Request'}
-              </Button>
+              <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
+                <button
+                  onClick={() => {
+                    setShowScheduleCallDialog(false);
+                    setShowOneDayFollowUpDialog(false);
+                    setShowOneMonthFollowUpDialog(false);
+                    setShowToolkitSentDialog(false);
+                    setSelectedEventRequest(null);
+                    setIsEditing(true);
+                    setShowEventDetails(true);
+                  }}
+                  className="premium-btn-secondary w-full"
+                  data-testid="button-add-manual-event"
+                >
+                  <Plus className="w-4 h-4" />
+                  {isMobile ? 'Add Event' : 'Add Manual Event Request'}
+                </button>
               <div className={`${isMobile ? 'flex flex-wrap gap-2' : 'flex items-center space-x-2'}`}>
                 <MissingInfoSummaryDialog />
                 <ToolkitSentPendingDialog />
-                <Button
+                <button
                   onClick={() => setShowSandwichPlanningModal(true)}
-                  variant="outline"
-                  className={`flex items-center space-x-2 ${isMobile ? 'flex-1' : ''}`}
+                  className={`premium-btn-outline ${isMobile ? 'flex-1' : ''}`}
                   data-testid="button-sandwich-planning"
                 >
-                  <span className="text-lg mr-1">🥪</span>
+                  <span className="text-lg">🥪</span>
                   <span className={isMobile ? 'hidden' : ''}>Sandwich Planning</span>
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={() => setShowStaffingPlanningModal(true)}
-                  variant="outline"
-                  className={`flex items-center space-x-2 ${isMobile ? 'flex-1' : ''}`}
+                  className={`premium-btn-outline ${isMobile ? 'flex-1' : ''}`}
                   data-testid="button-staffing-planning"
                 >
                   <Users className="w-4 h-4" />
                   <span className={isMobile ? 'hidden' : ''}>Staffing Planning</span>
-                </Button>
+                </button>
               </div>
             </div>
-            <Badge
-              variant="secondary"
-              className="bg-brand-primary text-white px-3 py-1 text-sm self-start"
-            >
+            <span className="premium-badge-info self-start">
               {eventRequests.length} Total Requests
-            </Badge>
+            </span>
           </div>
         </div>
 
         {/* View Mode Toggle - Separate Row */}
         <div className="flex items-center justify-center">
-          <div className="flex items-center gap-1 border rounded-lg p-1 bg-white shadow-sm">
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
+          <div className="premium-card-flat flex items-center gap-1 p-1">
+            <button
               onClick={() => setViewMode('list')}
-              className="gap-2"
+              className={viewMode === 'list' ? 'premium-btn-primary premium-btn-sm' : 'premium-btn-ghost premium-btn-sm'}
             >
               <List className="w-4 h-4" />
               {!isMobile && 'List View'}
-            </Button>
-            <Button
-              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-              size="sm"
+            </button>
+            <button
               onClick={() => setViewMode('calendar')}
-              className="gap-2"
+              className={viewMode === 'calendar' ? 'premium-btn-primary premium-btn-sm' : 'premium-btn-ghost premium-btn-sm'}
             >
               <Calendar className="w-4 h-4" />
               {!isMobile && 'Calendar View'}
-            </Button>
+            </button>
           </div>
         </div>
 
