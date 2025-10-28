@@ -114,7 +114,7 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
   return (
     <div className="space-y-4">
       {!request.eventStartTime && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           <label className="text-sm font-medium">Event Start Time</label>
           <Input
             type="time"
@@ -126,7 +126,7 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
         </div>
       )}
       {!request.eventEndTime && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           <label className="text-sm font-medium">Event End Time</label>
           <Input
             type="time"
@@ -138,7 +138,7 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
         </div>
       )}
       {!request.pickupDateTime && !request.pickupTime && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           <label className="text-sm font-medium">Pickup Date & Time</label>
           <DateTimePicker
             value={tempPickupDateTime}
@@ -729,7 +729,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             min="0"
           />
         ) : inlineSandwichMode === 'range' ? (
-          <div className="space-y-2">
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Input
                 type="number"
@@ -773,7 +773,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </Select>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {inlineSandwichTypes.map((item, index) => (
               <div key={index} className="flex gap-2">
                 <Select
@@ -1084,12 +1084,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Main Content */}
-        <div className="space-y-3">
+        <div className="space-y-1">
           {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
             {/* Event Times */}
-            <div className="bg-[#007E8C] text-white rounded-lg p-3 shadow-md">
-              <div className="flex items-center justify-between mb-2">
+            <div className="bg-[#007E8C] text-white rounded-lg p-2 shadow-md">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   <span className="font-semibold text-sm sm:text-base md:text-lg">Event Times</span>
@@ -1119,13 +1119,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </Dialog>
                 )}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {/* Times - only show if they exist */}
                 {request.eventStartTime ||
                 request.eventEndTime ||
                 request.pickupTime ||
                 request.pickupDateTime ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {request.eventStartTime && (
                       <div className="flex items-center gap-1 group">
                         <span className="text-sm sm:text-base md:text-lg font-medium">Start:</span>
@@ -1282,14 +1282,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Sandwich Information */}
-            <div className="bg-[#FBAD3F] text-white rounded-lg p-3 shadow-md">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="bg-[#FBAD3F] text-white rounded-lg p-2 shadow-md">
+              <div className="flex items-center gap-2 mb-1">
                 <Package className="w-4 h-4" />
                 <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Sandwich Details
                 </span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {renderSandwichEdit()}
                 {request.estimatedAttendance && request.estimatedAttendance > 0 && (
                   <div className="flex items-center gap-2">
@@ -1328,8 +1328,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             </div>
             {/* Delivery Logistics */}
-            <div className="bg-[#47B3CB] text-white rounded-lg p-3 shadow-md">
-              <div className="flex items-center justify-between mb-2">
+            <div className="bg-[#47B3CB] text-white rounded-lg p-2 shadow-md">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
                   <span className="font-semibold text-sm sm:text-base md:text-lg">
@@ -1337,7 +1337,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </span>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {/* Overnight holding field - show value when populated, show add button when empty */}
                 {request.overnightHoldingLocation ? (
                   <div className="flex items-center gap-2">
@@ -1432,7 +1432,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <span className="text-sm font-medium">Recipients:</span>
                   {isEditingThisCard &&
                   editingField === 'assignedRecipientIds' ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <MultiRecipientSelector
                         value={editingValue ? JSON.parse(editingValue) : []}
                         onChange={(ids) => setEditingValue(JSON.stringify(ids))}
@@ -1523,10 +1523,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
           {/* Two-column grid for Contact Information and Team Assignments */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* Contact Information */}
-            <div className="bg-[#236383] text-white rounded-lg p-3 shadow-md">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="bg-[#236383] text-white rounded-lg p-2 shadow-md">
+              <div className="flex items-center gap-2 mb-1">
                 <Users className="w-4 h-4" />
                 <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Contact Information
@@ -1588,8 +1588,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Team Assignments */}
-            <div className="bg-[#A31C41] text-white rounded-lg p-3 shadow-md">
-              <div className="flex items-center justify-between mb-2">
+            <div className="bg-[#A31C41] text-white rounded-lg p-2 shadow-md">
+              <div className="flex items-center justify-between mb-1">
                 <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Team Assignments
                 </span>
@@ -1604,7 +1604,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {/* Drivers */}
                 {driverNeeded > 0 && (
                   <div
@@ -1729,7 +1729,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         : 'bg-white/20 border-white/30'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <Megaphone className="w-4 h-4" />
                         <span className="font-medium">Speakers</span>
@@ -1756,7 +1756,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       )}
                     </div>
                     {((request as any).speakerAudienceType || (request as any).speakerDuration) && (
-                      <div className="text-xs space-y-1 mb-2 text-white/80">
+                      <div className="text-xs space-y-1 mb-1 text-white/80">
                         {(request as any).speakerAudienceType && (
                           <div>Audience: {(request as any).speakerAudienceType}</div>
                         )}
@@ -1830,7 +1830,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         : 'bg-white/20 border-white/30'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4" />
                         <span className="font-medium">Volunteers</span>
@@ -1924,10 +1924,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   Notes & Requirements
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {request.message && (
                   <div className="sm:col-span-2">
-                    <p className="text-sm font-medium mb-2">
+                    <p className="text-sm font-medium mb-1">
                       Original Request Message:
                     </p>
                     <p className="text-sm text-gray-700 bg-brand-primary-lighter p-3 rounded border-l-2 border-brand-primary-border whitespace-pre-wrap">
@@ -1937,7 +1937,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.additionalRequirements && (
                   <div>
-                    <p className="text-sm font-medium mb-2">
+                    <p className="text-sm font-medium mb-1">
                       Special Requirements:
                     </p>
                     <p className="text-sm text-gray-700 bg-amber-50 p-3 rounded border-l-2 border-amber-200 whitespace-pre-wrap">
@@ -1947,7 +1947,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.planningNotes && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-1">
                       <p className="text-sm font-medium">Planning Notes:</p>
                       {canEdit && (
                         <Button
@@ -1966,7 +1966,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       )}
                     </div>
                     {isEditingThisCard && editingField === 'planningNotes' ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <textarea
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
@@ -1998,7 +1998,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.schedulingNotes && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-1">
                       <p className="text-sm font-medium">Scheduling Notes:</p>
                       {canEdit && (
                         <Button
@@ -2017,7 +2017,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       )}
                     </div>
                     {isEditingThisCard && editingField === 'schedulingNotes' ? (
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <textarea
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
@@ -2049,7 +2049,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.volunteerNotes && (
                   <div>
-                    <p className="text-sm font-medium mb-2">Volunteer Notes:</p>
+                    <p className="text-sm font-medium mb-1">Volunteer Notes:</p>
                     <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded border-l-2 border-purple-200 whitespace-pre-wrap">
                       {request.volunteerNotes}
                     </p>
@@ -2057,7 +2057,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.driverNotes && (
                   <div>
-                    <p className="text-sm font-medium mb-2">Driver Notes:</p>
+                    <p className="text-sm font-medium mb-1">Driver Notes:</p>
                     <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded border-l-2 border-orange-200 whitespace-pre-wrap">
                       {request.driverNotes}
                     </p>
@@ -2065,7 +2065,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.vanDriverNotes && (
                   <div>
-                    <p className="text-sm font-medium mb-2">
+                    <p className="text-sm font-medium mb-1">
                       Van Driver Notes:
                     </p>
                     <p className="text-sm text-gray-700 bg-red-50 p-3 rounded border-l-2 border-red-200 whitespace-pre-wrap">
@@ -2075,7 +2075,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.followUpNotes && (
                   <div>
-                    <p className="text-sm font-medium mb-2">Follow-up Notes:</p>
+                    <p className="text-sm font-medium mb-1">Follow-up Notes:</p>
                     <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded border-l-2 border-yellow-200 whitespace-pre-wrap">
                       {request.followUpNotes}
                     </p>
@@ -2083,7 +2083,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.distributionNotes && (
                   <div>
-                    <p className="text-sm font-medium mb-2">
+                    <p className="text-sm font-medium mb-1">
                       Distribution Notes:
                     </p>
                     <p className="text-sm text-gray-700 bg-teal-50 p-3 rounded border-l-2 border-teal-200 whitespace-pre-wrap">
@@ -2093,7 +2093,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.duplicateNotes && (
                   <div>
-                    <p className="text-sm font-medium mb-2">
+                    <p className="text-sm font-medium mb-1">
                       Duplicate Check Notes:
                     </p>
                     <p className="text-sm text-gray-700 bg-pink-50 p-3 rounded border-l-2 border-pink-200">
@@ -2103,7 +2103,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.unresponsiveNotes && (
                   <div>
-                    <p className="text-sm font-medium mb-2">
+                    <p className="text-sm font-medium mb-1">
                       Unresponsive Notes:
                     </p>
                     <p className="text-sm text-gray-700 bg-gray-100 p-3 rounded border-l-2 border-gray-300">
@@ -2113,7 +2113,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.socialMediaPostNotes && (
                   <div>
-                    <p className="text-sm font-medium mb-2">
+                    <p className="text-sm font-medium mb-1">
                       Social Media Notes:
                     </p>
                     <p className="text-sm text-gray-700 bg-indigo-50 p-3 rounded border-l-2 border-indigo-200">
@@ -2127,7 +2127,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
           {/* Action Buttons */}
           <div
-            className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-2 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
+            className={`${isMobile ? 'flex flex-col space-y-1' : 'flex flex-wrap gap-2'} pt-2 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
           >
             <Button
               size="sm"
