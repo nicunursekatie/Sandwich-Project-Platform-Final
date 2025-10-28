@@ -326,11 +326,26 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           if (hostLocation) {
             return { name: hostLocation.name || `Host Location ${numId}`, type };
           }
+          // FALLBACK: Check recipients in case the data was mislabeled
+          const fallbackRecipient = recipients.find(r => r.id === numId);
+          if (fallbackRecipient) {
+            return { name: fallbackRecipient.name || `Recipient ${numId}`, type: 'recipient' };
+          }
           return { name: `Unknown Host (${numId})`, type };
         } else if (type === 'recipient') {
           const recipient = recipients.find(r => r.id === numId);
           if (recipient) {
             return { name: recipient.name || `Recipient ${numId}`, type };
+          }
+          // FALLBACK: Check hosts in case the data was mislabeled
+          const fallbackHostLocation = hostLocations.find(h => h.id === numId);
+          if (fallbackHostLocation) {
+            return { name: fallbackHostLocation.name || `Host ${numId}`, type: 'host' };
+          }
+          const fallbackHostContact = hostContacts.find(hc => hc.id === numId);
+          if (fallbackHostContact) {
+            const resolvedName = fallbackHostContact.displayName || fallbackHostContact.name || fallbackHostContact.hostLocationName;
+            return { name: resolvedName || `Host Contact ${numId}`, type: 'host' };
           }
           return { name: `Unknown Recipient (${numId})`, type };
         }

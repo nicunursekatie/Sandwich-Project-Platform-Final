@@ -1777,16 +1777,56 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           };
         }
         const host = hosts.find(h => h.id === hostId);
+        if (host) {
+          return {
+            name: host.name,
+            type: 'host',
+            icon: <Home className="w-3 h-3 mr-1" />
+          };
+        }
+        // FALLBACK: Check recipients in case the data was mislabeled
+        const fallbackRecipient = recipients.find(r => r.id === hostId);
+        if (fallbackRecipient) {
+          return {
+            name: fallbackRecipient.name || `Recipient (${hostId})`,
+            type: 'recipient',
+            icon: <Building className="w-3 h-3 mr-1" />
+          };
+        }
         return {
-          name: host?.name || `Unknown Host (${hostId})`,
+          name: `Unknown Host (${hostId})`,
           type: 'host',
           icon: <Home className="w-3 h-3 mr-1" />
         };
       } else if (idStr.startsWith('recipient:')) {
         const recipientId = parseInt(idStr.replace('recipient:', ''));
         const recipient = recipients.find(r => r.id === recipientId);
+        if (recipient) {
+          return {
+            name: recipient.name,
+            type: 'recipient',
+            icon: <Building className="w-3 h-3 mr-1" />
+          };
+        }
+        // FALLBACK: Check hosts in case the data was mislabeled
+        const fallbackHost = hosts.find(h => h.id === recipientId);
+        if (fallbackHost) {
+          return {
+            name: fallbackHost.name || `Host (${recipientId})`,
+            type: 'host',
+            icon: <Home className="w-3 h-3 mr-1" />
+          };
+        }
+        const fallbackHostContact = hostContacts.find(hc => hc.id === recipientId);
+        if (fallbackHostContact) {
+          return {
+            name: `${fallbackHostContact.name} (${fallbackHostContact.hostLocation})`,
+            type: 'host',
+            icon: <Home className="w-3 h-3 mr-1" />
+          };
+        }
         return {
-          name: recipient?.name || `Unknown Recipient (${recipientId})`,
+          name: `Unknown Recipient (${recipientId})`,
           type: 'recipient',
           icon: <Building className="w-3 h-3 mr-1" />
         };
