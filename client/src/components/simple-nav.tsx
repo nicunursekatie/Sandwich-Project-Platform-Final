@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { useMessaging } from '@/hooks/useMessaging';
 import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';wil  
+import { apiRequest } from '@/lib/queryClient';
 import { HelpBubble } from '@/components/help-system/HelpBubble';
 import { NavItem } from '@/nav.types';
 import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
