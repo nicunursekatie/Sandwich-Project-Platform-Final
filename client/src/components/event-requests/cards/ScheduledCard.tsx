@@ -153,7 +153,7 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
           />
         </div>
       )}
-      <div className="flex justify-end gap-2 pt-4">
+      <div className="flex justify-end gap-3 pt-4">
         <Button variant="outline" onClick={cancelEdit}>
           Cancel
         </Button>
@@ -496,8 +496,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
     if (isEditing) {
       return (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
             <Input
               type="date"
               value={editingValue}
@@ -512,7 +512,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <X className="w-3 h-3" />
             </Button>
           </div>
-          <div className="flex items-center gap-2 ml-2">
+          <div className="flex items-center gap-3 ml-2">
             <Checkbox
               id={`confirm-date-checkbox-${field}`}
               checked={tempIsConfirmed}
@@ -530,7 +530,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     }
 
     return (
-      <div className="flex items-center gap-2 group">
+      <div className="flex items-center gap-3 group">
         <span className="text-base font-medium text-gray-600">{label}:</span>
         <span className="text-base">{value || 'Not set'}</span>
         {canEdit && (
@@ -559,7 +559,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     if (isEditing) {
       if (type === 'select' && options) {
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Select value={editingValue} onValueChange={setEditingValue}>
               <SelectTrigger className="h-8">
                 <SelectValue />
@@ -583,7 +583,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       }
 
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Input
             type={type}
             value={editingValue}
@@ -602,7 +602,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     }
 
     return (
-      <div className="flex items-center gap-2 group">
+      <div className="flex items-center gap-3 group">
         <span className="text-base font-medium text-gray-600">{label}:</span>
         <span className="text-base">
           {field === 'eventAddress' && value ? (
@@ -657,7 +657,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       }
 
       return (
-        <div className="flex items-center gap-2 group">
+        <div className="flex items-center gap-3 group">
           <Package className="w-4 h-4 text-amber-600" />
           <span className="text-sm sm:text-base md:text-lg font-medium text-gray-600">
             Sandwiches:
@@ -682,7 +682,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       <div className="space-y-3 p-3 bg-amber-50 rounded-lg">
         <div className="flex items-center justify-between">
           <span className="font-medium">Edit Sandwiches</span>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button size="sm" onClick={saveEdit}>
               <Save className="w-3 h-3 mr-1" /> Save
             </Button>
@@ -692,7 +692,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             size="sm"
             variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
@@ -730,7 +730,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           />
         ) : inlineSandwichMode === 'range' ? (
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Input
                 type="number"
                 value={inlineRangeMin}
@@ -775,7 +775,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         ) : (
           <div className="space-y-1">
             {inlineSandwichTypes.map((item, index) => (
-              <div key={index} className="flex gap-2">
+              <div key={index} className="flex gap-3">
                 <Select
                   value={item.type}
                   onValueChange={(value) =>
@@ -836,7 +836,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h3
-              className={`${isMobile ? 'text-base sm:text-lg md:text-xl' : 'text-base sm:text-lg md:text-xl lg:text-2xl'} font-bold text-[#236383] flex items-center gap-2 mb-3 break-words`}
+              className={`${isMobile ? 'text-base sm:text-lg md:text-xl' : 'text-base sm:text-lg md:text-xl lg:text-2xl'} font-bold text-[#236383] flex items-center gap-3 mb-3 break-words`}
             >
               {request.organizationName}
               {request.department && (
@@ -846,7 +846,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
             </h3>
 
-            <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="flex flex-wrap items-center gap-3 mb-4">
               <Badge className="bg-[#FBAD3F] text-white px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center">
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {getStatusLabel(request.status)}
@@ -953,18 +953,18 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Key Information - Prominently Displayed */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               {/* Event Date - Most Important */}
               <div className="bg-gradient-to-br from-[#236383] to-[#1a4d65] text-white rounded-lg p-2 shadow-md text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="flex items-center justify-center gap-3 mb-1">
                   <Calendar className="w-4 h-4" />
                   <span className="font-semibold text-xs uppercase tracking-wide">
                     Event Date
                   </span>
                 </div>
                 {isEditingThisCard && editingField === dateFieldToEdit ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
                       <Input
                         type="date"
                         value={formatDateForInput(editingValue)}
@@ -988,7 +988,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <X className="w-3 h-3" />
                       </Button>
                     </div>
-                    <div className="flex items-center gap-2 ml-2">
+                    <div className="flex items-center gap-3 ml-2">
                       <Checkbox
                         id={`confirm-date-checkbox-${dateFieldToEdit}`}
                         checked={tempIsConfirmed}
@@ -1004,7 +1004,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center gap-2 group">
+                  <div className="flex items-center justify-center gap-3 group">
                     <span className="text-sm sm:text-base md:text-lg font-bold break-words">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </span>
@@ -1030,7 +1030,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {/* Event Address - Google Maps Link */}
               {request.eventAddress && (
                 <div className="bg-gradient-to-br from-[#47B3CB] to-[#2d9bb0] text-white rounded-lg p-2 shadow-md text-center">
-                  <div className="flex items-center justify-center gap-2 mb-1">
+                  <div className="flex items-center justify-center gap-3 mb-1">
                     <MapPin className="w-4 h-4" />
                     <span className="font-semibold text-xs uppercase tracking-wide">
                       Location
@@ -1084,13 +1084,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Main Content */}
-        <div className="space-y-1">
+        <div className="space-y-3">
           {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {/* Event Times */}
-            <div className="bg-[#007E8C] text-white rounded-lg p-2 shadow-md">
+            <div className="bg-[#007E8C] text-white rounded-lg p-1 shadow-md">
               <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <Clock className="w-4 h-4" />
                   <span className="font-semibold text-sm sm:text-base md:text-lg">Event Times</span>
                 </div>
@@ -1224,7 +1224,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       (editingField === 'eventStartTime' ||
                         editingField === 'eventEndTime' ||
                         editingField === 'pickupTime') && (
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-3 mt-2">
                           <Input
                             type="time"
                             value={editingValue}
@@ -1258,7 +1258,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           className="w-full"
                           data-testid="inline-pickup-datetime-picker"
                         />
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-3 mt-2">
                           <Button size="sm" onClick={saveEdit}>
                             <Save className="w-3 h-3" />
                           </Button>
@@ -1282,8 +1282,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Sandwich Information */}
-            <div className="bg-[#FBAD3F] text-white rounded-lg p-2 shadow-md">
-              <div className="flex items-center gap-2 mb-1">
+            <div className="bg-[#FBAD3F] text-white rounded-lg p-1 shadow-md">
+              <div className="flex items-center gap-3 mb-1">
                 <Package className="w-4 h-4" />
                 <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Sandwich Details
@@ -1292,7 +1292,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <div className="space-y-1">
                 {renderSandwichEdit()}
                 {request.estimatedAttendance && request.estimatedAttendance > 0 && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <Users className="w-4 h-4" />
                     <span className="text-sm sm:text-base md:text-lg font-medium">
                       Est. Attendance:
@@ -1303,7 +1303,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </div>
                 )}
                 {((request as any).adultCount > 0 || (request as any).childrenCount > 0) && (
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-3 text-sm">
                     <Users className="w-3 h-3" />
                     <span className="font-medium">Breakdown:</span>
                     {(request as any).adultCount > 0 && (
@@ -1318,7 +1318,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   </div>
                 )}
                 {(request as any).hasRefrigeration !== null && (request as any).hasRefrigeration !== undefined && (
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-3 text-sm">
                     <Package className="w-3 h-3" />
                     <span className="font-medium">
                       Refrigeration: {(request as any).hasRefrigeration ? '✓ Available' : '✗ Not available'}
@@ -1328,9 +1328,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             </div>
             {/* Delivery Logistics */}
-            <div className="bg-[#47B3CB] text-white rounded-lg p-2 shadow-md">
+            <div className="bg-[#47B3CB] text-white rounded-lg p-1 shadow-md">
               <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <Package className="w-4 h-4" />
                   <span className="font-semibold text-sm sm:text-base md:text-lg">
                     Delivery Logistics
@@ -1340,13 +1340,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               <div className="space-y-1">
                 {/* Overnight holding field - show value when populated, show add button when empty */}
                 {request.overnightHoldingLocation ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <span className="text-sm sm:text-base md:text-lg font-medium">
                       Overnight Holding:
                     </span>
                     {isEditingThisCard &&
                     editingField === 'overnightHoldingLocation' ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Input
                           type="text"
                           value={editingValue}
@@ -1387,10 +1387,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 ) : (
                   /* Show add button when field is empty */
                   canEdit && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       {isEditingThisCard &&
                       editingField === 'overnightHoldingLocation' ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <span className="text-base font-medium">
                             Overnight Holding:
                           </span>
@@ -1428,7 +1428,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </div>
                   )
                 )}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                   <span className="text-sm font-medium">Recipients:</span>
                   {isEditingThisCard &&
                   editingField === 'assignedRecipientIds' ? (
@@ -1439,7 +1439,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         placeholder="Select recipient organizations..."
                         data-testid="assigned-recipients-editor"
                       />
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <Button size="sm" onClick={saveEdit}>
                           <Save className="w-3 h-3 mr-1" />
                           Save
@@ -1455,7 +1455,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-2 group">
+                    <div className="flex items-start gap-3 group">
                       <div className="flex flex-wrap gap-1">
                         {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
                           request.assignedRecipientIds.map((recipientId, index) => {
@@ -1523,10 +1523,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
           {/* Two-column grid for Contact Information and Team Assignments */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Contact Information */}
-            <div className="bg-[#236383] text-white rounded-lg p-2 shadow-md">
-              <div className="flex items-center gap-2 mb-1">
+            <div className="bg-[#236383] text-white rounded-lg p-1 shadow-md">
+              <div className="flex items-center gap-3 mb-1">
                 <Users className="w-4 h-4" />
                 <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Contact Information
@@ -1588,7 +1588,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Team Assignments */}
-            <div className="bg-[#A31C41] text-white rounded-lg p-2 shadow-md">
+            <div className="bg-[#A31C41] text-white rounded-lg p-1 shadow-md">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Team Assignments
@@ -1615,7 +1615,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Car className="w-4 h-4" />
                         <span className="font-medium">Drivers</span>
                         <span
@@ -1730,7 +1730,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Megaphone className="w-4 h-4" />
                         <span className="font-medium">Speakers</span>
                         <span
@@ -1831,7 +1831,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Users className="w-4 h-4" />
                         <span className="font-medium">Volunteers</span>
                         <span
@@ -1918,19 +1918,19 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             request.unresponsiveNotes ||
             request.socialMediaPostNotes) && (
             <div className="bg-[#47B3CB] text-white rounded-lg p-3 mb-3 shadow-md">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-3 mb-3">
                 <FileText className="w-4 h-4" />
                 <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Notes & Requirements
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {request.message && (
                   <div className="sm:col-span-2">
                     <p className="text-sm font-medium mb-1">
                       Original Request Message:
                     </p>
-                    <p className="text-sm text-gray-700 bg-brand-primary-lighter p-3 rounded border-l-2 border-brand-primary-border whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-brand-primary-lighter p-4 rounded border-l-2 border-brand-primary-border whitespace-pre-wrap">
                       {request.message}
                     </p>
                   </div>
@@ -1940,7 +1940,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Special Requirements:
                     </p>
-                    <p className="text-sm text-gray-700 bg-amber-50 p-3 rounded border-l-2 border-amber-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-amber-50 p-4 rounded border-l-2 border-amber-200 whitespace-pre-wrap">
                       {request.additionalRequirements}
                     </p>
                   </div>
@@ -1970,11 +1970,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <textarea
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded text-sm min-h-[80px] text-gray-900 bg-gray-50"
+                          className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-gray-50"
                           placeholder="Add planning notes..."
                           autoFocus
                         />
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <Button size="sm" onClick={saveEdit}>
                             <Save className="w-3 h-3 mr-1" />
                             Save
@@ -1990,7 +1990,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 whitespace-pre-wrap">
+                      <p className="text-sm text-gray-700 bg-gray-50 p-4 rounded border border-gray-200 whitespace-pre-wrap">
                         {request.planningNotes}
                       </p>
                     )}
@@ -2021,11 +2021,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <textarea
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded text-sm min-h-[80px] text-gray-900 bg-gray-50"
+                          className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-gray-50"
                           placeholder="Add scheduling notes..."
                           autoFocus
                         />
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <Button size="sm" onClick={saveEdit}>
                             <Save className="w-3 h-3 mr-1" />
                             Save
@@ -2041,7 +2041,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-700 bg-green-50 p-3 rounded border-l-2 border-green-200 whitespace-pre-wrap">
+                      <p className="text-sm text-gray-700 bg-green-50 p-4 rounded border-l-2 border-green-200 whitespace-pre-wrap">
                         {request.schedulingNotes}
                       </p>
                     )}
@@ -2050,7 +2050,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {request.volunteerNotes && (
                   <div>
                     <p className="text-sm font-medium mb-1">Volunteer Notes:</p>
-                    <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded border-l-2 border-purple-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-purple-50 p-4 rounded border-l-2 border-purple-200 whitespace-pre-wrap">
                       {request.volunteerNotes}
                     </p>
                   </div>
@@ -2058,7 +2058,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {request.driverNotes && (
                   <div>
                     <p className="text-sm font-medium mb-1">Driver Notes:</p>
-                    <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded border-l-2 border-orange-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-orange-50 p-4 rounded border-l-2 border-orange-200 whitespace-pre-wrap">
                       {request.driverNotes}
                     </p>
                   </div>
@@ -2068,7 +2068,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Van Driver Notes:
                     </p>
-                    <p className="text-sm text-gray-700 bg-red-50 p-3 rounded border-l-2 border-red-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-red-50 p-4 rounded border-l-2 border-red-200 whitespace-pre-wrap">
                       {request.vanDriverNotes}
                     </p>
                   </div>
@@ -2076,7 +2076,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 {request.followUpNotes && (
                   <div>
                     <p className="text-sm font-medium mb-1">Follow-up Notes:</p>
-                    <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded border-l-2 border-yellow-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-yellow-50 p-4 rounded border-l-2 border-yellow-200 whitespace-pre-wrap">
                       {request.followUpNotes}
                     </p>
                   </div>
@@ -2086,7 +2086,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Distribution Notes:
                     </p>
-                    <p className="text-sm text-gray-700 bg-teal-50 p-3 rounded border-l-2 border-teal-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-teal-50 p-4 rounded border-l-2 border-teal-200 whitespace-pre-wrap">
                       {request.distributionNotes}
                     </p>
                   </div>
@@ -2096,7 +2096,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Duplicate Check Notes:
                     </p>
-                    <p className="text-sm text-gray-700 bg-pink-50 p-3 rounded border-l-2 border-pink-200">
+                    <p className="text-sm text-gray-700 bg-pink-50 p-4 rounded border-l-2 border-pink-200">
                       {request.duplicateNotes}
                     </p>
                   </div>
@@ -2106,7 +2106,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Unresponsive Notes:
                     </p>
-                    <p className="text-sm text-gray-700 bg-gray-100 p-3 rounded border-l-2 border-gray-300">
+                    <p className="text-sm text-gray-700 bg-gray-100 p-4 rounded border-l-2 border-gray-300">
                       {request.unresponsiveNotes}
                     </p>
                   </div>
@@ -2116,7 +2116,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     <p className="text-sm font-medium mb-1">
                       Social Media Notes:
                     </p>
-                    <p className="text-sm text-gray-700 bg-indigo-50 p-3 rounded border-l-2 border-indigo-200">
+                    <p className="text-sm text-gray-700 bg-indigo-50 p-4 rounded border-l-2 border-indigo-200">
                       {request.socialMediaPostNotes}
                     </p>
                   </div>
@@ -2127,7 +2127,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
           {/* Action Buttons */}
           <div
-            className={`${isMobile ? 'flex flex-col space-y-1' : 'flex flex-wrap gap-2'} pt-2 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
+            className={`${isMobile ? 'flex flex-col space-y-1' : 'flex flex-wrap gap-3'} pt-2 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
           >
             <Button
               size="sm"
@@ -2176,7 +2176,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
               data-testid="button-toggle-audit-log"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <History className="w-4 h-4" />
                 <span className="text-sm">Activity History</span>
               </div>
