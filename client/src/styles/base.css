@@ -72,6 +72,11 @@ body {
     --color-destructive-foreground: 0 0% 100%; /* #FFFFFF */
     --color-ring: 197 100% 37%; /* #007EBC */
     --radius: 0.5rem;
+    /* Premium design system radius values */
+    --radius-premium-sm: 8px;
+    --radius-premium-md: 12px;
+    --radius-premium-lg: 16px;
+    --radius-premium-xl: 20px;
     --color-gradient-from: 210 100% 98%;
     --color-gradient-via: 220 50% 96%;
     --color-gradient-to: 230 25% 94%;
