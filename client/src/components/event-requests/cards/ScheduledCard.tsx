@@ -953,7 +953,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
 
             {/* Key Information - Prominently Displayed */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
               {/* Event Date - Most Important */}
               <div className="bg-gradient-to-br from-[#236383] to-[#1a4d65] text-white rounded-lg p-2 shadow-md text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
@@ -1086,7 +1086,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {/* Main Content */}
         <div className="space-y-3">
           {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {/* Event Times */}
             <div className="bg-[#007E8C] text-white rounded-lg p-3 shadow-md">
               <div className="flex items-center justify-between mb-2">
@@ -1523,7 +1523,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
 
           {/* Two-column grid for Contact Information and Team Assignments */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Contact Information */}
             <div className="bg-[#236383] text-white rounded-lg p-3 shadow-md">
               <div className="flex items-center gap-2 mb-2">
@@ -1924,9 +1924,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   Notes & Requirements
                 </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {request.message && (
-                  <div className="md:col-span-2">
+                  <div className="sm:col-span-2">
                     <p className="text-sm font-medium mb-2">
                       Original Request Message:
                     </p>
