@@ -107,6 +107,7 @@ const GoogleCalendarAvailability = lazy(() => import('@/pages/google-calendar-av
 const RouteMapView = lazy(() => import('@/pages/route-map'));
 const Help = lazy(() => import('@/pages/Help'));
 const AdminSettings = lazy(() => import('@/pages/admin-settings'));
+const DesignSystemShowcase = lazy(() => import('@/pages/design-system-showcase'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -460,6 +461,8 @@ export default function Dashboard({
         return <AdminSettings />;
       case 'help':
         return <Help />;
+      case 'design-system':
+        return <DesignSystemShowcase />;
       default:
         // Handle project detail pages
         if (projectId) {
