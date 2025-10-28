@@ -1917,38 +1917,38 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             request.duplicateNotes ||
             request.unresponsiveNotes ||
             request.socialMediaPostNotes) && (
-            <div className="bg-[#47B3CB] text-white rounded-lg p-2 mb-3 shadow-md">
-              <div className="flex items-center gap-2 mb-2 px-1">
+            <div className="bg-[#47B3CB] text-white rounded-lg p-3 mb-3 shadow-md">
+              <div className="flex items-center gap-2 mb-3">
                 <FileText className="w-4 h-4" />
-                <span className="font-medium text-sm">
+                <span className="font-semibold text-sm sm:text-base md:text-lg">
                   Notes & Requirements
                 </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {request.message && (
                   <div className="md:col-span-2">
-                    <p className="text-xs font-medium mb-1">
+                    <p className="text-sm font-medium mb-2">
                       Original Request Message:
                     </p>
-                    <p className="text-xs text-gray-700 bg-brand-primary-lighter p-2 rounded border-l-2 border-brand-primary-border whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-brand-primary-lighter p-3 rounded border-l-2 border-brand-primary-border whitespace-pre-wrap">
                       {request.message}
                     </p>
                   </div>
                 )}
                 {request.additionalRequirements && (
                   <div>
-                    <p className="text-xs font-medium mb-1">
+                    <p className="text-sm font-medium mb-2">
                       Special Requirements:
                     </p>
-                    <p className="text-xs text-gray-700 bg-amber-50 p-2 rounded border-l-2 border-amber-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-amber-50 p-3 rounded border-l-2 border-amber-200 whitespace-pre-wrap">
                       {request.additionalRequirements}
                     </p>
                   </div>
                 )}
                 {request.planningNotes && (
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium">Planning Notes:</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium">Planning Notes:</p>
                       {canEdit && (
                         <Button
                           size="sm"
@@ -1959,9 +1959,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               request.planningNotes || ''
                             )
                           }
-                          className="h-5 px-1 text-xs hover:bg-white/20"
+                          className="h-6 px-2 text-sm hover:bg-white/20"
                         >
-                          <Edit2 className="w-3 h-3" />
+                          <Edit2 className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
@@ -1990,7 +1990,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-700 bg-white p-2 rounded border whitespace-pre-wrap">
+                      <p className="text-sm text-gray-700 bg-white p-3 rounded border whitespace-pre-wrap">
                         {request.planningNotes}
                       </p>
                     )}
@@ -1998,8 +1998,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.schedulingNotes && (
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium">Scheduling Notes:</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium">Scheduling Notes:</p>
                       {canEdit && (
                         <Button
                           size="sm"
@@ -2010,9 +2010,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               request.schedulingNotes || ''
                             )
                           }
-                          className="h-5 px-1 text-xs hover:bg-white/20"
+                          className="h-6 px-2 text-sm hover:bg-white/20"
                         >
-                          <Edit2 className="w-3 h-3" />
+                          <Edit2 className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
@@ -2041,7 +2041,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-700 bg-green-50 p-2 rounded border-l-2 border-green-200 whitespace-pre-wrap">
+                      <p className="text-sm text-gray-700 bg-green-50 p-3 rounded border-l-2 border-green-200 whitespace-pre-wrap">
                         {request.schedulingNotes}
                       </p>
                     )}
@@ -2049,74 +2049,74 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 )}
                 {request.volunteerNotes && (
                   <div>
-                    <p className="text-xs font-medium mb-1">Volunteer Notes:</p>
-                    <p className="text-xs text-gray-700 bg-purple-50 p-2 rounded border-l-2 border-purple-200 whitespace-pre-wrap">
+                    <p className="text-sm font-medium mb-2">Volunteer Notes:</p>
+                    <p className="text-sm text-gray-700 bg-purple-50 p-3 rounded border-l-2 border-purple-200 whitespace-pre-wrap">
                       {request.volunteerNotes}
                     </p>
                   </div>
                 )}
                 {request.driverNotes && (
                   <div>
-                    <p className="text-xs font-medium mb-1">Driver Notes:</p>
-                    <p className="text-xs text-gray-700 bg-orange-50 p-2 rounded border-l-2 border-orange-200 whitespace-pre-wrap">
+                    <p className="text-sm font-medium mb-2">Driver Notes:</p>
+                    <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded border-l-2 border-orange-200 whitespace-pre-wrap">
                       {request.driverNotes}
                     </p>
                   </div>
                 )}
                 {request.vanDriverNotes && (
                   <div>
-                    <p className="text-xs font-medium mb-1">
+                    <p className="text-sm font-medium mb-2">
                       Van Driver Notes:
                     </p>
-                    <p className="text-xs text-gray-700 bg-red-50 p-2 rounded border-l-2 border-red-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-red-50 p-3 rounded border-l-2 border-red-200 whitespace-pre-wrap">
                       {request.vanDriverNotes}
                     </p>
                   </div>
                 )}
                 {request.followUpNotes && (
                   <div>
-                    <p className="text-xs font-medium mb-1">Follow-up Notes:</p>
-                    <p className="text-xs text-gray-700 bg-yellow-50 p-2 rounded border-l-2 border-yellow-200 whitespace-pre-wrap">
+                    <p className="text-sm font-medium mb-2">Follow-up Notes:</p>
+                    <p className="text-sm text-gray-700 bg-yellow-50 p-3 rounded border-l-2 border-yellow-200 whitespace-pre-wrap">
                       {request.followUpNotes}
                     </p>
                   </div>
                 )}
                 {request.distributionNotes && (
                   <div>
-                    <p className="text-xs font-medium mb-1">
+                    <p className="text-sm font-medium mb-2">
                       Distribution Notes:
                     </p>
-                    <p className="text-xs text-gray-700 bg-teal-50 p-2 rounded border-l-2 border-teal-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-teal-50 p-3 rounded border-l-2 border-teal-200 whitespace-pre-wrap">
                       {request.distributionNotes}
                     </p>
                   </div>
                 )}
                 {request.duplicateNotes && (
                   <div>
-                    <p className="text-xs font-medium mb-1">
+                    <p className="text-sm font-medium mb-2">
                       Duplicate Check Notes:
                     </p>
-                    <p className="text-xs text-gray-700 bg-pink-50 p-2 rounded border-l-2 border-pink-200">
+                    <p className="text-sm text-gray-700 bg-pink-50 p-3 rounded border-l-2 border-pink-200">
                       {request.duplicateNotes}
                     </p>
                   </div>
                 )}
                 {request.unresponsiveNotes && (
                   <div>
-                    <p className="text-xs font-medium mb-1">
+                    <p className="text-sm font-medium mb-2">
                       Unresponsive Notes:
                     </p>
-                    <p className="text-xs text-gray-700 bg-gray-100 p-2 rounded border-l-2 border-gray-300">
+                    <p className="text-sm text-gray-700 bg-gray-100 p-3 rounded border-l-2 border-gray-300">
                       {request.unresponsiveNotes}
                     </p>
                   </div>
                 )}
                 {request.socialMediaPostNotes && (
                   <div>
-                    <p className="text-xs font-medium mb-1">
+                    <p className="text-sm font-medium mb-2">
                       Social Media Notes:
                     </p>
-                    <p className="text-xs text-gray-700 bg-indigo-50 p-2 rounded border-l-2 border-indigo-200">
+                    <p className="text-sm text-gray-700 bg-indigo-50 p-3 rounded border-l-2 border-indigo-200">
                       {request.socialMediaPostNotes}
                     </p>
                   </div>
