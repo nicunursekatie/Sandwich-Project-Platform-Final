@@ -2126,77 +2126,77 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Action Buttons */}
-          <div
-            className={`${isMobile ? 'flex flex-col space-y-1' : 'flex flex-wrap gap-3'} pt-2 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
+        <div
+          className={`${isMobile ? 'flex flex-col space-y-1' : 'flex flex-wrap gap-3'} pt-2 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
+        >
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onContact}
+            className="!bg-[#007e8c] !text-[#ffffff] !border-[#007e8c] hover:!bg-[#006975] hover:!text-white"
           >
+            Contact Organizer
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onLogContact}
+            className="text-[16px] border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+          >
+            <MessageSquare className="w-4 h-4 mr-1" />
+            Log Contact
+          </Button>
+          <Button size="sm" variant="outline" onClick={onReschedule}>
+            Reschedule
+          </Button>
+          <Button size="sm" onClick={onFollowUp}>
+            Follow Up
+          </Button>
+
+          {/* TSP Contact Assignment - only show if not already assigned */}
+          {!(request.tspContact || request.customTspContact) && (
             <Button
               size="sm"
               variant="outline"
-              onClick={onContact}
-              className="!bg-[#007e8c] !text-[#ffffff] !border-[#007e8c] hover:!bg-[#006975] hover:!text-white"
+              onClick={onAssignTspContact}
+              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
             >
-              Contact Organizer
+              <UserPlus className="w-4 h-4 mr-1" />
+              Assign TSP Contact
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onLogContact}
-              className="text-[16px] border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
-            >
-              <MessageSquare className="w-4 h-4 mr-1" />
-              Log Contact
-            </Button>
-            <Button size="sm" variant="outline" onClick={onReschedule}>
-              Reschedule
-            </Button>
-            <Button size="sm" onClick={onFollowUp}>
-              Follow Up
-            </Button>
+          )}
+        </div>
 
-            {/* TSP Contact Assignment - only show if not already assigned */}
-            {!(request.tspContact || request.customTspContact) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onAssignTspContact}
-                className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
-              >
-                <UserPlus className="w-4 h-4 mr-1" />
-                Assign TSP Contact
-              </Button>
+        {/* Activity History */}
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAuditLog(!showAuditLog)}
+            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
+            data-testid="button-toggle-audit-log"
+          >
+            <div className="flex items-center gap-3">
+              <History className="w-4 h-4" />
+              <span className="text-sm">Activity History</span>
+            </div>
+            {showAuditLog ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
             )}
-          </div>
+          </Button>
 
-          {/* Activity History */}
-          <div className="mt-4 border-t border-gray-200 pt-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAuditLog(!showAuditLog)}
-              className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
-              data-testid="button-toggle-audit-log"
-            >
-              <div className="flex items-center gap-3">
-                <History className="w-4 h-4" />
-                <span className="text-sm">Activity History</span>
-              </div>
-              {showAuditLog ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </Button>
-            
-            {showAuditLog && (
-              <div className="mt-3" data-testid="audit-log-section">
-                <EventRequestAuditLog
-                  eventId={request.id?.toString()}
-                  showFilters={false}
-                  compact={true}
-                />
-              </div>
-            )}
-          </div>
+          {showAuditLog && (
+            <div className="mt-3" data-testid="audit-log-section">
+              <EventRequestAuditLog
+                eventId={request.id?.toString()}
+                showFilters={false}
+                compact={true}
+              />
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
