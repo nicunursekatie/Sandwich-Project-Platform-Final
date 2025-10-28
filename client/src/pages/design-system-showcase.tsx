@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Heart,
   Check,
@@ -20,7 +19,7 @@ import {
  */
 
 export default function DesignSystemShowcase() {
-  const [progress, setProgress] = useState(65);
+  const progress = 65;
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
