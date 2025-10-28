@@ -1970,7 +1970,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <textarea
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded text-xs min-h-[60px] text-gray-900 bg-white"
+                          className="w-full p-3 border border-gray-300 rounded text-sm min-h-[80px] text-gray-900 bg-gray-50"
                           placeholder="Add planning notes..."
                           autoFocus
                         />
@@ -1990,7 +1990,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-700 bg-white p-3 rounded border whitespace-pre-wrap">
+                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 whitespace-pre-wrap">
                         {request.planningNotes}
                       </p>
                     )}
@@ -2021,7 +2021,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <textarea
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded text-xs min-h-[60px] text-gray-900 bg-white"
+                          className="w-full p-3 border border-gray-300 rounded text-sm min-h-[80px] text-gray-900 bg-gray-50"
                           placeholder="Add scheduling notes..."
                           autoFocus
                         />
