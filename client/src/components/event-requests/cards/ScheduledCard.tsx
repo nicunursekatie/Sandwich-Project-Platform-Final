@@ -235,6 +235,18 @@ interface ScheduledCardProps {
   canEdit?: boolean;
 }
 
+// Helper to get status border color
+const getStatusBorderColor = (status: string): string => {
+  const colors: Record<string, string> = {
+    new: 'border-l-blue-500',
+    in_process: 'border-l-yellow-500',
+    scheduled: 'border-l-green-500',
+    completed: 'border-l-emerald-600',
+    declined: 'border-l-red-500',
+  };
+  return colors[status] || 'border-l-gray-400';
+};
+
 export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   request,
   editingField,
@@ -290,43 +302,38 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     hostLocationName: string;
   }>>({
     queryKey: ['/api/hosts/host-contacts'],
-    staleTime: 1 * 60 * 1000, // Reduced to 1 minute
+    staleTime: 1 * 60 * 1000,
   });
 
   const { data: recipients = [], isLoading: recipientsLoading } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ['/api/recipients'],
-    staleTime: 1 * 60 * 1000, // Reduced to 1 minute
+    staleTime: 1 * 60 * 1000,
   });
 
   const { data: hostLocations = [], isLoading: hostLocationsLoading } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ['/api/hosts'],
-    staleTime: 1 * 60 * 1000, // Reduced to 1 minute
+    staleTime: 1 * 60 * 1000,
   });
 
   // Helper to resolve recipient display name from ID
   const resolveRecipientName = (recipientId: string): { name: string; type: string } => {
     if (recipientId.includes(':')) {
-      // New format: "host:16" or "recipient:23" or "custom:Custom Text"
       const [type, ...rest] = recipientId.split(':');
       const value = rest.join(':');
       
-      // If it's a numeric ID after the colon, look it up
       if (!isNaN(Number(value))) {
         const numId = Number(value);
         
         if (type === 'host') {
-          // Look up in host contacts first
           const hostContact = hostContacts.find(hc => hc.id === numId);
           if (hostContact) {
             const resolvedName = hostContact.displayName || hostContact.name || hostContact.hostLocationName;
             return { name: resolvedName || `Host Contact ${numId}`, type };
           }
-          // Then try host locations
           const hostLocation = hostLocations.find(h => h.id === numId);
           if (hostLocation) {
             return { name: hostLocation.name || `Host Location ${numId}`, type };
           }
-          // FALLBACK: Check recipients in case the data was mislabeled
           const fallbackRecipient = recipients.find(r => r.id === numId);
           if (fallbackRecipient) {
             return { name: fallbackRecipient.name || `Recipient ${numId}`, type: 'recipient' };
@@ -337,7 +344,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           if (recipient) {
             return { name: recipient.name || `Recipient ${numId}`, type };
           }
-          // FALLBACK: Check hosts in case the data was mislabeled
           const fallbackHostLocation = hostLocations.find(h => h.id === numId);
           if (fallbackHostLocation) {
             return { name: fallbackHostLocation.name || `Host ${numId}`, type: 'host' };
@@ -351,29 +357,23 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         }
       }
       
-      // Not numeric or custom type - return as-is
       return { name: value, type };
     }
 
-    // Legacy format: just a number
     if (!isNaN(Number(recipientId))) {
       const numId = Number(recipientId);
 
-      // If data is still loading, show loading indicator
       if (hostContactsLoading || hostLocationsLoading || recipientsLoading) {
         return { name: `Loading...`, type: 'unknown' };
       }
 
-      // Try to find in host locations FIRST (most common case)
       const hostLocation = hostLocations.find(h => h.id === numId);
       if (hostLocation) {
         return { name: hostLocation.name || `Host Location ${numId}`, type: 'host' };
       }
 
-      // Try to find in host contacts
       const hostContact = hostContacts.find(h => h.id === numId);
       if (hostContact) {
-        // Ensure we have a valid name - displayName should always be set by the server
         const resolvedName = hostContact.displayName || hostContact.name || hostContact.hostLocationName;
         return {
           name: resolvedName || `Host Contact ${numId}`,
@@ -381,17 +381,14 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         };
       }
 
-      // Try to find in recipients
       const recipient = recipients.find(r => r.id === numId);
       if (recipient) {
         return { name: recipient.name || `Recipient ${numId}`, type: 'recipient' };
       }
 
-      // Fallback if not found after all data loaded
       return { name: `Unknown ID #${recipientId}`, type: 'unknown' };
     }
 
-    // Legacy text format
     return { name: recipientId, type: 'custom' };
   };
 
@@ -431,18 +428,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     if (id.startsWith('custom-')) {
       const parts = id.split('-');
       if (parts.length >= 3) {
-        // Extract name parts (everything after "custom-" and the timestamp)
         const nameParts = parts.slice(2);
         const cleanName = nameParts.join('-').replace(/-/g, ' ');
-
-        // Return the cleaned name, or fallback if empty
         return cleanName.trim() || 'Custom Volunteer';
       }
-      // If custom ID doesn't have enough parts, return a fallback
       return 'Custom Volunteer';
     }
 
-    // For non-custom IDs, return as-is
     return id;
   };
 
@@ -490,67 +482,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
   }
 
-  // Special renderer for date fields with confirmation checkbox
-  const renderEditableDateField = (field: string, value: any, label: string) => {
-    const isEditing = isEditingThisCard && editingField === field;
-
-    if (isEditing) {
-      return (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <Input
-              type="date"
-              value={editingValue}
-              onChange={(e) => setEditingValue(e.target.value)}
-              className="h-8 w-40 text-gray-900 bg-white"
-              autoFocus
-            />
-            <Button size="sm" onClick={saveEdit}>
-              <Save className="w-3 h-3" />
-            </Button>
-            <Button size="sm" variant="ghost" onClick={cancelEdit}>
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-          <div className="flex items-center gap-3 ml-2">
-            <Checkbox
-              id={`confirm-date-checkbox-${field}`}
-              checked={tempIsConfirmed}
-              onCheckedChange={(checked) => setTempIsConfirmed(!!checked)}
-            />
-            <label
-              htmlFor={`confirm-date-checkbox-${field}`}
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-            >
-              Mark as confirmed by our team
-            </label>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center gap-3 group">
-        <span className="text-base font-medium text-gray-600">{label}:</span>
-        <span className="text-base">{value || 'Not set'}</span>
-        {canEdit && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => startEditing(field, value?.toString() || '')}
-            className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-          >
-            <Edit2 className="w-3 h-3" />
-          </Button>
-        )}
-      </div>
-    );
-  };
-
   const renderEditableField = (
     field: string,
     value: any,
     label: string,
+    icon?: React.ReactNode,
     type: 'text' | 'time' | 'number' | 'select' = 'text',
     options?: { value: string; label: string }[]
   ) => {
@@ -559,7 +495,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     if (isEditing) {
       if (type === 'select' && options) {
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {icon && <span className="text-gray-500">{icon}</span>}
+            <span className="text-sm font-medium text-gray-600 min-w-[100px]">{label}:</span>
             <Select value={editingValue} onValueChange={setEditingValue}>
               <SelectTrigger className="h-8">
                 <SelectValue />
@@ -583,7 +521,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       }
 
       return (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {icon && <span className="text-gray-500">{icon}</span>}
+          <span className="text-sm font-medium text-gray-600 min-w-[100px]">{label}:</span>
           <Input
             type={type}
             value={editingValue}
@@ -602,15 +542,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     }
 
     return (
-      <div className="flex items-center gap-3 group">
-        <span className="text-base font-medium text-gray-600">{label}:</span>
-        <span className="text-base">
+      <div className="flex items-center gap-2 group">
+        {icon && <span className="text-gray-500">{icon}</span>}
+        <span className="text-sm font-medium text-gray-600 min-w-[100px]">{label}:</span>
+        <span className="text-sm text-gray-900">
           {field === 'eventAddress' && value ? (
             <a
               href={`https://maps.google.com/maps?q=${encodeURIComponent(value)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-primary-muted hover:text-brand-primary-dark hover:underline"
+              className="text-blue-600 hover:text-blue-800 hover:underline"
             >
               {value}
             </a>
@@ -641,7 +582,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
   const renderSandwichEdit = () => {
     if (!(isEditingThisCard && editingField === 'sandwichTypes')) {
-      // Check if there's a range instead of exact count
       const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
 
       let sandwichInfo;
@@ -657,12 +597,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       }
 
       return (
-        <div className="flex items-center gap-3 group">
-          <Package className="w-4 h-4 text-amber-600" />
-          <span className="text-sm sm:text-base md:text-lg font-medium text-gray-600">
-            Sandwiches:
-          </span>
-          <span className="text-sm sm:text-base md:text-lg font-semibold break-words">{sandwichInfo}</span>
+        <div className="flex items-center gap-2 group">
+          <Package className="w-4 h-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-600 min-w-[100px]">Sandwiches:</span>
+          <span className="text-sm text-gray-900 font-semibold">{sandwichInfo}</span>
           {canEdit && (
             <Button
               size="sm"
@@ -677,12 +615,11 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
       );
     }
 
-    // Editing sandwich types
     return (
-      <div className="space-y-3 p-3 bg-amber-50 rounded-lg">
+      <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
         <div className="flex items-center justify-between">
-          <span className="font-medium">Edit Sandwiches</span>
-          <div className="flex gap-3">
+          <span className="font-medium text-sm">Edit Sandwiches</span>
+          <div className="flex gap-2">
             <Button size="sm" onClick={saveEdit}>
               <Save className="w-3 h-3 mr-1" /> Save
             </Button>
@@ -692,7 +629,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <Button
             size="sm"
             variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
@@ -729,8 +666,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             min="0"
           />
         ) : inlineSandwichMode === 'range' ? (
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
               <Input
                 type="number"
                 value={inlineRangeMin}
@@ -773,9 +710,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </Select>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {inlineSandwichTypes.map((item, index) => (
-              <div key={index} className="flex gap-3">
+              <div key={index} className="flex gap-2">
                 <Select
                   value={item.type}
                   onValueChange={(value) =>
@@ -826,238 +763,130 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     );
   };
 
+  const missingInfo = getMissingIntakeInfo(request);
+
   return (
     <Card
       id={`event-card-${request.id}`}
-      className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} transition-all duration-200 hover:shadow-lg bg-gradient-to-br from-[#fef3e2] via-[#FBAD3F]/60 to-[#FBAD3F]/40 border border-[#FBAD3F]/30 shadow-lg`}
+      className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} bg-white border-l-4 ${getStatusBorderColor(request.status)} shadow-sm hover:shadow-md transition-shadow`}
     >
-      <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
-        {/* Header with Organization and Status */}
-        <div className="flex items-start justify-between mb-4">
+      <CardContent className={`${isMobile ? 'p-4' : 'p-6'} space-y-4`}>
+        {/* Header Section */}
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-200">
           <div className="flex-1">
-            <h1
-              className={`${isMobile ? 'text-xl sm:text-2xl md:text-3xl' : 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl'} font-black text-[#236383] flex items-center gap-3 mb-4 break-words leading-tight`}
-            >
-              {request.organizationName}
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                {request.organizationName}
+              </h2>
               {request.department && (
-                <span className="text-sm sm:text-base md:text-lg font-normal text-[#646464] break-words">
-                  &bull; {request.department}
+                <span className="text-sm text-gray-500">
+                  {request.department}
                 </span>
               )}
-            </h1>
+            </div>
 
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <Badge className="bg-[#FBAD3F] text-white px-2 py-0.5 text-xs font-medium shadow-sm inline-flex items-center">
-                <StatusIcon className="w-2 h-2 mr-1" />
+            {/* Status Badges Group */}
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <Badge variant="outline" className="bg-white text-gray-700 border-gray-300">
+                <StatusIcon className="w-3 h-3 mr-1" />
                 {getStatusLabel(request.status)}
               </Badge>
 
-              {/* Confirmation Status Badge - Click to toggle */}
               <Badge
                 onClick={() => quickToggleBoolean('isConfirmed', request.isConfirmed)}
-                className={`px-2 py-0.5 text-xs font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
+                className={`cursor-pointer hover:opacity-80 transition-opacity ${
                   request.isConfirmed
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-400 text-white'
+                    ? 'bg-green-100 text-green-800 border-green-300'
+                    : 'bg-gray-100 text-gray-600 border-gray-300'
                 }`}
+                variant="outline"
                 title="Click to toggle confirmation status"
               >
                 {request.isConfirmed ? '✓ Date Confirmed' : 'Date Requested'}
               </Badge>
 
-              {/* Manual Entry Badge - for events not from Google Sheets */}
-              {request.externalId && request.externalId.startsWith('manual-') && (
-                <Badge className="bg-purple-600 text-white px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center">
-                  <FileText className="w-3 h-3 mr-1" />
-                  Manual Entry
-                </Badge>
-              )}
-
-              {/* Official Sheet Status Badge - Click to toggle */}
               <Badge
                 onClick={() => quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
-                className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
+                className={`cursor-pointer hover:opacity-80 transition-opacity ${
                   request.addedToOfficialSheet
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-300 text-gray-700'
+                    ? 'bg-blue-100 text-blue-800 border-blue-300'
+                    : 'bg-gray-100 text-gray-600 border-gray-300'
                 }`}
-                title="Click to toggle whether this event has been added to the official Google Sheet"
+                variant="outline"
+                title="Click to toggle official sheet status"
               >
                 {request.addedToOfficialSheet ? '✓ On Official Sheet' : 'Not on Official Sheet'}
               </Badge>
 
-              {/* Validation badges for missing intake info */}
-              {(() => {
-                const missingInfo = getMissingIntakeInfo(request);
-                if (missingInfo.length === 0) return null;
-                
-                // Always show individual badges listing each missing item
-                return missingInfo.map((item) => (
+              {request.externalId && request.externalId.startsWith('manual-') && (
+                <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">
+                  <FileText className="w-3 h-3 mr-1" />
+                  Manual Entry
+                </Badge>
+              )}
+            </div>
+
+            {/* Validation Badges Group */}
+            {missingInfo.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                {missingInfo.map((item) => (
                   <Badge 
                     key={item}
                     variant="outline"
-                    className="bg-red-50 text-red-700 border-red-300 px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center"
+                    className="bg-red-50 text-red-700 border-red-300"
                     data-testid={`badge-missing-${item.toLowerCase().replace(' ', '-')}`}
                   >
                     <AlertTriangle className="w-3 h-3 mr-1" />
                     Missing: {item}
                   </Badge>
-                ));
-              })()}
+                ))}
+              </div>
+            )}
 
-              {/* Sandwich Count Badge */}
-              <Badge className="bg-[#FBAD3F] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
-                <Package className="w-3 h-3 mr-1" />
-                {formatSandwichTypesDisplay(
-                  request.sandwichTypes,
-                  request.estimatedSandwichCount ?? undefined
-                )}
-              </Badge>
-
+            {/* Staffing Badges Group */}
+            <div className="flex flex-wrap items-center gap-2">
               {staffingComplete ? (
-                <Badge className="bg-[#47B3CB] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
                   <Check className="w-3 h-3 mr-1" />
                   Fully Staffed
                 </Badge>
               ) : (
                 <>
                   {driverNeeded > driverAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
-                      {driverNeeded - driverAssigned} driver
-                      {driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                    <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
+                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {speakerNeeded > speakerAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
-                      {speakerNeeded - speakerAssigned} speaker
-                      {speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
+                    <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
+                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {volunteerNeeded > volunteerAssigned && (
-                    <Badge className="bg-[#A31C41] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center">
-                      {volunteerNeeded - volunteerAssigned} volunteer
-                      {volunteerNeeded - volunteerAssigned > 1 ? 's' : ''}{' '}
-                      needed
+                    <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
+                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                 </>
               )}
 
-              {/* Van Driver Needed Badge - Shows when specifically requesting a van driver */}
               {request.vanDriverNeeded && !request.assignedVanDriverId && (
-                <Badge className="bg-[#236383] text-white px-2 py-1 text-xs shadow-sm inline-flex items-center" data-testid="badge-van-driver-needed">
+                <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
                   <Car className="w-3 h-3 mr-1" />
                   Van Driver Needed
                 </Badge>
-              )}
-            </div>
-
-            {/* Key Information - Prominently Displayed */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-              {/* Event Date - Most Important */}
-              <div className="bg-gradient-to-br from-[#236383] to-[#1a4d65] text-white rounded-lg p-5 shadow-md text-center">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <Calendar className="w-5 h-5" />
-                  <span className="font-bold text-sm uppercase tracking-wide">
-                    Event Date
-                  </span>
-                </div>
-                {isEditingThisCard && editingField === dateFieldToEdit ? (
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-3">
-                      <Input
-                        type="date"
-                        value={formatDateForInput(editingValue)}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-8 w-full text-gray-900 bg-white"
-                        autoFocus
-                      />
-                      <Button
-                        size="sm"
-                        onClick={saveEdit}
-                        className="bg-[#FBAD3F] hover:bg-[#e89a2d]"
-                      >
-                        <Save className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={cancelEdit}
-                        className="text-white hover:bg-white/20"
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-3 ml-2">
-                      <Checkbox
-                        id={`confirm-date-checkbox-${dateFieldToEdit}`}
-                        checked={tempIsConfirmed}
-                        onCheckedChange={(checked) => setTempIsConfirmed(!!checked)}
-                        className="border-white data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                      />
-                      <label
-                        htmlFor={`confirm-date-checkbox-${dateFieldToEdit}`}
-                        className="text-sm font-medium leading-none cursor-pointer select-none"
-                      >
-                        Mark as confirmed by our team
-                      </label>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-3 group">
-                    <span className="text-sm sm:text-base md:text-lg font-bold break-words">
-                      {displayDate && dateInfo ? dateInfo.text : 'No date set'}
-                    </span>
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          startEditing(
-                            dateFieldToEdit,
-                            formatDateForInput(displayDate?.toString() || '')
-                          )
-                        }
-                        className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity text-white hover:bg-white/20"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Event Address - Google Maps Link */}
-              {request.eventAddress && (
-                <div className="bg-gradient-to-br from-[#47B3CB] to-[#2d9bb0] text-white rounded-lg p-5 shadow-md text-center">
-                  <div className="flex items-center justify-center gap-3 mb-2">
-                    <MapPin className="w-5 h-5" />
-                    <span className="font-bold text-sm uppercase tracking-wide">
-                      Location
-                    </span>
-                  </div>
-                  <a
-                    href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs sm:text-sm md:text-base font-medium hover:underline block break-words text-center"
-                    title={request.eventAddress}
-                  >
-                    {request.eventAddress}
-                  </a>
-                </div>
               )}
             </div>
           </div>
 
           {/* Quick Actions */}
           {canEdit && (
-            <div className="flex gap-5">
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={onEdit}
-                className="text-[#236383] hover:bg-[#236383]/10"
+                className="text-gray-600 hover:text-gray-900"
               >
                 <Edit2 className="w-4 h-4" />
               </Button>
@@ -1066,7 +895,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     data-testid="button-delete-request"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -1083,170 +912,206 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           )}
         </div>
 
-        {/* Main Content */}
-        <div className="space-y-3">
-          {/* Three-column grid for Event Times, Sandwich Details, and Delivery Logistics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {/* Event Times */}
-            <div className="bg-[#236383] text-white rounded-lg p-5 shadow-md">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-4 h-4" />
-                  <span className="font-black text-lg sm:text-xl md:text-2xl">Event Times</span>
-                </div>
+        {/* Contact Information Section */}
+        {(request.contactName || request.contactEmail || request.contactPhone || (request.tspContact || request.customTspContact)) && (
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Contact Information
+            </h3>
+            
+            {request.contactName && renderEditableField('contactName', request.contactName, 'Organizer', <Users className="w-4 h-4" />)}
+            {request.contactEmail && renderEditableField('contactEmail', request.contactEmail, 'Email', <Mail className="w-4 h-4" />)}
+            {request.contactPhone && renderEditableField('contactPhone', request.contactPhone, 'Phone', <Phone className="w-4 h-4" />)}
+            
+            {(request.tspContact || request.customTspContact) && (
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                <UserPlus className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-600 min-w-[100px]">TSP Contact:</span>
+                <span className="text-sm text-gray-900">
+                  {request.customTspContact || resolveUserName(request.tspContact || '')}
+                </span>
                 {canEdit && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm bg-[#47b3cb]"
-                      >
-                        Add
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Add Event Times</DialogTitle>
-                      </DialogHeader>
-                      <TimeDialogContent
-                        request={request}
-                        startEditing={startEditing}
-                        saveEdit={saveEdit}
-                        cancelEdit={cancelEdit}
-                      />
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onEditTspContact}
+                    className="h-6 px-2"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </Button>
                 )}
               </div>
-              <div className="space-y-1">
-                {/* Times - only show if they exist */}
-                {request.eventStartTime ||
-                request.eventEndTime ||
-                request.pickupTime ||
-                request.pickupDateTime ? (
-                  <div className="space-y-1">
-                    {request.eventStartTime && (
-                      <div className="flex items-center gap-5 group">
-                        <span className="text-sm sm:text-base md:text-lg font-medium">Start:</span>
-                        <span className="text-sm sm:text-base md:text-lg">
-                          {formatTime12Hour(request.eventStartTime)}
-                        </span>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              startEditing(
-                                'eventStartTime',
-                                formatTimeForInput(request.eventStartTime || '')
-                              )
-                            }
-                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                    {request.eventEndTime && (
-                      <div className="flex items-center gap-5 group">
-                        <span className="text-sm sm:text-base md:text-lg font-medium">End:</span>
-                        <span className="text-sm sm:text-base md:text-lg">
-                          {formatTime12Hour(request.eventEndTime)}
-                        </span>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              startEditing(
-                                'eventEndTime',
-                                formatTimeForInput(request.eventEndTime || '')
-                              )
-                            }
-                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                    {(request.pickupDateTime || request.pickupTime) && (
-                      <div className="flex items-center gap-5 group">
-                        <span className="text-sm sm:text-base md:text-lg font-medium">Pickup:</span>
-                        <span className="text-sm sm:text-base md:text-lg">
-                          {request.pickupDateTime
-                            ? (() => {
-                                const date = new Date(request.pickupDateTime);
-                                const dateStr = date.toLocaleDateString(
-                                  'en-US',
-                                  {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                  }
-                                );
-                                const timeStr = formatTime12Hour(
-                                  date.toTimeString().slice(0, 5)
-                                );
-                                return `${dateStr} at ${timeStr}`;
-                              })()
-                            : formatTime12Hour(request.pickupTime!)}
-                        </span>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              if (request.pickupDateTime) {
-                                startEditing(
-                                  'pickupDateTime',
-                                  request.pickupDateTime.toString()
-                                );
-                              } else {
-                                startEditing(
-                                  'pickupTime',
-                                  formatTimeForInput(request.pickupTime || '')
-                                );
-                              }
-                            }}
-                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
+            )}
+          </div>
+        )}
 
-                    {/* Inline editing for times */}
-                    {isEditingThisCard &&
-                      (editingField === 'eventStartTime' ||
-                        editingField === 'eventEndTime' ||
-                        editingField === 'pickupTime') && (
-                        <div className="flex items-center gap-3 mt-2">
-                          <Input
-                            type="time"
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            className="h-8 w-32 text-gray-900 bg-white"
-                            autoFocus
-                          />
-                          <Button size="sm" onClick={saveEdit}>
-                            <Save className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={cancelEdit}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
+        {/* Event Details Section */}
+        <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Event Details
+          </h3>
+
+          {/* Date */}
+          {isEditingThisCard && editingField === dateFieldToEdit ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-600 min-w-[100px]">{dateLabel}:</span>
+                <Input
+                  type="date"
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  className="h-8 w-40 text-gray-900 bg-white"
+                  autoFocus
+                />
+                <Button size="sm" onClick={saveEdit}>
+                  <Save className="w-3 h-3" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2 ml-8">
+                <Checkbox
+                  id={`confirm-date-checkbox-${dateFieldToEdit}`}
+                  checked={tempIsConfirmed}
+                  onCheckedChange={(checked) => setTempIsConfirmed(!!checked)}
+                />
+                <label
+                  htmlFor={`confirm-date-checkbox-${dateFieldToEdit}`}
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Mark as confirmed by our team
+                </label>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group">
+              <Calendar className="w-4 h-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-600 min-w-[100px]">{dateLabel}:</span>
+              <span className="text-sm text-gray-900 font-semibold">
+                {displayDate && dateInfo ? dateInfo.text : 'No date set'}
+              </span>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() =>
+                    startEditing(
+                      dateFieldToEdit,
+                      formatDateForInput(displayDate?.toString() || '')
+                    )
+                  }
+                  className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Times */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1 flex-1">
+              {request.eventStartTime && (
+                <div className="flex items-center gap-2 group">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-600 min-w-[100px]">Start:</span>
+                  {isEditingThisCard && editingField === 'eventStartTime' ? (
+                    <>
+                      <Input
+                        type="time"
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="h-8 w-32 text-gray-900 bg-white"
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={saveEdit}>
+                        <Save className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm text-gray-900">
+                        {formatTime12Hour(request.eventStartTime)}
+                      </span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            startEditing(
+                              'eventStartTime',
+                              formatTimeForInput(request.eventStartTime || '')
+                            )
+                          }
+                          className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
                       )}
-                    {/* Inline editing for pickup datetime */}
-                    {isEditingThisCard && editingField === 'pickupDateTime' && (
-                      <div className="mt-2">
+                    </>
+                  )}
+                </div>
+              )}
+
+              {request.eventEndTime && (
+                <div className="flex items-center gap-2 group">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-600 min-w-[100px]">End:</span>
+                  {isEditingThisCard && editingField === 'eventEndTime' ? (
+                    <>
+                      <Input
+                        type="time"
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="h-8 w-32 text-gray-900 bg-white"
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={saveEdit}>
+                        <Save className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm text-gray-900">
+                        {formatTime12Hour(request.eventEndTime)}
+                      </span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            startEditing(
+                              'eventEndTime',
+                              formatTimeForInput(request.eventEndTime || '')
+                            )
+                          }
+                          className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {(request.pickupDateTime || request.pickupTime) && (
+                <div className="flex items-center gap-2 group">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-600 min-w-[100px]">Pickup:</span>
+                  {isEditingThisCard && (editingField === 'pickupDateTime' || editingField === 'pickupTime') ? (
+                    editingField === 'pickupDateTime' ? (
+                      <div className="flex flex-col gap-2">
                         <DateTimePicker
                           value={editingValue}
                           onChange={setEditingValue}
@@ -1258,100 +1123,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           className="w-full"
                           data-testid="inline-pickup-datetime-picker"
                         />
-                        <div className="flex items-center gap-3 mt-2">
+                        <div className="flex gap-2">
                           <Button size="sm" onClick={saveEdit}>
                             <Save className="w-3 h-3" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={cancelEdit}
-                          >
+                          <Button size="sm" variant="ghost" onClick={cancelEdit}>
                             <X className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-sm sm:text-base md:text-lg italic">
-                    No times set yet. Click "Add Times" to add event times.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Sandwich Information */}
-            <div className="bg-[#A31C41] text-white rounded-lg p-5 shadow-md">
-              <div className="flex items-center gap-3 mb-1">
-                <Package className="w-4 h-4" />
-                <span className="font-black text-lg sm:text-xl md:text-2xl">
-                  Sandwich Details
-                </span>
-              </div>
-              <div className="space-y-1">
-                {renderSandwichEdit()}
-                {request.estimatedAttendance && request.estimatedAttendance > 0 && (
-                  <div className="flex items-center gap-3">
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm sm:text-base md:text-lg font-medium">
-                      Est. Attendance:
-                    </span>
-                    <span className="text-sm sm:text-base md:text-lg font-semibold">
-                      {request.estimatedAttendance}
-                    </span>
-                  </div>
-                )}
-                {((request as any).adultCount > 0 || (request as any).childrenCount > 0) && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Users className="w-3 h-3" />
-                    <span className="font-medium">Breakdown:</span>
-                    {(request as any).adultCount > 0 && (
-                      <span>{(request as any).adultCount} adults</span>
-                    )}
-                    {(request as any).adultCount > 0 && (request as any).childrenCount > 0 && (
-                      <span>, </span>
-                    )}
-                    {(request as any).childrenCount > 0 && (
-                      <span>{(request as any).childrenCount} children</span>
-                    )}
-                  </div>
-                )}
-                {(request as any).hasRefrigeration !== null && (request as any).hasRefrigeration !== undefined && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Package className="w-3 h-3" />
-                    <span className="font-medium">
-                      Refrigeration: {(request as any).hasRefrigeration ? '✓ Available' : '✗ Not available'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Delivery Logistics */}
-            <div className="bg-[#47B3CB] text-white rounded-lg p-5 shadow-md">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-3">
-                  <Package className="w-4 h-4" />
-                  <span className="font-semibold text-sm sm:text-base md:text-lg">
-                    Delivery Logistics
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                {/* Overnight holding field - show value when populated, show add button when empty */}
-                {request.overnightHoldingLocation ? (
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm sm:text-base md:text-lg font-medium">
-                      Overnight Holding:
-                    </span>
-                    {isEditingThisCard &&
-                    editingField === 'overnightHoldingLocation' ? (
-                      <div className="flex items-center gap-3">
+                    ) : (
+                      <>
                         <Input
-                          type="text"
+                          type="time"
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-8 w-48 text-gray-900 bg-white"
+                          className="h-8 w-32 text-gray-900 bg-white"
                           autoFocus
                         />
                         <Button size="sm" onClick={saveEdit}>
@@ -1360,779 +1147,559 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Button size="sm" variant="ghost" onClick={cancelEdit}>
                           <X className="w-3 h-3" />
                         </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-5 group">
-                        <span className="text-sm sm:text-base md:text-lg break-words">
-                          {request.overnightHoldingLocation}
-                        </span>
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <span className="text-sm text-gray-900">
+                        {request.pickupDateTime
+                          ? (() => {
+                              const date = new Date(request.pickupDateTime);
+                              const dateStr = date.toLocaleDateString(
+                                'en-US',
+                                {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                }
+                              );
+                              const timeStr = formatTime12Hour(
+                                date.toTimeString().slice(0, 5)
+                              );
+                              return `${dateStr} at ${timeStr}`;
+                            })()
+                          : formatTime12Hour(request.pickupTime!)}
+                      </span>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            if (request.pickupDateTime) {
+                              startEditing(
+                                'pickupDateTime',
+                                request.pickupDateTime.toString()
+                              );
+                            } else {
+                              startEditing(
+                                'pickupTime',
+                                formatTimeForInput(request.pickupTime || '')
+                              );
+                            }
+                          }}
+                          className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    Add Times
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add Event Times</DialogTitle>
+                  </DialogHeader>
+                  <TimeDialogContent
+                    request={request}
+                    startEditing={startEditing}
+                    saveEdit={saveEdit}
+                    cancelEdit={cancelEdit}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+
+          {/* Location */}
+          {request.eventAddress && renderEditableField('eventAddress', request.eventAddress, 'Location', <MapPin className="w-4 h-4" />)}
+
+          {/* Sandwiches */}
+          {renderSandwichEdit()}
+
+          {/* Attendance */}
+          {request.estimatedAttendance && request.estimatedAttendance > 0 && (
+            renderEditableField('estimatedAttendance', request.estimatedAttendance, 'Est. Attendance', <Users className="w-4 h-4" />, 'number')
+          )}
+        </div>
+
+        {/* Delivery & Logistics Section */}
+        <div className="bg-teal-50 rounded-lg p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Package className="w-4 h-4" />
+            Delivery & Logistics
+          </h3>
+
+          {/* Recipients */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Building className="w-4 h-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-600 min-w-[100px]">Recipients:</span>
+            </div>
+            {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+              <div className="ml-8 space-y-2">
+                <MultiRecipientSelector
+                  value={editingValue ? JSON.parse(editingValue) : []}
+                  onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                  placeholder="Select recipient organizations..."
+                  data-testid="assigned-recipients-editor"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={saveEdit}>
+                    <Save className="w-3 h-3 mr-1" />
+                    Save
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                    <X className="w-3 h-3 mr-1" />
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="ml-8 flex flex-wrap gap-2 group">
+                {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+                  request.assignedRecipientIds.map((recipientId, index) => {
+                    const { name, type } = resolveRecipientName(recipientId);
+                    return (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="bg-white border border-gray-300"
+                      >
+                        {type === 'recipient' && '🏢 '}
+                        {type === 'host' && '🏠 '}
+                        {type === 'custom' && '📝 '}
+                        {type === 'unknown' && '🔍 '}
+                        {name}
+                      </Badge>
+                    );
+                  })
+                ) : (
+                  <span className="text-sm text-gray-500 italic">No recipients assigned</span>
+                )}
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      startEditing(
+                        'assignedRecipientIds',
+                        JSON.stringify(request.assignedRecipientIds || [])
+                      )
+                    }
+                    className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Overnight Holding */}
+          {request.overnightHoldingLocation && (
+            renderEditableField('overnightHoldingLocation', request.overnightHoldingLocation, 'Overnight Holding', <Package className="w-4 h-4" />)
+          )}
+        </div>
+
+        {/* Assignments Section */}
+        {(driverNeeded > 0 || speakerNeeded > 0 || volunteerNeeded > 0) && (
+          <div className="bg-purple-50 rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Team Assignments
+            </h3>
+
+            {/* Drivers */}
+            {driverNeeded > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    <Car className="w-4 h-4 inline mr-1" />
+                    Drivers ({driverAssigned}/{driverNeeded})
+                  </span>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openAssignmentDialog('driver')}
+                    >
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      Assign Driver
+                    </Button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {request.assignedVanDriverId && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-900 border-blue-300">
+                      {resolveUserName(request.assignedVanDriverId)} (Van)
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            handleRemoveAssignment('driver', request.assignedVanDriverId!)
+                          }
+                          className="h-4 w-4 p-0 ml-1 text-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </Badge>
+                  )}
+                  {parsePostgresArray(request.assignedDriverIds).map((driverId) => {
+                    const isCustom = driverId.startsWith('custom-');
+                    const displayName = isCustom
+                      ? extractCustomName(driverId)
+                      : resolveUserName(driverId);
+                    return (
+                      <Badge
+                        key={driverId}
+                        variant="secondary"
+                        className="bg-white border border-gray-300"
+                      >
+                        {displayName}
                         {canEdit && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() =>
-                              startEditing(
-                                'overnightHoldingLocation',
-                                request.overnightHoldingLocation || ''
-                              )
-                            }
-                            className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  /* Show add button when field is empty */
-                  canEdit && (
-                    <div className="flex items-center gap-3">
-                      {isEditingThisCard &&
-                      editingField === 'overnightHoldingLocation' ? (
-                        <div className="flex items-center gap-3">
-                          <span className="text-base font-medium">
-                            Overnight Holding:
-                          </span>
-                          <Input
-                            type="text"
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            className="h-8 w-48 text-gray-900 bg-white"
-                            autoFocus
-                            placeholder="Enter overnight holding location"
-                          />
-                          <Button size="sm" onClick={saveEdit}>
-                            <Save className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={cancelEdit}
+                            onClick={() => handleRemoveAssignment('driver', driverId)}
+                            className="h-4 w-4 p-0 ml-1 text-red-600"
                           >
                             <X className="w-3 h-3" />
                           </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            startEditing('overnightHoldingLocation', '')
-                          }
-                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#47B3CB] font-medium shadow-sm bg-[#236383]"
+                        )}
+                      </Badge>
+                    );
+                  })}
+                  {driverAssigned === 0 && (
+                    <span className="text-sm text-gray-500 italic">No drivers assigned</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Speakers */}
+            {speakerNeeded > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    <Megaphone className="w-4 h-4 inline mr-1" />
+                    Speakers ({speakerAssigned}/{speakerNeeded})
+                  </span>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openAssignmentDialog('speaker')}
+                    >
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      Assign Speaker
+                    </Button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(request.speakerDetails || {}).map(
+                    ([speakerId, details]: [string, any]) => {
+                      const isCustom = speakerId.startsWith('custom-');
+                      const displayName = isCustom
+                        ? extractCustomName(speakerId)
+                        : resolveUserName(speakerId);
+                      return (
+                        <Badge
+                          key={speakerId}
+                          variant="secondary"
+                          className="bg-white border border-gray-300"
                         >
-                          + Add Overnight Holding
-                        </Button>
-                      )}
-                    </div>
-                  )
-                )}
-                <div className="flex flex-col gap-3">
-                  <span className="text-sm font-medium">Recipients:</span>
-                  {isEditingThisCard &&
-                  editingField === 'assignedRecipientIds' ? (
-                    <div className="space-y-1">
-                      <MultiRecipientSelector
-                        value={editingValue ? JSON.parse(editingValue) : []}
-                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                        placeholder="Select recipient organizations..."
-                        data-testid="assigned-recipients-editor"
+                          {displayName}
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                handleRemoveAssignment('speaker', speakerId)
+                              }
+                              className="h-4 w-4 p-0 ml-1 text-red-600"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </Badge>
+                      );
+                    }
+                  )}
+                  {speakerAssigned === 0 && (
+                    <span className="text-sm text-gray-500 italic">No speakers assigned</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Volunteers */}
+            {volunteerNeeded > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    <Users className="w-4 h-4 inline mr-1" />
+                    Volunteers ({volunteerAssigned}/{volunteerNeeded})
+                  </span>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openAssignmentDialog('volunteer')}
+                    >
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      Assign Volunteer
+                    </Button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {parsePostgresArray(request.assignedVolunteerIds).map(
+                    (volunteerId) => {
+                      const isCustom = volunteerId.startsWith('custom-');
+                      const displayName = isCustom
+                        ? extractCustomName(volunteerId)
+                        : resolveUserName(volunteerId);
+                      return (
+                        <Badge
+                          key={volunteerId}
+                          variant="secondary"
+                          className="bg-white border border-gray-300"
+                        >
+                          {displayName}
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                handleRemoveAssignment('volunteer', volunteerId)
+                              }
+                              className="h-4 w-4 p-0 ml-1 text-red-600"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </Badge>
+                      );
+                    }
+                  )}
+                  {volunteerAssigned === 0 && (
+                    <span className="text-sm text-gray-500 italic">No volunteers assigned</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Notes Section */}
+        {(request.message ||
+          request.planningNotes ||
+          request.schedulingNotes ||
+          request.additionalRequirements ||
+          request.volunteerNotes ||
+          request.driverNotes ||
+          request.vanDriverNotes ||
+          request.followUpNotes ||
+          request.distributionNotes ||
+          request.duplicateNotes ||
+          request.unresponsiveNotes ||
+          request.socialMediaPostNotes) && (
+          <div className="bg-amber-50 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Notes & Requirements
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {request.message && (
+                <div className="sm:col-span-2">
+                  <p className="text-sm font-medium mb-1">Original Request Message:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
+                    {request.message}
+                  </p>
+                </div>
+              )}
+              {request.additionalRequirements && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Special Requirements:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-orange-400 whitespace-pre-wrap">
+                    {request.additionalRequirements}
+                  </p>
+                </div>
+              )}
+              {request.planningNotes && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium">Planning Notes:</p>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          startEditing('planningNotes', request.planningNotes || '')
+                        }
+                        className="h-6 px-2"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingThisCard && editingField === 'planningNotes' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                        placeholder="Add planning notes..."
+                        autoFocus
                       />
-                      <div className="flex gap-3">
+                      <div className="flex gap-2">
                         <Button size="sm" onClick={saveEdit}>
                           <Save className="w-3 h-3 mr-1" />
                           Save
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={cancelEdit}
-                        >
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
                           <X className="w-3 h-3 mr-1" />
                           Cancel
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-3 group">
-                      <div className="flex flex-wrap gap-5">
-                        {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                          request.assignedRecipientIds.map((recipientId, index) => {
-                            const { name, type } = resolveRecipientName(recipientId);
-
-                            return (
-                              <Badge
-                                key={index}
-                                variant="secondary"
-                                className="text-sm sm:text-base md:text-lg bg-white/20 text-white border-white/40"
-                              >
-                                {type === 'recipient' && '🏢 '}
-                                {type === 'host' && '🏠 '}
-                                {type === 'custom' && '📝 '}
-                                {type === 'unknown' && '🔍 '}
-                                {name}
-                              </Badge>
-                            );
-                          })
-                        ) : request.deliveryDestination ? (
-                          <span className="text-sm sm:text-base md:text-lg break-words">
-                            {request.deliveryDestination}
-                          </span>
-                        ) : (
-                          canEdit ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                startEditing(
-                                  'assignedRecipientIds',
-                                  request.assignedRecipientIds ? JSON.stringify(request.assignedRecipientIds) : '[]'
-                                )
-                              }
-                              className="text-gray-300 border-gray-300/50 hover:bg-white/10 hover:text-white hover:border-white/40"
-                            >
-                              <Edit2 className="w-3 h-3 mr-1" />
-                              Add Recipients
-                            </Button>
-                          ) : (
-                            <span className="text-sm text-gray-300 italic">Not specified</span>
-                          )
-                        )}
-                      </div>
-                      {canEdit && (request.assignedRecipientIds && request.assignedRecipientIds.length > 0) && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            startEditing(
-                              'assignedRecipientIds',
-                              request.assignedRecipientIds ? JSON.stringify(request.assignedRecipientIds) : '[]'
-                            )
-                          }
-                          className="h-4 px-1 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
+                    <p className="text-sm text-gray-700 bg-white p-3 rounded border border-gray-200 whitespace-pre-wrap">
+                      {request.planningNotes}
+                    </p>
                   )}
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Two-column grid for Contact Information and Team Assignments */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Contact Information */}
-            <div className="bg-[#236383] text-white rounded-lg p-5 shadow-md">
-              <div className="flex items-center gap-3 mb-1">
-                <Users className="w-4 h-4" />
-                <span className="font-black text-lg sm:text-xl md:text-2xl">
-                  Contact Information
-                </span>
-              </div>
-              <div className="space-y-2">
-                <div className="font-bold text-base sm:text-lg md:text-xl break-words">
-                  {request.firstName} {request.lastName}
-                </div>
-                {request.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-3 h-3" />
-                    <a
-                      href={`mailto:${request.email}`}
-                      className="text-sm hover:underline break-words"
-                    >
-                      {request.email}
-                    </a>
+              )}
+              {request.schedulingNotes && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium">Scheduling Notes:</p>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          startEditing('schedulingNotes', request.schedulingNotes || '')
+                        }
+                        className="h-6 px-2"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
                   </div>
-                )}
-                {request.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3 h-3" />
-                    <a
-                      href={`tel:${request.phone}`}
-                      className="text-sm hover:underline"
-                    >
-                      {request.phone}
-                    </a>
-                  </div>
-                )}
-                  {/* TSP Contact - Display when assigned */}
-                  {(request.tspContact || request.customTspContact) && (
-                    <div className="mt-2 pt-2 border-t border-white/20">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-5">
-                          <UserPlus className="w-4 h-4" />
-                          <span className="text-sm font-medium">TSP Contact:</span>
-                        </div>
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={onEditTspContact}
-                            className="h-6 px-2 text-white hover:bg-white/20"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                        )}
+                  {isEditingThisCard && editingField === 'schedulingNotes' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                        placeholder="Add scheduling notes..."
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
                       </div>
-                      <span className="text-sm sm:text-base md:text-lg font-medium break-words">
-                        {request.customTspContact || resolveUserName(request.tspContact || '')}
-                      </span>
                     </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-green-400 whitespace-pre-wrap">
+                      {request.schedulingNotes}
+                    </p>
                   )}
                 </div>
-              </div>
-            </div>
-
-            {/* Team Assignments */}
-            <div className="bg-[#236383] text-white rounded-lg p-5 shadow-md">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-black text-lg sm:text-xl md:text-2xl">
-                  Team Assignments
-                </span>
-                <span
-                  className={`text-sm sm:text-base md:text-lg font-bold px-2 py-1 rounded-full ${
-                    staffingComplete
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/20 text-white'
-                  }`}
-                >
-                  {totalAssigned}/{totalNeeded} assigned
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                {/* Drivers */}
-                {driverNeeded > 0 && (
-                  <div
-                    className={`rounded-lg p-2 border ${
-                      driverAssigned >= driverNeeded
-                        ? 'bg-white/20 border-white/30'
-                        : 'bg-white/20 border-white/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-3">
-                        <Car className="w-4 h-4" />
-                        <span className="font-medium">Drivers</span>
-                        <span
-                          className={`text-sm px-2 py-1 rounded-full font-bold ${
-                            driverAssigned >= driverNeeded
-                              ? 'bg-white/20 text-white'
-                              : 'bg-white/20 text-white'
-                          }`}
-                        >
-                          {driverAssigned}/{driverNeeded}
-                        </span>
-                      </div>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openAssignmentDialog('driver')}
-                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm !bg-[#47b3cb]"
-                        >
-                          <UserPlus className="w-3 h-3 mr-1" />
-                          {driverAssigned < driverNeeded ? 'Assign' : 'Add'}
-                        </Button>
-                      )}
-                    </div>
-                    {driverAssigned > 0 || request.assignedVanDriverId ? (
-                      <div className="space-y-1">
-                        {parsePostgresArray(request.assignedDriverIds).map(
-                          (driverId: string) => {
-                            let name = '';
-                            if (driverId.startsWith('custom-')) {
-                              name = extractCustomName(driverId);
-                            } else {
-                              const detailName = (
-                                request.driverDetails as any
-                              )?.[driverId]?.name;
-                              // Check if detailName is actually a name (not an ID)
-                              const isActualName =
-                                detailName &&
-                                !/^[\d]+$/.test(detailName) &&
-                                !detailName.startsWith('user_') &&
-                                !detailName.startsWith('admin_');
-                              name = isActualName
-                                ? detailName
-                                : resolveUserName(driverId);
-                            }
-                            return (
-                              <div
-                                key={driverId}
-                                className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
-                              >
-                                <span className="text-sm sm:text-base md:text-lg font-medium break-words">
-                                  {name}
-                                </span>
-                                {canEdit && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleRemoveAssignment('driver', driverId)
-                                    }
-                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            );
-                          }
-                        )}
-                        {/* Van Driver in Drivers List */}
-                        {request.assignedVanDriverId && (
-                          <div className="flex items-center justify-between bg-white/60 rounded px-2 py-1">
-                            <span className="text-sm sm:text-base md:text-lg font-medium break-words">
-                              {resolveUserName(request.assignedVanDriverId)}
-                              <span className="ml-2 text-xs sm:text-sm text-[#A31C41]">
-                                (van driver, counts as driver)
-                              </span>
-                            </span>
-                            {canEdit && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  handleRemoveAssignment(
-                                    'driver',
-                                    request.assignedVanDriverId!
-                                  )
-                                }
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-sm sm:text-base md:text-lg italic">
-                        No drivers assigned
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Speakers */}
-                {speakerNeeded > 0 && (
-                  <div
-                    className={`rounded-lg p-3 border ${
-                      speakerAssigned >= speakerNeeded
-                        ? 'bg-white/20 border-white/30'
-                        : 'bg-white/20 border-white/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-3">
-                        <Megaphone className="w-4 h-4" />
-                        <span className="font-medium">Speakers</span>
-                        <span
-                          className={`text-sm px-2 py-1 rounded-full font-bold ${
-                            speakerAssigned >= speakerNeeded
-                              ? 'bg-white/20 text-white'
-                              : 'bg-white/20 text-white'
-                          }`}
-                        >
-                          {speakerAssigned}/{speakerNeeded}
-                        </span>
-                      </div>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openAssignmentDialog('speaker')}
-                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
-                        >
-                          <UserPlus className="w-3 h-3 mr-1" />
-                          {speakerAssigned < speakerNeeded ? 'Assign' : 'Add'}
-                        </Button>
-                      )}
-                    </div>
-                    {((request as any).speakerAudienceType || (request as any).speakerDuration) && (
-                      <div className="text-xs space-y-1 mb-1 text-white/80">
-                        {(request as any).speakerAudienceType && (
-                          <div>Audience: {(request as any).speakerAudienceType}</div>
-                        )}
-                        {(request as any).speakerDuration && (
-                          <div>Duration: {(request as any).speakerDuration}</div>
-                        )}
-                      </div>
-                    )}
-                    {speakerAssigned > 0 ? (
-                      <div className="space-y-1">
-                        {Object.keys(request.speakerDetails || {}).map(
-                          (speakerId: string) => {
-                            let name = '';
-                            if (speakerId.startsWith('custom-')) {
-                              name = extractCustomName(speakerId);
-                            } else {
-                              const detailName = (
-                                request.speakerDetails as any
-                              )?.[speakerId]?.name;
-                              const isActualName =
-                                detailName &&
-                                !/^[\d]+$/.test(detailName) &&
-                                !detailName.startsWith('user_') &&
-                                !detailName.startsWith('admin_');
-                              name = isActualName
-                                ? detailName
-                                : resolveUserName(speakerId);
-                            }
-                            return (
-                              <div
-                                key={speakerId}
-                                className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
-                              >
-                                <span className="text-sm sm:text-base md:text-lg font-medium break-words">
-                                  {name}
-                                </span>
-                                {canEdit && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleRemoveAssignment(
-                                        'speaker',
-                                        speakerId
-                                      )
-                                    }
-                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            );
-                          }
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-sm sm:text-base md:text-lg italic">
-                        No speakers assigned
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Volunteers */}
-                {volunteerNeeded > 0 && (
-                  <div
-                    className={`rounded-lg p-3 border ${
-                      volunteerAssigned >= volunteerNeeded
-                        ? 'bg-white/20 border-white/30'
-                        : 'bg-white/20 border-white/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-3">
-                        <Users className="w-4 h-4" />
-                        <span className="font-medium">Volunteers</span>
-                        <span
-                          className={`text-sm px-2 py-1 rounded-full font-bold ${
-                            volunteerAssigned >= volunteerNeeded
-                              ? 'bg-white/20 text-white'
-                              : 'bg-white/20 text-white'
-                          }`}
-                        >
-                          {volunteerAssigned}/{volunteerNeeded}
-                        </span>
-                      </div>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openAssignmentDialog('volunteer')}
-                          className="h-8 text-sm border-white/60 text-white hover:bg-white hover:text-[#A31C41] font-semibold shadow-sm"
-                        >
-                          <UserPlus className="w-3 h-3 mr-1" />
-                          {volunteerAssigned < volunteerNeeded
-                            ? 'Assign'
-                            : 'Add'}
-                        </Button>
-                      )}
-                    </div>
-                    {volunteerAssigned > 0 ? (
-                      <div className="space-y-1">
-                        {parsePostgresArray(request.assignedVolunteerIds).map(
-                          (volunteerId: string) => {
-                            const name = volunteerId.startsWith('custom-')
-                              ? extractCustomName(volunteerId)
-                              : resolveUserName(volunteerId);
-                            return (
-                              <div
-                                key={volunteerId}
-                                className="flex items-center justify-between bg-white/20 rounded px-2 py-1"
-                              >
-                                <span className="text-sm sm:text-base md:text-lg font-medium break-words">
-                                  {name}
-                                </span>
-                                {canEdit && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      handleRemoveAssignment(
-                                        'volunteer',
-                                        volunteerId
-                                      )
-                                    }
-                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            );
-                          }
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-sm sm:text-base md:text-lg italic">
-                        No volunteers assigned
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
+              {request.volunteerNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Volunteer Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-purple-400 whitespace-pre-wrap">
+                    {request.volunteerNotes}
+                  </p>
+                </div>
+              )}
+              {request.driverNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Driver Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
+                    {request.driverNotes}
+                  </p>
+                </div>
+              )}
+              {request.vanDriverNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Van Driver Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-red-400 whitespace-pre-wrap">
+                    {request.vanDriverNotes}
+                  </p>
+                </div>
+              )}
+              {request.followUpNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Follow-up Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-yellow-400 whitespace-pre-wrap">
+                    {request.followUpNotes}
+                  </p>
+                </div>
+              )}
+              {request.distributionNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Distribution Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-teal-400 whitespace-pre-wrap">
+                    {request.distributionNotes}
+                  </p>
+                </div>
+              )}
+              {request.duplicateNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Duplicate Check Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-pink-400">
+                    {request.duplicateNotes}
+                  </p>
+                </div>
+              )}
+              {request.unresponsiveNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Unresponsive Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-gray-400">
+                    {request.unresponsiveNotes}
+                  </p>
+                </div>
+              )}
+              {request.socialMediaPostNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1">Social Media Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-indigo-400">
+                    {request.socialMediaPostNotes}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Comprehensive Notes & Requirements Section */}
-          {(request.message ||
-            request.planningNotes ||
-            request.schedulingNotes ||
-            request.additionalRequirements ||
-            request.volunteerNotes ||
-            request.driverNotes ||
-            request.vanDriverNotes ||
-            request.followUpNotes ||
-            request.distributionNotes ||
-            request.duplicateNotes ||
-            request.unresponsiveNotes ||
-            request.socialMediaPostNotes) && (
-            <div className="bg-[#47B3CB] text-white rounded-lg p-3 mb-3 shadow-md">
-              <div className="flex items-center gap-3 mb-3">
-                <FileText className="w-4 h-4" />
-                <span className="font-semibold text-sm sm:text-base md:text-lg">
-                  Notes & Requirements
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {request.message && (
-                  <div className="sm:col-span-2">
-                    <p className="text-sm font-medium mb-1">
-                      Original Request Message:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-brand-primary-lighter p-4 rounded border-l-2 border-brand-primary-border whitespace-pre-wrap">
-                      {request.message}
-                    </p>
-                  </div>
-                )}
-                {request.additionalRequirements && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">
-                      Special Requirements:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-amber-50 p-4 rounded border-l-2 border-amber-200 whitespace-pre-wrap">
-                      {request.additionalRequirements}
-                    </p>
-                  </div>
-                )}
-                {request.planningNotes && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-medium">Planning Notes:</p>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            startEditing(
-                              'planningNotes',
-                              request.planningNotes || ''
-                            )
-                          }
-                          className="h-6 px-2 text-sm hover:bg-white/20"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    {isEditingThisCard && editingField === 'planningNotes' ? (
-                      <div className="space-y-1">
-                        <textarea
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-gray-50"
-                          placeholder="Add planning notes..."
-                          autoFocus
-                        />
-                        <div className="flex gap-3">
-                          <Button size="sm" onClick={saveEdit}>
-                            <Save className="w-3 h-3 mr-1" />
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={cancelEdit}
-                          >
-                            <X className="w-3 h-3 mr-1" />
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-700 bg-gray-50 p-4 rounded border border-gray-200 whitespace-pre-wrap">
-                        {request.planningNotes}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {request.schedulingNotes && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-medium">Scheduling Notes:</p>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            startEditing(
-                              'schedulingNotes',
-                              request.schedulingNotes || ''
-                            )
-                          }
-                          className="h-6 px-2 text-sm hover:bg-white/20"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    {isEditingThisCard && editingField === 'schedulingNotes' ? (
-                      <div className="space-y-1">
-                        <textarea
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-gray-50"
-                          placeholder="Add scheduling notes..."
-                          autoFocus
-                        />
-                        <div className="flex gap-3">
-                          <Button size="sm" onClick={saveEdit}>
-                            <Save className="w-3 h-3 mr-1" />
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={cancelEdit}
-                          >
-                            <X className="w-3 h-3 mr-1" />
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-700 bg-green-50 p-4 rounded border-l-2 border-green-200 whitespace-pre-wrap">
-                        {request.schedulingNotes}
-                      </p>
-                    )}
-                  </div>
-                )}
-                {request.volunteerNotes && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">Volunteer Notes:</p>
-                    <p className="text-sm text-gray-700 bg-purple-50 p-4 rounded border-l-2 border-purple-200 whitespace-pre-wrap">
-                      {request.volunteerNotes}
-                    </p>
-                  </div>
-                )}
-                {request.driverNotes && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">Driver Notes:</p>
-                    <p className="text-sm text-gray-700 bg-orange-50 p-4 rounded border-l-2 border-orange-200 whitespace-pre-wrap">
-                      {request.driverNotes}
-                    </p>
-                  </div>
-                )}
-                {request.vanDriverNotes && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">
-                      Van Driver Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-red-50 p-4 rounded border-l-2 border-red-200 whitespace-pre-wrap">
-                      {request.vanDriverNotes}
-                    </p>
-                  </div>
-                )}
-                {request.followUpNotes && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">Follow-up Notes:</p>
-                    <p className="text-sm text-gray-700 bg-yellow-50 p-4 rounded border-l-2 border-yellow-200 whitespace-pre-wrap">
-                      {request.followUpNotes}
-                    </p>
-                  </div>
-                )}
-                {request.distributionNotes && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">
-                      Distribution Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-teal-50 p-4 rounded border-l-2 border-teal-200 whitespace-pre-wrap">
-                      {request.distributionNotes}
-                    </p>
-                  </div>
-                )}
-                {request.duplicateNotes && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">
-                      Duplicate Check Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-pink-50 p-4 rounded border-l-2 border-pink-200">
-                      {request.duplicateNotes}
-                    </p>
-                  </div>
-                )}
-                {request.unresponsiveNotes && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">
-                      Unresponsive Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-gray-100 p-4 rounded border-l-2 border-gray-300">
-                      {request.unresponsiveNotes}
-                    </p>
-                  </div>
-                )}
-                {request.socialMediaPostNotes && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">
-                      Social Media Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-indigo-50 p-4 rounded border-l-2 border-indigo-200">
-                      {request.socialMediaPostNotes}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+        )}
 
         {/* Action Buttons */}
-        <div
-          className={`${isMobile ? 'flex flex-col space-y-1' : 'flex flex-wrap gap-3'} pt-2 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
-        >
+        <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex flex-wrap gap-2'} pt-4 border-t border-gray-200`}>
           <Button
             size="sm"
             variant="outline"
             onClick={onContact}
-            className="!bg-[#007e8c] !text-[#ffffff] !border-[#007e8c] hover:!bg-[#006975] hover:!text-white"
+            className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:text-white"
           >
             Contact Organizer
           </Button>
@@ -2140,7 +1707,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onLogContact}
-            className="text-[16px] border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
           >
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
@@ -2152,7 +1718,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             Follow Up
           </Button>
 
-          {/* TSP Contact Assignment - only show if not already assigned */}
           {!(request.tspContact || request.customTspContact) && (
             <Button
               size="sm"
@@ -2167,7 +1732,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Activity History */}
-        <div className="mt-4 border-t border-gray-200 pt-4">
+        <div className="border-t border-gray-200 pt-4">
           <Button
             variant="ghost"
             size="sm"
@@ -2175,7 +1740,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
             data-testid="button-toggle-audit-log"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <History className="w-4 h-4" />
               <span className="text-sm">Activity History</span>
             </div>
