@@ -31,6 +31,12 @@ export default {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        // Premium design system values
+        'premium-sm': '8px',
+        'premium-md': '12px',
+        'premium-lg': '16px',
+        'premium-xl': '20px',
+        'premium-full': '9999px',
       },
       colors: {
         background: 'hsl(var(--color-background))',
