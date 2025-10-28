@@ -844,7 +844,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   &bull; {request.department}
                 </span>
               )}
-            </h3>
+            </h1>
 
             <div className="flex flex-wrap items-center gap-3 mb-4">
               <Badge className="bg-[#FBAD3F] text-white px-2 py-0.5 text-xs font-medium shadow-sm inline-flex items-center">
