@@ -769,6 +769,7 @@ const EventRequestsManagementContent: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
+    </div>
     </TooltipProvider>
   );
 };
