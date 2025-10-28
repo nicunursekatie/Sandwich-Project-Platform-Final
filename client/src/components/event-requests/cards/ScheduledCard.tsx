@@ -2123,8 +2123,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               </div>
             </div>
           )}
+        </div>
 
-          {/* Action Buttons */}
+        {/* Action Buttons */}
           <div
             className={`${isMobile ? 'flex flex-col space-y-1' : 'flex flex-wrap gap-3'} pt-2 border-t border-gray-200 ${isMobile ? '' : 'justify-end'}`}
           >
