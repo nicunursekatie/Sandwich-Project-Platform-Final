@@ -150,8 +150,8 @@ const ToolkitSentDialog = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-between space-x-4 pt-4 border-t border-[#007E8C]/10">
-              <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-3 pt-4 border-t border-[#007E8C]/10">
+              <div className="flex flex-wrap gap-2">
               {!emailSent && (
                 <Button
                   type="button"
@@ -200,13 +200,13 @@ const ToolkitSentDialog = ({
                 )}
               </div>
 
-              <div className="flex space-x-2 ml-auto">
+              <div className="flex flex-wrap gap-2 sm:ml-auto">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={onClose}
                   disabled={isLoading}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 flex-1 sm:flex-initial"
                   data-testid="button-cancel-toolkit-sent"
                 >
                   Cancel
@@ -215,11 +215,11 @@ const ToolkitSentDialog = ({
                   type="button"
                   onClick={handleSubmit}
                   disabled={!toolkitSentDate || !toolkitSentTime || isLoading}
-                  className="bg-[#007E8C] hover:bg-[#236383] text-white shadow-sm"
+                  className="bg-[#007E8C] hover:bg-[#236383] text-white shadow-sm flex-1 sm:flex-initial whitespace-nowrap"
                   data-testid="button-confirm-toolkit-sent"
                 >
                   <Shield className="w-4 h-4 mr-2" aria-hidden="true" />
-                  {isLoading ? 'Marking as Sent...' : 'Mark as Sent'}
+                  {isLoading ? 'Marking...' : 'Mark as Sent'}
                 </Button>
               </div>
             </div>
