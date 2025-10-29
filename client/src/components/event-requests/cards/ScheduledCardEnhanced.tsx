@@ -315,10 +315,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* Status Badges */}
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-[#007E8C]/10 text-[#007E8C] border border-[#007E8C]/30 font-medium">
-                Scheduled
-              </Badge>
-
               <Badge
                 onClick={() => canEdit && quickToggleBoolean('isConfirmed', !request.isConfirmed)}
                 className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
@@ -327,8 +323,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     : 'bg-gray-100 text-gray-600 border border-gray-300'
                 }`}
               >
-                {request.isConfirmed ? <Check className="w-3 h-3 mr-1" /> : null}
-                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
+                {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
               </Badge>
 
               <Badge
@@ -357,27 +352,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
               {staffingComplete ? (
                 <Badge className="bg-[#47B3CB]/10 text-[#007E8C] border border-[#007E8C]/30 font-medium">
-                  <Check className="w-3 h-3 mr-1" />
                   Fully Staffed
                 </Badge>
-              ) : (
-                <>
-                  {driverNeeded > driverAssigned && (
-                    <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
-                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                  )}
-                  {speakerNeeded > speakerAssigned && (
-                    <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
-                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                  )}
-                  {volunteerNeeded > volunteerAssigned && (
-                    <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
-                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
-                    </Badge>
-                  )}
-                </>
+              ) : totalNeeded > 0 && (
+                <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
+                  {totalNeeded - totalAssigned} missing
+                </Badge>
               )}
 
               {request.vanDriverNeeded && !request.assignedVanDriverId && (
