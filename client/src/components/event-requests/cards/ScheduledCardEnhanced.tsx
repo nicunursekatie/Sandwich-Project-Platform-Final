@@ -283,6 +283,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* Status Badges */}
             <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-[#007E8C] text-white font-semibold">
+                Scheduled
+              </Badge>
+
               <Badge
                 onClick={() => canEdit && quickToggleBoolean('isConfirmed', !request.isConfirmed)}
                 className={`cursor-pointer font-semibold ${
@@ -292,7 +296,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 }`}
               >
                 {request.isConfirmed ? <Check className="w-3 h-3 mr-1" /> : null}
-                {request.isConfirmed ? 'CONFIRMED' : 'REQUESTED'}
+                {request.isConfirmed ? 'Date Confirmed' : 'Date Requested'}
               </Badge>
 
               <Badge
@@ -303,20 +307,26 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     : 'bg-white/80 text-[#236383] border-2 border-[#47B3CB] hover:bg-white'
                 }`}
               >
-                {request.addedToOfficialSheet ? '✓ ON SHEET' : 'NOT ON SHEET'}
+                {request.addedToOfficialSheet ? '✓ On Official Sheet' : 'Not on Sheet'}
+              </Badge>
+
+              {/* Sandwich count badge */}
+              <Badge className="bg-[#FBAD3F] text-white font-bold border-2 border-white">
+                <Package className="w-3 h-3 mr-1" />
+                {sandwichInfo} Total
               </Badge>
 
               {request.externalId && request.externalId.startsWith('manual-') && (
                 <Badge className="bg-purple-100 text-purple-800 border-purple-300 font-semibold">
                   <FileText className="w-3 h-3 mr-1" />
-                  MANUAL ENTRY
+                  Manual Entry
                 </Badge>
               )}
 
               {staffingComplete ? (
-                <Badge className="bg-[#007E8C] text-white font-semibold">
+                <Badge className="bg-green-100 text-green-800 border-green-300 font-semibold">
                   <Check className="w-3 h-3 mr-1" />
-                  FULLY STAFFED
+                  Fully Staffed
                 </Badge>
               ) : (
                 <>
@@ -376,11 +386,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           )}
         </div>
 
-        {/* Main Info Grid - 2 columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          {/* LEFT COLUMN - Event Details */}
-          <div className="bg-[#236383] rounded-lg p-4 text-white space-y-3">
-            <h3 className="font-bold text-lg uppercase tracking-wide border-b border-white/30 pb-2">📅 Event Details</h3>
+        {/* Main Info Section - Compact Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+          {/* Event Details - Takes 2 columns */}
+          <div className="lg:col-span-2 bg-[#236383] rounded-lg p-4 text-white space-y-3">
+            <h3 className="font-bold text-lg uppercase tracking-wide border-b border-white/30 pb-2 mb-3">📅 Event Details</h3>
 
             {/* Date - Inline Editable */}
             <div className="flex items-center gap-2">
@@ -419,87 +429,111 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
             </div>
 
-            {/* Times Row */}
-            <div className="grid grid-cols-3 gap-2 text-sm">
-              {/* Start Time */}
-              <div>
-                <div className="text-white/70 text-xs uppercase">Start</div>
-                {isEditingThisCard && editingField === 'eventStartTime' ? (
-                  <div className="flex flex-col gap-1">
-                    <Input
-                      type="time"
-                      value={editingValue}
-                      onChange={(e) => setEditingValue(e.target.value)}
-                      className="h-7 bg-white text-gray-900 text-xs"
-                    />
-                    <div className="flex gap-1">
-                      <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C]">
-                        <Save className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-white">
-                        <X className="w-3 h-3" />
-                      </Button>
+            {/* Times Row with Add Times button */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="grid grid-cols-3 gap-2 text-sm flex-1">
+                {/* Start Time */}
+                <div>
+                  <div className="text-white/70 text-xs uppercase">Start</div>
+                  {isEditingThisCard && editingField === 'eventStartTime' ? (
+                    <div className="flex flex-col gap-1">
+                      <Input
+                        type="time"
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="h-7 bg-white text-gray-900 text-xs"
+                      />
+                      <div className="flex gap-1">
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C]">
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-white">
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="font-semibold group cursor-pointer" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
-                    {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
-                  </div>
-                )}
+                  ) : (
+                    <div className="font-semibold group cursor-pointer" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
+                      {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
+                    </div>
+                  )}
+                </div>
+
+                {/* End Time */}
+                <div>
+                  <div className="text-white/70 text-xs uppercase">End</div>
+                  {isEditingThisCard && editingField === 'eventEndTime' ? (
+                    <div className="flex flex-col gap-1">
+                      <Input
+                        type="time"
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="h-7 bg-white text-gray-900 text-xs"
+                      />
+                      <div className="flex gap-1">
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C]">
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-white">
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="font-semibold group cursor-pointer" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
+                      {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pickup Time */}
+                <div>
+                  <div className="text-white/70 text-xs uppercase">Pickup</div>
+                  {isEditingThisCard && editingField === 'pickupDateTime' ? (
+                    <div className="flex flex-col gap-1">
+                      <DateTimePicker
+                        value={editingValue}
+                        onChange={setEditingValue}
+                        className="h-7 text-xs"
+                      />
+                      <div className="flex gap-1">
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C]">
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-white">
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="font-semibold group cursor-pointer text-xs" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                      {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set')}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* End Time */}
-              <div>
-                <div className="text-white/70 text-xs uppercase">End</div>
-                {isEditingThisCard && editingField === 'eventEndTime' ? (
-                  <div className="flex flex-col gap-1">
-                    <Input
-                      type="time"
-                      value={editingValue}
-                      onChange={(e) => setEditingValue(e.target.value)}
-                      className="h-7 bg-white text-gray-900 text-xs"
-                    />
-                    <div className="flex gap-1">
-                      <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C]">
-                        <Save className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-white">
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="font-semibold group cursor-pointer" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
-                    {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
-                  </div>
-                )}
-              </div>
-
-              {/* Pickup Time */}
-              <div>
-                <div className="text-white/70 text-xs uppercase">Pickup</div>
-                {isEditingThisCard && editingField === 'pickupDateTime' ? (
-                  <div className="flex flex-col gap-1">
-                    <DateTimePicker
-                      value={editingValue}
-                      onChange={setEditingValue}
-                      className="h-7 text-xs"
-                    />
-                    <div className="flex gap-1">
-                      <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C]">
-                        <Save className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-white">
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="font-semibold group cursor-pointer text-xs" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
-                    {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set')}
-                  </div>
-                )}
-              </div>
+              {/* Add Times button - shows when any time is missing */}
+              {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/40 whitespace-nowrap mt-4"
+                  onClick={() => {
+                    // Open a dialog or inline editing for missing times
+                    if (!request.eventStartTime) {
+                      startEditing('eventStartTime', '');
+                    } else if (!request.eventEndTime) {
+                      startEditing('eventEndTime', '');
+                    } else {
+                      startEditing('pickupDateTime', '');
+                    }
+                  }}
+                >
+                  <Clock className="w-3 h-3 mr-1" />
+                  Add Times
+                </Button>
+              )}
             </div>
 
             {/* Address */}
@@ -727,8 +761,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           </div>
 
-          {/* RIGHT COLUMN - Contacts & Logistics */}
-          <div className="space-y-3">
+          {/* Contact & Logistics Column - Single column on right */}
+          <div className="lg:col-span-1 space-y-3">
             {/* Contact Info */}
             <div className="bg-[#47B3CB] rounded-lg p-4 text-white">
               <h3 className="font-bold uppercase tracking-wide border-b border-white/30 pb-2 mb-3">👤 Event Organizer</h3>
@@ -805,13 +839,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <div className="group">
+                    <div>
                       {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="space-y-1">
                           {request.assignedRecipientIds.map((id, idx) => (
-                            <Badge key={idx} className="bg-white/20 text-white border-white/40">
-                              {resolveRecipientName(id)}
-                            </Badge>
+                            <div key={idx} className="flex items-center justify-between bg-white/10 rounded px-2 py-1">
+                              <span className="text-sm font-medium">{resolveRecipientName(id)}</span>
+                            </div>
                           ))}
                         </div>
                       ) : (
@@ -822,9 +856,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           size="sm"
                           variant="ghost"
                           onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
-                          className="opacity-0 group-hover:opacity-100 text-white hover:bg-white/20 h-6 px-2 mt-1"
+                          className="text-white hover:bg-white/20 h-6 px-2 mt-2"
                         >
-                          <Edit2 className="w-3 h-3 mr-1" /> Edit
+                          <Edit2 className="w-3 h-3 mr-1" /> Edit Recipients
                         </Button>
                       )}
                     </div>
@@ -852,7 +886,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <div className="group cursor-pointer" onClick={() => canEdit && startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}>
+                    <div>
                       <div className="font-semibold">
                         {request.overnightHoldingLocation || 'Not set'}
                       </div>
@@ -860,8 +894,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={(e) => { e.stopPropagation(); startEditing('overnightHoldingLocation', request.overnightHoldingLocation || ''); }}
-                          className="opacity-0 group-hover:opacity-100 text-white hover:bg-white/20 h-6 px-2 mt-1"
+                          onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
+                          className="text-white hover:bg-white/20 h-6 px-2 mt-1"
                         >
                           <Edit2 className="w-3 h-3 mr-1" /> Edit
                         </Button>
@@ -874,9 +908,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         </div>
 
-        {/* Staffing Section */}
-        {totalNeeded > 0 && (
-          <div className="bg-white/90 rounded-lg p-4 mb-4">
+        {/* Team Assignments Section - Always visible */}
+        <div className="bg-white/90 rounded-lg p-4 mb-4">
             <h3 className="font-bold text-[#236383] uppercase tracking-wide mb-3">👥 Team Assignments</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Drivers */}
@@ -985,7 +1018,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
             </div>
           </div>
-        )}
 
         {/* Notes & Requirements Section */}
         {(request.message ||
