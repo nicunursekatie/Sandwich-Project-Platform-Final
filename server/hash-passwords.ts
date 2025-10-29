@@ -64,9 +64,9 @@ async function hashAllPasswords(): Promise<HashMigrationResult[]> {
         continue;
       }
 
-      // Hash the plaintext password
+      // Hash the plaintext password - CRITICAL: trim to match registration behavior
       logger.log(`  🔒 Hashing plaintext password...`);
-      const hashedPassword = await bcrypt.hash(currentPassword, SALT_ROUNDS);
+      const hashedPassword = await bcrypt.hash(currentPassword.trim(), SALT_ROUNDS);
 
       // Update the user with hashed password
       await db
