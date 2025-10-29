@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import multer from 'multer';
 import path from 'path';
-import { promises as fs } from 'fs';
+import { promises as fs, existsSync } from 'fs';
 import type { IStorage } from '../storage';
 import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
@@ -36,8 +36,8 @@ const documentsUpload = multer({
     destination: (req, file, cb) => {
       const uploadDir = 'server/uploads/documents';
       // Ensure the directory exists
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+      if (!existsSync(uploadDir)) {
+        require('fs').mkdirSync(uploadDir, { recursive: true });
       }
       cb(null, uploadDir);
     },
@@ -150,9 +150,9 @@ documentsRouter.post(
       logger.error('Error creating document:', error);
 
       // Clean up uploaded file if document creation failed
-      if (req.file && fs.existsSync(req.file.path)) {
+      if (req.file && existsSync(req.file.path)) {
         try {
-          fs.unlinkSync(req.file.path);
+          require('fs').unlinkSync(req.file.path);
           logger.info(`Cleaned up uploaded file: ${req.file.path}`);
         } catch (cleanupError) {
           logger.error('Error cleaning up uploaded file:', cleanupError);
@@ -205,7 +205,7 @@ documentsRouter.get(
       }
 
       // Check if file exists on disk
-      if (!fs.existsSync(document.filePath)) {
+      if (!existsSync(document.filePath)) {
         logger.error(`File not found on disk: ${document.filePath}`);
         return res.status(404).json({ error: 'File not found on server' });
       }
@@ -280,29 +280,25 @@ documentsRouter.delete(
           });
       }
 
-      // Mark document as inactive in database
-      // Since there's no deleteDocument method, we'll just mark as inactive by updating it
-      // For now, we'll just delete the file and return success
-      // TODO: Add proper soft delete in storage layer
+      // Soft delete the document in the storage layer
+      // This marks the document as inactive (isActive = false) but preserves the file for recovery
+      const deleted = await storage.deleteDocument(documentId);
 
-      // Clean up the file from disk
-      if (fs.existsSync(document.filePath)) {
-        try {
-          fs.unlinkSync(document.filePath);
-          logger.info(`Deleted file: ${document.filePath}`);
-        } catch (fileError) {
-          logger.error('Error deleting file:', fileError);
-          return res
-            .status(500)
-            .json({ error: 'Failed to delete document file' });
-        }
+      if (!deleted) {
+        logger.error(`Failed to soft delete document ID ${documentId}`);
+        return res
+          .status(500)
+          .json({ error: 'Failed to delete document' });
       }
 
       logger.info(
-        `Document deleted: ${user.email} deleted document ID ${documentId} - "${document.title}"`
+        `Document soft deleted: ${user.email} deleted document ID ${documentId} - "${document.title}" (file preserved for recovery)`
       );
 
-      res.json({ success: true, message: 'Document deleted successfully' });
+      res.json({
+        success: true,
+        message: 'Document deleted successfully'
+      });
     } catch (error: any) {
       logger.error('Error deleting document:', error);
       res.status(500).json({ error: 'Failed to delete document' });
