@@ -658,8 +658,8 @@ export function setupAuth(app: Express) {
         });
       }
 
-      // Verify password with bcrypt
-      const isValidPassword = await bcrypt.compare(password, storedPassword);
+      // Verify password with bcrypt - trim password to match registration behavior
+      const isValidPassword = await bcrypt.compare(password.trim(), storedPassword);
       if (!isValidPassword) {
         return res.status(401).json({
           success: false,
@@ -914,7 +914,7 @@ export function setupAuth(app: Express) {
             .json({ message: 'Current password is incorrect' });
         }
 
-        const isValidPassword = await bcrypt.compare(currentPassword, storedPassword);
+        const isValidPassword = await bcrypt.compare(currentPassword.trim(), storedPassword);
         if (!isValidPassword) {
           return res
             .status(400)
