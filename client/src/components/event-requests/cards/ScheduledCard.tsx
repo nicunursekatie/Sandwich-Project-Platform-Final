@@ -618,7 +618,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     return (
       <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-sm">Edit Sandwiches</span>
+          <span className="font-medium text-base">Edit Sandwiches</span>
           <div className="flex gap-2">
             <Button size="sm" onClick={saveEdit}>
               <Save className="w-3 h-3 mr-1" /> Save
@@ -981,7 +981,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 />
                 <label
                   htmlFor={`confirm-date-checkbox-${dateFieldToEdit}`}
-                  className="text-sm font-medium cursor-pointer"
+                  className="text-base font-medium cursor-pointer"
                 >
                   Mark as confirmed by our team
                 </label>
@@ -1070,7 +1070,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         type="time"
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-8 w-32 text-gray-900 bg-white"
+                        className="h-8 w-32 text-base text-gray-900 bg-white"
                         autoFocus
                       />
                       <Button size="sm" onClick={saveEdit}>
@@ -1138,7 +1138,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                           type="time"
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-8 w-32 text-gray-900 bg-white"
+                          className="h-8 w-32 text-base text-gray-900 bg-white"
                           autoFocus
                         />
                         <Button size="sm" onClick={saveEdit}>
@@ -1559,7 +1559,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <textarea
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                        className="w-full p-3 border border-gray-300 rounded text-base min-h-[100px] text-gray-900 bg-white"
                         placeholder="Add planning notes..."
                         autoFocus
                       />
@@ -1603,7 +1603,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <textarea
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                        className="w-full p-3 border border-gray-300 rounded text-base min-h-[100px] text-gray-900 bg-white"
                         placeholder="Add scheduling notes..."
                         autoFocus
                       />
