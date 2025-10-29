@@ -468,6 +468,16 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Submission Message */}
+            {request.message && (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-gray-500 mb-1 text-[17px] font-bold">
+                  Message from submission:
+                </p>
+                <p className="text-gray-600 text-[16px]">{request.message}</p>
+              </div>
+            )}
           </div>
 
           {/* Right Column - Contact Info */}
@@ -520,16 +530,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             )}
           </div>
         </div>
-
-        {/* Submission Message - Full Width */}
-        {request.message && (
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <p className="text-gray-500 mb-1 text-[17px] font-bold">
-              Message from submission:
-            </p>
-            <p className="text-gray-600 text-[16px]">{request.message}</p>
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
