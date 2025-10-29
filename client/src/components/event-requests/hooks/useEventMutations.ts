@@ -354,15 +354,15 @@ export const useEventMutations = () => {
     onSuccess: async (updatedEvent, variables) => {
       logger.log('=== RECIPIENT ASSIGNMENT SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
-      
+
       toast({
         title: 'Recipients assigned',
         description: 'Recipients have been successfully assigned to this event.',
       });
-      
+
       // Invalidate and refetch event requests
       await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
-      
+
       // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         try {
@@ -376,10 +376,57 @@ export const useEventMutations = () => {
     onError: (error) => {
       logger.error('=== RECIPIENT ASSIGNMENT ERROR ===');
       logger.error(error);
-      
+
       toast({
         title: 'Failed to assign recipients',
         description: 'There was an error assigning recipients to this event.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // TSP contact assignment mutation - uses the specific tsp-contact endpoint
+  const assignTspContactMutation = useMutation({
+    mutationFn: ({ id, tspContact, customTspContact }: { id: number; tspContact?: string | null; customTspContact?: string | null }) => {
+      logger.log('=== TSP CONTACT ASSIGNMENT MUTATION ===');
+      logger.log('Event ID:', id);
+      logger.log('TSP Contact:', tspContact);
+      logger.log('Custom TSP Contact:', customTspContact);
+      return apiRequest('PATCH', `/api/event-requests/${id}/tsp-contact`, { tspContact, customTspContact });
+    },
+    onSuccess: async (updatedEvent, variables) => {
+      logger.log('=== TSP CONTACT ASSIGNMENT SUCCESS ===');
+      logger.log('Updated event:', updatedEvent);
+
+      const description = variables.tspContact
+        ? 'TSP contact has been successfully assigned and notified via email.'
+        : 'Custom TSP contact has been successfully assigned.';
+
+      toast({
+        title: 'TSP contact assigned',
+        description,
+      });
+
+      // Invalidate and refetch event requests
+      await queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+
+      // Update the selected event if it matches
+      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          logger.error('Failed to fetch updated event data:', error);
+        }
+      }
+    },
+    onError: (error) => {
+      logger.error('=== TSP CONTACT ASSIGNMENT ERROR ===');
+      logger.error(error);
+
+      toast({
+        title: 'Failed to assign TSP contact',
+        description: 'There was an error assigning the TSP contact to this event.',
         variant: 'destructive',
       });
     },
@@ -396,5 +443,6 @@ export const useEventMutations = () => {
     oneMonthFollowUpMutation,
     rescheduleEventMutation,
     assignRecipientsMutation,
+    assignTspContactMutation,
   };
 };

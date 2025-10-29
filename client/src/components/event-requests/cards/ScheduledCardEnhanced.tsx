@@ -892,23 +892,26 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   <div className="space-y-1">
                     {speakerNeeded > 0 ? (
                       <>
-                        {Object.keys(request.speakerDetails || {}).map((id) => (
-                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                            <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
-                            {canEdit && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveAssignment('speaker', id)}
-                                className="h-5 w-5 p-0 text-red-600"
-                                aria-label="Remove speaker"
-                              >
-                                <X className="w-3 h-3" aria-hidden="true" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                        {speakerAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
+{Object.keys(request.speakerDetails || {}).map((id) => {
+  const detailName = (request.speakerDetails as any)?.[id]?.name;
+  const displayName = (detailName && !/^\d+$/.test(detailName)) ? detailName : (extractCustomName(id) || resolveUserName(id));
+  return (
+    <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
+      <span className="text-sm">{displayName}</span>
+      {canEdit && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => handleRemoveAssignment('speaker', id)}
+          className="h-5 w-5 p-0 text-red-600"
+          aria-label="Remove speaker"
+        >
+          <X className="w-3 h-3" aria-hidden="true" />
+        </Button>
+      )}
+    </div>
+  );
+})}                        {speakerAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
                       </>
                     ) : (
                       <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">

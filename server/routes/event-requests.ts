@@ -2796,6 +2796,7 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
     // Create validation schema for the payload
     const tspContactSchema = z.object({
       tspContact: z.string().optional().nullable(),
+      customTspContact: z.string().optional().nullable(),
     });
 
     const validatedData = tspContactSchema.parse(req.body);
@@ -2809,11 +2810,12 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
     // Prepare updates object
     const updates: Partial<EventRequest> = {
       tspContact: validatedData.tspContact || null,
+      customTspContact: validatedData.customTspContact || null,
       updatedAt: new Date(),
     };
 
-    // If assigning a TSP contact (not removing), set the assignment date
-    if (validatedData.tspContact) {
+    // If assigning a TSP contact (user or custom text, not removing), set the assignment date
+    if (validatedData.tspContact || validatedData.customTspContact) {
       updates.tspContactAssignedDate = new Date();
     } else {
       // If removing TSP contact, clear the assignment date

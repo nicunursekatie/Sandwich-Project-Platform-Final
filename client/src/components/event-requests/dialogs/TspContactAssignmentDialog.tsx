@@ -59,7 +59,7 @@ export const TspContactAssignmentDialog: React.FC<TspContactAssignmentDialogProp
   const [customContactText, setCustomContactText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { updateEventRequestMutation } = useEventMutations();
+  const { assignTspContactMutation } = useEventMutations();
 
   // Fetch all users for selection using the for-assignments endpoint (no special permissions required)
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
@@ -108,31 +108,27 @@ export const TspContactAssignmentDialog: React.FC<TspContactAssignmentDialogProp
   const handleSave = async () => {
     if (isSubmitting) return;
 
-    let updateData: any = {
-      tspContactAssignedDate: new Date(),
+    let assignmentData: any = {
+      id: eventRequestId,
     };
 
     if (activeTab === 'user' && selectedUserId) {
       // Assign a user as TSP contact
-      updateData.tspContact = selectedUserId;
-      updateData.customTspContact = null;
+      assignmentData.tspContact = selectedUserId;
+      assignmentData.customTspContact = null;
     } else if (activeTab === 'custom' && customContactText.trim()) {
       // Assign custom text as TSP contact
-      updateData.tspContact = null;
-      updateData.customTspContact = customContactText.trim();
+      assignmentData.tspContact = null;
+      assignmentData.customTspContact = customContactText.trim();
     } else {
       // No assignment (clear existing)
-      updateData.tspContact = null;
-      updateData.customTspContact = null;
-      updateData.tspContactAssignedDate = null;
+      assignmentData.tspContact = null;
+      assignmentData.customTspContact = null;
     }
 
     setIsSubmitting(true);
     try {
-      await updateEventRequestMutation.mutateAsync({
-        id: eventRequestId,
-        data: updateData,
-      });
+      await assignTspContactMutation.mutateAsync(assignmentData);
       onClose();
     } catch (error) {
       logger.error('Failed to assign TSP contact:', error);
