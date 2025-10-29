@@ -393,7 +393,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Event Details */}
             <div className="bg-[#007E8C]/5 rounded-lg p-4 border border-[#007E8C]/10 space-y-3">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide flex items-center gap-2 mb-3">
-                <Calendar className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
+                <Calendar className="w-4 h-4 text-[#007E8C]" aria-hidden="true" focusable="false" />
                 Event Details
               </h3>
 
@@ -773,7 +773,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Team Assignments - Below Event Details in same column */}
             <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
+                <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" focusable="false" />
                 Team Assignments
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1017,7 +1017,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Contact Info */}
             <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide pb-2 mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
+                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" focusable="false" />
                 Event Organizer
               </h3>
               <div className="space-y-2 text-sm text-gray-900">
@@ -1072,7 +1072,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Delivery Logistics */}
             <div className="bg-[#FBAD3F]/5 rounded-lg p-4 border border-[#FBAD3F]/10">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide pb-2 mb-3 flex items-center gap-2">
-                <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
+                <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" focusable="false" />
                 Delivery Logistics
               </h3>
               <div className="space-y-2 text-sm text-gray-900">
