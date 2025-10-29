@@ -62,6 +62,7 @@ import {
 } from '@/components/ui/dialog';
 import { logger } from '@/lib/logger';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
+import SendKudosButton from '@/components/send-kudos-button';
 
 interface CompletedCardProps {
   request: EventRequest;
@@ -646,22 +647,35 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               <div className="flex flex-wrap gap-1">
                 {drivers.map((driver, index) => (
                   <React.Fragment key={driver.id}>
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
                       data-testid={`badge-driver-${driver.id}`}
                     >
-                      {driver.name}
-                      {canEdit && onRemoveAssignment && (
-                        <button
-                          onClick={() => onRemoveAssignment('driver', driver.id)}
-                          className="ml-1 inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
-                          title="Remove driver"
-                          data-testid={`button-remove-driver-${driver.id}`}
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      )}
+                      <span className="flex items-center gap-1">
+                        {driver.name}
+                        <SendKudosButton
+                          recipientId={driver.id}
+                          recipientName={driver.name}
+                          contextType="project"
+                          contextId={request.id.toString()}
+                          contextTitle={`${request.organizationName} event`}
+                          size="sm"
+                          variant="ghost"
+                          iconOnly
+                          className="h-3 w-3 p-0"
+                        />
+                        {canEdit && onRemoveAssignment && (
+                          <button
+                            onClick={() => onRemoveAssignment('driver', driver.id)}
+                            className="inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
+                            title="Remove driver"
+                            data-testid={`button-remove-driver-${driver.id}`}
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                      </span>
                     </Badge>
                     {index < drivers.length - 1 && <span className="text-gray-400">•</span>}
                   </React.Fragment>
@@ -694,22 +708,35 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               <div className="flex flex-wrap gap-1">
                 {speakers.map((speaker, index) => (
                   <React.Fragment key={speaker.id}>
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
                       data-testid={`badge-speaker-${speaker.id}`}
                     >
-                      {speaker.name}
-                      {canEdit && onRemoveAssignment && (
-                        <button
-                          onClick={() => onRemoveAssignment('speaker', speaker.id)}
-                          className="ml-1 inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
-                          title="Remove speaker"
-                          data-testid={`button-remove-speaker-${speaker.id}`}
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      )}
+                      <span className="flex items-center gap-1">
+                        {speaker.name}
+                        <SendKudosButton
+                          recipientId={speaker.id}
+                          recipientName={speaker.name}
+                          contextType="project"
+                          contextId={request.id.toString()}
+                          contextTitle={`${request.organizationName} event`}
+                          size="sm"
+                          variant="ghost"
+                          iconOnly
+                          className="h-3 w-3 p-0"
+                        />
+                        {canEdit && onRemoveAssignment && (
+                          <button
+                            onClick={() => onRemoveAssignment('speaker', speaker.id)}
+                            className="inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
+                            title="Remove speaker"
+                            data-testid={`button-remove-speaker-${speaker.id}`}
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                      </span>
                     </Badge>
                     {index < speakers.length - 1 && <span className="text-gray-400">•</span>}
                   </React.Fragment>
@@ -742,22 +769,35 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
               <div className="flex flex-wrap gap-1">
                 {volunteers.map((volunteer, index) => (
                   <React.Fragment key={volunteer.id}>
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
                       data-testid={`badge-volunteer-${volunteer.id}`}
                     >
-                      {volunteer.name}
-                      {canEdit && onRemoveAssignment && (
-                        <button
-                          onClick={() => onRemoveAssignment('volunteer', volunteer.id)}
-                          className="ml-1 inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
-                          title="Remove volunteer"
-                          data-testid={`button-remove-volunteer-${volunteer.id}`}
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      )}
+                      <span className="flex items-center gap-1">
+                        {volunteer.name}
+                        <SendKudosButton
+                          recipientId={volunteer.id}
+                          recipientName={volunteer.name}
+                          contextType="project"
+                          contextId={request.id.toString()}
+                          contextTitle={`${request.organizationName} event`}
+                          size="sm"
+                          variant="ghost"
+                          iconOnly
+                          className="h-3 w-3 p-0"
+                        />
+                        {canEdit && onRemoveAssignment && (
+                          <button
+                            onClick={() => onRemoveAssignment('volunteer', volunteer.id)}
+                            className="inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
+                            title="Remove volunteer"
+                            data-testid={`button-remove-volunteer-${volunteer.id}`}
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                      </span>
                     </Badge>
                     {index < volunteers.length - 1 && <span className="text-gray-400">•</span>}
                   </React.Fragment>
