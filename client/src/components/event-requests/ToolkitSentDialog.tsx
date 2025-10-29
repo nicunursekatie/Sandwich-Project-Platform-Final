@@ -73,25 +73,26 @@ const ToolkitSentDialog = ({
   if (!eventRequest) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
-        <DialogHeader className="border-b border-[#007E8C]/10 pb-4 flex-shrink-0">
-          <DialogTitle className="flex items-center space-x-2 text-[#236383] text-xl">
-            <Shield className="w-5 h-5 text-[#007E8C]" aria-hidden="true" />
-            <span>Mark Toolkit as Sent</span>
-          </DialogTitle>
-          <DialogDescription className="text-gray-600 mt-2">
-            Record when the toolkit was sent to{' '}
-            <strong>
-              {eventRequest.firstName} {eventRequest.lastName}
-            </strong>{' '}
-            at <strong>{eventRequest.organizationName}</strong>. This will move
-            the event to "In Process" status.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen && !showEmailComposer} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+          <DialogHeader className="border-b border-[#007E8C]/10 pb-4 flex-shrink-0">
+            <DialogTitle className="flex items-center space-x-2 text-[#236383] text-xl">
+              <Shield className="w-5 h-5 text-[#007E8C]" aria-hidden="true" />
+              <span>Mark Toolkit as Sent</span>
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 mt-2">
+              Record when the toolkit was sent to{' '}
+              <strong>
+                {eventRequest.firstName} {eventRequest.lastName}
+              </strong>{' '}
+              at <strong>{eventRequest.organizationName}</strong>. This will move
+              the event to "In Process" status.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="overflow-y-auto flex-1">{!showEmailComposer ? (
-          <div className="space-y-6 pt-4">
+          <div className="overflow-y-auto flex-1">
+            <div className="space-y-6 pt-4">
             {/* Date and Time Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -223,35 +224,25 @@ const ToolkitSentDialog = ({
               </div>
             </div>
           </div>
-        ) : (
-          <div className="space-y-4 pt-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">Send Toolkit Email</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEmailComposer(false)}
-              >
-                <X className="w-4 h-4" aria-hidden="true" />
-              </Button>
-            </div>
-            <EventEmailComposer
-              eventRequest={{
-                ...eventRequest,
-                firstName: eventRequest.firstName || '',
-                lastName: eventRequest.lastName || '',
-                organizationName: eventRequest.organizationName || '',
-                email: eventRequest.email || '',
-                phone: eventRequest.phone || undefined,
-              } as any}
-              onEmailSent={handleEmailSent}
-              isOpen={showEmailComposer}
-              onClose={() => setShowEmailComposer(false)}
-            />
           </div>
-        )}</div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Composer as a separate dialog */}
+      <EventEmailComposer
+        eventRequest={{
+          ...eventRequest,
+          firstName: eventRequest.firstName || '',
+          lastName: eventRequest.lastName || '',
+          organizationName: eventRequest.organizationName || '',
+          email: eventRequest.email || '',
+          phone: eventRequest.phone || undefined,
+        } as any}
+        onEmailSent={handleEmailSent}
+        isOpen={showEmailComposer}
+        onClose={() => setShowEmailComposer(false)}
+      />
+    </>
   );
 };
 
