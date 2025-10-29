@@ -74,5 +74,17 @@ export default defineConfig({
       strict: true,
       deny: ['**/.*'],
     },
+    // Hot Module Replacement (HMR) settings for faster development
+    hmr: {
+      overlay: true, // Show errors as overlay
+    },
+    // Watch options for better file watching
+    watch: {
+      // Use polling for better compatibility in some environments
+      // Disable in local development for better performance
+      usePolling: false,
+      // Ignore node_modules and .git to improve performance
+      ignored: ['**/node_modules/**', '**/.git/**'],
+    },
   },
 });

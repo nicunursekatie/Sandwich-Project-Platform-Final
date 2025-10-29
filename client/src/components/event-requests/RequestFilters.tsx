@@ -140,122 +140,6 @@ export default function RequestFilters({
   // Get current tab info for mobile selector
   const currentTab = tabConfig.find(tab => tab.value === activeTab);
 
-  // Unified Search & Filter Component
-  const SearchAndFilters = () => (
-    <div className="flex flex-col gap-3 md:flex-row md:gap-4">
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
-        <Input
-          placeholder="Search by organization, name, email, date, or location..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10 w-full"
-          data-testid="input-search-requests"
-        />
-      </div>
-      <Select
-        value={sortBy}
-        onValueChange={(value: any) => onSortByChange(value)}
-      >
-        <SelectTrigger className="w-full md:w-56" data-testid="sort-select-trigger">
-          <SelectValue placeholder="Sort by..." />
-        </SelectTrigger>
-        <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-          <SelectItem value="created_date_desc">
-            <span className="hidden md:inline">Submission Date (Most Recent First)</span>
-            <span className="md:hidden">Newest First</span>
-          </SelectItem>
-          <SelectItem value="created_date_asc">
-            <span className="hidden md:inline">Submission Date (Oldest First)</span>
-            <span className="md:hidden">Oldest First</span>
-          </SelectItem>
-          <SelectItem value="event_date_desc">
-            <span className="hidden md:inline">Event Date (Most Recent)</span>
-            <span className="md:hidden">Most Recent Event</span>
-          </SelectItem>
-          <SelectItem value="event_date_asc">
-            <span className="hidden md:inline">Event Date (Oldest)</span>
-            <span className="md:hidden">Oldest Event</span>
-          </SelectItem>
-          <SelectItem value="organization_asc">
-            <span className="hidden md:inline">Organization A-Z</span>
-            <span className="md:hidden">Org A-Z</span>
-          </SelectItem>
-          <SelectItem value="organization_desc">
-            <span className="hidden md:inline">Organization Z-A</span>
-            <span className="md:hidden">Org Z-A</span>
-          </SelectItem>
-        </SelectContent>
-      </Select>
-      <Select
-        value={confirmationFilter}
-        onValueChange={(value: any) => onConfirmationFilterChange(value)}
-      >
-        <SelectTrigger className="w-full md:w-44">
-          <SelectValue placeholder="Filter by..." />
-        </SelectTrigger>
-        <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-          <SelectItem value="all">All Events</SelectItem>
-          <SelectItem value="confirmed">Confirmed</SelectItem>
-          <SelectItem value="requested">Requested</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
-  // Unified Pagination Component
-  const PaginationControls = () => (
-    <>
-      {totalPages > 1 && (
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Items per page:</span>
-            <Select
-              value={itemsPerPage.toString()}
-              onValueChange={(value) => onItemsPerPageChange(parseInt(value))}
-            >
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">
-              Page {currentPage} of {totalPages} ({totalItems} total)
-            </span>
-            <div className="flex space-x-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onCurrentPageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                data-testid="button-previous-page"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onCurrentPageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                data-testid="button-next-page"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-
   return (
     <div className="space-y-6">
       {/* Mobile: Dropdown Selector - Hidden on desktop */}
@@ -323,7 +207,65 @@ export default function RequestFilters({
       </div>
 
       {/* Unified Search & Filters - Shown on all screen sizes */}
-      <SearchAndFilters />
+      <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
+          <Input
+            placeholder="Search by organization, name, email, date, or location..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10 w-full"
+            data-testid="input-search-requests"
+          />
+        </div>
+        <Select
+          value={sortBy}
+          onValueChange={(value: any) => onSortByChange(value)}
+        >
+          <SelectTrigger className="w-full md:w-56" data-testid="sort-select-trigger">
+            <SelectValue placeholder="Sort by..." />
+          </SelectTrigger>
+          <SelectContent className="z-[100]" position="popper" sideOffset={5}>
+            <SelectItem value="created_date_desc">
+              <span className="hidden md:inline">Submission Date (Most Recent First)</span>
+              <span className="md:hidden">Newest First</span>
+            </SelectItem>
+            <SelectItem value="created_date_asc">
+              <span className="hidden md:inline">Submission Date (Oldest First)</span>
+              <span className="md:hidden">Oldest First</span>
+            </SelectItem>
+            <SelectItem value="event_date_desc">
+              <span className="hidden md:inline">Event Date (Most Recent)</span>
+              <span className="md:hidden">Most Recent Event</span>
+            </SelectItem>
+            <SelectItem value="event_date_asc">
+              <span className="hidden md:inline">Event Date (Oldest)</span>
+              <span className="md:hidden">Oldest Event</span>
+            </SelectItem>
+            <SelectItem value="organization_asc">
+              <span className="hidden md:inline">Organization A-Z</span>
+              <span className="md:hidden">Org A-Z</span>
+            </SelectItem>
+            <SelectItem value="organization_desc">
+              <span className="hidden md:inline">Organization Z-A</span>
+              <span className="md:hidden">Org Z-A</span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={confirmationFilter}
+          onValueChange={(value: any) => onConfirmationFilterChange(value)}
+        >
+          <SelectTrigger className="w-full md:w-44">
+            <SelectValue placeholder="Filter by..." />
+          </SelectTrigger>
+          <SelectContent className="z-[100]" position="popper" sideOffset={5}>
+            <SelectItem value="all">All Events</SelectItem>
+            <SelectItem value="confirmed">Confirmed</SelectItem>
+            <SelectItem value="requested">Requested</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Tab Content - Shown on all screen sizes */}
       <div className="space-y-4">
@@ -331,7 +273,53 @@ export default function RequestFilters({
       </div>
 
       {/* Unified Pagination - Shown on all screen sizes */}
-      <PaginationControls />
+      {totalPages > 1 && (
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Items per page:</span>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => onItemsPerPageChange(parseInt(value))}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages} ({totalItems} total)
+            </span>
+            <div className="flex space-x-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onCurrentPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                data-testid="button-previous-page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onCurrentPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                data-testid="button-next-page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
