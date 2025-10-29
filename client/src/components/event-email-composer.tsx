@@ -662,7 +662,8 @@ ${userEmail}`;
         contextTitle: `Event: ${eventRequest.organizationName}`,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[EventEmailComposer] Email sent successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/emails'] });
 
       if (isDraft) {
@@ -685,11 +686,19 @@ ${userEmail}`;
         onClose();
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('[EventEmailComposer] Email sending failed:', error);
+      console.error('[EventEmailComposer] Error details:', {
+        message: error?.message,
+        response: error?.response,
+        data: error?.response?.data,
+      });
+
+      const errorMessage = error?.response?.data?.message || error?.message || 'Please try again';
+
       toast({
         title: 'Failed to send email',
-        description:
-          error instanceof Error ? error.message : 'Please try again',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -704,6 +713,16 @@ ${userEmail}`;
       });
       return;
     }
+
+    console.log('[EventEmailComposer] Sending email:', {
+      isDraft: asDraft,
+      recipientEmail: eventRequest.email,
+      subject: subject.trim(),
+      attachmentsCount: selectedAttachments.length,
+      attachments: selectedAttachments,
+      contentLength: content.length,
+      contentPreview: content.substring(0, 100),
+    });
 
     setIsDraft(asDraft);
     sendEmailMutation.mutate({
@@ -808,8 +827,8 @@ ${userEmail}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="pb-4 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Mail className="w-5 h-5 text-teal-600" />
             Send Email to Event Contact
@@ -824,7 +843,7 @@ ${userEmail}`;
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-y-auto flex-1 pr-2">
           {/* Recipient Info */}
           <Card className="bg-gradient-to-r from-teal-50 to-cyan-100 border border-teal-200">
             <CardContent className="p-4">
@@ -1080,18 +1099,6 @@ ${userEmail}`;
                 />
               )}
             </div>
-            <div className="text-xs text-gray-500 mb-2 p-2 bg-brand-primary-lighter rounded border border-brand-primary-border">
-              💡 <strong>Quick Links:</strong> Inventory Calculator:
-              https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
-              | Schedule Call: https://thesandwichproject.as.me/
-            </div>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Write your message here..."
-              className="min-h-[300px] w-full resize-none"
-            />
           </div>
 
           {/* Next Step Options */}
@@ -1220,46 +1227,46 @@ ${userEmail}`;
               </div>
             )}
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t">
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="flex items-center gap-2"
+          >
+            <X className="w-4 h-4" />
+            Cancel
+          </Button>
+
+          <div className="flex gap-3">
             <Button
               variant="outline"
-              onClick={onClose}
-              className="flex items-center gap-2"
+              onClick={() => handleSend(true)}
+              disabled={sendEmailMutation.isPending}
+              className="flex items-center gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
             >
-              <X className="w-4 h-4" />
-              Cancel
+              <Clock className="w-4 h-4" />
+              {sendEmailMutation.isPending && isDraft
+                ? 'Saving Draft...'
+                : 'Save as Draft'}
             </Button>
 
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => handleSend(true)}
-                disabled={sendEmailMutation.isPending}
-                className="flex items-center gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
-              >
-                <Clock className="w-4 h-4" />
-                {sendEmailMutation.isPending && isDraft
-                  ? 'Saving Draft...'
-                  : 'Save as Draft'}
-              </Button>
-
-              <Button
-                onClick={() => handleSend(false)}
-                disabled={
-                  sendEmailMutation.isPending ||
-                  !subject.trim() ||
-                  !content.trim()
-                }
-                className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800"
-              >
-                <Send className="w-4 h-4" />
-                {sendEmailMutation.isPending && !isDraft
-                  ? 'Sending Email...'
-                  : 'Send Email Now'}
-              </Button>
-            </div>
+            <Button
+              onClick={() => handleSend(false)}
+              disabled={
+                sendEmailMutation.isPending ||
+                !subject.trim() ||
+                !content.trim()
+              }
+              className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800"
+            >
+              <Send className="w-4 h-4" />
+              {sendEmailMutation.isPending && !isDraft
+                ? 'Sending Email...'
+                : 'Send Email Now'}
+            </Button>
           </div>
         </div>
       </DialogContent>
