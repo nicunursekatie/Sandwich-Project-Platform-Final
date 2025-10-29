@@ -1112,7 +1112,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Contact Info */}
             <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide pb-2 mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" focusable="false" />
+                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
                 Event Organizer
               </h3>
               <div className="space-y-2 text-sm text-gray-900">
