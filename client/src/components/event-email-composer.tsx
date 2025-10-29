@@ -76,7 +76,7 @@ interface EmailTemplate {
 // Quick start options for subject line
 const SUBJECT_SUGGESTIONS = [
   'Your Sandwich-Making Event Toolkit + Next Steps',
-  'Let\'s Plan Your Event! [Action Required]',
+  'Let’s Plan Your Event! [Action Required]',
   'Everything You Need to Make 200+ Sandwiches',
   '{organizationName} - Ready to Get Started?',
   'Quick Call to Finalize Your Sandwich Event',
@@ -348,7 +348,7 @@ ${userEmail}`;
                                 <tr>
                                     <td align="center" style="padding: 10px 0 30px 0;">
                                         <a href="https://thesandwichproject.as.me/" style="display: inline-block; background-color: #FBAD3F; color: #333333; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">📅 Schedule Your Planning Call</a>
-                                        <p style="margin: 15px 0 0 0; font-size: 14px; color: #666666; font-style: italic;">Most groups book within 48 hours—secure your spot today!</p>
+                                        <p style="margin: 15px 0 0 0; font-size: 14px; color: #666666; font-style: italic;">We recommend booking early to secure your preferred date.</p>
                                     </td>
                                 </tr>
                             </table>
@@ -506,7 +506,7 @@ ${userEmail}`;
                                     <td style="background-color: #FBAD3F; color: #333333; padding: 25px; text-align: center; border-radius: 8px;">
                                         <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📅 Next Step: Schedule Your Planning Call</p>
                                         <p style="margin: 0 0 15px 0; font-size: 16px;">Reply to this email with 2-3 times that work for you this week, and we'll get you on the calendar!</p>
-                                        <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">Most groups complete this step within 48 hours.</p>
+                                        <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We look forward to scheduling your planning call soon.</p>
                                     </td>
                                 </tr>
                             </table>
