@@ -170,7 +170,8 @@ export function EventEmailComposer({
   // Regenerate email content based on selected options
   const regenerateEmailContent = (
     includeScheduling: boolean,
-    requestPhone: boolean
+    requestPhone: boolean,
+    templateStyleOverride?: 'classic' | 'optimized'
   ) => {
     const userName =
       user?.firstName && user?.lastName
@@ -180,6 +181,9 @@ export function EventEmailComposer({
     const userPhone = user?.phoneNumber || '';
     const userEmail =
       user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
+
+    // Use override if provided, otherwise use state
+    const activeTemplateStyle = templateStyleOverride ?? templateStyle;
 
     // Generate plain text email if user selected plaintext format
     if (emailFormat === 'plaintext') {
@@ -225,7 +229,7 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
     // Use styled HTML template when includeScheduling is true
     if (includeScheduling) {
       // Choose template based on style selection
-      const htmlTemplate = templateStyle === 'optimized'
+      const htmlTemplate = activeTemplateStyle === 'optimized'
         ? generateOptimizedSchedulingTemplate(eventRequest, userName, userEmail, userPhone)
         : generateClassicSchedulingTemplate(eventRequest, userName, userEmail, userPhone);
 
@@ -237,7 +241,7 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
     // Use styled HTML template for non-scheduling version (unless requesting phone)
     if (!requestPhone) {
       // Choose template based on style selection
-      const htmlTemplate = templateStyle === 'optimized'
+      const htmlTemplate = activeTemplateStyle === 'optimized'
         ? generateOptimizedNonSchedulingTemplate(eventRequest, userName, userEmail, userPhone)
         : generateClassicNonSchedulingTemplate(eventRequest, userName, userEmail, userPhone);
 
@@ -1400,8 +1404,8 @@ ${userEmail}`;
                   value={templateStyle}
                   onValueChange={(value: 'classic' | 'optimized') => {
                     setTemplateStyle(value);
-                    // Regenerate content with new template style
-                    regenerateEmailContent(includeSchedulingLink, requestPhoneCall);
+                    // Regenerate content with new template style (pass value directly to avoid race condition)
+                    regenerateEmailContent(includeSchedulingLink, requestPhoneCall, value);
                   }}
                   className="flex gap-4"
                 >
