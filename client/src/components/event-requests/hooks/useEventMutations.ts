@@ -394,17 +394,38 @@ export const useEventMutations = () => {
       logger.log('Custom TSP Contact:', customTspContact);
       return apiRequest('PATCH', `/api/event-requests/${id}/tsp-contact`, { tspContact, customTspContact });
     },
-    onSuccess: async (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent: any, variables) => {
       logger.log('=== TSP CONTACT ASSIGNMENT SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
+      logger.log('Email notification status:', updatedEvent._emailNotification);
 
-      const description = variables.tspContact
-        ? 'TSP contact has been successfully assigned and notified via email.'
-        : 'Custom TSP contact has been successfully assigned.';
+      // Determine the appropriate message based on email send status
+      const emailStatus = updatedEvent._emailNotification;
+      let description: string;
+      let variant: 'default' | 'destructive' = 'default';
+      let title = 'TSP contact assigned';
+
+      if (variables.tspContact) {
+        // User was assigned (not custom text)
+        if (emailStatus?.sent) {
+          description = 'TSP contact has been successfully assigned and email notification sent.';
+        } else if (emailStatus?.error) {
+          title = 'Warning';
+          description = `TSP contact assigned, but email notification failed: ${emailStatus.error}`;
+          variant = 'destructive';
+        } else {
+          // No email was sent (e.g., no change, already completed/declined)
+          description = 'TSP contact has been successfully assigned.';
+        }
+      } else {
+        // Custom text assignment (no email)
+        description = 'Custom TSP contact has been successfully assigned.';
+      }
 
       toast({
-        title: 'TSP contact assigned',
+        title,
         description,
+        variant,
       });
 
       // Invalidate and refetch event requests

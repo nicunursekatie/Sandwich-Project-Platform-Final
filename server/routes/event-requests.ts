@@ -2828,12 +2828,16 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'Event request not found' });
     }
 
+    // Track email notification status
+    let emailSent = false;
+    let emailError: string | undefined;
+
     // Send email notification if:
     // 1. TSP contact was assigned (not removed)
     // 2. It changed from previous value
     // 3. Event is not already completed or declined
     if (
-      validatedData.tspContact && 
+      validatedData.tspContact &&
       originalEvent.tspContact !== validatedData.tspContact &&
       originalEvent.status !== 'completed' &&
       originalEvent.status !== 'declined'
@@ -2845,9 +2849,12 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
           originalEvent.organizationName,
           originalEvent.scheduledEventDate || originalEvent.desiredEventDate
         );
+        emailSent = true;
+        logger.info(`TSP contact assignment email sent successfully to user ${validatedData.tspContact}`);
       } catch (error) {
         // Log error but don't fail the request if email notification fails
         logger.error('Failed to send TSP contact assignment notification:', error);
+        emailError = error instanceof Error ? error.message : 'Unknown error';
       }
     }
 
@@ -2874,10 +2881,18 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
         tspContact: validatedData.tspContact,
         assignedBy: req.user?.email,
         organizationName: originalEvent.organizationName,
+        emailSent,
       }
     );
 
-    res.json(updatedEventRequest);
+    // Return updated event with email notification status
+    res.json({
+      ...updatedEventRequest,
+      _emailNotification: {
+        sent: emailSent,
+        error: emailError,
+      },
+    });
   } catch (error) {
     logger.error('Error updating TSP contact:', error);
 
