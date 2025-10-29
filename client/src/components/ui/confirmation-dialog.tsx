@@ -55,19 +55,19 @@ export function ConfirmationDialog({
         {trigger}
       </AlertDialogTrigger>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+        <AlertDialogHeader className="border-b border-[#007E8C]/10 pb-4">
+          <AlertDialogTitle className="text-[#236383] text-xl">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-gray-600 mt-2">{description}</AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>
+        <AlertDialogFooter className="pt-4">
+          <AlertDialogCancel disabled={isLoading} className="border-gray-300 text-gray-700 hover:bg-gray-50">
             {cancelText}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={isLoading}
             className={
-              variant === 'destructive' ? 'bg-red-600 hover:bg-red-700' : ''
+              variant === 'destructive' ? 'bg-[#A31C41] hover:bg-[#A31C41]/90 text-white shadow-sm' : 'bg-[#007E8C] hover:bg-[#236383] text-white shadow-sm'
             }
           >
             {isLoading ? 'Processing...' : confirmText}
@@ -103,14 +103,14 @@ export function useConfirmation() {
       onOpenChange={(open) => !open && setDialogState(null)}
     >
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{dialogState.title}</AlertDialogTitle>
-          <AlertDialogDescription>
+        <AlertDialogHeader className="border-b border-[#007E8C]/10 pb-4">
+          <AlertDialogTitle className="text-[#236383] text-xl">{dialogState.title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-gray-600 mt-2">
             {dialogState.description}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setDialogState(null)}>
+        <AlertDialogFooter className="pt-4">
+          <AlertDialogCancel onClick={() => setDialogState(null)} className="border-gray-300 text-gray-700 hover:bg-gray-50">
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
@@ -120,8 +120,8 @@ export function useConfirmation() {
             }}
             className={
               dialogState.variant === 'destructive'
-                ? 'bg-red-600 hover:bg-red-700'
-                : ''
+                ? 'bg-[#A31C41] hover:bg-[#A31C41]/90 text-white shadow-sm'
+                : 'bg-[#007E8C] hover:bg-[#236383] text-white shadow-sm'
             }
           >
             Confirm
