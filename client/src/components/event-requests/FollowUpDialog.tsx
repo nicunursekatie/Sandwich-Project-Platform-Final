@@ -57,12 +57,12 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-orange-600" />
+        <DialogHeader className="border-b border-[#007E8C]/10 pb-4">
+          <DialogTitle className="flex items-center space-x-2 text-[#236383] text-xl">
+            <Clock className="w-5 h-5 text-[#FBAD3F]" aria-hidden="true" />
             <span>{title}</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-gray-600 mt-2">
             {description} with{' '}
             <strong>
               {eventRequest.firstName} {eventRequest.lastName}
@@ -71,33 +71,33 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           {/* Event Information */}
-          <div className="bg-[#e6f2f5] border border-[#007E8C]/20 rounded-lg p-3">
-            <h4 className="font-medium text-[#1A2332] mb-2">Event Details</h4>
-            <div className="space-y-1 text-sm">
-              <div><strong>Event Date:</strong> {
-                eventRequest.desiredEventDate ? 
-                  new Date(eventRequest.desiredEventDate).toLocaleDateString() : 
+          <div className="bg-[#007E8C]/5 border border-[#007E8C]/20 rounded-lg p-4">
+            <h4 className="font-semibold text-[#236383] uppercase tracking-wide text-sm mb-3">Event Details</h4>
+            <div className="space-y-2 text-sm">
+              <div><strong className="text-[#236383]">Event Date:</strong> <span className="text-gray-700">{
+                eventRequest.desiredEventDate ?
+                  new Date(eventRequest.desiredEventDate).toLocaleDateString() :
                   'Not specified'
-              }</div>
-              <div><strong>Address:</strong> {eventRequest.eventAddress || 'Not specified'}</div>
-              <div><strong>Estimated Sandwiches:</strong> {eventRequest.estimatedSandwichCount || 'Not specified'}</div>
+              }</span></div>
+              <div><strong className="text-[#236383]">Address:</strong> <span className="text-gray-700">{eventRequest.eventAddress || 'Not specified'}</span></div>
+              <div><strong className="text-[#236383]">Estimated Sandwiches:</strong> <span className="text-gray-700">{eventRequest.estimatedSandwichCount || 'Not specified'}</span></div>
             </div>
           </div>
 
           {/* Contact Information */}
-          <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-3">
-            <h4 className="font-medium text-[#1A2332] mb-2">Contact Information</h4>
-            <div className="space-y-1 text-sm">
+          <div className="bg-[#47B3CB]/5 border border-[#47B3CB]/20 rounded-lg p-4">
+            <h4 className="font-semibold text-[#236383] uppercase tracking-wide text-sm mb-3">Contact Information</h4>
+            <div className="space-y-2 text-sm">
               <div className="flex items-center space-x-2">
-                <Mail className="w-4 h-4 text-[#007E8C]" />
-                <span>{eventRequest.email}</span>
+                <Mail className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
+                <span className="text-gray-700">{eventRequest.email}</span>
               </div>
               {eventRequest.phone && (
                 <div className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-[#007E8C]" />
-                  <span>{eventRequest.phone}</span>
+                  <Phone className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
+                  <span className="text-gray-700">{eventRequest.phone}</span>
                   <Button
                     type="button"
                     size="sm"
@@ -111,7 +111,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                         navigator.clipboard.writeText(phoneNumber || '');
                       }
                     }}
-                    className="ml-auto text-xs"
+                    className="ml-auto text-xs border-[#007E8C]/30 text-[#007E8C] hover:bg-[#007E8C]/5"
                   >
                     {isMobile ? 'Call' : 'Copy'}
                   </Button>
@@ -134,11 +134,11 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
           </div>
 
           {/* Information */}
-          <div className={`${isOneDay ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'} border rounded-lg p-3`}>
-            <h4 className={`font-medium ${isOneDay ? 'text-orange-900' : 'text-green-900'} mb-2`}>
+          <div className={`${isOneDay ? 'bg-[#FBAD3F]/5 border-[#FBAD3F]/30' : 'bg-[#007E8C]/5 border-[#007E8C]/30'} border rounded-lg p-4`}>
+            <h4 className={`font-semibold ${isOneDay ? 'text-[#FBAD3F]' : 'text-[#007E8C]'} uppercase tracking-wide text-sm mb-3`}>
               {title} Guidelines:
             </h4>
-            <ul className={`text-sm ${isOneDay ? 'text-orange-800' : 'text-green-800'} space-y-1`}>
+            <ul className={`text-sm ${isOneDay ? 'text-[#236383]' : 'text-[#236383]'} space-y-2`}>
               {isOneDay ? (
                 <>
                   <li>• Ask how the event went and if there were any issues</li>
@@ -156,14 +156,14 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+          <div className="flex justify-end space-x-3 pt-4 border-t border-[#007E8C]/10">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading} className="border-gray-300 text-gray-700 hover:bg-gray-50">
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={!notes.trim() || isLoading}
-              className={`text-white ${isOneDay ? 'bg-orange-600 hover:bg-orange-700' : 'bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary)/0.9)]'}`}
+              className={`text-white shadow-sm ${isOneDay ? 'bg-[#FBAD3F] hover:bg-[#FBAD3F]/90' : 'bg-[#007E8C] hover:bg-[#236383]'}`}
               data-testid={`button-confirm-followup-${followUpType}`}
             >
               {isLoading ? 'Saving...' : `Complete ${title}`}

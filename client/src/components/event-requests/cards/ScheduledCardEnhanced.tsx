@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -168,6 +168,37 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   canEdit = true,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [addingAllTimes, setAddingAllTimes] = useState(false);
+  const [tempStartTime, setTempStartTime] = useState('');
+  const [tempEndTime, setTempEndTime] = useState('');
+  const [tempPickupTime, setTempPickupTime] = useState('');
+
+  const queryClient = useQueryClient();
+
+  // Mutation for updating event request fields
+  const updateFieldsMutation = useMutation({
+    mutationFn: async (updates: Record<string, any>) => {
+      const response = await fetch(`/api/event-requests/${request.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update event request');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setAddingAllTimes(false);
+      setTempStartTime('');
+      setTempEndTime('');
+      setTempPickupTime('');
+    },
+  });
 
   // Fetch data for recipient resolution
   const { data: hostContacts = [] } = useQuery<Array<{
@@ -441,22 +472,24 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {/* Start Time */}
                 <div>
                   <div className="text-gray-600 text-xs uppercase font-medium">Start</div>
-                  {isEditingThisCard && editingField === 'eventStartTime' ? (
+                  {(isEditingThisCard && editingField === 'eventStartTime') || addingAllTimes ? (
                     <div className="flex flex-col gap-1">
                       <Input
                         type="time"
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
+                        value={addingAllTimes ? tempStartTime : editingValue}
+                        onChange={(e) => addingAllTimes ? setTempStartTime(e.target.value) : setEditingValue(e.target.value)}
                         className="h-7 bg-white text-gray-900 text-xs border-[#007E8C]/20"
                       />
-                      <div className="flex gap-1">
-                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
-                          <Save className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
-                          <X className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                      </div>
+                      {!addingAllTimes && (
+                        <div className="flex gap-1">
+                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
+                            <Save className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="font-semibold group cursor-pointer text-[#236383]" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
@@ -468,22 +501,24 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {/* End Time */}
                 <div>
                   <div className="text-gray-600 text-xs uppercase font-medium">End</div>
-                  {isEditingThisCard && editingField === 'eventEndTime' ? (
+                  {(isEditingThisCard && editingField === 'eventEndTime') || addingAllTimes ? (
                     <div className="flex flex-col gap-1">
                       <Input
                         type="time"
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
+                        value={addingAllTimes ? tempEndTime : editingValue}
+                        onChange={(e) => addingAllTimes ? setTempEndTime(e.target.value) : setEditingValue(e.target.value)}
                         className="h-7 bg-white text-gray-900 text-xs border-[#007E8C]/20"
                       />
-                      <div className="flex gap-1">
-                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
-                          <Save className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
-                          <X className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                      </div>
+                      {!addingAllTimes && (
+                        <div className="flex gap-1">
+                          <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
+                            <Save className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
+                            <X className="w-3 h-3" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="font-semibold group cursor-pointer text-[#236383]" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
@@ -495,21 +530,32 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {/* Pickup Time */}
                 <div>
                   <div className="text-gray-600 text-xs uppercase font-medium">Pickup</div>
-                  {isEditingThisCard && editingField === 'pickupDateTime' ? (
+                  {(isEditingThisCard && editingField === 'pickupDateTime') || addingAllTimes ? (
                     <div className="flex flex-col gap-1">
-                      <DateTimePicker
-                        value={editingValue}
-                        onChange={setEditingValue}
-                        className="h-7 text-xs border-[#007E8C]/20"
-                      />
-                      <div className="flex gap-1">
-                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
-                          <Save className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
-                          <X className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                      </div>
+                      {addingAllTimes ? (
+                        <Input
+                          type="time"
+                          value={tempPickupTime}
+                          onChange={(e) => setTempPickupTime(e.target.value)}
+                          className="h-7 bg-white text-gray-900 text-xs border-[#007E8C]/20"
+                        />
+                      ) : (
+                        <>
+                          <DateTimePicker
+                            value={editingValue}
+                            onChange={setEditingValue}
+                            className="h-7 text-xs border-[#007E8C]/20"
+                          />
+                          <div className="flex gap-1">
+                            <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white hover:bg-[#007E8C]/90" aria-label="Save">
+                              <Save className="w-3 h-3" aria-hidden="true" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 hover:bg-gray-100" aria-label="Cancel">
+                              <X className="w-3 h-3" aria-hidden="true" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <div className="font-semibold group cursor-pointer text-xs text-[#236383]" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
@@ -519,26 +565,79 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               </div>
 
-              {/* Add Times button - shows when any time is missing */}
+              {/* Add Times button or Save/Cancel buttons */}
               {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap mt-4"
-                  onClick={() => {
-                    // Open a dialog or inline editing for missing times
-                    if (!request.eventStartTime) {
-                      startEditing('eventStartTime', '');
-                    } else if (!request.eventEndTime) {
-                      startEditing('eventEndTime', '');
-                    } else {
-                      startEditing('pickupDateTime', '');
-                    }
-                  }}
-                >
-                  <Clock className="w-3 h-3 mr-1" />
-                  Add Times
-                </Button>
+                <div className="flex flex-col gap-1 mt-4">
+                  {!addingAllTimes ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap"
+                      onClick={() => {
+                        // Initialize temp values with existing times
+                        setTempStartTime(formatTimeForInput(request.eventStartTime || ''));
+                        setTempEndTime(formatTimeForInput(request.eventEndTime || ''));
+                        setTempPickupTime(request.pickupDateTime ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTimeForInput(request.pickupTime) : ''));
+                        setAddingAllTimes(true);
+                      }}
+                    >
+                      <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
+                      Set All Times
+                    </Button>
+                  ) : (
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          // Prepare updates object with all modified times
+                          const updates: Record<string, string> = {};
+
+                          // Get existing pickup time value for comparison
+                          const existingPickupTime = request.pickupDateTime
+                            ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
+                            : (request.pickupTime ? formatTimeForInput(request.pickupTime) : '');
+
+                          if (tempStartTime && tempStartTime !== formatTimeForInput(request.eventStartTime || '')) {
+                            updates.eventStartTime = tempStartTime;
+                          }
+                          if (tempEndTime && tempEndTime !== formatTimeForInput(request.eventEndTime || '')) {
+                            updates.eventEndTime = tempEndTime;
+                          }
+                          if (tempPickupTime && tempPickupTime !== existingPickupTime) {
+                            updates.pickupTime = tempPickupTime;
+                          }
+
+                          // Save all fields at once
+                          if (Object.keys(updates).length > 0) {
+                            updateFieldsMutation.mutate(updates);
+                          } else {
+                            setAddingAllTimes(false);
+                          }
+                        }}
+                        className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 whitespace-nowrap"
+                        disabled={updateFieldsMutation.isPending}
+                        aria-label="Save all times"
+                      >
+                        <Save className="w-3 h-3 mr-1" aria-hidden="true" />
+                        {updateFieldsMutation.isPending ? 'Saving...' : 'Save All'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setAddingAllTimes(false);
+                          setTempStartTime('');
+                          setTempEndTime('');
+                          setTempPickupTime('');
+                        }}
+                        className="text-gray-600 hover:bg-gray-100"
+                        aria-label="Cancel"
+                      >
+                        <X className="w-3 h-3" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
