@@ -424,7 +424,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Event Details */}
             <div className="bg-[#007E8C]/5 rounded-lg p-4 border border-[#007E8C]/10 space-y-3">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide flex items-center gap-2 mb-3">
-                <Calendar className="w-4 h-4 text-[#007E8C]" aria-hidden="true" focusable="false" />
+                <Calendar className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
                 Event Details
               </h3>
 
