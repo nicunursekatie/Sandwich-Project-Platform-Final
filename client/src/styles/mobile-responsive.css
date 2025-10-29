@@ -352,13 +352,6 @@
     width: calc(100vw - 2rem) !important;
   }
   
-  /* Better mobile form layouts */
-  .mobile-form-grid {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 1rem !important;
-  }
-  
   /* Mobile-friendly select dropdowns */
   .mobile-select-trigger {
     width: 100% !important;
