@@ -407,233 +407,239 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           );
         })()}
 
-        {/* Event Details */}
-        <div className="space-y-3 mb-4">
-
-          {/* Contact Attempts Info */}
-          {(request.contactAttempts || request.lastContactAttempt) && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-amber-800">
-                <Phone className="w-4 h-4" />
-                {request.contactAttempts && request.contactAttempts > 0 && (
-                  <span className="text-sm font-medium">
-                    Contact attempts: {request.contactAttempts}
-                  </span>
-                )}
-                {request.lastContactAttempt && (
-                  <span className="text-xs">
-                    (Last: {new Date(request.lastContactAttempt).toLocaleDateString()})
-                  </span>
-                )}
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          {/* Left Column - Event Details */}
+          <div className="space-y-3">
+            {/* Contact Attempts Info */}
+            {(request.contactAttempts || request.lastContactAttempt) && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-amber-800">
+                  <Phone className="w-4 h-4" />
+                  {request.contactAttempts && request.contactAttempts > 0 && (
+                    <span className="text-sm font-medium">
+                      Contact attempts: {request.contactAttempts}
+                    </span>
+                  )}
+                  {request.lastContactAttempt && (
+                    <span className="text-xs">
+                      (Last: {new Date(request.lastContactAttempt).toLocaleDateString()})
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Scheduled Call Info */}
-          {request.scheduledCallDate && (
-            <div className="bg-brand-primary-lighter rounded-lg p-3">
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-brand-primary-muted" />
-                <span className="text-sm font-medium">Call scheduled:</span>
-                <span className="text-sm">
-                  {new Date(request.scheduledCallDate).toLocaleString()}
-                </span>
+            {/* Scheduled Call Info */}
+            {request.scheduledCallDate && (
+              <div className="bg-brand-primary-lighter rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-brand-primary-muted" />
+                  <span className="text-sm font-medium">Call scheduled:</span>
+                  <span className="text-sm">
+                    {new Date(request.scheduledCallDate).toLocaleString()}
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm sm:text-base md:text-lg font-semibold text-[#007E8C]">
-                Preferred Time
-              </p>
-              <p className="font-medium">
-                {request.eventStartTime &&
-                  formatTime12Hour(request.eventStartTime)}
-                {request.eventEndTime &&
-                  ` - ${formatTime12Hour(request.eventEndTime)}`}
-              </p>
-            </div>
+            {/* Preferred Time */}
+            {(request.eventStartTime || request.eventEndTime) && (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm sm:text-base md:text-lg font-semibold text-[#007E8C] mb-1">
+                  Preferred Time
+                </p>
+                <p className="font-medium">
+                  {request.eventStartTime &&
+                    formatTime12Hour(request.eventStartTime)}
+                  {request.eventEndTime &&
+                    ` - ${formatTime12Hour(request.eventEndTime)}`}
+                </p>
+              </div>
+            )}
+
+            {/* Sandwich Info */}
+            {(request.estimatedSandwichCount || request.sandwichTypes) && (
+              <div className="bg-amber-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Package className="w-4 h-4 text-amber-600" />
+                  <span className="font-medium">Sandwiches:</span>
+                  <span>
+                    {formatSandwichTypesDisplay(
+                      request.sandwichTypes,
+                      request.estimatedSandwichCount ?? undefined
+                    )}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Sandwich Info */}
-          {(request.estimatedSandwichCount || request.sandwichTypes) && (
-            <div className="bg-amber-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Package className="w-4 h-4 text-amber-600" />
-                <span className="font-medium">Sandwiches:</span>
-                <span>
-                  {formatSandwichTypesDisplay(
-                    request.sandwichTypes,
-                    request.estimatedSandwichCount ?? undefined
-                  )}
-                </span>
-              </div>
-            </div>
-          )}
+          {/* Right Column - Contact Info & TSP Contact */}
+          <div className="space-y-3">
+            {/* Contact Info */}
+            <CardContactInfo
+              request={request}
+              onCall={onCall}
+              onContact={onContact}
+            />
 
-          {/* Comprehensive Notes Section */}
-          {(request.message || request.planningNotes || request.schedulingNotes || request.additionalRequirements || 
-            request.volunteerNotes || request.driverNotes || request.vanDriverNotes || request.followUpNotes || 
-            request.distributionNotes || request.duplicateNotes || request.unresponsiveNotes || request.socialMediaPostNotes) && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                Notes & Requirements
-              </h4>
-              <div className="space-y-3">
-                {request.message && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Initial Request Message:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-brand-primary-lighter p-2 rounded border-l-3 border-brand-primary-border">
-                      {request.message}
-                    </p>
+            {/* TSP Contact Section - Prominent display */}
+            {(request.tspContact || request.customTspContact) && (
+              <div className="p-4 bg-gradient-to-r from-[#FBAD3F]/10 to-[#D68319]/10 border-2 border-[#FBAD3F]/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="bg-[#FBAD3F] p-2 rounded-full">
+                    <Building className="w-6 h-6 text-white" />
                   </div>
-                )}
-                {request.additionalRequirements && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Special Requirements:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-amber-50 p-2 rounded border-l-3 border-amber-200">
-                      {request.additionalRequirements}
-                    </p>
+                  <div className="flex-1">
+                    <div className="text-sm sm:text-base md:text-lg font-bold text-[#D68319] mb-1">
+                      TSP Contact
+                    </div>
+                    <div className="text-base sm:text-lg md:text-xl font-semibold text-[#007E8C] break-words">
+                      {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
+                    </div>
+                    {request.tspContactAssignedDate && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        Assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()}
+                      </div>
+                    )}
                   </div>
-                )}
-                {request.planningNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Planning Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-white p-2 rounded border">
-                      {request.planningNotes}
-                    </p>
-                  </div>
-                )}
-                {request.schedulingNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Scheduling Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-green-50 p-2 rounded border-l-3 border-green-200">
-                      {request.schedulingNotes}
-                    </p>
-                  </div>
-                )}
-                {request.volunteerNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Volunteer Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-purple-50 p-2 rounded border-l-3 border-purple-200">
-                      {request.volunteerNotes}
-                    </p>
-                  </div>
-                )}
-                {request.driverNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Driver Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-orange-50 p-2 rounded border-l-3 border-orange-200">
-                      {request.driverNotes}
-                    </p>
-                  </div>
-                )}
-                {request.vanDriverNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Van Driver Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-red-50 p-2 rounded border-l-3 border-red-200">
-                      {request.vanDriverNotes}
-                    </p>
-                  </div>
-                )}
-                {request.followUpNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Follow-up Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-yellow-50 p-2 rounded border-l-3 border-yellow-200">
-                      {request.followUpNotes}
-                    </p>
-                  </div>
-                )}
-                {request.distributionNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Distribution Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-teal-50 p-2 rounded border-l-3 border-teal-200">
-                      {request.distributionNotes}
-                    </p>
-                  </div>
-                )}
-                {request.duplicateNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Duplicate Check Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-pink-50 p-2 rounded border-l-3 border-pink-200">
-                      {request.duplicateNotes}
-                    </p>
-                  </div>
-                )}
-                {request.unresponsiveNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Unresponsive Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-gray-100 p-2 rounded border-l-3 border-gray-300">
-                      {request.unresponsiveNotes}
-                    </p>
-                  </div>
-                )}
-                {request.socialMediaPostNotes && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Social Media Notes:
-                    </p>
-                    <p className="text-sm text-gray-700 bg-indigo-50 p-2 rounded border-l-3 border-indigo-200">
-                      {request.socialMediaPostNotes}
-                    </p>
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Contact Info */}
-        <CardContactInfo
-          request={request}
-          onCall={onCall}
-          onContact={onContact}
-        />
-
-        {/* TSP Contact Section - Prominent display */}
-        {(request.tspContact || request.customTspContact) && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-[#FBAD3F]/10 to-[#D68319]/10 border-2 border-[#FBAD3F]/30 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="bg-[#FBAD3F] p-2 rounded-full">
-                <Building className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <div className="text-sm sm:text-base md:text-lg font-bold text-[#D68319] mb-1">
-                  TSP Contact
+        {/* Comprehensive Notes Section - Full Width */}
+        {(request.message || request.planningNotes || request.schedulingNotes || request.additionalRequirements ||
+          request.volunteerNotes || request.driverNotes || request.vanDriverNotes || request.followUpNotes ||
+          request.distributionNotes || request.duplicateNotes || request.unresponsiveNotes || request.socialMediaPostNotes) && (
+          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Notes & Requirements
+            </h4>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {request.message && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Initial Request Message:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-brand-primary-lighter p-2 rounded border-l-3 border-brand-primary-border">
+                    {request.message}
+                  </p>
                 </div>
-                <div className="text-base sm:text-lg md:text-xl font-semibold text-[#007E8C] break-words">
-                  {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
+              )}
+              {request.additionalRequirements && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Special Requirements:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-amber-50 p-2 rounded border-l-3 border-amber-200">
+                    {request.additionalRequirements}
+                  </p>
                 </div>
-                {request.tspContactAssignedDate && (
-                  <div className="text-sm text-gray-600 mt-1">
-                    Assigned {new Date(request.tspContactAssignedDate).toLocaleDateString()}
-                  </div>
-                )}
-              </div>
+              )}
+              {request.planningNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Planning Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-white p-2 rounded border">
+                    {request.planningNotes}
+                  </p>
+                </div>
+              )}
+              {request.schedulingNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Scheduling Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-green-50 p-2 rounded border-l-3 border-green-200">
+                    {request.schedulingNotes}
+                  </p>
+                </div>
+              )}
+              {request.volunteerNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Volunteer Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-purple-50 p-2 rounded border-l-3 border-purple-200">
+                    {request.volunteerNotes}
+                  </p>
+                </div>
+              )}
+              {request.driverNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Driver Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-orange-50 p-2 rounded border-l-3 border-orange-200">
+                    {request.driverNotes}
+                  </p>
+                </div>
+              )}
+              {request.vanDriverNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Van Driver Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-red-50 p-2 rounded border-l-3 border-red-200">
+                    {request.vanDriverNotes}
+                  </p>
+                </div>
+              )}
+              {request.followUpNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Follow-up Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-yellow-50 p-2 rounded border-l-3 border-yellow-200">
+                    {request.followUpNotes}
+                  </p>
+                </div>
+              )}
+              {request.distributionNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Distribution Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-teal-50 p-2 rounded border-l-3 border-teal-200">
+                    {request.distributionNotes}
+                  </p>
+                </div>
+              )}
+              {request.duplicateNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Duplicate Check Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-pink-50 p-2 rounded border-l-3 border-pink-200">
+                    {request.duplicateNotes}
+                  </p>
+                </div>
+              )}
+              {request.unresponsiveNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Unresponsive Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-gray-100 p-2 rounded border-l-3 border-gray-300">
+                    {request.unresponsiveNotes}
+                  </p>
+                </div>
+              )}
+              {request.socialMediaPostNotes && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">
+                    Social Media Notes:
+                  </p>
+                  <p className="text-sm text-gray-700 bg-indigo-50 p-2 rounded border-l-3 border-indigo-200">
+                    {request.socialMediaPostNotes}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

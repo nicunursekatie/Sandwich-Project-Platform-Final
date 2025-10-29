@@ -61,7 +61,7 @@ export const NewRequestsTab: React.FC = () => {
           No new event requests
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+        <div className="space-y-4">
           {newRequests.map((request) => (
             <NewRequestCard
               key={request.id}
