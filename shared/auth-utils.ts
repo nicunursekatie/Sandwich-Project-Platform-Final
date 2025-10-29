@@ -262,6 +262,7 @@ export const PERMISSIONS = {
   NAV_HELP: 'NAV_HELP', // Access to Help tab
   NAV_USER_MANAGEMENT: 'NAV_USER_MANAGEMENT', // Access to User Management tab
   NAV_TEAM_BOARD: 'NAV_TEAM_BOARD', // Access to Team Board tab
+  NAV_PROMOTION: 'NAV_PROMOTION', // Access to Promotion (Social Media Graphics) tab
 
   // ADMIN - Administrative access
   ADMIN_PANEL_ACCESS: 'ADMIN_PANEL_ACCESS', // Access to admin panel/user management

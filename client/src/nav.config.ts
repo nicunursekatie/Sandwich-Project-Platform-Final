@@ -31,6 +31,7 @@ import {
   Package,
   HelpCircle,
   StickyNote,
+  Image,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -128,6 +129,14 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'team-board',
     group: 'communication',
     highlighted: true,
+  },
+  {
+    id: 'promotion',
+    label: 'Promotion',
+    icon: Image,
+    href: 'promotion',
+    permission: PERMISSIONS.NAV_PROMOTION,
+    group: 'communication',
   },
 
   // OPERATIONS (the weekly flow)
