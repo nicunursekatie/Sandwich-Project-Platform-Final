@@ -472,7 +472,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <div className="grid grid-cols-3 gap-2 text-sm flex-1">
                 {/* Start Time */}
                 <div>
-                  <div className="text-gray-600 text-xs uppercase font-medium">Start</div>
+                  <div className="text-gray-700 text-2xl uppercase font-bold">Start</div>
                   {(isEditingThisCard && editingField === 'eventStartTime') || addingAllTimes ? (
                     <div className="flex flex-col gap-1">
                       <Input
@@ -493,7 +493,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                   ) : (
-                    <div className="font-semibold group cursor-pointer text-[#236383]" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
+                    <div className="text-3xl font-extrabold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
                       {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
                     </div>
                   )}
@@ -501,7 +501,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
                 {/* End Time */}
                 <div>
-                  <div className="text-gray-600 text-xs uppercase font-medium">End</div>
+                  <div className="text-gray-700 text-2xl uppercase font-bold">End</div>
                   {(isEditingThisCard && editingField === 'eventEndTime') || addingAllTimes ? (
                     <div className="flex flex-col gap-1">
                       <Input
@@ -522,7 +522,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                   ) : (
-                    <div className="font-semibold group cursor-pointer text-[#236383]" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
+                    <div className="text-3xl font-extrabold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
                       {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
                     </div>
                   )}
@@ -530,7 +530,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
                 {/* Pickup Time */}
                 <div>
-                  <div className="text-gray-600 text-xs uppercase font-medium">Pickup</div>
+                  <div className="text-gray-700 text-2xl uppercase font-bold">Pickup</div>
                   {(isEditingThisCard && editingField === 'pickupDateTime') || addingAllTimes ? (
                     <div className="flex flex-col gap-1">
                       {addingAllTimes ? (
@@ -559,7 +559,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                   ) : (
-                    <div className="font-semibold group cursor-pointer text-xs text-[#236383]" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                    <div className="text-3xl font-extrabold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
                       {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set')}
                     </div>
                   )}
@@ -901,8 +901,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </div>
                     ) : (
                       <>
-                        <span className="font-semibold text-[#236383] flex items-center gap-1">
-                          <Car className="w-4 h-4" />
+                        <span className="text-2xl font-extrabold text-gray-900 flex items-center gap-1">
+                          <Car className="w-7 h-7" />
                           {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
                         </span>
                         {canEdit && driverNeeded > 0 && (
@@ -917,8 +917,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {driverNeeded > 0 ? (
                       <>
                         {parsePostgresArray(request.assignedDriverIds).map((id) => (
-                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                            <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
+                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-4 py-2.5">
+                            <span className="text-xl font-semibold">{extractCustomName(id) || resolveUserName(id)}</span>
                             <div className="flex items-center gap-1">
                               <SendKudosButton
                                 recipientId={id}
@@ -943,11 +943,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </div>
                           </div>
                         ))}
-                        {driverAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
+                        {driverAssigned === 0 && <div className="text-xl font-medium text-gray-600 italic">None assigned</div>}
                       </>
                     ) : (
-                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                        <span className="text-sm text-[#236383] italic">No drivers needed</span>
+                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-4 py-2.5">
+                        <span className="text-xl font-medium text-gray-600 italic">No drivers needed</span>
                         {canEdit && (
                           <Button
                             size="sm"
@@ -988,8 +988,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </div>
                     ) : (
                       <>
-                        <span className="font-semibold text-[#236383] flex items-center gap-1">
-                          <Megaphone className="w-4 h-4" />
+                        <span className="text-2xl font-extrabold text-gray-900 flex items-center gap-1">
+                          <Megaphone className="w-7 h-7" />
                           {speakerNeeded > 0 ? `Speakers (${speakerAssigned}/${speakerNeeded})` : 'Speakers'}
                         </span>
                         {canEdit && speakerNeeded > 0 && (
@@ -1007,8 +1007,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           const detailName = (request.speakerDetails as any)?.[id]?.name;
                           const displayName = (detailName && !/^\d+$/.test(detailName)) ? detailName : (extractCustomName(id) || resolveUserName(id));
                           return (
-                            <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                              <span className="text-sm">{displayName}</span>
+                            <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-4 py-2.5">
+                              <span className="text-xl font-semibold">{displayName}</span>
                               <div className="flex items-center gap-1">
                                 <SendKudosButton
                                   recipientId={id}
@@ -1034,11 +1034,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </div>
                           );
                         })}
-                        {speakerAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
+                        {speakerAssigned === 0 && <div className="text-xl font-medium text-gray-600 italic">None assigned</div>}
                       </>
                     ) : (
-                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                        <span className="text-sm text-[#236383] italic">No speakers needed</span>
+                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-4 py-2.5">
+                        <span className="text-xl font-medium text-gray-600 italic">No speakers needed</span>
                         {canEdit && (
                           <Button
                             size="sm"
@@ -1079,8 +1079,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </div>
                     ) : (
                       <>
-                        <span className="font-semibold text-[#236383] flex items-center gap-1">
-                          <Users className="w-4 h-4" />
+                        <span className="text-2xl font-extrabold text-gray-900 flex items-center gap-1">
+                          <Users className="w-7 h-7" />
                           {volunteerNeeded > 0 ? `Volunteers (${volunteerAssigned}/${volunteerNeeded})` : 'Volunteers'}
                         </span>
                         {canEdit && volunteerNeeded > 0 && (
@@ -1095,8 +1095,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {volunteerNeeded > 0 ? (
                       <>
                         {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
-                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                            <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
+                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-4 py-2.5">
+                            <span className="text-xl font-semibold">{extractCustomName(id) || resolveUserName(id)}</span>
                             <div className="flex items-center gap-1">
                               <SendKudosButton
                                 recipientId={id}
@@ -1121,11 +1121,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </div>
                           </div>
                         ))}
-                        {volunteerAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
+                        {volunteerAssigned === 0 && <div className="text-xl font-medium text-gray-600 italic">None assigned</div>}
                       </>
                     ) : (
-                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                        <span className="text-sm text-[#236383] italic">No volunteers needed</span>
+                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-4 py-2.5">
+                        <span className="text-xl font-medium text-gray-600 italic">No volunteers needed</span>
                         {canEdit && (
                           <Button
                             size="sm"
