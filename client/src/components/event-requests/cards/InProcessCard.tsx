@@ -172,7 +172,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </span>
             )}
           </h3>
-          <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border border-[#007E8C] text-[16px]">
+          <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C] text-[16px]">
             <StatusIcon className="w-3 h-3 mr-1" />
             {getStatusLabel(request.status)}
           </Badge>
@@ -181,8 +181,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
             className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
               request.isConfirmed
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-400 text-white'
+                ? 'bg-[#007E8C] text-white'
+                : 'bg-[#236383] text-white'
             }`}
             title="Click to toggle confirmation status"
           >
@@ -208,7 +208,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <Badge
                 key={item}
                 variant="outline"
-                className="bg-red-50 text-red-700 border-red-300 px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center"
+                className="bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41] px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center"
                 data-testid={`badge-missing-${item.toLowerCase().replace(' ', '-')}`}
               >
                 <AlertTriangle className="w-3 h-3 mr-1" />
@@ -367,7 +367,19 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   canDelete = true,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
-  const headerContent = CardHeader({ request, resolveUserName, isInProcessStale: isStale });
+  const headerContent = CardHeader({
+    request,
+    resolveUserName,
+    isInProcessStale: isStale,
+    canEdit: false, // Date editing not yet implemented in InProcessCard
+    isEditingThisCard: false,
+    editingField: '',
+    editingValue: '',
+    startEditing: undefined,
+    saveEdit: undefined,
+    cancelEdit: undefined,
+    setEditingValue: undefined
+  });
 
   return (
     <Card
