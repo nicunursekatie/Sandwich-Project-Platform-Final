@@ -188,12 +188,12 @@ function ComprehensivePersonSelector({
       {/* Search and Custom Entry Controls */}
       <div className="space-y-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" aria-hidden="true" />
           <Input
             placeholder="Search by name, email, phone, or organization..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-[#007E8C]/20"
           />
         </div>
 
@@ -205,13 +205,13 @@ function ComprehensivePersonSelector({
               variant="outline"
               size="sm"
               onClick={() => setShowCustomEntry(true)}
-              className="w-full"
+              className="w-full border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/5 hover:border-[#007E8C]"
             >
-              <UserPlus className="w-4 h-4 mr-2" />
+              <UserPlus className="w-4 h-4 mr-2" aria-hidden="true" />
               Add Custom Entry (Person Not in List)
             </Button>
           ) : (
-            <div className="flex gap-2 p-3 bg-brand-primary-lighter rounded-lg border border-brand-primary-border">
+            <div className="flex gap-2 p-3 bg-[#007E8C]/5 rounded-lg border border-[#007E8C]/20">
               <Input
                 placeholder="Enter name for custom assignment..."
                 value={customEntryText}
@@ -230,6 +230,7 @@ function ComprehensivePersonSelector({
                 size="sm"
                 onClick={handleAddCustomEntry}
                 disabled={!customEntryText.trim()}
+                className="bg-[#007E8C] hover:bg-[#236383] text-white"
               >
                 Add
               </Button>
@@ -241,6 +242,7 @@ function ComprehensivePersonSelector({
                   setShowCustomEntry(false);
                   setCustomEntryText('');
                 }}
+                className="hover:bg-[#007E8C]/10"
               >
                 Cancel
               </Button>
@@ -251,8 +253,8 @@ function ComprehensivePersonSelector({
 
       {/* Selected People */}
       {selectedPeople.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-700">
+        <div className="space-y-2 p-3 bg-[#007E8C]/5 rounded-lg border border-[#007E8C]/10">
+          <h3 className="text-sm font-semibold text-[#236383] uppercase tracking-wide">
             Selected {assignmentType ? assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1) + 's' : 'People'} ({selectedPeople.length})
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -262,15 +264,16 @@ function ComprehensivePersonSelector({
                 <Badge
                   key={personId}
                   variant="secondary"
-                  className={isCustom ? "bg-brand-primary-lighter text-brand-primary border-brand-primary-border" : "bg-green-50 text-green-700 border-green-200"}
+                  className={isCustom ? "bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium" : "bg-[#007E8C]/10 text-[#007E8C] border border-[#007E8C]/30 font-medium"}
                 >
                   {getPersonDisplayName(personId)}
                   {isCustom && <span className="ml-1 text-xs">(custom)</span>}
                   <button
                     onClick={() => removeSelectedPerson(personId)}
-                    className="ml-2 hover:bg-green-200 rounded-full w-4 h-4 flex items-center justify-center"
+                    className="ml-2 hover:bg-[#007E8C]/20 rounded-full w-4 h-4 flex items-center justify-center"
+                    aria-label={`Remove ${getPersonDisplayName(personId)}`}
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </Badge>
               );
@@ -285,7 +288,7 @@ function ComprehensivePersonSelector({
           <div className="space-y-6 pr-4">
             {Object.entries(groupedPeople).map(([section, people]) => (
               <div key={section}>
-                <h3 className="text-sm font-medium text-gray-700 mb-3">
+                <h3 className="text-sm font-semibold text-[#236383] uppercase tracking-wide mb-3 pb-2 border-b border-[#007E8C]/10">
                   {section} ({people.length})
                 </h3>
                 <div className="space-y-2">
@@ -297,19 +300,19 @@ function ComprehensivePersonSelector({
                       <button
                         key={person.id}
                         type="button"
-                        className={`w-full text-left p-3 rounded-lg border cursor-pointer transition-colors ${
+                        className={`w-full text-left p-3 rounded-lg border cursor-pointer transition-all ${
                           isSelected
-                            ? 'bg-green-50 border-green-200 text-green-700'
-                            : 'bg-white border-gray-200 hover:bg-gray-50'
+                            ? 'bg-[#007E8C]/10 border-[#007E8C] text-[#236383] shadow-sm'
+                            : 'bg-white border-gray-200 hover:bg-[#007E8C]/5 hover:border-[#007E8C]/30'
                         }`}
                         onClick={() => togglePersonSelection(person.id)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3 flex-1">
-                            {person.type === 'user' && <User className="w-4 h-4 text-gray-400" />}
-                            {person.type === 'driver' && <Car className="w-4 h-4 text-gray-400" />}
-                            {person.type === 'volunteer' && <Users className="w-4 h-4 text-gray-400" />}
-                            {person.type === 'host-contact' && <Building className="w-4 h-4 text-gray-400" />}
+                            {person.type === 'user' && <User className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />}
+                            {person.type === 'driver' && <Car className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />}
+                            {person.type === 'volunteer' && <Users className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />}
+                            {person.type === 'host-contact' && <Building className="w-4 h-4 text-[#236383]" aria-hidden="true" />}
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <div className="font-medium">{person.displayName}</div>
@@ -317,27 +320,27 @@ function ComprehensivePersonSelector({
                                 {!isLoadingAvailability && person.type === 'user' && (
                                   <>
                                     {availabilityStatus === 'available' && (
-                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                      <Badge variant="outline" className="bg-[#007E8C]/10 text-[#007E8C] border border-[#007E8C]/30 text-xs font-medium">
+                                        <CheckCircle className="w-3 h-3 mr-1" aria-hidden="true" />
                                         Available
                                       </Badge>
                                     )}
                                     {availabilityStatus === 'unavailable' && (
-                                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
-                                        <XCircle className="w-3 h-3 mr-1" />
+                                      <Badge variant="outline" className="bg-[#A31C41]/10 text-[#A31C41] border border-[#A31C41]/30 text-xs font-medium">
+                                        <XCircle className="w-3 h-3 mr-1" aria-hidden="true" />
                                         Unavailable
                                       </Badge>
                                     )}
                                     {availabilityStatus === 'not_set' && (
-                                      <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200 text-xs">
-                                        <HelpCircle className="w-3 h-3 mr-1" />
+                                      <Badge variant="outline" className="bg-gray-50 text-gray-600 border border-gray-300 text-xs font-medium">
+                                        <HelpCircle className="w-3 h-3 mr-1" aria-hidden="true" />
                                         Not Set
                                       </Badge>
                                     )}
                                   </>
                                 )}
                                 {isLoadingAvailability && person.type === 'user' && (
-                                  <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+                                  <Loader2 className="w-3 h-3 animate-spin text-[#007E8C]" aria-hidden="true" />
                                 )}
                               </div>
                               {person.email && (
@@ -352,7 +355,7 @@ function ComprehensivePersonSelector({
                             </div>
                           </div>
                           {isSelected && (
-                            <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                            <Check className="w-5 h-5 text-[#007E8C] flex-shrink-0" aria-hidden="true" />
                           )}
                         </div>
                       </button>
@@ -434,27 +437,27 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
       }
     }}>
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5" />
+        <DialogHeader className="border-b border-[#007E8C]/10 pb-4">
+          <DialogTitle className="flex items-center gap-2 text-[#236383] text-xl">
+            <UserPlus className="w-5 h-5 text-[#007E8C]" aria-hidden="true" />
             Assign {assignmentType ? assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1) + 's' : 'People'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-gray-600 mt-2">
             Select people to assign as {assignmentType}s for this event. You can choose from team members, drivers, volunteers, and host contacts.
           </DialogDescription>
         </DialogHeader>
 
         {/* View Team Availability Link */}
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end pt-2">
           <Button
             type="button"
             variant="link"
             size="sm"
             onClick={() => window.open('/team-availability', '_blank')}
-            className="text-teal-600 hover:text-teal-700"
+            className="text-[#007E8C] hover:text-[#236383] font-medium"
             data-testid="link-view-team-availability"
           >
-            <ExternalLink className="w-4 h-4 mr-1" />
+            <ExternalLink className="w-4 h-4 mr-1" aria-hidden="true" />
             View Full Team Availability Calendar
           </Button>
         </div>
@@ -467,18 +470,20 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
           isLoadingAvailability={isLoadingAvailability}
         />
 
-        <div className="flex justify-end space-x-2 pt-4 border-t">
+        <div className="flex justify-end space-x-2 pt-4 border-t border-[#007E8C]/10">
           <Button
             variant="outline"
             onClick={onClose}
+            className="border-gray-300 text-gray-700 hover:bg-gray-50"
           >
             Cancel
           </Button>
           <Button
             onClick={() => onAssign(selectedAssignees)}
-            className="bg-teal-600 hover:bg-teal-700 text-white"
+            className="bg-[#007E8C] hover:bg-[#236383] text-white shadow-sm"
             disabled={selectedAssignees.length === 0}
           >
+            <UserPlus className="w-4 h-4 mr-2" aria-hidden="true" />
             Assign {selectedAssignees.length} {assignmentType}
             {selectedAssignees.length !== 1 ? 's' : ''}
           </Button>
