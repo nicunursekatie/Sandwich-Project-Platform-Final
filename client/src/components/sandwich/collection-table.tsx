@@ -43,49 +43,59 @@ function EditCollectionDialog({ collection, isOpen, onClose, onSave, isUpdating 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Collection</DialogTitle>
+      <DialogContent className="mobile-dialog-content sm:max-w-[500px]">
+        <DialogHeader className="mobile-modal-header pb-4 border-b border-gray-100">
+          <DialogTitle className="premium-text-h3 text-[#236383]">Edit Collection</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="collectionDate">Collection Date</Label>
+        <div className="space-y-5 mobile-modal-body py-4">
+          <div className="space-y-2">
+            <Label htmlFor="collectionDate" className="text-sm font-semibold text-[#236383]">
+              Collection Date
+            </Label>
             <Input
               id="collectionDate"
               type="date"
               value={formData.collectionDate}
               onChange={(e) => setFormData({ ...formData, collectionDate: e.target.value })}
+              className="premium-input mobile-input border-[#236383]/20 focus:border-[#007E8C]"
             />
           </div>
-          
-          <div>
-            <Label htmlFor="hostName">Host Name</Label>
+
+          <div className="space-y-2">
+            <Label htmlFor="hostName" className="text-sm font-semibold text-[#236383]">
+              Host Name
+            </Label>
             <Input
               id="hostName"
               value={formData.hostName}
               onChange={(e) => setFormData({ ...formData, hostName: e.target.value })}
+              className="premium-input mobile-input border-[#236383]/20 focus:border-[#007E8C]"
             />
           </div>
-          
-          <div>
-            <Label htmlFor="individualSandwiches">Individual Sandwiches</Label>
+
+          <div className="space-y-2">
+            <Label htmlFor="individualSandwiches" className="text-sm font-semibold text-[#236383]">
+              Individual Sandwiches
+            </Label>
             <Input
               id="individualSandwiches"
               type="number"
               min="0"
               value={formData.individualSandwiches}
               onChange={(e) => setFormData({ ...formData, individualSandwiches: parseInt(e.target.value) || 0 })}
+              className="premium-input mobile-input border-[#236383]/20 focus:border-[#007E8C]"
             />
           </div>
-          
-          <div>
-            <Label>Group Collections</Label>
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
+
+          <div className="space-y-3 pt-2">
+            <Label className="text-sm font-semibold text-[#236383]">Group Collections</Label>
+            <div className="space-y-3 ml-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mobile-form-grid">
                 <Input
                   placeholder="Group 1 name"
                   value={formData.group1Name}
                   onChange={(e) => setFormData({ ...formData, group1Name: e.target.value })}
+                  className="premium-input mobile-input border-[#236383]/20 focus:border-[#007E8C]"
                 />
                 <Input
                   type="number"
@@ -93,13 +103,15 @@ function EditCollectionDialog({ collection, isOpen, onClose, onSave, isUpdating 
                   placeholder="Count"
                   value={formData.group1Count}
                   onChange={(e) => setFormData({ ...formData, group1Count: parseInt(e.target.value) || 0 })}
+                  className="premium-input mobile-input border-[#236383]/20 focus:border-[#007E8C]"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mobile-form-grid">
                 <Input
                   placeholder="Group 2 name"
                   value={formData.group2Name}
                   onChange={(e) => setFormData({ ...formData, group2Name: e.target.value })}
+                  className="premium-input mobile-input border-[#236383]/20 focus:border-[#007E8C]"
                 />
                 <Input
                   type="number"
@@ -107,16 +119,25 @@ function EditCollectionDialog({ collection, isOpen, onClose, onSave, isUpdating 
                   placeholder="Count"
                   value={formData.group2Count}
                   onChange={(e) => setFormData({ ...formData, group2Count: parseInt(e.target.value) || 0 })}
+                  className="premium-input mobile-input border-[#236383]/20 focus:border-[#007E8C]"
                 />
               </div>
             </div>
           </div>
-          
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
+
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-gray-100 mobile-form-actions">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="mobile-button border-[#236383]/30 text-[#236383] hover:bg-[#236383]/5"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isUpdating}>
+            <Button
+              onClick={handleSave}
+              disabled={isUpdating}
+              className="mobile-button bg-gradient-to-r from-[#236383] to-[#007E8C] hover:from-[#1e5a75] hover:to-[#006B75] text-white shadow-md"
+            >
               {isUpdating ? "Saving..." : "Save Changes"}
             </Button>
           </div>
@@ -171,133 +192,252 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
 
   return (
     <>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b bg-gray-50">
-              <th className="text-left p-3 font-medium">Date</th>
-              <th className="text-left p-3 font-medium">Host</th>
-              <th className="text-left p-3 font-medium">Individual</th>
-              <th className="text-left p-3 font-medium">Groups</th>
-              <th className="text-left p-3 font-medium">Total</th>
-              <th className="text-left p-3 font-medium">Submitted By</th>
-              <th className="text-left p-3 font-medium">Date Submitted</th>
-              <th className="text-right p-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {collections.map((collection) => {
-              const groupCollections = getGroupCollections(collection);
-              const total = calculateTotal(collection);
-              
-              return (
-                <tr key={collection.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium">
-                        {(() => {
-                          // Timezone-safe date parsing to prevent day shifting
-                          const dateStr = collection.collectionDate;
-                          if (!dateStr) return 'No date';
-                          let date: Date;
-                          if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-                            // ISO midnight format - extract date part to avoid timezone shift
-                            const dateOnly = dateStr.split('T')[0];
-                            date = new Date(dateOnly + 'T12:00:00');
-                          } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                            // Date-only format
-                            date = new Date(dateStr + 'T12:00:00');
-                          } else {
-                            date = new Date(dateStr);
-                          }
-                          return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
-                        })()}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span>{collection.hostName}</span>
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <Badge variant="secondary">
-                      {collection.individualSandwiches}
-                    </Badge>
-                  </td>
-                  <td className="p-3">
-                    {groupCollections.length > 0 ? (
-                      <div className="space-y-1">
-                        {groupCollections.map((group: any, idx: number) => (
-                          <div key={idx} className="text-sm">
-                            <span className="font-medium">{group.groupName}:</span> {group.sandwichCount}
-                          </div>
-                        ))}
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto">
+        <div className="premium-card overflow-hidden">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b-2 border-[#236383]/10 bg-gradient-to-r from-[#236383]/5 to-[#47B3CB]/5">
+                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Date</th>
+                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Host</th>
+                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Individual</th>
+                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Groups</th>
+                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Total</th>
+                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Submitted By</th>
+                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Date Submitted</th>
+                <th className="text-right p-4 premium-text-body-sm font-semibold text-[#236383]">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {collections.map((collection) => {
+                const groupCollections = getGroupCollections(collection);
+                const total = calculateTotal(collection);
+
+                return (
+                  <tr
+                    key={collection.id}
+                    className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-[#236383]/[0.02] hover:to-[#47B3CB]/[0.02] transition-all duration-200"
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-[#007E8C]" />
+                        <span className="font-medium text-gray-900">
+                          {(() => {
+                            const dateStr = collection.collectionDate;
+                            if (!dateStr) return 'No date';
+                            let date: Date;
+                            if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                              const dateOnly = dateStr.split('T')[0];
+                              date = new Date(dateOnly + 'T12:00:00');
+                            } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                              date = new Date(dateStr + 'T12:00:00');
+                            } else {
+                              date = new Date(dateStr);
+                            }
+                            return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+                          })()}
+                        </span>
                       </div>
-                    ) : (
-                      <span className="text-gray-400">No groups</span>
-                    )}
-                  </td>
-                  <td className="p-3">
-                    <Badge className="bg-brand-primary-light text-brand-primary-dark">
-                      {total}
-                    </Badge>
-                  </td>
-                  <td className="p-3 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <User className="h-3 w-3 text-gray-400" />
-                      <span>{(collection as any).createdByName || 'Unknown User'}</span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-[#007E8C]" />
+                        <span className="text-gray-900 font-medium">{collection.hostName}</span>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="premium-badge-info">
+                        {collection.individualSandwiches}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      {groupCollections.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {groupCollections.map((group: any, idx: number) => (
+                            <div key={idx} className="text-sm flex items-center gap-2">
+                              <span className="font-semibold text-[#236383]">{group.groupName}:</span>
+                              <span className="premium-badge-success text-xs">{group.sandwichCount}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm italic">No groups</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-full bg-gradient-to-r from-[#236383] to-[#007E8C] text-white shadow-sm">
+                        {total}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <User className="h-3.5 w-3.5 text-[#007E8C]" />
+                        <span className="text-gray-700">{(collection as any).createdByName || 'Unknown User'}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">
+                      {(() => {
+                        const dateStr = collection.submittedAt;
+                        if (!dateStr) return 'No date';
+                        let date: Date;
+                        const dateStrString = typeof dateStr === 'string' ? dateStr : dateStr?.toISOString?.() ?? '';
+                        if (dateStrString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                          const dateOnly = dateStrString.split('T')[0];
+                          date = new Date(dateOnly + 'T12:00:00');
+                        } else if (dateStrString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                          date = new Date(dateStr + 'T12:00:00');
+                        } else {
+                          date = new Date(dateStr);
+                        }
+                        return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+                      })()}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(collection)}
+                          disabled={isUpdating}
+                          className="h-9 w-9 p-0 hover:bg-[#007E8C]/10 hover:text-[#007E8C] transition-colors"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDelete(collection.id)}
+                          disabled={isDeleting}
+                          className="h-9 w-9 p-0 text-[#A31C41] hover:text-[#8B1736] hover:bg-[#A31C41]/10 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4 mobile-container-tight">
+        {collections.map((collection) => {
+          const groupCollections = getGroupCollections(collection);
+          const total = calculateTotal(collection);
+
+          return (
+            <div
+              key={collection.id}
+              className="premium-card p-4 mobile-card hover:shadow-lg transition-all duration-300"
+            >
+              {/* Header Row */}
+              <div className="flex items-start justify-between mb-4 pb-3 border-b border-gray-100">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-[#007E8C]" />
+                    <span className="font-bold text-gray-900">
+                      {(() => {
+                        const dateStr = collection.collectionDate;
+                        if (!dateStr) return 'No date';
+                        let date: Date;
+                        if (dateStr.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
+                          const dateOnly = dateStr.split('T')[0];
+                          date = new Date(dateOnly + 'T12:00:00');
+                        } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                          date = new Date(dateStr + 'T12:00:00');
+                        } else {
+                          date = new Date(dateStr);
+                        }
+                        return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User className="h-3.5 w-3.5 text-[#007E8C]" />
+                    <span className="text-sm font-medium text-gray-700">{collection.hostName}</span>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-base font-bold rounded-full bg-gradient-to-r from-[#236383] to-[#007E8C] text-white shadow-md">
+                  {total}
+                </span>
+              </div>
+
+              {/* Content Grid */}
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[#236383] uppercase tracking-wide">Individual</span>
+                  <span className="premium-badge-info">
+                    {collection.individualSandwiches}
+                  </span>
+                </div>
+
+                {groupCollections.length > 0 && (
+                  <div>
+                    <span className="text-xs font-semibold text-[#236383] uppercase tracking-wide block mb-2">Groups</span>
+                    <div className="space-y-2 ml-2">
+                      {groupCollections.map((group: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between text-sm">
+                          <span className="font-semibold text-gray-700">{group.groupName}</span>
+                          <span className="premium-badge-success text-xs">{group.sandwichCount}</span>
+                        </div>
+                      ))}
                     </div>
-                  </td>
-                  <td className="p-3 text-sm text-gray-600">
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <User className="h-3 w-3 text-[#007E8C]" />
+                    <span>Submitted by <span className="font-medium text-gray-800">{(collection as any).createdByName || 'Unknown User'}</span></span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1 ml-5">
                     {(() => {
-                      // Timezone-safe date parsing to prevent day shifting
                       const dateStr = collection.submittedAt;
                       if (!dateStr) return 'No date';
                       let date: Date;
                       const dateStrString = typeof dateStr === 'string' ? dateStr : dateStr?.toISOString?.() ?? '';
                       if (dateStrString.match(/^\d{4}-\d{2}-\d{2}T00:00:00(\.\d{3})?Z?$/)) {
-                        // ISO midnight format - extract date part to avoid timezone shift
                         const dateOnly = dateStrString.split('T')[0];
                         date = new Date(dateOnly + 'T12:00:00');
                       } else if (dateStrString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        // Date-only format
                         date = new Date(dateStr + 'T12:00:00');
                       } else {
                         date = new Date(dateStr);
                       }
                       return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
                     })()}
-                  </td>
-                  <td className="p-3">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditClick(collection)}
-                        disabled={isUpdating}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onDelete(collection.id)}
-                        disabled={isDeleting}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-3 border-t border-gray-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditClick(collection)}
+                  disabled={isUpdating}
+                  className="flex-1 h-10 gap-2 border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C] hover:text-white transition-colors"
+                >
+                  <Edit className="h-4 w-4" />
+                  <span>Edit</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDelete(collection.id)}
+                  disabled={isDeleting}
+                  className="h-10 w-10 p-0 border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <EditCollectionDialog
