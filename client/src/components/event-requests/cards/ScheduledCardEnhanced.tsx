@@ -661,27 +661,29 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           <div className="space-y-3">
             {/* Contact Info */}
             <div className="bg-[#47B3CB] rounded-lg p-4 text-white">
-              <h3 className="font-bold uppercase tracking-wide border-b border-white/30 pb-2 mb-3">👤 Contact Info</h3>
+              <h3 className="font-bold uppercase tracking-wide border-b border-white/30 pb-2 mb-3">👤 Event Organizer</h3>
               <div className="space-y-2 text-sm">
-                {request.contactName && (
+                {(request.firstName || request.lastName) && (
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 shrink-0" />
-                    <span className="font-semibold">{request.contactName}</span>
+                    <span className="font-semibold">
+                      {request.firstName} {request.lastName}
+                    </span>
                   </div>
                 )}
-                {request.contactEmail && (
+                {request.email && (
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4 shrink-0" />
-                    <a href={`mailto:${request.contactEmail}`} className="hover:underline">
-                      {request.contactEmail}
+                    <a href={`mailto:${request.email}`} className="hover:underline">
+                      {request.email}
                     </a>
                   </div>
                 )}
-                {request.contactPhone && (
+                {request.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 shrink-0" />
-                    <a href={`tel:${request.contactPhone}`} className="hover:underline">
-                      {request.contactPhone}
+                    <a href={`tel:${request.phone}`} className="hover:underline">
+                      {request.phone}
                     </a>
                   </div>
                 )}
