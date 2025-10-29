@@ -312,8 +312,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
               {/* Sandwich count badge */}
               <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
-                <Package className="w-3 h-3 mr-1" />
-                {sandwichInfo}
+                <Package className="w-3 h-3 mr-1" aria-hidden="true" />
+                {sandwichInfo} Sandwiches
               </Badge>
 
               {request.externalId && request.externalId.startsWith('manual-') && (
@@ -356,7 +356,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
 
               {missingInfo.length > 0 && (
-                <Badge className="bg-[#A31C41]/10 text-[#A31C41] border border-[#A31C41]/30 font-medium">
+                <Badge className="bg-[#A31C41]/10 text-[#A31C41] border border-[#A31C41]/30 font-medium animate-pulse">
                   <AlertTriangle className="w-3 h-3 mr-1" />
                   {missingInfo.length} Missing
                 </Badge>
@@ -393,7 +393,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Event Details */}
             <div className="bg-[#007E8C]/5 rounded-lg p-4 border border-[#007E8C]/10 space-y-3">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide flex items-center gap-2 mb-3">
-                <Calendar className="w-4 h-4 text-[#007E8C]" />
+                <Calendar className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
                 Event Details
               </h3>
 
@@ -769,7 +769,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Team Assignments - Below Event Details in same column */}
             <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#236383]" />
+                <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1006,7 +1006,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Contact Info */}
             <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide pb-2 mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#47B3CB]" />
+                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
                 Event Organizer
               </h3>
               <div className="space-y-2 text-sm text-gray-900">
@@ -1061,7 +1061,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Delivery Logistics */}
             <div className="bg-[#FBAD3F]/5 rounded-lg p-4 border border-[#FBAD3F]/10">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide pb-2 mb-3 flex items-center gap-2">
-                <Package className="w-4 h-4 text-[#FBAD3F]" />
+                <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
                 Delivery Logistics
               </h3>
               <div className="space-y-2 text-sm text-gray-900">
@@ -1399,13 +1399,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             variant="ghost"
             size="sm"
             onClick={() => setShowAuditLog(!showAuditLog)}
-            className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#007E8C]/5"
+            className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#007E8C]/5 font-medium"
           >
             <div className="flex items-center gap-2">
-              <History className="w-4 h-4" />
-              <span className="font-medium">Activity History</span>
+              <History className="w-4 h-4" aria-hidden="true" />
+              Activity History
             </div>
-            {showAuditLog ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showAuditLog ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
           </Button>
         </div>
 
