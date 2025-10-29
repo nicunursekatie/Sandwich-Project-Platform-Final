@@ -367,10 +367,46 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   canDelete = true,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  
+  // State and handlers for CardHeader edit functionality
+  const [isEditingThisCard, setIsEditingThisCard] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+  
+  const startEditing = (field: string, value: string) => {
+    setIsEditingThisCard(true);
+    setEditingField(field);
+    setEditingValue(value);
+  };
+  
+  const saveEdit = () => {
+    // Call onEdit with the field and new value
+    if (editingField) {
+      onEdit();
+    }
+    setIsEditingThisCard(false);
+    setEditingField(null);
+    setEditingValue('');
+  };
+  
+  const cancelEdit = () => {
+    setIsEditingThisCard(false);
+    setEditingField(null);
+    setEditingValue('');
+  };
+  
   const headerContent = CardHeader({
     request,
     resolveUserName,
     isInProcessStale: isStale,
+    canEdit,
+    isEditingThisCard,
+    editingField,
+    editingValue,
+    startEditing,
+    saveEdit,
+    cancelEdit,
+    setEditingValue,
   });
 
   return (
