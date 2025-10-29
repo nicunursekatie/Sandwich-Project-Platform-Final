@@ -370,10 +370,10 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   return (
     <Card
       id={`event-card-${request.id}`}
-      className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#FBAD3F] ${
+      className={`transition-all duration-200 hover:shadow-lg border-l-4 bg-white shadow-sm ${
         isStale
-          ? 'bg-gradient-to-br from-[#FBAD3F]/30 via-[#FBAD3F]/20 to-[#FFF4E6] border border-[#FBAD3F]/50'
-          : 'bg-gradient-to-br from-[#FFF4E6] via-[#FBAD3F]/10 to-[#FBAD3F]/20 border border-[#FBAD3F]/30'
+          ? 'border-l-[#A31C41]'
+          : 'border-l-[#FBAD3F]'
       }`}
     >
       <CardContent className="p-6">
