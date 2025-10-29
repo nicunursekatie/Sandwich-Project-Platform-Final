@@ -841,13 +841,27 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   ) : (
                     <div>
                       {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                        <div className="space-y-1">
-                          {request.assignedRecipientIds.map((id, idx) => (
-                            <div key={idx} className="flex items-center justify-between bg-white/10 rounded px-2 py-1">
-                              <span className="text-sm font-medium">{resolveRecipientName(id)}</span>
-                            </div>
-                          ))}
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-1">
+                            {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
+                              const recipientName = resolveRecipientName(id);
+                              return (
+                                <Badge key={idx} className="bg-white/20 text-white border-white/40">
+                                  🏠 {recipientName}
+                                </Badge>
+                              );
+                            })}
+                            {request.assignedRecipientIds.length > 3 && (
+                              <Badge className="bg-white/10 text-white/80 border-white/30">
+                                +{request.assignedRecipientIds.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
                         </div>
+                      ) : request.recipientsCount ? (
+                        <Badge className="bg-white/20 text-white border-white/40">
+                          🏠 Unknown Host ({request.recipientsCount})
+                        </Badge>
                       ) : (
                         <div className="text-white/60 text-xs">No recipients assigned</div>
                       )}
@@ -969,8 +983,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {driverAssigned === 0 && <div className="text-sm text-gray-500 italic">None assigned</div>}
                     </>
                   ) : (
-                    <div className="flex items-center justify-between bg-gray-50 rounded px-2 py-1">
-                      <span className="text-sm text-gray-500 italic">No drivers needed</span>
+                    <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
+                      <span className="text-sm text-[#236383] italic">No drivers needed</span>
                       {canEdit && (
                         <Button
                           size="sm"
