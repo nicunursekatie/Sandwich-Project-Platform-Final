@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -84,6 +84,9 @@ export default function PromotionGraphics() {
   const [uploadedFileUrl, setUploadedFileUrl] = useState('');
   const [localPreviewUrl, setLocalPreviewUrl] = useState('');
 
+  // Ref to track the current preview URL for cleanup on unmount
+  const previewUrlRef = useRef<string>('');
+
   useEffect(() => {
     trackView(
       'Promotion Graphics',
@@ -96,8 +99,8 @@ export default function PromotionGraphics() {
   // Clean up local preview URL when component unmounts
   useEffect(() => {
     return () => {
-      if (localPreviewUrl) {
-        URL.revokeObjectURL(localPreviewUrl);
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
       }
     };
   }, []);
@@ -228,12 +231,13 @@ export default function PromotionGraphics() {
     setUploadedFile(file);
 
     // Clean up previous preview URL
-    if (localPreviewUrl) {
-      URL.revokeObjectURL(localPreviewUrl);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
     }
 
     // Create a local preview URL
     const previewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = previewUrl;
     setLocalPreviewUrl(previewUrl);
   };
 
@@ -331,8 +335,9 @@ export default function PromotionGraphics() {
     setUploadedFileUrl('');
 
     // Clean up the local preview URL
-    if (localPreviewUrl) {
-      URL.revokeObjectURL(localPreviewUrl);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = '';
       setLocalPreviewUrl('');
     }
   };
