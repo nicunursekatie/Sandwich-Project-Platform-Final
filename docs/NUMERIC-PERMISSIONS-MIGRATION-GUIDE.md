@@ -1,15 +1,40 @@
 # Numeric Permissions Migration Guide
 
+## Quick Start (For Neon Database)
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Set your DATABASE_URL environment variable (if not already set)
+export DATABASE_URL="your-neon-connection-string"
+
+# 3. Audit your database
+npx tsx scripts/audit-numeric-permissions-neon.ts
+
+# 4. If numeric permissions found, run dry-run first
+npx tsx scripts/migrate-numeric-permissions-neon.ts --dry-run
+
+# 5. If dry-run looks good, run actual migration
+npx tsx scripts/migrate-numeric-permissions-neon.ts
+
+# 6. Verify migration succeeded
+npx tsx scripts/audit-numeric-permissions-neon.ts
+```
+
+---
+
 ## Overview
 
 This guide explains how to safely migrate users with numeric (bitmask) permissions to the modern string array format, eliminating a critical security vulnerability.
 
 ## Current Status
 
-**Good News:** The `database.db` file in this environment is empty (0 bytes), which means:
-- This is likely a development or fresh environment
-- No actual users have numeric permissions in this database
-- Migration steps are provided for when you run this in production
+**Database:** This project uses **Neon (Postgres)** as its primary database.
+
+**Note:** The local `database.db` file is a fallback for development only. Your production data is in Neon.
+
+Migration steps below are for the Neon database.
 
 ## Background
 
@@ -34,22 +59,16 @@ See `docs/SECURITY-NUMERIC-PERMISSIONS.md` for full security details.
 First, identify if you have any users with numeric permissions:
 
 ```bash
-# Option A: Use the audit script (requires dependencies installed)
+# Audit your Neon database
 npm install
-npx tsx scripts/audit-numeric-permissions.ts
-
-# Option B: Direct SQL query (if sqlite3 CLI available)
-sqlite3 /path/to/production/database.db <<SQL
-SELECT
-  id,
-  email,
-  role,
-  permissions,
-  typeof(permissions) as perm_type
-FROM users
-WHERE typeof(permissions) = 'integer';
-SQL
+npx tsx scripts/audit-numeric-permissions-neon.ts
 ```
+
+This script will:
+- Connect to your Neon database via DATABASE_URL env variable
+- Scan all users for numeric permissions
+- Show you which users need migration
+- Display a summary of permission types
 
 **Expected Output:**
 - If empty: ✅ No migration needed for this database
@@ -85,110 +104,58 @@ Numeric permissions use bitmasks. You need to map the numeric value to permissio
 
 **CRITICAL: Always backup before migration!**
 
+For **Neon databases**, create a backup using their UI or pg_dump:
+
 ```bash
-# Backup production database
-cp database.db database.db.backup.$(date +%Y%m%d_%H%M%S)
+# Option 1: Use Neon dashboard
+# Go to https://console.neon.tech → Your Project → Backups → Create backup
+
+# Option 2: Use pg_dump (if you have postgres tools installed)
+# Get your DATABASE_URL from environment or Neon dashboard
+export DATABASE_URL="postgresql://user:pass@ep-xxx.neon.tech/dbname?sslmode=require"
+
+# Create backup
+pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Verify backup
-ls -lh database.db*
+ls -lh backup_*.sql
 ```
 
-### Step 4: Run Migration Script
+**Note:** Neon provides automatic backups, but it's still good practice to create a manual backup before major migrations.
 
-Create and run the migration script:
+### Step 4: Run Migration Script (Dry Run First!)
+
+**ALWAYS test with dry run first:**
 
 ```bash
-# Create migration script
-cat > scripts/migrate-numeric-permissions.ts << 'EOF'
-import { initializeStorage } from '../server/storage.js';
+# Dry run - see what would change without actually changing it
+npx tsx scripts/migrate-numeric-permissions-neon.ts --dry-run
 
-// Define default permissions for legacy users
-const DEFAULT_ADMIN_PERMISSIONS = [
-  'ADMIN_ACCESS',
-  'NAV_DASHBOARD',
-  'NAV_USER_MANAGEMENT',
-  'USERS_VIEW',
-  'USERS_EDIT',
-  'USERS_ADD',
-  'USERS_DELETE',
-  'HOSTS_VIEW',
-  'HOSTS_EDIT',
-  'RECIPIENTS_VIEW',
-  'RECIPIENTS_EDIT',
-  'DRIVERS_VIEW',
-  'VOLUNTEERS_VIEW',
-  'COLLECTIONS_VIEW',
-  'MESSAGES_VIEW',
-  'MESSAGES_SEND',
-  'EVENT_REQUESTS_VIEW',
-  'EVENT_REQUESTS_EDIT',
-  'PROJECTS_VIEW',
-  'PROJECTS_EDIT_ALL',
-  'DOCUMENTS_VIEW',
-  'DOCUMENTS_MANAGE',
-];
+# Review the output carefully
+# If everything looks good, run the actual migration:
+npx tsx scripts/migrate-numeric-permissions-neon.ts
 
-async function migrateNumericPermissions() {
-  const storage = await initializeStorage();
-
-  // Get all users
-  const users = await storage.getAllUsers();
-
-  let migratedCount = 0;
-
-  for (const user of users) {
-    if (typeof user.permissions === 'number') {
-      console.log(`Migrating user: ${user.email} (ID: ${user.id})`);
-      console.log(`  Old permissions (numeric): ${user.permissions}`);
-
-      // Assign appropriate permissions based on role
-      let newPermissions: string[] = [];
-
-      if (user.role === 'super_admin' || user.role === 'admin') {
-        newPermissions = DEFAULT_ADMIN_PERMISSIONS;
-      } else {
-        // For other roles, assign basic permissions
-        newPermissions = ['NAV_DASHBOARD', 'VOLUNTEERS_VIEW'];
-      }
-
-      // Update user
-      await storage.updateUser(user.id, {
-        permissions: newPermissions
-      });
-
-      console.log(`  New permissions (array): [${newPermissions.length} permissions]`);
-      migratedCount++;
-    }
-  }
-
-  console.log(`\n✅ Migration complete! Migrated ${migratedCount} users.`);
-}
-
-migrateNumericPermissions().catch(console.error);
-EOF
-
-# Run migration (after installing dependencies)
-npm install
-npx tsx scripts/migrate-numeric-permissions.ts
+# For verbose output:
+npx tsx scripts/migrate-numeric-permissions-neon.ts --verbose
 ```
+
+The migration script will:
+- Find all users with numeric permissions
+- Assign comprehensive admin permissions to admin/super_admin roles
+- Assign basic volunteer permissions to other roles
+- Update each user in the Neon database
 
 ### Step 5: Verify Migration
 
 After migration, verify all users have proper permissions:
 
 ```bash
-# Check that no numeric permissions remain
-sqlite3 database.db <<SQL
-SELECT COUNT(*) as numeric_count
-FROM users
-WHERE typeof(permissions) = 'integer';
--- Should return 0
+# Run the audit script again
+npx tsx scripts/audit-numeric-permissions-neon.ts
 
-SELECT COUNT(*) as array_count
-FROM users
-WHERE typeof(permissions) = 'text';
--- Should return total user count (or close to it)
-SQL
+# Should show:
+# "✅ Good news! No users with numeric permissions found."
+# And all users should be in the "Array (string[])" category
 ```
 
 ### Step 6: Remove Numeric Permission Support
