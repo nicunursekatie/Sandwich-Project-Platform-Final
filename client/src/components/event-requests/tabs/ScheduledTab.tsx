@@ -291,6 +291,17 @@ export const ScheduledTab: React.FC = () => {
                   setContactEventRequest(request);
                   setShowContactOrganizerDialog(true);
                 }}
+                onLogContact={() => {
+                  setLogContactEventRequest(request);
+                  setShowLogContactDialog(true);
+                }}
+                onFollowUp={() => {
+                  setShowOneDayFollowUpDialog(true);
+                }}
+                onReschedule={() => {
+                  setRescheduleRequest(request);
+                  setShowRescheduleDialog(true);
+                }}
                 onAssignTspContact={() => {
                   setTspContactEventRequest(request);
                   setShowTspContactAssignmentDialog(true);

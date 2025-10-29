@@ -40,6 +40,8 @@ import {
   ChevronDown,
   ChevronUp,
   History,
+  FileText,
+  MessageSquare,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -77,6 +79,9 @@ interface ScheduledCardEnhancedProps {
   onContact: () => void;
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
+  onLogContact: () => void;
+  onFollowUp: () => void;
+  onReschedule: () => void;
   startEditing: (field: string, value: string) => void;
   saveEdit: () => void;
   cancelEdit: () => void;
@@ -139,6 +144,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   onContact,
   onAssignTspContact,
   onEditTspContact,
+  onLogContact,
+  onFollowUp,
+  onReschedule,
   startEditing,
   saveEdit,
   cancelEdit,
@@ -298,10 +306,42 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {request.addedToOfficialSheet ? '✓ ON SHEET' : 'NOT ON SHEET'}
               </Badge>
 
-              {staffingComplete && (
+              {request.externalId && request.externalId.startsWith('manual-') && (
+                <Badge className="bg-purple-100 text-purple-800 border-purple-300 font-semibold">
+                  <FileText className="w-3 h-3 mr-1" />
+                  MANUAL ENTRY
+                </Badge>
+              )}
+
+              {staffingComplete ? (
                 <Badge className="bg-[#007E8C] text-white font-semibold">
                   <Check className="w-3 h-3 mr-1" />
                   FULLY STAFFED
+                </Badge>
+              ) : (
+                <>
+                  {driverNeeded > driverAssigned && (
+                    <Badge className="bg-orange-100 text-orange-800 border-orange-300 font-semibold">
+                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {speakerNeeded > speakerAssigned && (
+                    <Badge className="bg-orange-100 text-orange-800 border-orange-300 font-semibold">
+                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {volunteerNeeded > volunteerAssigned && (
+                    <Badge className="bg-orange-100 text-orange-800 border-orange-300 font-semibold">
+                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                </>
+              )}
+
+              {request.vanDriverNeeded && !request.assignedVanDriverId && (
+                <Badge className="bg-blue-100 text-blue-800 border-blue-300 font-semibold">
+                  <Car className="w-3 h-3 mr-1" />
+                  Van Driver Needed
                 </Badge>
               )}
 
@@ -649,12 +689,42 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
 
             {/* Attendance */}
-            {request.estimatedAttendance && (
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 shrink-0" />
-                <span className="font-semibold">{request.estimatedAttendance} people expected</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 shrink-0" />
+              {isEditingThisCard && editingField === 'estimatedAttendance' ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <Input
+                    type="number"
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    className="h-8 w-24 bg-white text-gray-900"
+                    placeholder="Attendance"
+                  />
+                  <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90">
+                    <Save className="w-3 h-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 flex-1 group cursor-pointer" onClick={() => canEdit && startEditing('estimatedAttendance', request.estimatedAttendance?.toString() || '')}>
+                  <span className="font-semibold">
+                    {request.estimatedAttendance ? `${request.estimatedAttendance} people expected` : 'No attendance set'}
+                  </span>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => { e.stopPropagation(); startEditing('estimatedAttendance', request.estimatedAttendance?.toString() || ''); }}
+                      className="opacity-0 group-hover:opacity-100 text-white hover:bg-white/20 h-6 px-2"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* RIGHT COLUMN - Contacts & Logistics */}
@@ -715,27 +785,90 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             <div className="bg-[#A31C41] rounded-lg p-4 text-white">
               <h3 className="font-bold uppercase tracking-wide border-b border-white/30 pb-2 mb-3">🚚 Delivery Logistics</h3>
               <div className="space-y-2 text-sm">
-                {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                  <div>
-                    <div className="text-white/80 text-xs uppercase mb-1">Recipients</div>
-                    <div className="flex flex-wrap gap-1">
-                      {request.assignedRecipientIds.map((id, idx) => (
-                        <Badge key={idx} className="bg-white/20 text-white border-white/40">
-                          {resolveRecipientName(id)}
-                        </Badge>
-                      ))}
+                {/* Recipients - Inline Editable */}
+                <div>
+                  <div className="text-white/80 text-xs uppercase mb-1">Recipients</div>
+                  {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+                    <div className="space-y-2">
+                      <MultiRecipientSelector
+                        value={editingValue ? JSON.parse(editingValue) : []}
+                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                        placeholder="Select recipients..."
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit} className="bg-white text-[#A31C41] hover:bg-white/90">
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-white/60 text-xs">No recipients assigned</div>
-                )}
+                  ) : (
+                    <div className="group">
+                      {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {request.assignedRecipientIds.map((id, idx) => (
+                            <Badge key={idx} className="bg-white/20 text-white border-white/40">
+                              {resolveRecipientName(id)}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-white/60 text-xs">No recipients assigned</div>
+                      )}
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
+                          className="opacity-0 group-hover:opacity-100 text-white hover:bg-white/20 h-6 px-2 mt-1"
+                        >
+                          <Edit2 className="w-3 h-3 mr-1" /> Edit
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-                {request.overnightHoldingLocation && (
-                  <div className="pt-2 border-t border-white/30">
-                    <div className="text-white/80 text-xs uppercase mb-1">Overnight Holding</div>
-                    <div className="font-semibold">{request.overnightHoldingLocation}</div>
-                  </div>
-                )}
+                {/* Overnight Holding - Inline Editable */}
+                <div className="pt-2 border-t border-white/30">
+                  <div className="text-white/80 text-xs uppercase mb-1">Overnight Holding</div>
+                  {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
+                    <div className="flex flex-col gap-2">
+                      <Input
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="bg-white text-gray-900"
+                        placeholder="Overnight holding location"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit} className="bg-white text-[#A31C41] hover:bg-white/90">
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="group cursor-pointer" onClick={() => canEdit && startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}>
+                      <div className="font-semibold">
+                        {request.overnightHoldingLocation || 'Not set'}
+                      </div>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => { e.stopPropagation(); startEditing('overnightHoldingLocation', request.overnightHoldingLocation || ''); }}
+                          className="opacity-0 group-hover:opacity-100 text-white hover:bg-white/20 h-6 px-2 mt-1"
+                        >
+                          <Edit2 className="w-3 h-3 mr-1" /> Edit
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -854,8 +987,195 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
 
-        {/* Actions Bar */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-300">
+        {/* Notes & Requirements Section */}
+        {(request.message ||
+          request.planningNotes ||
+          request.schedulingNotes ||
+          request.additionalRequirements ||
+          request.volunteerNotes ||
+          request.driverNotes ||
+          request.vanDriverNotes ||
+          request.followUpNotes ||
+          request.distributionNotes ||
+          request.duplicateNotes ||
+          request.unresponsiveNotes ||
+          request.socialMediaPostNotes) && (
+          <div className="bg-amber-50 rounded-lg p-4 mb-4">
+            <h3 className="font-bold text-[#236383] uppercase tracking-wide mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Notes & Requirements
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {request.message && (
+                <div className="sm:col-span-2">
+                  <p className="text-sm font-medium mb-1 text-gray-900">Original Request Message:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
+                    {request.message}
+                  </p>
+                </div>
+              )}
+              {request.additionalRequirements && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Special Requirements:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-orange-400 whitespace-pre-wrap">
+                    {request.additionalRequirements}
+                  </p>
+                </div>
+              )}
+              {request.planningNotes && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium text-gray-900">Planning Notes:</p>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('planningNotes', request.planningNotes || '')}
+                        className="h-6 px-2"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingThisCard && editingField === 'planningNotes' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                        placeholder="Add planning notes..."
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 bg-white p-3 rounded border border-gray-200 whitespace-pre-wrap">
+                      {request.planningNotes}
+                    </p>
+                  )}
+                </div>
+              )}
+              {request.schedulingNotes && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium text-gray-900">Scheduling Notes:</p>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('schedulingNotes', request.schedulingNotes || '')}
+                        className="h-6 px-2"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingThisCard && editingField === 'schedulingNotes' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                        placeholder="Add scheduling notes..."
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit}>
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-green-400 whitespace-pre-wrap">
+                      {request.schedulingNotes}
+                    </p>
+                  )}
+                </div>
+              )}
+              {request.volunteerNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Volunteer Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-purple-400 whitespace-pre-wrap">
+                    {request.volunteerNotes}
+                  </p>
+                </div>
+              )}
+              {request.driverNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Driver Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
+                    {request.driverNotes}
+                  </p>
+                </div>
+              )}
+              {request.vanDriverNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Van Driver Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-red-400 whitespace-pre-wrap">
+                    {request.vanDriverNotes}
+                  </p>
+                </div>
+              )}
+              {request.followUpNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Follow-up Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-yellow-400 whitespace-pre-wrap">
+                    {request.followUpNotes}
+                  </p>
+                </div>
+              )}
+              {request.distributionNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Distribution Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-teal-400 whitespace-pre-wrap">
+                    {request.distributionNotes}
+                  </p>
+                </div>
+              )}
+              {request.duplicateNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Duplicate Check Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-pink-400">
+                    {request.duplicateNotes}
+                  </p>
+                </div>
+              )}
+              {request.unresponsiveNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Unresponsive Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-gray-400">
+                    {request.unresponsiveNotes}
+                  </p>
+                </div>
+              )}
+              {request.socialMediaPostNotes && (
+                <div>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Social Media Notes:</p>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-indigo-400">
+                    {request.socialMediaPostNotes}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons Row */}
+        <div className="flex flex-wrap gap-2 mb-4 pt-4 border-t border-gray-300">
           <Button
             onClick={onContact}
             className="bg-[#236383] text-white hover:bg-[#236383]/90"
@@ -863,16 +1183,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             <Mail className="w-4 h-4 mr-2" />
             Contact Organizer
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onLogContact}
+          >
+            <MessageSquare className="w-4 h-4 mr-1" />
+            Log Contact
+          </Button>
+          <Button size="sm" variant="outline" onClick={onReschedule}>
+            Reschedule
+          </Button>
+          <Button size="sm" onClick={onFollowUp}>
+            Follow Up
+          </Button>
 
+          {!(request.tspContact || request.customTspContact) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAssignTspContact}
+              className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+            >
+              <UserPlus className="w-4 h-4 mr-1" />
+              Assign TSP Contact
+            </Button>
+          )}
+        </div>
+
+        {/* Activity History Toggle */}
+        <div className="border-t border-gray-300 pt-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowAuditLog(!showAuditLog)}
-            className="text-[#236383]"
+            className="w-full justify-between text-[#236383] hover:text-[#236383]/90"
           >
-            <History className="w-4 h-4 mr-2" />
-            Activity History
-            {showAuditLog ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              Activity History
+            </div>
+            {showAuditLog ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
         </div>
 
