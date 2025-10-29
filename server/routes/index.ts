@@ -290,6 +290,14 @@ export function createMainRoutes(deps: RouterDependencies) {
   router.use('/api/storage', createErrorHandler('storage'));
 
   router.use(
+    '/api/objects',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    objectsRouter
+  );
+  router.use('/api/objects', createErrorHandler('objects'));
+
+  router.use(
     '/api/documents',
     deps.isAuthenticated,
     ...createStandardMiddleware(),
