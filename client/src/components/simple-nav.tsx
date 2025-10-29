@@ -161,7 +161,7 @@ export default function SimpleNav({
                 active
                   ? 'bg-gradient-to-r from-brand-primary to-brand-primary-dark hover:shadow-lg text-white shadow-md border-l-4 border-l-brand-orange rounded-lg transition-all duration-200'
                   : item.highlighted
-                    ? 'hover:bg-gradient-to-br hover:from-orange-50 hover:to-orange-100 text-brand-orange font-semibold rounded-lg hover:shadow-sm transition-all duration-200'
+                    ? 'hover:bg-gradient-to-br hover:from-[#FBAD3F]/10 hover:to-[#FBAD3F]/20 text-[#FBAD3F] font-semibold rounded-lg hover:shadow-sm transition-all duration-200'
                     : item.isSubItem
                       ? 'hover:bg-slate-50 text-slate-600 ml-4 mr-1 rounded-md hover:shadow-sm transition-all duration-200'
                       : 'hover:bg-gradient-to-br hover:from-slate-50 hover:to-slate-100 text-slate-700 rounded-lg hover:shadow-sm transition-all duration-200'
@@ -189,7 +189,7 @@ export default function SimpleNav({
                 <item.icon
                   className={`h-4 w-4 flex-shrink-0 ${
                     isCollapsed ? '' : 'mr-2 sm:mr-3'
-                  } ${item.highlighted && !active ? 'text-brand-orange' : ''}`}
+                  } ${item.highlighted && !active ? 'text-[#FBAD3F]' : ''}`}
 
                 />
               )}
