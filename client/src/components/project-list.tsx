@@ -967,9 +967,23 @@ export default function ProjectList() {
                         </Button>
                       )
                     ) : project.assigneeName ? (
-                      <span className="text-sm text-slate-500">
-                        Assigned to {project.assigneeName}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500">
+                          Assigned to {project.assigneeName}
+                        </span>
+                        {project.assigneeId && (
+                          <SendKudosButton
+                            recipientId={project.assigneeId.toString()}
+                            recipientName={project.assigneeName}
+                            contextType="project"
+                            contextId={project.id.toString()}
+                            contextTitle={project.title}
+                            size="sm"
+                            variant="outline"
+                            iconOnly
+                          />
+                        )}
+                      </div>
                     ) : null}
                     <Button
                       variant="ghost"
@@ -1365,9 +1379,23 @@ export default function ProjectList() {
                         </Button>
                       )
                     ) : project.assigneeName ? (
-                      <span className="text-sm text-slate-500">
-                        Assigned to {project.assigneeName}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500">
+                          Assigned to {project.assigneeName}
+                        </span>
+                        {project.assigneeId && (
+                          <SendKudosButton
+                            recipientId={project.assigneeId.toString()}
+                            recipientName={project.assigneeName}
+                            contextType="project"
+                            contextId={project.id.toString()}
+                            contextTitle={project.title}
+                            size="sm"
+                            variant="outline"
+                            iconOnly
+                          />
+                        )}
+                      </div>
                     ) : null}
                     <Button
                       variant="ghost"

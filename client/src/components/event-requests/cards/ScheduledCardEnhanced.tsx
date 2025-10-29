@@ -62,6 +62,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import SendKudosButton from '@/components/send-kudos-button';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -918,17 +919,28 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         {parsePostgresArray(request.assignedDriverIds).map((id) => (
                           <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
                             <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
-                            {canEdit && (
-                              <Button
+                            <div className="flex items-center gap-1">
+                              <SendKudosButton
+                                recipientId={id}
+                                recipientName={extractCustomName(id) || resolveUserName(id)}
+                                contextType="project"
+                                contextId={request.id.toString()}
+                                contextTitle={`${request.organizationName} event`}
                                 size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveAssignment('driver', id)}
-                                className="h-5 w-5 p-0 text-red-600"
-                                aria-label="Remove driver"
-                              >
-                                <X className="w-3 h-3" aria-hidden="true" />
-                              </Button>
-                            )}
+                                variant="outline"
+                                iconOnly
+                              />
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('driver', id)}
+                                  className="h-5 w-5 p-0 text-red-600"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         ))}
                         {driverAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
@@ -997,17 +1009,28 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           return (
                             <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
                               <span className="text-sm">{displayName}</span>
-                              {canEdit && (
-                                <Button
+                              <div className="flex items-center gap-1">
+                                <SendKudosButton
+                                  recipientId={id}
+                                  recipientName={displayName}
+                                  contextType="project"
+                                  contextId={request.id.toString()}
+                                  contextTitle={`${request.organizationName} event`}
                                   size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('speaker', id)}
-                                  className="h-5 w-5 p-0 text-red-600"
-                                  aria-label="Remove speaker"
-                                >
-                                  <X className="w-3 h-3" aria-hidden="true" />
-                                </Button>
-                              )}
+                                  variant="outline"
+                                  iconOnly
+                                />
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveAssignment('speaker', id)}
+                                    className="h-5 w-5 p-0 text-red-600"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -1074,17 +1097,28 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
                           <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
                             <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
-                            {canEdit && (
-                              <Button
+                            <div className="flex items-center gap-1">
+                              <SendKudosButton
+                                recipientId={id}
+                                recipientName={extractCustomName(id) || resolveUserName(id)}
+                                contextType="project"
+                                contextId={request.id.toString()}
+                                contextTitle={`${request.organizationName} event`}
                                 size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveAssignment('volunteer', id)}
-                                className="h-5 w-5 p-0 text-red-600"
-                                aria-label="Remove volunteer"
-                              >
-                                <X className="w-3 h-3" aria-hidden="true" />
-                              </Button>
-                            )}
+                                variant="outline"
+                                iconOnly
+                              />
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('volunteer', id)}
+                                  className="h-5 w-5 p-0 text-red-600"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         ))}
                         {volunteerAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
