@@ -662,7 +662,8 @@ ${userEmail}`;
         contextTitle: `Event: ${eventRequest.organizationName}`,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[EventEmailComposer] Email sent successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/emails'] });
 
       if (isDraft) {
@@ -685,11 +686,19 @@ ${userEmail}`;
         onClose();
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('[EventEmailComposer] Email sending failed:', error);
+      console.error('[EventEmailComposer] Error details:', {
+        message: error?.message,
+        response: error?.response,
+        data: error?.response?.data,
+      });
+
+      const errorMessage = error?.response?.data?.message || error?.message || 'Please try again';
+
       toast({
         title: 'Failed to send email',
-        description:
-          error instanceof Error ? error.message : 'Please try again',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -704,6 +713,16 @@ ${userEmail}`;
       });
       return;
     }
+
+    console.log('[EventEmailComposer] Sending email:', {
+      isDraft: asDraft,
+      recipientEmail: eventRequest.email,
+      subject: subject.trim(),
+      attachmentsCount: selectedAttachments.length,
+      attachments: selectedAttachments,
+      contentLength: content.length,
+      contentPreview: content.substring(0, 100),
+    });
 
     setIsDraft(asDraft);
     sendEmailMutation.mutate({

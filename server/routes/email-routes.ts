@@ -674,7 +674,7 @@ export function createEmailRouter(deps: RouterDependencies) {
 
     // Send clean professional email via SendGrid
     const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
-    
+
     // For full HTML documents, inject footer before closing tags
     let finalHtml;
     if (isFullHtml) {
@@ -693,7 +693,7 @@ export function createEmailRouter(deps: RouterDependencies) {
         </div>
       `;
     }
-    
+
     const fromEmail =
       process.env.SENDGRID_FROM_EMAIL || 'katielong2316@gmail.com';
     const bccEmail = process.env.SENDGRID_TOOLKIT_BCC || 'katielong2316@gmail.com';
@@ -714,7 +714,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       subject,
       html: finalHtml,
     };
-    
+
     // Only include plain text fallback for non-HTML emails
     if (!isFullHtml) {
       emailPayload.text = `${textContent}\n\n${EMAIL_FOOTER_TEXT}`;
@@ -728,7 +728,22 @@ export function createEmailRouter(deps: RouterDependencies) {
       emailPayload.attachments = attachmentsForSendgrid;
     }
 
-    await sendGridEmail(emailPayload);
+    logger.log('[Event Email API] Sending email via SendGrid:', {
+      to: recipientEmail,
+      from: fromEmail,
+      replyTo: replyToEmail,
+      subject,
+      attachmentsCount: attachmentsForSendgrid.length,
+      isFullHtml,
+      hasApiKey: !!process.env.SENDGRID_API_KEY,
+    });
+
+    const sendResult = await sendGridEmail(emailPayload);
+
+    if (!sendResult) {
+      logger.error('[Event Email API] SendGrid returned false - email may not have been sent');
+      throw new Error('SendGrid email sending failed - check API key configuration');
+    }
 
     // Save a record in internal email system (without sending duplicate)
     const newEmail = await db.insert(emailMessages).values({
