@@ -87,9 +87,9 @@ export function ToolkitSentPendingDialog() {
     const element = document.getElementById(`event-card-${eventId}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('ring-2', 'ring-orange-500', 'ring-offset-2');
+      element.classList.add('ring-2', 'ring-[#FBAD3F]', 'ring-offset-2');
       setTimeout(() => {
-        element.classList.remove('ring-2', 'ring-orange-500', 'ring-offset-2');
+        element.classList.remove('ring-2', 'ring-[#FBAD3F]', 'ring-offset-2');
       }, 2000);
     }
     setOpen(false);
@@ -100,34 +100,34 @@ export function ToolkitSentPendingDialog() {
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="border-orange-300 text-orange-700 hover:bg-orange-50"
+          className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/5"
           data-testid="button-toolkit-sent-pending"
         >
-          <Clock className="w-4 h-4 mr-2" />
+          <Clock className="w-4 h-4 mr-2" aria-hidden="true" />
           Toolkit Sent - Awaiting Schedule ({pendingEvents.length})
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Mail className="w-5 h-5 text-orange-600" />
+        <DialogHeader className="border-b border-[#007E8C]/10 pb-4">
+          <DialogTitle className="flex items-center gap-2 text-[#236383] text-xl">
+            <Mail className="w-5 h-5 text-[#FBAD3F]" aria-hidden="true" />
             In-Process Events with Toolkit Sent
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3 border-b pb-4">
+        <div className="space-y-3 border-b border-[#007E8C]/10 pb-4 pt-4">
           <p className="text-sm text-gray-600">
             These events had the toolkit sent but haven't been scheduled yet
           </p>
-          
+
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Days since sent:</span>
+            <span className="text-sm font-semibold text-[#236383]">Days since sent:</span>
             <div className="flex gap-2">
               <Button
                 size="sm"
                 variant={daysFilter === '3days' ? 'default' : 'outline'}
                 onClick={() => setDaysFilter('3days')}
-                className={daysFilter === '3days' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                className={daysFilter === '3days' ? 'bg-[#FBAD3F] hover:bg-[#FBAD3F]/90 text-white' : 'border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/5'}
                 data-testid="filter-3days"
               >
                 3+ Days
@@ -136,7 +136,7 @@ export function ToolkitSentPendingDialog() {
                 size="sm"
                 variant={daysFilter === '5days' ? 'default' : 'outline'}
                 onClick={() => setDaysFilter('5days')}
-                className={daysFilter === '5days' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                className={daysFilter === '5days' ? 'bg-[#FBAD3F] hover:bg-[#FBAD3F]/90 text-white' : 'border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/5'}
                 data-testid="filter-5days"
               >
                 5+ Days
@@ -145,7 +145,7 @@ export function ToolkitSentPendingDialog() {
                 size="sm"
                 variant={daysFilter === 'all' ? 'default' : 'outline'}
                 onClick={() => setDaysFilter('all')}
-                className={daysFilter === 'all' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+                className={daysFilter === 'all' ? 'bg-[#FBAD3F] hover:bg-[#FBAD3F]/90 text-white' : 'border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/5'}
                 data-testid="filter-all-pending"
               >
                 All (1+ Day)
@@ -177,17 +177,17 @@ export function ToolkitSentPendingDialog() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-gray-900 truncate">
+                        <h3 className="font-semibold text-[#236383] truncate">
                           {event.organizationName || 'Unnamed Organization'}
                         </h3>
                         <Badge
                           variant="outline"
                           className={
                             daysSinceToolkitSent >= 7
-                              ? 'bg-red-50 text-red-700 border-red-300'
+                              ? 'bg-[#A31C41]/10 text-[#A31C41] border border-[#A31C41]/30 font-medium'
                               : daysSinceToolkitSent >= 5
-                              ? 'bg-orange-50 text-orange-700 border-orange-300'
-                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                              ? 'bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium'
+                              : 'bg-[#FBAD3F]/5 text-[#FBAD3F] border border-[#FBAD3F]/20 font-medium'
                           }
                         >
                           {daysSinceToolkitSent} day{daysSinceToolkitSent === 1 ? '' : 's'} ago
@@ -224,10 +224,10 @@ export function ToolkitSentPendingDialog() {
                       size="sm"
                       variant="ghost"
                       onClick={() => scrollToEvent(event.id)}
-                      className="shrink-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                      className="shrink-0 text-[#007E8C] hover:text-[#236383] hover:bg-[#007E8C]/5"
                       data-testid={`button-view-pending-${event.id}`}
                     >
-                      <ExternalLink className="w-4 h-4 mr-1" />
+                      <ExternalLink className="w-4 h-4 mr-1" aria-hidden="true" />
                       View
                     </Button>
                   </div>

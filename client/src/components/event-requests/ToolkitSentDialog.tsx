@@ -75,12 +75,12 @@ const ToolkitSentDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Shield className="w-5 h-5 text-[hsl(var(--color-primary))]" />
+        <DialogHeader className="border-b border-[#007E8C]/10 pb-4">
+          <DialogTitle className="flex items-center space-x-2 text-[#236383] text-xl">
+            <Shield className="w-5 h-5 text-[#007E8C]" aria-hidden="true" />
             <span>Mark Toolkit as Sent</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-gray-600 mt-2">
             Record when the toolkit was sent to{' '}
             <strong>
               {eventRequest.firstName} {eventRequest.lastName}
@@ -91,26 +91,28 @@ const ToolkitSentDialog = ({
         </DialogHeader>
 
         {!showEmailComposer ? (
-          <div className="space-y-6">
+          <div className="space-y-6 pt-4">
             {/* Date and Time Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="toolkit-sent-date">Toolkit Sent Date</Label>
+                <Label htmlFor="toolkit-sent-date" className="text-[#236383] font-medium">Toolkit Sent Date</Label>
                 <Input
                   id="toolkit-sent-date"
                   type="date"
                   value={toolkitSentDate}
                   onChange={(e) => setToolkitSentDate(e.target.value)}
+                  className="border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-[#007E8C]/20"
                   data-testid="input-toolkit-sent-date"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="toolkit-sent-time">Toolkit Sent Time</Label>
+                <Label htmlFor="toolkit-sent-time" className="text-[#236383] font-medium">Toolkit Sent Time</Label>
                 <Input
                   id="toolkit-sent-time"
                   type="time"
                   value={toolkitSentTime}
                   onChange={(e) => setToolkitSentTime(e.target.value)}
+                  className="border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-[#007E8C]/20"
                   data-testid="input-toolkit-sent-time"
                 />
               </div>
@@ -118,23 +120,23 @@ const ToolkitSentDialog = ({
 
             {/* Email Status Display */}
             {emailSent && (
-              <div className="p-4 bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg">
-                <div className="flex items-center space-x-2 text-[#236383]">
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Email successfully sent!</span>
+              <div className="p-4 bg-[#007E8C]/5 border border-[#007E8C]/30 rounded-lg">
+                <div className="flex items-center space-x-2 text-[#007E8C]">
+                  <CheckCircle className="w-5 h-5" aria-hidden="true" />
+                  <span className="font-semibold">Email successfully sent!</span>
                 </div>
-                <p className="text-sm text-[#007E8C] mt-1">
+                <p className="text-sm text-[#236383] mt-1">
                   The toolkit email has been sent to {eventRequest.email}
                 </p>
               </div>
             )}
 
             {/* Information */}
-            <div className="bg-[#e6f2f5] border border-[#007E8C]/30 rounded-lg p-4">
-              <h4 className="font-medium text-[#1A2332] mb-2">
+            <div className="bg-[#47B3CB]/5 border border-[#47B3CB]/30 rounded-lg p-4">
+              <h4 className="font-semibold text-[#236383] uppercase tracking-wide text-sm mb-3">
                 What happens when you mark toolkit as sent:
               </h4>
-              <ul className="text-sm text-[#236383] space-y-1">
+              <ul className="text-sm text-[#236383] space-y-2">
                 <li>• Event status will change from "New" to "In Process"</li>
                 <li>• Event will appear in the "In Process" tab</li>
                 {!emailSent && (
@@ -147,21 +149,21 @@ const ToolkitSentDialog = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-between space-x-4">
+            <div className="flex justify-between space-x-4 pt-4 border-t border-[#007E8C]/10">
               <div className="flex space-x-2">
               {!emailSent && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowEmailComposer(true)}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-2 border-[#007E8C]/30 text-[#007E8C] hover:bg-[#007E8C]/5"
                   data-testid="button-send-toolkit-email"
                 >
-                  <Mail className="w-4 h-4" />
+                  <Mail className="w-4 h-4" aria-hidden="true" />
                   <span>Send Toolkit Email</span>
                 </Button>
               )}
-                
+
                 {eventRequest?.phone && (
                   <Button
                     type="button"
@@ -187,12 +189,12 @@ const ToolkitSentDialog = ({
                         }
                       }
                     }}
-                    className="flex items-center space-x-2"
+                    className="flex items-center space-x-2 border-[#47B3CB]/30 text-[#47B3CB] hover:bg-[#47B3CB]/5"
                     data-testid="button-call-contact"
                     title={eventRequest.phone}
                   >
-                    <Phone className="w-4 h-4" />
-                    <span>Call Contact</span>
+                    <Phone className="w-4 h-4" aria-hidden="true" />
+                    <span>{isMobile ? 'Call' : 'Copy Number'}</span>
                   </Button>
                 )}
               </div>
@@ -203,6 +205,7 @@ const ToolkitSentDialog = ({
                   variant="outline"
                   onClick={onClose}
                   disabled={isLoading}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
                   data-testid="button-cancel-toolkit-sent"
                 >
                   Cancel
@@ -211,9 +214,10 @@ const ToolkitSentDialog = ({
                   type="button"
                   onClick={handleSubmit}
                   disabled={!toolkitSentDate || !toolkitSentTime || isLoading}
-                  className="bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary)/0.9)] text-white"
+                  className="bg-[#007E8C] hover:bg-[#236383] text-white shadow-sm"
                   data-testid="button-confirm-toolkit-sent"
                 >
+                  <Shield className="w-4 h-4 mr-2" aria-hidden="true" />
                   {isLoading ? 'Marking as Sent...' : 'Mark as Sent'}
                 </Button>
               </div>
