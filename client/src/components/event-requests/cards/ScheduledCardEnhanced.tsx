@@ -319,8 +319,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 onClick={() => canEdit && quickToggleBoolean('isConfirmed', !request.isConfirmed)}
                 className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
                   request.isConfirmed
-                    ? 'bg-[#47B3CB]/10 text-[#007E8C] border border-[#007E8C]/30'
-                    : 'bg-gray-100 text-gray-600 border border-gray-300'
+                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
+                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
                 }`}
               >
                 {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
@@ -330,44 +330,44 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 onClick={() => canEdit && quickToggleBoolean('addedToOfficialSheet', !request.addedToOfficialSheet)}
                 className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
                   request.addedToOfficialSheet
-                    ? 'bg-[#236383]/10 text-[#236383] border border-[#236383]/30'
-                    : 'bg-gray-100 text-gray-600 border border-gray-300'
+                    ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
+                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
                 }`}
               >
                 {request.addedToOfficialSheet ? '✓ On Official Sheet' : 'Not on Sheet'}
               </Badge>
 
               {/* Sandwich count badge */}
-              <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
+              <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
                 <Package className="w-3 h-3 mr-1" aria-hidden="true" />
                 {sandwichInfo} Sandwiches
               </Badge>
 
               {request.externalId && request.externalId.startsWith('manual-') && (
-                <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
+                <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
                   <FileText className="w-3 h-3 mr-1" />
                   Manual Entry
                 </Badge>
               )}
 
               {staffingComplete ? (
-                <Badge className="bg-[#47B3CB]/10 text-[#007E8C] border border-[#007E8C]/30 font-medium">
+                <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#007E8C] font-medium">
                   Fully Staffed
                 </Badge>
               ) : (
                 <>
                   {driverNeeded > driverAssigned && (
-                    <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
+                    <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
                       {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {speakerNeeded > speakerAssigned && (
-                    <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
+                    <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
                       {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {volunteerNeeded > volunteerAssigned && (
-                    <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
+                    <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
                       {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
@@ -375,14 +375,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
 
               {request.vanDriverNeeded && !request.assignedVanDriverId && (
-                <Badge className="bg-[#236383]/10 text-[#236383] border border-[#236383]/30 font-medium">
+                <Badge className="bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383] font-medium">
                   <Car className="w-3 h-3 mr-1" />
                   Van Driver Needed
                 </Badge>
               )}
 
               {missingInfo.length > 0 && (
-                <Badge className="bg-[#A31C41]/10 text-[#A31C41] border border-[#A31C41]/30 font-medium animate-pulse">
+                <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] font-medium animate-pulse">
                   <AlertTriangle className="w-3 h-3 mr-1" />
                   {missingInfo.length} Missing
                 </Badge>

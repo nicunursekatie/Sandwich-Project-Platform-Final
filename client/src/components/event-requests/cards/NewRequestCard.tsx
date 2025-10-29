@@ -173,10 +173,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               )}
             </h3>
-            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C] text-[16px]">
-              <StatusIcon className="w-3 h-3 mr-1" />
-              {getStatusLabel(request.status)}
-            </Badge>
             {/* Confirmation Status Badge - Click to toggle */}
             <Badge
               onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
