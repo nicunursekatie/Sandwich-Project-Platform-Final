@@ -76,7 +76,7 @@ interface EmailTemplate {
 // Quick start options for subject line
 const SUBJECT_SUGGESTIONS = [
   'Your Sandwich-Making Event Toolkit + Next Steps',
-  'Let\'s Plan Your Event! [Action Required]',
+  'Let’s Plan Your Event! [Action Required]',
   'Everything You Need to Make 200+ Sandwiches',
   '{organizationName} - Ready to Get Started?',
   'Quick Call to Finalize Your Sandwich Event',
