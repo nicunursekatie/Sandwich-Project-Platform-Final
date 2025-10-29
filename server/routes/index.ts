@@ -33,6 +33,7 @@ import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
 import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
 import teamBoardRouter from './team-board';
+import { promotionGraphicsRouter } from './promotion-graphics';
 import migrationsRouter from './migrations';
 import { createDashboardDocumentsRoutes } from './dashboard-documents';
 import { createDriversRouter } from './drivers';
@@ -425,6 +426,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     teamBoardRouter
   );
   router.use('/api/team-board', createErrorHandler('team-board'));
+
+  // Promotion graphics routes
+  router.use(
+    '/api/promotion-graphics',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    promotionGraphicsRouter
+  );
+  router.use('/api/promotion-graphics', createErrorHandler('promotion-graphics'));
 
   // Cooler tracking routes
   router.use(

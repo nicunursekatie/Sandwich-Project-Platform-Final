@@ -2983,6 +2983,45 @@ export type ActivityAttachment = typeof activityAttachments.$inferSelect;
 export type InsertActivityAttachment = z.infer<typeof insertActivityAttachmentSchema>;
 
 /**
+ * Promotion Graphics - Social media graphics for team sharing
+ * Store graphics that hosts can share on their social media
+ */
+export const promotionGraphics = pgTable('promotion_graphics', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  imageUrl: text('image_url').notNull(), // URL to the uploaded graphic
+  fileName: text('file_name').notNull(), // Original filename
+  fileSize: integer('file_size'), // Size in bytes
+  fileType: varchar('file_type', { length: 100 }), // MIME type (image/png, image/jpeg, etc.)
+  intendedUseDate: timestamp('intended_use_date'), // When the graphic should be used
+  targetAudience: text('target_audience').default('hosts'), // 'hosts', 'volunteers', 'all', etc.
+  status: varchar('status', { length: 50 }).default('active'), // 'active', 'archived'
+  notificationSent: boolean('notification_sent').default(false), // Track if email was sent
+  notificationSentAt: timestamp('notification_sent_at'), // When notification was sent
+  uploadedBy: varchar('uploaded_by').notNull(), // FK to users.id
+  uploadedByName: text('uploaded_by_name').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('idx_promotion_graphics_status').on(table.status),
+  index('idx_promotion_graphics_target_audience').on(table.targetAudience),
+  index('idx_promotion_graphics_uploaded_by').on(table.uploadedBy),
+  index('idx_promotion_graphics_intended_use_date').on(table.intendedUseDate),
+]);
+
+export const insertPromotionGraphicSchema = createInsertSchema(promotionGraphics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  notificationSent: true,
+  notificationSentAt: true,
+});
+
+export type PromotionGraphic = typeof promotionGraphics.$inferSelect;
+export type InsertPromotionGraphic = z.infer<typeof insertPromotionGraphicSchema>;
+
+/**
  * Expenses - Track expenses and receipts for events, projects, or general use
  * Supports receipt file uploads via storage service
  */
