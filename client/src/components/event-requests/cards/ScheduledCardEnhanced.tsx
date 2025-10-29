@@ -354,10 +354,24 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 <Badge className="bg-[#47B3CB]/10 text-[#007E8C] border border-[#007E8C]/30 font-medium">
                   Fully Staffed
                 </Badge>
-              ) : totalNeeded > 0 && (
-                <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
-                  {totalNeeded - totalAssigned} missing
-                </Badge>
+              ) : (
+                <>
+                  {driverNeeded > driverAssigned && (
+                    <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
+                      {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {speakerNeeded > speakerAssigned && (
+                    <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
+                      {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                  {volunteerNeeded > volunteerAssigned && (
+                    <Badge className="bg-[#FBAD3F]/10 text-[#FBAD3F] border border-[#FBAD3F]/30 font-medium">
+                      {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
+                    </Badge>
+                  )}
+                </>
               )}
 
               {request.vanDriverNeeded && !request.assignedVanDriverId && (
