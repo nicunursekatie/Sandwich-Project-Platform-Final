@@ -343,7 +343,7 @@ async function sendNotificationEmail(graphic: PromotionGraphic, uploader: any) {
     let targetUsers: any[] = [];
 
     if (graphic.targetAudience === 'hosts') {
-      // Get all users with host-related permissions
+      // Get all users with the 'host' role
       targetUsers = await db
         .select({
           id: users.id,
@@ -357,11 +357,11 @@ async function sendNotificationEmail(graphic: PromotionGraphic, uploader: any) {
         .where(
           and(
             eq(users.isActive, true),
-            sql`${users.permissions}::jsonb ? 'NAV_HOSTS' OR ${users.role} = 'admin' OR ${users.role} = 'admin_coordinator'`
+            eq(users.role, 'host')
           )
         );
     } else if (graphic.targetAudience === 'volunteers') {
-      // Get all active volunteers
+      // Get all users with volunteer-related roles (volunteer, driver, core_team, committee_member)
       targetUsers = await db
         .select({
           id: users.id,
@@ -372,7 +372,12 @@ async function sendNotificationEmail(graphic: PromotionGraphic, uploader: any) {
           preferredEmail: users.preferredEmail,
         })
         .from(users)
-        .where(eq(users.isActive, true));
+        .where(
+          and(
+            eq(users.isActive, true),
+            sql`${users.role} IN ('volunteer', 'driver', 'core_team', 'committee_member')`
+          )
+        );
     } else {
       // Default to all active users
       targetUsers = await db
