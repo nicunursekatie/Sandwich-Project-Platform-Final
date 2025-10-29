@@ -913,16 +913,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Contact Information Section */}
-        {(request.contactName || request.contactEmail || request.contactPhone || (request.tspContact || request.customTspContact)) && (
+        {(request.firstName || request.lastName || request.email || request.phone || (request.tspContact || request.customTspContact)) && (
           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
             <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <Users className="w-4 h-4" />
               Contact Information
             </h3>
             
-            {request.contactName && renderEditableField('contactName', request.contactName, 'Organizer', <Users className="w-4 h-4" />)}
-            {request.contactEmail && renderEditableField('contactEmail', request.contactEmail, 'Email', <Mail className="w-4 h-4" />)}
-            {request.contactPhone && renderEditableField('contactPhone', request.contactPhone, 'Phone', <Phone className="w-4 h-4" />)}
+            {request.firstName && request.lastName && renderEditableField('firstName', `${request.firstName} ${request.lastName}`, 'Organizer', <Users className="w-4 h-4" />)}
+            {request.email && renderEditableField('email', request.email, 'Email', <Mail className="w-4 h-4" />)}
+            {request.phone && renderEditableField('phone', request.phone, 'Phone', <Phone className="w-4 h-4" />)}
             
             {(request.tspContact || request.customTspContact) && (
               <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
