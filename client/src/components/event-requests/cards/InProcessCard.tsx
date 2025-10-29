@@ -64,6 +64,15 @@ interface InProcessCardProps {
   onLogContact: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
+  // Inline editing props
+  startEditing?: (field: string, value: string) => void;
+  saveEdit?: () => void;
+  cancelEdit?: () => void;
+  setEditingValue?: (value: string) => void;
+  isEditingThisCard?: boolean;
+  editingField?: string;
+  editingValue?: string;
+  tempIsConfirmed?: boolean;
 }
 
 // CardHeader component - copied from shared
@@ -365,48 +374,29 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onLogContact,
   canEdit = true,
   canDelete = true,
+  // Inline editing props
+  startEditing,
+  saveEdit,
+  cancelEdit,
+  setEditingValue,
+  isEditingThisCard = false,
+  editingField = '',
+  editingValue = '',
+  tempIsConfirmed = false,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
-  
-  // State and handlers for CardHeader edit functionality
-  const [isEditingThisCard, setIsEditingThisCard] = useState(false);
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editingValue, setEditingValue] = useState<string>('');
-  
-  const startEditing = (field: string, value: string) => {
-    setIsEditingThisCard(true);
-    setEditingField(field);
-    setEditingValue(value);
-  };
-  
-  const saveEdit = () => {
-    // Call onEdit with the field and new value
-    if (editingField) {
-      onEdit();
-    }
-    setIsEditingThisCard(false);
-    setEditingField(null);
-    setEditingValue('');
-  };
-  
-  const cancelEdit = () => {
-    setIsEditingThisCard(false);
-    setEditingField(null);
-    setEditingValue('');
-  };
-  
   const headerContent = CardHeader({
     request,
     resolveUserName,
     isInProcessStale: isStale,
-    canEdit,
+    canEdit: !!startEditing, // Enable editing if editing functions are provided
     isEditingThisCard,
     editingField,
     editingValue,
     startEditing,
     saveEdit,
     cancelEdit,
-    setEditingValue,
+    setEditingValue
   });
 
   return (

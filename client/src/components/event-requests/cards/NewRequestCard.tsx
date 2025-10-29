@@ -52,6 +52,15 @@ interface NewRequestCardProps {
   onLogContact: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
+  // Inline editing props
+  startEditing?: (field: string, value: string) => void;
+  saveEdit?: () => void;
+  cancelEdit?: () => void;
+  setEditingValue?: (value: string) => void;
+  isEditingThisCard?: boolean;
+  editingField?: string;
+  editingValue?: string;
+  tempIsConfirmed?: boolean;
 }
 
 interface User {
@@ -330,6 +339,15 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onLogContact,
   canEdit = true,
   canDelete = true,
+  // Inline editing props
+  startEditing,
+  saveEdit,
+  cancelEdit,
+  setEditingValue,
+  isEditingThisCard = false,
+  editingField = '',
+  editingValue = '',
+  tempIsConfirmed = false,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
   const { user } = useAuth();
@@ -362,7 +380,17 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
       className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-white shadow-sm"
     >
       <CardContent className="p-6">
-        <CardHeader request={request} />
+        <CardHeader
+          request={request}
+          canEdit={!!startEditing}
+          isEditingThisCard={isEditingThisCard}
+          editingField={editingField}
+          editingValue={editingValue}
+          startEditing={startEditing}
+          saveEdit={saveEdit}
+          cancelEdit={cancelEdit}
+          setEditingValue={setEditingValue}
+        />
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
