@@ -63,57 +63,59 @@ export const InProcessTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <>
       {inProcessRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No events in process
         </div>
       ) : (
-        inProcessRequests.map((request) => (
-          <InProcessCard
-            key={request.id}
-            request={request}
-            resolveUserName={resolveUserName}
-            isStale={isStale(request)}
-            onEdit={() => {
-              setSelectedEventRequest(request);
-              setIsEditing(true);
-              setShowEventDetails(true);
-            }}
-            onDelete={() => deleteEventRequestMutation.mutate(request.id)}
-            onSchedule={() => {
-              setSchedulingEventRequest(request);
-              setShowSchedulingDialog(true);
-            }}
-            onCall={() => handleCall(request)}
-            onContact={() => {
-              setContactEventRequest(request);
-              setShowContactOrganizerDialog(true);
-            }}
-            onScheduleCall={() => {
-              setSelectedEventRequest(request);
-              setShowScheduleCallDialog(true);
-            }}
-            onResendToolkit={() => {
-              setSelectedEventRequest(request);
-              setToolkitEventRequest(request);
-              setShowToolkitSentDialog(true);
-            }}
-            onAssignTspContact={() => {
-              setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
-            }}
-            onEditTspContact={() => {
-              setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
-            }}
-            onLogContact={() => {
-              setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
-            }}
-          />
-        ))
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+          {inProcessRequests.map((request) => (
+            <InProcessCard
+              key={request.id}
+              request={request}
+              resolveUserName={resolveUserName}
+              isStale={isStale(request)}
+              onEdit={() => {
+                setSelectedEventRequest(request);
+                setIsEditing(true);
+                setShowEventDetails(true);
+              }}
+              onDelete={() => deleteEventRequestMutation.mutate(request.id)}
+              onSchedule={() => {
+                setSchedulingEventRequest(request);
+                setShowSchedulingDialog(true);
+              }}
+              onCall={() => handleCall(request)}
+              onContact={() => {
+                setContactEventRequest(request);
+                setShowContactOrganizerDialog(true);
+              }}
+              onScheduleCall={() => {
+                setSelectedEventRequest(request);
+                setShowScheduleCallDialog(true);
+              }}
+              onResendToolkit={() => {
+                setSelectedEventRequest(request);
+                setToolkitEventRequest(request);
+                setShowToolkitSentDialog(true);
+              }}
+              onAssignTspContact={() => {
+                setTspContactEventRequest(request);
+                setShowTspContactAssignmentDialog(true);
+              }}
+              onEditTspContact={() => {
+                setTspContactEventRequest(request);
+                setShowTspContactAssignmentDialog(true);
+              }}
+              onLogContact={() => {
+                setLogContactEventRequest(request);
+                setShowLogContactDialog(true);
+              }}
+            />
+          ))}
+        </div>
       )}
-    </div>
+    </>
   );
 };

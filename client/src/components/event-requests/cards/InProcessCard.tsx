@@ -164,7 +164,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
     <div className="flex items-start justify-between mb-6">
       <div className="flex-1">
         <div className="flex items-center gap-3 mb-4">
-          <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-[#236383] flex items-center gap-2 break-words">
+          <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-[#007E8C] flex items-center gap-2 break-words">
             {request.organizationName}
             {request.department && (
               <span className="text-sm sm:text-base md:text-lg font-normal text-[#646464] break-words">
@@ -172,7 +172,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </span>
             )}
           </h3>
-          <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
+          <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border border-[#007E8C] text-[16px]">
             <StatusIcon className="w-3 h-3 mr-1" />
             {getStatusLabel(request.status)}
           </Badge>
@@ -219,7 +219,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
         </div>
 
         {/* Prominent Event Date Display */}
-        <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md mb-4">
+        <div className="bg-[#00CED1] text-white rounded-lg p-4 shadow-md mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Calendar className="w-5 h-5" />
             <span className="font-semibold text-sm uppercase tracking-wide">Event Date</span>
@@ -386,11 +386,11 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
           return (
             <div className="mb-4">
-              <div className="inline-flex items-center gap-2 rounded-md border border-[#236383]/25 bg-[#EAF4F8] text-[#236383] px-3 py-2 text-sm font-medium">
+              <div className="inline-flex items-center gap-2 rounded-md border border-[#007E8C]/25 bg-[#00CED1]/10 text-[#007E8C] px-3 py-2 text-sm font-medium">
                 <Package className="w-4 h-4" />
                 <span>Toolkit sent {formattedDate}</span>
                 {request.toolkitSentBy && (
-                  <span className="text-xs text-[#236383]/70">
+                  <span className="text-xs text-[#007E8C]/70">
                     by {resolveUserName ? resolveUserName(request.toolkitSentBy) : request.toolkitSentBy}
                   </span>
                 )}
@@ -444,7 +444,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm sm:text-base md:text-lg font-semibold text-[#236383]">
+              <p className="text-sm sm:text-base md:text-lg font-semibold text-[#007E8C]">
                 Preferred Time
               </p>
               <p className="font-medium">
@@ -625,7 +625,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 <div className="text-sm sm:text-base md:text-lg font-bold text-[#D68319] mb-1">
                   TSP Contact
                 </div>
-                <div className="text-base sm:text-lg md:text-xl font-semibold text-[#236383] break-words">
+                <div className="text-base sm:text-lg md:text-xl font-semibold text-[#007E8C] break-words">
                   {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
                 </div>
                 {request.tspContactAssignedDate && (

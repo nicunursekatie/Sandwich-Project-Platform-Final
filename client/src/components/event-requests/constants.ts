@@ -16,15 +16,15 @@ export const SANDWICH_TYPES = [
 ] as const;
 
 export const statusColors = {
-  new: 'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30',
+  new: 'bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border border-[#007E8C]',
   in_process:
-    'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30',
+    'bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border border-[#007E8C]',
   scheduled:
-    'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30',
+    'bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border border-[#007E8C]',
   completed:
-    'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30',
+    'bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border border-[#007E8C]',
   declined:
-    'bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border-2 border-[#236383]/50 font-bold shadow-lg',
+    'bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border-2 border-[#007E8C] font-bold shadow-lg',
 };
 
 export const SANDWICH_DESTINATIONS = [
