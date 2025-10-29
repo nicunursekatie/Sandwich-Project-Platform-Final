@@ -388,9 +388,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
         {/* Main Info Section - Compact Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
-          {/* Event Details - Takes 2 columns */}
-          <div className="lg:col-span-2 bg-[#236383] rounded-lg p-4 text-white space-y-3">
-            <h3 className="font-bold text-lg uppercase tracking-wide border-b border-white/30 pb-2 mb-3">📅 Event Details</h3>
+          {/* Left Column - Event Details & Team Assignments */}
+          <div className="lg:col-span-2 space-y-3">
+            {/* Event Details */}
+            <div className="bg-[#236383] rounded-lg p-4 text-white space-y-3">
+              <h3 className="font-bold text-lg uppercase tracking-wide border-b border-white/30 pb-2 mb-3">📅 Event Details</h3>
 
             {/* Date - Inline Editable */}
             <div className="flex items-center gap-2">
@@ -759,6 +761,238 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               )}
             </div>
+            </div>
+
+            {/* Team Assignments - Below Event Details in same column */}
+            <div className="bg-white/90 rounded-lg p-4">
+              <h3 className="font-bold text-[#236383] uppercase tracking-wide mb-3">👥 Team Assignments</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Drivers */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    {isEditingThisCard && editingField === 'driversNeeded' ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Car className="w-4 h-4 text-[#236383]" />
+                        <Input
+                          type="number"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-7 w-16 text-sm"
+                          min="0"
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-[#236383]">needed</span>
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white">
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2">
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-[#236383] flex items-center gap-1">
+                          <Car className="w-4 h-4" />
+                          {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                        </span>
+                        {canEdit && driverNeeded > 0 && (
+                          <Button size="sm" onClick={() => openAssignmentDialog('driver')} className="h-7 bg-[#007E8C] text-white">
+                            <UserPlus className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {driverNeeded > 0 ? (
+                      <>
+                        {parsePostgresArray(request.assignedDriverIds).map((id) => (
+                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
+                            <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('driver', id)}
+                                className="h-5 w-5 p-0 text-red-600"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        {driverAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
+                        <span className="text-sm text-[#236383] italic">No drivers needed</span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('driversNeeded', '1')}
+                            className="h-6 px-2 text-[#007E8C]"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Set Need
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Speakers */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    {isEditingThisCard && editingField === 'speakersNeeded' ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Megaphone className="w-4 h-4 text-[#236383]" />
+                        <Input
+                          type="number"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-7 w-16 text-sm"
+                          min="0"
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-[#236383]">needed</span>
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white">
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2">
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-[#236383] flex items-center gap-1">
+                          <Megaphone className="w-4 h-4" />
+                          {speakerNeeded > 0 ? `Speakers (${speakerAssigned}/${speakerNeeded})` : 'Speakers'}
+                        </span>
+                        {canEdit && speakerNeeded > 0 && (
+                          <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7 bg-[#007E8C] text-white">
+                            <UserPlus className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {speakerNeeded > 0 ? (
+                      <>
+                        {Object.keys(request.speakerDetails || {}).map((id) => (
+                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
+                            <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('speaker', id)}
+                                className="h-5 w-5 p-0 text-red-600"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        {speakerAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
+                        <span className="text-sm text-[#236383] italic">No speakers needed</span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('speakersNeeded', '1')}
+                            className="h-6 px-2 text-[#007E8C]"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Set Need
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Volunteers */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    {isEditingThisCard && editingField === 'volunteersNeeded' ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Users className="w-4 h-4 text-[#236383]" />
+                        <Input
+                          type="number"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-7 w-16 text-sm"
+                          min="0"
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-[#236383]">needed</span>
+                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white">
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2">
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-[#236383] flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {volunteerNeeded > 0 ? `Volunteers (${volunteerAssigned}/${volunteerNeeded})` : 'Volunteers'}
+                        </span>
+                        {canEdit && volunteerNeeded > 0 && (
+                          <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7 bg-[#007E8C] text-white">
+                            <UserPlus className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {volunteerNeeded > 0 ? (
+                      <>
+                        {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
+                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
+                            <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('volunteer', id)}
+                                className="h-5 w-5 p-0 text-red-600"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        {volunteerAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
+                        <span className="text-sm text-[#236383] italic">No volunteers needed</span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('volunteersNeeded', '1')}
+                            className="h-6 px-2 text-[#007E8C]"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Set Need
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Contact & Logistics Column - Single column on right */}
@@ -921,237 +1155,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           </div>
         </div>
-
-        {/* Team Assignments Section - Always visible */}
-        <div className="bg-white/90 rounded-lg p-4 mb-4">
-            <h3 className="font-bold text-[#236383] uppercase tracking-wide mb-3">👥 Team Assignments</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Drivers */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  {isEditingThisCard && editingField === 'driversNeeded' ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <Car className="w-4 h-4 text-[#236383]" />
-                      <Input
-                        type="number"
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-7 w-16 text-sm"
-                        min="0"
-                        placeholder="0"
-                      />
-                      <span className="text-sm text-[#236383]">needed</span>
-                      <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white">
-                        <Save className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2">
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <span className="font-semibold text-[#236383] flex items-center gap-1">
-                        <Car className="w-4 h-4" />
-                        {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
-                      </span>
-                      {canEdit && driverNeeded > 0 && (
-                        <Button size="sm" onClick={() => openAssignmentDialog('driver')} className="h-7 bg-[#007E8C] text-white">
-                          <UserPlus className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  {driverNeeded > 0 ? (
-                    <>
-                      {parsePostgresArray(request.assignedDriverIds).map((id) => (
-                        <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                          <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('driver', id)}
-                              className="h-5 w-5 p-0 text-red-600"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      {driverAssigned === 0 && <div className="text-sm text-gray-500 italic">None assigned</div>}
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                      <span className="text-sm text-[#236383] italic">No drivers needed</span>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('driversNeeded', '1')}
-                          className="h-6 px-2 text-[#007E8C]"
-                        >
-                          <Edit2 className="w-3 h-3 mr-1" />
-                          Set Need
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Speakers */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  {isEditingThisCard && editingField === 'speakersNeeded' ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <Megaphone className="w-4 h-4 text-[#236383]" />
-                      <Input
-                        type="number"
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-7 w-16 text-sm"
-                        min="0"
-                        placeholder="0"
-                      />
-                      <span className="text-sm text-[#236383]">needed</span>
-                      <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white">
-                        <Save className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2">
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <span className="font-semibold text-[#236383] flex items-center gap-1">
-                        <Megaphone className="w-4 h-4" />
-                        {speakerNeeded > 0 ? `Speakers (${speakerAssigned}/${speakerNeeded})` : 'Speakers'}
-                      </span>
-                      {canEdit && speakerNeeded > 0 && (
-                        <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7 bg-[#007E8C] text-white">
-                          <UserPlus className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  {speakerNeeded > 0 ? (
-                    <>
-                      {Object.keys(request.speakerDetails || {}).map((id) => (
-                        <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                          <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('speaker', id)}
-                              className="h-5 w-5 p-0 text-red-600"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      {speakerAssigned === 0 && <div className="text-sm text-gray-500 italic">None assigned</div>}
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-between bg-gray-50 rounded px-2 py-1">
-                      <span className="text-sm text-gray-500 italic">No speakers needed</span>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('speakersNeeded', '1')}
-                          className="h-6 px-2 text-[#007E8C]"
-                        >
-                          <Edit2 className="w-3 h-3 mr-1" />
-                          Set Need
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Volunteers */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  {isEditingThisCard && editingField === 'volunteersNeeded' ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <Users className="w-4 h-4 text-[#236383]" />
-                      <Input
-                        type="number"
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-7 w-16 text-sm"
-                        min="0"
-                        placeholder="0"
-                      />
-                      <span className="text-sm text-[#236383]">needed</span>
-                      <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white">
-                        <Save className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2">
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <span className="font-semibold text-[#236383] flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {volunteerNeeded > 0 ? `Volunteers (${volunteerAssigned}/${volunteerNeeded})` : 'Volunteers'}
-                      </span>
-                      {canEdit && volunteerNeeded > 0 && (
-                        <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7 bg-[#007E8C] text-white">
-                          <UserPlus className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  {volunteerNeeded > 0 ? (
-                    <>
-                      {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
-                        <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-2 py-1">
-                          <span className="text-sm">{extractCustomName(id) || resolveUserName(id)}</span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('volunteer', id)}
-                              className="h-5 w-5 p-0 text-red-600"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      {volunteerAssigned === 0 && <div className="text-sm text-gray-500 italic">None assigned</div>}
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-between bg-gray-50 rounded px-2 py-1">
-                      <span className="text-sm text-gray-500 italic">No volunteers needed</span>
-                      {canEdit && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('volunteersNeeded', '1')}
-                          className="h-6 px-2 text-[#007E8C]"
-                        >
-                          <Edit2 className="w-3 h-3 mr-1" />
-                          Set Need
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
 
         {/* Notes & Requirements Section */}
         {(request.message ||
