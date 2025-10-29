@@ -359,9 +359,9 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   );
   return (
     <Card
-      className={`transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#236383] ${statusColors.new}`}
+      className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-white shadow-sm"
     >
-      <CardContent className="p-6 bg-gradient-to-br from-[#e5f4f6] via-[#47B3Cb] to-[#47B3CB]">
+      <CardContent className="p-6">
         <CardHeader request={request} />
 
         {/* TSP Contact Assignment Status */}

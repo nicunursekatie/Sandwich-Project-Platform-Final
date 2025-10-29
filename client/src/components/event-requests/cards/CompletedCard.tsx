@@ -1867,7 +1867,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     : 'No time set';
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-gradient-to-br from-[#e6f7f5] via-[#007E8C]/10 to-[#007E8C]/20 border border-[#007E8C]/30">
+    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-white shadow-sm">
       <CardContent className="p-4">
         <CardHeader
           request={request}
