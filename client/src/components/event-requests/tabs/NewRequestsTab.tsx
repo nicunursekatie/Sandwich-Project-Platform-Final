@@ -55,52 +55,55 @@ export const NewRequestsTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      {newRequests.map((request) => (
-        <NewRequestCard
-          key={request.id}
-          request={request}
-          onEdit={() => {
-            setSelectedEventRequest(request);
-            setIsEditing(true);
-            setShowEventDetails(true);
-          }}
-          onDelete={() => deleteEventRequestMutation.mutate(request.id)}
-          onCall={() => handleCall(request)}
-          onContact={() => {
-            setContactEventRequest(request);
-            setShowContactOrganizerDialog(true);
-          }}
-          onToolkit={() => {
-            setSelectedEventRequest(request);
-            setToolkitEventRequest(request);
-            setShowToolkitSentDialog(true);
-          }}
-          onScheduleCall={() => {
-            setSelectedEventRequest(request);
-            setShowScheduleCallDialog(true);
-          }}
-          onAssignTspContact={() => {
-            setTspContactEventRequest(request);
-            setShowTspContactAssignmentDialog(true);
-          }}
-          onEditTspContact={() => {
-            setTspContactEventRequest(request);
-            setShowTspContactAssignmentDialog(true);
-          }}
-          onApprove={() => handleStatusChange(request.id, 'in_process')}
-          onDecline={() => handleStatusChange(request.id, 'declined')}
-          onLogContact={() => {
-            setLogContactEventRequest(request);
-            setShowLogContactDialog(true);
-          }}
-        />
-      ))}
-      {newRequests.length === 0 && (
+    <>
+      {newRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No new event requests
         </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+          {newRequests.map((request) => (
+            <NewRequestCard
+              key={request.id}
+              request={request}
+              onEdit={() => {
+                setSelectedEventRequest(request);
+                setIsEditing(true);
+                setShowEventDetails(true);
+              }}
+              onDelete={() => deleteEventRequestMutation.mutate(request.id)}
+              onCall={() => handleCall(request)}
+              onContact={() => {
+                setContactEventRequest(request);
+                setShowContactOrganizerDialog(true);
+              }}
+              onToolkit={() => {
+                setSelectedEventRequest(request);
+                setToolkitEventRequest(request);
+                setShowToolkitSentDialog(true);
+              }}
+              onScheduleCall={() => {
+                setSelectedEventRequest(request);
+                setShowScheduleCallDialog(true);
+              }}
+              onAssignTspContact={() => {
+                setTspContactEventRequest(request);
+                setShowTspContactAssignmentDialog(true);
+              }}
+              onEditTspContact={() => {
+                setTspContactEventRequest(request);
+                setShowTspContactAssignmentDialog(true);
+              }}
+              onApprove={() => handleStatusChange(request.id, 'in_process')}
+              onDecline={() => handleStatusChange(request.id, 'declined')}
+              onLogContact={() => {
+                setLogContactEventRequest(request);
+                setShowLogContactDialog(true);
+              }}
+            />
+          ))}
+        </div>
       )}
-    </div>
+    </>
   );
 };

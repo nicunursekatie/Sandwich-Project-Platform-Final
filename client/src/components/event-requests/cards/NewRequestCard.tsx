@@ -156,15 +156,15 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="flex items-start space-x-3">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[20px] bg-[47b3cb] text-[#04414a]">
+            <h3 className="font-semibold text-[20px] bg-[#00CED1] text-white px-2 py-1 rounded">
               {request.organizationName}
               {request.department && (
-                <span className="text-gray-600 ml-1">
+                <span className="text-gray-100 ml-1">
                   &bull; {request.department}
                 </span>
               )}
             </h3>
-            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
+            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border border-[#007E8C] text-[16px]">
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}
             </Badge>
@@ -187,7 +187,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </Badge>
             )}
           </div>
-          <div className="text-sm text-[#236383] mt-1 space-y-1">
+          <div className="text-sm text-[#007E8C] mt-1 space-y-1">
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {isEditingDate ? (
@@ -216,7 +216,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </strong>
                     {displayDate && getRelativeTime(displayDate.toString()) && (
-                      <span className="text-[#236383] ml-1">({getRelativeTime(displayDate.toString())})</span>
+                      <span className="text-[#007E8C] ml-1">({getRelativeTime(displayDate.toString())})</span>
                     )}
                   </span>
                   {canEdit && startEditing && (
@@ -396,7 +396,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 )}
               </div>
               {request.tspContactAssignedDate && (
-                <p className="text-sm text-[#D68319]/90 mt-1">
+                <p className="text-sm text-[#D68319] mt-1">
                   Assigned on{' '}
                   {new Date(
                     request.tspContactAssignedDate

@@ -218,26 +218,25 @@ const EventRequestsManagementContent: React.FC = () => {
               </p>
             </div>
             <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
-              <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
-                <button
-                  onClick={() => {
-                    setShowScheduleCallDialog(false);
-                    setShowOneDayFollowUpDialog(false);
-                    setShowOneMonthFollowUpDialog(false);
-                    setShowToolkitSentDialog(false);
-                    setSelectedEventRequest(null);
-                    setIsEditing(true);
-                    setShowEventDetails(true);
-                  }}
-                  className="premium-btn-secondary w-full"
-                  data-testid="button-add-manual-event"
-                >
-                  <Plus className="w-4 h-4" />
-                  {isMobile ? 'Add Event' : 'Add Manual Event Request'}
-                </button>
+              <button
+                onClick={() => {
+                  setShowScheduleCallDialog(false);
+                  setShowOneDayFollowUpDialog(false);
+                  setShowOneMonthFollowUpDialog(false);
+                  setShowToolkitSentDialog(false);
+                  setSelectedEventRequest(null);
+                  setIsEditing(true);
+                  setShowEventDetails(true);
+                }}
+                className={`premium-btn-outline ${isMobile ? 'w-full' : ''}`}
+                data-testid="button-add-manual-event"
+              >
+                <Plus className="w-4 h-4" />
+                {isMobile ? 'Add Event' : 'Add Manual Event Request'}
+              </button>
+              <MissingInfoSummaryDialog />
+              <ToolkitSentPendingDialog />
               <div className={`${isMobile ? 'flex flex-wrap gap-2' : 'flex items-center space-x-2'}`}>
-                <MissingInfoSummaryDialog />
-                <ToolkitSentPendingDialog />
                 <button
                   onClick={() => setShowSandwichPlanningModal(true)}
                   className={`premium-btn-outline ${isMobile ? 'flex-1' : ''}`}
