@@ -8,11 +8,13 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export default function EventsViewer() {
   const [isLoading, setIsLoading] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(85); // Default zoom level (85%)
+  const [spreadsheetId, setSpreadsheetId] = useState<string | null>(null);
 
   // Use published Google Sheets URL (no authentication required)
   // TODO: Update this URL with the current published Google Sheets URL
@@ -28,6 +30,24 @@ export default function EventsViewer() {
     if (savedZoom) {
       setZoomLevel(parseInt(savedZoom));
     }
+  }, []);
+
+  // Fetch the spreadsheet ID from the API
+  useEffect(() => {
+    const fetchSpreadsheetId = async () => {
+      try {
+        const response = await fetch('/api/google-sheets/event-requests/config/check');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.spreadsheetId) {
+            setSpreadsheetId(data.spreadsheetId);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch spreadsheet ID:', error);
+      }
+    };
+    fetchSpreadsheetId();
   }, []);
 
   // Save zoom preference when changed
@@ -51,6 +71,15 @@ export default function EventsViewer() {
 
   const handleOpenInNewTab = () => {
     window.open(fullViewUrl, '_blank');
+  };
+
+  const handleEditInGoogleDrive = () => {
+    if (spreadsheetId) {
+      window.open(
+        `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`,
+        '_blank'
+      );
+    }
   };
 
   const handleZoomIn = () => {
@@ -87,6 +116,17 @@ export default function EventsViewer() {
                   className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
                 />
                 Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditInGoogleDrive}
+                disabled={!spreadsheetId}
+                className="flex items-center gap-2"
+                title="Edit in Google Drive"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Edit in Google Drive
               </Button>
               <Button
                 variant="outline"
