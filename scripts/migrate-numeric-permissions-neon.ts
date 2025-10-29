@@ -12,7 +12,7 @@
  * - Test on a database copy first
  */
 
-import { initializeStorage } from '../server/storage.js';
+import { storage } from '../server/storage.js';
 import { PERMISSIONS } from '../shared/auth-utils.js';
 
 // Define comprehensive admin permissions for legacy users with numeric format
@@ -133,8 +133,7 @@ async function migrateNumericPermissions(options: MigrationOptions = {}) {
   }
 
   try {
-    // Initialize storage
-    const storage = await initializeStorage();
+    // Use storage instance (connects to Neon)
 
     // Get all users
     const users = await storage.getAllUsers();
