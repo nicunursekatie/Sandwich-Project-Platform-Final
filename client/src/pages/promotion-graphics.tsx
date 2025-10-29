@@ -504,7 +504,7 @@ export default function PromotionGraphics() {
             <Card key={graphic.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-video w-full overflow-hidden bg-gray-100">
                 <img
-                  src={graphic.imageUrl}
+                  src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
                   alt={graphic.title}
                   className="w-full h-full object-cover cursor-pointer"
                   onClick={() => setSelectedGraphic(graphic)}
@@ -587,7 +587,7 @@ export default function PromotionGraphics() {
               </DialogHeader>
               <div className="space-y-4">
                 <img
-                  src={selectedGraphic.imageUrl}
+                  src={`/api/objects/proxy?url=${encodeURIComponent(selectedGraphic.imageUrl)}`}
                   alt={selectedGraphic.title}
                   className="w-full h-auto rounded-lg"
                 />
