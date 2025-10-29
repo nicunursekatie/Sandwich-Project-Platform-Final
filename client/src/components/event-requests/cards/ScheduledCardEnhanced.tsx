@@ -298,7 +298,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   return (
     <Card className="w-full bg-white border-l-4 border-l-[#007E8C] shadow-sm hover:shadow-lg transition-all">
-      <CardContent className="p-5">
+      <CardContent className="p-6">
         {/* Header Row - Organization & Status */}
         <div className="flex items-start justify-between gap-4 mb-4 pb-4 border-b-2 border-[#007E8C]/10">
           <div className="flex-1">
@@ -338,36 +338,36 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </Badge>
 
               {/* Sandwich count badge */}
-              <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
+              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
                 <Package className="w-3 h-3 mr-1" aria-hidden="true" />
                 {sandwichInfo} Sandwiches
               </Badge>
 
               {request.externalId && request.externalId.startsWith('manual-') && (
-                <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
+                <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
                   <FileText className="w-3 h-3 mr-1" />
                   Manual Entry
                 </Badge>
               )}
 
               {staffingComplete ? (
-                <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#007E8C] font-medium">
+                <Badge className="bg-gradient-to-br from-[#47B3CB] to-[#007E8C] text-white border border-[#47B3CB] font-medium">
                   Fully Staffed
                 </Badge>
               ) : (
                 <>
                   {driverNeeded > driverAssigned && (
-                    <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
+                    <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
                       {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {speakerNeeded > speakerAssigned && (
-                    <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
+                    <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
                       {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
                   {volunteerNeeded > volunteerAssigned && (
-                    <Badge className="bg-gradient-to-br from-[#FBAD3F] to-[#FF8C00] text-white border border-[#FBAD3F] font-medium">
+                    <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
                       {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
                     </Badge>
                   )}
@@ -375,7 +375,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
 
               {request.vanDriverNeeded && !request.assignedVanDriverId && (
-                <Badge className="bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383] font-medium">
+                <Badge className="bg-[#236383] text-white border border-[#236383] font-medium">
                   <Car className="w-3 h-3 mr-1" />
                   Van Driver Needed
                 </Badge>
@@ -413,12 +413,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         </div>
 
         {/* Main Info Section - Compact Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
           {/* Left Column - Event Details & Team Assignments */}
-          <div className="lg:col-span-2 space-y-3">
+          <div className="lg:col-span-2 space-y-4">
             {/* Event Details */}
             <div className="bg-[#007E8C]/5 rounded-lg p-4 border border-[#007E8C]/10 space-y-3">
-              <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide flex items-center gap-2 mb-3">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] flex items-center gap-2 mb-3">
                 <Calendar className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
                 Event Details
               </h3>
@@ -443,7 +443,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2 flex-1 group">
-                  <span className="font-bold text-lg text-[#236383]">
+                  <span className="text-base font-bold text-[#236383]">
                     {dateInfo ? dateInfo.text : 'No date set'}
                   </span>
                   {canEdit && (
@@ -487,7 +487,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                   ) : (
-                    <div className="text-lg font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
+                    <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
                       {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : 'Not set'}
                     </div>
                   )}
@@ -516,7 +516,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                   ) : (
-                    <div className="text-lg font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
+                    <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
                       {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : 'Not set'}
                     </div>
                   )}
@@ -553,7 +553,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                   ) : (
-                    <div className="text-lg font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                    <div className="text-base font-bold group cursor-pointer text-gray-900" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
                       {request.pickupDateTime ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5)) : (request.pickupTime ? formatTime12Hour(request.pickupTime) : 'Not set')}
                     </div>
                   )}
@@ -663,12 +663,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#007E8C] hover:text-[#007E8C]/80 underline font-semibold"
+                      className="text-base text-[#007E8C] hover:text-[#007E8C]/80 underline font-semibold"
                     >
                       {request.eventAddress}
                     </a>
                   ) : (
-                    <span className="text-gray-500">No address set</span>
+                    <span className="text-sm text-gray-600">No address set</span>
                   )}
                   {canEdit && (
                     <Button
@@ -808,7 +808,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <div className="flex-1 group flex items-center gap-2">
-                  <span className="font-bold text-xl text-[#FBAD3F]">{sandwichInfo}</span>
+                  <span className="text-base font-bold text-[#FBAD3F]">{sandwichInfo}</span>
                   {canEdit && (
                     <Button
                       size="sm"
@@ -845,7 +845,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2 flex-1 group cursor-pointer" onClick={() => canEdit && startEditing('estimatedAttendance', request.estimatedAttendance?.toString() || '')}>
-                  <span className="font-semibold">
+                  <span className="text-base font-semibold">
                     {request.estimatedAttendance ? `${request.estimatedAttendance} people expected` : 'No attendance set'}
                   </span>
                   {canEdit && (
@@ -866,7 +866,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* Team Assignments - Below Event Details in same column */}
             <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10">
-              <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide mb-3 flex items-center gap-2">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
@@ -1140,10 +1140,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
 
           {/* Contact & Logistics Column - Single column on right */}
-          <div className="lg:col-span-1 space-y-3">
+          <div className="lg:col-span-1 space-y-4">
             {/* Contact Info */}
             <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10">
-              <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide pb-2 mb-3 flex items-center gap-2">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
                 Event Organizer
               </h3>
@@ -1151,7 +1151,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {(request.firstName || request.lastName) && (
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 shrink-0" />
-                    <span className="font-semibold">
+                    <span className="text-base font-semibold">
                       {request.firstName} {request.lastName}
                     </span>
                   </div>
@@ -1175,7 +1175,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {(request.tspContact || request.customTspContact) && (
                   <div className="flex items-center gap-2 pt-2 border-t border-white/30">
                     <UserPlus className="w-4 h-4 shrink-0" />
-                    <span className="font-semibold">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
+                    <span className="text-base font-semibold">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
                     {canEdit && (
                       <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-white hover:bg-white/20" aria-label="Edit TSP contact">
                         <Edit2 className="w-3 h-3" aria-hidden="true" />
@@ -1198,7 +1198,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* Delivery Logistics */}
             <div className="bg-[#FBAD3F]/5 rounded-lg p-4 border border-[#FBAD3F]/10">
-              <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide pb-2 mb-3 flex items-center gap-2">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
                 <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
                 Delivery Logistics
               </h3>
@@ -1285,7 +1285,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     </div>
                   ) : (
                     <div>
-                      <div className="font-semibold">
+                      <div className="text-base font-semibold">
                         {request.overnightHoldingLocation || 'Not set'}
                       </div>
                       {canEdit && (
@@ -1320,7 +1320,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           request.unresponsiveNotes ||
           request.socialMediaPostNotes) && (
           <div className="bg-amber-50 rounded-lg p-4 mb-4">
-            <h3 className="font-bold text-[#236383] uppercase tracking-wide mb-3 flex items-center gap-2">
+            <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Notes & Requirements
             </h3>

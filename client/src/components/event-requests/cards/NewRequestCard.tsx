@@ -165,10 +165,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="flex items-start space-x-3">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[20px] bg-[#47B3CB] text-white px-2 py-1 rounded">
+            <h3 className="text-2xl font-bold text-[#236383]">
               {request.organizationName}
               {request.department && (
-                <span className="text-white ml-1">
+                <span className="text-sm font-normal text-gray-600 ml-2">
                   &bull; {request.department}
                 </span>
               )}
@@ -178,8 +178,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
               className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
                 request.isConfirmed
-                  ? 'bg-[#007E8C] text-white'
-                  : 'bg-[#236383] text-white'
+                  ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
+                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white'
               }`}
               title="Click to toggle confirmation status"
             >
@@ -215,9 +215,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
-                  <span data-testid="text-date-label" className="text-[19px]">
+                  <span data-testid="text-date-label" className="text-sm uppercase text-gray-600">
                     {dateLabel}: {' '}
-                    <strong className="text-[18px]" data-testid="text-date-value">
+                    <strong className="text-base font-bold text-[#236383]" data-testid="text-date-value">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </strong>
                     {displayDate && getRelativeTime(displayDate.toString()) && (
@@ -264,7 +264,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-[18px]">
+            <span className="font-medium text-base">
               {request.firstName} {request.lastName}
             </span>
           </div>
@@ -273,7 +273,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               <Mail className="w-4 h-4 text-gray-400" />
               <a
                 href={`mailto:${request.email}`}
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-[18px]"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-base"
               >
                 {request.email}
               </a>
@@ -284,7 +284,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               <Phone className="w-4 h-4 text-gray-400" />
               <a
                 href={`tel:${request.phone}`}
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-[18px]"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-base"
               >
                 {request.phone}
               </a>
@@ -297,7 +297,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onCall}
-              className="text-[15px]"
+              className="text-sm"
             >
               <Phone className="w-3 h-3 mr-1" />
               Call
@@ -308,7 +308,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onContact}
-              className="text-[15px]"
+              className="text-sm"
             >
               <Mail className="w-3 h-3 mr-1" />
               Email
@@ -394,11 +394,11 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           <div className="space-y-3">
             {/* Submitted Info */}
             <div className="bg-brand-primary-lighter rounded-lg p-3">
-              <p className="text-gray-500 mb-1 text-[16px] font-bold">
+              <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-1">
                 Submitted
               </p>
               <div className="space-y-1">
-                <div className="font-medium flex items-center gap-2 text-[18px]">
+                <div className="font-medium flex items-center gap-2 text-base">
                   <Clock className="w-4 h-4" />
                   {request.createdAt
                     ? new Date(request.createdAt).toLocaleDateString() +
@@ -406,7 +406,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                       new Date(request.createdAt).toLocaleTimeString()
                     : 'Unknown date'}
                   {request.createdAt && (
-                    <Badge className="ml-1 bg-[#236383] text-white border-0 shadow-lg hover:bg-[#007E8C] transition-all duration-200 text-[14px]">
+                    <Badge className="ml-1 bg-[#236383] text-white border-0 shadow-lg hover:bg-[#007E8C] transition-all duration-200 text-sm">
                       {formatDistanceToNow(new Date(request.createdAt), {
                         addSuffix: true,
                       })}
@@ -449,14 +449,14 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             {typeof request.hasHostedBefore !== 'undefined' && (
               <div className="bg-gray-50 rounded-lg p-3">
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-500 font-bold text-[16px]">
+                  <span className="text-sm uppercase font-bold tracking-wide text-[#236383]">
                     Previously hosted:
                   </span>
                   <Badge
                     className={
                       request.hasHostedBefore
-                        ? 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-[#007E8C] text-white border-0 shadow-lg hover:bg-[#47B3CB] transition-all duration-200 text-[14px]'
-                        : 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-[#236383] text-white border-0 shadow-lg hover:bg-[#007E8C] transition-all duration-200 text-[14px]'
+                        ? 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-[#007E8C] text-white border-0 shadow-lg hover:bg-[#47B3CB] transition-all duration-200 text-sm'
+                        : 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-[#236383] text-white border-0 shadow-lg hover:bg-[#007E8C] transition-all duration-200 text-sm'
                     }
                   >
                     {request.hasHostedBefore ? 'Yes' : 'No - First Time'}
@@ -468,10 +468,10 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             {/* Submission Message */}
             {request.message && (
               <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-gray-500 mb-1 text-[17px] font-bold">
+                <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-1">
                   Message from submission:
                 </p>
-                <p className="text-gray-600 text-[16px]">{request.message}</p>
+                <p className="text-gray-600 text-base">{request.message}</p>
               </div>
             )}
           </div>
@@ -546,7 +546,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             size="sm"
             variant="default"
             onClick={onToolkit}
-            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white text-[16px]"
+            className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white text-base"
           >
             <Package className="w-4 h-4 mr-1" />
             Send Toolkit
@@ -555,7 +555,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onScheduleCall}
-            className="text-[16px]"
+            className="text-base"
           >
             <Phone className="w-4 h-4 mr-1" />
             Schedule Call
@@ -564,7 +564,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onLogContact}
-            className="text-[16px] border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+            className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
           >
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact

@@ -173,10 +173,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
     header: (
       <div className="mb-4">
         <div className="flex items-center gap-3 flex-wrap">
-          <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-[#007E8C] flex items-center gap-2 break-words">
+          <h3 className="text-2xl font-bold text-[#236383] flex items-center gap-2 break-words">
             {request.organizationName}
             {request.department && (
-              <span className="text-sm sm:text-base md:text-lg font-normal text-[#646464] break-words">
+              <span className="text-sm font-normal text-gray-600 break-words">
                 &bull; {request.department}
               </span>
             )}
@@ -186,8 +186,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
             className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
               request.isConfirmed
-                ? 'bg-[#007E8C] text-white'
-                : 'bg-[#236383] text-white'
+                ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
+                : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white'
             }`}
             title="Click to toggle confirmation status"
           >
@@ -212,8 +212,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             return missingInfo.map((item) => (
               <Badge
                 key={item}
-                variant="outline"
-                className="bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41] px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center"
+                className="bg-[#A31C41] text-white px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center"
                 data-testid={`badge-missing-${item.toLowerCase().replace(' ', '-')}`}
               >
                 <AlertTriangle className="w-3 h-3 mr-1" />
@@ -228,7 +227,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
         <div className="flex items-center gap-2 mb-2">
           <Calendar className="w-5 h-5" />
-          <span className="font-semibold text-sm uppercase tracking-wide">Event Date</span>
+          <span className="text-sm uppercase font-bold tracking-wide">Event Date</span>
         </div>
         {isEditingDate ? (
           <div className="flex items-center gap-2">
@@ -260,7 +259,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           </div>
         ) : (
           <div className="flex items-center gap-2 group">
-            <span className="text-sm sm:text-base md:text-lg font-bold break-words" data-testid="text-date-value">
+            <span className="text-base font-bold break-words" data-testid="text-date-value">
               {displayDate && dateInfo ? dateInfo.text : 'No date set'}
             </span>
             {displayDate && getRelativeTime(displayDate.toString()) && (
@@ -310,18 +309,18 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm">
             <User className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-sm sm:text-base md:text-lg break-words">
+            <span className="font-medium text-base break-words">
               {request.firstName} {request.lastName}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Mail className="w-4 h-4 text-gray-400" />
-            <span className="text-sm sm:text-base md:text-lg break-words">{request.email}</span>
+            <span className="text-base break-words">{request.email}</span>
           </div>
           {request.phone && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Phone className="w-4 h-4 text-gray-400" />
-              <span className="text-sm sm:text-base md:text-lg break-words">{request.phone}</span>
+              <span className="text-base break-words">{request.phone}</span>
             </div>
           )}
         </div>
@@ -331,7 +330,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onCall}
-              className="text-[15px]"
+              className="text-sm"
             >
               <Phone className="w-3 h-3 mr-1" />
               Call
@@ -342,7 +341,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onContact}
-              className="text-[15px]"
+              className="text-sm"
             >
               <Mail className="w-3 h-3 mr-1" />
               Email
@@ -476,7 +475,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             {/* Preferred Time */}
             {(request.eventStartTime || request.eventEndTime) && (
               <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm sm:text-base md:text-lg font-semibold text-[#007E8C] mb-1">
+                <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-1">
                   Preferred Time
                 </p>
                 <p className="font-medium">
@@ -522,10 +521,10 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     <Building className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm sm:text-base md:text-lg font-bold text-[#D68319] mb-1">
+                    <div className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-1">
                       TSP Contact
                     </div>
-                    <div className="text-base sm:text-lg md:text-xl font-semibold text-[#007E8C] break-words">
+                    <div className="text-base font-semibold text-[#007E8C] break-words">
                       {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
                     </div>
                     {request.tspContactAssignedDate && (
@@ -689,7 +688,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onScheduleCall}
-            className="text-[16px]"
+            className="text-base"
           >
             <Phone className="w-4 h-4 mr-1" />
             {request.scheduledCallDate ? 'Reschedule Call' : 'Schedule Call'}
@@ -698,7 +697,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             size="sm"
             variant="outline"
             onClick={onLogContact}
-            className="text-[16px] border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+            className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
           >
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
