@@ -83,7 +83,6 @@ function Router() {
   // Lazy-loaded components
   const SMSOptIn = lazy(() => import('./pages/sms-opt-in'));
   const SMSVerificationDocs = lazy(() => import('./pages/sms-verification-docs'));
-  const ExpensesPage = lazy(() => import('./pages/ExpensesPage'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
@@ -240,9 +239,7 @@ function Router() {
         {() => <Dashboard initialSection="event-reminders" />}
       </Route>
       <Route path="/expenses">
-        <Suspense fallback={<LoadingState text="Loading expenses..." size="lg" className="min-h-screen" />}>
-          <ExpensesPage />
-        </Suspense>
+        {() => <Dashboard initialSection="expenses" />}
       </Route>
       <Route path="/historical-import">
         {() => <Dashboard initialSection="historical-import" />}
