@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
@@ -13,6 +13,12 @@ export const NewRequestsTab: React.FC = () => {
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation, updateEventRequestMutation } = useEventMutations();
   const { handleStatusChange } = useEventAssignments();
+
+  // Inline editing state
+  const [editingNewRequestId, setEditingNewRequestId] = useState<number | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+  const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
 
   const {
     setSelectedEventRequest,
@@ -52,6 +58,60 @@ export const NewRequestsTab: React.FC = () => {
         });
       });
     }
+  };
+
+  // Inline editing functions
+  const startEditing = (id: number, field: string, currentValue: string) => {
+    setEditingNewRequestId(id);
+    setEditingField(field);
+    setEditingValue(currentValue || '');
+
+    // When editing a date field, also load the current confirmation status
+    if (field === 'desiredEventDate' || field === 'scheduledEventDate') {
+      const eventRequest = newRequests.find(req => req.id === id);
+      if (eventRequest) {
+        setTempIsConfirmed(eventRequest.isConfirmed || false);
+      }
+    }
+  };
+
+  const saveEdit = () => {
+    if (editingNewRequestId && editingField) {
+      if (editingField === 'isConfirmed') {
+        // Special handling for boolean toggles
+        const boolValue = editingValue === 'true';
+        updateEventRequestMutation.mutate({
+          id: editingNewRequestId,
+          data: { [editingField]: boolValue },
+        });
+      } else if (editingField === 'desiredEventDate' || editingField === 'scheduledEventDate') {
+        // When saving a date field, also save the confirmation status if needed
+        updateEventRequestMutation.mutate({
+          id: editingNewRequestId,
+          data: {
+            [editingField]: editingValue,
+            isConfirmed: tempIsConfirmed,
+          },
+        });
+      } else {
+        // Default handling for other fields
+        updateEventRequestMutation.mutate({
+          id: editingNewRequestId,
+          data: { [editingField]: editingValue },
+        });
+      }
+
+      // Reset editing state
+      setEditingNewRequestId(null);
+      setEditingField(null);
+      setEditingValue('');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingNewRequestId(null);
+    setEditingField(null);
+    setEditingValue('');
   };
 
   return (
@@ -100,6 +160,15 @@ export const NewRequestsTab: React.FC = () => {
                 setLogContactEventRequest(request);
                 setShowLogContactDialog(true);
               }}
+              // Inline editing props
+              startEditing={(field, value) => startEditing(request.id, field, value)}
+              saveEdit={saveEdit}
+              cancelEdit={cancelEdit}
+              setEditingValue={setEditingValue}
+              isEditingThisCard={editingNewRequestId === request.id}
+              editingField={editingField || ''}
+              editingValue={editingValue}
+              tempIsConfirmed={tempIsConfirmed}
             />
           ))}
         </div>

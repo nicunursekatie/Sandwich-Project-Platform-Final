@@ -52,6 +52,15 @@ interface NewRequestCardProps {
   onLogContact: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
+  // Inline editing props
+  startEditing?: (field: string, value: string) => void;
+  saveEdit?: () => void;
+  cancelEdit?: () => void;
+  setEditingValue?: (value: string) => void;
+  isEditingThisCard?: boolean;
+  editingField?: string;
+  editingValue?: string;
+  tempIsConfirmed?: boolean;
 }
 
 interface User {
@@ -156,15 +165,15 @@ const CardHeader: React.FC<CardHeaderProps> = ({
       <div className="flex items-start space-x-3">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[20px] bg-[#00CED1] text-white px-2 py-1 rounded">
+            <h3 className="font-semibold text-[20px] bg-[#47B3CB] text-white px-2 py-1 rounded">
               {request.organizationName}
               {request.department && (
-                <span className="text-gray-100 ml-1">
+                <span className="text-white ml-1">
                   &bull; {request.department}
                 </span>
               )}
             </h3>
-            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border border-[#007E8C] text-[16px]">
+            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C] text-[16px]">
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}
             </Badge>
@@ -173,8 +182,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
               className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
                 request.isConfirmed
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-400 text-white'
+                  ? 'bg-[#007E8C] text-white'
+                  : 'bg-[#236383] text-white'
               }`}
               title="Click to toggle confirmation status"
             >
@@ -330,6 +339,15 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onLogContact,
   canEdit = true,
   canDelete = true,
+  // Inline editing props
+  startEditing,
+  saveEdit,
+  cancelEdit,
+  setEditingValue,
+  isEditingThisCard = false,
+  editingField = '',
+  editingValue = '',
+  tempIsConfirmed = false,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
   const { user } = useAuth();
@@ -362,7 +380,17 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
       className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-white shadow-sm"
     >
       <CardContent className="p-6">
-        <CardHeader request={request} />
+        <CardHeader
+          request={request}
+          canEdit={!!startEditing}
+          isEditingThisCard={isEditingThisCard}
+          editingField={editingField}
+          editingValue={editingValue}
+          startEditing={startEditing}
+          saveEdit={saveEdit}
+          cancelEdit={cancelEdit}
+          setEditingValue={setEditingValue}
+        />
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
@@ -382,7 +410,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                       new Date(request.createdAt).toLocaleTimeString()
                     : 'Unknown date'}
                   {request.createdAt && (
-                    <Badge className="ml-1 bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]">
+                    <Badge className="ml-1 bg-[#236383] text-white border-0 shadow-lg hover:bg-[#007E8C] transition-all duration-200 text-[14px]">
                       {formatDistanceToNow(new Date(request.createdAt), {
                         addSuffix: true,
                       })}
@@ -431,8 +459,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   <Badge
                     className={
                       request.hasHostedBefore
-                        ? 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 text-[14px]'
-                        : 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]'
+                        ? 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-[#007E8C] text-white border-0 shadow-lg hover:bg-[#47B3CB] transition-all duration-200 text-[14px]'
+                        : 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-[#236383] text-white border-0 shadow-lg hover:bg-[#007E8C] transition-all duration-200 text-[14px]'
                     }
                   >
                     {request.hasHostedBefore ? 'Yes' : 'No - First Time'}

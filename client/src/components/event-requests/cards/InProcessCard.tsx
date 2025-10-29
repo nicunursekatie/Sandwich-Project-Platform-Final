@@ -64,6 +64,15 @@ interface InProcessCardProps {
   onLogContact: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
+  // Inline editing props
+  startEditing?: (field: string, value: string) => void;
+  saveEdit?: () => void;
+  cancelEdit?: () => void;
+  setEditingValue?: (value: string) => void;
+  isEditingThisCard?: boolean;
+  editingField?: string;
+  editingValue?: string;
+  tempIsConfirmed?: boolean;
 }
 
 // CardHeader component - copied from shared
@@ -160,10 +169,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   // Check if we're editing this date field
   const isEditingDate = isEditingThisCard && editingField === dateFieldToEdit;
 
-  return (
-    <div className="flex items-start justify-between mb-6">
-      <div className="flex-1">
-        <div className="flex items-center gap-3 mb-4">
+  return {
+    header: (
+      <div className="mb-4">
+        <div className="flex items-center gap-3 flex-wrap">
           <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-[#007E8C] flex items-center gap-2 break-words">
             {request.organizationName}
             {request.department && (
@@ -172,7 +181,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </span>
             )}
           </h3>
-          <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#00CED1] to-[#00B4D8] text-white border border-[#007E8C] text-[16px]">
+          <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C] text-[16px]">
             <StatusIcon className="w-3 h-3 mr-1" />
             {getStatusLabel(request.status)}
           </Badge>
@@ -181,8 +190,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
             className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
               request.isConfirmed
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-400 text-white'
+                ? 'bg-[#007E8C] text-white'
+                : 'bg-[#236383] text-white'
             }`}
             title="Click to toggle confirmation status"
           >
@@ -197,18 +206,18 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               Needs follow-up
             </Badge>
           )}
-          
+
           {/* Validation badges for missing intake info */}
           {(() => {
             const missingInfo = getMissingIntakeInfo(request);
             if (missingInfo.length === 0) return null;
-            
+
             // Always show individual badges listing each missing item
             return missingInfo.map((item) => (
-              <Badge 
+              <Badge
                 key={item}
                 variant="outline"
-                className="bg-red-50 text-red-700 border-red-300 px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center"
+                className="bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41] px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center"
                 data-testid={`badge-missing-${item.toLowerCase().replace(' ', '-')}`}
               >
                 <AlertTriangle className="w-3 h-3 mr-1" />
@@ -217,74 +226,74 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             ));
           })()}
         </div>
-
-        {/* Prominent Event Date Display */}
-        <div className="bg-[#00CED1] text-white rounded-lg p-4 shadow-md mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-5 h-5" />
-            <span className="font-semibold text-sm uppercase tracking-wide">Event Date</span>
+      </div>
+    ),
+    eventDate: (
+      <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
+        <div className="flex items-center gap-2 mb-2">
+          <Calendar className="w-5 h-5" />
+          <span className="font-semibold text-sm uppercase tracking-wide">Event Date</span>
+        </div>
+        {isEditingDate ? (
+          <div className="flex items-center gap-2">
+            <Input
+              type="date"
+              value={formatDateForInput(editingValue)}
+              onChange={(e) => setEditingValue?.(e.target.value)}
+              className="h-8 w-full bg-white text-gray-900"
+              autoFocus
+              data-testid="input-date"
+            />
+            <Button
+              size="sm"
+              onClick={saveEdit}
+              className="bg-[#FBAD3F] hover:bg-[#e89a2d]"
+              data-testid="button-save-date"
+            >
+              <Save className="w-3 h-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={cancelEdit}
+              className="text-white hover:bg-white/20"
+              data-testid="button-cancel-date"
+            >
+              <X className="w-3 h-3" />
+            </Button>
           </div>
-          {isEditingDate ? (
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={formatDateForInput(editingValue)}
-                onChange={(e) => setEditingValue?.(e.target.value)}
-                className="h-8 w-full bg-white text-gray-900"
-                autoFocus
-                data-testid="input-date"
-              />
-              <Button
-                size="sm"
-                onClick={saveEdit}
-                className="bg-[#FBAD3F] hover:bg-[#e89a2d]"
-                data-testid="button-save-date"
-              >
-                <Save className="w-3 h-3" />
-              </Button>
+        ) : (
+          <div className="flex items-center gap-2 group">
+            <span className="text-sm sm:text-base md:text-lg font-bold break-words" data-testid="text-date-value">
+              {displayDate && dateInfo ? dateInfo.text : 'No date set'}
+            </span>
+            {displayDate && getRelativeTime(displayDate.toString()) && (
+              <span className="text-sm opacity-80">
+                ({getRelativeTime(displayDate.toString())})
+              </span>
+            )}
+            {canEdit && startEditing && (
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={cancelEdit}
-                className="text-white hover:bg-white/20"
-                data-testid="button-cancel-date"
+                onClick={() =>
+                  startEditing(
+                    dateFieldToEdit,
+                    formatDateForInput(displayDate?.toString() || '')
+                  )
+                }
+                className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity text-white hover:bg-white/20"
+                title={`Edit ${dateLabel}`}
+                data-testid="button-edit-date"
               >
-                <X className="w-3 h-3" />
+                <Edit2 className="w-3 h-3" />
               </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 group">
-              <span className="text-sm sm:text-base md:text-lg font-bold break-words" data-testid="text-date-value">
-                {displayDate && dateInfo ? dateInfo.text : 'No date set'}
-              </span>
-              {displayDate && getRelativeTime(displayDate.toString()) && (
-                <span className="text-sm opacity-80">
-                  ({getRelativeTime(displayDate.toString())})
-                </span>
-              )}
-              {canEdit && startEditing && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() =>
-                    startEditing(
-                      dateFieldToEdit,
-                      formatDateForInput(displayDate?.toString() || '')
-                    )
-                  }
-                  className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity text-white hover:bg-white/20"
-                  title={`Edit ${dateLabel}`}
-                  data-testid="button-edit-date"
-                >
-                  <Edit2 className="w-3 h-3" />
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
-    </div>
-  );
+    )
+  };
 };
 
 // CardContactInfo component - copied from shared
@@ -365,8 +374,31 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onLogContact,
   canEdit = true,
   canDelete = true,
+  // Inline editing props
+  startEditing,
+  saveEdit,
+  cancelEdit,
+  setEditingValue,
+  isEditingThisCard = false,
+  editingField = '',
+  editingValue = '',
+  tempIsConfirmed = false,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const headerContent = CardHeader({
+    request,
+    resolveUserName,
+    isInProcessStale: isStale,
+    canEdit: !!startEditing, // Enable editing if editing functions are provided
+    isEditingThisCard,
+    editingField,
+    editingValue,
+    startEditing,
+    saveEdit,
+    cancelEdit,
+    setEditingValue
+  });
+
   return (
     <Card
       id={`event-card-${request.id}`}
@@ -377,7 +409,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
       }`}
     >
       <CardContent className="p-6">
-        <CardHeader request={request} resolveUserName={resolveUserName} isInProcessStale={isStale} />
+        {headerContent.header}
 
         {/* Toolkit Sent Status - Professional and brand-aligned */}
         {request.toolkitSentDate && (() => {
@@ -411,6 +443,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           {/* Left Column - Event Details */}
           <div className="space-y-3">
+            {/* Event Date - First in left column */}
+            {headerContent.eventDate}
             {/* Contact Attempts Info */}
             {(request.contactAttempts || request.lastContactAttempt) && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
