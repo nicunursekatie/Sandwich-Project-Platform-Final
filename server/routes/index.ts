@@ -56,6 +56,7 @@ import { createAuditLogsRouter } from './audit-logs';
 import { createApiDocsRouter } from './api-docs';
 import featureFlagsRouter from './feature-flags';
 import activitiesRouter from './activities';
+import expensesRouter from './expenses';
 
 // Import centralized middleware
 import {
@@ -348,6 +349,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     eventRequestsRouter
   );
   router.use('/api/event-requests', createErrorHandler('event-requests'));
+
+  // Expenses routes - expense and receipt tracking
+  router.use(
+    '/api/expenses',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    expensesRouter
+  );
+  router.use('/api/expenses', createErrorHandler('expenses'));
 
   // Me routes - user-specific endpoints
   router.use(

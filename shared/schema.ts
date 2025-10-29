@@ -2981,3 +2981,55 @@ export const insertActivityAttachmentSchema = createInsertSchema(activityAttachm
 
 export type ActivityAttachment = typeof activityAttachments.$inferSelect;
 export type InsertActivityAttachment = z.infer<typeof insertActivityAttachmentSchema>;
+
+/**
+ * Expenses - Track expenses and receipts for events, projects, or general use
+ * Supports receipt file uploads via storage service
+ */
+export const expenses = pgTable('expenses', {
+  id: serial('id').primaryKey(),
+  contextType: varchar('context_type', { length: 50 }), // 'event', 'project', 'general'
+  contextId: integer('context_id'), // FK to eventRequests.id or projects.id
+  description: text('description').notNull(),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  category: varchar('category', { length: 100 }), // 'food', 'supplies', 'transport', 'reimbursement', 'other'
+  vendor: varchar('vendor', { length: 255 }), // Where the purchase was made
+  purchaseDate: timestamp('purchase_date'), // When the purchase was made
+  receiptUrl: text('receipt_url'), // URL to receipt file in storage
+  receiptFileName: text('receipt_file_name'), // Original filename
+  receiptFileSize: integer('receipt_file_size'), // Size in bytes
+  uploadedBy: varchar('uploaded_by').notNull(), // FK to users.id
+  uploadedAt: timestamp('uploaded_at').defaultNow(),
+  approvedBy: varchar('approved_by'), // FK to users.id (for approval workflow)
+  approvedAt: timestamp('approved_at'),
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // 'pending', 'approved', 'rejected', 'reimbursed'
+  notes: text('notes'),
+  metadata: jsonb('metadata').default('{}'), // Additional context
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('idx_expenses_context').on(table.contextType, table.contextId),
+  index('idx_expenses_uploaded_by').on(table.uploadedBy),
+  index('idx_expenses_status').on(table.status),
+  index('idx_expenses_category').on(table.category),
+  index('idx_expenses_purchase_date').on(table.purchaseDate),
+]);
+
+export const insertExpenseSchema = createInsertSchema(expenses, {
+  amount: z.string().regex(/^\d+(\.\d{1,2})?$/, "Amount must be a valid decimal with up to 2 decimal places"),
+  description: z.string().min(1, "Description is required"),
+  category: z.enum(['food', 'supplies', 'transport', 'reimbursement', 'other']).optional(),
+  status: z.enum(['pending', 'approved', 'rejected', 'reimbursed']).optional(),
+  contextType: z.enum(['event', 'project', 'general']).optional(),
+}).omit({
+  id: true,
+  uploadedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateExpenseSchema = insertExpenseSchema.partial();
+
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type UpdateExpense = z.infer<typeof updateExpenseSchema>;
