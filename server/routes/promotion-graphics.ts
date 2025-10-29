@@ -11,6 +11,8 @@ import {
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
 import { sendEmail } from '../sendgrid';
+import { requirePermission } from '../middleware/auth';
+import { PERMISSIONS } from '@shared/auth-utils';
 
 // Type definitions for authenticated requests
 interface AuthenticatedRequest extends Request {
@@ -33,14 +35,18 @@ const createPromotionGraphicSchema = insertPromotionGraphicSchema
     description: z.string().min(1, 'Description is required').max(1000, 'Description too long'),
     imageUrl: z.string().url('Invalid image URL'),
     fileName: z.string().min(1, 'File name is required'),
-    intendedUseDate: z.string().datetime().optional().nullable(),
+    intendedUseDate: z.string().refine((date) => !date || !isNaN(Date.parse(date)), {
+      message: 'Invalid date format',
+    }).optional().nullable(),
     targetAudience: z.string().optional(),
   });
 
 const updatePromotionGraphicSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title too long').optional(),
   description: z.string().min(1, 'Description is required').max(1000, 'Description too long').optional(),
-  intendedUseDate: z.string().datetime().optional().nullable(),
+  intendedUseDate: z.string().refine((date) => !date || !isNaN(Date.parse(date)), {
+    message: 'Invalid date format',
+  }).optional().nullable(),
   targetAudience: z.string().optional(),
   status: z.enum(['active', 'archived']).optional(),
 });
@@ -143,13 +149,17 @@ promotionGraphicsRouter.get('/:id', async (req: AuthenticatedRequest, res: Respo
 });
 
 // POST /api/promotion-graphics - Create a new promotion graphic
-promotionGraphicsRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+// Require ADMIN_ACCESS permission to create graphics
+promotionGraphicsRouter.post(
+  '/',
+  requirePermission(PERMISSIONS.ADMIN_ACCESS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
 
-    logger.info('Creating promotion graphic', { userId: req.user.id, data: req.body });
+      logger.info('Creating promotion graphic', { userId: req.user.id, data: req.body });
 
     // Validate input
     const validatedData = createPromotionGraphicSchema.parse(req.body);
@@ -180,29 +190,34 @@ promotionGraphicsRouter.post('/', async (req: AuthenticatedRequest, res: Respons
       logger.error('Failed to send notification email', error);
     });
 
-    res.status(201).json(newGraphic);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        error: 'Validation error',
-        details: error.errors
+      res.status(201).json(newGraphic);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: 'Validation error',
+          details: error.errors
+        });
+      }
+
+      logger.error('Failed to create promotion graphic', error);
+      res.status(500).json({
+        error: 'Failed to create promotion graphic',
+        message: 'An error occurred while creating the promotion graphic'
       });
     }
-
-    logger.error('Failed to create promotion graphic', error);
-    res.status(500).json({
-      error: 'Failed to create promotion graphic',
-      message: 'An error occurred while creating the promotion graphic'
-    });
   }
-});
+);
 
 // PUT /api/promotion-graphics/:id - Update a promotion graphic
-promotionGraphicsRouter.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+// Require ADMIN_ACCESS permission to update graphics
+promotionGraphicsRouter.put(
+  '/:id',
+  requirePermission(PERMISSIONS.ADMIN_ACCESS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
 
     const graphicId = parseInt(req.params.id);
     if (isNaN(graphicId)) {
@@ -240,29 +255,34 @@ promotionGraphicsRouter.put('/:id', async (req: AuthenticatedRequest, res: Respo
       userId: req.user.id
     });
 
-    res.json(updatedGraphic);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        error: 'Validation error',
-        details: error.errors
+      res.json(updatedGraphic);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          error: 'Validation error',
+          details: error.errors
+        });
+      }
+
+      logger.error('Failed to update promotion graphic', error);
+      res.status(500).json({
+        error: 'Failed to update promotion graphic',
+        message: 'An error occurred while updating the promotion graphic'
       });
     }
-
-    logger.error('Failed to update promotion graphic', error);
-    res.status(500).json({
-      error: 'Failed to update promotion graphic',
-      message: 'An error occurred while updating the promotion graphic'
-    });
   }
-});
+);
 
 // DELETE /api/promotion-graphics/:id - Delete a promotion graphic
-promotionGraphicsRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+// Require ADMIN_ACCESS permission to delete graphics
+promotionGraphicsRouter.delete(
+  '/:id',
+  requirePermission(PERMISSIONS.ADMIN_ACCESS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
 
     const graphicId = parseInt(req.params.id);
     if (isNaN(graphicId)) {
@@ -291,15 +311,16 @@ promotionGraphicsRouter.delete('/:id', async (req: AuthenticatedRequest, res: Re
       userId: req.user.id
     });
 
-    res.json({ message: 'Promotion graphic deleted successfully' });
-  } catch (error) {
-    logger.error('Failed to delete promotion graphic', error);
-    res.status(500).json({
-      error: 'Failed to delete promotion graphic',
-      message: 'An error occurred while deleting the promotion graphic'
-    });
+      res.json({ message: 'Promotion graphic deleted successfully' });
+    } catch (error) {
+      logger.error('Failed to delete promotion graphic', error);
+      res.status(500).json({
+        error: 'Failed to delete promotion graphic',
+        message: 'An error occurred while deleting the promotion graphic'
+      });
+    }
   }
-});
+);
 
 // Helper function to send notification emails
 async function sendNotificationEmail(graphic: PromotionGraphic, uploader: any) {
