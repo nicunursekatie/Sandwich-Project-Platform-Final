@@ -2782,9 +2782,13 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       return res.status(400).json({ error: 'Valid event ID required' });
     }
 
-    // Check permissions - only admin@sandwich.project and katielong2316@gmail.com
+    // Check permissions - only admin@sandwich.project, katielong2316@gmail.com, and christine@thesandwichproject.org
     const userEmail = req.user?.email;
-    const allowedEmails = ['admin@sandwich.project', 'katielong2316@gmail.com'];
+    const allowedEmails = [
+      'admin@sandwich.project',
+      'katielong2316@gmail.com',
+      'christine@thesandwichproject.org'
+    ];
 
     if (!userEmail || !allowedEmails.includes(userEmail)) {
       return res.status(403).json({
