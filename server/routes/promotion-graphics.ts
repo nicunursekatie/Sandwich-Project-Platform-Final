@@ -161,34 +161,34 @@ promotionGraphicsRouter.post(
 
       logger.info('Creating promotion graphic', { userId: req.user.id, data: req.body });
 
-    // Validate input
-    const validatedData = createPromotionGraphicSchema.parse(req.body);
+      // Validate input
+      const validatedData = createPromotionGraphicSchema.parse(req.body);
 
-    // Get user's display name
-    const userName = req.user.displayName ||
-                     `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() ||
-                     req.user.email;
+      // Get user's display name
+      const userName = req.user.displayName ||
+                       `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() ||
+                       req.user.email;
 
-    // Create the promotion graphic
-    const [newGraphic] = await db
-      .insert(promotionGraphics)
-      .values({
-        ...validatedData,
-        uploadedBy: req.user.id,
-        uploadedByName: userName,
-        intendedUseDate: validatedData.intendedUseDate ? new Date(validatedData.intendedUseDate) : null,
-      })
-      .returning();
+      // Create the promotion graphic
+      const [newGraphic] = await db
+        .insert(promotionGraphics)
+        .values({
+          ...validatedData,
+          uploadedBy: req.user.id,
+          uploadedByName: userName,
+          intendedUseDate: validatedData.intendedUseDate ? new Date(validatedData.intendedUseDate) : null,
+        })
+        .returning();
 
-    logger.info('Successfully created promotion graphic', {
-      graphicId: newGraphic.id,
-      userId: req.user.id
-    });
+      logger.info('Successfully created promotion graphic', {
+        graphicId: newGraphic.id,
+        userId: req.user.id
+      });
 
-    // Send email notification to target audience (async, don't wait)
-    sendNotificationEmail(newGraphic, req.user).catch(error => {
-      logger.error('Failed to send notification email', error);
-    });
+      // Send email notification to target audience (async, don't wait)
+      sendNotificationEmail(newGraphic, req.user).catch(error => {
+        logger.error('Failed to send notification email', error);
+      });
 
       res.status(201).json(newGraphic);
     } catch (error) {
@@ -219,50 +219,50 @@ promotionGraphicsRouter.put(
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-    const graphicId = parseInt(req.params.id);
-    if (isNaN(graphicId)) {
-      return res.status(400).json({ error: 'Invalid graphic ID' });
-    }
+      const graphicId = parseInt(req.params.id);
+      if (isNaN(graphicId)) {
+        return res.status(400).json({ error: 'Invalid graphic ID' });
+      }
 
-    logger.info('Updating promotion graphic', { graphicId, userId: req.user.id, data: req.body });
+      logger.info('Updating promotion graphic', { graphicId, userId: req.user.id, data: req.body });
 
-    // Validate input
-    const validatedData = updatePromotionGraphicSchema.parse(req.body);
+      // Validate input
+      const validatedData = updatePromotionGraphicSchema.parse(req.body);
 
-    // Check if graphic exists
-    const [existingGraphic] = await db
-      .select()
-      .from(promotionGraphics)
-      .where(eq(promotionGraphics.id, graphicId));
+      // Check if graphic exists
+      const [existingGraphic] = await db
+        .select()
+        .from(promotionGraphics)
+        .where(eq(promotionGraphics.id, graphicId));
 
-    if (!existingGraphic) {
-      return res.status(404).json({ error: 'Promotion graphic not found' });
-    }
+      if (!existingGraphic) {
+        return res.status(404).json({ error: 'Promotion graphic not found' });
+      }
 
-    // Update the promotion graphic
-    // Handle intendedUseDate properly: if present, set to parsed date or null; if absent, don't update
-    const updateData: any = {
-      ...validatedData,
-      updatedAt: new Date(),
-    };
+      // Update the promotion graphic
+      // Handle intendedUseDate properly: if present, set to parsed date or null; if absent, don't update
+      const updateData: Partial<InsertPromotionGraphic> = {
+        ...validatedData,
+        updatedAt: new Date(),
+      };
 
-    // Only update intendedUseDate if it was provided in the request
-    if ('intendedUseDate' in validatedData) {
-      updateData.intendedUseDate = validatedData.intendedUseDate
-        ? new Date(validatedData.intendedUseDate)
-        : null;
-    }
+      // Only update intendedUseDate if it was provided in the request
+      if ('intendedUseDate' in validatedData) {
+        updateData.intendedUseDate = validatedData.intendedUseDate
+          ? new Date(validatedData.intendedUseDate)
+          : null;
+      }
 
-    const [updatedGraphic] = await db
-      .update(promotionGraphics)
-      .set(updateData)
-      .where(eq(promotionGraphics.id, graphicId))
-      .returning();
+      const [updatedGraphic] = await db
+        .update(promotionGraphics)
+        .set(updateData)
+        .where(eq(promotionGraphics.id, graphicId))
+        .returning();
 
-    logger.info('Successfully updated promotion graphic', {
-      graphicId,
-      userId: req.user.id
-    });
+      logger.info('Successfully updated promotion graphic', {
+        graphicId,
+        userId: req.user.id
+      });
 
       res.json(updatedGraphic);
     } catch (error) {
@@ -293,32 +293,32 @@ promotionGraphicsRouter.delete(
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-    const graphicId = parseInt(req.params.id);
-    if (isNaN(graphicId)) {
-      return res.status(400).json({ error: 'Invalid graphic ID' });
-    }
+      const graphicId = parseInt(req.params.id);
+      if (isNaN(graphicId)) {
+        return res.status(400).json({ error: 'Invalid graphic ID' });
+      }
 
-    logger.info('Deleting promotion graphic', { graphicId, userId: req.user.id });
+      logger.info('Deleting promotion graphic', { graphicId, userId: req.user.id });
 
-    // Check if graphic exists
-    const [existingGraphic] = await db
-      .select()
-      .from(promotionGraphics)
-      .where(eq(promotionGraphics.id, graphicId));
+      // Check if graphic exists
+      const [existingGraphic] = await db
+        .select()
+        .from(promotionGraphics)
+        .where(eq(promotionGraphics.id, graphicId));
 
-    if (!existingGraphic) {
-      return res.status(404).json({ error: 'Promotion graphic not found' });
-    }
+      if (!existingGraphic) {
+        return res.status(404).json({ error: 'Promotion graphic not found' });
+      }
 
-    // Delete the promotion graphic
-    await db
-      .delete(promotionGraphics)
-      .where(eq(promotionGraphics.id, graphicId));
+      // Delete the promotion graphic
+      await db
+        .delete(promotionGraphics)
+        .where(eq(promotionGraphics.id, graphicId));
 
-    logger.info('Successfully deleted promotion graphic', {
-      graphicId,
-      userId: req.user.id
-    });
+      logger.info('Successfully deleted promotion graphic', {
+        graphicId,
+        userId: req.user.id
+      });
 
       res.json({ message: 'Promotion graphic deleted successfully' });
     } catch (error) {
