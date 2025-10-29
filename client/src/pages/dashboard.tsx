@@ -107,6 +107,7 @@ const TeamAvailability = lazy(() => import('@/pages/team-availability'));
 const GoogleCalendarAvailability = lazy(() => import('@/pages/google-calendar-availability'));
 const RouteMapView = lazy(() => import('@/pages/route-map'));
 const Help = lazy(() => import('@/pages/Help'));
+const ExpensesPage = lazy(() => import('@/pages/ExpensesPage'));
 const AdminSettings = lazy(() => import('@/pages/admin-settings'));
 const DesignSystemShowcase = lazy(() => import('@/pages/design-system-showcase'));
 
@@ -420,6 +421,8 @@ export default function Dashboard({
         return <RoleDemo />;
       case 'work-log':
         return <WorkLogPage />;
+      case 'expenses':
+        return <ExpensesPage />;
       case 'suggestions':
         return <SuggestionsPortal />;
       case 'google-sheets':
