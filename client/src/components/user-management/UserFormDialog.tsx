@@ -189,7 +189,7 @@ export function UserFormDialog({
 
           {mode === 'add' && (
             <div>
-              <Label htmlFor="password">Password (Optional)</Label>
+              <Label htmlFor="password">Password *</Label>
               <Input
                 id="password"
                 type="password"
@@ -197,11 +197,11 @@ export function UserFormDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
-                placeholder="Leave blank for no password"
+                placeholder="Enter initial password (min 6 characters)"
+                data-testid="input-password"
               />
               <p className="text-xs text-gray-500 mt-1">
-                If no password is set, user will need to use email login or
-                reset password
+                User will be able to change this password after logging in
               </p>
             </div>
           )}
@@ -231,9 +231,11 @@ export function UserFormDialog({
                 isPending ||
                 !formData.email ||
                 !formData.firstName ||
-                !formData.lastName
+                !formData.lastName ||
+                (mode === 'add' && (!formData.password || formData.password.length < 6))
               }
               className="bg-brand-primary hover:bg-brand-primary-dark"
+              data-testid="button-submit-user"
             >
               {isPending
                 ? mode === 'add'

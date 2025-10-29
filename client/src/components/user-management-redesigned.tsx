@@ -133,8 +133,40 @@ export default function UserManagementFinal() {
 
   const handleAddUser = (formData: any) => {
     addUserMutation.mutate(formData, {
-      onSuccess: () => {
-        setShowAddUserDialog(false);
+      onSuccess: (newUser: any) => {
+        // If password was provided, set it immediately after user creation
+        if (formData.password && formData.password.trim()) {
+          setPasswordMutation.mutate(
+            {
+              userId: newUser.id,
+              password: formData.password,
+            },
+            {
+              onSuccess: () => {
+                setShowAddUserDialog(false);
+                toast({
+                  title: 'User Created',
+                  description: `User ${formData.firstName} ${formData.lastName} created with password successfully.`,
+                });
+              },
+              onError: () => {
+                setShowAddUserDialog(false);
+                toast({
+                  title: 'Password Warning',
+                  description: `User created but password failed to set. Please set password manually.`,
+                  variant: 'destructive',
+                });
+              },
+            }
+          );
+        } else {
+          setShowAddUserDialog(false);
+          toast({
+            title: 'User Created',
+            description: `User ${formData.firstName} ${formData.lastName} created. Remember to set their password!`,
+            variant: 'default',
+          });
+        }
       },
     });
   };
