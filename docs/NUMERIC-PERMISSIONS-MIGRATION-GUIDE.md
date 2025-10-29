@@ -36,7 +36,7 @@ First, identify if you have any users with numeric permissions:
 ```bash
 # Option A: Use the audit script (requires dependencies installed)
 npm install
-npm run db:audit-numeric-permissions
+npx tsx scripts/audit-numeric-permissions.ts
 
 # Option B: Direct SQL query (if sqlite3 CLI available)
 sqlite3 /path/to/production/database.db <<SQL
