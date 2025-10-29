@@ -15,10 +15,7 @@
 import { db } from './db';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcrypt';
 import { logger } from './utils/production-safe-logger';
-
-const SALT_ROUNDS = 10;
 
 interface RehashResult {
   email: string;
