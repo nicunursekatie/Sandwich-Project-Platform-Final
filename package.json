@@ -14,6 +14,7 @@
     "db:migrate": "tsx server/run-migrations.ts",
     "db:seed": "tsx scripts/seed-dev-database.ts",
     "db:reset": "tsx scripts/reset-dev-database.ts",
+    "audit:permissions": "tsx scripts/audit-numeric-permissions.ts",
     "test": "npm run test:unit && npm run test:integration",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:unit": "jest --config jest.config.js",
