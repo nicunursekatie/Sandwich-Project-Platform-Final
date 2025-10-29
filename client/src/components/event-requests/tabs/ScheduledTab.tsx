@@ -5,7 +5,7 @@ import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ScheduledCardCompact } from '../cards/ScheduledCardCompact';
+import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { RescheduleDialog } from '../dialogs/RescheduleDialog';
 import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
@@ -267,11 +267,20 @@ export const ScheduledTab: React.FC = () => {
           No scheduled events
         </div>
       ) : (
-        <div className="space-y-3 max-w-7xl mx-auto px-4">
+        <div className="space-y-4 max-w-7xl mx-auto px-4">
           {scheduledRequests.map((request) => (
             <div key={request.id} className="w-full">
-              <ScheduledCardCompact
+              <ScheduledCardEnhanced
                 request={request}
+                editingField={editingField}
+                editingValue={editingValue}
+                isEditingThisCard={editingScheduledId === request.id}
+                inlineSandwichMode={inlineSandwichMode}
+                inlineTotalCount={inlineTotalCount}
+                inlineSandwichTypes={inlineSandwichTypes}
+                inlineRangeMin={inlineRangeMin}
+                inlineRangeMax={inlineRangeMax}
+                inlineRangeType={inlineRangeType}
                 onEdit={() => {
                   setSelectedEventRequest(request);
                   setIsEditing(true);
@@ -286,7 +295,28 @@ export const ScheduledTab: React.FC = () => {
                   setTspContactEventRequest(request);
                   setShowTspContactAssignmentDialog(true);
                 }}
+                onEditTspContact={() => {
+                  setTspContactEventRequest(request);
+                  setShowTspContactAssignmentDialog(true);
+                }}
+                startEditing={(field, value) => startEditing(request.id, field, value)}
+                saveEdit={saveEdit}
+                cancelEdit={cancelEdit}
+                setEditingValue={setEditingValue}
+                tempIsConfirmed={tempIsConfirmed}
+                setTempIsConfirmed={setTempIsConfirmed}
+                quickToggleBoolean={(field, value) => quickToggleBoolean(request.id, field, value)}
+                setInlineSandwichMode={setInlineSandwichMode}
+                setInlineTotalCount={setInlineTotalCount}
+                setInlineRangeMin={setInlineRangeMin}
+                setInlineRangeMax={setInlineRangeMax}
+                setInlineRangeType={setInlineRangeType}
+                addInlineSandwichType={addInlineSandwichType}
+                updateInlineSandwichType={updateInlineSandwichType}
+                removeInlineSandwichType={removeInlineSandwichType}
                 resolveUserName={resolveUserName}
+                openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
+                handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
                 canEdit={true}
               />
             </div>
