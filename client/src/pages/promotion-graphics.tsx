@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -82,6 +82,10 @@ export default function PromotionGraphics() {
   const [targetAudience, setTargetAudience] = useState('hosts');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState('');
+  const [localPreviewUrl, setLocalPreviewUrl] = useState('');
+
+  // Ref to track the current preview URL for cleanup on unmount
+  const previewUrlRef = useRef<string>('');
 
   useEffect(() => {
     trackView(
@@ -91,6 +95,15 @@ export default function PromotionGraphics() {
       'User accessed promotion graphics page'
     );
   }, [trackView]);
+
+  // Clean up local preview URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   // Get current user
   const { data: currentUser } = useQuery({
@@ -190,7 +203,7 @@ export default function PromotionGraphics() {
     },
   });
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -214,64 +227,27 @@ export default function PromotionGraphics() {
       return;
     }
 
-    setIsUploading(true);
+    // Store the file and create a local preview URL
     setUploadedFile(file);
 
-    try {
-      // Get upload URL from backend
-      const uploadResponse = await fetch('/api/objects/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to get upload URL');
-      }
-
-      const { uploadURL } = await uploadResponse.json();
-
-      // Upload file directly to object storage
-      const uploadFileResponse = await fetch(uploadURL, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
-      });
-
-      if (!uploadFileResponse.ok) {
-        throw new Error(`Failed to upload ${file.name}`);
-      }
-
-      // Get the permanent URL (without query parameters)
-      const permanentUrl = uploadURL.split('?')[0];
-      setUploadedFileUrl(permanentUrl);
-
-      toast({
-        title: 'Upload Successful',
-        description: 'File uploaded successfully. Please fill out the details.',
-      });
-    } catch (error) {
-      logger.error('Upload error:', error);
-      toast({
-        title: 'Upload Failed',
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
-        variant: 'destructive',
-      });
-      setUploadedFile(null);
-    } finally {
-      setIsUploading(false);
-      event.target.value = '';
+    // Clean up previous preview URL
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
     }
+
+    // Create a local preview URL
+    const previewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = previewUrl;
+    setLocalPreviewUrl(previewUrl);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!uploadedFileUrl || !uploadedFile) {
+    if (!uploadedFile) {
       toast({
         title: 'Missing Image',
-        description: 'Please upload an image first',
+        description: 'Please select an image first',
         variant: 'destructive',
       });
       return;
@@ -295,16 +271,59 @@ export default function PromotionGraphics() {
       return;
     }
 
-    uploadMutation.mutate({
-      title,
-      description,
-      imageUrl: uploadedFileUrl,
-      fileName: uploadedFile.name,
-      fileSize: uploadedFile.size,
-      fileType: uploadedFile.type,
-      intendedUseDate: intendedUseDate || undefined,
-      targetAudience,
-    });
+    // Upload the file first
+    setIsUploading(true);
+    try {
+      // Get upload URL from backend
+      const uploadResponse = await fetch('/api/objects/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { uploadURL } = await uploadResponse.json();
+
+      // Upload file directly to object storage
+      const uploadFileResponse = await fetch(uploadURL, {
+        method: 'PUT',
+        body: uploadedFile,
+        headers: {
+          'Content-Type': uploadedFile.type,
+        },
+      });
+
+      if (!uploadFileResponse.ok) {
+        throw new Error(`Failed to upload ${uploadedFile.name}`);
+      }
+
+      // Get the permanent URL (without query parameters)
+      const permanentUrl = uploadURL.split('?')[0];
+      setUploadedFileUrl(permanentUrl);
+
+      // Now submit the form with the uploaded file URL
+      uploadMutation.mutate({
+        title,
+        description,
+        imageUrl: permanentUrl,
+        fileName: uploadedFile.name,
+        fileSize: uploadedFile.size,
+        fileType: uploadedFile.type,
+        intendedUseDate: intendedUseDate || undefined,
+        targetAudience,
+      });
+    } catch (error) {
+      logger.error('Upload error:', error);
+      toast({
+        title: 'Upload Failed',
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const resetForm = () => {
@@ -314,6 +333,13 @@ export default function PromotionGraphics() {
     setTargetAudience('hosts');
     setUploadedFile(null);
     setUploadedFileUrl('');
+
+    // Clean up the local preview URL
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = '';
+      setLocalPreviewUrl('');
+    }
   };
 
   const formatFileSize = (bytes?: number) => {
@@ -362,19 +388,16 @@ export default function PromotionGraphics() {
                   />
                   {uploadedFile && (
                     <p className="text-sm text-gray-600 mt-2">
-                      Uploaded: {uploadedFile.name} ({formatFileSize(uploadedFile.size)})
+                      Selected: {uploadedFile.name} ({formatFileSize(uploadedFile.size)})
                     </p>
-                  )}
-                  {isUploading && (
-                    <p className="text-sm text-blue-600 mt-2">Uploading...</p>
                   )}
                 </div>
 
-                {uploadedFileUrl && (
+                {localPreviewUrl && (
                   <div>
                     <Label>Preview</Label>
                     <img
-                      src={uploadedFileUrl}
+                      src={localPreviewUrl}
                       alt="Preview"
                       className="mt-2 max-w-full h-auto rounded-lg border"
                       style={{ maxHeight: '300px' }}
@@ -442,10 +465,10 @@ export default function PromotionGraphics() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={!uploadedFileUrl || uploadMutation.isPending}
+                    disabled={!uploadedFile || isUploading || uploadMutation.isPending}
                     style={{ backgroundColor: '#007E8C', color: 'white' }}
                   >
-                    {uploadMutation.isPending ? 'Uploading...' : 'Upload & Notify'}
+                    {isUploading || uploadMutation.isPending ? 'Uploading...' : 'Upload & Notify'}
                   </Button>
                 </DialogFooter>
               </form>
