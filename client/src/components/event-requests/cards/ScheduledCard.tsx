@@ -1017,8 +1017,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="space-y-1 flex-1">
               {request.eventStartTime && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-base font-medium text-gray-600 min-w-[100px]">Start:</span>
+                  <Clock className="w-5 h-5 text-gray-500" />
+                  <span className="text-lg font-medium text-gray-700 min-w-[100px]">Start:</span>
                   {isEditingThisCard && editingField === 'eventStartTime' ? (
                     <>
                       <Input
@@ -1037,7 +1037,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </>
                   ) : (
                     <>
-                      <span className="text-base text-gray-900">
+                      <span className="text-lg font-semibold text-gray-900">
                         {formatTime12Hour(request.eventStartTime)}
                       </span>
                       {canEdit && (
@@ -1062,8 +1062,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {request.eventEndTime && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-base font-medium text-gray-600 min-w-[100px]">End:</span>
+                  <Clock className="w-5 h-5 text-gray-500" />
+                  <span className="text-lg font-medium text-gray-700 min-w-[100px]">End:</span>
                   {isEditingThisCard && editingField === 'eventEndTime' ? (
                     <>
                       <Input
@@ -1082,7 +1082,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </>
                   ) : (
                     <>
-                      <span className="text-base text-gray-900">
+                      <span className="text-lg font-semibold text-gray-900">
                         {formatTime12Hour(request.eventEndTime)}
                       </span>
                       {canEdit && (
@@ -1107,8 +1107,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {(request.pickupDateTime || request.pickupTime) && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-base font-medium text-gray-600 min-w-[100px]">Pickup:</span>
+                  <Clock className="w-5 h-5 text-gray-500" />
+                  <span className="text-lg font-medium text-gray-700 min-w-[100px]">Pickup:</span>
                   {isEditingThisCard && (editingField === 'pickupDateTime' || editingField === 'pickupTime') ? (
                     editingField === 'pickupDateTime' ? (
                       <div className="flex flex-col gap-2">
@@ -1151,7 +1151,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )
                   ) : (
                     <>
-                      <span className="text-base text-gray-900">
+                      <span className="text-lg font-semibold text-gray-900">
                         {request.pickupDateTime
                           ? (() => {
                               const date = new Date(request.pickupDateTime);
@@ -1323,8 +1323,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {driverNeeded > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-base font-medium text-gray-700">
-                    <Car className="w-4 h-4 inline mr-1" />
+                  <span className="text-lg font-semibold text-gray-800">
+                    <Car className="w-5 h-5 inline mr-1" />
                     Drivers ({driverAssigned}/{driverNeeded})
                   </span>
                   {canEdit && (
@@ -1340,7 +1340,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {request.assignedVanDriverId && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-900 border-blue-300">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-900 border-blue-300 text-base px-3 py-1">
                       {resolveUserName(request.assignedVanDriverId)} (Van)
                       {canEdit && (
                         <Button
@@ -1365,7 +1365,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Badge
                         key={driverId}
                         variant="secondary"
-                        className="bg-white border border-gray-300"
+                        className="bg-white border border-gray-300 text-base px-3 py-1"
                       >
                         {displayName}
                         {canEdit && (
@@ -1382,7 +1382,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     );
                   })}
                   {driverAssigned === 0 && (
-                    <span className="text-base text-gray-500 italic">No drivers assigned</span>
+                    <span className="text-lg text-gray-500 italic">No drivers assigned</span>
                   )}
                 </div>
               </div>
@@ -1392,8 +1392,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {speakerNeeded > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-base font-medium text-gray-700">
-                    <Megaphone className="w-4 h-4 inline mr-1" />
+                  <span className="text-lg font-semibold text-gray-800">
+                    <Megaphone className="w-5 h-5 inline mr-1" />
                     Speakers ({speakerAssigned}/{speakerNeeded})
                   </span>
                   {canEdit && (
@@ -1418,7 +1418,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Badge
                           key={speakerId}
                           variant="secondary"
-                          className="bg-white border border-gray-300"
+                          className="bg-white border border-gray-300 text-base px-3 py-1"
                         >
                           {displayName}
                           {canEdit && (
@@ -1438,7 +1438,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }
                   )}
                   {speakerAssigned === 0 && (
-                    <span className="text-base text-gray-500 italic">No speakers assigned</span>
+                    <span className="text-lg text-gray-500 italic">No speakers assigned</span>
                   )}
                 </div>
               </div>
@@ -1448,8 +1448,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {volunteerNeeded > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-base font-medium text-gray-700">
-                    <Users className="w-4 h-4 inline mr-1" />
+                  <span className="text-lg font-semibold text-gray-800">
+                    <Users className="w-5 h-5 inline mr-1" />
                     Volunteers ({volunteerAssigned}/{volunteerNeeded})
                   </span>
                   {canEdit && (
@@ -1474,7 +1474,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Badge
                           key={volunteerId}
                           variant="secondary"
-                          className="bg-white border border-gray-300"
+                          className="bg-white border border-gray-300 text-base px-3 py-1"
                         >
                           {displayName}
                           {canEdit && (
@@ -1494,7 +1494,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }
                   )}
                   {volunteerAssigned === 0 && (
-                    <span className="text-base text-gray-500 italic">No volunteers assigned</span>
+                    <span className="text-lg text-gray-500 italic">No volunteers assigned</span>
                   )}
                 </div>
               </div>
