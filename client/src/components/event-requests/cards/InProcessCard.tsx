@@ -371,14 +371,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
     request,
     resolveUserName,
     isInProcessStale: isStale,
-    canEdit: false, // Date editing not yet implemented in InProcessCard
-    isEditingThisCard: false,
-    editingField: '',
-    editingValue: '',
-    startEditing: undefined,
-    saveEdit: undefined,
-    cancelEdit: undefined,
-    setEditingValue: undefined
   });
 
   return (
