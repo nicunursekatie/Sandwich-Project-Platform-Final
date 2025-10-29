@@ -100,8 +100,7 @@ export default function PromotionGraphics() {
   });
 
   // Check permissions
-  const canUpload = hasPermission(currentUser, 'ADMIN_ACCESS') ||
-                   hasPermission(currentUser, 'SUGGESTIONS_MANAGE');
+  const canUpload = hasPermission(currentUser, 'ADMIN_ACCESS');
   const canDelete = hasPermission(currentUser, 'ADMIN_ACCESS');
 
   // Fetch promotion graphics

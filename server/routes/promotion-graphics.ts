@@ -240,13 +240,22 @@ promotionGraphicsRouter.put(
     }
 
     // Update the promotion graphic
+    // Handle intendedUseDate properly: if present, set to parsed date or null; if absent, don't update
+    const updateData: any = {
+      ...validatedData,
+      updatedAt: new Date(),
+    };
+
+    // Only update intendedUseDate if it was provided in the request
+    if ('intendedUseDate' in validatedData) {
+      updateData.intendedUseDate = validatedData.intendedUseDate
+        ? new Date(validatedData.intendedUseDate)
+        : null;
+    }
+
     const [updatedGraphic] = await db
       .update(promotionGraphics)
-      .set({
-        ...validatedData,
-        intendedUseDate: validatedData.intendedUseDate ? new Date(validatedData.intendedUseDate) : undefined,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(promotionGraphics.id, graphicId))
       .returning();
 
