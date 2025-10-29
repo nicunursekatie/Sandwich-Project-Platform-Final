@@ -424,7 +424,7 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
                                     <td style="background-color: #FBAD3F; color: #333333; padding: 25px; text-align: center; border-radius: 8px;">
                                         <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">📅 Next Step: Schedule Your Planning Call</p>
                                         <p style="margin: 0 0 15px 0; font-size: 16px;">Reply to this email with 2-3 times that work for you this week, and we'll get you on the calendar!</p>
-                                        <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">Most groups complete this step within 48 hours.</p>
+                                        <p style="margin: 0; font-size: 14px; font-style: italic; color: #666666;">We look forward to scheduling your planning call soon.</p>
                                     </td>
                                 </tr>
                             </table>
