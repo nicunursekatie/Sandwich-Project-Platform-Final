@@ -143,6 +143,39 @@ export class ObjectStorageService {
       ttlSec: 900,
     });
   }
+
+  // Upload a local file to object storage and return the public URL
+  async uploadLocalFile(localFilePath: string, destKey: string): Promise<string> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    const fullPath = `${privateObjectDir}/${destKey}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    try {
+      // Upload the file
+      await bucket.upload(localFilePath, {
+        destination: objectName,
+        metadata: {
+          cacheControl: 'public, max-age=31536000',
+        },
+      });
+
+      logger.info('File uploaded successfully', { destKey, objectName });
+
+      // Return a signed URL for accessing the file (valid for 1 year)
+      return signObjectURL({
+        bucketName,
+        objectName,
+        method: 'GET',
+        ttlSec: 31536000, // 1 year
+      });
+    } catch (error) {
+      logger.error('Error uploading file to object storage', { error, destKey });
+      throw new Error('Failed to upload file to object storage');
+    }
+  }
 }
 
 function parseObjectPath(path: string): {

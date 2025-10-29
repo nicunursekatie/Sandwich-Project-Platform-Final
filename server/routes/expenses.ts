@@ -12,9 +12,12 @@ import {
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
 import { receiptUpload } from '../middleware/uploads';
-import { uploadToStorage } from '../objectStorage';
+import { ObjectStorageService } from '../objectStorage';
 import { promises as fs } from 'fs';
 import path from 'path';
+
+// Initialize object storage service for receipt uploads
+const objectStorageService = new ObjectStorageService();
 
 // Type definitions for authenticated requests
 interface AuthenticatedRequest extends Request {
@@ -231,7 +234,10 @@ expensesRouter.post('/', receiptUpload.single('receipt'), async (req: Authentica
     if (req.file) {
       try {
         // Upload to storage
-        const receiptUrl = await uploadToStorage(req.file.path, `receipts/${Date.now()}-${req.file.originalname}`);
+        const receiptUrl = await objectStorageService.uploadLocalFile(
+          req.file.path,
+          `receipts/${Date.now()}-${req.file.originalname}`
+        );
 
         expenseData.receiptUrl = receiptUrl;
         expenseData.receiptFileName = req.file.originalname;
@@ -386,7 +392,10 @@ expensesRouter.post('/:id/receipt', receiptUpload.single('receipt'), async (req:
     }
 
     // Upload to storage
-    const receiptUrl = await uploadToStorage(req.file.path, `receipts/${Date.now()}-${req.file.originalname}`);
+    const receiptUrl = await objectStorageService.uploadLocalFile(
+      req.file.path,
+      `receipts/${Date.now()}-${req.file.originalname}`
+    );
 
     // Update expense with receipt info
     const [updatedExpense] = await db
