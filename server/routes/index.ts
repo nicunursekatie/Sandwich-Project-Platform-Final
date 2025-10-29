@@ -58,6 +58,7 @@ import { createApiDocsRouter } from './api-docs';
 import featureFlagsRouter from './feature-flags';
 import activitiesRouter from './activities';
 import expensesRouter from './expenses';
+import objectsRouter from './objects';
 
 // Import centralized middleware
 import {
@@ -684,6 +685,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     ...createPublicMiddleware(),
     apiDocsRouter
   );
+
+  // Object storage upload endpoint
+  router.use(
+    '/api/objects',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    objectsRouter
+  );
+  router.use('/api/objects', createErrorHandler('objects'));
 
   return router;
 }
