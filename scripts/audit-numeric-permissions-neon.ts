@@ -7,7 +7,7 @@
  * which is a known security vulnerability documented in docs/SECURITY-NUMERIC-PERMISSIONS.md
  */
 
-import { initializeStorage } from '../server/storage.js';
+import { storage } from '../server/storage.js';
 
 interface UserAuditResult {
   id: string;
@@ -21,8 +21,7 @@ async function auditNumericPermissions() {
   console.log('🔍 Starting numeric permissions audit (Neon database)...\n');
 
   try {
-    // Initialize storage (connects to Neon)
-    const storage = await initializeStorage();
+    // Use storage instance (connects to Neon)
 
     // Get all users
     const users = await storage.getAllUsers();
