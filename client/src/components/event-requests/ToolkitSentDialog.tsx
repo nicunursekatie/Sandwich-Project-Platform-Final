@@ -74,8 +74,8 @@ const ToolkitSentDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="border-b border-[#007E8C]/10 pb-4">
+      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+        <DialogHeader className="border-b border-[#007E8C]/10 pb-4 flex-shrink-0">
           <DialogTitle className="flex items-center space-x-2 text-[#236383] text-xl">
             <Shield className="w-5 h-5 text-[#007E8C]" aria-hidden="true" />
             <span>Mark Toolkit as Sent</span>
@@ -90,7 +90,7 @@ const ToolkitSentDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        {!showEmailComposer ? (
+        <div className="overflow-y-auto flex-1">{!showEmailComposer ? (
           <div className="space-y-6 pt-4">
             {/* Date and Time Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -224,7 +224,7 @@ const ToolkitSentDialog = ({
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 pt-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">Send Toolkit Email</h3>
               <Button
@@ -232,7 +232,7 @@ const ToolkitSentDialog = ({
                 size="sm"
                 onClick={() => setShowEmailComposer(false)}
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </Button>
             </div>
             <EventEmailComposer
@@ -249,7 +249,7 @@ const ToolkitSentDialog = ({
               onClose={() => setShowEmailComposer(false)}
             />
           </div>
-        )}
+        )}</div>
       </DialogContent>
     </Dialog>
   );
