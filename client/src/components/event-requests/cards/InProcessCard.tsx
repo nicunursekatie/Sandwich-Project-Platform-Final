@@ -195,7 +195,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             }`}
             title="Click to toggle confirmation status"
           >
-            {request.isConfirmed ? '✓ Confirmed' : 'Requested'}
+            {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
           </Badge>
           {isInProcessStale && (
             <Badge

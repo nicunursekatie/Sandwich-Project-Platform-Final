@@ -802,7 +802,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 variant="outline"
                 title="Click to toggle confirmation status"
               >
-                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Requested'}
+                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
               </Badge>
 
               <Badge

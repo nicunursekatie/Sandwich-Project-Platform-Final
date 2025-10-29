@@ -313,7 +313,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               } ${request.status !== 'completed' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
               title={request.status === 'completed' ? 'Completed events are always confirmed' : 'Click to toggle confirmation status'}
             >
-              {request.status === 'completed' || request.isConfirmed ? '✓ Confirmed' : 'Requested'}
+              {request.status === 'completed' || request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
             </Badge>
             {isInProcessStale && (
               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">

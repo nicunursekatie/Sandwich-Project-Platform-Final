@@ -328,7 +328,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 }`}
               >
                 {request.isConfirmed ? <Check className="w-3 h-3 mr-1" /> : null}
-                {request.isConfirmed ? 'Date Confirmed' : 'Date Requested'}
+                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
               </Badge>
 
               <Badge
