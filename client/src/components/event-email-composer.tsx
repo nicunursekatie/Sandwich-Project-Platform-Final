@@ -171,7 +171,8 @@ export function EventEmailComposer({
   const regenerateEmailContent = (
     includeScheduling: boolean,
     requestPhone: boolean,
-    templateStyleOverride?: 'classic' | 'optimized'
+    templateStyleOverride?: 'classic' | 'optimized',
+    emailFormatOverride?: 'html' | 'plaintext'
   ) => {
     const userName =
       user?.firstName && user?.lastName
@@ -182,11 +183,12 @@ export function EventEmailComposer({
     const userEmail =
       user?.preferredEmail || user?.email || 'info@thesandwichproject.org';
 
-    // Use override if provided, otherwise use state
+    // Use overrides if provided, otherwise use state
     const activeTemplateStyle = templateStyleOverride ?? templateStyle;
+    const activeEmailFormat = emailFormatOverride ?? emailFormat;
 
     // Generate plain text email if user selected plaintext format
-    if (emailFormat === 'plaintext') {
+    if (activeEmailFormat === 'plaintext') {
       let plainTextContent = `Hi ${eventRequest.firstName},
 
 Thank you for your interest in hosting a sandwich-making event with The Sandwich Project!
@@ -251,7 +253,7 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
     }
 
     // Phone call request - respect email format setting
-    if (emailFormat === 'html') {
+    if (activeEmailFormat === 'html') {
       // Generate HTML template for phone call request
       const htmlTemplate = activeTemplateStyle === 'optimized'
         ? generateOptimizedPhoneRequestTemplate(eventRequest, userName, userEmail, userPhone)
@@ -1651,8 +1653,8 @@ ${userEmail}`;
               value={emailFormat}
               onValueChange={(value: 'html' | 'plaintext') => {
                 setEmailFormat(value);
-                // Regenerate content in the new format
-                regenerateEmailContent(includeSchedulingLink, requestPhoneCall);
+                // Regenerate content in the new format (pass value directly to avoid race condition)
+                regenerateEmailContent(includeSchedulingLink, requestPhoneCall, undefined, value);
               }}
               className="flex gap-4"
             >
