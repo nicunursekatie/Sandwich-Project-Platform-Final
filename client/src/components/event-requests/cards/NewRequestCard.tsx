@@ -364,138 +364,144 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
       <CardContent className="p-6">
         <CardHeader request={request} />
 
-        {/* TSP Contact Assignment Status */}
-        {(request.tspContact || request.customTspContact) && (
-          <div className="mb-4">
-            <div
-              className="rounded-lg p-3 border border-[#FBAD3F] shadow-sm"
-              style={{ backgroundColor: '#FFF4E6', borderColor: '#FBAD3F' }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserPlus className="w-4 h-4 text-[#E5901A]" />
-                  <span className="font-semibold text-[#D68319]">
-                    TSP Contact Assigned:
-                  </span>
-                  <span className="font-medium text-[#C7761A]">
-                    {request.tspContact
-                      ? getUserDisplayName(request.tspContact)
-                      : request.customTspContact}
-                  </span>
-                </div>
-                {canEditTspContact && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={onEditTspContact}
-                    className="h-6 px-2 text-[#D68319] hover:bg-[#FBAD3F]/20"
-                    data-testid="button-edit-tsp-contact"
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-              {request.tspContactAssignedDate && (
-                <p className="text-sm text-[#D68319] mt-1">
-                  Assigned on{' '}
-                  {new Date(
-                    request.tspContactAssignedDate
-                  ).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Event Details */}
-        <div className="space-y-3 mb-4">
-          <div className="bg-brand-primary-lighter rounded-lg p-3">
-            <p className="text-gray-500 mb-1 text-[16px] font-bold">
-              Submitted
-            </p>
-            <div className="space-y-1">
-              <div className="font-medium flex items-center gap-2 text-[18px]">
-                <Clock className="w-4 h-4" />
-                {request.createdAt
-                  ? new Date(request.createdAt).toLocaleDateString() +
-                    ' at ' +
-                    new Date(request.createdAt).toLocaleTimeString()
-                  : 'Unknown date'}
-                {request.createdAt && (
-                  <Badge className="ml-1 bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]">
-                    {formatDistanceToNow(new Date(request.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </Badge>
-                )}
-              </div>
-              {(request.contactAttempts || request.lastContactAttempt) && (
-                <div className="text-sm text-gray-600 flex items-center gap-2 mt-2">
-                  <Phone className="w-3 h-3" />
-                  {request.contactAttempts && request.contactAttempts > 0 && (
-                    <span>Contact attempts: {request.contactAttempts}</span>
-                  )}
-                  {request.lastContactAttempt && (
-                    <span className="text-xs">
-                      (Last: {formatDistanceToNow(new Date(request.lastContactAttempt), { addSuffix: true })})
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Submission Message */}
-          {request.message && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-gray-500 mb-1 text-[17px] font-bold">
-                Message from submission:
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          {/* Left Column - Event Details */}
+          <div className="space-y-3">
+            {/* Submitted Info */}
+            <div className="bg-brand-primary-lighter rounded-lg p-3">
+              <p className="text-gray-500 mb-1 text-[16px] font-bold">
+                Submitted
               </p>
-              <p className="text-gray-600 text-[16px]">{request.message}</p>
-            </div>
-          )}
-
-          {/* Sandwich Info */}
-          {(request.estimatedSandwichCount !== undefined && request.estimatedSandwichCount !== null) || request.sandwichTypes ? (
-            <div className="bg-amber-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Package className="w-4 h-4 text-amber-600" />
-                <span className="font-medium">Sandwiches:</span>
-                <span>
-                  {formatSandwichTypesDisplay(
-                    request.sandwichTypes,
-                    request.estimatedSandwichCount ?? undefined
+              <div className="space-y-1">
+                <div className="font-medium flex items-center gap-2 text-[18px]">
+                  <Clock className="w-4 h-4" />
+                  {request.createdAt
+                    ? new Date(request.createdAt).toLocaleDateString() +
+                      ' at ' +
+                      new Date(request.createdAt).toLocaleTimeString()
+                    : 'Unknown date'}
+                  {request.createdAt && (
+                    <Badge className="ml-1 bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]">
+                      {formatDistanceToNow(new Date(request.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </Badge>
                   )}
-                </span>
+                </div>
+                {(request.contactAttempts || request.lastContactAttempt) && (
+                  <div className="text-sm text-gray-600 flex items-center gap-2 mt-2">
+                    <Phone className="w-3 h-3" />
+                    {request.contactAttempts && request.contactAttempts > 0 && (
+                      <span>Contact attempts: {request.contactAttempts}</span>
+                    )}
+                    {request.lastContactAttempt && (
+                      <span className="text-xs">
+                        (Last: {formatDistanceToNow(new Date(request.lastContactAttempt), { addSuffix: true })})
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-          ) : null}
 
-          {/* Previous Host Status */}
-          {typeof request.hasHostedBefore !== 'undefined' && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500 font-bold text-[16px]">
-                Previously hosted:
-              </span>
-              <Badge
-                className={
-                  request.hasHostedBefore
-                    ? 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 text-[14px]'
-                    : 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]'
-                }
+            {/* Sandwich Info */}
+            {(request.estimatedSandwichCount !== undefined && request.estimatedSandwichCount !== null) || request.sandwichTypes ? (
+              <div className="bg-amber-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Package className="w-4 h-4 text-amber-600" />
+                  <span className="font-medium">Sandwiches:</span>
+                  <span>
+                    {formatSandwichTypesDisplay(
+                      request.sandwichTypes,
+                      request.estimatedSandwichCount ?? undefined
+                    )}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Previous Host Status */}
+            {typeof request.hasHostedBefore !== 'undefined' && (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-500 font-bold text-[16px]">
+                    Previously hosted:
+                  </span>
+                  <Badge
+                    className={
+                      request.hasHostedBefore
+                        ? 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 text-[14px]'
+                        : 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all duration-200 text-[14px]'
+                    }
+                  >
+                    {request.hasHostedBefore ? 'Yes' : 'No - First Time'}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column - Contact Info */}
+          <div className="space-y-3">
+            <CardContactInfo
+              request={request}
+              onCall={onCall}
+              onContact={onContact}
+            />
+
+            {/* TSP Contact Assignment Status */}
+            {(request.tspContact || request.customTspContact) && (
+              <div
+                className="rounded-lg p-3 border border-[#FBAD3F] shadow-sm"
+                style={{ backgroundColor: '#FFF4E6', borderColor: '#FBAD3F' }}
               >
-                {request.hasHostedBefore ? 'Yes' : 'No - First Time'}
-              </Badge>
-            </div>
-          )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-[#E5901A]" />
+                    <span className="font-semibold text-[#D68319]">
+                      TSP Contact:
+                    </span>
+                    <span className="font-medium text-[#C7761A]">
+                      {request.tspContact
+                        ? getUserDisplayName(request.tspContact)
+                        : request.customTspContact}
+                    </span>
+                  </div>
+                  {canEditTspContact && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={onEditTspContact}
+                      className="h-6 px-2 text-[#D68319] hover:bg-[#FBAD3F]/20"
+                      data-testid="button-edit-tsp-contact"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+                {request.tspContactAssignedDate && (
+                  <p className="text-sm text-[#D68319] mt-1">
+                    Assigned on{' '}
+                    {new Date(
+                      request.tspContactAssignedDate
+                    ).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Contact Info */}
-        <CardContactInfo
-          request={request}
-          onCall={onCall}
-          onContact={onContact}
-        />
+        {/* Submission Message - Full Width */}
+        {request.message && (
+          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+            <p className="text-gray-500 mb-1 text-[17px] font-bold">
+              Message from submission:
+            </p>
+            <p className="text-gray-600 text-[16px]">{request.message}</p>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">

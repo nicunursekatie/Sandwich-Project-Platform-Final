@@ -32,6 +32,8 @@ import {
   HelpCircle,
   StickyNote,
   Image,
+  DollarSign,
+  Receipt,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -204,6 +206,14 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'work-log',
     permission: PERMISSIONS.NAV_WORK_LOG,
     group: 'operations',
+  },
+  {
+    id: 'expenses',
+    label: 'Expenses & Receipts',
+    icon: Receipt,
+    href: 'expenses',
+    group: 'operations',
+    highlighted: true,
   },
 
   // PLANNING & COORDINATION

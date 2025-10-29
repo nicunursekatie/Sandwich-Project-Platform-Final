@@ -45,8 +45,9 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
       let plaintextPassword: string | null = null;
 
       // Try bcrypt comparison first (for already-hashed passwords)
+      // CRITICAL: Trim password to match registration behavior
       try {
-        isValidPassword = await bcrypt.compare(password, storedPassword);
+        isValidPassword = await bcrypt.compare(password.trim(), storedPassword);
       } catch (bcryptError) {
         // bcrypt.compare failed - password might be in legacy format
         isValidPassword = false;
@@ -59,12 +60,12 @@ export function createAuthRoutes(deps: AuthDependencies = {}) {
           const parsed = JSON.parse(storedPassword);
           if (parsed.password && typeof parsed.password === 'string') {
             plaintextPassword = parsed.password.trim();
-            isValidPassword = plaintextPassword === password;
+            isValidPassword = plaintextPassword === password.trim();
             needsHashUpgrade = isValidPassword; // Upgrade if valid
           }
         } catch {
           // Not JSON - check Format 2: plain string
-          if (storedPassword.trim() === password) {
+          if (storedPassword.trim() === password.trim()) {
             plaintextPassword = storedPassword.trim();
             isValidPassword = true;
             needsHashUpgrade = true;
