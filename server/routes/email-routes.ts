@@ -720,7 +720,8 @@ export function createEmailRouter(deps: RouterDependencies) {
       emailPayload.text = `${textContent}\n\n${EMAIL_FOOTER_TEXT}`;
     }
 
-    if (bccEmail) {
+    // Only add BCC if it's different from the recipient email to avoid SendGrid duplicate error
+    if (bccEmail && bccEmail.toLowerCase() !== recipientEmail.toLowerCase()) {
       emailPayload.bcc = bccEmail;
     }
 
