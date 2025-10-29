@@ -567,23 +567,27 @@ export default function GroupCatalog({
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-teal-100 to-cyan-200 shadow-sm">
-            <Building className="w-6 h-6 text-teal-700" />
+      <div className="min-h-screen premium-gradient-subtle">
+        <div className="space-y-6 p-6">
+          <div className="premium-card p-6 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-teal/10">
+                <Building className="w-6 h-6 text-brand-teal" />
+              </div>
+              <div>
+                <h1 className="premium-text-h1">Groups Catalog</h1>
+                <p className="premium-text-body text-brand-primary">Loading organization contacts...</p>
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Groups Catalog</h1>
-            <p className="text-gray-600">Loading organization contacts...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-48 bg-gray-200 animate-pulse rounded-lg"
+              ></div>
+            ))}
           </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-48 bg-gray-200 animate-pulse rounded-lg"
-            ></div>
-          ))}
         </div>
       </div>
     );
@@ -591,35 +595,40 @@ export default function GroupCatalog({
 
   if (error) {
     return (
-      <div className="space-y-6 p-6">
-        <div className="text-center py-12">
-          <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Failed to load organizations catalog</p>
-          <p className="text-sm text-gray-500 mt-2">
-            {(error as Error).message}
-          </p>
+      <div className="min-h-screen premium-gradient-subtle">
+        <div className="space-y-6 p-6">
+          <div className="premium-card text-center py-12">
+            <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">Failed to load organizations catalog</p>
+            <p className="text-sm text-gray-500 mt-2">
+              {(error as Error).message}
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
-          <Building className="w-6 h-6 text-teal-600" />
+    <div className="min-h-screen premium-gradient-subtle">
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="premium-card p-6">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-teal/10">
+              <Building className="w-6 h-6 text-brand-teal" />
+            </div>
+            <div>
+              <h1 className="premium-text-h1">Groups Catalog</h1>
+              <p className="premium-text-body text-brand-primary">
+                Directory of all organizations we've worked with from event requests
+              </p>
+            </div>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Groups Catalog</h1>
-          <p className="text-gray-600">
-            Directory of all organizations we've worked with from event requests
-          </p>
-        </div>
-      </div>
 
-      {/* Search and Filter Controls */}
-      <div className="bg-white rounded-lg border p-4 shadow-sm">
+        {/* Search and Filter Controls */}
+        <div className="premium-card-elevated p-6"  style={{ borderTop: '3px solid #236383' }}>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Search */}
           <div className="md:col-span-3 relative">
@@ -1930,6 +1939,7 @@ export default function GroupCatalog({
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
