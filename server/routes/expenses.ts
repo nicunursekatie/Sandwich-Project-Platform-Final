@@ -60,7 +60,10 @@ expensesRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
       conditions.push(eq(expenses.contextType, contextType));
     }
     if (contextId && typeof contextId === 'string') {
-      conditions.push(eq(expenses.contextId, parseInt(contextId)));
+      const parsedContextId = parseInt(contextId);
+      if (!isNaN(parsedContextId)) {
+        conditions.push(eq(expenses.contextId, parsedContextId));
+      }
     }
     if (status && typeof status === 'string') {
       conditions.push(eq(expenses.status, status));
@@ -103,6 +106,53 @@ expensesRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
   } catch (error) {
     logger.error('Error fetching expenses', { error, userId: req.user?.id });
     res.status(500).json({ error: 'Failed to fetch expenses' });
+  }
+});
+
+// GET /api/expenses/summary/stats - Get expense statistics
+// NOTE: This route must come before /:id to avoid "summary" being treated as an ID
+expensesRouter.get('/summary/stats', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { contextType, contextId } = req.query;
+
+    logger.info('Fetching expense statistics', {
+      userId: req.user.id,
+      filters: { contextType, contextId }
+    });
+
+    // Build where conditions
+    const conditions = [];
+    if (contextType && typeof contextType === 'string') {
+      conditions.push(eq(expenses.contextType, contextType));
+    }
+    if (contextId && typeof contextId === 'string') {
+      const parsedContextId = parseInt(contextId);
+      if (!isNaN(parsedContextId)) {
+        conditions.push(eq(expenses.contextId, parsedContextId));
+      }
+    }
+
+    // Fetch statistics
+    const [stats] = await db
+      .select({
+        totalExpenses: sql<number>`COUNT(*)::int`,
+        totalAmount: sql<string>`COALESCE(SUM(${expenses.amount}), 0)`,
+        pendingCount: sql<number>`COUNT(CASE WHEN ${expenses.status} = 'pending' THEN 1 END)::int`,
+        approvedCount: sql<number>`COUNT(CASE WHEN ${expenses.status} = 'approved' THEN 1 END)::int`,
+        rejectedCount: sql<number>`COUNT(CASE WHEN ${expenses.status} = 'rejected' THEN 1 END)::int`,
+        reimbursedCount: sql<number>`COUNT(CASE WHEN ${expenses.status} = 'reimbursed' THEN 1 END)::int`,
+      })
+      .from(expenses)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    res.json(stats);
+  } catch (error) {
+    logger.error('Error fetching expense statistics', { error, userId: req.user?.id });
+    res.status(500).json({ error: 'Failed to fetch expense statistics' });
   }
 });
 
@@ -407,49 +457,6 @@ expensesRouter.delete('/:id', async (req: AuthenticatedRequest, res: Response) =
   } catch (error) {
     logger.error('Error deleting expense', { error, userId: req.user?.id, expenseId: req.params.id });
     res.status(500).json({ error: 'Failed to delete expense' });
-  }
-});
-
-// GET /api/expenses/summary/stats - Get expense statistics
-expensesRouter.get('/summary/stats', async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const { contextType, contextId } = req.query;
-
-    logger.info('Fetching expense statistics', {
-      userId: req.user.id,
-      filters: { contextType, contextId }
-    });
-
-    // Build where conditions
-    const conditions = [];
-    if (contextType && typeof contextType === 'string') {
-      conditions.push(eq(expenses.contextType, contextType));
-    }
-    if (contextId && typeof contextId === 'string') {
-      conditions.push(eq(expenses.contextId, parseInt(contextId)));
-    }
-
-    // Fetch statistics
-    const [stats] = await db
-      .select({
-        totalExpenses: sql<number>`COUNT(*)::int`,
-        totalAmount: sql<string>`COALESCE(SUM(${expenses.amount}), 0)`,
-        pendingCount: sql<number>`COUNT(CASE WHEN ${expenses.status} = 'pending' THEN 1 END)::int`,
-        approvedCount: sql<number>`COUNT(CASE WHEN ${expenses.status} = 'approved' THEN 1 END)::int`,
-        rejectedCount: sql<number>`COUNT(CASE WHEN ${expenses.status} = 'rejected' THEN 1 END)::int`,
-        reimbursedCount: sql<number>`COUNT(CASE WHEN ${expenses.status} = 'reimbursed' THEN 1 END)::int`,
-      })
-      .from(expenses)
-      .where(conditions.length > 0 ? and(...conditions) : undefined);
-
-    res.json(stats);
-  } catch (error) {
-    logger.error('Error fetching expense statistics', { error, userId: req.user?.id });
-    res.status(500).json({ error: 'Failed to fetch expense statistics' });
   }
 });
 

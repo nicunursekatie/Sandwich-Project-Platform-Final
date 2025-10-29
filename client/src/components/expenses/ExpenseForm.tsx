@@ -79,11 +79,20 @@ export function ExpenseForm({
     }
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/heic',
+      'image/heif'
+    ];
     if (!allowedTypes.includes(file.type)) {
       toast({
         title: 'Invalid file type',
-        description: 'Please upload a PDF or image file (JPG, PNG, GIF, WEBP)',
+        description: 'Please upload a PDF or image file (JPG, PNG, GIF, WEBP, HEIC)',
         variant: 'destructive',
       });
       return;
@@ -231,7 +240,7 @@ export function ExpenseForm({
           <input
             type="file"
             id="receipt-file-input"
-            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -260,7 +269,7 @@ export function ExpenseForm({
           </div>
         )}
         <p className="text-xs text-muted-foreground">
-          PDF or image files (JPG, PNG, GIF, WEBP) up to 10MB
+          PDF or image files (JPG, PNG, GIF, WEBP, HEIC) up to 10MB
         </p>
       </div>
 
