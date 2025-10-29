@@ -592,14 +592,18 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           // Prepare updates object with all modified times
                           const updates: Record<string, string> = {};
 
+                          // Get existing pickup time value for comparison
+                          const existingPickupTime = request.pickupDateTime
+                            ? formatTimeForInput(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
+                            : (request.pickupTime ? formatTimeForInput(request.pickupTime) : '');
+
                           if (tempStartTime && tempStartTime !== formatTimeForInput(request.eventStartTime || '')) {
                             updates.eventStartTime = tempStartTime;
                           }
                           if (tempEndTime && tempEndTime !== formatTimeForInput(request.eventEndTime || '')) {
                             updates.eventEndTime = tempEndTime;
                           }
-                          if (tempPickupTime) {
-                            // For pickup time, we update pickupTime field (not pickupDateTime for bulk update)
+                          if (tempPickupTime && tempPickupTime !== existingPickupTime) {
                             updates.pickupTime = tempPickupTime;
                           }
 
