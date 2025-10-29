@@ -267,7 +267,7 @@ ${userEmail}${userPhone ? `\n${userPhone}` : ''}`;
                                 <tr>
                                     <td align="center" style="padding: 10px 0 30px 0;">
                                         <a href="https://thesandwichproject.as.me/" style="display: inline-block; background-color: #FBAD3F; color: #333333; padding: 18px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">📅 Schedule Your Planning Call</a>
-                                        <p style="margin: 15px 0 0 0; font-size: 14px; color: #666666; font-style: italic;">Most groups book within 48 hours—secure your spot today!</p>
+                                        <p style="margin: 15px 0 0 0; font-size: 14px; color: #666666; font-style: italic;">We recommend booking early to secure your preferred date.</p>
                                     </td>
                                 </tr>
                             </table>
