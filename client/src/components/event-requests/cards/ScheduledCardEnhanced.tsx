@@ -927,7 +927,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 contextId={request.id.toString()}
                                 contextTitle={`${request.organizationName} event`}
                                 size="sm"
-                                variant="ghost"
+                                variant="outline"
                                 iconOnly
                               />
                               {canEdit && (
@@ -1024,7 +1024,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                   contextId={request.id.toString()}
                                   contextTitle={`${request.organizationName} event`}
                                   size="sm"
-                                  variant="ghost"
+                                  variant="outline"
                                   iconOnly
                                 />
                                 {canEdit && (
@@ -1119,7 +1119,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 contextId={request.id.toString()}
                                 contextTitle={`${request.organizationName} event`}
                                 size="sm"
-                                variant="ghost"
+                                variant="outline"
                                 iconOnly
                               />
                               {canEdit && (

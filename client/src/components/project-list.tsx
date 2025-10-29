@@ -979,7 +979,7 @@ export default function ProjectList() {
                             contextId={project.id.toString()}
                             contextTitle={project.title}
                             size="sm"
-                            variant="ghost"
+                            variant="outline"
                             iconOnly
                           />
                         )}
@@ -1391,7 +1391,7 @@ export default function ProjectList() {
                             contextId={project.id.toString()}
                             contextTitle={project.title}
                             size="sm"
-                            variant="ghost"
+                            variant="outline"
                             iconOnly
                           />
                         )}

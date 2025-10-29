@@ -661,7 +661,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
                           contextId={request.id.toString()}
                           contextTitle={`${request.organizationName} event`}
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           iconOnly
                           className="h-3 w-3 p-0"
                         />
@@ -722,7 +722,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
                           contextId={request.id.toString()}
                           contextTitle={`${request.organizationName} event`}
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           iconOnly
                           className="h-3 w-3 p-0"
                         />
@@ -783,7 +783,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
                           contextId={request.id.toString()}
                           contextTitle={`${request.organizationName} event`}
                           size="sm"
-                          variant="ghost"
+                          variant="outline"
                           iconOnly
                           className="h-3 w-3 p-0"
                         />
