@@ -192,20 +192,20 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
 
   return (
     <>
-      {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto">
+      {/* Desktop Table View - Only show on large screens (1024px+) */}
+      <div className="hidden lg:block overflow-x-auto">
         <div className="premium-card overflow-hidden">
-          <table className="w-full border-collapse">
+          <table className="w-full border-collapse table-fixed">
             <thead>
               <tr className="border-b-2 border-[#236383]/10 bg-gradient-to-r from-[#236383]/5 to-[#47B3CB]/5">
-                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Date</th>
-                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Host</th>
-                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Individual</th>
-                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Groups</th>
-                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Total</th>
-                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Submitted By</th>
-                <th className="text-left p-4 premium-text-body-sm font-semibold text-[#236383]">Date Submitted</th>
-                <th className="text-right p-4 premium-text-body-sm font-semibold text-[#236383]">Actions</th>
+                <th className="text-left p-3 lg:p-4 premium-text-body-sm font-semibold text-[#236383] w-[120px]">Date</th>
+                <th className="text-left p-3 lg:p-4 premium-text-body-sm font-semibold text-[#236383] w-[140px]">Host</th>
+                <th className="text-left p-3 lg:p-4 premium-text-body-sm font-semibold text-[#236383] w-[100px]">Individual</th>
+                <th className="text-left p-3 lg:p-4 premium-text-body-sm font-semibold text-[#236383] w-[180px]">Groups</th>
+                <th className="text-left p-3 lg:p-4 premium-text-body-sm font-semibold text-[#236383] w-[90px]">Total</th>
+                <th className="text-left p-3 lg:p-4 premium-text-body-sm font-semibold text-[#236383] w-[150px]">Submitted By</th>
+                <th className="text-left p-3 lg:p-4 premium-text-body-sm font-semibold text-[#236383] w-[120px]">Date Submitted</th>
+                <th className="text-right p-3 lg:p-4 premium-text-body-sm font-semibold text-[#236383] w-[100px]">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -218,10 +218,10 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
                     key={collection.id}
                     className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-[#236383]/[0.02] hover:to-[#47B3CB]/[0.02] transition-all duration-200"
                   >
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-[#007E8C]" />
-                        <span className="font-medium text-gray-900">
+                    <td className="p-3 lg:p-4">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <Calendar className="h-4 w-4 text-[#007E8C] flex-shrink-0" />
+                        <span className="font-medium text-gray-900 text-sm truncate">
                           {(() => {
                             const dateStr = collection.collectionDate;
                             if (!dateStr) return 'No date';
@@ -239,43 +239,43 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
                         </span>
                       </div>
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-[#007E8C]" />
-                        <span className="text-gray-900 font-medium">{collection.hostName}</span>
+                    <td className="p-3 lg:p-4">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <User className="h-4 w-4 text-[#007E8C] flex-shrink-0" />
+                        <span className="text-gray-900 font-medium text-sm truncate">{collection.hostName}</span>
                       </div>
                     </td>
-                    <td className="p-4">
-                      <span className="premium-badge-info">
+                    <td className="p-3 lg:p-4">
+                      <span className="premium-badge-info text-xs">
                         {collection.individualSandwiches}
                       </span>
                     </td>
-                    <td className="p-4">
+                    <td className="p-3 lg:p-4">
                       {groupCollections.length > 0 ? (
-                        <div className="space-y-1.5">
+                        <div className="space-y-1">
                           {groupCollections.map((group: any, idx: number) => (
-                            <div key={idx} className="text-sm flex items-center gap-2">
-                              <span className="font-semibold text-[#236383]">{group.groupName}:</span>
-                              <span className="premium-badge-success text-xs">{group.sandwichCount}</span>
+                            <div key={idx} className="text-xs flex items-center gap-1.5 overflow-hidden">
+                              <span className="font-semibold text-[#236383] truncate">{group.groupName}:</span>
+                              <span className="premium-badge-success text-xs flex-shrink-0">{group.sandwichCount}</span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-sm italic">No groups</span>
+                        <span className="text-gray-400 text-xs italic">None</span>
                       )}
                     </td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-full bg-gradient-to-r from-[#236383] to-[#007E8C] text-white shadow-sm">
+                    <td className="p-3 lg:p-4">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 text-sm font-bold rounded-full bg-gradient-to-r from-[#236383] to-[#007E8C] text-white shadow-sm">
                         {total}
                       </span>
                     </td>
-                    <td className="p-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <User className="h-3.5 w-3.5 text-[#007E8C]" />
-                        <span className="text-gray-700">{(collection as any).createdByName || 'Unknown User'}</span>
+                    <td className="p-3 lg:p-4 text-sm">
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        <User className="h-3.5 w-3.5 text-[#007E8C] flex-shrink-0" />
+                        <span className="text-gray-700 text-xs truncate">{(collection as any).createdByName || 'Unknown User'}</span>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-gray-600">
+                    <td className="p-3 lg:p-4 text-xs text-gray-600">
                       {(() => {
                         const dateStr = collection.submittedAt;
                         if (!dateStr) return 'No date';
@@ -292,25 +292,25 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
                         return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
                       })()}
                     </td>
-                    <td className="p-4">
-                      <div className="flex justify-end gap-2">
+                    <td className="p-3 lg:p-4">
+                      <div className="flex justify-end gap-1.5">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditClick(collection)}
                           disabled={isUpdating}
-                          className="h-9 w-9 p-0 hover:bg-[#007E8C]/10 hover:text-[#007E8C] transition-colors"
+                          className="h-8 w-8 p-0 hover:bg-[#007E8C]/10 hover:text-[#007E8C] transition-colors"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => onDelete(collection.id)}
                           disabled={isDeleting}
-                          className="h-9 w-9 p-0 text-[#A31C41] hover:text-[#8B1736] hover:bg-[#A31C41]/10 transition-colors"
+                          className="h-8 w-8 p-0 text-[#A31C41] hover:text-[#8B1736] hover:bg-[#A31C41]/10 transition-colors"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </td>
@@ -322,8 +322,8 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
         </div>
       </div>
 
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-4 mobile-container-tight">
+      {/* Mobile/Tablet Card View - Show on screens smaller than 1024px */}
+      <div className="lg:hidden space-y-4 mobile-container-tight">
         {collections.map((collection) => {
           const groupCollections = getGroupCollections(collection);
           const total = calculateTotal(collection);
