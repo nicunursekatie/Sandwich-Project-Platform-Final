@@ -941,13 +941,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 </Button>
                               )}
                             </div>
-                                onClick={() => handleRemoveAssignment('driver', id)}
-                                className="h-5 w-5 p-0 text-red-600"
-                                aria-label="Remove driver"
-                              >
-                                <X className="w-3 h-3" aria-hidden="true" />
-                              </Button>
-                            )}
                           </div>
                         ))}
                         {driverAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
@@ -1038,13 +1031,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                   </Button>
                                 )}
                               </div>
-                                  onClick={() => handleRemoveAssignment('speaker', id)}
-                                  className="h-5 w-5 p-0 text-red-600"
-                                  aria-label="Remove speaker"
-                                >
-                                  <X className="w-3 h-3" aria-hidden="true" />
-                                </Button>
-                              )}
                             </div>
                           );
                         })}
@@ -1133,13 +1119,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 </Button>
                               )}
                             </div>
-                                onClick={() => handleRemoveAssignment('volunteer', id)}
-                                className="h-5 w-5 p-0 text-red-600"
-                                aria-label="Remove volunteer"
-                              >
-                                <X className="w-3 h-3" aria-hidden="true" />
-                              </Button>
-                            )}
                           </div>
                         ))}
                         {volunteerAssigned === 0 && <div className="text-sm text-[#236383] italic">None assigned</div>}
