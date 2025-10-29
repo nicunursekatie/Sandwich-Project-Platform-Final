@@ -36,6 +36,15 @@ export class ObjectNotFoundError extends Error {
 export class ObjectStorageService {
   constructor() {}
 
+  private static instance: ObjectStorageService;
+
+  static getInstance(): ObjectStorageService {
+    if (!ObjectStorageService.instance) {
+      ObjectStorageService.instance = new ObjectStorageService();
+    }
+    return ObjectStorageService.instance;
+  }
+
   // Gets the public object search paths.
   getPublicObjectSearchPaths(): Array<string> {
     const pathsStr = process.env.PUBLIC_OBJECT_SEARCH_PATHS || '';
@@ -177,6 +186,9 @@ export class ObjectStorageService {
     }
   }
 }
+
+// Export a singleton instance for convenience
+export const objectStorageService = ObjectStorageService.getInstance();
 
 function parseObjectPath(path: string): {
   bucketName: string;

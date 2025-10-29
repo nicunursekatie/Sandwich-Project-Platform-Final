@@ -100,7 +100,7 @@ export default function PromotionGraphics() {
         URL.revokeObjectURL(localPreviewUrl);
       }
     };
-  }, [localPreviewUrl]);
+  }, []);
 
   // Get current user
   const { data: currentUser } = useQuery({
