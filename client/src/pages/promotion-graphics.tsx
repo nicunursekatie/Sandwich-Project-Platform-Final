@@ -37,7 +37,6 @@ import {
   Calendar,
   Users,
   Trash2,
-  Edit,
   Eye,
   Send,
   Archive,
@@ -68,7 +67,7 @@ interface PromotionGraphic {
 }
 
 export default function PromotionGraphics() {
-  const { trackView, trackClick } = useActivityTracker();
+  const { trackView } = useActivityTracker();
   const [selectedGraphic, setSelectedGraphic] = useState<PromotionGraphic | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
