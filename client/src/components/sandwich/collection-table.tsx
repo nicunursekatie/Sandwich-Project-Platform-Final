@@ -90,7 +90,7 @@ function EditCollectionDialog({ collection, isOpen, onClose, onSave, isUpdating 
           <div className="space-y-3 pt-2">
             <Label className="text-sm font-semibold text-[#236383]">Group Collections</Label>
             <div className="space-y-3 ml-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mobile-form-grid">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   placeholder="Group 1 name"
                   value={formData.group1Name}
@@ -106,7 +106,7 @@ function EditCollectionDialog({ collection, isOpen, onClose, onSave, isUpdating 
                   className="premium-input mobile-input border-[#236383]/20 focus:border-[#007E8C]"
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mobile-form-grid">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   placeholder="Group 2 name"
                   value={formData.group2Name}
@@ -285,9 +285,9 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
                           const dateOnly = dateStrString.split('T')[0];
                           date = new Date(dateOnly + 'T12:00:00');
                         } else if (dateStrString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                          date = new Date(dateStr + 'T12:00:00');
+                          date = new Date(dateStrString + 'T12:00:00');
                         } else {
-                          date = new Date(dateStr);
+                          date = new Date(dateStrString);
                         }
                         return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
                       })()}
@@ -403,9 +403,9 @@ export function CollectionTable({ collections, onEdit, onDelete, isUpdating, isD
                         const dateOnly = dateStrString.split('T')[0];
                         date = new Date(dateOnly + 'T12:00:00');
                       } else if (dateStrString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        date = new Date(dateStr + 'T12:00:00');
+                        date = new Date(dateStrString + 'T12:00:00');
                       } else {
-                        date = new Date(dateStr);
+                        date = new Date(dateStrString);
                       }
                       return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
                     })()}
