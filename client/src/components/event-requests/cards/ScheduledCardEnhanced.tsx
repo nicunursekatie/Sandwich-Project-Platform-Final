@@ -868,7 +868,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Team Assignments - Below Event Details in same column */}
             <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10">
               <h3 className="font-bold text-sm text-[#236383] uppercase tracking-wide mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" focusable="false" />
+                <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
