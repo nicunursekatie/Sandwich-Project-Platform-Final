@@ -257,7 +257,7 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
               type="submit"
               size="sm"
               disabled={!newComment.trim() || createCommentMutation.isPending}
-              className="bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
+              className="bg-brand-teal hover:bg-brand-teal-hover text-white"
               data-testid={`button-submit-comment-${itemId}`}
             >
               {createCommentMutation.isPending ? (
@@ -559,20 +559,20 @@ export default function TeamBoard() {
   const doneItems = filteredItems.filter(item => item.status === 'done');
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          Team Board
-        </h1>
-        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-          Share tasks, ideas, and updates with the team
-        </p>
-      </div>
+    <div className="min-h-screen premium-gradient-subtle">
+      <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
+        {/* Header */}
+        <div className="premium-card p-6 mb-6">
+          <h1 className="premium-text-h1">
+            Team Board
+          </h1>
+          <p className="premium-text-body text-brand-primary">
+            Share tasks, ideas, and updates with the team
+          </p>
+        </div>
 
-      {/* Quick Add Form */}
-      <Card className="mb-6 border-teal-200 dark:border-teal-800 shadow-sm">
-        <CardContent className="pt-6">
+        {/* Quick Add Form */}
+        <div className="premium-card-elevated p-6 mb-6" style={{ borderTop: '3px solid #007E8C' }}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <Select
@@ -603,7 +603,7 @@ export default function TeamBoard() {
               <Button
                 type="submit"
                 disabled={!newItemContent.trim() || createItemMutation.isPending}
-                className="bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600"
+                className="bg-brand-teal hover:bg-brand-teal-hover text-white"
                 data-testid="button-post"
               >
                 {createItemMutation.isPending ? (
@@ -615,8 +615,7 @@ export default function TeamBoard() {
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
 
       {/* Search and Filter */}
       <div className="mb-6 flex flex-col sm:flex-row gap-3">
@@ -656,41 +655,40 @@ export default function TeamBoard() {
         </Select>
       </div>
 
-      {/* Board Items */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-        </div>
-      ) : filteredItems.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <StickyNote className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-center">
-              {searchQuery || filterType !== 'all' 
-                ? 'No items match your search'
-                : 'No items yet. Post the first one!'}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
+        {/* Board Items */}
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-brand-teal" />
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="premium-card border-dashed">
+            <div className="flex flex-col items-center justify-center py-12">
+              <StickyNote className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400 text-center">
+                {searchQuery || filterType !== 'all'
+                  ? 'No items match your search'
+                  : 'No items yet. Post the first one!'}
+              </p>
+            </div>
+          </div>
+        ) : (
         <div className="grid gap-6 md:grid-cols-3">
           {/* Open Items Column */}
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+              <h2 className="premium-text-h3 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-brand-primary"></div>
                 Open
                 <span className="text-sm font-normal text-gray-500">({openItems.length})</span>
               </h2>
             </div>
             <div className="space-y-3">
               {openItems.map((item) => (
-                <Card 
-                  key={item.id} 
-                  className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-gray-400" 
+                <div
+                  key={item.id}
+                  className="premium-card premium-interactive p-4 border-l-[3px] border-l-brand-primary"
                   data-testid={`card-item-${item.id}`}
                 >
-                  <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <Badge variant="secondary" className={`capitalize ${getTypeColor(item.type)} flex items-center gap-1`}>
                         {getTypeIcon(item.type)}
@@ -761,7 +759,7 @@ export default function TeamBoard() {
                       <Button
                         onClick={() => handleClaim(item)}
                         disabled={updateItemMutation.isPending}
-                        className="w-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600 text-sm"
+                        className="w-full bg-brand-teal hover:bg-brand-teal-hover text-white text-sm"
                         size="sm"
                         data-testid={`button-claim-${item.id}`}
                       >
@@ -797,8 +795,7 @@ export default function TeamBoard() {
 
                     {/* Comments section */}
                     <ItemComments itemId={item.id} initialCommentCount={item.commentCount} />
-                  </CardContent>
-                </Card>
+                </div>
               ))}
               {openItems.length === 0 && (
                 <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
@@ -811,20 +808,19 @@ export default function TeamBoard() {
           {/* In Progress Column */}
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <h2 className="premium-text-h3 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-brand-orange"></div>
                 In Progress
                 <span className="text-sm font-normal text-gray-500">({claimedItems.length})</span>
               </h2>
             </div>
             <div className="space-y-3">
               {claimedItems.map((item) => (
-                <Card 
-                  key={item.id} 
-                  className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500" 
+                <div
+                  key={item.id}
+                  className="premium-card premium-interactive p-4 border-l-[3px] border-l-brand-orange"
                   data-testid={`card-item-${item.id}`}
                 >
-                  <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <Badge variant="secondary" className={`capitalize ${getTypeColor(item.type)} flex items-center gap-1`}>
                         {getTypeIcon(item.type)}
@@ -891,7 +887,7 @@ export default function TeamBoard() {
                       <Button
                         onClick={() => handleComplete(item)}
                         disabled={updateItemMutation.isPending}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-sm min-w-0"
+                        className="flex-1 bg-brand-teal hover:bg-brand-teal-hover text-white text-sm min-w-0"
                         size="sm"
                         data-testid={`button-complete-${item.id}`}
                       >
@@ -912,8 +908,7 @@ export default function TeamBoard() {
 
                     {/* Comments section */}
                     <ItemComments itemId={item.id} initialCommentCount={item.commentCount} />
-                  </CardContent>
-                </Card>
+                </div>
               ))}
               {claimedItems.length === 0 && (
                 <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
@@ -926,20 +921,19 @@ export default function TeamBoard() {
           {/* Done Column */}
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <h2 className="premium-text-h3 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-brand-teal"></div>
                 Done
                 <span className="text-sm font-normal text-gray-500">({doneItems.length})</span>
               </h2>
             </div>
             <div className="space-y-3">
               {doneItems.map((item) => (
-                <Card 
-                  key={item.id} 
-                  className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500 opacity-90" 
+                <div
+                  key={item.id}
+                  className="premium-card premium-interactive p-4 border-l-[3px] border-l-brand-teal opacity-90"
                   data-testid={`card-item-${item.id}`}
                 >
-                  <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <Badge variant="secondary" className={`capitalize ${getTypeColor(item.type)} flex items-center gap-1`}>
                         {getTypeIcon(item.type)}
@@ -1012,8 +1006,7 @@ export default function TeamBoard() {
 
                     {/* Comments section */}
                     <ItemComments itemId={item.id} initialCommentCount={item.commentCount} />
-                  </CardContent>
-                </Card>
+                </div>
               ))}
               {doneItems.length === 0 && (
                 <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
@@ -1023,7 +1016,8 @@ export default function TeamBoard() {
             </div>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
