@@ -390,7 +390,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 <Package className="w-4 h-4" />
                 <span>Toolkit sent {formattedDate}</span>
                 {request.toolkitSentBy && (
-                  <span className="text-xs text-[#007E8C]/70">
+                  <span className="text-xs text-[#007E8C]">
                     by {resolveUserName ? resolveUserName(request.toolkitSentBy) : request.toolkitSentBy}
                   </span>
                 )}

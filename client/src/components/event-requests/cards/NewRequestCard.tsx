@@ -396,7 +396,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 )}
               </div>
               {request.tspContactAssignedDate && (
-                <p className="text-sm text-[#D68319]/90 mt-1">
+                <p className="text-sm text-[#D68319] mt-1">
                   Assigned on{' '}
                   {new Date(
                     request.tspContactAssignedDate
