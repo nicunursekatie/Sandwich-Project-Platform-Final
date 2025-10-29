@@ -1934,43 +1934,46 @@ export default function SandwichCollectionLog() {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-200">
-          <div className="h-6 bg-slate-200 rounded animate-pulse"></div>
-        </div>
-        <div className="p-6 space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="border border-slate-200 rounded-lg p-4 space-y-3"
-            >
-              <div className="h-4 bg-slate-200 rounded animate-pulse"></div>
-              <div className="h-3 bg-slate-100 rounded animate-pulse"></div>
-              <div className="h-3 bg-slate-100 rounded animate-pulse w-2/3"></div>
-            </div>
-          ))}
+      <div className="min-h-screen premium-gradient-subtle p-6">
+        <div className="premium-card">
+          <div className="px-6 py-4">
+            <div className="h-6 bg-slate-200 rounded animate-pulse"></div>
+          </div>
+          <div className="p-6 space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="border border-slate-200 rounded-lg p-4 space-y-3"
+              >
+                <div className="h-4 bg-slate-200 rounded animate-pulse"></div>
+                <div className="h-3 bg-slate-100 rounded animate-pulse"></div>
+                <div className="h-3 bg-slate-100 rounded animate-pulse w-2/3"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-      <div className="px-3 sm:px-6 py-4 border-b border-slate-200">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-base sm:text-lg font-semibold text-slate-900 flex items-center">
-              <img
-                src={sandwichLogo}
-                alt="Sandwich Logo"
-                className="mr-2 w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
-              />
-              <span className="truncate">Collections</span>
-            </h2>
-            <p className="text-sm sm:text-base text-slate-500 mt-1">
-              Manage collection data and bulk operations
-            </p>
-          </div>
+    <div className="min-h-screen premium-gradient-subtle p-6">
+      <div className="premium-card-elevated overflow-hidden" style={{ borderTop: '3px solid #FBAD3F' }}>
+        <div className="px-3 sm:px-6 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="premium-text-h2 flex items-center">
+                <img
+                  src={sandwichLogo}
+                  alt="Sandwich Logo"
+                  className="mr-2 w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0"
+                />
+                <span className="truncate">Collections Log</span>
+              </h2>
+              <p className="premium-text-body text-brand-primary mt-1">
+                Manage collection data and bulk operations
+              </p>
+            </div>
           {canEditData && (
             <Button
               onClick={() => setShowDataManagement(true)}
@@ -3671,6 +3674,7 @@ export default function SandwichCollectionLog() {
       </Dialog>
 
       {/* Quick Help Button */}
+      </div>
     </div>
   );
 }
