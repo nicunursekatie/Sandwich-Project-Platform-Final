@@ -39,6 +39,7 @@ const createPromotionGraphicSchema = insertPromotionGraphicSchema
       message: 'Invalid date format',
     }).optional().nullable(),
     targetAudience: z.string().optional(),
+    sendNotification: z.boolean().optional().default(false),
   });
 
 const updatePromotionGraphicSchema = z.object({
@@ -182,13 +183,19 @@ promotionGraphicsRouter.post(
 
       logger.info('Successfully created promotion graphic', {
         graphicId: newGraphic.id,
-        userId: req.user.id
+        userId: req.user.id,
+        sendNotification: validatedData.sendNotification
       });
 
-      // Send email notification to target audience (async, don't wait)
-      sendNotificationEmail(newGraphic, req.user).catch(error => {
-        logger.error('Failed to send notification email', error);
-      });
+      // Send email notification only if explicitly requested
+      if (validatedData.sendNotification) {
+        sendNotificationEmail(newGraphic, req.user).catch(error => {
+          logger.error('Failed to send notification email', error);
+        });
+        logger.info('Email notifications will be sent', { graphicId: newGraphic.id });
+      } else {
+        logger.info('Skipping email notifications (not requested)', { graphicId: newGraphic.id });
+      }
 
       res.status(201).json(newGraphic);
     } catch (error) {

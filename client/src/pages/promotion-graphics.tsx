@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -80,6 +81,7 @@ export default function PromotionGraphics() {
   const [description, setDescription] = useState('');
   const [intendedUseDate, setIntendedUseDate] = useState('');
   const [targetAudience, setTargetAudience] = useState('hosts');
+  const [sendNotification, setSendNotification] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState('');
   const [localPreviewUrl, setLocalPreviewUrl] = useState('');
@@ -313,6 +315,7 @@ export default function PromotionGraphics() {
         fileType: uploadedFile.type,
         intendedUseDate: intendedUseDate || undefined,
         targetAudience,
+        sendNotification,
       });
     } catch (error) {
       logger.error('Upload error:', error);
@@ -331,6 +334,7 @@ export default function PromotionGraphics() {
     setDescription('');
     setIntendedUseDate('');
     setTargetAudience('hosts');
+    setSendNotification(false);
     setUploadedFile(null);
     setUploadedFileUrl('');
 
@@ -455,6 +459,27 @@ export default function PromotionGraphics() {
                   </Select>
                 </div>
 
+                <div className="flex items-center space-x-2 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <Checkbox
+                    id="send-notification"
+                    checked={sendNotification}
+                    onCheckedChange={(checked) => setSendNotification(checked as boolean)}
+                  />
+                  <div className="flex-1">
+                    <Label
+                      htmlFor="send-notification"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Send email notifications to {targetAudience === 'all' ? 'everyone' : targetAudience}
+                    </Label>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {sendNotification 
+                        ? 'Email notifications will be sent when you upload this graphic' 
+                        : 'Graphic will be uploaded without sending notifications'}
+                    </p>
+                  </div>
+                </div>
+
                 <DialogFooter>
                   <Button
                     type="button"
@@ -468,7 +493,11 @@ export default function PromotionGraphics() {
                     disabled={!uploadedFile || isUploading || uploadMutation.isPending}
                     style={{ backgroundColor: '#007E8C', color: 'white' }}
                   >
-                    {isUploading || uploadMutation.isPending ? 'Uploading...' : 'Upload & Notify'}
+                    {isUploading || uploadMutation.isPending 
+                      ? 'Uploading...' 
+                      : sendNotification 
+                        ? 'Upload & Send Notifications' 
+                        : 'Upload Graphic'}
                   </Button>
                 </DialogFooter>
               </form>
