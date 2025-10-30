@@ -1817,12 +1817,12 @@ export default function SandwichCollectionLog() {
       }
     }
 
-    // Format group collections to match the new schema (separate columns)
+    // Format group collections using unlimited groups JSONB array format
     const validGroupCollections = newGroupCollections.filter(
       (group) => group.sandwichCount > 0
     );
 
-    const submissionData = {
+    const submissionData: any = {
       collectionDate: newCollectionData.collectionDate,
       hostName: newCollectionGroupOnlyMode
         ? 'Groups - Unassigned'
@@ -1830,12 +1830,15 @@ export default function SandwichCollectionLog() {
       individualSandwiches: newCollectionGroupOnlyMode
         ? 0
         : parseInt(newCollectionData.individualSandwiches) || 0,
-      // New schema: separate group columns (snake_case to match database)
-      group1_name: validGroupCollections[0]?.groupName.trim() || null,
-      group1_count: validGroupCollections[0]?.sandwichCount || null,
-      group2_name: validGroupCollections[1]?.groupName.trim() || null,
-      group2_count: validGroupCollections[1]?.sandwichCount || null,
     };
+
+    // Add unlimited groups using JSONB array format (matches compact form)
+    if (validGroupCollections.length > 0) {
+      submissionData.groupCollections = validGroupCollections.map((group) => ({
+        name: group.groupName.trim(),
+        count: group.sandwichCount,
+      }));
+    }
 
     createMutation.mutate(submissionData);
   };
