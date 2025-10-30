@@ -1106,7 +1106,9 @@ export default function RecipientsManagement() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
                                       const trimmed = customFocusArea.trim();
                                       if (trimmed && !newRecipient.focusAreas.includes(trimmed)) {
                                         setNewRecipient({
@@ -2413,7 +2415,9 @@ export default function RecipientsManagement() {
                               type="button"
                               variant="outline"
                               size="sm"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 const trimmed = customFocusArea.trim();
                                 const currentAreas = (editingRecipient as any).focusAreas || [];
                                 if (trimmed && !currentAreas.includes(trimmed)) {
