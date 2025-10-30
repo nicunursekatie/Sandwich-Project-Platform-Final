@@ -1,8 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
 import {
   Card,
   CardContent,
@@ -53,9 +50,6 @@ import {
 import { hasPermission } from '@shared/auth-utils';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
-
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PromotionGraphic {
   id: number;
@@ -388,31 +382,11 @@ export default function PromotionGraphics() {
                         style={{ maxHeight: '300px' }}
                       />
                     ) : uploadedFile.type === 'application/pdf' ? (
-                      <div className="mt-2 border rounded-lg bg-gray-50 overflow-hidden">
-                        <Document
-                          file={uploadedFile}
-                          loading={
-                            <div className="p-8 flex flex-col items-center justify-center">
-                              <FileText className="h-16 w-16 text-gray-400 mb-2 animate-pulse" />
-                              <p className="text-sm text-gray-600">Loading PDF...</p>
-                            </div>
-                          }
-                          error={
-                            <div className="p-8 flex flex-col items-center justify-center">
-                              <FileText className="h-16 w-16 text-gray-400 mb-2" />
-                              <p className="text-sm text-red-600">Failed to load PDF</p>
-                              <p className="text-xs text-gray-500">{uploadedFile.name}</p>
-                            </div>
-                          }
-                        >
-                          <Page
-                            pageNumber={1}
-                            width={500}
-                            renderTextLayer={false}
-                            renderAnnotationLayer={false}
-                          />
-                        </Document>
-                        <p className="text-xs text-gray-500 text-center py-2 bg-gray-100">{uploadedFile.name}</p>
+                      <div className="mt-2 p-8 border rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                        <FileText className="h-16 w-16 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600 font-medium">PDF Document</p>
+                        <p className="text-xs text-gray-500 mt-1">{uploadedFile.name}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(uploadedFile.size)}</p>
                       </div>
                     ) : null}
                   </div>
@@ -542,30 +516,11 @@ export default function PromotionGraphics() {
             <Card key={graphic.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => setSelectedGraphic(graphic)}>
                 {graphic.fileType === 'application/pdf' ? (
-                  <Document
-                    file={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
-                    loading={
-                      <div className="flex flex-col items-center justify-center p-8">
-                        <FileText className="h-24 w-24 text-gray-400 mb-2 animate-pulse" />
-                        <p className="text-sm text-gray-600">Loading...</p>
-                      </div>
-                    }
-                    error={
-                      <div className="flex flex-col items-center justify-center p-8">
-                        <FileText className="h-24 w-24 text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600">PDF Document</p>
-                      </div>
-                    }
-                    className="w-full h-full flex items-center justify-center"
-                  >
-                    <Page
-                      pageNumber={1}
-                      width={350}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
-                      className="max-w-full max-h-full"
-                    />
-                  </Document>
+                  <div className="flex flex-col items-center justify-center p-8">
+                    <FileText className="h-24 w-24 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600 font-medium">PDF Document</p>
+                    <p className="text-xs text-gray-500 mt-1">Click to view</p>
+                  </div>
                 ) : (
                   <img
                     src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
@@ -659,48 +614,17 @@ export default function PromotionGraphics() {
               </DialogHeader>
               <div className="space-y-4">
                 {selectedGraphic.fileType === 'application/pdf' ? (
-                  <div className="w-full border rounded-lg bg-gray-50 overflow-hidden">
-                    <Document
-                      file={`/api/objects/proxy?url=${encodeURIComponent(selectedGraphic.imageUrl)}`}
-                      loading={
-                        <div className="p-12 flex flex-col items-center justify-center">
-                          <FileText className="h-32 w-32 text-gray-400 mb-4 animate-pulse" />
-                          <p className="text-lg text-gray-600">Loading PDF...</p>
-                        </div>
-                      }
-                      error={
-                        <div className="p-12 flex flex-col items-center justify-center">
-                          <FileText className="h-32 w-32 text-gray-400 mb-4" />
-                          <p className="text-lg text-red-600 mb-2">Failed to load PDF</p>
-                          <p className="text-sm text-gray-500 mb-4">{selectedGraphic.fileName}</p>
-                          <Button
-                            onClick={() => window.open(selectedGraphic.imageUrl, '_blank')}
-                            style={{ backgroundColor: '#007E8C', color: 'white' }}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Open PDF in New Tab
-                          </Button>
-                        </div>
-                      }
+                  <div className="w-full p-12 border rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                    <FileText className="h-32 w-32 text-gray-400 mb-4" />
+                    <p className="text-lg text-gray-600 mb-2 font-medium">PDF Document</p>
+                    <p className="text-sm text-gray-500 mb-4">{selectedGraphic.fileName}</p>
+                    <Button
+                      onClick={() => window.open(selectedGraphic.imageUrl, '_blank')}
+                      style={{ backgroundColor: '#007E8C', color: 'white' }}
                     >
-                      <Page
-                        pageNumber={1}
-                        width={700}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                      />
-                    </Document>
-                    <div className="bg-gray-100 p-3 flex items-center justify-between">
-                      <p className="text-sm text-gray-600">{selectedGraphic.fileName}</p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => window.open(selectedGraphic.imageUrl, '_blank')}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
-                    </div>
+                      <Download className="h-4 w-4 mr-2" />
+                      Open PDF
+                    </Button>
                   </div>
                 ) : (
                   <img
