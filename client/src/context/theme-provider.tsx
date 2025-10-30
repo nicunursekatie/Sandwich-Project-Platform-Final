@@ -76,9 +76,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       }
       return newTheme;
     });
-    if (theme !== newTheme) {
-      persistTheme(newTheme);
-    }
+    persistTheme(newTheme);
   };
 
   const toggleTheme = () => {
