@@ -100,6 +100,7 @@ const GroupCatalog = lazy(() => import('@/components/organizations-catalog'));
 const ActionTracking = lazy(() => import('@/components/action-tracking-enhanced'));
 const LogosPage = lazy(() => import('@/pages/logos'));
 const ImportantLinks = lazy(() => import('@/pages/important-links'));
+const Resources = lazy(() => import('@/pages/resources').then(m => ({ default: m.Resources })));
 const EventRequestAuditLog = lazy(() => import('@/components/event-request-audit-log').then(m => ({ default: m.EventRequestAuditLog })));
 const HistoricalImport = lazy(() => import('@/pages/historical-import'));
 const MyAvailability = lazy(() => import('@/pages/my-availability'));
@@ -273,6 +274,8 @@ export default function Dashboard({
         return <DashboardOverview onSectionChange={setActiveSection} />;
       case 'important-documents':
         return <ImportantDocuments />;
+      case 'resources':
+        return <Resources />;
       case 'projects':
         logger.log('Rendering ProjectsManagement component');
         return <ProjectsManagement />;
