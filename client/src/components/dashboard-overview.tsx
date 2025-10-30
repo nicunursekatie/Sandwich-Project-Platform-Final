@@ -570,7 +570,7 @@ export default function DashboardOverview({
                 <div className="premium-text-body-sm text-gray-700 font-medium">
                   Peak Week
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">Nov 15, 2023</div>
+                <div className="premium-text-caption text-gray-600 mt-1">{organizationalStats.peakWeekDate}</div>
               </div>
 
               {/* Annual Goal - Orange accent */}
