@@ -409,8 +409,8 @@ export default function ImpactDashboard() {
   };
 
   const calculateImpactMetrics = () => {
-    // Use the stats API for total sandwiches since it's calculated server-side
-    const totalSandwiches = (stats as any)?.completeTotalSandwiches || 0;
+    // Use hybrid stats total (authoritative data through 8/6/2025 + collection log after)
+    const totalSandwiches = hybridStats?.total || (stats as any)?.completeTotalSandwiches || 0;
     const totalCollections = collections?.length || 0;
     const uniqueHosts = 34; // Override to show correct active hosts count
 
