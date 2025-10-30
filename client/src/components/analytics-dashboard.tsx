@@ -511,42 +511,48 @@ export default function AnalyticsDashboard() {
         </div>
         <CardContent className="p-6">
           <div className="space-y-3">
-            {analyticsData.yearlyBreakdown?.map((yearData) => (
-              <div
-                key={yearData.year}
-                className={`flex items-center justify-between p-4 rounded-lg border-2 ${
-                  yearData.isPeakYear
-                    ? 'bg-brand-orange/10 border-brand-orange/30'
-                    : yearData.isIncomplete
-                    ? 'bg-yellow-50 border-yellow-300'
-                    : 'bg-white border-brand-primary/20'
-                } hover:shadow-md transition-all`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl font-bold text-brand-primary">
-                    {yearData.year}
+            {analyticsData.yearlyBreakdown && analyticsData.yearlyBreakdown.length > 0 ? (
+              analyticsData.yearlyBreakdown.map((yearData) => (
+                <div
+                  key={yearData.year}
+                  className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+                    yearData.isPeakYear
+                      ? 'bg-brand-orange/10 border-brand-orange/30'
+                      : yearData.isIncomplete
+                      ? 'bg-yellow-50 border-yellow-300'
+                      : 'bg-white border-brand-primary/20'
+                  } hover:shadow-md transition-all`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl font-bold text-brand-primary">
+                      {yearData.year}
+                    </div>
+                    {yearData.isPeakYear && (
+                      <Badge className="bg-brand-orange text-white">
+                        PEAK YEAR
+                      </Badge>
+                    )}
+                    {yearData.isIncomplete && (
+                      <Badge className="bg-yellow-500 text-white">
+                        Incomplete
+                      </Badge>
+                    )}
                   </div>
-                  {yearData.isPeakYear && (
-                    <Badge className="bg-brand-orange text-white">
-                      PEAK YEAR
-                    </Badge>
-                  )}
-                  {yearData.isIncomplete && (
-                    <Badge className="bg-yellow-500 text-white">
-                      Incomplete
-                    </Badge>
-                  )}
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-brand-primary">
+                      {yearData.totalSandwiches.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-[#646464]">
+                      {yearData.totalCollections} collections
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-brand-primary">
-                    {yearData.totalSandwiches.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-[#646464]">
-                    {yearData.totalCollections} collections
-                  </div>
-                </div>
+              ))
+            ) : (
+              <div className="text-center text-[#646464] py-8">
+                No yearly data available
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
