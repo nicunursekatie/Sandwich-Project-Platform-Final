@@ -176,6 +176,9 @@ export default function SandwichCollectionLog() {
   const [selectedKeepIds, setSelectedKeepIds] = useState<Map<number, number>>(
     new Map()
   );
+  const [skippedGroups, setSkippedGroups] = useState<Set<number>>(new Set());
+  const [duplicatePage, setDuplicatePage] = useState(0);
+  const DUPLICATES_PER_PAGE = 10;
   const [showBatchEdit, setShowBatchEdit] = useState(false);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [batchEditData, setBatchEditData] = useState({
@@ -1245,6 +1248,8 @@ export default function SandwichCollectionLog() {
       setDuplicateAnalysis(null);
       setSelectedSuspiciousIds(new Set());
       setSelectedKeepIds(new Map());
+      setSkippedGroups(new Set());
+      setDuplicatePage(0);
       toast({
         title: 'Cleanup completed',
         description: `Successfully cleaned ${result.deletedCount} duplicate entries.`,
@@ -1273,6 +1278,8 @@ export default function SandwichCollectionLog() {
       setDuplicateAnalysis(null);
       setSelectedSuspiciousIds(new Set());
       setSelectedKeepIds(new Map());
+      setSkippedGroups(new Set());
+      setDuplicatePage(0);
       toast({
         title: 'Selected entries deleted',
         description: `Successfully deleted ${result.deletedCount} selected entries.`,
@@ -2722,17 +2729,53 @@ export default function SandwichCollectionLog() {
                   </div>
                   <div className="text-base text-slate-600 mb-2">
                     Use radio buttons to select which entry to keep in each
-                    duplicate group. All other entries will be deleted.
+                    duplicate group, or click "Skip" to leave duplicates as-is. Only selected groups will be processed.
+                  </div>
+                  <div className="mb-3 flex items-center justify-between bg-slate-100 p-3 rounded-lg">
+                    <div className="text-sm text-slate-600">
+                      Showing duplicates {duplicatePage * DUPLICATES_PER_PAGE + 1} - {Math.min((duplicatePage + 1) * DUPLICATES_PER_PAGE, duplicateAnalysis.duplicates.length)} of {duplicateAnalysis.duplicates.length}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDuplicatePage(Math.max(0, duplicatePage - 1))}
+                        disabled={duplicatePage === 0}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDuplicatePage(duplicatePage + 1)}
+                        disabled={(duplicatePage + 1) * DUPLICATES_PER_PAGE >= duplicateAnalysis.duplicates.length}
+                      >
+                        Next
+                      </Button>
+                    </div>
                   </div>
                   <div className="max-h-96 overflow-y-auto border border-slate-200 rounded-lg">
                     <div className="space-y-3 p-3">
-                      {duplicateAnalysis.duplicates.map((group, groupIndex) => (
+                      {duplicateAnalysis.duplicates
+                        .slice(duplicatePage * DUPLICATES_PER_PAGE, (duplicatePage + 1) * DUPLICATES_PER_PAGE)
+                        .map((group, sliceIndex) => {
+                          const groupIndex = duplicatePage * DUPLICATES_PER_PAGE + sliceIndex;
+                          const isSkipped = skippedGroups.has(groupIndex);
+                          return (
                         <div
                           key={groupIndex}
-                          className="border border-slate-100 rounded-lg p-3 bg-slate-50"
+                          className={`border rounded-lg p-3 ${
+                            isSkipped
+                              ? 'bg-slate-100 border-slate-300 opacity-60'
+                              : 'border-slate-100 bg-slate-50'
+                          }`}
                         >
                           {/* Duplicate Info Header */}
-                          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className={`mb-3 p-3 border rounded-lg ${
+                            isSkipped
+                              ? 'bg-slate-200 border-slate-400'
+                              : 'bg-blue-50 border-blue-200'
+                          }`}>
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center space-x-2">
                                 <Calendar className="w-4 h-4 text-blue-600" />
@@ -2910,9 +2953,30 @@ export default function SandwichCollectionLog() {
                                 }
                               )}
                             </RadioGroup>
+
+                            {/* Skip/Keep Both Button */}
+                            <div className="mt-3 pt-3 border-t">
+                              <Button
+                                variant={isSkipped ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  const newSkipped = new Set(skippedGroups);
+                                  if (isSkipped) {
+                                    newSkipped.delete(groupIndex);
+                                  } else {
+                                    newSkipped.add(groupIndex);
+                                  }
+                                  setSkippedGroups(newSkipped);
+                                }}
+                                className="w-full"
+                              >
+                                {isSkipped ? '✓ Skipped - Will Keep All Duplicates' : 'Skip This Group (Keep All)'}
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      ))}
+                          );
+                        })}
                     </div>
                   </div>
                   {duplicateAnalysis.duplicates.length > 0 && (
@@ -2922,6 +2986,9 @@ export default function SandwichCollectionLog() {
                           const totalEntriesToDelete =
                             duplicateAnalysis.duplicates.reduce(
                               (sum, group, index) => {
+                                if (skippedGroups.has(index)) {
+                                  return sum; // Skip this group
+                                }
                                 const keepId =
                                   selectedKeepIds.get(index) ||
                                   group.keepNewest.id;
@@ -2936,7 +3003,9 @@ export default function SandwichCollectionLog() {
                               },
                               0
                             );
-                          return `${totalEntriesToDelete} duplicate entr${totalEntriesToDelete === 1 ? 'y' : 'ies'} will be deleted (keeping ${duplicateAnalysis.duplicates.length} selected entr${duplicateAnalysis.duplicates.length === 1 ? 'y' : 'ies'})`;
+                          const groupsToProcess = duplicateAnalysis.duplicates.length - skippedGroups.size;
+                          const skippedText = skippedGroups.size > 0 ? ` (${skippedGroups.size} group${skippedGroups.size === 1 ? '' : 's'} skipped)` : '';
+                          return `${totalEntriesToDelete} duplicate entr${totalEntriesToDelete === 1 ? 'y' : 'ies'} will be deleted from ${groupsToProcess} group${groupsToProcess === 1 ? '' : 's'}${skippedText}`;
                         })()}
                       </div>
                     </div>
@@ -3075,6 +3144,8 @@ export default function SandwichCollectionLog() {
                     setSelectedSuspiciousIds(new Set());
                     setSelectedDuplicateIds(new Set());
                     setSelectedKeepIds(new Map());
+                    setSkippedGroups(new Set());
+                    setDuplicatePage(0);
                   }}
                   className="w-full sm:w-auto"
                 >
@@ -3085,6 +3156,9 @@ export default function SandwichCollectionLog() {
                     onClick={() => {
                       const idsToDelete: number[] = [];
                       duplicateAnalysis.duplicates.forEach((group, index) => {
+                        if (skippedGroups.has(index)) {
+                          return; // Skip this group
+                        }
                         const keepId =
                           selectedKeepIds.get(index) || group.keepNewest.id;
                         const allIds = [
@@ -3110,6 +3184,9 @@ export default function SandwichCollectionLog() {
                           const totalToDelete =
                             duplicateAnalysis.duplicates.reduce(
                               (sum, group, index) => {
+                                if (skippedGroups.has(index)) {
+                                  return sum; // Skip this group
+                                }
                                 const keepId =
                                   selectedKeepIds.get(index) ||
                                   group.keepNewest.id;
