@@ -531,7 +531,8 @@ export default function GrantMetrics() {
       ? Math.round((yearTotals[latestYear] / yearTotals[earliestYear]) * 10) / 10
       : 0;
 
-    const totalSandwiches = (stats as any)?.completeTotalSandwiches || 0;
+    // Calculate total sandwiches from the actual data
+    const totalSandwiches = Object.values(yearTotals).reduce((sum, total) => sum + total, 0);
     const avgPerCollection = collections.length > 0 ? Math.round(totalSandwiches / collections.length) : 0;
 
     return {
