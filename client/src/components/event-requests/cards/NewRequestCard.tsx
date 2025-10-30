@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +84,7 @@ interface CardHeaderProps {
   saveEdit?: () => void;
   cancelEdit?: () => void;
   setEditingValue?: (value: string) => void;
+  handleConfirmToggleClick?: () => void;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({ 
@@ -96,7 +97,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   startEditing,
   saveEdit,
   cancelEdit,
-  setEditingValue
+  setEditingValue,
+  handleConfirmToggleClick
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -175,7 +177,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </h3>
             {/* Confirmation Status Badge - Click to toggle */}
             <Badge
-              onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
+              onClick={handleConfirmToggleClick}
               className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
                 request.isConfirmed
                   ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
@@ -346,7 +348,33 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   tempIsConfirmed = false,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showConfirmToggle, setShowConfirmToggle] = useState(false);
+  const [pendingConfirmValue, setPendingConfirmValue] = useState(false);
+  const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Mutation for toggling date confirmation
+  const toggleConfirmMutation = useMutation({
+    mutationFn: async (newValue: boolean) => {
+      const response = await fetch(`/api/event-requests/${request.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isConfirmed: newValue }),
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to update confirmation status');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      setShowConfirmToggle(false);
+    },
+  });
+
+  const handleConfirmToggleClick = () => {
+    setPendingConfirmValue(!request.isConfirmed);
+    setShowConfirmToggle(true);
+  };
 
   // Fetch users data for TSP contact name lookup
   const { data: users = [] } = useQuery<User[]>({
@@ -386,6 +414,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           saveEdit={saveEdit}
           cancelEdit={cancelEdit}
           setEditingValue={setEditingValue}
+          handleConfirmToggleClick={handleConfirmToggleClick}
         />
 
         {/* Main Content Grid */}
@@ -630,6 +659,21 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Confirmation Toggle Dialog */}
+        <ConfirmationDialog
+          isOpen={showConfirmToggle}
+          onClose={() => setShowConfirmToggle(false)}
+          onConfirm={() => toggleConfirmMutation.mutate(pendingConfirmValue)}
+          title={pendingConfirmValue ? 'Confirm Date' : 'Mark Date as Pending'}
+          message={
+            pendingConfirmValue
+              ? 'Are you sure you want to mark this date as confirmed?'
+              : 'Are you sure you want to mark this date as pending?'
+          }
+          confirmText="Yes, Update"
+          cancelText="Cancel"
+        />
       </CardContent>
     </Card>
   );
