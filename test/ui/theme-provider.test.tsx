@@ -10,34 +10,7 @@ import React from 'react';
 import { ThemeProvider, useTheme } from '../../client/src/context/theme-provider';
 
 describe('ThemeProvider Component', () => {
-  let localStorageMock: { [key: string]: string };
-
   beforeEach(() => {
-    // Mock localStorage
-    localStorageMock = {};
-    global.Storage.prototype.getItem = jest.fn((key: string) => localStorageMock[key] || null);
-    global.Storage.prototype.setItem = jest.fn((key: string, value: string) => {
-      localStorageMock[key] = value;
-    });
-    global.Storage.prototype.clear = jest.fn(() => {
-      localStorageMock = {};
-    });
-
-    // Mock matchMedia
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: jest.fn().mockImplementation((query: string) => ({
-        matches: query === '(prefers-color-scheme: dark)' ? false : false,
-        media: query,
-        onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
-      })),
-    });
-
     // Clear any existing theme from localStorage
     localStorage.clear();
   });
@@ -173,7 +146,6 @@ describe('ThemeProvider Component', () => {
     // Check that CSS variables are set (if document is available)
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
-      const computedStyle = window.getComputedStyle(root);
       // At minimum, verify the root element exists
       expect(root).toBeDefined();
     }
