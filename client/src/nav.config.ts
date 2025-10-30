@@ -302,16 +302,16 @@ export const NAV_ITEMS: NavItem[] = [
 
   // DOCUMENTATION
   {
-    id: 'important-documents',
-    label: 'Important Documents',
+    id: 'resources',
+    label: 'Resources',
     icon: FileText,
-    href: 'important-documents',
+    href: 'resources',
     group: 'documentation',
     highlighted: true,
   },
   {
-    id: 'important-links',
-    label: 'Important Links',
+    id: 'quick-tools',
+    label: 'Quick Tools',
     icon: Link,
     href: 'important-links',
     group: 'documentation',

@@ -986,6 +986,110 @@ export const confidentialDocuments = pgTable('confidential_documents', {
   uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
 });
 
+// Resources system - unified document and link management for easy discovery
+export const resources = pgTable(
+  'resources',
+  {
+    id: serial('id').primaryKey(),
+    title: text('title').notNull(),
+    description: text('description'),
+    type: text('type').notNull(), // 'file', 'link', 'google_drive'
+    category: text('category').notNull(), // 'legal_governance', 'brand_marketing', 'operations_safety', 'forms_templates', 'training', 'master_documents'
+
+    // For files - references documents table
+    documentId: integer('document_id').references(() => documents.id, { onDelete: 'cascade' }),
+
+    // For external links
+    url: text('url'),
+
+    // Display and organization
+    icon: text('icon'), // Icon name for display
+    iconColor: text('icon_color'), // Color for icon
+    isPinnedGlobal: boolean('is_pinned_global').notNull().default(false), // Admin global pin
+    pinnedOrder: integer('pinned_order'), // Order for pinned items (lower = higher priority)
+
+    // Usage tracking
+    accessCount: integer('access_count').notNull().default(0),
+    lastAccessedAt: timestamp('last_accessed_at'),
+
+    // Metadata
+    createdBy: varchar('created_by').notNull(),
+    createdByName: text('created_by_name').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    isActive: boolean('is_active').notNull().default(true),
+  },
+  (table) => ({
+    categoryIdx: index('idx_resources_category').on(table.category),
+    typeIdx: index('idx_resources_type').on(table.type),
+    pinnedIdx: index('idx_resources_pinned').on(table.isPinnedGlobal, table.pinnedOrder),
+    accessCountIdx: index('idx_resources_access_count').on(table.accessCount),
+    activeIdx: index('idx_resources_active').on(table.isActive),
+  })
+);
+
+// User's personal favorite resources
+export const userResourceFavorites = pgTable(
+  'user_resource_favorites',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    resourceId: integer('resource_id')
+      .notNull()
+      .references(() => resources.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index('idx_user_resource_favorites_user').on(table.userId),
+    resourceIdx: index('idx_user_resource_favorites_resource').on(table.resourceId),
+    uniqueFavorite: unique('unique_user_resource_favorite').on(
+      table.userId,
+      table.resourceId
+    ),
+  })
+);
+
+// Tag definitions for categorizing resources
+export const resourceTags = pgTable(
+  'resource_tags',
+  {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull().unique(),
+    color: text('color'), // Hex color for display
+    description: text('description'),
+    createdBy: varchar('created_by').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    nameIdx: index('idx_resource_tags_name').on(table.name),
+  })
+);
+
+// Many-to-many relationship between resources and tags
+export const resourceTagAssignments = pgTable(
+  'resource_tag_assignments',
+  {
+    id: serial('id').primaryKey(),
+    resourceId: integer('resource_id')
+      .notNull()
+      .references(() => resources.id, { onDelete: 'cascade' }),
+    tagId: integer('tag_id')
+      .notNull()
+      .references(() => resourceTags.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    resourceIdx: index('idx_resource_tag_assignments_resource').on(table.resourceId),
+    tagIdx: index('idx_resource_tag_assignments_tag').on(table.tagId),
+    uniqueAssignment: unique('unique_resource_tag_assignment').on(
+      table.resourceId,
+      table.tagId
+    ),
+  })
+);
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -1136,6 +1240,32 @@ export const insertConfidentialDocumentSchema = createInsertSchema(
 export const insertDocumentAccessLogSchema = createInsertSchema(
   documentAccessLogs
 ).omit({ id: true, accessedAt: true });
+
+// Resource system insert schemas
+export const insertResourceSchema = createInsertSchema(resources).omit({
+  id: true,
+  accessCount: true,
+  lastAccessedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertUserResourceFavoriteSchema = createInsertSchema(
+  userResourceFavorites
+).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertResourceTagSchema = createInsertSchema(resourceTags).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertResourceTagAssignmentSchema = createInsertSchema(
+  resourceTagAssignments
+).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertProjectTaskSchema = createInsertSchema(projectTasks).omit({
   id: true,
   createdAt: true,

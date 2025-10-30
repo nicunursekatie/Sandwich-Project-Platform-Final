@@ -40,6 +40,7 @@ import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
 import { AnimatedCounter } from '@/components/modern-dashboard/animated-counter';
 import DashboardActionTracker from '@/components/dashboard-action-tracker';
+import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
 import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
@@ -494,6 +495,11 @@ export default function DashboardOverview({
         {/* Action Tracker Widget */}
         <div className="mx-4 mb-8">
           <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
+        </div>
+
+        {/* Recently Accessed Resources Widget */}
+        <div className="mx-4 mb-8">
+          <RecentlyAccessedResources />
         </div>
 
         {/* Key Metrics Grid */}

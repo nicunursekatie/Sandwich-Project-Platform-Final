@@ -18,6 +18,7 @@ import reportsRouter from './reports';
 import searchRouter from './search';
 import storageRouter from './storage';
 import documentsRouter from './documents';
+import resourcesRouter from './resources';
 import versioningRouter from './versioning';
 import coreRouter from './core';
 import meRouter from './me';
@@ -304,6 +305,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     documentsRouter
   );
   router.use('/api/documents', createErrorHandler('documents'));
+
+  router.use(
+    '/api/resources',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    resourcesRouter
+  );
+  router.use('/api/resources', createErrorHandler('resources'));
 
   router.use(
     '/api/versioning',
