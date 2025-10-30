@@ -43,7 +43,7 @@ collectionsRouter.get('/stats', async (req, res) => {
         let groupTotal = 0;
 
         collections.forEach((collection) => {
-          individualTotal += Number(collection.individualSandwiches || 0);
+          individualTotal += collection.individualSandwiches || 0;
 
           // Calculate group total using standardized method: groupCollections JSONB with fallback to legacy columns
           let collectionGroupTotal = 0;
@@ -56,9 +56,7 @@ collectionsRouter.get('/stats', async (req, res) => {
           ) {
             collectionGroupTotal = collection.groupCollections.reduce(
               (sum, group) => {
-                // Ensure count is a number to prevent string concatenation issues
-                const count = Number(group.count || 0);
-                return sum + count;
+                return sum + (group.count || 0);
               },
               0
             );
@@ -66,7 +64,7 @@ collectionsRouter.get('/stats', async (req, res) => {
           // Fallback: Use legacy group1Count + group2Count for older records
           else {
             collectionGroupTotal =
-              Number(collection.group1Count || 0) + Number(collection.group2Count || 0);
+              (collection.group1Count || 0) + (collection.group2Count || 0);
           }
 
           groupTotal += collectionGroupTotal;
