@@ -74,6 +74,7 @@ export default function RecipientsManagement() {
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [tspContactFilter, setTspContactFilter] = useState<string>('all');
   const [sandwichTypeFilter, setSandwichTypeFilter] = useState<string>('all');
+  const [focusAreaFilter, setFocusAreaFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResults, setImportResults] = useState<{
@@ -121,7 +122,7 @@ export default function RecipientsManagement() {
     reportingGroup: '',
     estimatedSandwiches: '',
     sandwichType: '',
-    focusArea: '', // New field for group focus (youth, veterans, etc.)
+    focusAreas: [] as string[], // Multiple focus areas
     tspContact: '',
     tspContactUserId: '',
     contractSigned: false,
@@ -170,7 +171,7 @@ export default function RecipientsManagement() {
             ?.toLowerCase()
             .includes(term) ||
           recipient.reportingGroup?.toLowerCase().includes(term) ||
-          (recipient as any).focusArea?.toLowerCase().includes(term) ||
+          ((recipient as any).focusAreas || []).some((area: string) => area.toLowerCase().includes(term)) ||
           (recipient as any).instagramHandle?.toLowerCase().includes(term)
       );
     }
@@ -216,6 +217,13 @@ export default function RecipientsManagement() {
       );
     }
 
+    // Apply focus area filter
+    if (focusAreaFilter !== 'all') {
+      filtered = filtered.filter((recipient) =>
+        ((recipient as any).focusAreas || []).includes(focusAreaFilter)
+      );
+    }
+
     return filtered;
   }, [
     recipients,
@@ -225,6 +233,7 @@ export default function RecipientsManagement() {
     regionFilter,
     tspContactFilter,
     sandwichTypeFilter,
+    focusAreaFilter,
   ]);
 
   // Get unique values for filter dropdowns
@@ -252,8 +261,8 @@ export default function RecipientsManagement() {
   }, [recipients]);
 
   const uniqueFocusAreas = useMemo(() => {
-    const areas = recipients.map((r) => (r as any).focusArea).filter(Boolean);
-    return [...new Set(areas)].sort();
+    const allAreas = recipients.flatMap((r) => (r as any).focusAreas || []);
+    return [...new Set(allAreas)].sort();
   }, [recipients]);
 
   const createRecipientMutation = useMutation({
@@ -284,7 +293,7 @@ export default function RecipientsManagement() {
         reportingGroup: '',
         estimatedSandwiches: '',
         sandwichType: '',
-        focusArea: '', // Reset focus area field
+        focusAreas: [], // Reset focus areas field
         tspContact: '',
         tspContactUserId: '',
         contractSigned: false,
@@ -1017,18 +1026,26 @@ export default function RecipientsManagement() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor="focusArea">Focus Area</Label>
-                              <Input
-                                id="focusArea"
-                                value={newRecipient.focusArea}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    focusArea: e.target.value,
-                                  })
-                                }
-                                placeholder="Group focus (e.g., youth, veterans, seniors, families)"
-                              />
+                              <Label htmlFor="focusAreas">Focus Areas</Label>
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                  {['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].map((area) => (
+                                    <Badge
+                                      key={area}
+                                      variant={newRecipient.focusAreas.includes(area) ? "default" : "outline"}
+                                      className="cursor-pointer"
+                                      onClick={() => {
+                                        const updated = newRecipient.focusAreas.includes(area)
+                                          ? newRecipient.focusAreas.filter(a => a !== area)
+                                          : [...newRecipient.focusAreas, area];
+                                        setNewRecipient({ ...newRecipient, focusAreas: updated });
+                                      }}
+                                    >
+                                      {area}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                             <div>
                               <Label htmlFor="tspContact">TSP Contact</Label>
@@ -1407,6 +1424,28 @@ export default function RecipientsManagement() {
                 </Select>
               </div>
 
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">
+                  Focus Area
+                </Label>
+                <Select
+                  value={focusAreaFilter}
+                  onValueChange={setFocusAreaFilter}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Focus Areas</SelectItem>
+                    {uniqueFocusAreas.map((area) => (
+                      <SelectItem key={area} value={area}>
+                        {area}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-end">
                 <Button
                   variant="ghost"
@@ -1418,6 +1457,7 @@ export default function RecipientsManagement() {
                     setRegionFilter('all');
                     setTspContactFilter('all');
                     setSandwichTypeFilter('all');
+                    setFocusAreaFilter('all');
                   }}
                   className="text-slate-500 hover:text-slate-700"
                 >
@@ -1470,13 +1510,18 @@ export default function RecipientsManagement() {
                       <CardTitle className="text-lg">
                         {recipient.name}
                       </CardTitle>
-                      {(recipient as any).focusArea && (
-                        <Badge
-                          variant="outline"
-                          className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border"
-                        >
-                          {(recipient as any).focusArea}
-                        </Badge>
+                      {(recipient as any).focusAreas && (recipient as any).focusAreas.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {(recipient as any).focusAreas.map((area: string) => (
+                            <Badge
+                              key={area}
+                              variant="outline"
+                              className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border text-xs"
+                            >
+                              {area}
+                            </Badge>
+                          ))}
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -2240,18 +2285,27 @@ export default function RecipientsManagement() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="edit-focusArea">Focus Area</Label>
-                        <Input
-                          id="edit-focusArea"
-                          value={(editingRecipient as any).focusArea || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              focusArea: e.target.value,
-                            })
-                          }
-                          placeholder="Group focus (e.g., youth, veterans, seniors, families)"
-                        />
+                        <Label htmlFor="edit-focusAreas">Focus Areas</Label>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].map((area) => (
+                              <Badge
+                                key={area}
+                                variant={((editingRecipient as any).focusAreas || []).includes(area) ? "default" : "outline"}
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  const currentAreas = (editingRecipient as any).focusAreas || [];
+                                  const updated = currentAreas.includes(area)
+                                    ? currentAreas.filter((a: string) => a !== area)
+                                    : [...currentAreas, area];
+                                  setEditingRecipient({ ...editingRecipient, focusAreas: updated });
+                                }}
+                              >
+                                {area}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                       <div>
                         <Label htmlFor="edit-tspContact">TSP Contact</Label>
