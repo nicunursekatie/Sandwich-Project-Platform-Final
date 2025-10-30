@@ -59,7 +59,7 @@ interface DashboardActionTrackerProps {
 }
 
 const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => {
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = React.useState(true);
 
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['/api/me/dashboard'],
