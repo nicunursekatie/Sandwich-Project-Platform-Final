@@ -2530,7 +2530,7 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Second Row: Individual & Groups (locked columns for alignment) */}
-                  <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[160px_minmax(280px,1fr)] md:gap-4 items-start ml-4 sm:ml-20 md:ml-28 lg:ml-32">
+                  <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[160px_minmax(280px,1fr)] sm:min-h-[88px] md:gap-4 items-start ml-4 sm:ml-20 md:ml-28 lg:ml-32">
                     {/* Individual - show placeholder to keep column alignment when empty */}
                     <div className="w-full sm:min-w-[160px] sm:pl-3 md:pl-4">
                       <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Individual</div>
