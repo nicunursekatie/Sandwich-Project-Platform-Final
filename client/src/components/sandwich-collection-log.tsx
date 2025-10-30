@@ -2530,7 +2530,7 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Second Row: Individual & Groups (locked columns for alignment) */}
-                  <div className="grid grid-cols-[160px_minmax(280px,1fr)] gap-3 sm:gap-4 items-start min-h-[88px]">
+                  <div className="grid grid-cols-[160px_minmax(280px,1fr)] gap-3 sm:gap-4 items-start min-h-[88px] ml-20 sm:ml-28 lg:ml-32">
                     {/* Individual - show placeholder to keep column alignment when empty */}
                     <div className="min-w-[160px] pl-3 sm:pl-4">
                       <div className="text-xs text-slate-500 mb-0.5 font-semibold">Individual</div>
@@ -2597,7 +2597,7 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Third Row: Total & Actions */}
-                  <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 lg:gap-4">
+                  <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 lg:gap-4 ml-20 sm:ml-28 lg:ml-32">
                     {/* Total */}
                     <div className="shrink-0 flex items-center gap-2 lg:flex-col lg:items-end lg:gap-0 justify-self-end">
                       <div className="text-xs text-slate-500 font-semibold">Total:</div>
@@ -2644,7 +2644,7 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Submission info - small footer detail */}
-                  <div className="mt-2 ml-11 text-xs text-slate-500 leading-snug">
+                  <div className="mt-2 ml-20 sm:ml-28 lg:ml-32 text-xs text-slate-500 leading-snug">
                     Submitted {formatSubmittedAt(collection.submittedAt)}
                     {collection.createdByName && (
                       <span className="ml-1 font-medium">
