@@ -355,9 +355,11 @@ export default function DashboardOverview({
       : 2020;
     const operationalYears = currentYear - earliestYear;
 
-    // Calculate annual capacity based on recent performance trends
+    // Annual goal - organizational target
+    const annualGoal = 500000; // The Sandwich Project's annual target
+    
+    // Calculate weekly average for other metrics
     const weeklyAverage = totalSandwiches / (operationalYears * 52);
-    const annualCapacity = Math.round(weeklyAverage * 52);
 
     // Calculate baseline and surge capacity from data patterns
     const baselineMin = Math.round(weeklyAverage * 0.7);
@@ -377,7 +379,7 @@ export default function DashboardOverview({
       totalLifetimeSandwiches: totalSandwiches.toLocaleString(),
       peakWeekRecord: peakWeekRecord.toLocaleString(),
       peakWeekDate: peakWeekDate,
-      currentAnnualCapacity: annualCapacity.toLocaleString(),
+      currentAnnualCapacity: annualGoal.toLocaleString(),
       weeklyBaseline: `${baselineMin.toLocaleString()}-${baselineMax.toLocaleString()}`,
       surgingCapacity: `${surgeMin.toLocaleString()}-${surgeMax.toLocaleString()}`,
       operationalYears: operationalYears.toString(),
@@ -571,15 +573,15 @@ export default function DashboardOverview({
                 <div className="premium-text-caption text-gray-600 mt-1">Nov 15, 2023</div>
               </div>
 
-              {/* Annual Target - Orange accent */}
+              {/* Annual Goal - Orange accent */}
               <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all">
                 <div className="premium-text-h3 text-brand-orange mb-1">
                   {organizationalStats.currentAnnualCapacity}
                 </div>
                 <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Annual Target
+                  Annual Goal
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">Current year</div>
+                <div className="premium-text-caption text-gray-600 mt-1">2025 Target</div>
               </div>
 
               {/* Weekly Baseline - Light Blue accent */}
