@@ -7,8 +7,6 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import { ThemeProvider, useTheme } from '@/context/theme-provider';
 
-(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-
 describe('ThemeProvider', () => {
 
   let container: HTMLDivElement;
