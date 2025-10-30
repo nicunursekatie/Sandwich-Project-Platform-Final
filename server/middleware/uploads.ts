@@ -185,3 +185,34 @@ export const receiptUpload = multer({
     }
   },
 });
+
+// Configure multer for promotion graphics uploads (images and PDFs)
+export const promotionGraphicsUpload = multer({
+  dest: 'uploads/promotion-graphics/',
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Allow images and PDFs for promotion graphics
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+    ];
+
+    const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif'];
+    const hasValidType = allowedTypes.includes(file.mimetype);
+    const hasValidExtension = allowedExtensions.some((ext) =>
+      file.originalname.toLowerCase().endsWith(ext)
+    );
+
+    if (hasValidType || hasValidExtension) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF and image files (JPG, PNG, GIF, WEBP, HEIC) are allowed for promotion graphics'));
+    }
+  },
+});
