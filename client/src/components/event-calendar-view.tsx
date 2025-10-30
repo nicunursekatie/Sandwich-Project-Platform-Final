@@ -138,6 +138,7 @@ const getSandwichInfo = (event: EventRequest) => {
 
 export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
 
   // Fetch all event requests
   const { data: events = [] } = useQuery<EventRequest[]>({
@@ -242,6 +243,18 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
     return date.toISOString().split('T')[0];
   };
 
+  const toggleDateExpansion = (dateKey: string) => {
+    setExpandedDates((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(dateKey)) {
+        newSet.delete(dateKey);
+      } else {
+        newSet.add(dateKey);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -285,6 +298,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
             const dayEvents = eventsByDate.get(dateKey) || [];
             const isCurrentMonthDay = isCurrentMonth(date);
             const isTodayDay = isToday(date);
+            const isExpanded = expandedDates.has(dateKey);
 
             return (
               <div
@@ -311,7 +325,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
 
                 {/* Events for this day */}
                 <div className="space-y-1">
-                  {dayEvents.slice(0, 3).map((event) => {
+                  {(isExpanded ? dayEvents : dayEvents.slice(0, 3)).map((event) => {
                     const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
 
@@ -379,7 +393,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                         } else if (displayType === 'pbj' || displayType === 'pb&j') {
                                           displayType = 'PB&J';
                                         }
-                                        
+
                                         return (
                                           <div key={`${idx}-${typeIdx}`} className="font-semibold truncate">
                                             {type.quantity} {displayType}
@@ -414,9 +428,17 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                     );
                   })}
                   {dayEvents.length > 3 && (
-                    <div className="text-[10px] text-gray-500 text-center font-semibold mt-0.5">
-                      +{dayEvents.length - 3} more
-                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleDateExpansion(dateKey);
+                      }}
+                      className="text-[10px] text-blue-600 hover:text-blue-800 text-center font-semibold mt-0.5 w-full hover:underline"
+                    >
+                      {isExpanded
+                        ? 'Show less'
+                        : `+${dayEvents.length - 3} more`}
+                    </button>
                   )}
                 </div>
               </div>
