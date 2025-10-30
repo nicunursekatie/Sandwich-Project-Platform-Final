@@ -604,6 +604,21 @@ export const sandwichCollections = pgTable('sandwich_collections', {
   submissionMethod: text('submission_method').default('standard'), // 'standard' or 'walkthrough'
 });
 
+// Authoritative weekly collections from Scott's Excel tracking system
+// This is the source of truth for analytics and reporting (2020-2025)
+// Imported from "New Sandwich Totals Scott" Excel file with weekly aggregated data
+export const authoritativeWeeklyCollections = pgTable('authoritative_weekly_collections', {
+  id: serial('id').primaryKey(),
+  weekDate: text('week_date').notNull(), // Date of the week (from Excel Date column)
+  location: text('location').notNull(), // Host location name
+  sandwiches: integer('sandwiches').notNull(), // Total sandwiches for this location for this week
+  weekOfYear: integer('week_of_year').notNull(), // Week number in the year (1-52)
+  weekOfProgram: integer('week_of_program').notNull(), // Week number since program start
+  year: integer('year').notNull(), // Year
+  importedAt: timestamp('imported_at').defaultNow().notNull(),
+  sourceFile: text('source_file').default('New Sandwich Totals Scott (5)_1761847323011.xlsx'),
+});
+
 export const meetingMinutes = pgTable('meeting_minutes', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
