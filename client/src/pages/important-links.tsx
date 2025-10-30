@@ -45,6 +45,8 @@ export default function ImportantLinks() {
     'https://nicunursekatie.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html';
   const eventToolkitUrl =
     'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
+  const flyersUrl =
+    'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/NCLflyer.html';
 
   // Events Google Sheet (published version)
   const eventsEmbedUrl =
@@ -155,9 +157,12 @@ export default function ImportantLinks() {
       </div>
 
       <Tabs defaultValue="toolkit" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="toolkit" className="flex items-center gap-2">
             📦 Event Toolkit
+          </TabsTrigger>
+          <TabsTrigger value="flyers" className="flex items-center gap-2">
+            📄 Flyers & QR Codes
           </TabsTrigger>
           <TabsTrigger value="calculator" className="flex items-center gap-2">
             <Calculator className="h-4 w-4" />
