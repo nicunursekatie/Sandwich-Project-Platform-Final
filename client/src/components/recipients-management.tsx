@@ -297,8 +297,10 @@ export default function RecipientsManagement() {
   }, [recipients]);
 
   const createRecipientMutation = useMutation({
-    mutationFn: (recipient: any) =>
-      apiRequest('POST', '/api/recipients', recipient),
+    mutationFn: (recipient: any) => {
+      logger.log('[CREATE RECIPIENT] Sending data:', recipient);
+      return apiRequest('POST', '/api/recipients', recipient);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
       setIsAddModalOpen(false);
@@ -438,6 +440,10 @@ export default function RecipientsManagement() {
       // Convert contractSignedDate from string to Date (or null if empty)
       contractSignedDate: newRecipient.contractSignedDate
         ? new Date(newRecipient.contractSignedDate)
+        : null,
+      // Convert sharedPostDate from string to Date (or null if empty)
+      sharedPostDate: (newRecipient as any).sharedPostDate
+        ? new Date((newRecipient as any).sharedPostDate)
         : null,
     };
 
