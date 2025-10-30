@@ -178,10 +178,22 @@ promotionGraphicsRouter.post(
       });
 
       // Upload file to Google Cloud Storage
-      const fileUrl = await objectStorageService.uploadLocalFile(
-        req.file.path,
-        `promotion-graphics/${Date.now()}-${req.file.originalname}`
-      );
+      let fileUrl: string;
+      try {
+        fileUrl = await objectStorageService.uploadLocalFile(
+          req.file.path,
+          `promotion-graphics/${Date.now()}-${req.file.originalname}`
+        );
+      } catch (storageError) {
+        logger.error('Failed to upload to object storage', {
+          error: storageError,
+          message: storageError instanceof Error ? storageError.message : 'Unknown error'
+        });
+        throw new Error(
+          `Failed to upload file to storage: ${storageError instanceof Error ? storageError.message : 'Unknown error'}. ` +
+          'Please ensure PRIVATE_OBJECT_DIR is configured in environment variables.'
+        );
+      }
 
       // Parse form data
       const title = req.body.title || req.file.originalname;
