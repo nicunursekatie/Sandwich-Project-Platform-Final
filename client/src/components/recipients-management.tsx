@@ -482,6 +482,15 @@ export default function RecipientsManagement() {
     }
   };
 
+  const handleToggleStatus = (recipient: Recipient) => {
+    const newStatus = recipient.status === 'active' ? 'inactive' : 'active';
+    const updateData = {
+      ...recipient,
+      status: newStatus
+    };
+    updateRecipientMutation.mutate(updateData);
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -1643,6 +1652,28 @@ export default function RecipientsManagement() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={!canEdit}
+                            onClick={() => handleToggleStatus(recipient)}
+                            className={recipient.status === 'active' ? 'text-green-600 hover:text-green-700' : 'text-gray-500 hover:text-gray-600'}
+                          >
+                            {recipient.status === 'active' ? (
+                              <ToggleRight className="w-4 h-4" />
+                            ) : (
+                              <ToggleLeft className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {recipient.status === 'active' ? 'Mark as Inactive' : 'Mark as Active'}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Button
                       size="sm"
                       variant="outline"
