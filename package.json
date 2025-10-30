@@ -12,6 +12,7 @@
     "check:routes": "node scripts/check-legacy-routes.js",
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx server/run-migrations.ts",
+    "db:migrate-focus": "tsx scripts/migrate-focus-areas.ts",
     "db:seed": "tsx scripts/seed-dev-database.ts",
     "db:reset": "tsx scripts/reset-dev-database.ts",
     "test": "npm run test:unit && npm run test:integration",
