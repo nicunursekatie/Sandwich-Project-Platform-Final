@@ -785,6 +785,7 @@ export const recipients = pgTable('recipients', {
   region: text('region'), // Geographic region/area (e.g., "Downtown", "Sandy Springs")
   preferences: text('preferences'), // Legacy field - keeping for backward compatibility
   weeklyEstimate: integer('weekly_estimate'), // Estimated weekly sandwich count
+  focusArea: text('focus_area'), // Legacy single focus area field (keeping for backward compatibility)
   focusAreas: jsonb('focus_areas').$type<string[]>().default([]), // What groups they focus on (e.g., ["youth", "veterans", "seniors", "families"])
   status: text('status').notNull().default('active'), // 'active', 'inactive'
   // New detailed contact fields

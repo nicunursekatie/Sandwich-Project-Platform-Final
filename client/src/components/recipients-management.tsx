@@ -172,7 +172,15 @@ export default function RecipientsManagement() {
             ?.toLowerCase()
             .includes(term) ||
           recipient.reportingGroup?.toLowerCase().includes(term) ||
-          ((recipient as any).focusAreas || []).some((area: string) => area.toLowerCase().includes(term)) ||
+          (() => {
+            // Handle both new focusAreas array and legacy focusArea string
+            const areas = Array.isArray((recipient as any).focusAreas)
+              ? (recipient as any).focusAreas
+              : (recipient as any).focusArea
+                ? [(recipient as any).focusArea]
+                : [];
+            return areas.some((area: string) => area.toLowerCase().includes(term));
+          })() ||
           (recipient as any).instagramHandle?.toLowerCase().includes(term)
       );
     }
@@ -220,9 +228,15 @@ export default function RecipientsManagement() {
 
     // Apply focus area filter
     if (focusAreaFilter !== 'all') {
-      filtered = filtered.filter((recipient) =>
-        ((recipient as any).focusAreas || []).includes(focusAreaFilter)
-      );
+      filtered = filtered.filter((recipient) => {
+        // Handle both new focusAreas array and legacy focusArea string
+        const areas = Array.isArray((recipient as any).focusAreas)
+          ? (recipient as any).focusAreas
+          : (recipient as any).focusArea
+            ? [(recipient as any).focusArea]
+            : [];
+        return areas.includes(focusAreaFilter);
+      });
     }
 
     return filtered;
@@ -262,7 +276,15 @@ export default function RecipientsManagement() {
   }, [recipients]);
 
   const uniqueFocusAreas = useMemo(() => {
-    const allAreas = recipients.flatMap((r) => (r as any).focusAreas || []);
+    const allAreas = recipients.flatMap((r) => {
+      // Handle both new focusAreas array and legacy focusArea string
+      if (Array.isArray((r as any).focusAreas) && (r as any).focusAreas.length > 0) {
+        return (r as any).focusAreas;
+      } else if ((r as any).focusArea) {
+        return [(r as any).focusArea];
+      }
+      return [];
+    });
     return [...new Set(allAreas)].sort();
   }, [recipients]);
 
@@ -416,13 +438,19 @@ export default function RecipientsManagement() {
 
   const handleEdit = (recipient: Recipient) => {
     // Normalize focusAreas to always be an array
+    // Handle both new focusAreas array and legacy focusArea string
+    let focusAreas: string[] = [];
+
+    if (Array.isArray((recipient as any).focusAreas) && (recipient as any).focusAreas.length > 0) {
+      focusAreas = (recipient as any).focusAreas;
+    } else if ((recipient as any).focusArea && typeof (recipient as any).focusArea === 'string') {
+      // Migrate old single focusArea to array
+      focusAreas = [(recipient as any).focusArea];
+    }
+
     const normalizedRecipient = {
       ...recipient,
-      focusAreas: Array.isArray((recipient as any).focusAreas)
-        ? (recipient as any).focusAreas
-        : (recipient as any).focusAreas
-          ? [(recipient as any).focusAreas]
-          : []
+      focusAreas
     };
     setEditingRecipient(normalizedRecipient as Recipient);
   };
@@ -1557,19 +1585,28 @@ export default function RecipientsManagement() {
                       <CardTitle className="text-lg">
                         {recipient.name}
                       </CardTitle>
-                      {(recipient as any).focusAreas && (recipient as any).focusAreas.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {(recipient as any).focusAreas.map((area: string) => (
-                            <Badge
-                              key={area}
-                              variant="outline"
-                              className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border text-xs"
-                            >
-                              {area}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                      {(() => {
+                        // Handle both new focusAreas array and legacy focusArea string
+                        const areas = Array.isArray((recipient as any).focusAreas) && (recipient as any).focusAreas.length > 0
+                          ? (recipient as any).focusAreas
+                          : (recipient as any).focusArea
+                            ? [(recipient as any).focusArea]
+                            : [];
+
+                        return areas.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {areas.map((area: string) => (
+                              <Badge
+                                key={area}
+                                variant="outline"
+                                className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border text-xs"
+                              >
+                                {area}
+                              </Badge>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge
