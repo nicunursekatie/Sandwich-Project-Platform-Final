@@ -45,6 +45,7 @@ import {
   Download,
   Plus,
   MessageCircle,
+  FileText,
 } from 'lucide-react';
 import { hasPermission } from '@shared/auth-utils';
 import { logger } from '@/lib/logger';
@@ -212,11 +213,16 @@ export default function PromotionGraphics() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type - accept images and PDFs
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
+    const validPdfType = 'application/pdf';
+    const isValidImage = validImageTypes.includes(file.type);
+    const isValidPdf = file.type === validPdfType;
+
+    if (!isValidImage && !isValidPdf) {
       toast({
         title: 'Invalid File',
-        description: 'Please select an image file (PNG, JPG, etc.)',
+        description: 'Please select an image file (PNG, JPG, GIF, WEBP, HEIC) or a PDF',
         variant: 'destructive',
       });
       return;
@@ -226,7 +232,7 @@ export default function PromotionGraphics() {
     if (file.size > 10485760) {
       toast({
         title: 'File Too Large',
-        description: 'Please select an image smaller than 10MB',
+        description: 'Please select a file smaller than 10MB',
         variant: 'destructive',
       });
       return;
@@ -240,10 +246,15 @@ export default function PromotionGraphics() {
       URL.revokeObjectURL(previewUrlRef.current);
     }
 
-    // Create a local preview URL
-    const previewUrl = URL.createObjectURL(file);
-    previewUrlRef.current = previewUrl;
-    setLocalPreviewUrl(previewUrl);
+    // Create a local preview URL for images only
+    if (isValidImage) {
+      const previewUrl = URL.createObjectURL(file);
+      previewUrlRef.current = previewUrl;
+      setLocalPreviewUrl(previewUrl);
+    } else {
+      // For PDFs, clear preview URL (we'll show a PDF icon instead)
+      setLocalPreviewUrl('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -251,8 +262,8 @@ export default function PromotionGraphics() {
 
     if (!uploadedFile) {
       toast({
-        title: 'Missing Image',
-        description: 'Please select an image first',
+        title: 'Missing File',
+        description: 'Please select an image or PDF file first',
         variant: 'destructive',
       });
       return;
@@ -276,49 +287,42 @@ export default function PromotionGraphics() {
       return;
     }
 
-    // Upload the file first
+    // Upload the file using FormData
     setIsUploading(true);
     try {
-      // Get upload URL from backend
-      const uploadResponse = await fetch('/api/objects/upload', {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('targetAudience', targetAudience);
+      formData.append('sendNotification', sendNotification.toString());
+      if (intendedUseDate) {
+        formData.append('intendedUseDate', intendedUseDate);
+      }
+
+      const response = await fetch('/api/promotion-graphics/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        body: formData,
+        credentials: 'include', // Include cookies for authentication
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to get upload URL');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(errorData.error || `Upload failed with status ${response.status}`);
       }
 
-      const { uploadURL } = await uploadResponse.json();
-
-      // Upload file directly to object storage
-      const uploadFileResponse = await fetch(uploadURL, {
-        method: 'PUT',
-        body: uploadedFile,
-        headers: {
-          'Content-Type': uploadedFile.type,
-        },
-      });
-
-      if (!uploadFileResponse.ok) {
-        throw new Error(`Failed to upload ${uploadedFile.name}`);
-      }
-
-      // Get the permanent URL (without query parameters)
-      const permanentUrl = uploadURL.split('?')[0];
-      setUploadedFileUrl(permanentUrl);
-
-      // Now submit the form with the uploaded file URL
-      uploadMutation.mutate({
-        title,
-        description,
-        imageUrl: permanentUrl,
-        fileName: uploadedFile.name,
-        fileSize: uploadedFile.size,
-        fileType: uploadedFile.type,
-        intendedUseDate: intendedUseDate || undefined,
-        targetAudience,
-        sendNotification,
+      const newGraphic = await response.json();
+      
+      // Invalidate the query to refresh the graphics list
+      queryClient.invalidateQueries({ queryKey: ['/api/promotion-graphics'] });
+      setShowUploadDialog(false);
+      resetForm();
+      
+      toast({
+        title: 'Success',
+        description: sendNotification 
+          ? 'Graphic uploaded successfully! Notifications are being sent to the team.'
+          : 'Graphic uploaded successfully!',
       });
     } catch (error) {
       logger.error('Upload error:', error);
@@ -385,11 +389,11 @@ export default function PromotionGraphics() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="file-upload">Image File *</Label>
+                  <Label htmlFor="file-upload">Image or PDF File *</Label>
                   <Input
                     id="file-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.pdf"
                     onChange={handleFileSelect}
                     disabled={isUploading}
                   />
@@ -400,15 +404,23 @@ export default function PromotionGraphics() {
                   )}
                 </div>
 
-                {localPreviewUrl && (
+                {uploadedFile && (
                   <div>
                     <Label>Preview</Label>
-                    <img
-                      src={localPreviewUrl}
-                      alt="Preview"
-                      className="mt-2 max-w-full h-auto rounded-lg border"
-                      style={{ maxHeight: '300px' }}
-                    />
+                    {localPreviewUrl ? (
+                      <img
+                        src={localPreviewUrl}
+                        alt="Preview"
+                        className="mt-2 max-w-full h-auto rounded-lg border"
+                        style={{ maxHeight: '300px' }}
+                      />
+                    ) : uploadedFile.type === 'application/pdf' ? (
+                      <div className="mt-2 p-8 border rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                        <FileText className="h-16 w-16 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">PDF Document</p>
+                        <p className="text-xs text-gray-500">{uploadedFile.name}</p>
+                      </div>
+                    ) : null}
                   </div>
                 )}
 
@@ -534,13 +546,19 @@ export default function PromotionGraphics() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activeGraphics.map((graphic) => (
             <Card key={graphic.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-video w-full overflow-hidden bg-gray-100">
-                <img
-                  src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
-                  alt={graphic.title}
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => setSelectedGraphic(graphic)}
-                />
+              <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => setSelectedGraphic(graphic)}>
+                {graphic.fileType === 'application/pdf' ? (
+                  <div className="flex flex-col items-center justify-center p-8">
+                    <FileText className="h-24 w-24 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">PDF Document</p>
+                  </div>
+                ) : (
+                  <img
+                    src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
+                    alt={graphic.title}
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
               <CardHeader>
                 <CardTitle className="flex items-start justify-between">
@@ -626,11 +644,26 @@ export default function PromotionGraphics() {
                 <DialogTitle>{selectedGraphic.title}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <img
-                  src={`/api/objects/proxy?url=${encodeURIComponent(selectedGraphic.imageUrl)}`}
-                  alt={selectedGraphic.title}
-                  className="w-full h-auto rounded-lg"
-                />
+                {selectedGraphic.fileType === 'application/pdf' ? (
+                  <div className="w-full p-12 border rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                    <FileText className="h-32 w-32 text-gray-400 mb-4" />
+                    <p className="text-lg text-gray-600 mb-2">PDF Document</p>
+                    <p className="text-sm text-gray-500 mb-4">{selectedGraphic.fileName}</p>
+                    <Button
+                      onClick={() => window.open(selectedGraphic.imageUrl, '_blank')}
+                      style={{ backgroundColor: '#007E8C', color: 'white' }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Open PDF
+                    </Button>
+                  </div>
+                ) : (
+                  <img
+                    src={`/api/objects/proxy?url=${encodeURIComponent(selectedGraphic.imageUrl)}`}
+                    alt={selectedGraphic.title}
+                    className="w-full h-auto rounded-lg"
+                  />
+                )}
                 <div>
                   <Label>Description</Label>
                   <p className="text-gray-700 mt-1">{selectedGraphic.description}</p>

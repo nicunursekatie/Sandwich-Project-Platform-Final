@@ -13,6 +13,8 @@ import { logger } from '../middleware/logger';
 import { sendEmail } from '../sendgrid';
 import { requirePermission } from '../middleware/auth';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { promotionGraphicsUpload } from '../middleware/uploads';
+import { ObjectStorageService } from '../objectStorage';
 
 // Type definitions for authenticated requests
 interface AuthenticatedRequest extends Request {
@@ -54,6 +56,9 @@ const updatePromotionGraphicSchema = z.object({
 
 // Create promotion graphics router
 export const promotionGraphicsRouter = Router();
+
+// Initialize object storage service for file uploads
+const objectStorageService = new ObjectStorageService();
 
 // GET /api/promotion-graphics - Get all promotion graphics
 promotionGraphicsRouter.get('/', async (req: AuthenticatedRequest, res: Response) => {
@@ -148,6 +153,102 @@ promotionGraphicsRouter.get('/:id', async (req: AuthenticatedRequest, res: Respo
     });
   }
 });
+
+// POST /api/promotion-graphics/upload - Upload a new promotion graphic file (images or PDFs)
+// Require ADMIN_ACCESS permission to upload graphics
+promotionGraphicsRouter.post(
+  '/upload',
+  requirePermission(PERMISSIONS.ADMIN_ACCESS),
+  promotionGraphicsUpload.single('file'),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      logger.info('Uploading promotion graphic file', {
+        userId: req.user.id,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+        fileType: req.file.mimetype,
+      });
+
+      // Upload file to Google Cloud Storage
+      const fileUrl = await objectStorageService.uploadLocalFile(
+        req.file.path,
+        `promotion-graphics/${Date.now()}-${req.file.originalname}`
+      );
+
+      // Parse form data
+      const title = req.body.title || req.file.originalname;
+      const description = req.body.description || '';
+      const intendedUseDate = req.body.intendedUseDate || null;
+      const targetAudience = req.body.targetAudience || 'hosts';
+      const sendNotification = req.body.sendNotification === 'true';
+
+      // Get user's display name
+      const userName = req.user.displayName ||
+                       `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() ||
+                       req.user.email;
+
+      // Create the promotion graphic record in database
+      const [newGraphic] = await db
+        .insert(promotionGraphics)
+        .values({
+          title,
+          description,
+          imageUrl: fileUrl,
+          fileName: req.file.originalname,
+          fileSize: req.file.size,
+          fileType: req.file.mimetype,
+          intendedUseDate: intendedUseDate ? new Date(intendedUseDate) : null,
+          targetAudience,
+          uploadedBy: req.user.id,
+          uploadedByName: userName,
+        })
+        .returning();
+
+      logger.info('Successfully uploaded promotion graphic', {
+        graphicId: newGraphic.id,
+        userId: req.user.id,
+        sendNotification,
+      });
+
+      // Send email notification only if explicitly requested
+      if (sendNotification) {
+        sendNotificationEmail(newGraphic, req.user).catch(error => {
+          logger.error('Failed to send notification email', error);
+        });
+        logger.info('Email notifications will be sent', { graphicId: newGraphic.id });
+      } else {
+        logger.info('Skipping email notifications (not requested)', { graphicId: newGraphic.id });
+      }
+
+      res.status(201).json(newGraphic);
+    } catch (error) {
+      logger.error('Failed to upload promotion graphic', error);
+      
+      // Clean up uploaded file if it exists
+      if (req.file?.path) {
+        try {
+          const fs = await import('fs/promises');
+          await fs.unlink(req.file.path);
+        } catch (unlinkError) {
+          logger.error('Failed to clean up uploaded file', unlinkError);
+        }
+      }
+
+      res.status(500).json({
+        error: 'Failed to upload promotion graphic',
+        message: 'An error occurred while uploading the promotion graphic'
+      });
+    }
+  }
+);
 
 // POST /api/promotion-graphics - Create a new promotion graphic
 // Require ADMIN_ACCESS permission to create graphics
