@@ -2533,9 +2533,9 @@ export default function SandwichCollectionLog() {
                   <div className="grid grid-cols-[160px_minmax(280px,1fr)] gap-3 sm:gap-4 items-start min-h-[88px] ml-20 sm:ml-28 lg:ml-32">
                     {/* Individual - show placeholder to keep column alignment when empty */}
                     <div className="min-w-[160px] pl-3 sm:pl-4">
-                      <div className="text-xs text-slate-500 mb-0.5 font-semibold">Individual</div>
+                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Individual</div>
                       {collection.individualSandwiches > 0 ? (
-                        <div className="text-sm lg:text-base font-bold">
+                        <div className="text-base lg:text-lg font-bold">
                           {(() => {
                             const hasTypes = collection.individualDeli || collection.individualPbj;
                             if (hasTypes) {
@@ -2556,8 +2556,8 @@ export default function SandwichCollectionLog() {
 
                     {/* Groups - inline breakdown when available; keeps its column even if Individuals missing */}
                     <div className="min-w-[200px] pl-3 sm:pl-4">
-                      <div className="text-xs text-slate-500 mb-0.5 font-semibold">Groups</div>
-                      <div className="text-sm lg:text-base font-bold">
+                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Groups</div>
+                      <div className="text-base lg:text-lg font-bold">
                         {(() => {
                           if (calculateGroupTotal(collection) <= 0 || groupData.length === 0) {
                             return <div className="h-[64px] rounded border border-slate-200 bg-slate-50" aria-hidden="true" />;
@@ -2577,14 +2577,14 @@ export default function SandwichCollectionLog() {
                                     className="p-2 rounded"
                                     style={{ backgroundColor: bgColor, borderLeft: `3px solid ${borderColor}` }}
                                   >
-                                    <div className="mb-1 font-semibold">{group.groupName}</div>
+                                    <div className="mb-1 font-semibold text-sm">{group.groupName}</div>
                                     {hasTypes ? (
-                                      <div className="space-y-0.5 text-sm">
+                                      <div className="space-y-0.5 text-base">
                                         {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
                                         {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
                                       </div>
                                     ) : (
-                                      <div className="text-sm">{group.sandwichCount}</div>
+                                      <div className="text-base">{group.sandwichCount}</div>
                                     )}
                                   </div>
                                 );
