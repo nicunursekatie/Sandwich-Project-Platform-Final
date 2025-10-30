@@ -421,10 +421,10 @@ export default function RecipientsManagement() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRecipient.name || !newRecipient.phone) {
+    if (!newRecipient.name) {
       toast({
         title: 'Validation Error',
-        description: 'Name and phone are required',
+        description: 'Name is required',
         variant: 'destructive',
       });
       return;
