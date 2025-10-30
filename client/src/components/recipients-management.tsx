@@ -77,6 +77,7 @@ export default function RecipientsManagement() {
   const [focusAreaFilter, setFocusAreaFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [customFocusArea, setCustomFocusArea] = useState('');
   const [importResults, setImportResults] = useState<{
     imported: number;
     skipped: number;
@@ -414,7 +415,16 @@ export default function RecipientsManagement() {
   };
 
   const handleEdit = (recipient: Recipient) => {
-    setEditingRecipient(recipient);
+    // Normalize focusAreas to always be an array
+    const normalizedRecipient = {
+      ...recipient,
+      focusAreas: Array.isArray((recipient as any).focusAreas)
+        ? (recipient as any).focusAreas
+        : (recipient as any).focusAreas
+          ? [(recipient as any).focusAreas]
+          : []
+    };
+    setEditingRecipient(normalizedRecipient as Recipient);
   };
 
   const handleUpdate = () => {
@@ -1044,6 +1054,43 @@ export default function RecipientsManagement() {
                                       {area}
                                     </Badge>
                                   ))}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Input
+                                    placeholder="Add custom focus area..."
+                                    value={customFocusArea}
+                                    onChange={(e) => setCustomFocusArea(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && customFocusArea.trim()) {
+                                        e.preventDefault();
+                                        const trimmed = customFocusArea.trim();
+                                        if (!newRecipient.focusAreas.includes(trimmed)) {
+                                          setNewRecipient({
+                                            ...newRecipient,
+                                            focusAreas: [...newRecipient.focusAreas, trimmed]
+                                          });
+                                        }
+                                        setCustomFocusArea('');
+                                      }
+                                    }}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const trimmed = customFocusArea.trim();
+                                      if (trimmed && !newRecipient.focusAreas.includes(trimmed)) {
+                                        setNewRecipient({
+                                          ...newRecipient,
+                                          focusAreas: [...newRecipient.focusAreas, trimmed]
+                                        });
+                                        setCustomFocusArea('');
+                                      }
+                                    }}
+                                  >
+                                    Add
+                                  </Button>
                                 </div>
                               </div>
                             </div>
@@ -2304,6 +2351,45 @@ export default function RecipientsManagement() {
                                 {area}
                               </Badge>
                             ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Add custom focus area..."
+                              value={customFocusArea}
+                              onChange={(e) => setCustomFocusArea(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && customFocusArea.trim()) {
+                                  e.preventDefault();
+                                  const trimmed = customFocusArea.trim();
+                                  const currentAreas = (editingRecipient as any).focusAreas || [];
+                                  if (!currentAreas.includes(trimmed)) {
+                                    setEditingRecipient({
+                                      ...editingRecipient,
+                                      focusAreas: [...currentAreas, trimmed]
+                                    });
+                                  }
+                                  setCustomFocusArea('');
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const trimmed = customFocusArea.trim();
+                                const currentAreas = (editingRecipient as any).focusAreas || [];
+                                if (trimmed && !currentAreas.includes(trimmed)) {
+                                  setEditingRecipient({
+                                    ...editingRecipient,
+                                    focusAreas: [...currentAreas, trimmed]
+                                  });
+                                  setCustomFocusArea('');
+                                }
+                              }}
+                            >
+                              Add
+                            </Button>
                           </div>
                         </div>
                       </div>
