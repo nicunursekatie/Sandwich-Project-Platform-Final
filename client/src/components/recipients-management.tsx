@@ -16,6 +16,8 @@ import {
   ChevronDown,
   ChevronRight,
   HelpCircle,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1068,7 +1070,7 @@ export default function RecipientsManagement() {
                               <div className="space-y-2">
                                 <div className="flex flex-wrap gap-2 mb-2">
                                   {/* Predefined options */}
-                                  {['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].map((area) => (
+                                  {['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].map((area) => (
                                     <Badge
                                       key={area}
                                       variant={newRecipient.focusAreas.includes(area) ? "default" : "outline"}
@@ -1086,7 +1088,7 @@ export default function RecipientsManagement() {
 
                                   {/* Custom focus areas */}
                                   {newRecipient.focusAreas
-                                    .filter((area) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].includes(area))
+                                    .filter((area) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].includes(area))
                                     .map((area) => (
                                       <Badge
                                         key={area}
@@ -2393,7 +2395,7 @@ export default function RecipientsManagement() {
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2 mb-2">
                             {/* Predefined options */}
-                            {['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].map((area) => (
+                            {['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].map((area) => (
                               <Badge
                                 key={area}
                                 variant={((editingRecipient as any).focusAreas || []).includes(area) ? "default" : "outline"}
@@ -2412,7 +2414,7 @@ export default function RecipientsManagement() {
 
                             {/* Custom focus areas */}
                             {((editingRecipient as any).focusAreas || [])
-                              .filter((area: string) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].includes(area))
+                              .filter((area: string) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].includes(area))
                               .map((area: string) => (
                                 <Badge
                                   key={area}
