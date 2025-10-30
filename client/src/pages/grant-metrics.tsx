@@ -105,7 +105,13 @@ export default function GrantMetrics() {
     (window as any).__collections = collections;
   }
 
-  // Fetch stats
+  // Fetch hybrid stats (authoritative data + collection log)
+  const { data: hybridStats } = useQuery({
+    queryKey: ['/api/collections/hybrid-stats'],
+    staleTime: 2 * 60 * 1000, // 2 minutes - grant metrics need reasonable freshness
+  });
+
+  // Fetch stats  
   const { data: stats } = useQuery({
     queryKey: ['/api/sandwich-collections/stats'],
     staleTime: 2 * 60 * 1000, // 2 minutes - grant metrics need reasonable freshness
@@ -441,9 +447,16 @@ export default function GrantMetrics() {
 
     const hostData: Record<string, number> = {};
     const monthlyData: Record<string, number> = {};
-    const yearTotals: Record<number, number> = {};
     const weeklyData: Record<string, number> = {};
     const uniqueHostsSet = new Set<string>();
+
+    // Use authoritative yearly totals from hybrid stats if available
+    const yearTotals: Record<number, number> = {};
+    if (hybridStats?.byYear) {
+      Object.entries(hybridStats.byYear).forEach(([year, data]: [string, any]) => {
+        yearTotals[parseInt(year)] = data.sandwiches;
+      });
+    }
 
     collections.forEach((collection: any) => {
       const hostName = collection.hostName || 'Unknown';
@@ -475,10 +488,13 @@ export default function GrantMetrics() {
           monthlyData[monthKey] = (monthlyData[monthKey] || 0) + total;
           weeklyData[weekKey] = (weeklyData[weekKey] || 0) + total;
 
-          if (!yearTotals[year]) {
-            yearTotals[year] = 0;
+          // Only calculate yearTotals from collections if hybrid stats not available
+          if (!hybridStats?.byYear) {
+            if (!yearTotals[year]) {
+              yearTotals[year] = 0;
+            }
+            yearTotals[year] += total;
           }
-          yearTotals[year] += total;
         }
       }
     });
