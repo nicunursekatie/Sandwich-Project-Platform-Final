@@ -1435,65 +1435,56 @@ export default function GmailStyleInbox() {
                 </div>
               </div>
 
-              {/* Message Content */}
-              <div
-                className={`p-4 ${
-                  selectedMessage.content.length > 500
-                    ? 'flex-1 overflow-y-auto'
-                    : 'flex-shrink-0'
-                }`}
-              >
-                <div className="prose max-w-none">
-                  {/* Special formatting for Kudos messages */}
-                  {(selectedMessage as any).isKudos ? (
-                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6 mb-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-yellow-100 p-2 rounded-full">
-                          <Trophy className="h-6 w-6 text-yellow-600" />
+              {/* Message Content - Scrollable area for all messages */}
+              <ScrollArea className="flex-1">
+                <div className="p-4">
+                  <div className="prose max-w-none">
+                    {/* Special formatting for Kudos messages */}
+                    {(selectedMessage as any).isKudos ? (
+                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6 mb-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="bg-yellow-100 p-2 rounded-full">
+                            <Trophy className="h-6 w-6 text-yellow-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-yellow-800">
+                              Kudos Received!
+                            </h3>
+                            <p className="text-sm text-yellow-700">
+                              From {selectedMessage.senderName}
+                              {(selectedMessage as any).projectTitle && (
+                                <span className="ml-1">
+                                  for "{(selectedMessage as any).projectTitle}"
+                                </span>
+                              )}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-yellow-800">
-                            Kudos Received!
-                          </h3>
-                          <p className="text-sm text-yellow-700">
-                            From {selectedMessage.senderName}
-                            {(selectedMessage as any).projectTitle && (
-                              <span className="ml-1">
-                                for "{(selectedMessage as any).projectTitle}"
-                              </span>
-                            )}
-                          </p>
+                        <div className="bg-white border border-yellow-300 rounded-lg p-4">
+                          <div className="text-lg text-gray-800 font-medium leading-relaxed">
+                            {selectedMessage.content}
+                          </div>
                         </div>
+                        {(selectedMessage as any).contextType && (
+                          <div className="mt-4 text-xs text-yellow-600">
+                            <span className="font-medium">Context:</span>{' '}
+                            {(selectedMessage as any).contextType === 'project'
+                              ? 'Project'
+                              : 'Task'}{' '}
+                            -{' '}
+                            {(selectedMessage as any).entityName ||
+                              (selectedMessage as any).projectTitle}
+                          </div>
+                        )}
                       </div>
-                      <div className="bg-white border border-yellow-300 rounded-lg p-4">
-                        <div className="text-lg text-gray-800 font-medium leading-relaxed">
-                          {selectedMessage.content}
-                        </div>
+                    ) : (
+                      <div className="whitespace-pre-wrap">
+                        {selectedMessage.content}
                       </div>
-                      {(selectedMessage as any).contextType && (
-                        <div className="mt-4 text-xs text-yellow-600">
-                          <span className="font-medium">Context:</span>{' '}
-                          {(selectedMessage as any).contextType === 'project'
-                            ? 'Project'
-                            : 'Task'}{' '}
-                          -{' '}
-                          {(selectedMessage as any).entityName ||
-                            (selectedMessage as any).projectTitle}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="whitespace-pre-wrap">
-                      {selectedMessage.content}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              {/* Flexible spacer for short messages */}
-              {selectedMessage.content.length <= 500 && (
-                <div className="flex-1 min-h-0"></div>
-              )}
+              </ScrollArea>
 
               {/* Gmail-Style Reply Section - Always visible for non-Kudos messages */}
               {!(selectedMessage as any).isKudos && (
