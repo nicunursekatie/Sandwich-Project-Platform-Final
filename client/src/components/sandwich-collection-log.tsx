@@ -2481,10 +2481,10 @@ export default function SandwichCollectionLog() {
                       : ''
                 }`}
               >
-                {/* Responsive layout: vertical on mobile, horizontal on desktop */}
-                <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+                {/* Responsive layout: vertical stack for all rows */}
+                <div className="flex flex-col gap-3">
                   {/* First Row: Checkbox, Date, Host */}
-                  <div className="flex items-center gap-3 flex-wrap lg:flex-nowrap lg:flex-1 lg:min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
                     {/* Checkbox */}
                     {(canEditAllCollections ||
                       canEditCollection(user, collection)) && (
