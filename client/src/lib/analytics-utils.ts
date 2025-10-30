@@ -479,11 +479,13 @@ export function calculateYearlyBreakdown(
   // Mark peak year(s) (highest sandwich count, handle ties)
   if (yearlyTotals.length > 0) {
     const maxSandwiches = Math.max(...yearlyTotals.map(y => y.totalSandwiches));
-    yearlyTotals.forEach(y => {
-      if (y.totalSandwiches === maxSandwiches) {
-        y.isPeakYear = true;
-      }
-    });
+    if (maxSandwiches > 0) {
+      yearlyTotals.forEach(y => {
+        if (y.totalSandwiches === maxSandwiches) {
+          y.isPeakYear = true;
+        }
+      });
+    }
   }
 
   // Mark current year as incomplete
