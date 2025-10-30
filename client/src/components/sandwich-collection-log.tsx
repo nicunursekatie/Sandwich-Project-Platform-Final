@@ -2530,7 +2530,7 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Second Row: Individual & Groups (locked columns for alignment) */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:flex-1 min-h-[88px]">
+                  <div className="grid grid-cols-[160px_minmax(280px,1fr)] gap-3 sm:gap-4 items-start min-h-[88px]">
                     {/* Individual - show placeholder to keep column alignment when empty */}
                     <div className="min-w-[160px]">
                       <div className="text-xs text-slate-500 mb-0.5 font-semibold">Individual</div>
@@ -2597,15 +2597,15 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Third Row: Total & Actions */}
-                  <div className="flex items-center justify-between lg:justify-end gap-3 lg:gap-4">
+                  <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 lg:gap-4">
                     {/* Total */}
-                    <div className="shrink-0 flex items-center gap-2 lg:flex-col lg:items-end lg:gap-0">
+                    <div className="shrink-0 flex items-center gap-2 lg:flex-col lg:items-end lg:gap-0 justify-self-end">
                       <div className="text-xs text-slate-500 font-semibold">Total:</div>
                       <div className="text-xl lg:text-2xl font-bold">{totalSandwiches}</div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0 justify-self-end">
                       {collection.createdBy &&
                         collection.createdByName && (
                           <SendKudosButton
