@@ -51,6 +51,53 @@ import { hasPermission } from '@shared/auth-utils';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 
+// Helper function to convert URLs in text to clickable links
+function LinkifyText({ text }: { text: string }) {
+  // Regular expression to match URLs
+  const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/g;
+  
+  const parts = text.split(urlRegex);
+  
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (!part) return null;
+        
+        // Check if this part is a URL
+        if (part.match(/^https?:\/\//)) {
+          return (
+            <a
+              key={index}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {part}
+            </a>
+          );
+        } else if (part.match(/^www\./)) {
+          return (
+            <a
+              key={index}
+              href={`https://${part}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {part}
+            </a>
+          );
+        }
+        
+        return <span key={index}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 interface PromotionGraphic {
   id: number;
   title: string;
@@ -543,7 +590,7 @@ export default function PromotionGraphics() {
                   )}
                 </CardTitle>
                 <CardDescription className="line-clamp-2">
-                  {graphic.description}
+                  <LinkifyText text={graphic.description} />
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -633,7 +680,9 @@ export default function PromotionGraphics() {
                 )}
                 <div>
                   <Label>Description</Label>
-                  <p className="text-gray-700 mt-1">{selectedGraphic.description}</p>
+                  <p className="text-gray-700 mt-1">
+                    <LinkifyText text={selectedGraphic.description} />
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {selectedGraphic.intendedUseDate && (
