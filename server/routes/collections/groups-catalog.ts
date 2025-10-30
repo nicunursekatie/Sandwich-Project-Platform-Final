@@ -323,17 +323,17 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           // Use new JSON group collections data (preferred)
           collection.groupCollections.forEach((group: any) => {
             // Include groups even if count is 0 (check for undefined/null instead of truthy)
-            if (group.name && (group.count !== undefined && group.count !== null)) {
+            if (group.name && group.count != null) {
               processOrganization(group.name, group.count);
             }
           });
         } else {
           // Fall back to legacy group data only if JSON is empty
           // Include groups even if count is 0
-          if (collection.group1Name && (collection.group1Count !== undefined && collection.group1Count !== null)) {
+          if (collection.group1Name && collection.group1Count != null) {
             processOrganization(collection.group1Name, collection.group1Count);
           }
-          if (collection.group2Name && (collection.group2Count !== undefined && collection.group2Count !== null)) {
+          if (collection.group2Name && collection.group2Count != null) {
             processOrganization(collection.group2Name, collection.group2Count);
           }
         }
