@@ -31,6 +31,114 @@ collectionsRouter.post('/clear-cache', async (req, res) => {
   }
 });
 
+// Hybrid Stats - Authoritative data + Collection Log
+// Uses Scott's authoritative weekly data (2020-2024 complete, 2025 through Aug 6)
+// Falls back to collection log for dates after August 6, 2025
+collectionsRouter.get('/hybrid-stats', async (req, res) => {
+  try {
+    const stats = await QueryOptimizer.getCachedQuery(
+      'hybrid-collection-stats',
+      async () => {
+        const { db } = await import('../../db');
+        const { sql } = await import('drizzle-orm');
+        
+        // Cutoff date: Scott's data ends on 2025-08-06
+        const CUTOFF_DATE = '2025-08-06';
+        
+        // Query 1: Get all authoritative data through cutoff date
+        const authoritativeData = await db.execute(sql`
+          SELECT 
+            year,
+            SUM(sandwiches) as total_sandwiches,
+            COUNT(*) as record_count
+          FROM authoritative_weekly_collections
+          WHERE year < 2025 OR (year = 2025 AND week_date <= ${CUTOFF_DATE})
+          GROUP BY year
+          ORDER BY year
+        `);
+        
+        // Query 2: Get collection log data after cutoff date
+        const collectionLogData = await db.execute(sql`
+          SELECT 
+            SUBSTRING(collection_date, 1, 4)::integer as year,
+            SUM(individual_sandwiches) as individual,
+            COUNT(*) as record_count
+          FROM sandwich_collections
+          WHERE collection_date > ${CUTOFF_DATE}
+          GROUP BY SUBSTRING(collection_date, 1, 4)
+        `);
+        
+        // Query 3: Calculate group sandwiches from collection log after cutoff
+        const collections = await storage.getAllSandwichCollections();
+        const recentCollections = collections.filter(c => c.collectionDate > CUTOFF_DATE);
+        
+        let recentGroupTotal = 0;
+        recentCollections.forEach((collection) => {
+          if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
+            recentGroupTotal += collection.groupCollections.reduce((sum, group) => sum + (group.count || 0), 0);
+          } else {
+            recentGroupTotal += (collection.group1Count || 0) + (collection.group2Count || 0);
+          }
+        });
+        
+        // Combine data by year
+        const yearlyTotals: Record<number, {records: number, sandwiches: number, source: string}> = {};
+        
+        // Add authoritative data
+        (authoritativeData.rows as any[]).forEach(row => {
+          const year = Number(row.year);
+          yearlyTotals[year] = {
+            records: Number(row.record_count),
+            sandwiches: Number(row.total_sandwiches),
+            source: 'authoritative'
+          };
+        });
+        
+        // Add/merge collection log data
+        (collectionLogData.rows as any[]).forEach(row => {
+          const year = Number(row.year);
+          const individual = Number(row.individual || 0);
+          const groupForYear = recentCollections
+            .filter(c => c.collectionDate.startsWith(String(year)))
+            .reduce((sum, c) => {
+              if (c.groupCollections && Array.isArray(c.groupCollections) && c.groupCollections.length > 0) {
+                return sum + c.groupCollections.reduce((s, g) => s + (g.count || 0), 0);
+              }
+              return sum + (c.group1Count || 0) + (c.group2Count || 0);
+            }, 0);
+          
+          if (yearlyTotals[year]) {
+            // Merge with existing authoritative data (for 2025)
+            yearlyTotals[year].records += Number(row.record_count);
+            yearlyTotals[year].sandwiches += individual + groupForYear;
+            yearlyTotals[year].source = 'hybrid';
+          } else {
+            // New year (future data)
+            yearlyTotals[year] = {
+              records: Number(row.record_count),
+              sandwiches: individual + groupForYear,
+              source: 'collection_log'
+            };
+          }
+        });
+        
+        return {
+          byYear: yearlyTotals,
+          grandTotal: Object.values(yearlyTotals).reduce((sum, y) => sum + y.sandwiches, 0),
+          cutoffDate: CUTOFF_DATE,
+          description: 'Hybrid stats: Authoritative weekly data (2020-2024, 2025 through Aug 6) + Collection log (after Aug 6, 2025)'
+        };
+      },
+      60000 // Cache for 1 minute
+    );
+
+    res.json(stats);
+  } catch (error) {
+    logger.error('Failed to fetch hybrid collection stats:', error);
+    res.status(500).json({ message: 'Failed to fetch hybrid collection stats' });
+  }
+});
+
 // Sandwich Collections Stats - Complete totals including individual + group collections (Optimized)
 collectionsRouter.get('/stats', async (req, res) => {
   try {
