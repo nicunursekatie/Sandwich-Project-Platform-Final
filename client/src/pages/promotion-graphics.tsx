@@ -130,39 +130,6 @@ export default function PromotionGraphics() {
   // Filter to show only active graphics
   const activeGraphics = graphics.filter((g) => g.status === 'active');
 
-  // Upload mutation
-  const uploadMutation = useMutation({
-    mutationFn: async (data: {
-      title: string;
-      description: string;
-      imageUrl: string;
-      fileName: string;
-      fileSize?: number;
-      fileType?: string;
-      intendedUseDate?: string;
-      targetAudience: string;
-    }) => {
-      return apiRequest('POST', '/api/promotion-graphics', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/promotion-graphics'] });
-      setShowUploadDialog(false);
-      resetForm();
-      toast({
-        title: 'Success',
-        description: 'Graphic uploaded successfully! Notifications are being sent to the team.',
-      });
-    },
-    onError: (error: any) => {
-      logger.error('Failed to upload graphic', error);
-      toast({
-        title: 'Upload Failed',
-        description: error.message || 'Failed to upload graphic. Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
-
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: number) => {
@@ -505,10 +472,10 @@ export default function PromotionGraphics() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={!uploadedFile || isUploading || uploadMutation.isPending}
+                    disabled={!uploadedFile || isUploading}
                     style={{ backgroundColor: '#007E8C', color: 'white' }}
                   >
-                    {isUploading || uploadMutation.isPending 
+                    {isUploading 
                       ? 'Uploading...' 
                       : sendNotification 
                         ? 'Upload & Send Notifications' 
