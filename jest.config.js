@@ -6,6 +6,7 @@ export default {
     '**/tests/**/*.test.{js,ts}',
     '**/server/**/__tests__/**/*.test.{js,ts}',
     '!**/client/**',
+    '!**/test/**',
   ],
   transform: {
     '^.+\\.(ts|tsx)$': [
