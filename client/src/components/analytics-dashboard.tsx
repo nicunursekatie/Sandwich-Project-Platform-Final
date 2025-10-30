@@ -283,7 +283,10 @@ export default function AnalyticsDashboard() {
 
     logger.log('\n📅 YEARLY BREAKDOWN CALCULATED:');
     yearlyBreakdown.forEach(year => {
-      logger.log(`  ${year.year}: ${year.totalSandwiches.toLocaleString()} sandwiches (${year.totalCollections} collections)${year.isPeakYear ? ' - PEAK' : ''}${year.isIncomplete ? ' - incomplete' : ''}`);
+      let msg = `  ${year.year}: ${year.totalSandwiches.toLocaleString()} sandwiches (${year.totalCollections} collections)`;
+      if (year.isPeakYear) msg += ' - PEAK';
+      if (year.isIncomplete) msg += ' - incomplete';
+      logger.log(msg);
     });
 
     return {
