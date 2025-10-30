@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -59,7 +60,19 @@ export default function LogContactAttemptDialog({
   const [contactMethod, setContactMethod] = useState<string>('');
   const [contactOutcome, setContactOutcome] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+  const [customDateTime, setCustomDateTime] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Set default date/time to current when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      const now = new Date();
+      const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+      setCustomDateTime(localDateTime);
+    }
+  }, [isOpen]);
 
   const handleSubmit = async () => {
     if (!contactMethod || !contactOutcome) {
@@ -78,8 +91,11 @@ export default function LogContactAttemptDialog({
       const currentAttempts = eventRequest.contactAttempts || 0;
       const attemptNumber = currentAttempts + 1;
 
+      // Use custom date/time or current time
+      const contactDate = customDateTime ? new Date(customDateTime) : new Date();
+
       // Build the notes with structured information
-      const timestamp = new Date().toLocaleString('en-US', {
+      const timestamp = contactDate.toLocaleString('en-US', {
         dateStyle: 'medium',
         timeStyle: 'short',
       });
@@ -97,7 +113,7 @@ export default function LogContactAttemptDialog({
 
       await onLogContact({
         contactAttempts: attemptNumber,
-        lastContactAttempt: new Date().toISOString(),
+        lastContactAttempt: contactDate.toISOString(),
         contactMethod,
         unresponsiveNotes: updatedNotes,
         contactOutcome,
@@ -112,6 +128,7 @@ export default function LogContactAttemptDialog({
       setContactMethod('');
       setContactOutcome('');
       setNotes('');
+      setCustomDateTime('');
       onClose();
     } catch (error) {
       toast({
@@ -129,6 +146,7 @@ export default function LogContactAttemptDialog({
       setContactMethod('');
       setContactOutcome('');
       setNotes('');
+      setCustomDateTime('');
       onClose();
     }
   };
@@ -172,6 +190,24 @@ export default function LogContactAttemptDialog({
                 })}
               </p>
             )}
+          </div>
+
+          {/* Date/Time of Contact */}
+          <div className="space-y-2">
+            <Label htmlFor="contact-datetime" className="text-[#1A2332] font-medium">
+              Date & Time of Contact *
+            </Label>
+            <Input
+              id="contact-datetime"
+              type="datetime-local"
+              value={customDateTime}
+              onChange={(e) => setCustomDateTime(e.target.value)}
+              className="w-full"
+              data-testid="input-contact-datetime"
+            />
+            <p className="text-xs text-gray-500">
+              Defaults to current date/time. You can change this to log a contact from earlier.
+            </p>
           </div>
 
           {/* Contact Method */}
