@@ -88,6 +88,15 @@ export default function ImpactDashboard() {
 
   const collections = collectionsData?.collections || [];
 
+  // Fetch hybrid stats (authoritative data + collection log)
+  const { data: hybridStats } = useQuery({
+    queryKey: ['/api/collections/hybrid-stats'],
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnMount: true,
+    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
+    keepPreviousData: true,
+  });
+
   // Fetch collection stats
   const { data: stats } = useQuery({
     queryKey: ['/api/sandwich-collections/stats'],
@@ -412,13 +421,42 @@ export default function ImpactDashboard() {
     let currentMonthTotal = 0;
     let currentMonthCollections = 0;
 
-    // Calculate year totals from actual collections data
-    const yearTotals = {
+    // Use authoritative yearly totals from hybrid stats if available
+    const yearTotals: Record<number, number> = {
       2023: 0,
       2024: 0,
       2025: 0,
     };
+    
+    if (hybridStats?.byYear) {
+      Object.entries(hybridStats.byYear).forEach(([year, data]: [string, any]) => {
+        const y = parseInt(year);
+        if (yearTotals[y] !== undefined) {
+          yearTotals[y] = data.sandwiches;
+        }
+      });
+    } else {
+      // Fallback to calculating from collections if hybrid stats not available
+      if (Array.isArray(collections)) {
+        collections.forEach((collection: any) => {
+          if (collection.collectionDate) {
+            const date = parseCollectionDate(collection.collectionDate);
+            if (Number.isNaN(date.getTime())) {
+              return;
+            }
+            const year = date.getFullYear();
+            const collectionTotal = calculateTotalSandwiches(collection);
 
+            // Add to year totals
+            if (yearTotals[year] !== undefined) {
+              yearTotals[year] += collectionTotal;
+            }
+          }
+        });
+      }
+    }
+
+    // Calculate current month totals (always from collections for real-time data)
     if (Array.isArray(collections)) {
       collections.forEach((collection: any) => {
         if (collection.collectionDate) {
@@ -428,51 +466,7 @@ export default function ImpactDashboard() {
           }
           const year = date.getFullYear();
           const month = date.getMonth();
-
-          // Calculate total sandwiches for this collection
-          const individualSandwiches = collection.individualSandwiches || 0;
-          let groupSandwiches = 0;
-
-          // Handle groupCollections properly
-          if (
-            collection.groupCollections &&
-            Array.isArray(collection.groupCollections) &&
-            collection.groupCollections.length > 0
-          ) {
-            groupSandwiches = collection.groupCollections.reduce(
-              (sum, group) => {
-                const count = group.count || group.sandwichCount || 0;
-                return sum + count;
-              },
-              0
-            );
-          } else if (
-            collection.groupCollections &&
-            typeof collection.groupCollections === 'string' &&
-            collection.groupCollections !== '' &&
-            collection.groupCollections !== '[]'
-          ) {
-            try {
-              const groupData = JSON.parse(collection.groupCollections);
-              if (Array.isArray(groupData)) {
-                groupSandwiches = groupData.reduce(
-                  (sum, group) =>
-                    sum + (group.count || group.sandwichCount || 0),
-                  0
-                );
-              }
-            } catch (e) {
-              logger.log('Error parsing groupCollections JSON:', e);
-              groupSandwiches = 0;
-            }
-          }
-
-          const collectionTotal = individualSandwiches + groupSandwiches;
-
-          // Add to year totals
-          if (yearTotals[year] !== undefined) {
-            yearTotals[year] += collectionTotal;
-          }
+          const collectionTotal = calculateTotalSandwiches(collection);
 
           // Add to current month totals
           if (year === currentYear && month === currentMonth) {
