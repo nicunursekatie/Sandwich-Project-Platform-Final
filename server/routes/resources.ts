@@ -524,6 +524,7 @@ resourcesRouter.put(
         isPinnedGlobal,
         pinnedOrder,
         isActive,
+        tags: tagIds,
       } = req.body;
 
       const updateData: any = {
@@ -540,6 +541,7 @@ resourcesRouter.put(
       if (pinnedOrder !== undefined) updateData.pinnedOrder = pinnedOrder;
       if (isActive !== undefined) updateData.isActive = isActive;
 
+      // Update the resource
       const [updatedResource] = await db
         .update(resources)
         .set(updateData)
@@ -548,6 +550,28 @@ resourcesRouter.put(
 
       if (!updatedResource) {
         return res.status(404).json({ error: 'Resource not found' });
+      }
+
+      // Handle tag updates if tags array is provided
+      if (tagIds !== undefined && Array.isArray(tagIds)) {
+        // Delete existing tag assignments
+        await db
+          .delete(resourceTagAssignments)
+          .where(eq(resourceTagAssignments.resourceId, resourceId));
+
+        // Insert new tag assignments
+        if (tagIds.length > 0) {
+          await db.insert(resourceTagAssignments).values(
+            tagIds.map((tagId: number) => ({
+              resourceId,
+              tagId,
+            }))
+          );
+        }
+
+        logger.info(
+          `Resource ${resourceId} tags updated: ${tagIds.length} tags assigned by ${user.email}`
+        );
       }
 
       logger.info(`Resource updated: ${resourceId} by ${user.email}`);

@@ -150,20 +150,7 @@ export function ResourceAdminModal({
         throw new Error(errorData.error || 'Failed to save resource');
       }
 
-      const savedResource = await res.json();
-
-      // Assign tags if this is a new resource (for existing, tags are updated separately)
-      if (!existingResource && formData.tags.length > 0) {
-        await Promise.all(
-          formData.tags.map((tagId) =>
-            fetch(`/api/resources/${savedResource.id}/tags/${tagId}`, {
-              method: 'POST',
-              credentials: 'include',
-            })
-          )
-        );
-      }
-
+      // Tags are now handled by the backend in both POST and PUT requests
       onSuccess();
       onClose();
       resetForm();
