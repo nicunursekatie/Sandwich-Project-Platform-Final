@@ -2804,6 +2804,7 @@ export const onboardingChallenges = pgTable('onboarding_challenges', {
   points: integer('points').notNull().default(10), // Points awarded for completion
   icon: varchar('icon'), // Icon name for UI
   order: integer('order').notNull().default(0), // Display order
+  promotion: text('promotion'), // Promotion text to highlight special challenges
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow(),
 });

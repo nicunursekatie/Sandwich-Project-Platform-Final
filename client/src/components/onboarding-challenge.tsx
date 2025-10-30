@@ -48,6 +48,7 @@ interface Challenge {
   points: number;
   icon: string | null;
   order: number;
+  promotion: string | null;
   isCompleted: boolean;
   completedAt: Date | null;
 }
@@ -385,12 +386,21 @@ export default function OnboardingChallenge({
                           <Card
                             key={challenge.id}
                             onClick={() => handleChallengeClick(challenge)}
-                            className={`transition-all cursor-pointer ${
+                            className={`transition-all cursor-pointer relative ${
                               challenge.isCompleted
                                 ? 'bg-green-50 border-green-200'
+                                : challenge.promotion
+                                ? 'hover:shadow-lg hover:border-[#FBAD3F] hover:bg-yellow-50 ring-2 ring-[#FBAD3F]/30'
                                 : 'hover:shadow-md hover:border-blue-300 hover:bg-blue-50'
                             }`}
                           >
+                            {challenge.promotion && !challenge.isCompleted && (
+                              <div className="absolute -top-2 -right-2 z-10">
+                                <Badge className="bg-gradient-to-r from-[#FBAD3F] to-yellow-500 text-white font-bold px-3 py-1 shadow-lg animate-pulse">
+                                  {challenge.promotion}
+                                </Badge>
+                              </div>
+                            )}
                             <CardContent className="p-4">
                               <div className="flex items-start gap-3">
                                 <div className="mt-1">
@@ -416,6 +426,8 @@ export default function OnboardingChallenge({
                                       className={`ml-2 ${
                                         challenge.isCompleted
                                           ? 'bg-green-600 hover:bg-green-700'
+                                          : challenge.promotion
+                                          ? 'bg-[#FBAD3F] text-white hover:bg-[#FBAD3F]/90'
                                           : ''
                                       }`}
                                     >
