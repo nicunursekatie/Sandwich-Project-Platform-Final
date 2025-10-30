@@ -40,14 +40,31 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       // Get all organizations from database for category information
       const allOrganizations = await storage.getAllOrganizations();
       const organizationCategoryMap = new Map();
+
+      // Prioritize organization-level entries (without department) over department-specific entries
       allOrganizations.forEach(org => {
         const canonicalKey = canonicalizeOrgName(org.name);
-        organizationCategoryMap.set(canonicalKey, {
-          category: org.category,
-          schoolClassification: org.schoolClassification,
-          isReligious: org.isReligious,
-          department: org.department,
-        });
+        const existing = organizationCategoryMap.get(canonicalKey);
+
+        // If no existing entry, add this one
+        if (!existing) {
+          organizationCategoryMap.set(canonicalKey, {
+            category: org.category,
+            schoolClassification: org.schoolClassification,
+            isReligious: org.isReligious,
+            department: org.department,
+          });
+        }
+        // If existing entry has a department but this one doesn't, replace with org-level entry
+        else if (existing.department && !org.department) {
+          organizationCategoryMap.set(canonicalKey, {
+            category: org.category,
+            schoolClassification: org.schoolClassification,
+            isReligious: org.isReligious,
+            department: org.department,
+          });
+        }
+        // Otherwise keep the existing entry (prefer first match or org-level entry)
       });
 
       // Create a map to aggregate data by organization and department
@@ -203,14 +220,17 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
       // Build a lookup of event requests by canonical org name and date for deduplication
       // This prevents double-counting events that exist in both event_requests AND sandwich_collections
+      // NOTE: Only event requests WITH dates can be used for date-based deduplication
+      // Event requests WITHOUT dates are still included in the catalog but won't prevent
+      // collections from being included (since we can't determine if they're the same event)
       const eventRequestLookup = new Map<string, Set<string>>();
-      
+
       allEventRequests.forEach((request) => {
         if (!request.organizationName || !request.desiredEventDate) return;
-        
+
         const canonicalOrgName = canonicalizeOrgName(request.organizationName);
         const eventDateStr = new Date(request.desiredEventDate).toISOString().split('T')[0];
-        
+
         if (!eventRequestLookup.has(canonicalOrgName)) {
           eventRequestLookup.set(canonicalOrgName, new Set());
         }
@@ -240,20 +260,26 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
           const cleanOrgName = orgName.trim();
           const canonicalOrgName = canonicalizeOrgName(cleanOrgName);
-          
+
           // DEDUPLICATION: Check if this collection matches an event request within ±7 days
-          // If yes, skip it (already counted via event_requests)
+          // This prevents the same event from being counted twice when it appears in both:
+          // 1. event_requests (planned event with date)
+          // 2. sandwich_collections (actual logged collection)
+          //
+          // If an event request exists within 7 days, we skip the collection to avoid duplication.
+          // The 7-day window allows for slight date discrepancies due to late logging or date changes.
+          // Collections are only deduplicated if the organization has event requests WITH dates.
           if (collectionDate && eventRequestLookup.has(canonicalOrgName)) {
             const collectionDateObj = new Date(collectionDate);
             const requestDates = eventRequestLookup.get(canonicalOrgName)!;
-            
+
             // Check if any event request is within 7 days of this collection
             for (const requestDateStr of requestDates) {
               const requestDateObj = new Date(requestDateStr);
               const daysDiff = Math.abs(
                 (collectionDateObj.getTime() - requestDateObj.getTime()) / (1000 * 60 * 60 * 24)
               );
-              
+
               if (daysDiff <= 7) {
                 // This collection matches an event request - skip to avoid double-counting
                 return;
@@ -296,16 +322,18 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         ) {
           // Use new JSON group collections data (preferred)
           collection.groupCollections.forEach((group: any) => {
-            if (group.name && group.count) {
+            // Include groups even if count is 0 (check for undefined/null instead of truthy)
+            if (group.name && group.count != null) {
               processOrganization(group.name, group.count);
             }
           });
         } else {
           // Fall back to legacy group data only if JSON is empty
-          if (collection.group1Name && collection.group1Count) {
+          // Include groups even if count is 0
+          if (collection.group1Name && collection.group1Count != null) {
             processOrganization(collection.group1Name, collection.group1Count);
           }
-          if (collection.group2Name && collection.group2Count) {
+          if (collection.group2Name && collection.group2Count != null) {
             processOrganization(collection.group2Name, collection.group2Count);
           }
         }
