@@ -63,6 +63,7 @@ import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import SendKudosButton from '@/components/send-kudos-button';
+import { MessageComposer } from '@/components/message-composer';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -169,6 +170,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   canEdit = true,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [addingAllTimes, setAddingAllTimes] = useState(false);
   const [tempStartTime, setTempStartTime] = useState('');
   const [tempEndTime, setTempEndTime] = useState('');
@@ -393,6 +395,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           {/* Action Buttons */}
           {canEdit && (
             <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => setShowMessageDialog(true)}
+                variant="ghost"
+                className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                aria-label="Message about this event"
+              >
+                <MessageSquare className="w-4 h-4" aria-hidden="true" />
+              </Button>
               <Button size="sm" onClick={onEdit} variant="ghost" className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit event">
                 <Edit2 className="w-4 h-4" aria-hidden="true" />
               </Button>
@@ -1559,6 +1570,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
       </CardContent>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
+          </DialogHeader>
+          <MessageComposer
+            contextType="event"
+            contextId={request.id.toString()}
+            contextTitle={`${request.organizationName} event on ${formatEventDate(request.scheduledDate)}`}
+            onSent={() => setShowMessageDialog(false)}
+            onCancel={() => setShowMessageDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

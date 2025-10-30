@@ -13,7 +13,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 
 interface MessageComposerProps {
-  contextType?: 'suggestion' | 'project' | 'task' | 'direct';
+  contextType?: 'suggestion' | 'project' | 'task' | 'event' | 'graphic' | 'expense' | 'collection' | 'direct';
   contextId?: string;
   contextTitle?: string;
   defaultRecipients?: Array<{ id: string; name: string; email?: string }>;
@@ -35,7 +35,7 @@ export function MessageComposer({
   const { sendMessage, isSending } = useMessaging();
   const queryClient = useQueryClient();
 
-  // Fetch all users for direct messaging
+  // Fetch all users for recipient selection
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ['/api/users'],
     queryFn: async () => {
@@ -47,7 +47,6 @@ export function MessageComposer({
         return [];
       }
     },
-    enabled: contextType === 'direct',
   });
 
   const handleSend = async () => {
@@ -83,6 +82,7 @@ export function MessageComposer({
         content: content.trim(),
         contextType,
         contextId,
+        contextTitle,
       });
 
       setContent('');
@@ -129,9 +129,8 @@ export function MessageComposer({
         )}
       </CardHeader>
       <CardContent className="space-y-4">
-        {contextType === 'direct' && (
-          <div>
-            <label className="text-sm font-medium">Recipients</label>
+        <div>
+          <label className="text-sm font-medium">Recipients</label>
             {isLoadingUsers ? (
               <div className="text-sm text-gray-500 mt-1">Loading users...</div>
             ) : (
@@ -204,7 +203,6 @@ export function MessageComposer({
               </div>
             )}
           </div>
-        )}
 
         <div>
           <label className="text-sm font-medium">Message</label>
@@ -228,7 +226,7 @@ export function MessageComposer({
             disabled={
               !content.trim() ||
               isSending ||
-              (contextType === 'direct' && selectedRecipients.length === 0)
+              selectedRecipients.length === 0
             }
             className="flex items-center gap-2"
           >

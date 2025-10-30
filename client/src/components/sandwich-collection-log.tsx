@@ -31,8 +31,10 @@ import {
   Heart,
   CheckCircle,
   AlertCircle,
+  MessageCircle,
 } from 'lucide-react';
 import SendKudosButton from '@/components/send-kudos-button';
+import { MessageComposer } from '@/components/message-composer';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
 import { Button } from '@/components/ui/button';
 import {
@@ -181,6 +183,7 @@ export default function SandwichCollectionLog() {
   const DUPLICATES_PER_PAGE = 10;
   const [showBatchEdit, setShowBatchEdit] = useState(false);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [messageCollection, setMessageCollection] = useState<any>(null);
   const [batchEditData, setBatchEditData] = useState({
     hostName: '',
     collectionDate: '',
@@ -2627,6 +2630,15 @@ export default function SandwichCollectionLog() {
                             className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                           />
                         )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMessageCollection(collection)}
+                        title="Message about this collection"
+                        className="h-8 w-8 p-0"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </Button>
                       {canEditCollection(user, collection) && (
                         <Button
                           variant="outline"
@@ -3740,6 +3752,26 @@ export default function SandwichCollectionLog() {
               cleanDuplicatesMutation.mutate('og-duplicates')
             }
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={!!messageCollection} onOpenChange={() => setMessageCollection(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Message About Collection: {messageCollection?.hostName}
+            </DialogTitle>
+          </DialogHeader>
+          {messageCollection && (
+            <MessageComposer
+              contextType="collection"
+              contextId={messageCollection.id.toString()}
+              contextTitle={`${messageCollection.hostName} collection`}
+              onSent={() => setMessageCollection(null)}
+              onCancel={() => setMessageCollection(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

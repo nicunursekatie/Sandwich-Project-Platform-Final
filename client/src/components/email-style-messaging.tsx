@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { MessageContextBadge } from '@/components/message-context-badge';
 import {
   Mail,
   Send,
@@ -823,6 +824,17 @@ export default function EmailStyleMessaging() {
                           {selectedMessage.content}
                         </p>
                       </div>
+
+                      {(selectedMessage as any).contextType &&
+                        (selectedMessage as any).contextId && (
+                          <div className="mt-4">
+                            <MessageContextBadge
+                              contextType={(selectedMessage as any).contextType}
+                              contextId={(selectedMessage as any).contextId}
+                              contextTitle={(selectedMessage as any).contextTitle}
+                            />
+                          </div>
+                        )}
 
                       {selectedMessage.attachments &&
                         selectedMessage.attachments.length > 0 && (

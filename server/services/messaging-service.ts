@@ -33,8 +33,9 @@ export interface SendMessageParams {
   senderId: string;
   recipientIds: string[];
   content: string;
-  contextType?: 'suggestion' | 'project' | 'task' | 'direct';
+  contextType?: 'suggestion' | 'project' | 'task' | 'event' | 'graphic' | 'expense' | 'collection' | 'direct';
   contextId?: string;
+  contextTitle?: string;
   parentMessageId?: number;
 }
 
@@ -55,6 +56,7 @@ export class MessagingService {
       content,
       contextType,
       contextId,
+      contextTitle,
       parentMessageId,
     } = params;
 
@@ -83,6 +85,7 @@ export class MessagingService {
           sender: senderName,
           contextType,
           contextId,
+          contextTitle,
         })
         .returning();
 
