@@ -388,8 +388,9 @@ export const messages = pgTable('messages', {
   senderId: text('sender_id').notNull(),
   content: text('content').notNull(),
   sender: text('sender'), // Display name of sender
-  contextType: text('context_type'), // 'suggestion', 'project', 'task', 'direct'
+  contextType: text('context_type'), // 'suggestion', 'project', 'task', 'event', 'graphic', 'expense', 'collection', 'direct'
   contextId: text('context_id'),
+  contextTitle: text('context_title'), // Display name of related entity
   read: boolean('read').notNull().default(false), // Simple read status
   editedAt: timestamp('edited_at'),
   editedContent: text('edited_content'),
@@ -501,7 +502,7 @@ export const emailMessages = pgTable(
     isTrashed: boolean('is_trashed').notNull().default(false),
     isDraft: boolean('is_draft').notNull().default(false),
     parentMessageId: integer('parent_message_id'), // Reference to parent message for threading
-    contextType: varchar('context_type'), // 'project', 'task', 'suggestion', etc.
+    contextType: varchar('context_type'), // 'suggestion', 'project', 'task', 'event', 'graphic', 'expense', 'collection', 'direct'
     contextId: varchar('context_id'), // ID of the related entity
     contextTitle: varchar('context_title'), // Display name of related entity
     attachments: text('attachments').array(), // Array of attachment file paths

@@ -64,6 +64,7 @@ import {
 } from '@/components/ui/select';
 import { ButtonTooltip } from '@/components/ui/button-tooltip';
 import { KudosInbox } from '@/components/kudos-inbox';
+import { MessageContextBadge } from '@/components/message-context-badge';
 import { logger } from '@/lib/logger';
 
 interface User {
@@ -1466,20 +1467,34 @@ export default function GmailStyleInbox() {
                           </div>
                         </div>
                         {(selectedMessage as any).contextType && (
-                          <div className="mt-4 text-xs text-yellow-600">
-                            <span className="font-medium">Context:</span>{' '}
-                            {(selectedMessage as any).contextType === 'project'
-                              ? 'Project'
-                              : 'Task'}{' '}
-                            -{' '}
-                            {(selectedMessage as any).entityName ||
-                              (selectedMessage as any).projectTitle}
+                          <div className="mt-4">
+                            <MessageContextBadge
+                              contextType={(selectedMessage as any).contextType}
+                              contextId={(selectedMessage as any).contextId}
+                              contextTitle={
+                                (selectedMessage as any).contextTitle ||
+                                (selectedMessage as any).entityName ||
+                                (selectedMessage as any).projectTitle
+                              }
+                            />
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="whitespace-pre-wrap">
-                        {selectedMessage.content}
+                      <div className="space-y-4">
+                        <div className="whitespace-pre-wrap">
+                          {selectedMessage.content}
+                        </div>
+                        {selectedMessage.contextType && selectedMessage.contextId && (
+                          <MessageContextBadge
+                            contextType={selectedMessage.contextType}
+                            contextId={selectedMessage.contextId}
+                            contextTitle={
+                              selectedMessage.contextTitle ||
+                              (selectedMessage as any).entityName
+                            }
+                          />
+                        )}
                       </div>
                     )}
                   </div>
