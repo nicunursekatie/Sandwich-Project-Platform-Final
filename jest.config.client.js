@@ -2,7 +2,7 @@ export default {
   displayName: 'client',
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/tests/setup/jest.setup.client.ts'],
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   globals: {
     'import.meta': {
       env: {
@@ -14,6 +14,7 @@ export default {
   testMatch: [
     '**/client/**/__tests__/**/*.test.{ts,tsx}',
     '**/client/**/*.test.{ts,tsx}',
+    '**/test/**/*.test.{ts,tsx}',
   ],
   transform: {
     '^.+\\.(ts|tsx)$': [

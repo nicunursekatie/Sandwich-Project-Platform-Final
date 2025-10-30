@@ -11,8 +11,10 @@ import { ThemeProvider, useTheme } from '../../client/src/context/theme-provider
 
 describe('ThemeProvider Component', () => {
   beforeEach(() => {
-    // Clear any existing theme from localStorage
+    // Clear localStorage before each test
     localStorage.clear();
+    // Clear all mock call history
+    jest.clearAllMocks();
   });
 
   afterEach(() => {

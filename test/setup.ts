@@ -5,6 +5,12 @@
 
 import '@testing-library/jest-dom';
 
+// Mock import.meta for Vite (needed for client-side code)
+if (typeof global !== 'undefined') {
+  // @ts-ignore
+  global.import = { meta: { env: { DEV: false, MODE: 'test' } } } as any;
+}
+
 // Polyfill for TextEncoder/TextDecoder (needed for some node environments)
 if (typeof global.TextEncoder === 'undefined') {
   const { TextEncoder, TextDecoder } = require('util');
@@ -46,28 +52,28 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
 } as any;
 
-// Mock localStorage
+// Mock localStorage with Jest mock functions
 const localStorageMock = (() => {
   let store: { [key: string]: string } = {};
 
   return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => {
+    getItem: jest.fn((key: string) => store[key] || null),
+    setItem: jest.fn((key: string, value: string) => {
       store[key] = value.toString();
-    },
-    removeItem: (key: string) => {
+    }),
+    removeItem: jest.fn((key: string) => {
       delete store[key];
-    },
-    clear: () => {
+    }),
+    clear: jest.fn(() => {
       store = {};
-    },
+    }),
     get length() {
       return Object.keys(store).length;
     },
-    key: (index: number) => {
+    key: jest.fn((index: number) => {
       const keys = Object.keys(store);
       return keys[index] || null;
-    },
+    }),
   };
 })();
 
@@ -81,23 +87,23 @@ const sessionStorageMock = (() => {
   let store: { [key: string]: string } = {};
 
   return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => {
+    getItem: jest.fn((key: string) => store[key] || null),
+    setItem: jest.fn((key: string, value: string) => {
       store[key] = value.toString();
-    },
-    removeItem: (key: string) => {
+    }),
+    removeItem: jest.fn((key: string) => {
       delete store[key];
-    },
-    clear: () => {
+    }),
+    clear: jest.fn(() => {
       store = {};
-    },
+    }),
     get length() {
       return Object.keys(store).length;
     },
-    key: (index: number) => {
+    key: jest.fn((index: number) => {
       const keys = Object.keys(store);
       return keys[index] || null;
-    },
+    }),
   };
 })();
 
@@ -106,16 +112,28 @@ Object.defineProperty(window, 'sessionStorage', {
   writable: true,
 });
 
-// Suppress console warnings in tests (optional)
-global.console = {
-  ...console,
-  // Uncomment to suppress warnings during tests
-  // warn: jest.fn(),
-  // error: jest.fn(),
-};
-
 // Mock scrollTo
 window.scrollTo = jest.fn();
 
 // Mock HTMLElement.prototype.scrollIntoView
 HTMLElement.prototype.scrollIntoView = jest.fn();
+
+// Suppress specific console errors in tests
+const originalError = console.error;
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning: ReactDOM.render') ||
+        args[0].includes('Not implemented: HTMLFormElement.prototype.submit') ||
+        args[0].includes('Not implemented: HTMLCanvasElement.prototype.getContext'))
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+});
