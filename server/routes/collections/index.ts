@@ -124,7 +124,7 @@ collectionsRouter.get('/hybrid-stats', async (req, res) => {
         
         return {
           byYear: yearlyTotals,
-          grandTotal: Object.values(yearlyTotals).reduce((sum, y) => sum + y.sandwiches, 0),
+          total: Object.values(yearlyTotals).reduce((sum, y) => sum + y.sandwiches, 0),
           cutoffDate: CUTOFF_DATE,
           description: 'Hybrid stats: Authoritative weekly data (2020-2024, 2025 through Aug 6) + Collection log (after Aug 6, 2025)'
         };
