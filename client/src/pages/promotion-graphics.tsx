@@ -516,10 +516,13 @@ export default function PromotionGraphics() {
             <Card key={graphic.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => setSelectedGraphic(graphic)}>
                 {graphic.fileType === 'application/pdf' ? (
-                  <div className="flex flex-col items-center justify-center p-8">
-                    <FileText className="h-24 w-24 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600 font-medium">PDF Document</p>
-                    <p className="text-xs text-gray-500 mt-1">Click to view</p>
+                  <div className="w-full h-full relative">
+                    <iframe
+                      src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
+                      className="w-full h-full pointer-events-none"
+                      title={graphic.title}
+                    />
+                    <div className="absolute inset-0 cursor-pointer" onClick={() => setSelectedGraphic(graphic)} />
                   </div>
                 ) : (
                   <img
@@ -614,17 +617,12 @@ export default function PromotionGraphics() {
               </DialogHeader>
               <div className="space-y-4">
                 {selectedGraphic.fileType === 'application/pdf' ? (
-                  <div className="w-full p-12 border rounded-lg bg-gray-50 flex flex-col items-center justify-center">
-                    <FileText className="h-32 w-32 text-gray-400 mb-4" />
-                    <p className="text-lg text-gray-600 mb-2 font-medium">PDF Document</p>
-                    <p className="text-sm text-gray-500 mb-4">{selectedGraphic.fileName}</p>
-                    <Button
-                      onClick={() => window.open(selectedGraphic.imageUrl, '_blank')}
-                      style={{ backgroundColor: '#007E8C', color: 'white' }}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Open PDF
-                    </Button>
+                  <div className="w-full border rounded-lg bg-gray-50 overflow-hidden">
+                    <iframe
+                      src={`/api/objects/proxy?url=${encodeURIComponent(selectedGraphic.imageUrl)}`}
+                      className="w-full h-[600px]"
+                      title={selectedGraphic.title}
+                    />
                   </div>
                 ) : (
                   <img
