@@ -309,6 +309,53 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
           </Button>
         </div>
         <p className="text-gray-600">Stay on top of your assigned work and communications</p>
+        
+        {/* Collapsed State Summary */}
+        {isCollapsed && (
+          <div className="mt-4 inline-flex items-center gap-3 bg-gray-50 px-6 py-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setIsCollapsed(false)}>
+            {isLoading ? (
+              <span className="text-sm text-gray-600">Loading...</span>
+            ) : (
+              <>
+                {dashboardData?.counts && (
+                  <>
+                    {dashboardData.counts.projects > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-[#236383]" />
+                        <span className="text-sm font-semibold text-[#236383]">{dashboardData.counts.projects}</span>
+                        <span className="text-sm text-gray-600">Project{dashboardData.counts.projects !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {dashboardData.counts.tasks > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <CheckSquare className="w-4 h-4 text-[#007E8C]" />
+                        <span className="text-sm font-semibold text-[#007E8C]">{dashboardData.counts.tasks}</span>
+                        <span className="text-sm text-gray-600">Task{dashboardData.counts.tasks !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {dashboardData.counts.events > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-[#47B3CB]" />
+                        <span className="text-sm font-semibold text-[#47B3CB]">{dashboardData.counts.events}</span>
+                        <span className="text-sm text-gray-600">Event{dashboardData.counts.events !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {dashboardData.counts.messages > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <MessageSquare className="w-4 h-4 text-[#FBAD3F]" />
+                        <span className="text-sm font-semibold text-[#FBAD3F]">{dashboardData.counts.messages}</span>
+                        <span className="text-sm text-gray-600">Message{dashboardData.counts.messages !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {dashboardData.counts.projects === 0 && dashboardData.counts.tasks === 0 && dashboardData.counts.events === 0 && dashboardData.counts.messages === 0 && (
+                      <span className="text-sm text-gray-500">No pending items</span>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
       {!isCollapsed && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
