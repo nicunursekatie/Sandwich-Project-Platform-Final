@@ -409,3 +409,87 @@ export function aggregateTypeBreakdownAcrossCollections(
     total: totalDeli + totalTurkey + totalHam + totalPbj,
   };
 }
+
+// ============================================================================
+// YEARLY BREAKDOWN FUNCTIONS
+// ============================================================================
+
+/**
+ * Yearly total structure for analytics
+ */
+export interface YearlyTotal {
+  year: number;
+  totalSandwiches: number;
+  totalCollections: number;
+  isPeakYear?: boolean;
+  isIncomplete?: boolean;
+}
+
+/**
+ * Calculate yearly breakdown from collections data.
+ *
+ * Groups collections by year and calculates total sandwiches per year.
+ * Uses the same calculation logic as the backend stats endpoint.
+ *
+ * @param collections - Array of sandwich collections to analyze
+ * @returns Array of yearly totals sorted by year (newest first)
+ */
+export function calculateYearlyBreakdown(
+  collections: SandwichCollection[]
+): YearlyTotal[] {
+  const yearlyData: Record<number, { sandwiches: number; count: number }> = {};
+
+  collections.forEach((collection) => {
+    if (!collection.collectionDate) return;
+
+    // Parse date and extract year
+    const date = parseCollectionDate(collection.collectionDate);
+    const year = date.getFullYear();
+
+    // Skip invalid years
+    if (isNaN(year) || year < 2000 || year > 2100) return;
+
+    // Calculate total sandwiches for this collection
+    const individual = Number(collection.individualSandwiches || 0);
+    const groupTotal = calculateGroupSandwiches(collection);
+    const collectionTotal = individual + groupTotal;
+
+    // Initialize year if not exists
+    if (!yearlyData[year]) {
+      yearlyData[year] = { sandwiches: 0, count: 0 };
+    }
+
+    // Add to yearly total
+    yearlyData[year].sandwiches += collectionTotal;
+    yearlyData[year].count += 1;
+  });
+
+  // Convert to array and sort by year (newest first)
+  const yearlyTotals: YearlyTotal[] = Object.entries(yearlyData)
+    .map(([yearStr, data]) => {
+      const year = parseInt(yearStr);
+      return {
+        year,
+        totalSandwiches: data.sandwiches,
+        totalCollections: data.count,
+      };
+    })
+    .sort((a, b) => b.year - a.year);
+
+  // Mark peak year (highest sandwich count)
+  if (yearlyTotals.length > 0) {
+    const peakYear = yearlyTotals.reduce((max, current) =>
+      current.totalSandwiches > max.totalSandwiches ? current : max
+    );
+    peakYear.isPeakYear = true;
+  }
+
+  // Mark current year as incomplete
+  const currentYear = new Date().getFullYear();
+  const currentYearData = yearlyTotals.find(y => y.year === currentYear);
+  if (currentYearData) {
+    currentYearData.isIncomplete = true;
+  }
+
+  return yearlyTotals;
+}

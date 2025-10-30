@@ -36,6 +36,7 @@ import {
   calculateActualWeeklyAverage,
   getRecordWeek,
   parseCollectionDate,
+  calculateYearlyBreakdown,
 } from '@/lib/analytics-utils';
 import { getCollectionMonthKey } from '@/lib/date-utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -277,6 +278,14 @@ export default function AnalyticsDashboard() {
       }));
     }
 
+    // Calculate yearly breakdown
+    const yearlyBreakdown = calculateYearlyBreakdown(collections);
+
+    logger.log('\n📅 YEARLY BREAKDOWN CALCULATED:');
+    yearlyBreakdown.forEach(year => {
+      logger.log(`  ${year.year}: ${year.totalSandwiches.toLocaleString()} sandwiches (${year.totalCollections} collections)${year.isPeakYear ? ' - PEAK' : ''}${year.isIncomplete ? ' - incomplete' : ''}`);
+    });
+
     return {
       totalSandwiches,
       totalCollections: collections.length,
@@ -286,6 +295,7 @@ export default function AnalyticsDashboard() {
       avgWeekly: calculateActualWeeklyAverage(collections), // Calculate actual weekly average from real weekly buckets
       recordWeek: getRecordWeek(collections), // Get actual best performing week
       trendData,
+      yearlyBreakdown,
     };
   }, [collections, statsData, hostsData]);
 
@@ -487,6 +497,59 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
       </div>
+
+      {/* Yearly Breakdown Section */}
+      <Card className="border-2 border-brand-primary/20">
+        <div className="p-6 border-b">
+          <h3 className="text-xl font-semibold text-brand-primary flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Yearly Breakdown
+          </h3>
+          <p className="text-[#646464] mt-1">
+            Annual sandwich totals since founding
+          </p>
+        </div>
+        <CardContent className="p-6">
+          <div className="space-y-3">
+            {analyticsData.yearlyBreakdown?.map((yearData) => (
+              <div
+                key={yearData.year}
+                className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+                  yearData.isPeakYear
+                    ? 'bg-brand-orange/10 border-brand-orange/30'
+                    : yearData.isIncomplete
+                    ? 'bg-yellow-50 border-yellow-300'
+                    : 'bg-white border-brand-primary/20'
+                } hover:shadow-md transition-all`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl font-bold text-brand-primary">
+                    {yearData.year}
+                  </div>
+                  {yearData.isPeakYear && (
+                    <Badge className="bg-brand-orange text-white">
+                      PEAK YEAR
+                    </Badge>
+                  )}
+                  {yearData.isIncomplete && (
+                    <Badge className="bg-yellow-500 text-white">
+                      Incomplete
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-brand-primary">
+                    {yearData.totalSandwiches.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-[#646464]">
+                    {yearData.totalCollections} collections
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Charts Section - Vertical Layout */}
       <div className="space-y-8">
