@@ -1181,10 +1181,10 @@ export default function GrantMetrics() {
                   {filteredVolunteerMetrics.avgHoursPerEvent}
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
-                  Avg hours per event
+                  Total volunteer hours per event
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Sustained efficiency
+                  All participants combined
                 </p>
               </div>
             </div>
