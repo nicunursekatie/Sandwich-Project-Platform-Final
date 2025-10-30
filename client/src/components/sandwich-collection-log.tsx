@@ -2117,14 +2117,14 @@ export default function SandwichCollectionLog() {
               <div className="text-center">
                 <div
                   className={`text-lg sm:text-xl font-bold drop-shadow-sm ${
-                    hasActiveFilters ? 'text-indigo-600' : 'text-orange-600'
+                    hasActiveFilters ? 'text-indigo-600' : 'text-[#FBAD3F]'
                   }`}
                 >
                   {currentStats.groupSandwiches.toLocaleString()}
                 </div>
                 <div
                   className={`text-base font-semibold uppercase tracking-wide mt-1 ${
-                    hasActiveFilters ? 'text-indigo-600' : 'text-orange-600'
+                    hasActiveFilters ? 'text-indigo-600' : 'text-[#FBAD3F]'
                   }`}
                 >
                   Groups
