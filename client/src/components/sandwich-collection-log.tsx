@@ -2532,7 +2532,7 @@ export default function SandwichCollectionLog() {
                   {/* Second Row: Individual & Groups (locked columns for alignment) */}
                   <div className="grid grid-cols-[160px_minmax(280px,1fr)] gap-3 sm:gap-4 items-start min-h-[88px]">
                     {/* Individual - show placeholder to keep column alignment when empty */}
-                    <div className="min-w-[160px]">
+                    <div className="min-w-[160px] pl-3 sm:pl-4">
                       <div className="text-xs text-slate-500 mb-0.5 font-semibold">Individual</div>
                       {collection.individualSandwiches > 0 ? (
                         <div className="text-sm lg:text-base font-bold">
@@ -2555,7 +2555,7 @@ export default function SandwichCollectionLog() {
                     </div>
 
                     {/* Groups - inline breakdown when available; keeps its column even if Individuals missing */}
-                    <div className="min-w-[200px]">
+                    <div className="min-w-[200px] pl-3 sm:pl-4">
                       <div className="text-xs text-slate-500 mb-0.5 font-semibold">Groups</div>
                       <div className="text-sm lg:text-base font-bold">
                         {(() => {
