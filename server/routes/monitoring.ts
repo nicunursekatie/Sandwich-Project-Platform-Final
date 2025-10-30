@@ -178,11 +178,29 @@ router.get('/weekly-status/:weeksAgo', async (req, res) => {
 // Get multi-week report
 router.get('/multi-week-report/:weeks', async (req, res) => {
   try {
-    const weeks = parseInt(req.params.weeks, 10);
-    const reports = [];
+    const numWeeks = parseInt(req.params.weeks, 10);
+    const weekReports = [];
+    const locationStats: { [location: string]: { submitted: number; missed: number } } = {};
 
-    for (let i = 0; i < weeks; i++) {
-      // Calculate date range for each week
+    // Get all expected locations
+    const expectedLocations = [
+      'East Cobb/Roswell',
+      'Dunwoody/PTC',
+      'Alpharetta',
+      'Sandy Springs',
+      'Intown/Druid Hills',
+      'Dacula',
+      'Flowery Branch',
+      'Collective Learning',
+    ];
+
+    // Initialize stats for all locations
+    expectedLocations.forEach((location) => {
+      locationStats[location] = { submitted: 0, missed: 0 };
+    });
+
+    // Generate report for each week
+    for (let i = 0; i < numWeeks; i++) {
       const now = new Date();
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay() - i * 7);
@@ -192,28 +210,72 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      // Get all collections and filter for the week
-      const allCollections = await storage.getSandwichCollections(1000, 0);
-      const collections = allCollections.filter((c: any) => {
-        const collDate = new Date(c.collectionDate);
-        return collDate >= startOfWeek && collDate <= endOfWeek;
+      // Get submission status for this week
+      const submissionStatus = await checkWeekSubmissions(startOfWeek);
+
+      // Update location stats
+      submissionStatus.forEach((status: any) => {
+        if (locationStats[status.location]) {
+          if (status.hasSubmitted) {
+            locationStats[status.location].submitted++;
+          } else {
+            locationStats[status.location].missed++;
+          }
+        }
       });
 
-      const weekData = {
-        week: i,
-        totalCollections: collections.length,
-        totalSandwiches: collections.reduce(
-          (sum: number, c: any) => sum + (c.individualSandwiches || 0),
-          0
-        ),
-        locationsReporting: new Set(collections.map((c: any) => c.hostName))
-          .size,
-      };
+      const weekLabel = i === 0 ? 'This Week' : i === 1 ? 'Last Week' : `${i} Weeks Ago`;
 
-      reports.push(weekData);
+      weekReports.push({
+        weekRange: {
+          startDate: startOfWeek,
+          endDate: endOfWeek,
+        },
+        weekLabel,
+        submissionStatus,
+      });
     }
 
-    res.json({ weeks: reports });
+    // Calculate summary statistics
+    const overallStats: { [location: string]: { submitted: number; missed: number; percentage: number } } = {};
+    Object.keys(locationStats).forEach((location) => {
+      const stats = locationStats[location];
+      const total = stats.submitted + stats.missed;
+      const percentage = total > 0 ? Math.round((stats.submitted / total) * 100) : 0;
+      overallStats[location] = {
+        submitted: stats.submitted,
+        missed: stats.missed,
+        percentage,
+      };
+    });
+
+    // Find most reliable (>=75% submission rate)
+    const mostReliable = Object.keys(overallStats)
+      .filter((location) => overallStats[location].percentage >= 75)
+      .sort((a, b) => overallStats[b].percentage - overallStats[a].percentage);
+
+    // Find most missing (sorted by number of missed weeks)
+    const mostMissing = Object.keys(overallStats)
+      .filter((location) => overallStats[location].missed > 0)
+      .sort((a, b) => overallStats[b].missed - overallStats[a].missed)
+      .slice(0, 5);
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - startDate.getDay() - (numWeeks - 1) * 7);
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() - endDate.getDay() + 6);
+
+    res.json({
+      reportPeriod: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
+      weeks: weekReports,
+      summary: {
+        totalWeeks: numWeeks,
+        locationsTracked: expectedLocations,
+        mostMissing,
+        mostReliable,
+        overallStats,
+      },
+    });
   } catch (error) {
     logger.error('Error getting multi-week report:', error);
     res.status(500).json({ error: 'Failed to get multi-week report' });

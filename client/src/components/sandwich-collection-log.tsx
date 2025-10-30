@@ -2529,12 +2529,12 @@ export default function SandwichCollectionLog() {
                     </div>
                   </div>
 
-                  {/* Second Row: Individual & Groups (stacked on small, side-by-side on medium+) */}
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:flex-row lg:flex-1">
-                    {/* Individual - with inline type breakdown when available */}
-                    {collection.individualSandwiches > 0 && (
-                      <div className="flex-1 min-w-0 sm:max-w-[45%] lg:max-w-[200px]">
-                        <div className="text-xs text-slate-500 mb-0.5 font-semibold">Individual</div>
+                  {/* Second Row: Individual & Groups (locked columns for alignment) */}
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:flex-1 min-h-[88px]">
+                    {/* Individual - show placeholder to keep column alignment when empty */}
+                    <div className="min-w-[160px]">
+                      <div className="text-xs text-slate-500 mb-0.5 font-semibold">Individual</div>
+                      {collection.individualSandwiches > 0 ? (
                         <div className="text-sm lg:text-base font-bold">
                           {(() => {
                             const hasTypes = collection.individualDeli || collection.individualPbj;
@@ -2549,55 +2549,51 @@ export default function SandwichCollectionLog() {
                             return collection.individualSandwiches;
                           })()}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="h-[64px] rounded border border-slate-200 bg-slate-50" aria-hidden="true" />
+                      )}
+                    </div>
 
-                    {/* Groups - inline breakdown when available */}
-                    {calculateGroupTotal(collection) > 0 && (
-                      <div className="flex-1 min-w-0 sm:max-w-[45%] lg:max-w-[250px]">
-                        <div className="text-xs text-slate-500 mb-0.5 font-semibold">Groups</div>
-                        <div className="text-sm lg:text-base font-bold">
-                          {(() => {
-                            if (groupData.length === 0) {
-                              return null;
-                            }
+                    {/* Groups - inline breakdown when available; keeps its column even if Individuals missing */}
+                    <div className="min-w-[200px]">
+                      <div className="text-xs text-slate-500 mb-0.5 font-semibold">Groups</div>
+                      <div className="text-sm lg:text-base font-bold">
+                        {(() => {
+                          if (calculateGroupTotal(collection) <= 0 || groupData.length === 0) {
+                            return <div className="h-[64px] rounded border border-slate-200 bg-slate-50" aria-hidden="true" />;
+                          }
 
-                            // Always show group names and details vertically
-                            return (
-                              <div className="space-y-2">
-                                {groupData.map((group: any, index: number) => {
-                                  const hasTypes = group.deli || group.pbj;
-                                  const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
-                                  const colorIndex = index % colors.length;
-                                  const borderColor = colors[colorIndex];
-                                  const bgColor = `${borderColor}10`; // 10% opacity
-                                  return (
-                                    <div
-                                      key={index}
-                                      className="p-2 rounded"
-                                      style={{
-                                        backgroundColor: bgColor,
-                                        borderLeft: `3px solid ${borderColor}`
-                                      }}
-                                    >
-                                      <div className="mb-1 font-semibold">{group.groupName}</div>
-                                      {hasTypes ? (
-                                        <div className="space-y-0.5 text-sm">
-                                          {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
-                                          {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
-                                        </div>
-                                      ) : (
-                                        <div className="text-sm">{group.sandwichCount}</div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })()}
-                        </div>
+                          return (
+                            <div className="space-y-2">
+                              {groupData.map((group: any, index: number) => {
+                                const hasTypes = group.deli || group.pbj;
+                                const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
+                                const colorIndex = index % colors.length;
+                                const borderColor = colors[colorIndex];
+                                const bgColor = `${borderColor}10`;
+                                return (
+                                  <div
+                                    key={index}
+                                    className="p-2 rounded"
+                                    style={{ backgroundColor: bgColor, borderLeft: `3px solid ${borderColor}` }}
+                                  >
+                                    <div className="mb-1 font-semibold">{group.groupName}</div>
+                                    {hasTypes ? (
+                                      <div className="space-y-0.5 text-sm">
+                                        {(group.deli ?? 0) > 0 && <div>{group.deli} Deli</div>}
+                                        {(group.pbj ?? 0) > 0 && <div>{group.pbj} PB&J</div>}
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm">{group.sandwichCount}</div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
-                    )}
+                    </div>
                   </div>
 
                   {/* Third Row: Total & Actions */}
@@ -2647,8 +2643,8 @@ export default function SandwichCollectionLog() {
                     </div>
                   </div>
 
-                  {/* Submission info - small text at bottom */}
-                  <div className="mt-2 ml-11 text-sm text-slate-500">
+                  {/* Submission info - small footer detail */}
+                  <div className="mt-2 ml-11 text-xs text-slate-500 leading-snug">
                     Submitted {formatSubmittedAt(collection.submittedAt)}
                     {collection.createdByName && (
                       <span className="ml-1 font-medium">
