@@ -2074,10 +2074,10 @@ export default function SandwichCollectionLog() {
                 )}
               </div>
               <div className="text-right">
-                <div className="text-xl sm:text-2xl font-black text-transparent bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text drop-shadow-sm">
+                <div className="text-xl sm:text-2xl font-black text-[#FBAD3F] drop-shadow-sm">
                   {currentStats.completeTotalSandwiches.toLocaleString()}
                 </div>
-                <div className="text-base font-semibold text-amber-700 uppercase tracking-wide">
+                <div className="text-base font-semibold text-[#FBAD3F] uppercase tracking-wide">
                   {hasActiveFilters ? 'Filtered' : 'Total'} Sandwiches
                 </div>
               </div>
@@ -2088,7 +2088,7 @@ export default function SandwichCollectionLog() {
               className={`flex justify-center gap-8 rounded-xl py-4 px-6 border shadow-sm ${
                 hasActiveFilters
                   ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-brand-primary-border'
-                  : 'bg-gradient-to-r from-teal-50 to-amber-50 border-amber-200'
+                  : 'bg-gradient-to-r from-teal-50 to-yellow-50 border-yellow-200'
               }`}
             >
               <div className="text-center">
@@ -2111,7 +2111,7 @@ export default function SandwichCollectionLog() {
                 className={`w-px bg-gradient-to-b ${
                   hasActiveFilters
                     ? 'from-blue-300 to-indigo-300'
-                    : 'from-teal-300 to-amber-300'
+                    : 'from-teal-300 to-yellow-300'
                 }`}
               ></div>
               <div className="text-center">
