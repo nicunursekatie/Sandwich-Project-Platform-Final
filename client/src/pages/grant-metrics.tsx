@@ -17,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import {
   TrendingUp,
   Heart,
@@ -63,6 +65,7 @@ import { logger } from '@/lib/logger';
 
 export default function GrantMetrics() {
   const { trackView } = useActivityTracker();
+  const [yearType, setYearType] = useState<'fiscal' | 'calendar'>('fiscal');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>('all');
   const [selectedQuarter, setSelectedQuarter] = useState<string>('all');
 
@@ -176,7 +179,7 @@ export default function GrantMetrics() {
     let eventsToAnalyze = completedEvents;
 
     if (selectedFiscalYear !== 'all') {
-      const fiscalYear = parseInt(selectedFiscalYear);
+      const selectedYear = parseInt(selectedFiscalYear);
       eventsToAnalyze = eventsToAnalyze.filter((e: any) => {
         if (!e.scheduledEventDate && !e.desiredEventDate) return false;
         const eventDate = new Date(e.scheduledEventDate || e.desiredEventDate);
@@ -185,10 +188,16 @@ export default function GrantMetrics() {
         const year = eventDate.getFullYear();
         const month = eventDate.getMonth();
 
-        if (month >= 6) { // July-December
-          return year === fiscalYear;
-        } else { // January-June
-          return year === fiscalYear + 1;
+        if (yearType === 'fiscal') {
+          // Fiscal year logic: July-June
+          if (month >= 6) { // July-December
+            return year === selectedYear;
+          } else { // January-June
+            return year === selectedYear + 1;
+          }
+        } else {
+          // Calendar year logic: January-December
+          return year === selectedYear;
         }
       });
     }
@@ -227,31 +236,37 @@ export default function GrantMetrics() {
   const recipientMetrics = calculateRecipientMetrics();
   const eventMetrics = calculateEventMetrics();
 
-  // Filter collections by fiscal year and quarter
+  // Filter collections by fiscal/calendar year and quarter
   const getFilteredCollections = () => {
     if (!Array.isArray(collections)) return [];
 
     let filtered = collections.filter((c: any) => c.hostName !== 'Groups');
 
     if (selectedFiscalYear !== 'all') {
-      const fiscalYear = parseInt(selectedFiscalYear);
+      const selectedYear = parseInt(selectedFiscalYear);
       filtered = filtered.filter((c: any) => {
         if (!c.collectionDate) return false;
         const date = parseCollectionDate(c.collectionDate);
         if (Number.isNaN(date.getTime())) return false;
-        // Fiscal year runs July 1 - June 30
         const year = date.getFullYear();
         const month = date.getMonth(); // 0-11
-        if (month >= 6) { // July-December
-          return year === fiscalYear;
-        } else { // January-June
-          return year === fiscalYear + 1;
+
+        if (yearType === 'fiscal') {
+          // Fiscal year runs July 1 - June 30
+          if (month >= 6) { // July-December
+            return year === selectedYear;
+          } else { // January-June
+            return year === selectedYear + 1;
+          }
+        } else {
+          // Calendar year runs January 1 - December 31
+          return year === selectedYear;
         }
       });
     }
 
     if (selectedQuarter !== 'all' && selectedFiscalYear !== 'all') {
-      const fiscalYear = parseInt(selectedFiscalYear);
+      const selectedYear = parseInt(selectedFiscalYear);
       const quarter = parseInt(selectedQuarter);
       filtered = filtered.filter((c: any) => {
         if (!c.collectionDate) return false;
@@ -260,23 +275,36 @@ export default function GrantMetrics() {
         const year = date.getFullYear();
         const month = date.getMonth(); // 0-11
 
-        // Q1: July-Sept, Q2: Oct-Dec, Q3: Jan-Mar, Q4: Apr-Jun
         let collectionQuarter = 0;
-        let collectionFY = year;
+        let collectionYear = year;
 
-        if (month >= 6 && month <= 8) { // July-Sept
-          collectionQuarter = 1;
-        } else if (month >= 9 && month <= 11) { // Oct-Dec
-          collectionQuarter = 2;
-        } else if (month >= 0 && month <= 2) { // Jan-Mar
-          collectionQuarter = 3;
-          collectionFY = year - 1;
-        } else { // Apr-Jun
-          collectionQuarter = 4;
-          collectionFY = year - 1;
+        if (yearType === 'fiscal') {
+          // Fiscal quarters: Q1: July-Sept, Q2: Oct-Dec, Q3: Jan-Mar, Q4: Apr-Jun
+          if (month >= 6 && month <= 8) { // July-Sept
+            collectionQuarter = 1;
+          } else if (month >= 9 && month <= 11) { // Oct-Dec
+            collectionQuarter = 2;
+          } else if (month >= 0 && month <= 2) { // Jan-Mar
+            collectionQuarter = 3;
+            collectionYear = year - 1;
+          } else { // Apr-Jun
+            collectionQuarter = 4;
+            collectionYear = year - 1;
+          }
+        } else {
+          // Calendar quarters: Q1: Jan-Mar, Q2: Apr-Jun, Q3: Jul-Sep, Q4: Oct-Dec
+          if (month >= 0 && month <= 2) { // Jan-Mar
+            collectionQuarter = 1;
+          } else if (month >= 3 && month <= 5) { // Apr-Jun
+            collectionQuarter = 2;
+          } else if (month >= 6 && month <= 8) { // Jul-Sep
+            collectionQuarter = 3;
+          } else { // Oct-Dec
+            collectionQuarter = 4;
+          }
         }
 
-        return collectionFY === fiscalYear && collectionQuarter === quarter;
+        return collectionYear === selectedYear && collectionQuarter === quarter;
       });
     }
 
@@ -525,7 +553,7 @@ export default function GrantMetrics() {
   const allTimeVolunteerMetrics = calculateVolunteerMetrics(allTimeCollections);
   const allTimeCostMetrics = calculateCostMetrics(allTimeCollections);
 
-  // Get available fiscal years from data
+  // Get available years from data (fiscal or calendar)
   const availableFiscalYears = Array.from(
     new Set(
       collections.map((c: any) => {
@@ -533,9 +561,15 @@ export default function GrantMetrics() {
         const date = parseCollectionDate(c.collectionDate);
         if (Number.isNaN(date.getTime())) return null;
         const year = date.getFullYear();
-        const month = date.getMonth();
-        // If July-Dec, fiscal year starts that year. If Jan-Jun, fiscal year started previous year
-        return month >= 6 ? year : year - 1;
+
+        if (yearType === 'fiscal') {
+          const month = date.getMonth();
+          // If July-Dec, fiscal year starts that year. If Jan-Jun, fiscal year started previous year
+          return month >= 6 ? year : year - 1;
+        } else {
+          // Calendar year - just return the year
+          return year;
+        }
       }).filter(Boolean)
     )
   ).sort((a: any, b: any) => b - a);
@@ -635,55 +669,92 @@ export default function GrantMetrics() {
           {/* Fiscal Year and Quarter Filters */}
           <Card className="bg-white/80 backdrop-blur border-[#236383]/20">
             <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-4">
+                {/* Year Type Toggle */}
+                <div className="flex items-center gap-4 pb-3 border-b border-gray-200">
                   <Calendar className="w-5 h-5 text-[#236383]" />
-                  <span className="font-semibold text-gray-700">Reporting Period:</span>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                  <Select value={selectedFiscalYear} onValueChange={(value) => {
-                    setSelectedFiscalYear(value);
-                    if (value === 'all') setSelectedQuarter('all');
-                  }}>
-                    <SelectTrigger className="w-full sm:w-[200px]">
-                      <SelectValue placeholder="Select Fiscal Year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Years</SelectItem>
-                      {availableFiscalYears.map((year: any) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          FY {year} (Jul {year} - Jun {year + 1})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select
-                    value={selectedQuarter}
-                    onValueChange={setSelectedQuarter}
-                    disabled={selectedFiscalYear === 'all'}
+                  <span className="font-semibold text-gray-700">Year Type:</span>
+                  <RadioGroup
+                    value={yearType}
+                    onValueChange={(value: 'fiscal' | 'calendar') => {
+                      setYearType(value);
+                      setSelectedFiscalYear('all');
+                      setSelectedQuarter('all');
+                    }}
+                    className="flex gap-4"
                   >
-                    <SelectTrigger className="w-full sm:w-[200px]">
-                      <SelectValue placeholder="Select Quarter" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Quarters</SelectItem>
-                      <SelectItem value="1">Q1 (Jul-Sep)</SelectItem>
-                      <SelectItem value="2">Q2 (Oct-Dec)</SelectItem>
-                      <SelectItem value="3">Q3 (Jan-Mar)</SelectItem>
-                      <SelectItem value="4">Q4 (Apr-Jun)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="fiscal" id="fiscal" />
+                      <Label htmlFor="fiscal" className="cursor-pointer">Fiscal Year</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="calendar" id="calendar" />
+                      <Label htmlFor="calendar" className="cursor-pointer">Calendar Year</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
-                <Badge variant="outline" className="bg-[#236383]/10 text-[#236383] border-[#236383]/30">
-                  {selectedFiscalYear === 'all'
-                    ? 'Showing All-Time Data'
-                    : selectedQuarter === 'all'
-                    ? `FY ${selectedFiscalYear}`
-                    : `FY ${selectedFiscalYear} Q${selectedQuarter}`}
-                </Badge>
+                {/* Year and Quarter Selectors */}
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <span className="font-semibold text-gray-700">Reporting Period:</span>
+
+                  <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                    <Select value={selectedFiscalYear} onValueChange={(value) => {
+                      setSelectedFiscalYear(value);
+                      if (value === 'all') setSelectedQuarter('all');
+                    }}>
+                      <SelectTrigger className="w-full sm:w-[240px]">
+                        <SelectValue placeholder={yearType === 'fiscal' ? 'Select Fiscal Year' : 'Select Calendar Year'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Years</SelectItem>
+                        {availableFiscalYears.map((year: any) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {yearType === 'fiscal'
+                              ? `FY ${year} (Jul ${year} - Jun ${year + 1})`
+                              : `${year}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={selectedQuarter}
+                      onValueChange={setSelectedQuarter}
+                      disabled={selectedFiscalYear === 'all'}
+                    >
+                      <SelectTrigger className="w-full sm:w-[200px]">
+                        <SelectValue placeholder="Select Quarter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Quarters</SelectItem>
+                        {yearType === 'fiscal' ? (
+                          <>
+                            <SelectItem value="1">Q1 (Jul-Sep)</SelectItem>
+                            <SelectItem value="2">Q2 (Oct-Dec)</SelectItem>
+                            <SelectItem value="3">Q3 (Jan-Mar)</SelectItem>
+                            <SelectItem value="4">Q4 (Apr-Jun)</SelectItem>
+                          </>
+                        ) : (
+                          <>
+                            <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
+                            <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
+                            <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
+                            <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Badge variant="outline" className="bg-[#236383]/10 text-[#236383] border-[#236383]/30">
+                    {selectedFiscalYear === 'all'
+                      ? 'Showing All-Time Data'
+                      : selectedQuarter === 'all'
+                      ? (yearType === 'fiscal' ? `FY ${selectedFiscalYear}` : `${selectedFiscalYear}`)
+                      : (yearType === 'fiscal' ? `FY ${selectedFiscalYear} Q${selectedQuarter}` : `${selectedFiscalYear} Q${selectedQuarter}`)}
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
