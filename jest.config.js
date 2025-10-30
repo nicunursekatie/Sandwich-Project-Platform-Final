@@ -2,8 +2,10 @@ export default {
   displayName: 'server',
   preset: 'ts-jest',
   testEnvironment: 'node',
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   testMatch: [
-    '**/tests/**/*.test.{js,ts}',
+    '**/tests/**/*.test.{js,ts,tsx}',
+    '**/test/**/*.test.{js,ts,tsx}',
     '**/server/**/__tests__/**/*.test.{js,ts}',
     '!**/client/**',
   ],
