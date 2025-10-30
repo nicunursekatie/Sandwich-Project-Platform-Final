@@ -173,6 +173,188 @@ resourcesRouter.get(
   }
 );
 
+// ============================================
+// SPECIFIC STRING ROUTES (MUST COME BEFORE PARAMETERIZED ROUTES)
+// ============================================
+
+// GET /api/resources/user/favorites - Get user's favorite resources
+resourcesRouter.get(
+  '/user/favorites',
+  isAuthenticated,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = getUser(req);
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const favorites = await db
+        .select({
+          resource: resources,
+          favoritedAt: userResourceFavorites.createdAt,
+          tags: sql<any>`COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', ${resourceTags.id},
+                'name', ${resourceTags.name},
+                'color', ${resourceTags.color}
+              )
+            ) FILTER (WHERE ${resourceTags.id} IS NOT NULL),
+            '[]'
+          )`,
+        })
+        .from(userResourceFavorites)
+        .innerJoin(resources, eq(userResourceFavorites.resourceId, resources.id))
+        .leftJoin(
+          resourceTagAssignments,
+          eq(resources.id, resourceTagAssignments.resourceId)
+        )
+        .leftJoin(resourceTags, eq(resourceTagAssignments.tagId, resourceTags.id))
+        .where(
+          and(
+            eq(userResourceFavorites.userId, user.id),
+            eq(resources.isActive, true)
+          )
+        )
+        .groupBy(resources.id, userResourceFavorites.createdAt)
+        .orderBy(desc(userResourceFavorites.createdAt));
+
+      res.json(favorites);
+    } catch (error) {
+      logger.error('Error fetching favorites:', error);
+      errorHandler(error, req as Request, res);
+    }
+  }
+);
+
+// GET /api/resources/user/recent - Get user's recently accessed resources
+resourcesRouter.get(
+  '/user/recent',
+  isAuthenticated,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = getUser(req);
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const limit = parseInt((req.query.limit as string) || '5');
+
+      const recent = await db
+        .select({
+          resource: resources,
+          lastAccessed: resources.lastAccessedAt,
+          tags: sql<any>`COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', ${resourceTags.id},
+                'name', ${resourceTags.name},
+                'color', ${resourceTags.color}
+              )
+            ) FILTER (WHERE ${resourceTags.id} IS NOT NULL),
+            '[]'
+          )`,
+        })
+        .from(resources)
+        .leftJoin(
+          resourceTagAssignments,
+          eq(resources.id, resourceTagAssignments.resourceId)
+        )
+        .leftJoin(resourceTags, eq(resourceTagAssignments.tagId, resourceTags.id))
+        .where(
+          and(
+            eq(resources.isActive, true),
+            sql`${resources.lastAccessedAt} IS NOT NULL`
+          )
+        )
+        .groupBy(resources.id)
+        .orderBy(desc(resources.lastAccessedAt))
+        .limit(limit);
+
+      res.json(recent);
+    } catch (error) {
+      logger.error('Error fetching recent resources:', error);
+      errorHandler(error, req as Request, res);
+    }
+  }
+);
+
+// GET /api/resources/tags/all - Get all tags
+resourcesRouter.get(
+  '/tags/all',
+  isAuthenticated,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = getUser(req);
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const tags = await db
+        .select({
+          tag: resourceTags,
+          usageCount: sql<number>`COUNT(${resourceTagAssignments.id})`,
+        })
+        .from(resourceTags)
+        .leftJoin(
+          resourceTagAssignments,
+          eq(resourceTags.id, resourceTagAssignments.tagId)
+        )
+        .groupBy(resourceTags.id)
+        .orderBy(asc(resourceTags.name));
+
+      res.json(tags);
+    } catch (error) {
+      logger.error('Error fetching tags:', error);
+      errorHandler(error, req as Request, res);
+    }
+  }
+);
+
+// POST /api/resources/tags - Create new tag (admin only)
+resourcesRouter.post(
+  '/tags',
+  isAuthenticated,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = getUser(req);
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      if (!isAdmin(req)) {
+        return res.status(403).json({ error: 'Forbidden - Admin access required' });
+      }
+
+      const { name, color, description } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ error: 'Tag name is required' });
+      }
+
+      const [newTag] = await db
+        .insert(resourceTags)
+        .values({
+          name,
+          color: color || null,
+          description: description || null,
+          createdBy: user.id,
+        })
+        .returning();
+
+      logger.info(`Tag created: ${name} by ${user.email}`);
+      res.status(201).json(newTag);
+    } catch (error) {
+      logger.error('Error creating tag:', error);
+      errorHandler(error, req as Request, res);
+    }
+  }
+);
+
+// ============================================
+// PARAMETERIZED ROUTES (MUST COME AFTER SPECIFIC STRING ROUTES)
+// ============================================
+
 // GET /api/resources/:id - Get specific resource
 resourcesRouter.get(
   '/:id',
@@ -492,180 +674,6 @@ resourcesRouter.post(
       }
     } catch (error) {
       logger.error('Error toggling favorite:', error);
-      errorHandler(error, req as Request, res);
-    }
-  }
-);
-
-// GET /api/resources/favorites - Get user's favorite resources
-resourcesRouter.get(
-  '/user/favorites',
-  isAuthenticated,
-  async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const user = getUser(req);
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const favorites = await db
-        .select({
-          resource: resources,
-          favoritedAt: userResourceFavorites.createdAt,
-          tags: sql<any>`COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', ${resourceTags.id},
-                'name', ${resourceTags.name},
-                'color', ${resourceTags.color}
-              )
-            ) FILTER (WHERE ${resourceTags.id} IS NOT NULL),
-            '[]'
-          )`,
-        })
-        .from(userResourceFavorites)
-        .innerJoin(resources, eq(userResourceFavorites.resourceId, resources.id))
-        .leftJoin(
-          resourceTagAssignments,
-          eq(resources.id, resourceTagAssignments.resourceId)
-        )
-        .leftJoin(resourceTags, eq(resourceTagAssignments.tagId, resourceTags.id))
-        .where(
-          and(
-            eq(userResourceFavorites.userId, user.id),
-            eq(resources.isActive, true)
-          )
-        )
-        .groupBy(resources.id, userResourceFavorites.createdAt)
-        .orderBy(desc(userResourceFavorites.createdAt));
-
-      res.json(favorites);
-    } catch (error) {
-      logger.error('Error fetching favorites:', error);
-      errorHandler(error, req as Request, res);
-    }
-  }
-);
-
-// GET /api/resources/user/recent - Get user's recently accessed resources
-resourcesRouter.get(
-  '/user/recent',
-  isAuthenticated,
-  async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const user = getUser(req);
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const limit = parseInt((req.query.limit as string) || '5');
-
-      const recent = await db
-        .select({
-          resource: resources,
-          lastAccessed: resources.lastAccessedAt,
-          tags: sql<any>`COALESCE(
-            json_agg(
-              DISTINCT jsonb_build_object(
-                'id', ${resourceTags.id},
-                'name', ${resourceTags.name},
-                'color', ${resourceTags.color}
-              )
-            ) FILTER (WHERE ${resourceTags.id} IS NOT NULL),
-            '[]'
-          )`,
-        })
-        .from(resources)
-        .leftJoin(
-          resourceTagAssignments,
-          eq(resources.id, resourceTagAssignments.resourceId)
-        )
-        .leftJoin(resourceTags, eq(resourceTagAssignments.tagId, resourceTags.id))
-        .where(
-          and(
-            eq(resources.isActive, true),
-            sql`${resources.lastAccessedAt} IS NOT NULL`
-          )
-        )
-        .groupBy(resources.id)
-        .orderBy(desc(resources.lastAccessedAt))
-        .limit(limit);
-
-      res.json(recent);
-    } catch (error) {
-      logger.error('Error fetching recent resources:', error);
-      errorHandler(error, req as Request, res);
-    }
-  }
-);
-
-// GET /api/resources/tags - Get all tags
-resourcesRouter.get(
-  '/tags/all',
-  isAuthenticated,
-  async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const user = getUser(req);
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const tags = await db
-        .select({
-          tag: resourceTags,
-          usageCount: sql<number>`COUNT(${resourceTagAssignments.id})`,
-        })
-        .from(resourceTags)
-        .leftJoin(
-          resourceTagAssignments,
-          eq(resourceTags.id, resourceTagAssignments.tagId)
-        )
-        .groupBy(resourceTags.id)
-        .orderBy(asc(resourceTags.name));
-
-      res.json(tags);
-    } catch (error) {
-      logger.error('Error fetching tags:', error);
-      errorHandler(error, req as Request, res);
-    }
-  }
-);
-
-// POST /api/resources/tags - Create new tag (admin only)
-resourcesRouter.post(
-  '/tags',
-  isAuthenticated,
-  async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const user = getUser(req);
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      if (!isAdmin(req)) {
-        return res.status(403).json({ error: 'Forbidden - Admin access required' });
-      }
-
-      const { name, color, description } = req.body;
-
-      if (!name) {
-        return res.status(400).json({ error: 'Tag name is required' });
-      }
-
-      const [newTag] = await db
-        .insert(resourceTags)
-        .values({
-          name,
-          color: color || null,
-          description: description || null,
-          createdBy: user.id,
-        })
-        .returning();
-
-      logger.info(`Tag created: ${name} by ${user.email}`);
-      res.status(201).json(newTag);
-    } catch (error) {
-      logger.error('Error creating tag:', error);
       errorHandler(error, req as Request, res);
     }
   }
