@@ -32,6 +32,7 @@ export interface GuideStep {
   position: 'top' | 'bottom' | 'left' | 'right' | 'center';
   type: 'tip' | 'feature' | 'warning' | 'success' | 'onboarding';
   icon: React.ReactNode;
+  promotion?: string; // Promotional text like "NEW!", "Popular", "Pro Tip!"
   actions?: {
     primary?: { label: string; action: () => void };
     secondary?: { label: string; action: () => void };
@@ -46,6 +47,7 @@ export interface GuideSequence {
   id: string;
   name: string;
   description: string;
+  promotion?: string; // Promotional text for the entire sequence
   steps: GuideStep[];
   trigger: 'manual' | 'auto' | 'contextual';
   targetRoles: string[];
@@ -202,6 +204,7 @@ const createGuideSequences = (context: UserContext): GuideSequence[] => {
       id: 'productivity-tips',
       name: 'Pro Tips',
       description: 'Advanced features to boost your productivity',
+      promotion: 'Popular',
       trigger: 'contextual',
       targetRoles: ['volunteer', 'host', 'core_team', 'admin'],
       category: 'productivity',
@@ -214,6 +217,7 @@ const createGuideSequences = (context: UserContext): GuideSequence[] => {
           position: 'center',
           type: 'tip',
           icon: <Sparkles className="w-5 h-5" />,
+          promotion: 'Pro Tip!',
           priority: 'low',
         },
         {
@@ -225,6 +229,7 @@ const createGuideSequences = (context: UserContext): GuideSequence[] => {
           position: 'top',
           type: 'feature',
           icon: <FileText className="w-5 h-5" />,
+          promotion: 'Time Saver!',
           priority: 'medium',
         },
       ],
@@ -243,8 +248,6 @@ export function SmartTooltipGuide({
   className = '',
   showGlobalGuide = false,
 }: SmartTooltipGuideProps) {
-  // Help system completely disabled - return null to prevent any rendering
-  return null;
   const [isVisible, setIsVisible] = useState(false);
   const [activeSequence, setActiveSequence] = useState<GuideSequence | null>(
     null
@@ -310,17 +313,17 @@ export function SmartTooltipGuide({
 
   return (
     <div className={`smart-tooltip-guide ${className}`}>
-      {/* Guide Launcher Button - DISABLED */}
-      {false && !isVisible && (
+      {/* Guide Launcher Button */}
+      {!isVisible && availableSequences.length > 0 && (
         <Button
           variant="outline"
           size="sm"
-          className="fixed bottom-4 right-4 z-40 bg-teal-600 text-white hover:bg-teal-700 border-teal-600 shadow-lg"
+          className="fixed bottom-4 right-4 z-40 bg-gradient-to-r from-[#FBAD3F] to-yellow-500 text-white hover:from-[#FBAD3F]/90 hover:to-yellow-500/90 border-0 shadow-lg"
           onClick={() => setIsVisible(true)}
-          title="Get contextual help"
+          title="Interactive tutorials and guides"
         >
-          <HelpCircle className="w-4 h-4 mr-2" />
-          Need Help?
+          <Sparkles className="w-4 h-4 mr-2" />
+          Tutorials
         </Button>
       )}
 
@@ -397,9 +400,18 @@ export function SmartTooltipGuide({
                     {availableSequences.map((sequence) => (
                       <div
                         key={sequence.id}
-                        className="p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+                        className={`p-3 border rounded-lg hover:bg-slate-50 cursor-pointer transition-all relative ${
+                          sequence.promotion ? 'ring-2 ring-[#FBAD3F]/30 hover:ring-[#FBAD3F]/50' : ''
+                        }`}
                         onClick={() => handleStartSequence(sequence)}
                       >
+                        {sequence.promotion && (
+                          <div className="absolute -top-2 -right-2 z-10">
+                            <Badge className="bg-gradient-to-r from-[#FBAD3F] to-yellow-500 text-white font-bold px-2 py-0.5 text-xs shadow-lg animate-pulse">
+                              {sequence.promotion}
+                            </Badge>
+                          </div>
+                        )}
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <h4 className="font-medium text-slate-900 text-sm">
@@ -450,10 +462,17 @@ export function SmartTooltipGuide({
               {currentStep && (
                 <div className="space-y-4">
                   <div
-                    className={`p-4 rounded-lg border ${
+                    className={`p-4 rounded-lg border relative ${
                       stepTypeStyles[currentStep.type]
-                    }`}
+                    } ${currentStep.promotion ? 'ring-2 ring-[#FBAD3F]/40' : ''}`}
                   >
+                    {currentStep.promotion && (
+                      <div className="absolute -top-2 -right-2 z-10">
+                        <Badge className="bg-gradient-to-r from-[#FBAD3F] to-yellow-500 text-white font-bold px-2 py-0.5 text-xs shadow-lg">
+                          {currentStep.promotion}
+                        </Badge>
+                      </div>
+                    )}
                     <div className="flex items-start gap-3">
                       {stepTypeIcons[currentStep.type]}
                       <div className="flex-1">

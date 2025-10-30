@@ -24,8 +24,6 @@ export function IntelligentGuideSystem({
   enableContextualTooltips = true,
   className = '',
 }: IntelligentGuideSystemProps) {
-  // Help system completely disabled - just return children without any help features
-  return <div className={className}>{children}</div>;
   const { userContext, trackActivity } = useSmartGuide();
 
   // Track page navigation
@@ -38,16 +36,9 @@ export function IntelligentGuideSystem({
       <div className={`intelligent-guide-system ${className}`}>
         {children}
 
-        {/* Smart Tooltip Guide - DISABLED */}
-        {false && enableSmartGuides && (
+        {/* Smart Tooltip Guide */}
+        {enableSmartGuides && (
           <SmartTooltipGuide userContext={userContext} />
-        )}
-
-        {/* Help Toggle - DISABLED */}
-        {false && (
-          <div className="fixed top-4 right-4 z-30">
-            <HelpToggle />
-          </div>
         )}
       </div>
     </HelpProvider>
