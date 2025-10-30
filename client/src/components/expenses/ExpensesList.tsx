@@ -18,6 +18,13 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { MessageComposer } from '@/components/message-composer';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   FileText,
   Trash2,
@@ -27,6 +34,7 @@ import {
   DollarSign,
   ExternalLink,
   Filter,
+  MessageCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { logger } from '@/lib/logger';
@@ -71,6 +79,7 @@ export function ExpensesList({
 }: ExpensesListProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [messageExpense, setMessageExpense] = useState<Expense | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -333,6 +342,14 @@ export function ExpensesList({
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => setMessageExpense(expense)}
+                        title="Message about this expense"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => deleteMutation.mutate(expense.id)}
                         disabled={deleteMutation.isPending}
                       >
@@ -346,6 +363,24 @@ export function ExpensesList({
           </Table>
         )}
       </CardContent>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={!!messageExpense} onOpenChange={() => setMessageExpense(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Message About Expense: {messageExpense?.description}</DialogTitle>
+          </DialogHeader>
+          {messageExpense && (
+            <MessageComposer
+              contextType="expense"
+              contextId={messageExpense.id.toString()}
+              contextTitle={messageExpense.description}
+              onSent={() => setMessageExpense(null)}
+              onCancel={() => setMessageExpense(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
