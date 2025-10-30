@@ -65,9 +65,17 @@ import { logger } from '@/lib/logger';
 
 export default function GrantMetrics() {
   const { trackView } = useActivityTracker();
-  const [yearType, setYearType] = useState<'fiscal' | 'calendar'>('fiscal');
+  const [yearType, setYearType] = useState<'fiscal' | 'calendar'>(() => {
+    const saved = localStorage.getItem('grantMetricsYearType');
+    return (saved === 'fiscal' || saved === 'calendar') ? saved : 'fiscal';
+  });
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>('all');
   const [selectedQuarter, setSelectedQuarter] = useState<string>('all');
+
+  // Persist yearType to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('grantMetricsYearType', yearType);
+  }, [yearType]);
 
   useEffect(() => {
     trackView(
@@ -703,7 +711,7 @@ export default function GrantMetrics() {
                       setSelectedFiscalYear(value);
                       if (value === 'all') setSelectedQuarter('all');
                     }}>
-                      <SelectTrigger className="w-full sm:w-[240px]">
+                      <SelectTrigger className="w-full sm:w-[200px]">
                         <SelectValue placeholder={yearType === 'fiscal' ? 'Select Fiscal Year' : 'Select Calendar Year'} />
                       </SelectTrigger>
                       <SelectContent>
