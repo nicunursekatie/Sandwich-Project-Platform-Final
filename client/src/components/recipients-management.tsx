@@ -71,8 +71,9 @@ export default function RecipientsManagement() {
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('active'); // Default to active only
   const [contractFilter, setContractFilter] = useState<string>('all');
+  const [showInactive, setShowInactive] = useState(false);
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [tspContactFilter, setTspContactFilter] = useState<string>('all');
   const [sandwichTypeFilter, setSandwichTypeFilter] = useState<string>('all');
@@ -252,6 +253,11 @@ export default function RecipientsManagement() {
     sandwichTypeFilter,
     focusAreaFilter,
   ]);
+
+  // Separate list for inactive recipients (always filtered, no other filters applied)
+  const inactiveRecipients = useMemo(() => {
+    return recipients.filter((r) => r.status === 'inactive');
+  }, [recipients]);
 
   // Get unique values for filter dropdowns
   const uniqueRegions = useMemo(() => {
@@ -1989,6 +1995,72 @@ export default function RecipientsManagement() {
           </div>
         )}
       </div>
+
+      {/* Inactive Recipients Section */}
+      {inactiveRecipients.length > 0 && (
+        <div className="mt-8">
+          <Collapsible open={showInactive} onOpenChange={setShowInactive}>
+            <div className="flex items-center justify-between mb-4">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 text-slate-600">
+                  {showInactive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  <span className="text-sm font-medium">
+                    Inactive Recipients ({inactiveRecipients.length})
+                  </span>
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+
+            <CollapsibleContent>
+              <div className="grid gap-2 opacity-60">
+                {inactiveRecipients.map((recipient) => (
+                  <Card key={recipient.id} className="border border-slate-200 bg-slate-50">
+                    <CardHeader className="py-2 px-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <CardTitle className="text-sm font-normal text-slate-600">
+                            {recipient.name}
+                          </CardTitle>
+                          <Badge variant="secondary" className="text-xs">
+                            inactive
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={!canEdit}
+                                  onClick={() => handleToggleStatus(recipient)}
+                                  className="text-gray-500 hover:text-green-600 h-7 w-7 p-0"
+                                >
+                                  <ToggleLeft className="w-3 h-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Reactivate</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={!canEdit}
+                            onClick={() => handleEdit(recipient)}
+                            className="h-7 w-7 p-0"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editingRecipient && (
