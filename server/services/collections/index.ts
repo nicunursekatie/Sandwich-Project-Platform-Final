@@ -218,7 +218,7 @@ export class CollectionService implements ICollectionService {
       const dates: string[] = [];
 
       collections.forEach((collection) => {
-        const individual = collection.individualSandwiches || 0;
+        const individual = Number(collection.individualSandwiches || 0);
         const groupTotal = this.calculateGroupTotal(collection);
         const total = individual + groupTotal;
 
@@ -1088,7 +1088,7 @@ export class CollectionService implements ICollectionService {
    * Calculate total sandwiches in a collection
    */
   private calculateTotal(collection: SandwichCollection): number {
-    const individual = collection.individualSandwiches || 0;
+    const individual = Number(collection.individualSandwiches || 0);
     const groupTotal = this.calculateGroupTotal(collection);
     return individual + groupTotal;
   }
@@ -1106,14 +1106,14 @@ export class CollectionService implements ICollectionService {
       collection.groupCollections.length > 0
     ) {
       groupTotal = collection.groupCollections.reduce(
-        (sum: number, group: any) => sum + (group.count || 0),
+        (sum: number, group: any) => sum + Number(group.count || 0),
         0
       );
     }
     // Fallback to legacy columns
     else {
       groupTotal =
-        (collection.group1Count || 0) + (collection.group2Count || 0);
+        Number(collection.group1Count || 0) + Number(collection.group2Count || 0);
     }
 
     return groupTotal;
