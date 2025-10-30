@@ -52,6 +52,7 @@ interface InProcessCardProps {
   request: EventRequest;
   resolveUserName?: (id: string) => string;
   isStale?: boolean;
+  followUpStatus?: 'toolkit' | 'contact' | null;
   onEdit: () => void;
   onDelete: () => void;
   onSchedule: () => void;
@@ -357,6 +358,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   request,
   resolveUserName,
   isStale = false,
+  followUpStatus = null,
   onEdit,
   onDelete,
   onSchedule,
@@ -422,11 +424,19 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   </span>
                 )}
               </div>
-              {isStale && (
+              {followUpStatus === 'toolkit' && (
                 <div className="mt-2">
                   <Badge className="bg-red-500 text-white border-red-400 px-3 py-1">
                     <AlertTriangle className="w-4 h-4 mr-1" />
                     Follow-up needed - Over 1 week since toolkit sent
+                  </Badge>
+                </div>
+              )}
+              {followUpStatus === 'contact' && (
+                <div className="mt-2">
+                  <Badge className="bg-orange-500 text-white border-orange-400 px-3 py-1">
+                    <AlertTriangle className="w-4 h-4 mr-1" />
+                    Follow-up needed - Over 1 week since last contact
                   </Badge>
                 </div>
               )}
@@ -652,7 +662,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               {request.unresponsiveNotes && (
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">
-                    Unresponsive Notes:
+                    Contact Attempts Logged:
                   </p>
                   <p className="text-sm text-gray-700 bg-gray-100 p-2 rounded border-l-3 border-gray-300">
                     {request.unresponsiveNotes}

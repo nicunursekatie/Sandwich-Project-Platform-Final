@@ -1675,7 +1675,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
               {request.unresponsiveNotes && (
                 <div>
-                  <p className="text-base font-medium mb-1">Unresponsive Notes:</p>
+                  <p className="text-base font-medium mb-1">Contact Attempts Logged:</p>
                   <p className="text-base text-gray-700 bg-white p-3 rounded border-l-4 border-gray-400">
                     {request.unresponsiveNotes}
                   </p>

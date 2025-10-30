@@ -1488,7 +1488,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
               {request.unresponsiveNotes && (
                 <div>
-                  <p className="text-sm font-medium mb-1 text-gray-900">Unresponsive Notes:</p>
+                  <p className="text-sm font-medium mb-1 text-gray-900">Contact Attempts Logged:</p>
                   <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-gray-400">
                     {request.unresponsiveNotes}
                   </p>

@@ -60,12 +60,43 @@ export const InProcessTab: React.FC = () => {
     }
   };
 
-  // Check if event has been in process for over a week
-  const isStale = (request: any) => {
-    if (request.status !== 'in_process') return false;
+  // Check if event needs follow-up
+  // Returns: 'toolkit' if toolkit sent > 1 week ago and no recent contact attempts
+  //          'contact' if last contact attempt > 1 week ago
+  //          null if no follow-up needed
+  const getFollowUpStatus = (request: any) => {
+    if (request.status !== 'in_process') return null;
+    
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    return request.statusChangedAt ? new Date(request.statusChangedAt) < oneWeekAgo : false;
+    
+    // If there's a contact attempt logged
+    if (request.contactAttempts && request.contactAttempts > 0 && request.lastContactAttempt) {
+      const lastContactDate = new Date(request.lastContactAttempt);
+      // If last contact was more than a week ago, need follow-up on that contact
+      if (lastContactDate < oneWeekAgo) {
+        return 'contact';
+      }
+      // If last contact was within a week, no follow-up needed
+      return null;
+    }
+    
+    // No contact attempts - check if toolkit sent over a week ago
+    if (request.toolkitSentDate && new Date(request.toolkitSentDate) < oneWeekAgo) {
+      return 'toolkit';
+    }
+    
+    // Fallback: check if status changed to in_process over a week ago (for events without toolkit)
+    if (request.statusChangedAt && new Date(request.statusChangedAt) < oneWeekAgo) {
+      return 'toolkit';
+    }
+    
+    return null;
+  };
+  
+  // For backwards compatibility
+  const isStale = (request: any) => {
+    return getFollowUpStatus(request) === 'toolkit';
   };
 
   // Inline editing functions
@@ -136,6 +167,7 @@ export const InProcessTab: React.FC = () => {
               request={request}
               resolveUserName={resolveUserName}
               isStale={isStale(request)}
+              followUpStatus={getFollowUpStatus(request)}
               onEdit={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(true);
