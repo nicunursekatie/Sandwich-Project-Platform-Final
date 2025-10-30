@@ -539,13 +539,33 @@ export default function PromotionGraphics() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activeGraphics.map((graphic) => (
-            <Card key={graphic.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card key={graphic.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => setSelectedGraphic(graphic)}>
                 {graphic.fileType === 'application/pdf' ? (
-                  <div className="flex flex-col items-center justify-center p-8">
-                    <FileText className="h-24 w-24 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">PDF Document</p>
-                  </div>
+                  <Document
+                    file={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
+                    loading={
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <FileText className="h-24 w-24 text-gray-400 mb-2 animate-pulse" />
+                        <p className="text-sm text-gray-600">Loading...</p>
+                      </div>
+                    }
+                    error={
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <FileText className="h-24 w-24 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">PDF Document</p>
+                      </div>
+                    }
+                    className="w-full h-full flex items-center justify-center"
+                  >
+                    <Page
+                      pageNumber={1}
+                      width={350}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                      className="max-w-full max-h-full"
+                    />
+                  </Document>
                 ) : (
                   <img
                     src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
@@ -586,11 +606,11 @@ export default function PromotionGraphics() {
                     Uploaded by {graphic.uploadedByName}
                   </div>
                 </div>
-                <div className="flex gap-2 mt-4">
+                <div className="flex flex-wrap gap-2 mt-4">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 min-w-[80px]"
                     onClick={() => setSelectedGraphic(graphic)}
                   >
                     <Eye className="h-4 w-4 mr-1" />
@@ -599,7 +619,7 @@ export default function PromotionGraphics() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 min-w-[100px]"
                     onClick={() => window.open(graphic.imageUrl, '_blank')}
                   >
                     <Download className="h-4 w-4 mr-1" />
