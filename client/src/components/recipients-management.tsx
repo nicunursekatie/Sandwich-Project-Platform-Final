@@ -1067,6 +1067,7 @@ export default function RecipientsManagement() {
                               <Label htmlFor="focusAreas">Focus Areas</Label>
                               <div className="space-y-2">
                                 <div className="flex flex-wrap gap-2 mb-2">
+                                  {/* Predefined options */}
                                   {['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].map((area) => (
                                     <Badge
                                       key={area}
@@ -1082,6 +1083,23 @@ export default function RecipientsManagement() {
                                       {area}
                                     </Badge>
                                   ))}
+
+                                  {/* Custom focus areas */}
+                                  {newRecipient.focusAreas
+                                    .filter((area) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].includes(area))
+                                    .map((area) => (
+                                      <Badge
+                                        key={area}
+                                        variant="default"
+                                        className="cursor-pointer"
+                                        onClick={() => {
+                                          const updated = newRecipient.focusAreas.filter(a => a !== area);
+                                          setNewRecipient({ ...newRecipient, focusAreas: updated });
+                                        }}
+                                      >
+                                        {area} ×
+                                      </Badge>
+                                    ))}
                                 </div>
                                 <div className="flex gap-2">
                                   <Input
@@ -2374,6 +2392,7 @@ export default function RecipientsManagement() {
                         <Label htmlFor="edit-focusAreas">Focus Areas</Label>
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2 mb-2">
+                            {/* Predefined options */}
                             {['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].map((area) => (
                               <Badge
                                 key={area}
@@ -2390,6 +2409,24 @@ export default function RecipientsManagement() {
                                 {area}
                               </Badge>
                             ))}
+
+                            {/* Custom focus areas */}
+                            {((editingRecipient as any).focusAreas || [])
+                              .filter((area: string) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Homeless', 'Refugees', 'Disabilities', 'Other'].includes(area))
+                              .map((area: string) => (
+                                <Badge
+                                  key={area}
+                                  variant="default"
+                                  className="cursor-pointer"
+                                  onClick={() => {
+                                    const currentAreas = (editingRecipient as any).focusAreas || [];
+                                    const updated = currentAreas.filter((a: string) => a !== area);
+                                    setEditingRecipient({ ...editingRecipient, focusAreas: updated });
+                                  }}
+                                >
+                                  {area} ×
+                                </Badge>
+                              ))}
                           </div>
                           <div className="flex gap-2">
                             <Input
