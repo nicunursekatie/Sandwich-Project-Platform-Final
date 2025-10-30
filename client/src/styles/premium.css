@@ -145,7 +145,7 @@
   .premium-btn-accent {
     @apply premium-btn;
     background: linear-gradient(135deg, #FBAD3F 0%, #E89A2F 100%);
-    color: #1A2332;
+    color: #236383;
     box-shadow: 0 2px 8px rgba(251, 173, 63, 0.28);
     font-weight: 600;
   }
