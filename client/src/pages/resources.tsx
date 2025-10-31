@@ -371,6 +371,8 @@ export function Resources() {
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(resource);
     });
+    console.log('📊 GROUPED RESOURCES:', groups);
+    console.log('📋 CATEGORY IDs we are looking for:', CATEGORIES.map(c => c.id));
     return groups;
   }, [resources]);
 
