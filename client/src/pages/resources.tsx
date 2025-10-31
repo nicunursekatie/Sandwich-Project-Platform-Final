@@ -63,7 +63,7 @@ const CATEGORIES = [
   },
   {
     id: 'training',
-    label: 'Training Materials',
+    label: 'Guides & How-To's',
     icon: BookOpen,
     color: 'text-[#236383]', // Brand dark blue
     bgColor: 'bg-[#236383]/10',
