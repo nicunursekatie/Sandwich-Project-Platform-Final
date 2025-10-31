@@ -1518,6 +1518,22 @@ router.put(
       } else if (processedUpdates.status === 'scheduled') {
       }
 
+      // Ensure boolean fields are properly typed (for ALL updates)
+      const booleanFields = [
+        'hasRefrigeration',
+        'volunteersNeeded',
+        'vanDriverNeeded',
+        'isConfirmed',
+        'addedToOfficialSheet',
+      ];
+      booleanFields.forEach((field) => {
+        if (processedUpdates[field] !== undefined) {
+          processedUpdates[field] =
+            processedUpdates[field] === true ||
+            processedUpdates[field] === 'true';
+        }
+      });
+
       // Process comprehensive scheduling data if status is scheduled
       if (processedUpdates.status === 'scheduled') {
 
@@ -1546,20 +1562,6 @@ router.put(
         numericFields.forEach((field) => {
           if (processedUpdates[field] !== undefined && processedUpdates[field] !== null) {
             processedUpdates[field] = parseInt(processedUpdates[field]) || 0;
-          }
-        });
-
-        // Ensure boolean fields are properly typed
-        const booleanFields = [
-          'hasRefrigeration',
-          'volunteersNeeded',
-          'vanDriverNeeded',
-        ];
-        booleanFields.forEach((field) => {
-          if (processedUpdates[field] !== undefined) {
-            processedUpdates[field] =
-              processedUpdates[field] === true ||
-              processedUpdates[field] === 'true';
           }
         });
 
