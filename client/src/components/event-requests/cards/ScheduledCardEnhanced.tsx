@@ -118,7 +118,7 @@ const parsePostgresArray = (arr: any): string[] => {
 };
 
 const extractCustomName = (id: string): string => {
-  if (!id || typeof id !== 'string') return 'Unknown';
+  if (!id || typeof id !== 'string') return '';
   if (id.startsWith('custom-')) {
     const parts = id.split('-');
     if (parts.length >= 3) {
@@ -127,7 +127,7 @@ const extractCustomName = (id: string): string => {
     }
     return 'Custom Volunteer';
   }
-  return id;
+  return ''; // Return empty string so resolveUserName gets called
 };
 
 export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
