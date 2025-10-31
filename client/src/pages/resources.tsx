@@ -30,68 +30,36 @@ import {
 // Category definitions with icons and colors (using brand color scheme)
 const CATEGORIES = [
   {
-    id: 'Legal & Tax',
-    label: 'Legal & Tax',
+    id: 'legal_governance',
+    label: 'Legal & Governance',
     icon: Shield,
     color: 'text-[#236383]', // Brand dark blue
     bgColor: 'bg-[#236383]/10',
     borderColor: 'border-[#236383]/30',
   },
   {
-    id: 'Governance',
-    label: 'Governance',
-    icon: Shield,
-    color: 'text-[#236383]', // Brand dark blue
-    bgColor: 'bg-[#236383]/10',
-    borderColor: 'border-[#236383]/30',
-  },
-  {
-    id: 'Forms',
-    label: 'Forms',
+    id: 'forms_templates',
+    label: 'Forms & Templates',
     icon: FileCheck,
     color: 'text-[#47B3CB]', // Brand light blue
     bgColor: 'bg-[#47B3CB]/10',
     borderColor: 'border-[#47B3CB]/30',
   },
   {
-    id: 'Safety Guidelines',
-    label: 'Safety Guidelines',
+    id: 'operations_safety',
+    label: 'Operations & Safety',
     icon: Shield,
     color: 'text-[#007E8C]', // Brand teal
     bgColor: 'bg-[#007E8C]/10',
     borderColor: 'border-[#007E8C]/30',
   },
   {
-    id: 'Tools',
-    label: 'Tools',
-    icon: BookOpen,
-    color: 'text-[#236383]', // Brand dark blue
-    bgColor: 'bg-[#236383]/10',
-    borderColor: 'border-[#236383]/30',
-  },
-  {
-    id: 'Sandwich Making',
-    label: 'Sandwich Making',
+    id: 'training',
+    label: 'Training & Resources',
     icon: BookOpen,
     color: 'text-[#FBAD3F]', // Brand orange
     bgColor: 'bg-[#FBAD3F]/10',
     borderColor: 'border-[#FBAD3F]/30',
-  },
-  {
-    id: 'Labels & Printing',
-    label: 'Labels & Printing',
-    icon: FileText,
-    color: 'text-[#47B3CB]', // Brand light blue
-    bgColor: 'bg-[#47B3CB]/10',
-    borderColor: 'border-[#47B3CB]/30',
-  },
-  {
-    id: 'Reference Lists',
-    label: 'Reference Lists',
-    icon: FileText,
-    color: 'text-[#A31C41]', // Brand red/maroon
-    bgColor: 'bg-[#A31C41]/10',
-    borderColor: 'border-[#A31C41]/30',
   },
 ];
 
@@ -371,8 +339,6 @@ export function Resources() {
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(resource);
     });
-    console.log('📊 GROUPED RESOURCES:', groups);
-    console.log('📋 CATEGORY IDs we are looking for:', CATEGORIES.map(c => c.id));
     return groups;
   }, [resources]);
 
