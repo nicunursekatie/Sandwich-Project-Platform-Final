@@ -1221,7 +1221,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           )}
 
           {/* Location */}
-          {request.eventAddress && renderEditableField('eventAddress', request.eventAddress, 'Location', <MapPin className="w-4 h-4" />)}
+          {renderEditableField('eventAddress', request.eventAddress || '', 'Location', <MapPin className="w-4 h-4" />)}
 
           {/* Sandwiches */}
           {renderSandwichEdit()}
