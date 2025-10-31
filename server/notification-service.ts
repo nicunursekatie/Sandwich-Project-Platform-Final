@@ -175,6 +175,178 @@ export class NotificationService {
     }
   }
 
+  /**
+   * Send SMS opt-in instructions email
+   */
+  static async sendSMSOptInInstructions(
+    recipientEmail: string,
+    recipientName?: string
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log(
+        'SMS opt-in instructions email skipped - no SendGrid API key configured'
+      );
+      return false;
+    }
+
+    try {
+      const subject = 'Get Text Reminders for Sandwich Collections 📱';
+      const displayName = recipientName || 'there';
+      const settingsUrl = `${process.env.REPL_URL || 'https://your-platform-url.com'}/profile`;
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #236383; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { background: white; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; }
+            .section { margin: 25px 0; }
+            .highlight-box { background: #f0f9ff; border-left: 4px solid #236383; padding: 15px; margin: 20px 0; border-radius: 4px; }
+            .steps { background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .step { margin: 15px 0; padding-left: 10px; }
+            .step-number { display: inline-block; background: #236383; color: white; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; margin-right: 10px; font-weight: bold; }
+            .button { display: inline-block; background: #236383; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+            .footer { color: #64748b; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+            ul { padding-left: 25px; }
+            li { margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📱 Get SMS Reminders from The Sandwich Project</h1>
+            </div>
+            <div class="content">
+              <div class="section">
+                <p>Hi ${displayName},</p>
+                <p>Never miss a sandwich collection reminder! Sign up to receive text message alerts when it's time to report your weekly sandwich counts.</p>
+              </div>
+
+              <div class="highlight-box">
+                <strong>What you'll receive:</strong>
+                <ul>
+                  <li>Weekly text reminders when sandwich counts are due</li>
+                  <li>Timely notifications to help you stay on track</li>
+                  <li>Simple, helpful messages – no spam!</li>
+                </ul>
+              </div>
+
+              <div class="section">
+                <h3 style="color: #236383;">📋 How to Sign Up (Takes 2 minutes)</h3>
+              </div>
+
+              <div class="steps">
+                <div class="step">
+                  <span class="step-number">1</span>
+                  <strong>Go to your profile settings</strong><br>
+                  <span style="color: #64748b;">Click the button below or log in and navigate to your profile</span>
+                </div>
+                
+                <div class="step">
+                  <span class="step-number">2</span>
+                  <strong>Find the "SMS Notifications" section</strong><br>
+                  <span style="color: #64748b;">Scroll down to the SMS alerts section</span>
+                </div>
+                
+                <div class="step">
+                  <span class="step-number">3</span>
+                  <strong>Enter your mobile phone number</strong><br>
+                  <span style="color: #64748b;">Use the number where you want to receive texts</span>
+                </div>
+                
+                <div class="step">
+                  <span class="step-number">4</span>
+                  <strong>Check the consent box and click "Enable SMS Notifications"</strong><br>
+                  <span style="color: #64748b;">You'll instantly receive a confirmation text with a verification code</span>
+                </div>
+                
+                <div class="step">
+                  <span class="step-number">5</span>
+                  <strong>Reply to the text with your code (or "YES")</strong><br>
+                  <span style="color: #64748b;">Once confirmed, you'll get a welcome message and you're all set!</span>
+                </div>
+              </div>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${settingsUrl}" class="button">Go to Profile Settings →</a>
+              </div>
+
+              <div class="section">
+                <p style="color: #64748b; font-size: 14px;">
+                  <strong>Note:</strong> Standard text messaging rates may apply from your carrier. You can opt out anytime by replying "STOP" to any text or updating your profile settings.
+                </p>
+              </div>
+
+              <div class="footer">
+                <p>Thanks for helping us fight hunger, one sandwich at a time! 🥪</p>
+                <p>— The Sandwich Project Team</p>
+                <p style="margin-top: 20px; font-size: 12px;">
+                  This is an automated message from The Sandwich Project. Questions? Contact us through the platform.
+                </p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const textContent = `
+Get SMS Reminders from The Sandwich Project
+
+Hi ${displayName},
+
+Never miss a sandwich collection reminder! Sign up to receive text message alerts when it's time to report your weekly sandwich counts.
+
+WHAT YOU'LL RECEIVE:
+• Weekly text reminders when sandwich counts are due
+• Timely notifications to help you stay on track
+• Simple, helpful messages – no spam!
+
+HOW TO SIGN UP (Takes 2 minutes):
+
+1. Go to your profile settings
+   Visit: ${settingsUrl}
+
+2. Find the "SMS Notifications" section
+   Scroll down to the SMS alerts section
+
+3. Enter your mobile phone number
+   Use the number where you want to receive texts
+
+4. Check the consent box and click "Enable SMS Notifications"
+   You'll instantly receive a confirmation text with a verification code
+
+5. Reply to the text with your code (or "YES")
+   Once confirmed, you'll get a welcome message and you're all set!
+
+Note: Standard text messaging rates may apply from your carrier. You can opt out anytime by replying "STOP" to any text or updating your profile settings.
+
+Thanks for helping us fight hunger, one sandwich at a time! 🥪
+
+— The Sandwich Project Team
+      `.trim();
+
+      const emailData = {
+        to: recipientEmail,
+        from: this.FROM_EMAIL,
+        subject,
+        html: htmlContent,
+        text: textContent,
+      };
+
+      await mailService.send(emailData);
+      logger.log(`SMS opt-in instructions email sent to ${recipientEmail}`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to send SMS opt-in instructions email:', error);
+      return false;
+    }
+  }
+
   private static getEmailTemplate(
     type: NotificationType,
     data: ProjectNotificationData

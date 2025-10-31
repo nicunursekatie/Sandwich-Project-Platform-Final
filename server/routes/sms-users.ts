@@ -6,6 +6,7 @@ import { generateVerificationCode, sendConfirmationSMS, submitTollFreeVerificati
 import twilio from 'twilio';
 import { logger } from '../utils/production-safe-logger';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { NotificationService } from '../notification-service';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -739,6 +740,77 @@ router.get('/users/toll-free-verification/status', isAuthenticated, async (req, 
     logger.error('Error checking toll-free verification status:', error);
     res.status(500).json({
       error: 'Failed to check toll-free verification status',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * Send SMS opt-in instructions email to selected users
+ */
+router.post('/users/send-sms-instructions', isAuthenticated, async (req, res) => {
+  try {
+    // Check for admin permissions
+    if (!req.user || !hasPermission(req.user, PERMISSIONS.ADMIN_ACCESS)) {
+      return res.status(403).json({ error: 'PERMISSION_DENIED' });
+    }
+
+    const { userIds } = z.object({
+      userIds: z.array(z.string()).min(1, 'At least one user must be selected'),
+    }).parse(req.body);
+
+    logger.log(`📧 Sending SMS opt-in instructions to ${userIds.length} users...`);
+
+    // Get all selected users
+    const selectedUsers = await Promise.all(
+      userIds.map(id => storage.getUserById(id))
+    );
+
+    const validUsers = selectedUsers.filter(user => user !== null && user.email);
+    
+    if (validUsers.length === 0) {
+      return res.status(400).json({
+        error: 'No valid users found',
+        message: 'None of the selected users have valid email addresses',
+      });
+    }
+
+    // Send emails to all users
+    const results = await Promise.allSettled(
+      validUsers.map(user => 
+        NotificationService.sendSMSOptInInstructions(
+          user!.email,
+          user!.name || undefined
+        )
+      )
+    );
+
+    const successCount = results.filter(r => r.status === 'fulfilled' && r.value).length;
+    const failCount = results.length - successCount;
+
+    logger.log(`✅ SMS opt-in emails sent: ${successCount} successful, ${failCount} failed`);
+
+    res.json({
+      success: true,
+      message: `SMS opt-in instructions sent to ${successCount} user(s)`,
+      details: {
+        total: validUsers.length,
+        successful: successCount,
+        failed: failCount,
+      },
+    });
+  } catch (error) {
+    logger.error('Error sending SMS opt-in instructions:', error);
+    
+    if ((error as any).name === 'ZodError') {
+      return res.status(400).json({
+        error: 'Invalid request data',
+        details: (error as any).errors,
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to send SMS opt-in instructions',
       message: (error as Error).message,
     });
   }

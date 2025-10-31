@@ -34,6 +34,8 @@ import {
   Upload,
   Award,
   TrendingUp,
+  MessageCircle,
+  CheckSquare,
 } from 'lucide-react';
 import CleanPermissionsEditor from '@/components/clean-permissions-editor';
 import BulkPermissionsManager from '@/components/bulk-permissions-manager';
@@ -78,6 +80,8 @@ export default function UserManagementFinal() {
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
   const [showSMSDialog, setShowSMSDialog] = useState(false);
   const [smsUser, setSmsUser] = useState<User | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [isSendingSMSInstructions, setIsSendingSMSInstructions] = useState(false);
 
   // Check permissions
   if (!USERS_EDIT) {
@@ -236,6 +240,60 @@ export default function UserManagementFinal() {
     );
   };
 
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSendSMSInstructions = async () => {
+    if (selectedUsers.size === 0) {
+      toast({
+        title: 'No Users Selected',
+        description: 'Please select at least one user to send SMS instructions.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSendingSMSInstructions(true);
+    try {
+      const response = await fetch('/api/users/send-sms-instructions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userIds: Array.from(selectedUsers) }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send emails');
+      }
+
+      toast({
+        title: 'SMS Instructions Sent',
+        description: data.message || `Instructions sent to ${data.details?.successful || selectedUsers.size} user(s)`,
+      });
+
+      setSelectedUsers(new Set());
+    } catch (error: any) {
+      toast({
+        title: 'Failed to Send',
+        description: error.message || 'Could not send SMS opt-in instructions',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingSMSInstructions(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -361,34 +419,66 @@ export default function UserManagementFinal() {
           {/* Search & Filter */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search users by name or email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search users by name or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={roleFilter}
+                      onChange={(e) => setRoleFilter(e.target.value)}
+                      className="px-3 py-2 border rounded-md text-sm bg-white"
+                    >
+                      <option value="all">All Roles</option>
+                      {Object.entries(USER_ROLES).map(([key, value]) => (
+                        <option key={key} value={value}>
+                          {getRoleDisplayName(value)}
+                        </option>
+                      ))}
+                    </select>
+                    <Button variant="outline" size="sm">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filter
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="px-3 py-2 border rounded-md text-sm bg-white"
-                  >
-                    <option value="all">All Roles</option>
-                    {Object.entries(USER_ROLES).map(([key, value]) => (
-                      <option key={key} value={value}>
-                        {getRoleDisplayName(value)}
-                      </option>
-                    ))}
-                  </select>
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filter
-                  </Button>
-                </div>
+                
+                {selectedUsers.size > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="flex items-center gap-2 text-sm text-blue-900">
+                      <CheckSquare className="h-4 w-4" />
+                      <span className="font-medium">{selectedUsers.size} user(s) selected</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedUsers(new Set())}
+                      >
+                        Clear Selection
+                      </Button>
+                      <ButtonTooltip explanation="Send email with step-by-step SMS opt-in instructions">
+                        <Button
+                          size="sm"
+                          onClick={handleSendSMSInstructions}
+                          disabled={isSendingSMSInstructions}
+                          className="bg-brand-primary hover:bg-brand-primary-dark"
+                          data-testid="button-send-sms-instructions"
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          {isSendingSMSInstructions ? 'Sending...' : 'Send SMS Opt-In Instructions'}
+                        </Button>
+                      </ButtonTooltip>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -404,6 +494,21 @@ export default function UserManagementFinal() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <input
+                          type="checkbox"
+                          checked={filteredUsers.length > 0 && filteredUsers.every((u: User) => selectedUsers.has(u.id))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUsers(new Set(filteredUsers.map((u: User) => u.id)));
+                            } else {
+                              setSelectedUsers(new Set());
+                            }
+                          }}
+                          className="cursor-pointer"
+                          data-testid="checkbox-select-all-users"
+                        />
+                      </TableHead>
                       <TableHead>User</TableHead>
                       <TableHead>Role & Permissions</TableHead>
                       <TableHead>Status</TableHead>
@@ -414,7 +519,7 @@ export default function UserManagementFinal() {
                   <TableBody>
                     {filteredUsers.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                           No users found matching your criteria
                         </TableCell>
                       </TableRow>
@@ -436,6 +541,8 @@ export default function UserManagementFinal() {
                           onViewActivity={(u) => {
                             setActiveTab('impact');
                           }}
+                          isSelected={selectedUsers.has(user.id)}
+                          onToggleSelection={toggleUserSelection}
                         />
                       ))
                     )}

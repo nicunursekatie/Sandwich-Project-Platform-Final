@@ -46,6 +46,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Expenses Receipt Upload**: Handles receipt uploads to Google Cloud Storage via `ObjectStorageService`, returning signed URLs.
 -   **Dashboard Annual Goal Display**: Displays the correct organizational annual goal of 500,000 sandwiches.
 -   **Social Media Graphics**: Supports image and PDF uploads (up to 10MB) to Google Cloud Storage with optional email notifications controlled by a user checkbox.
+-   **SMS Opt-In Email Campaign**: Admins can select users in User Management and send detailed email instructions with direct profile link, explaining how to opt-in to SMS notifications. Email includes 5-step walkthrough, "what you'll receive" section, and branded HTML template from katie@thesandwichproject.org. Fixed double-message bug - users now receive only confirmation SMS at opt-in, then welcome SMS after confirmation.
 
 ## External Dependencies
 -   **Database**: `@neondatabase/serverless`, `drizzle-orm`

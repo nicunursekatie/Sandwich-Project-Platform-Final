@@ -34,6 +34,8 @@ interface SimplifiedUserTableRowProps {
   onSetPassword: (user: User) => void;
   onManageSMS: (user: User) => void;
   onViewActivity: (user: User) => void;
+  isSelected?: boolean;
+  onToggleSelection?: (userId: string) => void;
 }
 
 export function SimplifiedUserTableRow({
@@ -44,6 +46,8 @@ export function SimplifiedUserTableRow({
   onSetPassword,
   onManageSMS,
   onViewActivity,
+  isSelected = false,
+  onToggleSelection,
 }: SimplifiedUserTableRowProps) {
   return (
     <TableRow
@@ -51,6 +55,17 @@ export function SimplifiedUserTableRow({
       className="hover:bg-gray-50 cursor-pointer"
       onClick={() => onEditUser(user)}
     >
+      {onToggleSelection && (
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelection(user.id)}
+            className="cursor-pointer"
+            data-testid={`checkbox-user-${user.id}`}
+          />
+        </TableCell>
+      )}
       <TableCell>
         <div className="flex items-center gap-3">
           <UserAvatar firstName={user.firstName} lastName={user.lastName} />
