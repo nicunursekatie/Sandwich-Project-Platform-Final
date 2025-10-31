@@ -143,7 +143,15 @@ async function bootstrap() {
   try {
     serverLogger.info('🚀 Starting The Sandwich Project server...');
 
-    // Basic error handler - ensure JSON responses for API routes
+    // Use PORT from environment (Replit Autoscale sets PORT=80), fallback to 80 for production, 5000 for dev
+    const port = process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 5000);
+    const host = '0.0.0.0';
+
+    serverLogger.info(
+      `Starting server on ${host}:${port} in ${process.env.NODE_ENV || 'development'} mode`
+    );
+
+    // Basic error handler - available immediately for early errors
     app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || 'Internal Server Error';
@@ -156,14 +164,6 @@ async function bootstrap() {
 
       res.status(status).json({ message });
     });
-
-    // Use PORT from environment (Replit sets this), fallback to 5000 for local dev
-    const port = process.env.PORT || 5000;
-    const host = '0.0.0.0';
-
-    serverLogger.info(
-      `Starting server on ${host}:${port} in ${process.env.NODE_ENV || 'development'} mode`
-    );
 
     // Set up basic routes BEFORE starting server
     app.use('/attached_assets', express.static('attached_assets'));
@@ -191,192 +191,184 @@ async function bootstrap() {
 
     const httpServer = createServer(app);
 
-    // Set up Socket.io for chat system
-    const io = setupSocketChat(httpServer);
-
-    // Monitor Socket.IO performance
-    monitorSocketIO(io);
-    serverLogger.info('✅ Socket.IO monitoring enabled');
-
-    // Configure smart delivery service with Socket.IO for real-time notifications
-    smartDeliveryService.setSocketIO(io);
-
-    // Set up WebSocket server for real-time notifications
-    const wss = new WebSocketServer({
-      server: httpServer,
-      path: '/notifications',
-    });
-
-    // Monitor native WebSocket performance
-    monitorWebSocket(wss);
-    serverLogger.info('✅ WebSocket monitoring enabled');
-
-    // Simple API request logging (without interfering with responses)
-    app.use('/api', (req: Request, res: Response, next: NextFunction) => {
-      serverLogger.debug(`API Request: ${req.method} ${req.originalUrl}`);
-      next();
-    });
-
-    // Register monitoring routes (metrics, health checks, dashboard)
-    const monitoringRouter = createMonitoringRoutes();
-    app.use('/monitoring', monitoringRouter);
-    serverLogger.info('✅ Monitoring routes registered at /monitoring');
-
-    // CRITICAL FIX: Register all API routes FIRST to prevent route interception
-    let sessionStore: any;
-    try {
-      sessionStore = await registerRoutes(app);
-      serverLogger.info('✅ API routes registered FIRST - before static files');
-    } catch (error) {
-      serverLogger.error('Route registration failed:', error);
-    }
-
-    // Error tracking middleware (before final error handler)
-    app.use(errorTrackingMiddleware);
-
-    // CRITICAL FIX: Add JSON 404 catch-all for unmatched API routes
-    // This prevents API routes from falling through to Vite/SPA and returning HTML
-    app.all('/api/*', (req: Request, res: Response) => {
-      serverLogger.warn(`🚨 API route not found: ${req.originalUrl}`);
-      res.status(404).json({
-        error: `API route not found: ${req.originalUrl}`,
-        method: req.method,
-        path: req.originalUrl,
-      });
-    });
-
-    // Sentry error handler (must be after all routes) - only if Sentry is initialized
-    if (process.env.SENTRY_DSN) {
-      app.use(sentryErrorHandler());
-      serverLogger.info('✅ Sentry error handler registered');
-    }
-
-    // IMPORTANT: Static files and SPA fallback MUST come AFTER API routes
-    if (process.env.NODE_ENV === 'production') {
-      // In production, serve static files from the built frontend
-      app.use(express.static('dist/public'));
-
-      // Simple SPA fallback for production - serve index.html for non-API routes
-      // This MUST be after API routes to prevent catching API requests
-      app.get('*', async (req: Request, res: Response, next: NextFunction) => {
-        // Skip health check endpoints - they're already handled
-        if (req.originalUrl === '/' || req.originalUrl === '/healthz') {
-          return next();
-        }
-
-        // NEVER serve HTML for API routes - let them 404 instead
-        if (req.originalUrl.startsWith('/api/')) {
-          serverLogger.warn(
-            `🚨 API route ${req.originalUrl} reached SPA fallback - this should not happen!`
-          );
-          return next(); // Let it 404 rather than serve HTML
-        }
-
-        // Only serve SPA for non-API routes
-        const path = await import('path');
-        res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
-      });
-
-      serverLogger.info(
-        '✅ Static file serving and SPA routing configured AFTER API routes'
-      );
-    }
-
-    // Set up Vite middleware AFTER API routes to prevent catch-all interference
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        const { setupVite } = await import('./vite');
-        await setupVite(app, httpServer);
-        serverLogger.info(
-          'Vite development server setup complete AFTER API routes'
-        );
-      } catch (error) {
-        serverLogger.error('Vite setup failed:', error);
-        serverLogger.warn(
-          'Server continuing without Vite - frontend may not work properly'
-        );
-      }
-    }
-
-    const clients = new Map<string, any>();
-
-    wss.on('connection', (ws, request) => {
-      serverLogger.info('WebSocket client connected', {
-        remoteAddress: request.socket.remoteAddress,
-      });
-
-      ws.on('message', (data) => {
-        try {
-          const message = JSON.parse(data.toString());
-          if (message.type === 'identify' && message.userId) {
-            clients.set(message.userId, ws);
-            serverLogger.info('User identified for notifications', {
-              userId: message.userId,
-            });
-          }
-        } catch (error) {
-          serverLogger.error('WebSocket message parse error:', error);
-        }
-      });
-
-      ws.on('close', () => {
-        // Remove client from map when disconnected
-        for (const [userId, client] of Array.from(clients.entries())) {
-          if (client === ws) {
-            clients.delete(userId);
-            serverLogger.info('User disconnected from notifications', {
-              userId,
-            });
-            break;
-          }
-        }
-      });
-
-      ws.on('error', (error) => {
-        serverLogger.error('WebSocket error:', error);
-      });
-    });
-
-    // Global broadcast function for messaging system
-    (global as any).broadcastNewMessage = async (data: any) => {
-      serverLogger.debug('Broadcasting message to connected clients', {
-        clientCount: clients.size,
-      });
-
-      // Broadcast to all connected clients
-      for (const [userId, ws] of Array.from(clients.entries())) {
-        if (ws.readyState === 1) {
-          // WebSocket.OPEN
-          try {
-            ws.send(JSON.stringify(data));
-          } catch (error) {
-            serverLogger.error('Error sending message to user', {
-              userId,
-              error,
-            });
-            // Remove dead connection
-            clients.delete(userId);
-          }
-        } else {
-          // Remove dead connection
-          clients.delete(userId);
-        }
-      }
-    };
-
-    // Start server and keep process alive - critical for production deployments
+    // CRITICAL: Start listening IMMEDIATELY to open port for health checks
+    // All heavy initialization will happen in background after port is open
     httpServer.listen(Number(port), host, () => {
       serverLogger.info(`✅ Server listening on http://${host}:${port}`);
-      serverLogger.info(
-        `WebSocket server ready at /notifications (internal: ws://${host}:${port}, external: wss:// via platform TLS)`
-      );
-      serverLogger.info(
-        `Environment: ${process.env.NODE_ENV || 'development'}`
-      );
+      serverLogger.info(`✅ Port ${port} is now open for health checks`);
+      serverLogger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
-      // Do heavy initialization in background after server is listening
+      // Do ALL heavy initialization in background after server is listening
       setImmediate(async () => {
         try {
+          serverLogger.info('Starting background initialization...');
+
+          // Set up Socket.io for chat system
+          const io = setupSocketChat(httpServer);
+          monitorSocketIO(io);
+          serverLogger.info('✅ Socket.IO monitoring enabled');
+
+          // Configure smart delivery service with Socket.IO for real-time notifications
+          smartDeliveryService.setSocketIO(io);
+
+          // Set up WebSocket server for real-time notifications
+          const wss = new WebSocketServer({
+            server: httpServer,
+            path: '/notifications',
+          });
+
+          // Monitor native WebSocket performance
+          monitorWebSocket(wss);
+          serverLogger.info('✅ WebSocket monitoring enabled');
+
+          // Simple API request logging (without interfering with responses)
+          app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+            serverLogger.debug(`API Request: ${req.method} ${req.originalUrl}`);
+            next();
+          });
+
+          // Register monitoring routes (metrics, health checks, dashboard)
+          const monitoringRouter = createMonitoringRoutes();
+          app.use('/monitoring', monitoringRouter);
+          serverLogger.info('✅ Monitoring routes registered at /monitoring');
+
+          // CRITICAL FIX: Register all API routes FIRST to prevent route interception
+          let sessionStore: any;
+          try {
+            sessionStore = await registerRoutes(app);
+            serverLogger.info('✅ API routes registered');
+          } catch (error) {
+            serverLogger.error('Route registration failed:', error);
+          }
+
+          // Error tracking middleware (before final error handler)
+          app.use(errorTrackingMiddleware);
+
+          // CRITICAL FIX: Add JSON 404 catch-all for unmatched API routes
+          app.all('/api/*', (req: Request, res: Response) => {
+            serverLogger.warn(`🚨 API route not found: ${req.originalUrl}`);
+            res.status(404).json({
+              error: `API route not found: ${req.originalUrl}`,
+              method: req.method,
+              path: req.originalUrl,
+            });
+          });
+
+          // Sentry error handler (must be after all routes) - only if Sentry is initialized
+          if (process.env.SENTRY_DSN) {
+            app.use(sentryErrorHandler());
+            serverLogger.info('✅ Sentry error handler registered');
+          }
+
+          // IMPORTANT: Static files and SPA fallback MUST come AFTER API routes
+          if (process.env.NODE_ENV === 'production') {
+            // In production, serve static files from the built frontend
+            app.use(express.static('dist/public'));
+
+            // Simple SPA fallback for production - serve index.html for non-API routes
+            app.get('*', async (req: Request, res: Response, next: NextFunction) => {
+              // Skip health check endpoints - they're already handled
+              if (req.originalUrl === '/' || req.originalUrl === '/healthz') {
+                return next();
+              }
+
+              // NEVER serve HTML for API routes - let them 404 instead
+              if (req.originalUrl.startsWith('/api/')) {
+                serverLogger.warn(
+                  `🚨 API route ${req.originalUrl} reached SPA fallback - this should not happen!`
+                );
+                return next(); // Let it 404 rather than serve HTML
+              }
+
+              // Only serve SPA for non-API routes
+              const path = await import('path');
+              res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
+            });
+
+            serverLogger.info('✅ Static file serving and SPA routing configured');
+          }
+
+          // Set up Vite middleware AFTER API routes to prevent catch-all interference
+          if (process.env.NODE_ENV === 'development') {
+            try {
+              const { setupVite } = await import('./vite');
+              await setupVite(app, httpServer);
+              serverLogger.info('Vite development server setup complete');
+            } catch (error) {
+              serverLogger.error('Vite setup failed:', error);
+              serverLogger.warn('Server continuing without Vite - frontend may not work properly');
+            }
+          }
+
+          const clients = new Map<string, any>();
+
+          wss.on('connection', (ws, request) => {
+            serverLogger.info('WebSocket client connected', {
+              remoteAddress: request.socket.remoteAddress,
+            });
+
+            ws.on('message', (data) => {
+              try {
+                const message = JSON.parse(data.toString());
+                if (message.type === 'identify' && message.userId) {
+                  clients.set(message.userId, ws);
+                  serverLogger.info('User identified for notifications', {
+                    userId: message.userId,
+                  });
+                }
+              } catch (error) {
+                serverLogger.error('WebSocket message parse error:', error);
+              }
+            });
+
+            ws.on('close', () => {
+              // Remove client from map when disconnected
+              for (const [userId, client] of Array.from(clients.entries())) {
+                if (client === ws) {
+                  clients.delete(userId);
+                  serverLogger.info('User disconnected from notifications', {
+                    userId,
+                  });
+                  break;
+                }
+              }
+            });
+
+            ws.on('error', (error) => {
+              serverLogger.error('WebSocket error:', error);
+            });
+          });
+
+          // Global broadcast function for messaging system
+          (global as any).broadcastNewMessage = async (data: any) => {
+            serverLogger.debug('Broadcasting message to connected clients', {
+              clientCount: clients.size,
+            });
+
+            // Broadcast to all connected clients
+            for (const [userId, ws] of Array.from(clients.entries())) {
+              if (ws.readyState === 1) {
+                // WebSocket.OPEN
+                try {
+                  ws.send(JSON.stringify(data));
+                } catch (error) {
+                  serverLogger.error('Error sending message to user', {
+                    userId,
+                    error,
+                  });
+                  // Remove dead connection
+                  clients.delete(userId);
+                }
+              } else {
+                // Remove dead connection
+                clients.delete(userId);
+              }
+            }
+          };
+
+          serverLogger.info('✅ WebSocket server ready at /notifications');
+
+          // Database and background services initialization
           await initializeDatabase();
           logger.log({ message: '✓ Database initialization complete', level: 'info' });
 
