@@ -625,20 +625,20 @@ export function Resources() {
               const CategoryIcon = category.icon;
 
               return (
-                <div key={category.id} className="bg-white rounded-lg shadow-sm p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`${category.bgColor} p-2 rounded`}>
-                      <CategoryIcon className={`w-6 h-6 ${category.color}`} />
+                <div key={category.id}>
+                  <div className={`flex items-center gap-3 mb-4 pb-3 border-b-2 ${category.borderColor}`}>
+                    <div className={`${category.bgColor} p-3 rounded-lg`}>
+                      <CategoryIcon className={`w-7 h-7 ${category.color}`} />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900">
+                    <h2 className="text-2xl font-bold text-gray-900">
                       {category.label}
                     </h2>
-                    <span className="text-sm text-gray-500">
-                      ({categoryResources.length})
+                    <span className="text-sm font-semibold text-gray-500 ml-auto">
+                      {categoryResources.length} {categoryResources.length === 1 ? 'item' : 'items'}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                     {categoryResources.map((resource) => (
                       <ResourceCard key={resource.resource.id} item={resource} />
                     ))}
