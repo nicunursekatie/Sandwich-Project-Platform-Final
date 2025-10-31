@@ -947,8 +947,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Event Details Section */}
-        <div className="bg-[#007E8C]/5 rounded-lg p-4 space-y-3 border border-[#007E8C]/10">
-          <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
+        <div className="bg-[#007E8C]/5 rounded-lg p-4 space-y-2 border border-[#007E8C]/10">
+          <h3 className="text-base font-bold text-[#236383] mb-2 flex items-center gap-2 uppercase tracking-wide">
             <Calendar className="w-4 h-4 text-[#007E8C]" />
             Event Details
           </h3>
@@ -1012,32 +1012,32 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           )}
 
-          {/* Times */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-1 flex-1">
+          {/* Times - Condensed Layout */}
+          {((request.eventStartTime || request.eventEndTime || request.pickupDateTime || request.pickupTime) || (canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)))) && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
               {request.eventStartTime && (
-                <div className="flex items-center gap-3 group py-2">
-                  <Clock className="w-7 h-7 text-gray-500" />
-                  <span className="text-2xl font-bold text-gray-800 min-w-[120px]">Start:</span>
+                <div className="flex items-center gap-2 group">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-semibold text-gray-700">Start:</span>
                   {isEditingThisCard && editingField === 'eventStartTime' ? (
                     <>
                       <Input
                         type="time"
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-10 w-40 text-xl text-gray-900 bg-white"
+                        className="h-8 w-32 text-base text-gray-900 bg-white"
                         autoFocus
                       />
                       <Button size="sm" onClick={saveEdit}>
-                        <Save className="w-4 h-4" />
+                        <Save className="w-3 h-3" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3" />
                       </Button>
                     </>
                   ) : (
                     <>
-                      <span className="text-3xl font-extrabold text-gray-900">
+                      <span className="text-lg font-bold text-gray-900">
                         {formatTime12Hour(request.eventStartTime)}
                       </span>
                       {canEdit && (
@@ -1050,7 +1050,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               formatTimeForInput(request.eventStartTime || '')
                             )
                           }
-                          className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          className="h-5 px-1.5 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-3 h-3" />
                         </Button>
@@ -1061,28 +1061,28 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
 
               {request.eventEndTime && (
-                <div className="flex items-center gap-3 group py-2">
-                  <Clock className="w-7 h-7 text-gray-500" />
-                  <span className="text-2xl font-bold text-gray-800 min-w-[120px]">End:</span>
+                <div className="flex items-center gap-2 group">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-semibold text-gray-700">End:</span>
                   {isEditingThisCard && editingField === 'eventEndTime' ? (
                     <>
                       <Input
                         type="time"
                         value={editingValue}
                         onChange={(e) => setEditingValue(e.target.value)}
-                        className="h-10 w-40 text-xl text-gray-900 bg-white"
+                        className="h-8 w-32 text-base text-gray-900 bg-white"
                         autoFocus
                       />
                       <Button size="sm" onClick={saveEdit}>
-                        <Save className="w-4 h-4" />
+                        <Save className="w-3 h-3" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3" />
                       </Button>
                     </>
                   ) : (
                     <>
-                      <span className="text-3xl font-extrabold text-gray-900">
+                      <span className="text-lg font-bold text-gray-900">
                         {formatTime12Hour(request.eventEndTime)}
                       </span>
                       {canEdit && (
@@ -1095,7 +1095,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               formatTimeForInput(request.eventEndTime || '')
                             )
                           }
-                          className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          className="h-5 px-1.5 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-3 h-3" />
                         </Button>
@@ -1106,9 +1106,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               )}
 
               {(request.pickupDateTime || request.pickupTime) && (
-                <div className="flex items-center gap-3 group py-2">
-                  <Clock className="w-7 h-7 text-gray-500" />
-                  <span className="text-2xl font-bold text-gray-800 min-w-[120px]">Pickup:</span>
+                <div className="flex items-center gap-2 group">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-semibold text-gray-700">Pickup:</span>
                   {isEditingThisCard && (editingField === 'pickupDateTime' || editingField === 'pickupTime') ? (
                     editingField === 'pickupDateTime' ? (
                       <div className="flex flex-col gap-2">
@@ -1151,7 +1151,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )
                   ) : (
                     <>
-                      <span className="text-3xl font-extrabold text-gray-900">
+                      <span className="text-lg font-bold text-gray-900">
                         {request.pickupDateTime
                           ? (() => {
                               const date = new Date(request.pickupDateTime);
@@ -1187,7 +1187,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                               );
                             }
                           }}
-                          className="h-6 px-2 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                          className="h-5 px-1.5 opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-3 h-3" />
                         </Button>
@@ -1196,29 +1196,29 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   )}
                 </div>
               )}
-            </div>
 
-            {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    Add Times
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Add Event Times</DialogTitle>
-                  </DialogHeader>
-                  <TimeDialogContent
-                    request={request}
-                    startEditing={startEditing}
-                    saveEdit={saveEdit}
-                    cancelEdit={cancelEdit}
-                  />
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
+              {canEdit && (!request.eventStartTime || !request.eventEndTime || (!request.pickupDateTime && !request.pickupTime)) && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="h-8">
+                      Add Times
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Add Event Times</DialogTitle>
+                    </DialogHeader>
+                    <TimeDialogContent
+                      request={request}
+                      startEditing={startEditing}
+                      saveEdit={saveEdit}
+                      cancelEdit={cancelEdit}
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+          )}
 
           {/* Location */}
           {request.eventAddress && renderEditableField('eventAddress', request.eventAddress, 'Location', <MapPin className="w-4 h-4" />)}
