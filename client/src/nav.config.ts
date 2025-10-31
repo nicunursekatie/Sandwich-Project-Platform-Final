@@ -137,7 +137,6 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Promotion',
     icon: Image,
     href: 'promotion',
-    permission: PERMISSIONS.NAV_PROMOTION,
     group: 'communication',
   },
 
