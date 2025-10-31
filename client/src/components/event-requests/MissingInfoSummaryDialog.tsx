@@ -135,14 +135,13 @@ export function MissingInfoSummaryDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="premium-btn-outline border-red-300 text-red-700 hover:bg-red-50"
+        <button
+          className="premium-btn-outline border-red-600 text-red-700 hover:bg-red-50 hover:border-red-700"
           data-testid="button-missing-info-summary"
         >
-          <AlertTriangle className="w-4 h-4 mr-2" />
+          <AlertTriangle className="w-4 h-4" />
           Incomplete Events ({eventsWithMissingInfo.length})
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>

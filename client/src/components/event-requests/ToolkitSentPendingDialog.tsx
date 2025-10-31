@@ -98,14 +98,13 @@ export function ToolkitSentPendingDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="premium-btn-outline border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/5"
+        <button
+          className="premium-btn-outline border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F]/10 hover:border-[#FBAD3F]"
           data-testid="button-toolkit-sent-pending"
         >
-          <Clock className="w-4 h-4 mr-2" aria-hidden="true" />
+          <Clock className="w-4 h-4" aria-hidden="true" />
           Toolkit Sent - Awaiting Schedule ({pendingEvents.length})
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader className="border-b border-[#007E8C]/10 pb-4">

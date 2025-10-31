@@ -217,7 +217,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
               </p>
             </div>
-            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center space-x-2'}`}>
+            <div className={`${isMobile ? 'flex flex-col space-y-2 w-full' : 'flex items-center gap-2 flex-wrap'}`}>
               <button
                 onClick={() => {
                   setShowScheduleCallDialog(false);
@@ -228,36 +228,34 @@ const EventRequestsManagementContent: React.FC = () => {
                   setIsEditing(true);
                   setShowEventDetails(true);
                 }}
-                className={`premium-btn-outline ${isMobile ? 'w-full' : ''}`}
+                className="premium-btn-outline"
                 data-testid="button-add-manual-event"
               >
                 <Plus className="w-4 h-4" />
                 {isMobile ? 'Add Event' : 'Add Manual Event Request'}
               </button>
+              <button
+                onClick={() => setShowSandwichPlanningModal(true)}
+                className="premium-btn-outline"
+                data-testid="button-sandwich-planning"
+              >
+                <span className="text-lg">🥪</span>
+                <span className={isMobile ? 'hidden' : ''}>Sandwich Planning</span>
+              </button>
+              <button
+                onClick={() => setShowStaffingPlanningModal(true)}
+                className="premium-btn-outline"
+                data-testid="button-staffing-planning"
+              >
+                <Users className="w-4 h-4" />
+                <span className={isMobile ? 'hidden' : ''}>Staffing Planning</span>
+              </button>
               <MissingInfoSummaryDialog />
               <ToolkitSentPendingDialog />
-              <div className={`${isMobile ? 'flex flex-wrap gap-2' : 'flex items-center space-x-2'}`}>
-                <button
-                  onClick={() => setShowSandwichPlanningModal(true)}
-                  className={`premium-btn-outline ${isMobile ? 'flex-1' : ''}`}
-                  data-testid="button-sandwich-planning"
-                >
-                  <span className="text-lg">🥪</span>
-                  <span className={isMobile ? 'hidden' : ''}>Sandwich Planning</span>
-                </button>
-                <button
-                  onClick={() => setShowStaffingPlanningModal(true)}
-                  className={`premium-btn-outline ${isMobile ? 'flex-1' : ''}`}
-                  data-testid="button-staffing-planning"
-                >
-                  <Users className="w-4 h-4" />
-                  <span className={isMobile ? 'hidden' : ''}>Staffing Planning</span>
-                </button>
-              </div>
+              <span className="premium-badge-info">
+                {eventRequests.length} Total Requests
+              </span>
             </div>
-            <span className="premium-badge-info self-start">
-              {eventRequests.length} Total Requests
-            </span>
           </div>
         </div>
 

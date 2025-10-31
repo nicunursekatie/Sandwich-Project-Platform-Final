@@ -1550,9 +1550,12 @@ router.put(
       ];
       booleanFields.forEach((field) => {
         if (processedUpdates[field] !== undefined) {
-          processedUpdates[field] =
+          const originalValue = processedUpdates[field];
+          const convertedValue =
             processedUpdates[field] === true ||
             processedUpdates[field] === 'true';
+          processedUpdates[field] = convertedValue;
+          logger.info(`[PUT] Boolean field ${field}: ${JSON.stringify(originalValue)} (${typeof originalValue}) → ${convertedValue}`);
         }
       });
 
