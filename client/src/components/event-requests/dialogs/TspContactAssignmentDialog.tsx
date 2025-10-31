@@ -168,6 +168,19 @@ export const TspContactAssignmentDialog: React.FC<TspContactAssignmentDialogProp
   };
 
   const canSave = (): boolean => {
+    // Allow saving when there are changes
+    if (!hasChanges()) return false;
+    
+    // Check if we're removing an existing assignment
+    const hasExistingAssignment = currentTspContact || currentCustomTspContact;
+    const isClearing = !selectedUserId && !customContactText.trim();
+    
+    // Allow clearing an existing assignment
+    if (hasExistingAssignment && isClearing) {
+      return true;
+    }
+    
+    // Otherwise, require content to save
     if (activeTab === 'user') {
       return !!selectedUserId;
     } else {
@@ -344,7 +357,9 @@ export const TspContactAssignmentDialog: React.FC<TspContactAssignmentDialogProp
             disabled={!canSave() || isSubmitting}
             data-testid="button-save-assignment"
           >
-            {isSubmitting ? 'Assigning...' : hasChanges() ? 'Save Assignment' : 'No Changes'}
+            {isSubmitting ? 'Saving...' : 
+             (!selectedUserId && !customContactText.trim() && (currentTspContact || currentCustomTspContact)) ? 'Remove Assignment' :
+             hasChanges() ? 'Save Assignment' : 'No Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>
