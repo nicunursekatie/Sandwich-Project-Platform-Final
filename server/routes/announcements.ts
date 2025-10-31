@@ -2,6 +2,9 @@ import { Request, Response, Router } from 'express';
 import type { RouterDependencies } from '../types';
 import { z } from 'zod';
 import { logger } from '../utils/production-safe-logger';
+import { db } from '../db';
+import { dismissedAnnouncements } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
 
 // Get announcements
 const getAnnouncements = async (req: Request, res: Response) => {
@@ -28,6 +31,64 @@ export function createAnnouncementsRouter(deps: RouterDependencies) {
   const { isAuthenticated, storage } = deps;
 
   router.get('/', isAuthenticated, getAnnouncements);
+
+  // Check if user has dismissed a specific announcement
+  router.get('/dismissed/:announcementId', isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const user = req.user || req.session?.user;
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { announcementId } = req.params;
+
+      const dismissed = await db
+        .select()
+        .from(dismissedAnnouncements)
+        .where(
+          and(
+            eq(dismissedAnnouncements.userId, user.id),
+            eq(dismissedAnnouncements.announcementId, announcementId)
+          )
+        )
+        .limit(1);
+
+      res.json({ dismissed: dismissed.length > 0 });
+    } catch (error) {
+      logger.error('Error checking dismissed announcement:', error);
+      res.status(500).json({ error: 'Failed to check announcement status' });
+    }
+  });
+
+  // Mark an announcement as dismissed for the current user
+  router.post('/dismiss', isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const user = req.user || req.session?.user;
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { announcementId } = req.body;
+      if (!announcementId) {
+        return res.status(400).json({ error: 'announcementId is required' });
+      }
+
+      // Insert or ignore if already exists (unique constraint)
+      await db
+        .insert(dismissedAnnouncements)
+        .values({
+          userId: user.id,
+          announcementId,
+        })
+        .onConflictDoNothing();
+
+      logger.log(`User ${user.id} dismissed announcement: ${announcementId}`);
+      res.json({ success: true });
+    } catch (error) {
+      logger.error('Error dismissing announcement:', error);
+      res.status(500).json({ error: 'Failed to dismiss announcement' });
+    }
+  });
 
   // Broadcast announcement to all users or specific roles
   router.post('/broadcast', isAuthenticated, async (req: any, res: Response) => {

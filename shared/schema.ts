@@ -3220,3 +3220,25 @@ export const updateExpenseSchema = insertExpenseSchema.partial();
 export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type UpdateExpense = z.infer<typeof updateExpenseSchema>;
+
+/**
+ * Dismissed announcements - Track which users have dismissed which announcements
+ * Allows for one-time popups and announcements that don't show repeatedly
+ */
+export const dismissedAnnouncements = pgTable('dismissed_announcements', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull(), // FK to users.id
+  announcementId: varchar('announcement_id').notNull(), // Unique identifier for the announcement (e.g., 'sms_launch_2024')
+  dismissedAt: timestamp('dismissed_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_dismissed_announcements_user').on(table.userId),
+  unique('unique_user_announcement').on(table.userId, table.announcementId),
+]);
+
+export const insertDismissedAnnouncementSchema = createInsertSchema(dismissedAnnouncements).omit({
+  id: true,
+  dismissedAt: true,
+});
+
+export type DismissedAnnouncement = typeof dismissedAnnouncements.$inferSelect;
+export type InsertDismissedAnnouncement = z.infer<typeof insertDismissedAnnouncementSchema>;

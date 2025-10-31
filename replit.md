@@ -49,6 +49,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Social Media Graphics**: Supports image and PDF uploads (up to 10MB) to Google Cloud Storage with optional email notifications controlled by a user checkbox.
 -   **SMS Opt-In Email Campaign**: Admins can select users in User Management and send detailed email instructions with direct profile link, explaining how to opt-in to SMS notifications. Email includes 5-step walkthrough, "what you'll receive" section, and branded HTML template from katie@thesandwichproject.org. Fixed double-message bug - users now receive only confirmation SMS at opt-in, then welcome SMS after confirmation.
 -   **TSP Contact SMS Notifications**: When users are assigned as TSP contact on event requests, they receive an SMS with organization name, event date, and direct link to view the event in the app. Only sends to users who have confirmed SMS opt-in. Messages are generic about event assignments and notifications, not specific to sandwich counts.
+-   **SMS Launch Announcement Modal**: One-time popup shown to all users on login announcing SMS alerts are live. Links directly to profile settings for easy signup. Tracked via dismissed_announcements table to ensure users only see it once. Generic announcement system supports future one-time announcements.
 
 ## External Dependencies
 -   **Database**: `@neondatabase/serverless`, `drizzle-orm`

@@ -50,6 +50,7 @@ import { KudosLoginNotifier } from '@/components/kudos-login-notifier';
 import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
+import { SMSAnnouncementModal } from '@/components/sms-announcement-modal';
 
 // Lazy load all page/section components for better performance
 const ProjectList = lazy(() => import('@/components/project-list'));
@@ -512,6 +513,7 @@ export default function Dashboard({
     <>
       {/* Login Kudos Notifier */}
       <KudosLoginNotifier />
+      <SMSAnnouncementModal />
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
         <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
