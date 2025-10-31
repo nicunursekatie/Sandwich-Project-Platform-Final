@@ -38,36 +38,36 @@ const CATEGORIES = [
     borderColor: 'border-[#236383]/30',
   },
   {
-    id: 'brand_marketing',
-    label: 'Brand & Marketing',
-    icon: Briefcase,
-    color: 'text-[#FBAD3F]', // Brand orange
-    bgColor: 'bg-[#FBAD3F]/10',
-    borderColor: 'border-[#FBAD3F]/30',
-  },
-  {
-    id: 'operations_safety',
-    label: 'Operations & Safety',
-    icon: Shield,
-    color: 'text-[#007E8C]', // Brand teal
-    bgColor: 'bg-[#007E8C]/10',
-    borderColor: 'border-[#007E8C]/30',
-  },
-  {
-    id: 'forms_templates',
-    label: 'Forms & Templates',
+    id: 'forms',
+    label: 'Forms',
     icon: FileCheck,
     color: 'text-[#47B3CB]', // Brand light blue
     bgColor: 'bg-[#47B3CB]/10',
     borderColor: 'border-[#47B3CB]/30',
   },
   {
-    id: 'training',
-    label: 'Guides & How-To's',
+    id: 'safety_guidelines',
+    label: 'Safety Guidelines',
+    icon: Shield,
+    color: 'text-[#007E8C]', // Brand teal
+    bgColor: 'bg-[#007E8C]/10',
+    borderColor: 'border-[#007E8C]/30',
+  },
+  {
+    id: 'tools',
+    label: 'Tools',
     icon: BookOpen,
     color: 'text-[#236383]', // Brand dark blue
     bgColor: 'bg-[#236383]/10',
     borderColor: 'border-[#236383]/30',
+  },
+  {
+    id: 'brand_marketing',
+    label: 'Brand & Marketing',
+    icon: Briefcase,
+    color: 'text-[#FBAD3F]', // Brand orange
+    bgColor: 'bg-[#FBAD3F]/10',
+    borderColor: 'border-[#FBAD3F]/30',
   },
   {
     id: 'master_documents',
