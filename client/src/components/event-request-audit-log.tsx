@@ -214,8 +214,11 @@ export function EventRequestAuditLog({
       case 'PRIMARY_CONTACT_COMPLETED':
         return <UserCheck className={iconClass} />;
       case 'EVENT_DETAILS_UPDATED':
+      case 'EVENT_REQUEST_CHANGE':
+      case 'UPDATE':
         return <Edit className={iconClass} />;
       case 'STATUS_CHANGED':
+      case 'EVENT_SCHEDULED':
         return <RefreshCw className={iconClass} />;
       case 'FOLLOW_UP_RECORDED':
         return <Mail className={iconClass} />;
@@ -236,8 +239,10 @@ export function EventRequestAuditLog({
         return 'bg-brand-primary-lighter text-brand-primary border-brand-primary-border';
       case 'EVENT_DETAILS_UPDATED':
       case 'UPDATE':
+      case 'EVENT_REQUEST_CHANGE':
         return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'STATUS_CHANGED':
+      case 'EVENT_SCHEDULED':
         return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'FOLLOW_UP_RECORDED':
         return 'bg-cyan-50 text-cyan-700 border-cyan-200';
@@ -245,6 +250,8 @@ export function EventRequestAuditLog({
         return 'bg-yellow-50 text-yellow-700 border-yellow-200';
       case 'DELETE':
         return 'bg-red-50 text-red-700 border-red-200';
+      case 'EVENT_REQUEST_SIGNIFICANT_CHANGE':
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200';
     }
@@ -352,6 +359,10 @@ export function EventRequestAuditLog({
       'tspContactAssigned': 'TSP Contact',
       'tspContactAssignedDate': 'TSP Contact Assigned Date',
       'additionalTspContacts': 'Additional TSP Contacts',
+      'toolkitSent': 'Toolkit Sent',
+      'toolkitSentDate': 'Toolkit Sent Date',
+      'toolkitStatus': 'Toolkit Status',
+      'toolkitSentBy': 'Toolkit Sent By',
       
       // Boolean flags
       'isPublic': 'Public Event',
@@ -528,6 +539,7 @@ export function EventRequestAuditLog({
       'PRIMARY_CONTACT_COMPLETED': 'Contact Made',
       'EVENT_DETAILS_UPDATED': 'Details Updated',
       'STATUS_CHANGED': 'Status Changed',
+      'EVENT_SCHEDULED': 'Event Scheduled',
       'FOLLOW_UP_RECORDED': 'Follow-up Added',
       'MARKED_UNRESPONSIVE': 'Marked Unresponsive',
       'DELETE': 'Deleted',
@@ -811,6 +823,7 @@ export function EventRequestAuditLog({
                       <SelectItem value="72">Last 3 days</SelectItem>
                       <SelectItem value="168">Last Week</SelectItem>
                       <SelectItem value="720">Last Month</SelectItem>
+                      <SelectItem value="0">All Time</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
