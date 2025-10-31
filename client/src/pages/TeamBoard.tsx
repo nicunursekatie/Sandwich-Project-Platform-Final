@@ -82,14 +82,14 @@ const getInitials = (name: string | null | undefined) => {
 // Helper to get consistent avatar color based on name
 const getAvatarColor = (name: string | null | undefined) => {
   const colors = [
-    'bg-blue-500',
-    'bg-green-500',
-    'bg-purple-500',
-    'bg-pink-500',
-    'bg-indigo-500',
-    'bg-yellow-500',
-    'bg-red-500',
-    'bg-teal-500',
+    'bg-[#236383]', // Primary blue
+    'bg-[#007E8C]', // Teal
+    'bg-[#47B3CB]', // Light blue
+    'bg-[#FBAD3F]', // Orange/gold
+    'bg-[#A31C41]', // Red
+    'bg-[#236383]', // Primary blue (repeat for variety)
+    'bg-[#007E8C]', // Teal (repeat)
+    'bg-[#47B3CB]', // Light blue (repeat)
   ];
   if (!name || typeof name !== 'string') return colors[0];
   const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
@@ -178,10 +178,10 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
   };
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 mt-4 pt-3">
+    <div className="border-t border-[#47B3CB]/30 dark:border-[#236383] mt-4 pt-3">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+        className="flex items-center justify-between w-full text-sm text-[#007E8C] dark:text-[#47B3CB] hover:text-[#236383] dark:hover:text-[#FBAD3F] transition-colors"
         data-testid={`button-comments-toggle-${itemId}`}
       >
         <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
               {comments.map((comment) => (
                 <div
                   key={comment.id}
-                  className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+                  className="bg-[#47B3CB]/10 dark:bg-[#236383]/30 rounded-lg p-3 border border-[#47B3CB]/20 dark:border-[#236383]"
                   data-testid={`comment-${comment.id}`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -245,13 +245,20 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
           )}
 
           {/* Add comment form */}
-          <form onSubmit={handleSubmitComment} className="flex gap-2">
-            <Input
+          <form onSubmit={handleSubmitComment} className="flex gap-2 items-end">
+            <Textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Add a comment..."
-              className="text-sm"
+              className="text-sm min-h-[60px] max-h-[200px] resize-y"
               data-testid={`input-new-comment-${itemId}`}
+              onKeyDown={(e) => {
+                // Submit on Enter, but allow Shift+Enter for new lines
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmitComment(e as any);
+                }
+              }}
             />
             <Button
               type="submit"
