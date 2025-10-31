@@ -2859,7 +2859,7 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'Event request not found' });
     }
 
-    // Send email notification if:
+    // Send email and SMS notifications if:
     // 1. TSP contact was assigned (not removed)
     // 2. It changed from previous value
     // 3. Event is not already completed or declined
@@ -2870,6 +2870,7 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       originalEvent.status !== 'declined'
     ) {
       try {
+        // Send email notification
         await EmailNotificationService.sendTspContactAssignmentNotification(
           validatedData.tspContact!,
           id,
@@ -2878,7 +2879,36 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
         );
       } catch (error) {
         // Log error but don't fail the request if email notification fails
-        logger.error('Failed to send TSP contact assignment notification:', error);
+        logger.error('Failed to send TSP contact assignment email:', error);
+      }
+
+      // Send SMS notification if user has opted in
+      try {
+        const assignedUser = await storage.getUserById(validatedData.tspContact!);
+        if (assignedUser) {
+          const metadata = assignedUser.metadata as any || {};
+          const smsConsent = metadata.smsConsent || {};
+          
+          // Only send SMS if user has confirmed SMS opt-in
+          if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
+            const { sendTspContactAssignmentSMS } = await import('../sms-service');
+            const smsResult = await sendTspContactAssignmentSMS(
+              smsConsent.phoneNumber,
+              originalEvent.organizationName,
+              id,
+              originalEvent.scheduledEventDate || originalEvent.desiredEventDate
+            );
+            
+            if (smsResult.success) {
+              logger.log(`✅ TSP contact assignment SMS sent to ${assignedUser.email}`);
+            } else {
+              logger.warn(`⚠️ TSP contact assignment SMS failed: ${smsResult.message}`);
+            }
+          }
+        }
+      } catch (error) {
+        // Log error but don't fail the request if SMS notification fails
+        logger.error('Failed to send TSP contact assignment SMS:', error);
       }
     }
 

@@ -190,7 +190,7 @@ export class NotificationService {
     }
 
     try {
-      const subject = 'Get Text Reminders for Sandwich Collections 📱';
+      const subject = 'Get Text Notifications from The Sandwich Project 📱';
       const displayName = recipientName || 'there';
       const settingsUrl = `${process.env.REPL_URL || 'https://your-platform-url.com'}/profile`;
       
@@ -218,19 +218,20 @@ export class NotificationService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>📱 Get SMS Reminders from The Sandwich Project</h1>
+              <h1>📱 Get SMS Notifications from The Sandwich Project</h1>
             </div>
             <div class="content">
               <div class="section">
                 <p>Hi ${displayName},</p>
-                <p>Never miss a sandwich collection reminder! Sign up to receive text message alerts when it's time to report your weekly sandwich counts.</p>
+                <p>Stay informed about your event assignments! Sign up to receive instant text notifications when you're assigned as TSP contact for events.</p>
               </div>
 
               <div class="highlight-box">
                 <strong>What you'll receive:</strong>
                 <ul>
-                  <li>Weekly text reminders when sandwich counts are due</li>
-                  <li>Timely notifications to help you stay on track</li>
+                  <li>Instant alerts when you're assigned to events as TSP contact</li>
+                  <li>Direct links to view event details in the app</li>
+                  <li>Important notifications to help you stay on track</li>
                   <li>Simple, helpful messages – no spam!</li>
                 </ul>
               </div>
@@ -295,15 +296,16 @@ export class NotificationService {
       `;
 
       const textContent = `
-Get SMS Reminders from The Sandwich Project
+Get SMS Notifications from The Sandwich Project
 
 Hi ${displayName},
 
-Never miss a sandwich collection reminder! Sign up to receive text message alerts when it's time to report your weekly sandwich counts.
+Stay informed about your event assignments! Sign up to receive instant text notifications when you're assigned as TSP contact for events.
 
 WHAT YOU'LL RECEIVE:
-• Weekly text reminders when sandwich counts are due
-• Timely notifications to help you stay on track
+• Instant alerts when you're assigned to events as TSP contact
+• Direct links to view event details in the app
+• Important notifications to help you stay on track
 • Simple, helpful messages – no spam!
 
 HOW TO SIGN UP (Takes 2 minutes):

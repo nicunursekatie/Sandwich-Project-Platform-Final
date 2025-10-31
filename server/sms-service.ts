@@ -261,19 +261,19 @@ function getWelcomeMessages(provider: SMSProvider) {
   if (providerName === 'phone_gateway') {
     return {
       confirmation: (verificationCode: string) => 
-        `Welcome to The Sandwich Project! 🥪\n\nTo complete SMS signup, reply with this code: ${verificationCode}\n\nOr reply "YES" to confirm.\n\nYou'll get weekly sandwich collection reminders.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`,
+        `Welcome to The Sandwich Project! 🥪\n\nTo complete SMS signup, reply with this code: ${verificationCode}\n\nOr reply "YES" to confirm.\n\nYou'll receive important notifications and updates.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`,
       
       welcome: () => 
-        `Welcome to The Sandwich Project SMS! 🥪\n\nYou'll receive text reminders when weekly sandwich counts are missing.\n\nTo stop messages, reply STOP or visit app settings.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`
+        `Welcome to The Sandwich Project SMS! 🥪\n\nYou'll receive notifications when you're assigned to events and other important updates.\n\nTo stop messages, reply STOP or visit app settings.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`
     };
   } else {
     // Twilio or other providers
     return {
       confirmation: (verificationCode: string) => 
-        `Welcome to The Sandwich Project! 🥪\n\nTo complete your SMS signup, please reply with your verification code:\n\n${verificationCode}\n\nOr simply reply "YES" to confirm.\n\nThis confirms you want to receive weekly sandwich collection reminders.`,
+        `Welcome to The Sandwich Project! 🥪\n\nTo complete your SMS signup, please reply with your verification code:\n\n${verificationCode}\n\nOr simply reply "YES" to confirm.\n\nYou'll receive important notifications and updates.`,
       
       welcome: () => 
-        `Welcome to The Sandwich Project SMS reminders! 🥪\n\nYou'll receive text reminders when weekly sandwich counts are missing.\n\nTo stop receiving messages, reply STOP at any time or visit the app settings.`
+        `Welcome to The Sandwich Project SMS! 🥪\n\nYou'll receive notifications when you're assigned to events and other important updates.\n\nTo stop receiving messages, reply STOP at any time or visit the app settings.`
     };
   }
 }
@@ -498,6 +498,81 @@ export async function sendWelcomeSMS(
     return {
       success: false,
       message: `Failed to send welcome SMS: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS notification for TSP contact assignment
+ */
+export async function sendTspContactAssignmentSMS(
+  phoneNumber: string,
+  organizationName: string,
+  eventId: number,
+  eventDate: Date | string | null
+): Promise<SMSReminderResult> {
+  if (!smsProvider) {
+    return {
+      success: false,
+      message: 'SMS service not configured - no provider available',
+    };
+  }
+
+  if (!smsProvider.isConfigured()) {
+    return {
+      success: false,
+      message: `SMS service not configured - ${smsProvider.name} provider missing configuration`,
+    };
+  }
+
+  try {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      logger.error('❌ Invalid phone number provided');
+      return {
+        success: false,
+        message: 'Invalid phone number provided',
+      };
+    }
+
+    // Format event date
+    const formattedDate = eventDate 
+      ? new Date(eventDate).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric'
+        })
+      : 'TBD';
+
+    // Create app URL with event link
+    const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+    const eventUrl = `${appUrl}/event-requests/${eventId}`;
+
+    // Craft message
+    const message = `The Sandwich Project: You've been assigned as TSP contact for ${organizationName} (${formattedDate}). View details: ${eventUrl}`;
+
+    const result = await smsProvider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ TSP contact assignment SMS sent to ${phoneNumber} (${result.messageId})`);
+      return {
+        success: true,
+        message: `TSP contact assignment SMS sent successfully to ${phoneNumber}`,
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending TSP contact assignment SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send TSP contact assignment SMS: ${(error as Error).message}`,
     };
   }
 }
