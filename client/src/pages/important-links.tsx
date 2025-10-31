@@ -45,8 +45,25 @@ export default function ImportantLinks() {
     'https://nicunursekatie.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html';
   const eventToolkitUrl =
     'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
-  const flyersUrl =
-    'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/NCLflyer.html';
+  // Flyers configuration - add more flyers here as they become available
+  const flyers = [
+    {
+      id: 'ncl',
+      name: 'NCL Flyer - Social Media & QR Codes',
+      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/NCLflyer.html',
+      description: 'Social media QR codes, newsletter signup, and Amazon wishlist',
+    },
+    // Add more flyers here in the future:
+    // {
+    //   id: 'volunteer',
+    //   name: 'Volunteer Recruitment Flyer',
+    //   url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/volunteer.html',
+    //   description: 'Flyer for recruiting volunteers',
+    // },
+  ];
+
+  const [selectedFlyerId, setSelectedFlyerId] = useState(flyers[0].id);
+  const selectedFlyer = flyers.find(f => f.id === selectedFlyerId) || flyers[0];
 
   // Events Google Sheet (published version)
   const eventsEmbedUrl =
@@ -253,26 +270,46 @@ export default function ImportantLinks() {
                 📄 Flyers & Promotional Materials
               </CardTitle>
               <CardDescription>
-                Social media QR codes, newsletter signup, Amazon wishlist, and other promotional materials
+                {selectedFlyer.description}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <div className="space-y-4 flex-1 flex flex-col">
+                {/* Flyer Selector - Only show if multiple flyers available */}
+                {flyers.length > 1 && (
+                  <div className="bg-gradient-to-r from-[#236383]/10 to-[#47B3CB]/10 border border-[#47B3CB]/30 rounded-lg p-4">
+                    <label className="block text-sm font-semibold text-[#236383] mb-2">
+                      Select Flyer:
+                    </label>
+                    <select
+                      value={selectedFlyerId}
+                      onChange={(e) => setSelectedFlyerId(e.target.value)}
+                      className="w-full px-4 py-2 border border-[#47B3CB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#236383] bg-white"
+                    >
+                      {flyers.map((flyer) => (
+                        <option key={flyer.id} value={flyer.id}>
+                          {flyer.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <Button
                     size="lg"
-                    onClick={() => window.open(flyersUrl, '_blank')}
+                    onClick={() => window.open(selectedFlyer.url, '_blank')}
                     className="bg-gradient-to-r from-[#FBAD3F] to-yellow-500 hover:from-[#FBAD3F]/90 hover:to-yellow-500/90 text-white font-semibold px-8 py-3 text-base flex-1"
                   >
                     <ExternalLink className="w-5 h-5 mr-2" />
-                    Open Flyers Page
+                    Open Flyer Page
                   </Button>
                   <Button
                     size="lg"
                     variant="outline"
                     onClick={async () => {
                       try {
-                        await navigator.clipboard.writeText(flyersUrl);
+                        await navigator.clipboard.writeText(selectedFlyer.url);
                         alert('Link copied to clipboard!');
                       } catch (error) {
                         logger.error('Failed to copy:', error);
@@ -287,42 +324,46 @@ export default function ImportantLinks() {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <h3 className="font-semibold text-yellow-900 mb-2">Shareable Link:</h3>
                   <code className="text-sm bg-white px-3 py-2 rounded border border-yellow-200 block break-all">
-                    {flyersUrl}
+                    {selectedFlyer.url}
                   </code>
                   <p className="text-sm text-yellow-700 mt-2">
-                    Share this page to promote The Sandwich Project on social media, collect newsletter signups, and share the Amazon wishlist
+                    Share this flyer to promote The Sandwich Project
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-br from-blue-50 to-yellow-50 rounded-lg border">
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">✅ Social Media QR Codes</p>
-                    <p className="text-xs text-gray-600">Facebook, Instagram, LinkedIn</p>
+                {/* Flyer-specific content info - only show for NCL flyer */}
+                {selectedFlyer.id === 'ncl' && (
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-br from-blue-50 to-yellow-50 rounded-lg border">
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-gray-700 mb-1">✅ Social Media QR Codes</p>
+                      <p className="text-xs text-gray-600">Facebook, Instagram, LinkedIn</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-gray-700 mb-1">📧 Newsletter Signup</p>
+                      <p className="text-xs text-gray-600">QR code for newsletter</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-gray-700 mb-1">🎁 Amazon Wishlist</p>
+                      <p className="text-xs text-gray-600">QR code for supply donations</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-gray-700 mb-1">🌐 Website Link</p>
+                      <p className="text-xs text-gray-600">www.thesandwichproject.org</p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">📧 Newsletter Signup</p>
-                    <p className="text-xs text-gray-600">QR code for newsletter</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">🎁 Amazon Wishlist</p>
-                    <p className="text-xs text-gray-600">QR code for supply donations</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">🌐 Website Link</p>
-                    <p className="text-xs text-gray-600">www.thesandwichproject.org</p>
-                  </div>
-                </div>
+                )}
 
                 {/* Embedded Flyers */}
                 <div className="border rounded-lg overflow-hidden flex-1">
                   <iframe
-                    src={flyersUrl}
+                    key={selectedFlyer.id}
+                    src={selectedFlyer.url}
                     className="w-full h-full border-0"
                     style={{
                       minHeight: '800px',
                       height: '100%',
                     }}
-                    title="Flyers & Promotional Materials"
+                    title={selectedFlyer.name}
                     loading="eager"
                     referrerPolicy="no-referrer"
                   />
