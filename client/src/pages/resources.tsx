@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '../contexts/auth-context';
+import { useAuth } from '../hooks/useAuth';
 import { ResourceAdminModal } from '../components/resource-admin-modal';
 import {
   Search,
