@@ -261,19 +261,19 @@ function getWelcomeMessages(provider: SMSProvider) {
   if (providerName === 'phone_gateway') {
     return {
       confirmation: (verificationCode: string) => 
-        `Welcome to The Sandwich Project! 🥪\n\nTo complete SMS signup, reply with this code: ${verificationCode}\n\nOr reply "YES" to confirm.\n\nYou'll receive important notifications and updates.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`,
+        `Welcome to The Sandwich Project! 🥪\n\nTo complete SMS signup, reply with this code: ${verificationCode}\n\nOr reply "YES" to confirm.\n\nYou'll receive helpful reminders and updates as needed.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`,
       
       welcome: () => 
-        `Welcome to The Sandwich Project SMS! 🥪\n\nYou'll receive notifications when you're assigned to events and other important updates.\n\nTo stop messages, reply STOP or visit app settings.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`
+        `Welcome to The Sandwich Project SMS! 🥪\n\nYou're all set to receive helpful updates and reminders when needed.\n\nTo stop messages, reply STOP or visit app settings.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`
     };
   } else {
     // Twilio or other providers
     return {
       confirmation: (verificationCode: string) => 
-        `Welcome to The Sandwich Project! 🥪\n\nTo complete your SMS signup, please reply with your verification code:\n\n${verificationCode}\n\nOr simply reply "YES" to confirm.\n\nYou'll receive important notifications and updates.`,
+        `Welcome to The Sandwich Project! 🥪\n\nTo complete your SMS signup, please reply with your verification code:\n\n${verificationCode}\n\nOr simply reply "YES" to confirm.\n\nYou'll receive helpful reminders and updates as needed.`,
       
       welcome: () => 
-        `Welcome to The Sandwich Project SMS! 🥪\n\nYou'll receive notifications when you're assigned to events and other important updates.\n\nTo stop receiving messages, reply STOP at any time or visit the app settings.`
+        `Welcome to The Sandwich Project SMS! 🥪\n\nYou're all set to receive helpful updates and reminders when needed.\n\nTo stop receiving messages, reply STOP at any time or visit the app settings.`
     };
   }
 }

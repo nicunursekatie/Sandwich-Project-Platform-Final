@@ -229,10 +229,10 @@ export class NotificationService {
               <div class="highlight-box">
                 <strong>What you'll receive:</strong>
                 <ul>
-                  <li>Instant alerts when you're assigned to events as TSP contact</li>
-                  <li>Direct links to view event details in the app</li>
+                  <li>Helpful reminders and updates when you need them</li>
+                  <li>Direct links to the app for easy access</li>
                   <li>Important notifications to help you stay on track</li>
-                  <li>Simple, helpful messages – no spam!</li>
+                  <li>Simple, friendly messages – no spam!</li>
                 </ul>
               </div>
 
@@ -303,10 +303,10 @@ Hi ${displayName},
 Stay informed about your event assignments! Sign up to receive instant text notifications when you're assigned as TSP contact for events.
 
 WHAT YOU'LL RECEIVE:
-• Instant alerts when you're assigned to events as TSP contact
-• Direct links to view event details in the app
+• Helpful reminders and updates when you need them
+• Direct links to the app for easy access
 • Important notifications to help you stay on track
-• Simple, helpful messages – no spam!
+• Simple, friendly messages – no spam!
 
 HOW TO SIGN UP (Takes 2 minutes):
 
