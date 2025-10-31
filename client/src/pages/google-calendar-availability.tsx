@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Eye, EyeOff, Calendar as CalendarIcon2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/queryClient';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
@@ -24,6 +24,8 @@ interface CalendarEvent {
 export default function GoogleCalendarAvailability() {
   const { trackView, trackClick } = useActivityTracker();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [eventFilter, setEventFilter] = useState<'all' | 'unavailability' | 'events'>('all');
 
   useEffect(() => {
     trackView(
@@ -45,21 +47,74 @@ export default function GoogleCalendarAvailability() {
     return date;
   }, [currentDate]);
 
-  // Fetch events for the current month
+  // Calculate week boundaries
+  const weekStart = useMemo(() => {
+    const today = new Date(currentDate);
+    const dayOfWeek = today.getDay();
+    const diff = today.getDate() - dayOfWeek;
+    const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), diff);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }, [currentDate]);
+
+  const weekEnd = useMemo(() => {
+    const end = new Date(weekStart);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return end;
+  }, [weekStart]);
+
+  // Determine which date range to use
+  const dateStart = viewMode === 'week' ? weekStart : monthStart;
+  const dateEnd = viewMode === 'week' ? weekEnd : monthEnd;
+
+  // Fetch events for the current view
   const { data: events = [], isLoading } = useQuery<CalendarEvent[]>({
-    queryKey: ['/api/google-calendar/events', monthStart.toISOString(), monthEnd.toISOString()],
+    queryKey: ['/api/google-calendar/events', dateStart.toISOString(), dateEnd.toISOString()],
     queryFn: async () => {
-      return await apiRequest('GET', `/api/google-calendar/events?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`);
+      return await apiRequest('GET', `/api/google-calendar/events?startDate=${dateStart.toISOString()}&endDate=${dateEnd.toISOString()}`);
     },
   });
 
-  // Navigate months
-  const goToPreviousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  // Filter events based on selected filter
+  const filteredEvents = useMemo(() => {
+    if (eventFilter === 'all') return events;
+    
+    const lowerKeywords = ['unavailable', 'unavail', 'out of town', 'away', 'vacation', 'travel'];
+    
+    return events.filter(event => {
+      const summary = (event.summary || '').toLowerCase();
+      const isUnavailability = lowerKeywords.some(keyword => summary.includes(keyword));
+      
+      if (eventFilter === 'unavailability') {
+        return isUnavailability;
+      } else if (eventFilter === 'events') {
+        return !isUnavailability;
+      }
+      
+      return true;
+    });
+  }, [events, eventFilter]);
+
+  // Navigate months/weeks
+  const goToPrevious = () => {
+    if (viewMode === 'week') {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() - 7);
+      setCurrentDate(newDate);
+    } else {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    }
   };
 
-  const goToNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const goToNext = () => {
+    if (viewMode === 'week') {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() + 7);
+      setCurrentDate(newDate);
+    } else {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    }
   };
 
   const goToToday = () => {
@@ -68,6 +123,22 @@ export default function GoogleCalendarAvailability() {
 
   // Generate calendar grid
   const calendarDays = useMemo(() => {
+    if (viewMode === 'week') {
+      // Week view: show 7 days starting from week start
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(date.getDate() + i);
+        const today = new Date();
+        days.push({
+          date,
+          isCurrentMonth: true,
+        });
+      }
+      return days;
+    }
+
+    // Month view: existing logic
     const days = [];
     const firstDayOfMonth = monthStart.getDay();
     const daysInMonth = monthEnd.getDate();
@@ -100,11 +171,11 @@ export default function GoogleCalendarAvailability() {
     }
 
     return days;
-  }, [currentDate, monthStart, monthEnd]);
+  }, [currentDate, monthStart, monthEnd, weekStart, viewMode]);
 
   // Get events for a specific day (including multi-day events that span this day)
   const getEventsForDay = (date: Date) => {
-    return events.filter(event => {
+    return filteredEvents.filter(event => {
       const isAllDay = !!event.start.date;
       const startDateStr = event.start.date || event.start.dateTime?.split('T')[0];
       const endDateStr = event.end.date || event.end.dateTime?.split('T')[0];
@@ -173,6 +244,13 @@ export default function GoogleCalendarAvailability() {
 
   const monthYear = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const today = new Date().toDateString();
+  
+  // Format week range for display
+  const weekRange = useMemo(() => {
+    if (viewMode === 'month') return monthYear;
+    const weekEndDisplay = new Date(weekEnd);
+    return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEndDisplay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }, [viewMode, monthYear, weekStart, weekEnd]);
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900">
@@ -198,14 +276,64 @@ export default function GoogleCalendarAvailability() {
             <Button variant="outline" size="sm" onClick={goToToday}>
               Today
             </Button>
-            <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
+            <Button variant="outline" size="icon" onClick={goToPrevious}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm font-medium min-w-[150px] text-center">
-              {monthYear}
+              {weekRange}
             </span>
-            <Button variant="outline" size="icon" onClick={goToNextMonth}>
+            <Button variant="outline" size="icon" onClick={goToNext}>
               <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
+        {/* View Mode Toggle & Filters */}
+        <div className="flex items-center justify-between gap-4 mt-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">View:</span>
+            <Button
+              variant={viewMode === 'week' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('week')}
+            >
+              <Clock className="w-4 h-4 mr-1" />
+              Week
+            </Button>
+            <Button
+              variant={viewMode === 'month' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('month')}
+            >
+              <CalendarIcon2 className="w-4 h-4 mr-1" />
+              Month
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Filter:</span>
+            <Button
+              variant={eventFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setEventFilter('all')}
+            >
+              All
+            </Button>
+            <Button
+              variant={eventFilter === 'unavailability' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setEventFilter('unavailability')}
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              Unavailability
+            </Button>
+            <Button
+              variant={eventFilter === 'events' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setEventFilter('events')}
+            >
+              <CalendarIcon2 className="w-4 h-4 mr-1" />
+              Events
             </Button>
           </div>
         </div>
@@ -232,7 +360,7 @@ export default function GoogleCalendarAvailability() {
               return (
                 <div
                   key={index}
-                  className={`min-h-[120px] border-r border-b border-slate-200 dark:border-slate-700 p-2 ${
+                  className={`${viewMode === 'week' ? 'min-h-[200px]' : 'min-h-[120px]'} border-r border-b border-slate-200 dark:border-slate-700 p-2 ${
                     !day.isCurrentMonth ? 'bg-slate-50 dark:bg-slate-900' : ''
                   } ${isToday ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
                 >
@@ -274,7 +402,7 @@ export default function GoogleCalendarAvailability() {
         <div className="flex items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-400">
           <CalendarIcon className="h-4 w-4" />
           <span>
-            {isLoading ? 'Loading events...' : `Showing ${events.length} events with their original Google Calendar colors`}
+            {isLoading ? 'Loading events...' : `Showing ${filteredEvents.length} of ${events.length} events with their original Google Calendar colors`}
           </span>
         </div>
       </div>
