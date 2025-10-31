@@ -1241,20 +1241,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
                               const recipientName = resolveRecipientName(id);
                               return (
-                                <Badge key={idx} className="bg-white/20 text-white border-white/40">
+                                <Badge key={idx} className="bg-white text-gray-900 border-gray-300">
                                   🏠 {recipientName}
                                 </Badge>
                               );
                             })}
                             {request.assignedRecipientIds.length > 3 && (
-                              <Badge className="bg-white/10 text-white/80 border-white/30">
+                              <Badge className="bg-white/90 text-gray-700 border-gray-300">
                                 +{request.assignedRecipientIds.length - 3} more
                               </Badge>
                             )}
                           </div>
                         </div>
                       ) : request.recipientsCount ? (
-                        <Badge className="bg-white/20 text-white border-white/40">
+                        <Badge className="bg-white text-gray-900 border-gray-300">
                           🏠 Unknown Host ({request.recipientsCount})
                         </Badge>
                       ) : (
