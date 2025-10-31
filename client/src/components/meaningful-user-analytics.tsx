@@ -165,21 +165,31 @@ export default function MeaningfulUserAnalytics() {
     staleTime: 180000, // 3 minutes
   });
 
+  // Filter out admin users and sample data, then sort
   const sortedUsers =
-    userActivities?.sort((a, b) => {
-      switch (sortBy) {
-        case 'contribution':
-          return b.totalContributionValue - a.totalContributionValue;
-        case 'data':
-          return b.sandwichDataEntered - a.sandwichDataEntered;
-        case 'volunteers':
-          return b.volunteersManaged - a.volunteersManaged;
-        case 'active':
-          return b.daysActive - a.daysActive;
-        default:
-          return 0;
-      }
-    }) || [];
+    userActivities
+      ?.filter((user) => {
+        // Exclude admin roles and sample data
+        const isAdmin = user.role?.toLowerCase().includes('admin');
+        const isSampleData = 
+          user.email?.includes('admin@sandwich.project') ||
+          user.userName?.toLowerCase().includes('admin user');
+        return !isAdmin && !isSampleData;
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'contribution':
+            return b.totalContributionValue - a.totalContributionValue;
+          case 'data':
+            return b.sandwichDataEntered - a.sandwichDataEntered;
+          case 'volunteers':
+            return b.volunteersManaged - a.volunteersManaged;
+          case 'active':
+            return b.daysActive - a.daysActive;
+          default:
+            return 0;
+        }
+      }) || [];
 
   const getContributionLevel = (score: number) => {
     if (score >= 90)
