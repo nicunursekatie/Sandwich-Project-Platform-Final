@@ -162,7 +162,8 @@ export function getPreviousWednesday(): Date {
 
 /**
  * Check Dunwoody special requirements: need both Lisa Hiles AND either Stephanie or Marcy
- * Also accepts entries from admin accounts (katielong2316@gmail.com, kenig.ka@gmail.com, admin@sandwich.project)
+ * Also accepts entries from admin accounts (Katie, Christine, kenig.ka, admin@sandwich.project)
+ * who submit collection data on behalf of Stephanie/Marcy
  */
 function checkDunwoodyStatus(submissions: any[], location: string): any {
   const dunwoodySubmissions = submissions.filter((sub) =>
@@ -177,9 +178,10 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
     };
   }
 
-  // Admin emails that can submit for any location
+  // Admin emails that can submit for any location (counts as Stephanie/Marcy for Dunwoody)
   const adminEmails = [
     'katielong2316@gmail.com',
+    'christine@thesandwichproject.org',
     'kenig.ka@gmail.com',
     'admin@sandwich.project',
   ];

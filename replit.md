@@ -20,6 +20,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Authentication System**: Handles login/registration, session management with PostgreSQL storage, role-based access control, password resets, and profile management.
 -   **Unified Permissions System**: Consistent frontend/backend logic, visual role templates, and granular functional permissions.
 -   **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation and timezone-safe date handling.
+-   **Weekly Monitoring - Dunwoody Logic**: Dunwoody requires two separate entries: (1) Lisa Hiles AND (2) either Stephanie/Marcy OR admin submissions (Katie/Christine) that count as accounting for Stephanie/Marcy's data.
 -   **Dual Data Architecture**: Uses `sandwich_collections` for operational logging and `authoritative_weekly_collections` (Scott's data) as the source of truth for analytics, with a hybrid analytics endpoint combining both.
 -   **Search & Filtering**: Real-time capabilities across management interfaces.
 -   **Performance Optimization**: Query optimization, caching, pagination, and database connection pooling.
