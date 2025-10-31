@@ -49,6 +49,7 @@ import { ComprehensiveUserDialog } from '@/components/user-management/Comprehens
 import { PasswordDialog } from '@/components/user-management/PasswordDialog';
 import { SMSDialog } from '@/components/user-management/SMSDialog';
 import { SimplifiedUserTableRow } from '@/components/user-management/SimplifiedUserTableRow';
+import { IndividualUserActivity } from '@/components/individual-user-activity';
 
 // Import custom hooks
 import { useUserManagement } from '@/hooks/useUserManagement';
@@ -71,6 +72,7 @@ export default function UserManagementFinal() {
   const { celebration, triggerCelebration, hideCelebration } = useCelebration();
 
   const [activeTab, setActiveTab] = useState<'users' | 'permissions' | 'impact'>('users');
+  const [viewingActivityFor, setViewingActivityFor] = useState<User | null>(null);
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
@@ -539,6 +541,7 @@ export default function UserManagementFinal() {
                           }}
                           onManageSMS={handleManageSMS}
                           onViewActivity={(u) => {
+                            setViewingActivityFor(u);
                             setActiveTab('impact');
                           }}
                           isSelected={selectedUsers.has(user.id)}
@@ -570,17 +573,24 @@ export default function UserManagementFinal() {
 
         {/* Impact Tab - Contribution Metrics */}
         <TabsContent value="impact">
-          <Card>
-            <CardHeader>
-              <CardTitle>Team Impact & Contributions</CardTitle>
-              <CardDescription>
-                Track meaningful metrics: data entries, volunteers coordinated, active contributors
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MeaningfulUserAnalytics />
-            </CardContent>
-          </Card>
+          {viewingActivityFor ? (
+            <IndividualUserActivity
+              user={viewingActivityFor}
+              onBack={() => setViewingActivityFor(null)}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Team Impact & Contributions</CardTitle>
+                <CardDescription>
+                  Track meaningful metrics: data entries, volunteers coordinated, active contributors
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MeaningfulUserAnalytics />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
