@@ -444,7 +444,7 @@ export function ResourceAdminModal({
                 onChange={(e) =>
                   setFormData({ ...formData, isPinnedGlobal: e.target.checked })
                 }
-                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                className="w-4 h-4 text-[#236383] rounded focus:ring-2 focus:ring-[#236383]"
               />
               <label htmlFor="isPinned" className="text-sm font-medium text-gray-700">
                 Pin this resource globally
