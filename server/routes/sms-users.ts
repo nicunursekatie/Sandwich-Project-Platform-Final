@@ -120,26 +120,6 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    // Send provider-appropriate welcome SMS to confirm opt-in
-    try {
-      const { sendWelcomeSMS } = await import('../sms-service');
-      
-      // Use the new sendWelcomeSMS function which sends provider-appropriate messages
-      const result = await sendWelcomeSMS(formattedPhone);
-      
-      if (result.success) {
-        logger.log(`✅ Welcome SMS sent to ${formattedPhone}`);
-      } else {
-        logger.warn(`⚠️ Welcome SMS failed: ${result.message}`);
-      }
-    } catch (smsError) {
-      // Log the error but don't fail the opt-in
-      logger.error('Failed to send welcome SMS:', smsError);
-      logger.error('Error details:', {
-        message: (smsError as any).message
-      });
-    }
-
     logger.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone})`);
 
     res.json({
@@ -267,6 +247,20 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
     logger.log(`✅ SMS confirmation successful for user ${user.email} (${smsConsent.phoneNumber})`);
+
+    // Send welcome SMS after successful confirmation
+    try {
+      const { sendWelcomeSMS } = await import('../sms-service');
+      const welcomeResult = await sendWelcomeSMS(smsConsent.phoneNumber);
+      
+      if (welcomeResult.success) {
+        logger.log(`✅ Welcome SMS sent to ${smsConsent.phoneNumber} after confirmation`);
+      } else {
+        logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+      }
+    } catch (smsError) {
+      logger.error('Failed to send welcome SMS after confirmation:', smsError);
+    }
 
     res.json({
       success: true,
@@ -504,6 +498,20 @@ router.post('/sms/webhook', async (req, res) => {
       await storage.updateUser(userWithPendingConfirmation.id, { metadata: updatedMetadata });
 
       logger.log(`✅ SMS confirmation via YES reply successful for user ${userWithPendingConfirmation.email} (${phoneNumber})`);
+      
+      // Send welcome SMS after successful confirmation via YES reply
+      try {
+        const { sendWelcomeSMS } = await import('../sms-service');
+        const welcomeResult = await sendWelcomeSMS(phoneNumber);
+        
+        if (welcomeResult.success) {
+          logger.log(`✅ Welcome SMS sent to ${phoneNumber} after YES confirmation`);
+        } else {
+          logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+        }
+      } catch (smsError) {
+        logger.error('Failed to send welcome SMS after YES confirmation:', smsError);
+      }
     } 
     // Check if message is a verification code
     else if (/^\d{6}$/.test(messageBody)) {
@@ -551,6 +559,20 @@ router.post('/sms/webhook', async (req, res) => {
       await storage.updateUser(userWithMatchingCode.id, { metadata: updatedMetadata });
 
       logger.log(`✅ SMS confirmation via verification code successful for user ${userWithMatchingCode.email} (${phoneNumber})`);
+      
+      // Send welcome SMS after successful confirmation via verification code
+      try {
+        const { sendWelcomeSMS } = await import('../sms-service');
+        const welcomeResult = await sendWelcomeSMS(phoneNumber);
+        
+        if (welcomeResult.success) {
+          logger.log(`✅ Welcome SMS sent to ${phoneNumber} after code confirmation`);
+        } else {
+          logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+        }
+      } catch (smsError) {
+        logger.error('Failed to send welcome SMS after code confirmation:', smsError);
+      }
     } else {
       logger.log(`ℹ️ Unrecognized SMS message from ${phoneNumber}: "${Body}"`);
     }
