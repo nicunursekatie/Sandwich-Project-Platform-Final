@@ -30,15 +30,23 @@ import {
 // Category definitions with icons and colors (using brand color scheme)
 const CATEGORIES = [
   {
-    id: 'legal_governance',
-    label: 'Legal & Governance',
+    id: 'Legal & Tax',
+    label: 'Legal & Tax',
     icon: Shield,
     color: 'text-[#236383]', // Brand dark blue
     bgColor: 'bg-[#236383]/10',
     borderColor: 'border-[#236383]/30',
   },
   {
-    id: 'forms',
+    id: 'Governance',
+    label: 'Governance',
+    icon: Shield,
+    color: 'text-[#236383]', // Brand dark blue
+    bgColor: 'bg-[#236383]/10',
+    borderColor: 'border-[#236383]/30',
+  },
+  {
+    id: 'Forms',
     label: 'Forms',
     icon: FileCheck,
     color: 'text-[#47B3CB]', // Brand light blue
@@ -46,7 +54,7 @@ const CATEGORIES = [
     borderColor: 'border-[#47B3CB]/30',
   },
   {
-    id: 'safety_guidelines',
+    id: 'Safety Guidelines',
     label: 'Safety Guidelines',
     icon: Shield,
     color: 'text-[#007E8C]', // Brand teal
@@ -54,7 +62,7 @@ const CATEGORIES = [
     borderColor: 'border-[#007E8C]/30',
   },
   {
-    id: 'tools',
+    id: 'Tools',
     label: 'Tools',
     icon: BookOpen,
     color: 'text-[#236383]', // Brand dark blue
@@ -62,17 +70,25 @@ const CATEGORIES = [
     borderColor: 'border-[#236383]/30',
   },
   {
-    id: 'brand_marketing',
-    label: 'Brand & Marketing',
-    icon: Briefcase,
+    id: 'Sandwich Making',
+    label: 'Sandwich Making',
+    icon: BookOpen,
     color: 'text-[#FBAD3F]', // Brand orange
     bgColor: 'bg-[#FBAD3F]/10',
     borderColor: 'border-[#FBAD3F]/30',
   },
   {
-    id: 'master_documents',
-    label: 'Master Documents',
-    icon: FileEdit,
+    id: 'Labels & Printing',
+    label: 'Labels & Printing',
+    icon: FileText,
+    color: 'text-[#47B3CB]', // Brand light blue
+    bgColor: 'bg-[#47B3CB]/10',
+    borderColor: 'border-[#47B3CB]/30',
+  },
+  {
+    id: 'Reference Lists',
+    label: 'Reference Lists',
+    icon: FileText,
     color: 'text-[#A31C41]', // Brand red/maroon
     bgColor: 'bg-[#A31C41]/10',
     borderColor: 'border-[#A31C41]/30',
