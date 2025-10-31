@@ -1937,7 +1937,11 @@ export const eventVolunteers = pgTable(
     assignedBy: varchar('assigned_by'), // User ID who assigned this volunteer
     signedUpAt: timestamp('signed_up_at').defaultNow().notNull(),
     confirmedAt: timestamp('confirmed_at'),
-    reminderSentAt: timestamp('reminder_sent_at'), // When 24-hour reminder email was sent
+    reminderSentAt: timestamp('reminder_sent_at'), // When email reminder was sent (legacy/first reminder)
+    emailReminder1SentAt: timestamp('email_reminder_1_sent_at'), // First email reminder
+    emailReminder2SentAt: timestamp('email_reminder_2_sent_at'), // Second email reminder
+    smsReminder1SentAt: timestamp('sms_reminder_1_sent_at'), // First SMS reminder
+    smsReminder2SentAt: timestamp('sms_reminder_2_sent_at'), // Second SMS reminder
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },

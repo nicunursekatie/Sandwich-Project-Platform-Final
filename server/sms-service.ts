@@ -850,3 +850,59 @@ export async function checkTollFreeVerificationStatus(verificationSid?: string):
     };
   }
 }
+
+/**
+ * Send SMS reminder for an upcoming event to a specific volunteer or TSP contact
+ */
+export async function sendEventReminderSMS(
+  phoneNumber: string,
+  volunteerName: string,
+  organizationName: string,
+  eventDate: Date,
+  role?: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  if (!smsProvider || !smsProvider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const eventDateStr = eventDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
+    });
+
+    const roleText = role && role !== 'general' ? ` as ${role}` : '';
+    const message = `Hi ${volunteerName}! 🥪 Reminder: You're scheduled${roleText} for The Sandwich Project event at ${organizationName} on ${eventDateStr}. ${appUrl ? `View details: ${appUrl}` : ''} Thanks for making a difference!`;
+
+    const result = await smsProvider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ Event reminder SMS sent to ${phoneNumber} for ${organizationName}`);
+      return {
+        success: true,
+        message: 'Event reminder sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending event reminder SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send event reminder: ${(error as Error).message}`,
+    };
+  }
+}

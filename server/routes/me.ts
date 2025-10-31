@@ -4,6 +4,8 @@ import type { IStorage } from '../storage';
 import { storage } from '../storage-wrapper';
 import { logger } from '../utils/production-safe-logger';
 import type { AuthenticatedRequest } from '../types/express';
+import { getUserMetadata, getEventNotificationPreferences } from '@shared/types';
+import type { EventNotificationPreferences } from '@shared/types';
 
 interface DashboardItem {
   id: number;
@@ -345,6 +347,116 @@ meRouter.get('/dashboard', async (req: AuthenticatedRequest, res: Response) => {
     logger.error('Failed to fetch dashboard data', error);
     logger.error('Dashboard endpoint error:', error);
     res.status(500).json({ message: 'Failed to fetch dashboard data' });
+  }
+});
+
+// GET /notification-preferences - Get current user's event notification preferences
+meRouter.get('/notification-preferences', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    if (!user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const normalizedUserId = normalizeToString(user.id);
+    if (!normalizedUserId) {
+      return res.status(400).json({ message: 'Invalid user identifier' });
+    }
+
+    // Get full user data from storage
+    const allUsers = await storage.getAllUsers();
+    const fullUser = allUsers.find((u) => normalizeToString(u.id) === normalizedUserId);
+
+    if (!fullUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get notification preferences with defaults
+    const preferences = getEventNotificationPreferences(fullUser);
+    
+    res.json(preferences);
+  } catch (error) {
+    logger.error('Failed to fetch notification preferences', error);
+    res.status(500).json({ message: 'Failed to fetch notification preferences' });
+  }
+});
+
+// PUT /notification-preferences - Update current user's event notification preferences
+meRouter.put('/notification-preferences', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    if (!user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const normalizedUserId = normalizeToString(user.id);
+    if (!normalizedUserId) {
+      return res.status(400).json({ message: 'Invalid user identifier' });
+    }
+
+    // Validate request body
+    const {
+      primaryReminderEnabled,
+      primaryReminderHours,
+      primaryReminderType,
+      secondaryReminderEnabled,
+      secondaryReminderHours,
+      secondaryReminderType,
+    } = req.body as EventNotificationPreferences;
+
+    // Validate hours range (1-36)
+    if (primaryReminderHours < 1 || primaryReminderHours > 36) {
+      return res.status(400).json({ message: 'Primary reminder hours must be between 1 and 36' });
+    }
+    
+    if (secondaryReminderEnabled && (secondaryReminderHours < 1 || secondaryReminderHours > 36)) {
+      return res.status(400).json({ message: 'Secondary reminder hours must be between 1 and 36' });
+    }
+
+    // Validate reminder types
+    const validTypes = ['email', 'sms', 'both'];
+    if (!validTypes.includes(primaryReminderType)) {
+      return res.status(400).json({ message: 'Invalid primary reminder type' });
+    }
+    
+    if (secondaryReminderEnabled && !validTypes.includes(secondaryReminderType)) {
+      return res.status(400).json({ message: 'Invalid secondary reminder type' });
+    }
+
+    // Get current user data
+    const allUsers = await storage.getAllUsers();
+    const fullUser = allUsers.find((u) => normalizeToString(u.id) === normalizedUserId);
+
+    if (!fullUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get current metadata
+    const metadata = getUserMetadata(fullUser);
+
+    // Update notification preferences
+    const updatedMetadata = {
+      ...metadata,
+      eventNotificationPreferences: {
+        primaryReminderEnabled,
+        primaryReminderHours,
+        primaryReminderType,
+        secondaryReminderEnabled,
+        secondaryReminderHours,
+        secondaryReminderType,
+      } as EventNotificationPreferences,
+    };
+
+    // Save updated metadata
+    await storage.updateUser(normalizedUserId, {
+      metadata: updatedMetadata,
+    });
+
+    logger.info(`Updated notification preferences for user ${normalizedUserId}`);
+    res.json({ success: true, preferences: updatedMetadata.eventNotificationPreferences });
+  } catch (error) {
+    logger.error('Failed to update notification preferences', error);
+    res.status(500).json({ message: 'Failed to update notification preferences' });
   }
 });
 
