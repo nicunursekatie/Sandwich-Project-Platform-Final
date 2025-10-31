@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { TollFreeVerificationPanel } from './toll-free-verification-panel';
+import NotificationPreferences from './notification-preferences';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -836,6 +837,11 @@ export default function UserProfile() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Event Notification Preferences */}
+      {activeTab === 'notifications' && (
+        <NotificationPreferences />
       )}
 
       {/* Toll-Free Verification Panel - Admin Only */}
