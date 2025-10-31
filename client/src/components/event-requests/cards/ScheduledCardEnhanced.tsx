@@ -247,10 +247,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
     if (!isNaN(Number(recipientId))) {
       const numId = Number(recipientId);
-      const hostLocation = hostLocations.find(h => h.id === numId);
-      if (hostLocation) return hostLocation.name;
+      // Check host contacts first (more specific), then locations, then recipients
       const hostContact = hostContacts.find(h => h.id === numId);
       if (hostContact) return hostContact.displayName || hostContact.name;
+      const hostLocation = hostLocations.find(h => h.id === numId);
+      if (hostLocation) return hostLocation.name;
       const recipient = recipients.find(r => r.id === numId);
       if (recipient) return recipient.name;
     }
