@@ -252,9 +252,6 @@ const EventRequestsManagementContent: React.FC = () => {
               </button>
               <MissingInfoSummaryDialog />
               <ToolkitSentPendingDialog />
-              <span className="premium-badge-info">
-                {eventRequests.length} Total Requests
-              </span>
             </div>
           </div>
         </div>
