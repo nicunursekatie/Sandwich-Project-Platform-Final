@@ -137,7 +137,7 @@ export function MissingInfoSummaryDialog() {
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="border-red-300 text-red-700 hover:bg-red-50"
+          className="premium-btn-outline border-red-300 text-red-700 hover:bg-red-50"
           data-testid="button-missing-info-summary"
         >
           <AlertTriangle className="w-4 h-4 mr-2" />

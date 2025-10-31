@@ -100,7 +100,7 @@ export function ToolkitSentPendingDialog() {
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/5"
+          className="premium-btn-outline border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/5"
           data-testid="button-toolkit-sent-pending"
         >
           <Clock className="w-4 h-4 mr-2" aria-hidden="true" />
