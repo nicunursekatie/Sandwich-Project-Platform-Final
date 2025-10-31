@@ -27,55 +27,55 @@ import {
   X,
 } from 'lucide-react';
 
-// Category definitions with icons and colors
+// Category definitions with icons and colors (using brand color scheme)
 const CATEGORIES = [
   {
     id: 'legal_governance',
     label: 'Legal & Governance',
     icon: Shield,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
+    color: 'text-[#236383]', // Brand dark blue
+    bgColor: 'bg-[#236383]/10',
+    borderColor: 'border-[#236383]/30',
   },
   {
     id: 'brand_marketing',
     label: 'Brand & Marketing',
     icon: Briefcase,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: 'text-[#FBAD3F]', // Brand orange
+    bgColor: 'bg-[#FBAD3F]/10',
+    borderColor: 'border-[#FBAD3F]/30',
   },
   {
     id: 'operations_safety',
     label: 'Operations & Safety',
     icon: Shield,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
+    color: 'text-[#007E8C]', // Brand teal
+    bgColor: 'bg-[#007E8C]/10',
+    borderColor: 'border-[#007E8C]/30',
   },
   {
     id: 'forms_templates',
     label: 'Forms & Templates',
     icon: FileCheck,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
+    color: 'text-[#47B3CB]', // Brand light blue
+    bgColor: 'bg-[#47B3CB]/10',
+    borderColor: 'border-[#47B3CB]/30',
   },
   {
     id: 'training',
     label: 'Training Materials',
     icon: BookOpen,
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50',
-    borderColor: 'border-indigo-200',
+    color: 'text-[#236383]', // Brand dark blue
+    bgColor: 'bg-[#236383]/10',
+    borderColor: 'border-[#236383]/30',
   },
   {
     id: 'master_documents',
     label: 'Master Documents',
     icon: FileEdit,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
+    color: 'text-[#A31C41]', // Brand red/maroon
+    bgColor: 'bg-[#A31C41]/10',
+    borderColor: 'border-[#A31C41]/30',
   },
 ];
 
@@ -254,7 +254,7 @@ export function Resources() {
         {/* Pinned badge */}
         {item.resource.isPinnedGlobal && (
           <div className="absolute top-2 right-2">
-            <Pin className="w-4 h-4 text-orange-500 fill-orange-500" />
+            <Pin className="w-4 h-4 text-[#FBAD3F] fill-[#FBAD3F]" />
           </div>
         )}
 
@@ -311,7 +311,7 @@ export function Resources() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => openResource(item)}
-            className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-[#236383] text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#007E8C] transition-colors flex items-center justify-center gap-2"
           >
             <ExternalLink className="w-4 h-4" />
             Open
@@ -321,7 +321,7 @@ export function Resources() {
             onClick={() => copyLink(item)}
             className={`px-3 py-2 rounded-lg text-sm transition-colors ${
               isCopied
-                ? 'bg-green-100 text-green-700'
+                ? 'bg-[#007E8C]/20 text-[#007E8C]'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
             title="Copy link"
@@ -333,13 +333,13 @@ export function Resources() {
             onClick={() => toggleFavorite(item.resource.id)}
             className={`px-3 py-2 rounded-lg text-sm transition-colors ${
               item.isFavorite
-                ? 'bg-yellow-100 text-yellow-700'
+                ? 'bg-[#FBAD3F]/20 text-[#FBAD3F]'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
             title={item.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <Star
-              className={`w-4 h-4 ${item.isFavorite ? 'fill-yellow-500' : ''}`}
+              className={`w-4 h-4 ${item.isFavorite ? 'fill-[#FBAD3F]' : ''}`}
             />
           </button>
         </div>
@@ -397,7 +397,7 @@ export function Resources() {
             {isAdmin && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="bg-[#236383] text-white px-4 py-2 rounded-lg hover:bg-[#007E8C] transition-colors flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 Add Resource
@@ -461,7 +461,7 @@ export function Resources() {
                       onClick={() => setSelectedCategory(null)}
                       className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                         selectedCategory === null
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-[#236383] text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -510,7 +510,7 @@ export function Resources() {
                             }}
                             className={`px-3 py-1.5 rounded-full text-sm transition-colors flex items-center gap-1.5 ${
                               isSelected
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-[#236383] text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                             style={
@@ -541,7 +541,7 @@ export function Resources() {
           {pinnedResources.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Pin className="w-5 h-5 text-orange-500" />
+                <Pin className="w-5 h-5 text-[#FBAD3F]" />
                 <h2 className="font-semibold text-gray-900">Pinned</h2>
               </div>
               <div className="space-y-2">
@@ -567,7 +567,7 @@ export function Resources() {
           {favorites.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                <Star className="w-5 h-5 text-[#FBAD3F] fill-[#FBAD3F]" />
                 <h2 className="font-semibold text-gray-900">Your Favorites</h2>
               </div>
               <div className="space-y-2">
@@ -593,7 +593,7 @@ export function Resources() {
           {recentResources.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Clock className="w-5 h-5 text-blue-500" />
+                <Clock className="w-5 h-5 text-[#47B3CB]" />
                 <h2 className="font-semibold text-gray-900">Recently Accessed</h2>
               </div>
               <div className="space-y-2">

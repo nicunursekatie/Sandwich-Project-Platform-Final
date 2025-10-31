@@ -378,7 +378,7 @@ export function ResourceAdminModal({
                       }}
                       className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                         isSelected
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-[#236383] text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -389,7 +389,7 @@ export function ResourceAdminModal({
                 <button
                   type="button"
                   onClick={() => setShowNewTagForm(!showNewTagForm)}
-                  className="px-3 py-1.5 rounded-full text-sm bg-green-100 text-green-700 hover:bg-green-200 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-full text-sm bg-[#007E8C]/20 text-[#007E8C] hover:bg-[#007E8C]/30 transition-colors flex items-center gap-1"
                 >
                   <Plus className="w-4 h-4" />
                   New Tag
@@ -414,7 +414,7 @@ export function ResourceAdminModal({
                   <button
                     type="button"
                     onClick={handleCreateTag}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="px-4 py-2 bg-[#007E8C] text-white rounded-lg hover:bg-[#236383] transition-colors"
                   >
                     Add
                   </button>
@@ -484,7 +484,7 @@ export function ResourceAdminModal({
             <button
               type="submit"
               disabled={uploading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-[#236383] text-white rounded-lg hover:bg-[#007E8C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading
                 ? 'Saving...'
