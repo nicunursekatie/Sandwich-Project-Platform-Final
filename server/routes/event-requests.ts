@@ -1162,15 +1162,26 @@ router.patch(
           typeof processedUpdates[field] === 'string'
         ) {
           try {
-            const dateValue = new Date(processedUpdates[field]);
+            const dateString = processedUpdates[field] as string;
+            // Handle YYYY-MM-DD format from HTML5 date inputs by adding time component
+            let dateValue: Date;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+              // Date only format (YYYY-MM-DD) - add noon UTC to avoid timezone issues
+              dateValue = new Date(dateString + 'T12:00:00.000Z');
+            } else {
+              dateValue = new Date(dateString);
+            }
+
             // Check if the date is valid
             if (isNaN(dateValue.getTime())) {
+              logger.error(`[PATCH] Invalid date value for field ${field}:`, dateString);
               delete processedUpdates[field]; // Remove invalid date fields
             } else {
-              const originalValue = processedUpdates[field];
               processedUpdates[field] = dateValue;
+              logger.info(`[PATCH] Converted ${field} from "${dateString}" to ${dateValue.toISOString()}`);
             }
           } catch (error) {
+            logger.error(`[PATCH] Error parsing date for field ${field}:`, error);
             delete processedUpdates[field]; // Remove invalid date fields
           }
         } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
@@ -1408,15 +1419,26 @@ router.put(
           typeof processedUpdates[field] === 'string'
         ) {
           try {
-            const dateValue = new Date(processedUpdates[field]);
+            const dateString = processedUpdates[field] as string;
+            // Handle YYYY-MM-DD format from HTML5 date inputs by adding time component
+            let dateValue: Date;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+              // Date only format (YYYY-MM-DD) - add noon UTC to avoid timezone issues
+              dateValue = new Date(dateString + 'T12:00:00.000Z');
+            } else {
+              dateValue = new Date(dateString);
+            }
+
             // Check if the date is valid
             if (isNaN(dateValue.getTime())) {
+              logger.error(`Invalid date value for field ${field}:`, dateString);
               delete processedUpdates[field]; // Remove invalid date fields
             } else {
-              const originalValue = processedUpdates[field];
               processedUpdates[field] = dateValue;
+              logger.info(`Converted ${field} from "${dateString}" to ${dateValue.toISOString()}`);
             }
           } catch (error) {
+            logger.error(`Error parsing date for field ${field}:`, error);
             delete processedUpdates[field]; // Remove invalid fields
           }
         } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
