@@ -54,12 +54,12 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       }
 
       // Use hybrid search for best results
-      const results = await searchService.hybridSearch(query);
+      const searchData = await searchService.hybridSearch(query);
 
       const response: SmartSearchResponse = {
-        results,
+        results: searchData.results,
         queryTime: Date.now() - startTime,
-        usedAI: results.some(r => r.matchType === 'semantic')
+        usedAI: searchData.usedAI
       };
 
       res.json(response);

@@ -275,17 +275,20 @@ export class SmartSearchService {
 
   /**
    * Perform semantic search using OpenAI embeddings
+   * Returns results with usedAI flag to track if AI was actually used
    */
-  async semanticSearch(query: SmartSearchQuery): Promise<SmartSearchResult[]> {
+  async semanticSearch(query: SmartSearchQuery): Promise<{ results: SmartSearchResult[], usedAI: boolean }> {
     if (!this.openai || !this.index) {
       // Fallback to fuzzy search if AI not available
-      return this.fuzzySearch(query);
+      const fuzzyResults = await this.fuzzySearch(query);
+      return { results: fuzzyResults, usedAI: false };
     }
 
     // Get query embedding
     const queryEmbedding = await this.getEmbedding(query.query);
     if (!queryEmbedding) {
-      return this.fuzzySearch(query);
+      const fuzzyResults = await this.fuzzySearch(query);
+      return { results: fuzzyResults, usedAI: false };
     }
 
     const results: SmartSearchResult[] = [];
@@ -332,17 +335,24 @@ export class SmartSearchService {
     results.sort((a, b) => b.score - a.score);
 
     // Apply limit
-    return results.slice(0, query.limit || 10);
+    return {
+      results: results.slice(0, query.limit || 10),
+      usedAI: true
+    };
   }
 
   /**
    * Hybrid search: combines fuzzy and semantic results
+   * Returns results with usedAI flag to accurately track AI usage
    */
-  async hybridSearch(query: SmartSearchQuery): Promise<SmartSearchResult[]> {
-    const [fuzzyResults, semanticResults] = await Promise.all([
+  async hybridSearch(query: SmartSearchQuery): Promise<{ results: SmartSearchResult[], usedAI: boolean }> {
+    const [fuzzyResults, semanticData] = await Promise.all([
       this.fuzzySearch(query),
       this.semanticSearch(query)
     ]);
+
+    const semanticResults = semanticData.results;
+    const usedAI = semanticData.usedAI;
 
     // Merge results, prioritizing exact/fuzzy matches but including semantic ones
     const resultMap = new Map<string, SmartSearchResult>();
@@ -353,12 +363,16 @@ export class SmartSearchService {
     }
 
     // Add semantic results, boosting scores if already present
+    // Only mark as semantic if AI was actually used
     for (const result of semanticResults) {
       const existing = resultMap.get(result.feature.id);
       if (existing) {
         // Boost score if both fuzzy and semantic match
         existing.score = Math.min(1.0, existing.score * 1.2 + result.score * 0.3);
-        existing.matchType = 'semantic';
+        // Only mark as semantic if AI was actually used
+        if (usedAI) {
+          existing.matchType = 'semantic';
+        }
       } else {
         resultMap.set(result.feature.id, result);
       }
@@ -368,7 +382,10 @@ export class SmartSearchService {
     const results = Array.from(resultMap.values());
     results.sort((a, b) => b.score - a.score);
 
-    return results.slice(0, query.limit || 10);
+    return {
+      results: results.slice(0, query.limit || 10),
+      usedAI
+    };
   }
 
   /**

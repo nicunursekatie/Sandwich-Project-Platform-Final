@@ -42,7 +42,7 @@
       "title": "Hosts Management",
       "description": "Manage host facilities that provide sandwiches for collection",
       "category": "Operations",
-      "route": "/hosts",
+      "route": "/dashboard?section=hosts",
       "keywords": ["hosts", "facilities", "locations", "providers", "donors"],
       "requiredPermissions": []
     },
@@ -51,7 +51,7 @@
       "title": "Add New Host",
       "description": "Register a new host facility for sandwich collections",
       "category": "Operations",
-      "route": "/hosts",
+      "route": "/dashboard?section=hosts",
       "action": "openAddDialog",
       "keywords": ["add", "new", "create", "host", "facility", "location", "provider"],
       "requiredPermissions": ["hosts:write"]
@@ -61,7 +61,7 @@
       "title": "Drivers Management",
       "description": "Manage drivers and assign them to collection routes",
       "category": "Operations",
-      "route": "/drivers",
+      "route": "/dashboard?section=drivers",
       "keywords": ["drivers", "routes", "assignments", "transportation", "vehicles"],
       "requiredPermissions": []
     },
@@ -70,7 +70,7 @@
       "title": "Volunteers Management",
       "description": "Manage volunteer profiles, skills, availability, and assignments",
       "category": "Operations",
-      "route": "/volunteers",
+      "route": "/dashboard?section=volunteers",
       "keywords": ["volunteers", "people", "team", "members", "staff"],
       "requiredPermissions": []
     },
@@ -79,7 +79,7 @@
       "title": "Add New Volunteer",
       "description": "Create a new volunteer profile with contact information and skills",
       "category": "Operations",
-      "route": "/volunteers",
+      "route": "/dashboard?section=volunteers",
       "action": "openAddDialog",
       "keywords": ["add", "new", "create", "volunteer", "person", "member", "recruit"],
       "requiredPermissions": ["volunteers:write"]
@@ -89,7 +89,7 @@
       "title": "Recipients Management",
       "description": "Manage organizations and individuals who receive sandwiches",
       "category": "Operations",
-      "route": "/recipients",
+      "route": "/dashboard?section=recipients",
       "keywords": ["recipients", "beneficiaries", "distribution", "receiving"],
       "requiredPermissions": []
     },
@@ -154,7 +154,7 @@
       "title": "Team Chat",
       "description": "Communicate with your team in real-time channels",
       "category": "Communication",
-      "route": "/chat",
+      "route": "/dashboard?section=chat",
       "keywords": ["chat", "messaging", "communication", "talk", "discuss"],
       "requiredPermissions": []
     },
@@ -163,7 +163,7 @@
       "title": "Inbox",
       "description": "View your personal message inbox",
       "category": "Communication",
-      "route": "/inbox",
+      "route": "/dashboard?section=gmail-inbox",
       "keywords": ["inbox", "messages", "mail", "email", "communications"],
       "requiredPermissions": []
     },
@@ -190,7 +190,7 @@
       "title": "Analytics",
       "description": "View impact metrics and analytics dashboards",
       "category": "Planning",
-      "route": "/analytics",
+      "route": "/dashboard?section=analytics",
       "keywords": ["analytics", "metrics", "stats", "statistics", "data", "reports"],
       "requiredPermissions": []
     },
@@ -199,7 +199,7 @@
       "title": "Grant Metrics",
       "description": "Track performance metrics for grant reporting",
       "category": "Planning",
-      "route": "/grant-metrics",
+      "route": "/dashboard?section=grant-metrics",
       "keywords": ["grants", "metrics", "reporting", "funding", "performance"],
       "requiredPermissions": ["grants:read"]
     },
@@ -217,7 +217,7 @@
       "title": "Groups Catalog",
       "description": "Manage organizations and groups in the system",
       "category": "Operations",
-      "route": "/groups",
+      "route": "/dashboard?section=groups-catalog",
       "keywords": ["groups", "organizations", "catalog", "directory"],
       "requiredPermissions": []
     },
@@ -226,7 +226,7 @@
       "title": "Distribution Tracking",
       "description": "Monitor sandwich distribution to recipients",
       "category": "Operations",
-      "route": "/distribution",
+      "route": "/dashboard?section=donation-tracking",
       "keywords": ["distribution", "tracking", "delivery", "recipients"],
       "requiredPermissions": []
     },
@@ -235,7 +235,7 @@
       "title": "Inventory Calculator",
       "description": "Calculate sandwich quantities and inventory needs",
       "category": "Operations",
-      "route": "/inventory-calculator",
+      "route": "/dashboard?section=inventory-calculator",
       "keywords": ["inventory", "calculator", "quantities", "planning", "count"],
       "requiredPermissions": []
     },
@@ -244,7 +244,7 @@
       "title": "Work Log",
       "description": "Track volunteer hours and work time",
       "category": "Operations",
-      "route": "/work-log",
+      "route": "/dashboard?section=work-log",
       "keywords": ["work log", "hours", "time", "tracking", "timekeeping"],
       "requiredPermissions": []
     },
@@ -280,7 +280,7 @@
       "title": "Document Management",
       "description": "Manage and access important documents",
       "category": "Documentation",
-      "route": "/documents",
+      "route": "/dashboard?section=document-management",
       "keywords": ["documents", "files", "storage", "library"],
       "requiredPermissions": []
     },
@@ -289,7 +289,7 @@
       "title": "User Management",
       "description": "Manage user accounts, roles, and permissions (admin only)",
       "category": "Admin",
-      "route": "/user-management",
+      "route": "/dashboard?section=user-management",
       "keywords": ["users", "accounts", "admin", "permissions", "roles"],
       "requiredPermissions": ["admin"]
     },
@@ -316,7 +316,7 @@
       "title": "My Availability",
       "description": "Set and manage your personal availability schedule",
       "category": "Dashboard",
-      "route": "/dashboard/availability",
+      "route": "/dashboard?section=my-availability",
       "keywords": ["availability", "schedule", "calendar", "when", "free time"],
       "requiredPermissions": []
     },
@@ -325,7 +325,7 @@
       "title": "Team Availability",
       "description": "View team member availability schedules",
       "category": "Dashboard",
-      "route": "/dashboard/team-availability",
+      "route": "/dashboard?section=team-availability",
       "keywords": ["team", "availability", "schedule", "calendar", "who is available"],
       "requiredPermissions": []
     },
@@ -334,7 +334,7 @@
       "title": "Volunteer Calendar",
       "description": "View integrated Google Calendar for volunteer events",
       "category": "Dashboard",
-      "route": "/dashboard/calendar",
+      "route": "/dashboard?section=google-calendar-availability",
       "keywords": ["calendar", "events", "schedule", "google calendar"],
       "requiredPermissions": []
     },
@@ -343,7 +343,7 @@
       "title": "Events Google Sheet",
       "description": "Access event data synchronized with Google Sheets",
       "category": "Planning",
-      "route": "/google-sheets",
+      "route": "/dashboard?section=events",
       "keywords": ["google sheets", "spreadsheet", "events", "data"],
       "requiredPermissions": []
     },
@@ -352,7 +352,7 @@
       "title": "Sign Up Genius",
       "description": "Manage event volunteer signup through Sign Up Genius",
       "category": "Planning",
-      "route": "/signup-genius",
+      "route": "/dashboard?section=signup-genius",
       "keywords": ["signup", "sign up genius", "volunteers", "registration"],
       "requiredPermissions": []
     },
@@ -361,7 +361,7 @@
       "title": "Resources & Quick Tools",
       "description": "Access quick tools and resource links",
       "category": "Documentation",
-      "route": "/resources",
+      "route": "/dashboard?section=resources",
       "keywords": ["resources", "tools", "quick tools", "utilities"],
       "requiredPermissions": []
     },
@@ -370,7 +370,7 @@
       "title": "Promotion Graphics",
       "description": "Generate promotional graphics and materials",
       "category": "Communication",
-      "route": "/promotion-graphics",
+      "route": "/dashboard?section=promotion",
       "keywords": ["graphics", "promotion", "marketing", "flyers", "posters"],
       "requiredPermissions": []
     }
