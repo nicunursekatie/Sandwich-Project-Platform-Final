@@ -19,7 +19,15 @@ if (databaseUrl) {
   logger.log(`🗄️ Using ${process.env.PRODUCTION_DATABASE_URL ? 'PRODUCTION' : 'DEVELOPMENT'} database`);
   // Use HTTP connection instead of WebSocket for better stability
   const sql = neon(databaseUrl);
-  db = drizzle(sql, { schema }) as DB;
+  db = drizzle(sql, { 
+    schema,
+    logger: {
+      logQuery: (query: string, params: unknown[]) => {
+        logger.log(`[DRIZZLE SQL] ${query}`);
+        logger.log(`[DRIZZLE PARAMS] ${JSON.stringify(params)}`);
+      }
+    }
+  }) as DB;
 } else {
   // Fallback to SQLite for local development
   logger.log('🗄️ No DATABASE_URL found, using local SQLite database for development');
