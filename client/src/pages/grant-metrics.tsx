@@ -105,11 +105,8 @@ export default function GrantMetrics() {
     (window as any).__collections = collections;
   }
 
-  // Fetch hybrid stats (authoritative data + collection log)
-  const { data: hybridStats } = useQuery({
-    queryKey: ['/api/collections/hybrid-stats'],
-    staleTime: 2 * 60 * 1000, // 2 minutes - grant metrics need reasonable freshness
-  });
+  // Note: hybridStats removed - collection log is the source of truth
+  // Scott's Excel was a reference that stopped being updated in August 2025
 
   // Fetch stats  
   const { data: stats } = useQuery({
@@ -450,13 +447,8 @@ export default function GrantMetrics() {
     const weeklyData: Record<string, number> = {};
     const uniqueHostsSet = new Set<string>();
 
-    // Use authoritative yearly totals from hybrid stats if available
+    // Calculate yearly totals from actual collection log data (source of truth)
     const yearTotals: Record<number, number> = {};
-    if (hybridStats?.byYear) {
-      Object.entries(hybridStats.byYear).forEach(([year, data]: [string, any]) => {
-        yearTotals[parseInt(year)] = data.sandwiches;
-      });
-    }
 
     collections.forEach((collection: any) => {
       const hostName = collection.hostName || 'Unknown';
@@ -488,13 +480,11 @@ export default function GrantMetrics() {
           monthlyData[monthKey] = (monthlyData[monthKey] || 0) + total;
           weeklyData[weekKey] = (weeklyData[weekKey] || 0) + total;
 
-          // Only calculate yearTotals from collections if hybrid stats not available
-          if (!hybridStats?.byYear) {
-            if (!yearTotals[year]) {
-              yearTotals[year] = 0;
-            }
-            yearTotals[year] += total;
+          // Always calculate from actual collections (source of truth)
+          if (!yearTotals[year]) {
+            yearTotals[year] = 0;
           }
+          yearTotals[year] += total;
         }
       }
     });
