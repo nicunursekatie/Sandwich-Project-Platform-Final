@@ -538,7 +538,7 @@ router.get(
       
       // DEBUG: Log details about what we're returning
       const completedCount = eventRequests.filter(e => e.status === 'completed').length;
-      logger.log(`📊 API returning ${eventRequests.length} total events (${completedCount} completed)`);
+      logger.info(`📊 API returning ${eventRequests.length} total events (${completedCount} completed)`);
       
       // Check for duplicate IDs
       const ids = eventRequests.map(e => e.id);
