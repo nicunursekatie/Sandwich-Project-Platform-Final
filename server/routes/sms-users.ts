@@ -232,7 +232,9 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Confirm SMS consent
+    // Confirm SMS consent and set default notification preferences
+    const notificationPreferences = metadata.notificationPreferences || {};
+    
     const updatedMetadata = {
       ...(user.metadata as any || {}),
       smsConsent: {
@@ -242,6 +244,15 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
         confirmedAt: new Date().toISOString(),
         verificationCode: undefined, // Remove verification code after confirmation
         verificationCodeExpiry: undefined,
+      },
+      notificationPreferences: {
+        ...notificationPreferences,
+        primaryReminderEnabled: true,
+        primaryReminderHours: 72,
+        primaryReminderType: 'sms',
+        secondaryReminderEnabled: notificationPreferences.secondaryReminderEnabled || false,
+        secondaryReminderHours: notificationPreferences.secondaryReminderHours || 1,
+        secondaryReminderType: notificationPreferences.secondaryReminderType || 'email',
       },
     };
 
@@ -484,7 +495,9 @@ router.post('/sms/webhook', async (req, res) => {
       // Confirm SMS consent via YES reply
       const metadata = userWithPendingConfirmation.metadata as any || {};
       const smsConsent = metadata.smsConsent || {};
+      const notificationPreferences = metadata.notificationPreferences || {};
       
+      // Set default notification preferences: 72 hours before event with SMS
       const updatedMetadata = {
         ...(userWithPendingConfirmation.metadata as any || {}),
         smsConsent: {
@@ -495,6 +508,15 @@ router.post('/sms/webhook', async (req, res) => {
           confirmationMethod: 'sms_reply',
           verificationCode: undefined,
           verificationCodeExpiry: undefined,
+        },
+        notificationPreferences: {
+          ...notificationPreferences,
+          primaryReminderEnabled: true,
+          primaryReminderHours: 72,
+          primaryReminderType: 'sms',
+          secondaryReminderEnabled: notificationPreferences.secondaryReminderEnabled || false,
+          secondaryReminderHours: notificationPreferences.secondaryReminderHours || 1,
+          secondaryReminderType: notificationPreferences.secondaryReminderType || 'email',
         },
       };
 
@@ -552,6 +574,10 @@ router.post('/sms/webhook', async (req, res) => {
       }
 
       // Confirm SMS consent via verification code
+      const metadata2 = userWithMatchingCode.metadata as any || {};
+      const notificationPreferences2 = metadata2.notificationPreferences || {};
+      
+      // Set default notification preferences: 72 hours before event with SMS
       const updatedMetadata = {
         ...(userWithMatchingCode.metadata as any || {}),
         smsConsent: {
@@ -562,6 +588,15 @@ router.post('/sms/webhook', async (req, res) => {
           confirmationMethod: 'verification_code',
           verificationCode: undefined,
           verificationCodeExpiry: undefined,
+        },
+        notificationPreferences: {
+          ...notificationPreferences2,
+          primaryReminderEnabled: true,
+          primaryReminderHours: 72,
+          primaryReminderType: 'sms',
+          secondaryReminderEnabled: notificationPreferences2.secondaryReminderEnabled || false,
+          secondaryReminderHours: notificationPreferences2.secondaryReminderHours || 1,
+          secondaryReminderType: notificationPreferences2.secondaryReminderType || 'email',
         },
       };
 
