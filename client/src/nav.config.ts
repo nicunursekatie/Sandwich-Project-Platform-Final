@@ -34,6 +34,7 @@ import {
   Image,
   DollarSign,
   Receipt,
+  Sparkles,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -354,6 +355,14 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'User Management',
     icon: UserCog,
     href: 'user-management',
+    permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
+    group: 'admin',
+  },
+  {
+    id: 'smart-search-admin',
+    label: 'SmartSearch AI',
+    icon: Sparkles,
+    href: 'smart-search-admin',
     permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
     group: 'admin',
   },

@@ -7,6 +7,7 @@ import { Router } from 'express';
 import { SmartSearchService } from '../services/smart-search.service';
 import type { SmartSearchQuery, SmartSearchResponse } from '../types/smart-search';
 import type { SessionUser } from '../types/express';
+import { storage } from '../storage';
 
 interface ExtendedSmartSearchQuery extends SmartSearchQuery {
   userPermissions?: string[];
@@ -119,9 +120,9 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
    */
   router.post('/regenerate-embeddings', async (req, res) => {
     try {
-      // Check if user is admin
+      // Check if user is admin or super_admin
       const sessionUser = req.user as SessionUser | undefined;
-      if (sessionUser?.role !== 'admin') {
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
@@ -139,18 +140,19 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
    */
   router.post('/analytics', async (req, res) => {
     try {
-      // Log search analytics for learning
+      // Log search analytics for learning and ML improvements
       const sessionUser = req.user as SessionUser | undefined;
-      const analytics = {
-        query: req.body.query,
-        resultId: req.body.resultId,
-        clicked: req.body.clicked,
-        timestamp: new Date(),
-        userId: sessionUser?.id
-      };
-
-      // TODO: Store analytics in database for future ML improvements
-      console.log('Search analytics:', analytics);
+      
+      await storage.logSearchAnalytics({
+        query: req.body.query || '',
+        resultId: req.body.resultId || null,
+        clicked: req.body.clicked || false,
+        userId: sessionUser?.id || null,
+        userRole: sessionUser?.role || null,
+        usedAI: req.body.usedAI || false,
+        resultsCount: req.body.resultsCount || 0,
+        queryTime: req.body.queryTime || 0,
+      });
 
       res.json({ success: true });
     } catch (error) {

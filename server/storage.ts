@@ -36,6 +36,7 @@ import {
   meetingNotes,
   importedExternalIds,
   availabilitySlots,
+  searchAnalytics,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -111,6 +112,8 @@ import {
   type InsertImportedExternalId,
   type AvailabilitySlot,
   type InsertAvailabilitySlot,
+  type SearchAnalytics,
+  type InsertSearchAnalytics,
 } from '@shared/schema';
 
 export interface IStorage {
@@ -690,6 +693,10 @@ export interface IStorage {
   updateDashboardDocumentOrder(
     updates: Array<{ documentId: string; displayOrder: number }>
   ): Promise<void>;
+
+  // Search Analytics (SmartSearch usage tracking for ML improvements)
+  logSearchAnalytics(data: InsertSearchAnalytics): Promise<void>;
+  getSearchAnalytics(options?: { limit?: number; userId?: string }): Promise<SearchAnalytics[]>;
 }
 
 export class MemStorage implements IStorage {

@@ -12,6 +12,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { SmartSearch } from '@/components/SmartSearch';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
@@ -191,90 +192,93 @@ function Router() {
   }
 
   return (
-    <Switch>
-      <Route path="/messages">
-        {() => <Dashboard initialSection="messages" />}
-      </Route>
-      <Route path="/stream-messages">
-        {() => <Dashboard initialSection="stream-messages" />}
-      </Route>
-      <Route path="/inbox">{() => <Dashboard initialSection="inbox" />}</Route>
-      <Route path="/suggestions">
-        {() => <Dashboard initialSection="suggestions" />}
-      </Route>
-      <Route path="/collections">
-        {() => <Dashboard initialSection="collections" />}
-      </Route>
-      <Route path="/google-sheets">
-        {() => <Dashboard initialSection="google-sheets" />}
-      </Route>
-      <Route path="/meetings">
-        {() => <Dashboard initialSection="meetings" />}
-      </Route>
-      <Route path="/projects">
-        {() => <Dashboard initialSection="projects" />}
-      </Route>
-      <Route path="/projects/:id">
-        {(params) => <Dashboard initialSection={`project-${params.id}`} />}
-      </Route>
-      <Route path="/weekly-monitoring">
-        {() => <Dashboard initialSection="weekly-monitoring" />}
-      </Route>
-      <Route path="/wishlist">
-        {() => <Dashboard initialSection="wishlist" />}
-      </Route>
-      <Route path="/team-board">
-        {() => <Dashboard initialSection="team-board" />}
-      </Route>
-      <Route path="/cooler-tracking">
-        {() => <Dashboard initialSection="cooler-tracking" />}
-      </Route>
-      <Route path="/important-links">
-        {() => <Dashboard initialSection="important-links" />}
-      </Route>
-      <Route path="/event-requests">
-        {() => <Dashboard initialSection="event-requests" />}
-      </Route>
-      <Route path="/event-reminders">
-        {() => <Dashboard initialSection="event-reminders" />}
-      </Route>
-      <Route path="/expenses">
-        {() => <Dashboard initialSection="expenses" />}
-      </Route>
-      <Route path="/historical-import">
-        {() => <Dashboard initialSection="historical-import" />}
-      </Route>
-      <Route path="/route-map">
-        {() => <Dashboard initialSection="route-map" />}
-      </Route>
-      <Route path="/sms-opt-in">
-        <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
-          <SMSOptIn />
-        </Suspense>
-      </Route>
-      <Route path="/sms-verification-docs">
-        <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
-          <SMSVerificationDocs />
-        </Suspense>
-      </Route>
-      <Route path="/sms-verification-doc">
-        <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
-          <SMSVerificationDocs />
-        </Suspense>
-      </Route>
-      <Route path="/profile">
-        {() => <Dashboard initialSection="profile" />}
-      </Route>
-      <Route path="/help">
-        {() => <Dashboard initialSection="help" />}
-      </Route>
-      <Route path="/dashboard">{() => <Dashboard />}</Route>
-      <Route path="/dashboard/:section">
-        {(params) => <Dashboard initialSection={params.section} />}
-      </Route>
-      <Route path="/">{() => <Dashboard />}</Route>
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <SmartSearch />
+      <Switch>
+        <Route path="/messages">
+          {() => <Dashboard initialSection="messages" />}
+        </Route>
+        <Route path="/stream-messages">
+          {() => <Dashboard initialSection="stream-messages" />}
+        </Route>
+        <Route path="/inbox">{() => <Dashboard initialSection="inbox" />}</Route>
+        <Route path="/suggestions">
+          {() => <Dashboard initialSection="suggestions" />}
+        </Route>
+        <Route path="/collections">
+          {() => <Dashboard initialSection="collections" />}
+        </Route>
+        <Route path="/google-sheets">
+          {() => <Dashboard initialSection="google-sheets" />}
+        </Route>
+        <Route path="/meetings">
+          {() => <Dashboard initialSection="meetings" />}
+        </Route>
+        <Route path="/projects">
+          {() => <Dashboard initialSection="projects" />}
+        </Route>
+        <Route path="/projects/:id">
+          {(params) => <Dashboard initialSection={`project-${params.id}`} />}
+        </Route>
+        <Route path="/weekly-monitoring">
+          {() => <Dashboard initialSection="weekly-monitoring" />}
+        </Route>
+        <Route path="/wishlist">
+          {() => <Dashboard initialSection="wishlist" />}
+        </Route>
+        <Route path="/team-board">
+          {() => <Dashboard initialSection="team-board" />}
+        </Route>
+        <Route path="/cooler-tracking">
+          {() => <Dashboard initialSection="cooler-tracking" />}
+        </Route>
+        <Route path="/important-links">
+          {() => <Dashboard initialSection="important-links" />}
+        </Route>
+        <Route path="/event-requests">
+          {() => <Dashboard initialSection="event-requests" />}
+        </Route>
+        <Route path="/event-reminders">
+          {() => <Dashboard initialSection="event-reminders" />}
+        </Route>
+        <Route path="/expenses">
+          {() => <Dashboard initialSection="expenses" />}
+        </Route>
+        <Route path="/historical-import">
+          {() => <Dashboard initialSection="historical-import" />}
+        </Route>
+        <Route path="/route-map">
+          {() => <Dashboard initialSection="route-map" />}
+        </Route>
+        <Route path="/sms-opt-in">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSOptIn />
+          </Suspense>
+        </Route>
+        <Route path="/sms-verification-docs">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSVerificationDocs />
+          </Suspense>
+        </Route>
+        <Route path="/sms-verification-doc">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <SMSVerificationDocs />
+          </Suspense>
+        </Route>
+        <Route path="/profile">
+          {() => <Dashboard initialSection="profile" />}
+        </Route>
+        <Route path="/help">
+          {() => <Dashboard initialSection="help" />}
+        </Route>
+        <Route path="/dashboard">{() => <Dashboard />}</Route>
+        <Route path="/dashboard/:section">
+          {(params) => <Dashboard initialSection={params.section} />}
+        </Route>
+        <Route path="/">{() => <Dashboard />}</Route>
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 
