@@ -51,7 +51,7 @@ export const useEventMutations = () => {
       logger.log('=== UPDATE MUTATION ===');
       logger.log('Event ID:', id);
       logger.log('Data being sent:', JSON.stringify(data, null, 2));
-      return apiRequest('PUT', `/api/event-requests/${id}`, data);
+      return apiRequest('PATCH', `/api/event-requests/${id}`, data);
     },
     onSuccess: async (updatedEvent, variables) => {
       logger.log('=== UPDATE SUCCESS ===');
