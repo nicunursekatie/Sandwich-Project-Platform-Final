@@ -11,8 +11,8 @@ import { HelpBubble } from '@/components/help-system/HelpBubble';
 import { NavItem } from '@/nav.types';
 import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
 import { logger } from '@/lib/logger';
-import { Search, ChevronDown, ChevronRight, Sparkles, Command } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 import { SmartSearch } from '@/components/SmartSearch';
 
 export default function SimpleNav({
@@ -31,8 +31,7 @@ export default function SimpleNav({
     const [location] = useLocation();
     const { unreadCounts, totalUnread } = useMessaging();
 
-    // State for search and collapsible sections
-    const [searchQuery, setSearchQuery] = useState('');
+    // State for collapsible sections
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
     // Get Gmail inbox unread count
@@ -79,17 +78,6 @@ export default function SimpleNav({
       return hasPermission(user, item.permission);
     });
 
-    // Filter items by search query
-    const searchFilteredItems = useMemo(() => {
-      if (!searchQuery.trim()) return filteredNavigationItems;
-
-      const query = searchQuery.toLowerCase();
-      return filteredNavigationItems.filter(item =>
-        item.label.toLowerCase().includes(query) ||
-        item.id.toLowerCase().includes(query)
-      );
-    }, [filteredNavigationItems, searchQuery]);
-
     // Toggle section collapse
     const toggleSection = (group: string) => {
       const newCollapsed = new Set(collapsedSections);
@@ -114,8 +102,8 @@ export default function SimpleNav({
     };
 
     // Group items for visual separation
-    const groupedItems = searchFilteredItems.reduce((acc, item, index) => {
-      const prevItem = searchFilteredItems[index - 1];
+    const groupedItems = filteredNavigationItems.reduce((acc, item, index) => {
+      const prevItem = filteredNavigationItems[index - 1];
       const showSeparator =
         prevItem && prevItem.group !== item.group && item.group;
 
@@ -156,29 +144,8 @@ export default function SimpleNav({
       <nav className="flex flex-col gap-1.5 p-3" data-tour="navigation">
         {/* AI-Powered Smart Search */}
         {!isCollapsed && (
-          <div className="mb-4 px-1">
-            <SmartSearch />
-          </div>
-        )}
-
-        {/* Local Sidebar Search */}
-        {!isCollapsed && (
           <div className="mb-3 px-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Filter sidebar..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-sm bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary"
-              />
-            </div>
-            {searchQuery && (
-              <p className="text-xs text-gray-500 mt-1 px-1">
-                {searchFilteredItems.length} result{searchFilteredItems.length !== 1 ? 's' : ''}
-              </p>
-            )}
+            <SmartSearch />
           </div>
         )}
 
@@ -209,9 +176,9 @@ export default function SimpleNav({
           const badgeCount = getBadgeCount(item.id);
           const active = isActive(item.href);
 
-          // Hide items in collapsed sections (unless searching or item is dashboard)
+          // Hide items in collapsed sections (unless item is dashboard)
           const isInCollapsedSection = item.group && collapsedSections.has(item.group) && item.group !== 'dashboard';
-          if (isInCollapsedSection && !searchQuery) {
+          if (isInCollapsedSection) {
             return null;
           }
 
