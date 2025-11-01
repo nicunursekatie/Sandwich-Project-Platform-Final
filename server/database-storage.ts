@@ -1174,7 +1174,17 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({
         totalEntries: sql<number>`count(*)::int`,
-        totalSandwiches: sql<number>`coalesce(sum(individual_sandwiches), 0)::int + coalesce(sum(group1_count), 0)::int + coalesce(sum(group2_count), 0)::int`,
+        totalSandwiches: sql<number>`
+          coalesce(sum(individual_sandwiches), 0)::int
+          + coalesce(sum(group1_count), 0)::int
+          + coalesce(sum(group2_count), 0)::int
+          + coalesce(sum(
+              (
+                SELECT sum((elem->>'count')::int)
+                FROM jsonb_array_elements(group_collections) AS elem
+              )
+            ), 0)::int
+        `,
       })
       .from(sandwichCollections);
 
