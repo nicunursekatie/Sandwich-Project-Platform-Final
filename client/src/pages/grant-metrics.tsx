@@ -223,6 +223,19 @@ export default function GrantMetrics() {
       0
     );
 
+    // Debug logging
+    logger.log('=== EVENT METRICS DEBUG ===');
+    logger.log('Total completed events:', completedEvents.length);
+    logger.log('Events to analyze (after filtering):', eventsToAnalyze.length);
+    logger.log('Total sandwiches calculated:', totalActualSandwiches);
+    logger.log('Sample events:', eventsToAnalyze.slice(0, 5).map((e: any) => ({
+      id: e.id,
+      org: e.organizationName,
+      actual: e.actualSandwichCount,
+      estimated: e.estimatedSandwichCount,
+      used: e.actualSandwichCount || e.estimatedSandwichCount || 0
+    })));
+
     // Get unique organizations
     const uniqueOrgs = new Set(
       eventsToAnalyze.map((e: any) => e.organizationName).filter(Boolean)
