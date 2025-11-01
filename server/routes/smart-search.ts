@@ -120,9 +120,9 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
    */
   router.post('/regenerate-embeddings', async (req, res) => {
     try {
-      // Check if user is admin
+      // Check if user is admin or super_admin
       const sessionUser = req.user as SessionUser | undefined;
-      if (sessionUser?.role !== 'admin') {
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
