@@ -544,8 +544,8 @@ export async function sendTspContactAssignmentSMS(
       : 'TBD';
 
     // Create app URL with event link
-    const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
-    const eventUrl = `${appUrl}/event-requests/${eventId}`;
+    const appUrl = 'https://sandwich-project-platform-final-katielong2316.replit.app';
+    const eventUrl = `${appUrl}/event-requests`;
 
     // Craft message
     const message = `The Sandwich Project: You've been assigned as TSP contact for ${organizationName} (${formattedDate}). View details: ${eventUrl}`;
