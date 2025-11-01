@@ -15,6 +15,23 @@ function canonicalizeOrgName(orgName: string): string {
     .replace(/\s/g, ''); // Remove all remaining spaces
 }
 
+// Enhanced matching: checks if names are exact match OR if one is a substring of the other
+// This handles cases like "Allied World" vs "Allied World Assurance"
+function organizationNamesMatch(canonical1: string, canonical2: string): boolean {
+  if (!canonical1 || !canonical2) return false;
+  
+  // Exact match
+  if (canonical1 === canonical2) return true;
+  
+  // Substring match: one name contains the other (with minimum length to avoid false positives)
+  const minLength = 8; // Avoid matching very short abbreviations
+  if (canonical1.length >= minLength && canonical2.length >= minLength) {
+    return canonical1.includes(canonical2) || canonical2.includes(canonical1);
+  }
+  
+  return false;
+}
+
 export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
   const router = Router();
 
@@ -69,6 +86,17 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
       // Create a map to aggregate data by organization and department
       const departmentsMap = new Map();
+      
+      // Helper: find existing matching canonical name in departmentsMap
+      const findMatchingCanonicalName = (canonicalName: string, department: string): string | null => {
+        for (const [key, dept] of departmentsMap.entries()) {
+          // Only match within the same department
+          if (dept.department === department && organizationNamesMatch(dept.canonicalName, canonicalName)) {
+            return dept.canonicalName;
+          }
+        }
+        return null;
+      };
 
       allEventRequests.forEach((request) => {
         const orgName = request.organizationName;
@@ -82,7 +110,13 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         if (!orgName) return;
 
         // Create a unique key using canonical name for matching
-        const canonicalOrgName = canonicalizeOrgName(orgName);
+        // ENHANCED: Check if a similar organization already exists and use its canonical name
+        let canonicalOrgName = canonicalizeOrgName(orgName);
+        const matchingCanonical = findMatchingCanonicalName(canonicalOrgName, department);
+        if (matchingCanonical) {
+          canonicalOrgName = matchingCanonical; // Use existing canonical name for consistency
+        }
+        
         const departmentKey = `${canonicalOrgName}|${department}`;
 
         // Track department-level aggregation
@@ -269,27 +303,48 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           // If an event request exists within 7 days, we skip the collection to avoid duplication.
           // The 7-day window allows for slight date discrepancies due to late logging or date changes.
           // Collections are only deduplicated if the organization has event requests WITH dates.
-          if (collectionDate && eventRequestLookup.has(canonicalOrgName)) {
+          // ENHANCED: Now uses fuzzy matching to catch name variations (e.g., "Allied World" vs "Allied World Assurance")
+          if (collectionDate) {
             const collectionDateObj = new Date(collectionDate);
-            const requestDates = eventRequestLookup.get(canonicalOrgName)!;
+            let foundMatch = false;
 
-            // Check if any event request is within 7 days of this collection
-            for (const requestDateStr of requestDates) {
-              const requestDateObj = new Date(requestDateStr);
-              const daysDiff = Math.abs(
-                (collectionDateObj.getTime() - requestDateObj.getTime()) / (1000 * 60 * 60 * 24)
-              );
+            // Check all event requests for matching organization names (exact or partial)
+            for (const [requestCanonicalName, requestDates] of eventRequestLookup.entries()) {
+              if (organizationNamesMatch(canonicalOrgName, requestCanonicalName)) {
+                // Organization names match - now check if dates are within 7 days
+                for (const requestDateStr of requestDates) {
+                  const requestDateObj = new Date(requestDateStr);
+                  const daysDiff = Math.abs(
+                    (collectionDateObj.getTime() - requestDateObj.getTime()) / (1000 * 60 * 60 * 24)
+                  );
 
-              if (daysDiff <= 7) {
-                // This collection matches an event request - skip to avoid double-counting
-                return;
+                  if (daysDiff <= 7) {
+                    // This collection matches an event request - skip to avoid double-counting
+                    foundMatch = true;
+                    break;
+                  }
+                }
+                if (foundMatch) break;
               }
+            }
+
+            if (foundMatch) {
+              return; // Skip this collection to avoid duplication
             }
           }
 
           // Track sandwich totals using canonical name for matching
-          if (!organizationSandwichData.has(canonicalOrgName)) {
-            organizationSandwichData.set(canonicalOrgName, {
+          // ENHANCED: Check if a similar organization already exists and consolidate
+          let matchingKey = canonicalOrgName;
+          for (const [existingKey] of organizationSandwichData.entries()) {
+            if (organizationNamesMatch(existingKey, canonicalOrgName)) {
+              matchingKey = existingKey; // Use existing key for consolidation
+              break;
+            }
+          }
+          
+          if (!organizationSandwichData.has(matchingKey)) {
+            organizationSandwichData.set(matchingKey, {
               originalName: cleanOrgName, // Preserve original display name
               totalSandwiches: 0,
               eventCount: 0,
@@ -298,7 +353,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             });
           }
 
-          const orgData = organizationSandwichData.get(canonicalOrgName);
+          const orgData = organizationSandwichData.get(matchingKey);
           orgData.totalSandwiches += sandwichCount || 0;
 
           // Track unique event dates to calculate frequency
@@ -387,6 +442,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       // Update departments with actual collection data
       organizationSandwichData.forEach((orgData, canonicalOrgName) => {
         // Find existing department entries for this organization using canonical matching
+        // ENHANCED: Now uses fuzzy matching to catch name variations
         let foundExisting = false;
 
         // Sort past events by date (most recent first)
@@ -395,7 +451,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         );
 
         departmentsMap.forEach((dept, key) => {
-          if (dept.canonicalName === canonicalOrgName) {
+          if (organizationNamesMatch(dept.canonicalName, canonicalOrgName)) {
             foundExisting = true;
             dept.actualSandwichTotal = orgData.totalSandwiches;
             dept.actualEventCount = orgData.eventCount;
@@ -532,7 +588,17 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       const organizations = Array.from(organizationsMap.entries()).map(
         ([_, org]) => {
           // Look up category information for this organization
-          const categoryInfo = organizationCategoryMap.get(org.canonicalName);
+          // ENHANCED: Use fuzzy matching to find category info
+          let categoryInfo = organizationCategoryMap.get(org.canonicalName);
+          if (!categoryInfo) {
+            // Search for matching organization name
+            for (const [categoryKey, info] of organizationCategoryMap.entries()) {
+              if (organizationNamesMatch(categoryKey, org.canonicalName)) {
+                categoryInfo = info;
+                break;
+              }
+            }
+          }
           
           return {
             name: org.displayName,
