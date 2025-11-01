@@ -155,28 +155,26 @@ export function SmartSearch() {
   };
 
   // Navigate to selected result
-  const navigateToResult = useCallback(async (result: SmartSearchResult) => {
-    // Track analytics
-    try {
-      await fetch('/api/smart-search/analytics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          query,
-          resultId: result.feature.id,
-          clicked: true
-        })
-      });
-    } catch (error) {
+  const navigateToResult = useCallback((result: SmartSearchResult) => {
+    // Track analytics (non-blocking)
+    fetch('/api/smart-search/analytics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        query,
+        resultId: result.feature.id,
+        clicked: true
+      })
+    }).catch(error => {
       console.error('Failed to track analytics:', error);
-    }
+    });
+
+    // Close dialog immediately
+    setIsOpen(false);
 
     // Navigate to route
     setLocation(result.feature.route);
-
-    // Close dialog
-    setIsOpen(false);
 
     // TODO: If result has an action, trigger it (e.g., open a modal)
     if (result.feature.action) {
