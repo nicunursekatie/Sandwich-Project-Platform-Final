@@ -1,9 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -30,25 +37,6 @@ import {
 import { formatDateForDisplay } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
 import { StandardFilterBar } from '@/components/ui/standard-filter-bar';
-
-interface Group {
-  name: string;
-  category?: string | null;
-  schoolClassification?: string | null;
-  isReligious?: boolean;
-  contacts: Array<{
-    name: string;
-    email?: string;
-    status?: string;
-    latestRequestDate?: string;
-    totalRequests?: number;
-    hasHostedEvent?: boolean;
-    eventDate?: string | null;
-  }>;
-  totalRequests: number;
-  lastRequestDate: string;
-  hasHostedEvent: boolean;
-}
 
 interface OrganizationContact {
   organizationName: string;
@@ -122,7 +110,7 @@ const getCategoryBadgeColor = (category: string | null | undefined): string => {
 };
 
 export default function GroupCatalog({
-  onNavigateToEventPlanning,
+  onNavigateToEventPlanning: _onNavigateToEventPlanning,
 }: GroupCatalogProps = {}) {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
