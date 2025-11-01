@@ -53,6 +53,8 @@ import { AssignmentDialog } from './dialogs/AssignmentDialog';
 import { MissingInfoSummaryDialog } from './MissingInfoSummaryDialog';
 import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
 import { logger } from '@/lib/logger';
+import { getRoleViewDescription } from '@shared/role-view-defaults';
+import { Info } from 'lucide-react';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -255,6 +257,18 @@ const EventRequestsManagementContent: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Role-customized view indicator */}
+        {user?.role && user.role !== 'super_admin' && user.role !== 'admin' && (
+          <div className="premium-card-flat p-3 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500">
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                {getRoleViewDescription(user.role, 'events')}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* View Mode Toggle - Separate Row */}
         <div className="flex items-center justify-center">

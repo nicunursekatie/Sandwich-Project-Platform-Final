@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useQuery } from '@tanstack/react-query';
 import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
+import { getEventRequestDefaults } from '@shared/role-view-defaults';
 
 interface EventRequestContextType {
   // Event requests data
@@ -175,6 +176,14 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Get current user for assignment checking
   const { user } = useAuth();
 
+  // Get role-based defaults for this user
+  const roleDefaults = React.useMemo(() => {
+    if (!user?.role) {
+      return getEventRequestDefaults('viewer'); // Default fallback
+    }
+    return getEventRequestDefaults(user.role, user.id);
+  }, [user?.role, user?.id]);
+
   // Fetch event requests using the same query pattern
   const { data: eventRequests = [], isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests', 'v2'],
@@ -191,17 +200,17 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     gcTime: 10 * 60 * 1000,
   });
 
-  // View state
+  // View state - use role-based defaults if no initialTab provided
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [activeTab, setActiveTab] = useState(initialTab || 'new');
+  const [activeTab, setActiveTab] = useState(initialTab || roleDefaults.defaultTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [confirmationFilter, setConfirmationFilter] = useState<'all' | 'confirmed' | 'requested'>('all');
-  const [sortBy, setSortBy] = useState<'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc'>('event_date_desc');
+  const [confirmationFilter, setConfirmationFilter] = useState<'all' | 'confirmed' | 'requested'>(roleDefaults.defaultConfirmationFilter);
+  const [sortBy, setSortBy] = useState<'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc'>(roleDefaults.defaultSort);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [itemsPerPage, setItemsPerPage] = useState(roleDefaults.itemsPerPage);
 
   // Selected event and editing
   const [selectedEventRequest, setSelectedEventRequest] = useState<EventRequest | null>(null);
@@ -380,10 +389,12 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   }, [activeTab]);
 
   // Auto-sort by appropriate default for each tab (only when tab changes)
+  // This provides smart defaults but user can still override
   useEffect(() => {
     if (activeTab === 'new') {
       setSortBy('created_date_desc');
-    } else if (activeTab === 'scheduled' || activeTab === 'in_process') {
+    } else if (activeTab === 'scheduled' || activeTab === 'in_process' || activeTab === 'my_assignments') {
+      // For scheduled and my_assignments, show upcoming events first
       setSortBy('event_date_asc');
     } else if (activeTab === 'completed') {
       setSortBy('organization_asc');

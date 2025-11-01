@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { MessageComposer } from '@/components/message-composer';
 import {
   Dialog,
@@ -35,6 +36,8 @@ import {
   ExternalLink,
   Filter,
   MessageCircle,
+
+  Info,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { logger } from '@/lib/logger';
@@ -45,6 +48,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { getExpenseDefaults, getRoleViewDescription } from '@shared/role-view-defaults';
 
 interface Expense {
   id: number;
@@ -77,11 +81,21 @@ export function ExpensesList({
   contextId,
   showFilters = true,
 }: ExpensesListProps) {
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [messageExpense, setMessageExpense] = useState<Expense | null>(null);
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Get role-based defaults for expenses
+  const expenseDefaults = useMemo(() => {
+    if (!user?.role) {
+      return getExpenseDefaults('viewer');
+    }
+    return getExpenseDefaults(user.role);
+  }, [user?.role]);
+
+  const [statusFilter, setStatusFilter] = useState<string>(expenseDefaults.defaultStatusFilter);
+  const [categoryFilter, setCategoryFilter] = useState<string>(expenseDefaults.defaultCategoryFilter);
+  const [messageExpense, setMessageExpense] = useState<Expense | null>(null);
 
   // Build query params
   const queryParams = new URLSearchParams();
@@ -91,7 +105,7 @@ export function ExpensesList({
   if (categoryFilter !== 'all') queryParams.append('category', categoryFilter);
 
   // Fetch expenses
-  const { data: expenses = [], isLoading } = useQuery<Expense[]>({
+  const { data: rawExpenses = [], isLoading } = useQuery<Expense[]>({
     queryKey: ['expenses', contextType, contextId, statusFilter, categoryFilter],
     queryFn: async () => {
       const response = await fetch(`/api/expenses?${queryParams}`);
@@ -101,6 +115,25 @@ export function ExpensesList({
       return response.json();
     },
   });
+
+  // Apply role-based sorting - show user's own expenses first if role specifies
+  const expenses = useMemo(() => {
+    if (!expenseDefaults.showOwnFirst || !user?.id) {
+      return rawExpenses;
+    }
+
+    // Sort so user's own expenses appear first
+    return [...rawExpenses].sort((a, b) => {
+      const aIsOwn = a.uploadedBy === user.id;
+      const bIsOwn = b.uploadedBy === user.id;
+
+      if (aIsOwn && !bIsOwn) return -1;
+      if (!aIsOwn && bIsOwn) return 1;
+
+      // If both are own or both are not own, maintain original order (by date)
+      return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime();
+    });
+  }, [rawExpenses, expenseDefaults.showOwnFirst, user?.id]);
 
   // Delete expense mutation
   const deleteMutation = useMutation({
@@ -259,6 +292,18 @@ export function ExpensesList({
         </div>
       </CardHeader>
       <CardContent>
+        {/* Role-customized view indicator */}
+        {user?.role && user.role !== 'super_admin' && user.role !== 'admin' && (
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded">
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                {getRoleViewDescription(user.role, 'expenses')}
+              </p>
+            </div>
+          </div>
+        )}
+
         {expenses.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No expenses found
