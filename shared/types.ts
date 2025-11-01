@@ -18,6 +18,22 @@ export interface SmsConsent {
 }
 
 /**
+ * Event Notification Preferences
+ * Configures when and how users receive reminders for events they're assigned to
+ */
+export interface EventNotificationPreferences {
+  // Primary reminder settings
+  primaryReminderEnabled: boolean; // Whether to send first reminder
+  primaryReminderHours: number; // Hours before event (1-36, default 24)
+  primaryReminderType: 'email' | 'sms' | 'both'; // Notification method
+
+  // Secondary reminder settings (optional)
+  secondaryReminderEnabled: boolean; // Whether to send second reminder
+  secondaryReminderHours: number; // Hours before event (1-36)
+  secondaryReminderType: 'email' | 'sms' | 'both'; // Notification method
+}
+
+/**
  * User Metadata structure
  * Defines all properties that can be stored in the users.metadata JSONB field
  */
@@ -27,6 +43,9 @@ export interface UserMetadata {
 
   // SMS consent and phone number
   smsConsent?: SmsConsent;
+
+  // Event notification preferences
+  eventNotificationPreferences?: EventNotificationPreferences;
 
   // Additional contact information
   phoneNumber?: string;
@@ -171,4 +190,29 @@ export function getUserPhoneNumber(user: DrizzleUser | User | null | undefined):
   }
 
   return null;
+}
+
+/**
+ * Helper to get event notification preferences from user metadata
+ * Returns default preferences if none are set
+ */
+export function getEventNotificationPreferences(
+  user: DrizzleUser | User | null | undefined
+): EventNotificationPreferences {
+  const metadata = getUserMetadata(user);
+  
+  // Return user's preferences if they exist
+  if (metadata.eventNotificationPreferences) {
+    return metadata.eventNotificationPreferences;
+  }
+
+  // Return default preferences
+  return {
+    primaryReminderEnabled: true,
+    primaryReminderHours: 24,
+    primaryReminderType: 'email',
+    secondaryReminderEnabled: false,
+    secondaryReminderHours: 1,
+    secondaryReminderType: 'email',
+  };
 }
