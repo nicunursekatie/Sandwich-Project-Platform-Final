@@ -476,7 +476,9 @@ router.post('/sms/webhook', async (req, res) => {
 
       if (!userWithPendingConfirmation) {
         logger.log(`❌ No pending confirmation found for ${phoneNumber}`);
-        return res.status(200).send('OK'); // Still return 200 to Twilio
+        // Return TwiML response with no message (empty response)
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
 
       // Confirm SMS consent via YES reply
@@ -513,6 +515,10 @@ router.post('/sms/webhook', async (req, res) => {
       } catch (smsError) {
         logger.error('Failed to send welcome SMS after YES confirmation:', smsError);
       }
+      
+      // Return empty TwiML response (don't send duplicate message)
+      res.type('text/xml');
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     } 
     // Check if message is a verification code
     else if (/^\d{6}$/.test(messageBody)) {
@@ -530,7 +536,8 @@ router.post('/sms/webhook', async (req, res) => {
 
       if (!userWithMatchingCode) {
         logger.log(`❌ No matching verification code found for ${phoneNumber}: ${messageBody}`);
-        return res.status(200).send('OK');
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
 
       // Check expiry
@@ -540,7 +547,8 @@ router.post('/sms/webhook', async (req, res) => {
       
       if (new Date() > expiry) {
         logger.log(`❌ Verification code expired for ${phoneNumber}`);
-        return res.status(200).send('OK');
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
 
       // Confirm SMS consent via verification code
@@ -574,16 +582,22 @@ router.post('/sms/webhook', async (req, res) => {
       } catch (smsError) {
         logger.error('Failed to send welcome SMS after code confirmation:', smsError);
       }
+      
+      // Return empty TwiML response
+      res.type('text/xml');
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     } else {
       logger.log(`ℹ️ Unrecognized SMS message from ${phoneNumber}: "${Body}"`);
     }
 
-    // Always respond with 200 OK to Twilio
-    res.status(200).send('OK');
+    // Always respond with TwiML (empty response for unrecognized messages)
+    res.type('text/xml');
+    res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
   } catch (error) {
     logger.error('Error processing SMS webhook:', error);
-    // Always respond with 200 OK to Twilio even on errors
-    res.status(200).send('OK');
+    // Always respond with TwiML even on errors
+    res.type('text/xml');
+    res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
   }
 });
 
