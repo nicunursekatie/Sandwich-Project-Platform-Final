@@ -451,6 +451,40 @@ promotionGraphicsRouter.delete(
   }
 );
 
+// POST /api/promotion-graphics/:id/view - Increment view count
+promotionGraphicsRouter.post('/:id/view', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const graphicId = parseInt(req.params.id, 10);
+    if (isNaN(graphicId)) {
+      return res.status(400).json({ error: 'Invalid graphic ID' });
+    }
+
+    logger.info('Incrementing view count for graphic', { graphicId, userId: req.user.id });
+
+    // Increment the view count
+    await db
+      .update(promotionGraphics)
+      .set({
+        viewCount: sql`${promotionGraphics.viewCount} + 1`,
+      })
+      .where(eq(promotionGraphics.id, graphicId));
+
+    logger.info('Successfully incremented view count', { graphicId });
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Failed to increment view count', error);
+    res.status(500).json({
+      error: 'Failed to increment view count',
+      message: 'An error occurred while updating view count'
+    });
+  }
+});
+
 // Helper function to send notification emails
 async function sendNotificationEmail(graphic: PromotionGraphic, uploader: any) {
   try {

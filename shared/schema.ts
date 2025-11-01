@@ -3147,6 +3147,7 @@ export const promotionGraphics = pgTable('promotion_graphics', {
   status: varchar('status', { length: 50 }).default('active'), // 'active', 'archived'
   notificationSent: boolean('notification_sent').default(false), // Track if email was sent
   notificationSentAt: timestamp('notification_sent_at'), // When notification was sent
+  viewCount: integer('view_count').default(0), // Track how many times the graphic has been viewed
   uploadedBy: varchar('uploaded_by').notNull(), // FK to users.id
   uploadedByName: text('uploaded_by_name').notNull(),
   createdAt: timestamp('created_at').defaultNow(),

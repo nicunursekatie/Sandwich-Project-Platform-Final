@@ -111,6 +111,7 @@ interface PromotionGraphic {
   status: string;
   notificationSent: boolean;
   notificationSentAt?: string | null;
+  viewCount?: number;
   uploadedBy: string;
   uploadedByName: string;
   createdAt: string;
@@ -124,6 +125,8 @@ export default function PromotionGraphics() {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterAudience, setFilterAudience] = useState<string>('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -177,6 +180,21 @@ export default function PromotionGraphics() {
   // Filter to show only active graphics
   const activeGraphics = graphics.filter((g) => g.status === 'active');
 
+  // Apply search and audience filters
+  const filteredGraphics = activeGraphics.filter((graphic) => {
+    // Search filter
+    const matchesSearch =
+      searchQuery === '' ||
+      graphic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      graphic.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Audience filter
+    const matchesAudience =
+      filterAudience === 'all' || graphic.targetAudience === filterAudience;
+
+    return matchesSearch && matchesAudience;
+  });
+
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: number) => {
@@ -220,6 +238,19 @@ export default function PromotionGraphics() {
         description: error.message || 'Failed to archive graphic. Please try again.',
         variant: 'destructive',
       });
+    },
+  });
+
+  // View tracking mutation
+  const trackViewMutation = useMutation({
+    mutationFn: (id: number) => {
+      return apiRequest('POST', `/api/promotion-graphics/${id}/view`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/promotion-graphics'] });
+    },
+    onError: (error: any) => {
+      logger.error('Failed to track view', error);
     },
   });
 
@@ -536,6 +567,32 @@ export default function PromotionGraphics() {
         )}
       </div>
 
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="flex-1">
+          <Input
+            type="text"
+            placeholder="Search by title or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        <div className="w-full sm:w-48">
+          <Select value={filterAudience} onValueChange={setFilterAudience}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by audience" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Audiences</SelectItem>
+              <SelectItem value="hosts">Hosts</SelectItem>
+              <SelectItem value="volunteers">All Volunteers</SelectItem>
+              <SelectItem value="all">Everyone</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Graphics Grid */}
       {isLoading ? (
         <div className="text-center py-12">
@@ -557,11 +614,30 @@ export default function PromotionGraphics() {
             )}
           </CardContent>
         </Card>
+      ) : filteredGraphics.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-500 mb-4">No graphics match your filters</p>
+            <Button
+              onClick={() => {
+                setSearchQuery('');
+                setFilterAudience('all');
+              }}
+              variant="outline"
+            >
+              Clear Filters
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeGraphics.map((graphic) => (
+          {filteredGraphics.map((graphic) => (
             <Card key={graphic.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => setSelectedGraphic(graphic)}>
+              <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => {
+                setSelectedGraphic(graphic);
+                trackViewMutation.mutate(graphic.id);
+              }}>
                 {graphic.fileType === 'application/pdf' ? (
                   <div className="w-full h-full relative">
                     <iframe
@@ -607,6 +683,12 @@ export default function PromotionGraphics() {
                     <Users className="h-4 w-4 mr-2" style={{ color: '#47B3CB' }} />
                     <span className="capitalize">{graphic.targetAudience}</span>
                   </div>
+                  {graphic.viewCount !== undefined && graphic.viewCount > 0 && (
+                    <div className="flex items-center text-gray-600">
+                      <Eye className="h-4 w-4 mr-2" style={{ color: '#007E8C' }} />
+                      <span>{graphic.viewCount} {graphic.viewCount === 1 ? 'view' : 'views'}</span>
+                    </div>
+                  )}
                   <div className="text-xs text-gray-500">
                     Uploaded by {graphic.uploadedByName}
                   </div>
@@ -616,7 +698,10 @@ export default function PromotionGraphics() {
                     variant="outline"
                     size="sm"
                     className="flex-1 min-w-[80px]"
-                    onClick={() => setSelectedGraphic(graphic)}
+                    onClick={() => {
+                      setSelectedGraphic(graphic);
+                      trackViewMutation.mutate(graphic.id);
+                    }}
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     View
