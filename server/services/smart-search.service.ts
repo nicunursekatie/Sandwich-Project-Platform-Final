@@ -716,9 +716,17 @@ export class SmartSearchService {
 
       // Update estimated time remaining
       const elapsed = Date.now() - this.regenerationProgress.startTime!.getTime();
-      const rate = this.regenerationProgress.completed / (elapsed / 1000); // features per second
-      const remaining = featuresToProcess.length - this.regenerationProgress.completed;
-      this.regenerationProgress.estimatedTimeRemaining = remaining / rate;
+      const elapsedSeconds = elapsed / 1000;
+
+      // Only calculate ETA if we have completed at least 1 feature and have elapsed time
+      if (this.regenerationProgress.completed > 0 && elapsedSeconds > 0) {
+        const rate = this.regenerationProgress.completed / elapsedSeconds; // features per second
+        const remaining = featuresToProcess.length - this.regenerationProgress.completed;
+        this.regenerationProgress.estimatedTimeRemaining = remaining / rate;
+      } else {
+        // Not enough data yet for accurate estimate
+        this.regenerationProgress.estimatedTimeRemaining = undefined;
+      }
 
       // Save progress periodically
       await this.saveIndex();
