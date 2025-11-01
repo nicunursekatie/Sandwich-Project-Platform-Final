@@ -8,11 +8,13 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { RescheduleDialog } from '../dialogs/RescheduleDialog';
 import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
+import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import type { EventRequest } from '@shared/schema';
 
 export const ScheduledTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
 
@@ -105,17 +107,8 @@ export const ScheduledTab: React.FC = () => {
 
   const saveEdit = () => {
     if (editingScheduledId && editingField) {
-      // Show confirmation for critical fields
-      const criticalFields = ['eventStartTime', 'eventEndTime', 'pickupTime', 'overnightPickupTime', 'eventAddress', 'overnightHoldingLocation', 'deliveryDestination', 'hasRefrigeration', 'driversNeeded', 'speakersNeeded', 'volunteersNeeded'];
-
-      if (criticalFields.includes(editingField)) {
-        const fieldName = editingField.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase());
-        const confirmed = window.confirm(`Are you sure you want to update ${fieldName}?\n\nThis will change the event details and may affect planning.`);
-        if (!confirmed) {
-          cancelEdit();
-          return;
-        }
-      }
+      // Define the actual save logic
+      const performSave = () => {
 
       // Special handling for sandwich types
       if (editingField === 'sandwichTypes') {
@@ -194,6 +187,27 @@ export const ScheduledTab: React.FC = () => {
           field: editingField,
           value: editingValue,
         });
+      }
+      };
+
+      // Check if this is a critical field that requires confirmation
+      const criticalFields = ['eventStartTime', 'eventEndTime', 'pickupTime', 'overnightPickupTime', 'eventAddress', 'overnightHoldingLocation', 'deliveryDestination', 'hasRefrigeration', 'driversNeeded', 'speakersNeeded', 'volunteersNeeded'];
+
+      if (criticalFields.includes(editingField)) {
+        const fieldName = editingField.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase());
+        confirm(
+          `Update ${fieldName}`,
+          `Are you sure you want to update ${fieldName}? This will change the event details and may affect planning.`,
+          () => {
+            performSave();
+            cancelEdit();
+          },
+          'default'
+        );
+      } else {
+        // For non-critical fields, save directly
+        performSave();
+        cancelEdit();
       }
     }
   };
@@ -345,6 +359,7 @@ export const ScheduledTab: React.FC = () => {
       request={rescheduleRequest}
       onReschedule={performReschedule}
     />
+    {ConfirmationDialogComponent}
   </>
   );
 };
