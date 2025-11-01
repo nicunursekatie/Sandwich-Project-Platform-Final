@@ -6,6 +6,7 @@ import { insertNotificationSchema } from '../../../shared/schema';
 import { createStandardMiddleware } from '../../middleware';
 import { smartNotificationsRouter } from './smart';
 import { analyticsRouter } from './analytics';
+import { actionsRouter } from './actions';
 import { z } from 'zod';
 import { logger } from '../../utils/production-safe-logger';
 
@@ -19,6 +20,9 @@ notificationsRouter.use('/smart', smartNotificationsRouter);
 
 // Mount analytics routes
 notificationsRouter.use('/analytics', analyticsRouter);
+
+// Mount actions routes - for executing notification actions
+notificationsRouter.use('/', actionsRouter);
 
 // Mount test routes (remove in production) - moved to async initialization
 if (process.env.NODE_ENV === 'development') {
