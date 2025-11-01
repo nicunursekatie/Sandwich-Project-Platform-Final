@@ -1,23 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
@@ -31,14 +17,11 @@ import {
   Mail,
   Phone,
   Calendar,
-  Search,
-  Filter,
   Users,
   MapPin,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   Clock,
   CheckCircle,
   UserCheck,
@@ -46,6 +29,7 @@ import {
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
+import { StandardFilterBar } from '@/components/ui/standard-filter-bar';
 
 interface Group {
   name: string;
@@ -144,10 +128,14 @@ export default function GroupCatalog({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('groupName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [statusFilter, setStatusFilter] = useState<string[]>(['contacted', 'scheduled', 'completed', 'declined', 'past']); // Exclude new and in_process by default
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([]); // Empty = show all categories
-  const [dateFilterStart, setDateFilterStart] = useState<string>('');
-  const [dateFilterEnd, setDateFilterEnd] = useState<string>('');
+
+  // Consolidated filter state
+  const [filters, setFilters] = useState({
+    status: ['contacted', 'scheduled', 'completed', 'declined', 'past'] as string[],
+    category: [] as string[],
+    dateRange: {} as { from?: Date; to?: Date },
+    hostedEvents: [] as string[], // 'hosted', 'not-hosted'
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(24);
   const [selectedOrganization, setSelectedOrganization] =
@@ -319,7 +307,7 @@ export default function GroupCatalog({
 
     // Category filter - empty array means show all categories
     const orgCategory = org.category || null;
-    const matchesCategory = categoryFilter.length === 0 || categoryFilter.includes(orgCategory || '');
+    const matchesCategory = filters.category.length === 0 || filters.category.includes(orgCategory || '');
 
     // For organizations without email/status (from collections only), only apply search and category filter
     if (!org.email || org.contactName === 'Historical Organization' || org.contactName === 'Collection Logged Only') {
@@ -327,14 +315,19 @@ export default function GroupCatalog({
     }
 
     // For organizations with event requests, apply all filters
-    const matchesStatus = statusFilter.length === 0 || statusFilter.includes(org.status);
+    const matchesStatus = filters.status.length === 0 || filters.status.includes(org.status);
 
     // Use event date for filtering (when the event actually happened), not activity date (when it was created)
     const eventDate = org.eventDate ? new Date(org.eventDate) : null;
-    const matchesDateStart = !dateFilterStart || !eventDate || eventDate >= new Date(dateFilterStart);
-    const matchesDateEnd = !dateFilterEnd || !eventDate || eventDate <= new Date(dateFilterEnd + 'T23:59:59');
+    const matchesDateStart = !filters.dateRange.from || !eventDate || eventDate >= filters.dateRange.from;
+    const matchesDateEnd = !filters.dateRange.to || !eventDate || eventDate <= filters.dateRange.to;
 
-    return matchesSearch && matchesCategory && matchesStatus && matchesDateStart && matchesDateEnd;
+    // Hosted events filter
+    const matchesHosted = filters.hostedEvents.length === 0 ||
+      (filters.hostedEvents.includes('hosted') && org.hasHostedEvent) ||
+      (filters.hostedEvents.includes('not-hosted') && !org.hasHostedEvent);
+
+    return matchesSearch && matchesCategory && matchesStatus && matchesDateStart && matchesDateEnd && matchesHosted;
   });
 
   // Group entries by group name
@@ -479,7 +472,7 @@ export default function GroupCatalog({
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, categoryFilter, dateFilterStart, dateFilterEnd, sortBy, sortOrder]);
+  }, [searchTerm, filters, sortBy, sortOrder]);
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -620,18 +613,134 @@ export default function GroupCatalog({
 
       {/* Search and Filter Controls */}
       <div className="bg-white rounded-lg border p-4 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          {/* Search */}
-          <div className="md:col-span-3 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search organizations, contacts, emails..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+        <StandardFilterBar
+          searchPlaceholder="Search organizations, contacts, emails, departments..."
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          filters={[
+            {
+              id: 'status',
+              label: 'Status',
+              type: 'multi-select',
+              options: [
+                { value: 'new', label: 'New Requests', count: allOrganizations.filter(o => o.status === 'new').length },
+                { value: 'in_process', label: 'In Process', count: allOrganizations.filter(o => o.status === 'in_process').length },
+                { value: 'contacted', label: 'Contacted', count: allOrganizations.filter(o => o.status === 'contacted').length },
+                { value: 'scheduled', label: 'Upcoming Events', count: allOrganizations.filter(o => o.status === 'scheduled').length },
+                { value: 'completed', label: 'Completed', count: allOrganizations.filter(o => o.status === 'completed').length },
+                { value: 'declined', label: 'Declined', count: allOrganizations.filter(o => o.status === 'declined').length },
+                { value: 'postponed', label: 'Postponed', count: allOrganizations.filter(o => o.status === 'postponed').length },
+                { value: 'cancelled', label: 'Cancelled', count: allOrganizations.filter(o => o.status === 'cancelled').length },
+                { value: 'past', label: 'Past Events', count: allOrganizations.filter(o => o.status === 'past').length },
+              ],
+            },
+            {
+              id: 'category',
+              label: 'Category',
+              type: 'multi-select',
+              options: [
+                { value: 'school', label: 'School', count: allOrganizations.filter(o => o.category === 'school').length },
+                { value: 'church_faith', label: 'Church/Faith', count: allOrganizations.filter(o => o.category === 'church_faith').length },
+                { value: 'club', label: 'Club', count: allOrganizations.filter(o => o.category === 'club').length },
+                { value: 'neighborhood', label: 'Neighborhood', count: allOrganizations.filter(o => o.category === 'neighborhood').length },
+                { value: 'large_corp', label: 'Corporation', count: allOrganizations.filter(o => o.category === 'large_corp').length },
+                { value: 'small_medium_corp', label: 'Small Business', count: allOrganizations.filter(o => o.category === 'small_medium_corp').length },
+                { value: 'other', label: 'Other', count: allOrganizations.filter(o => o.category === 'other').length },
+              ],
+            },
+            {
+              id: 'hostedEvents',
+              label: 'Event History',
+              type: 'tags',
+              options: [
+                { value: 'hosted', label: 'Has Hosted', count: allOrganizations.filter(o => o.hasHostedEvent).length },
+                { value: 'not-hosted', label: 'Never Hosted', count: allOrganizations.filter(o => !o.hasHostedEvent).length },
+              ],
+            },
+            {
+              id: 'dateRange',
+              label: 'Event Date Range',
+              type: 'date-range',
+              placeholder: 'Filter by event date',
+            },
+          ]}
+          filterValues={filters}
+          onFilterChange={(id, value) => setFilters({ ...filters, [id]: value })}
+          showActiveFilters
+          onClearAll={() => {
+            setSearchTerm('');
+            setFilters({
+              status: [],
+              category: [],
+              dateRange: {},
+              hostedEvents: [],
+            });
+          }}
+        />
+
+        {/* Sort Controls */}
+        <div className="mt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div className="flex gap-2 items-center">
+            <span className="text-sm font-medium text-gray-600">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+            >
+              <option value="groupName">Group Name</option>
+              <option value="contactName">Contact Name</option>
+              <option value="eventDate">Event Date</option>
+              <option value="totalRequests">Total Requests</option>
+              <option value="category">Category</option>
+            </select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="px-3"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </Button>
           </div>
 
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Per page:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+            >
+              <option value="12">12</option>
+              <option value="24">24</option>
+              <option value="48">48</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Results Summary */}
+        <div className="mt-4 pt-3 border-t">
+          <small className="text-gray-600">
+            Showing {activeStartIndex + 1}-
+            {Math.min(activeEndIndex, totalActiveItems)} of {totalActiveItems}{' '}
+            organizations
+          </small>
+        </div>
+      </div>
+
+      {/* Organizations Display */}
+      {totalActiveItems === 0 ? (
+        <div className="text-center py-12">
+          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">No organizations found</p>
+          <p className="text-sm text-gray-500 mt-2">
+            {searchTerm || filters.status.length < 9
+              ? 'Try adjusting your search or filters'
+              : 'Event requests will populate this directory'}
+          </p>
+        </div>
+      ) : (
+        <>
           {/* Status Filter - Multi-select */}
           <div>
             <Popover>
