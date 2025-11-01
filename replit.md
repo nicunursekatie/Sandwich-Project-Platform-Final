@@ -22,7 +22,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Unified Permissions System**: Consistent frontend/backend logic, visual role templates, and granular functional permissions.
 -   **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation and timezone-safe date handling.
 -   **Weekly Monitoring - Dunwoody Logic**: Dunwoody requires two separate entries: (1) Lisa Hiles AND (2) either Stephanie/Marcy OR admin submissions (Katie/Christine) that count as accounting for Stephanie/Marcy's data.
--   **Dual Data Architecture**: Uses `sandwich_collections` for operational logging and `authoritative_weekly_collections` (Scott's data) as the source of truth for analytics, with a hybrid analytics endpoint combining both.
+-   **Collection Log Data Architecture**: The `sandwich_collections` table is the operational source of truth (~2.1M sandwiches total). Scott's Excel (`authoritative_weekly_collections`) was historical reference data that stopped being updated in August 2025. Grant metrics calculates directly from the collection log. IMPORTANT: "Groups" entries in the collection log are legitimate data and must be included in totals (previously they were incorrectly filtered out as duplicates).
 -   **Search & Filtering**: Real-time capabilities across management interfaces.
 -   **Performance Optimization**: Query optimization, caching, pagination, and database connection pooling.
 -   **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications.

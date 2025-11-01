@@ -251,7 +251,7 @@ export default function GrantMetrics() {
   const getFilteredCollections = () => {
     if (!Array.isArray(collections)) return [];
 
-    let filtered = collections.filter((c: any) => c.hostName !== 'Groups');
+    let filtered = collections;
 
     if (selectedFiscalYear !== 'all') {
       const selectedYear = parseInt(selectedFiscalYear);
@@ -558,7 +558,7 @@ export default function GrantMetrics() {
   const filteredQuarterlyBreakdown = getQuarterlyBreakdown(filteredCollections);
 
   // Calculate ALL-TIME metrics for the hero stats and growth charts (always show full history)
-  const allTimeCollections = collections.filter((c: any) => c.hostName !== 'Groups');
+  const allTimeCollections = collections;
   const metrics = calculateGrantMetrics();
   const allTimeVolunteerMetrics = calculateVolunteerMetrics(allTimeCollections);
   const allTimeCostMetrics = calculateCostMetrics(allTimeCollections);
