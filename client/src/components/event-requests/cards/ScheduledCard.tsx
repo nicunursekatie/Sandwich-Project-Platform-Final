@@ -914,9 +914,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Contact Information Section */}
         {(request.firstName || request.lastName || request.email || request.phone || (request.tspContact || request.customTspContact)) && (
-          <div className="bg-[#47B3CB]/5 rounded-lg p-4 space-y-2 border border-[#47B3CB]/10">
+          <div className="bg-purple-50 rounded-lg p-4 space-y-2 border border-purple-200">
             <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
-              <Users className="w-4 h-4 text-[#47B3CB]" />
+              <Users className="w-4 h-4 text-purple-600" />
               Contact Information
             </h3>
 
@@ -947,9 +947,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Event Details Section */}
-        <div className="bg-[#007E8C]/5 rounded-lg p-4 space-y-2 border border-[#007E8C]/10">
+        <div className="bg-blue-50 rounded-lg p-4 space-y-2 border border-blue-200">
           <h3 className="text-base font-bold text-[#236383] mb-2 flex items-center gap-2 uppercase tracking-wide">
-            <Calendar className="w-4 h-4 text-[#007E8C]" />
+            <Calendar className="w-4 h-4 text-blue-600" />
             Event Details
           </h3>
 
@@ -1233,9 +1233,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Delivery & Logistics Section */}
-        <div className="bg-[#FBAD3F]/5 rounded-lg p-4 space-y-3 border border-[#FBAD3F]/10">
+        <div className="bg-orange-50 rounded-lg p-4 space-y-3 border border-orange-200">
           <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
-            <Package className="w-4 h-4 text-[#FBAD3F]" />
+            <Package className="w-4 h-4 text-orange-600" />
             Delivery & Logistics
           </h3>
 
@@ -1313,9 +1313,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Assignments Section */}
         {(driverNeeded > 0 || speakerNeeded > 0 || volunteerNeeded > 0) && (
-          <div className="bg-[#236383]/5 rounded-lg p-4 space-y-4 border border-[#236383]/10">
+          <div className="bg-emerald-50 rounded-lg p-4 space-y-4 border border-emerald-200">
             <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
-              <Users className="w-4 h-4 text-[#236383]" />
+              <Users className="w-4 h-4 text-emerald-600" />
               Team Assignments
             </h3>
 
