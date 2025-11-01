@@ -157,7 +157,11 @@ export const InProcessTab: React.FC = () => {
           setEditingField(null);
           setEditingValue('');
         },
-        'default'
+        'default',
+        () => {
+          // Reset editing state on cancel
+          cancelEdit();
+        }
       );
     }
   };

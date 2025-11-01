@@ -118,7 +118,13 @@ export const NewRequestsTab: React.FC = () => {
           setEditingField(null);
           setEditingValue('');
         },
-        'default'
+        'default',
+        () => {
+          // Reset editing state on cancel
+          setEditingNewRequestId(null);
+          setEditingField(null);
+          setEditingValue('');
+        }
       );
     }
   };
