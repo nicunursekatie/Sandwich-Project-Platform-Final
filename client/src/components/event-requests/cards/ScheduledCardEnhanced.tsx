@@ -238,6 +238,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   });
 
   const resolveRecipientName = (recipientId: string): string => {
+    // Handle custom entries with format "custom-timestamp-Name" or "custom:Name"
+    if (recipientId.startsWith('custom-') || recipientId.startsWith('custom:')) {
+      // Extract just the name part from formats like:
+      // - "custom-1761977247368-David" -> "David"
+      // - "custom:David" -> "David"
+      const parts = recipientId.split('-');
+      if (parts.length >= 3) {
+        // Format: custom-timestamp-Name
+        return parts.slice(2).join('-'); // Handle names with dashes
+      } else if (recipientId.includes(':')) {
+        // Format: custom:Name
+        return recipientId.split(':')[1];
+      }
+      return recipientId.replace('custom-', '').replace('custom:', '');
+    }
+
     if (recipientId.includes(':')) {
       const [type, ...rest] = recipientId.split(':');
       const value = rest.join(':');
@@ -271,6 +287,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       return value;
     }
 
+    // Handle plain numeric IDs (legacy format without "host:" prefix)
     if (!isNaN(Number(recipientId))) {
       const numId = Number(recipientId);
       // Check host contacts first (more specific), then locations, then recipients
