@@ -202,7 +202,11 @@ export const ScheduledTab: React.FC = () => {
             performSave();
             cancelEdit();
           },
-          'default'
+          'default',
+          () => {
+            // Cancel callback: reset editing state
+            cancelEdit();
+          }
         );
       } else {
         // For non-critical fields, save directly
