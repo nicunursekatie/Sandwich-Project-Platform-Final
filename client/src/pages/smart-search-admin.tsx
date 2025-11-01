@@ -53,9 +53,7 @@ export default function SmartSearchAdmin() {
   // Regenerate embeddings mutation
   const regenerateMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/smart-search/regenerate-embeddings', {
-        method: 'POST',
-      });
+      return apiRequest('POST', '/api/smart-search/regenerate-embeddings');
     },
     onMutate: () => {
       setIsRegenerating(true);
