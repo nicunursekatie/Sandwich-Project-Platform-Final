@@ -384,6 +384,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </Badge>
               )}
 
+              {request.assignedVanDriverId && (
+                <Badge className="bg-blue-600 text-white border border-blue-600 font-medium">
+                  🚐 Van Assigned
+                </Badge>
+              )}
+
               {missingInfo.length > 0 && (
                 <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] font-medium animate-pulse">
                   <AlertTriangle className="w-3 h-3 mr-1" />
@@ -949,6 +955,35 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </div>
                           </div>
                         ))}
+                        {request.assignedVanDriverId && (
+                          <div className="flex items-center justify-between bg-blue-100 rounded px-3 py-1.5 border-2 border-blue-300">
+                            <span className="text-base font-semibold text-blue-900">
+                              {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <SendKudosButton
+                                recipientId={request.assignedVanDriverId}
+                                recipientName={resolveUserName(request.assignedVanDriverId)}
+                                contextType="project"
+                                contextId={request.id.toString()}
+                                contextTitle={`${request.organizationName} event`}
+                                size="sm"
+                                variant="outline"
+                                iconOnly
+                              />
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                                  className="h-5 w-5 p-0 text-red-600"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                         {driverAssigned === 0 && <div className="text-base text-gray-600 italic">None assigned</div>}
                       </>
                     ) : (

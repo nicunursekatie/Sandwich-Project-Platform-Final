@@ -69,6 +69,17 @@ const getStaffingIndicators = (event: EventRequest) => {
     });
   }
 
+  // Add van emoji if van driver is assigned
+  if (event.assignedVanDriverId) {
+    indicators.push({
+      icon: null, // We'll render the emoji directly
+      emoji: '🚐',
+      count: null,
+      color: 'text-blue-700',
+      tooltip: 'Van driver assigned',
+    });
+  }
+
   if (event.speakersNeeded && event.speakersNeeded > 0) {
     indicators.push({
       icon: Mic,
@@ -357,8 +368,12 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                                   )}
                                   title={indicator.tooltip}
                                 >
-                                  <IconComponent className="w-5 h-5" />
-                                  {indicator.count > 1 && (
+                                  {indicator.emoji ? (
+                                    <span className="text-lg">{indicator.emoji}</span>
+                                  ) : IconComponent ? (
+                                    <IconComponent className="w-5 h-5" />
+                                  ) : null}
+                                  {indicator.count && indicator.count > 1 && (
                                     <span className="text-sm ml-1 font-semibold">
                                       {indicator.count}
                                     </span>
