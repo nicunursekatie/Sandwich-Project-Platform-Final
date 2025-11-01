@@ -16,6 +16,8 @@ import importCollectionsRouter from './import-collections';
 import notificationsRouter from './notifications';
 import reportsRouter from './reports';
 import searchRouter from './search';
+import { createSmartSearchRouter } from './smart-search';
+import { SmartSearchService } from '../services/smart-search.service';
 import storageRouter from './storage';
 import documentsRouter from './documents';
 import resourcesRouter from './resources';
@@ -74,6 +76,12 @@ import { RouterDependencies } from '../types';
 
 export function createMainRoutes(deps: RouterDependencies) {
   const router = Router();
+
+  // Initialize Smart Search Service
+  const smartSearchService = new SmartSearchService(process.env.OPENAI_API_KEY);
+  smartSearchService.loadIndex().catch(err => {
+    console.error('Failed to load smart search index:', err);
+  });
 
   // Legacy routes - preserve existing functionality
   const adminRoutes = createAdminRoutes({
@@ -281,6 +289,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     searchRouter
   );
   router.use('/api/search', createErrorHandler('search'));
+
+  // Smart Search - AI-powered app navigation
+  const smartSearchRouter = createSmartSearchRouter(smartSearchService);
+  router.use(
+    '/api/smart-search',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    smartSearchRouter
+  );
+  router.use('/api/smart-search', createErrorHandler('smart-search'));
 
   router.use(
     '/api/storage',
