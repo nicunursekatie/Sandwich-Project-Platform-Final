@@ -106,7 +106,7 @@ export default function SmartSearchAdmin() {
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
     return (
       <div className="p-6">
         <Alert variant="destructive">
