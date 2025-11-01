@@ -51,7 +51,7 @@ export function SMSAnnouncementModal() {
 
   const handleGoToSettings = () => {
     dismissMutation.mutate();
-    setLocation('/profile-settings');
+    setLocation('/profile');
   };
 
   const handleDismiss = () => {
@@ -65,13 +65,13 @@ export function SMSAnnouncementModal() {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="bg-green-100 p-3 rounded-full">
-              <Smartphone className="w-6 h-6 text-green-600" />
+            <div className="bg-[#007E8C]/10 p-3 rounded-full">
+              <Smartphone className="w-6 h-6 text-[#007E8C]" />
             </div>
             <div>
               <DialogTitle className="text-xl flex items-center gap-2">
                 SMS Alerts Are Now Live! 🎉
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <Badge variant="outline" className="bg-[#007E8C]/10 text-[#007E8C] border-[#007E8C]/30">
                   New
                 </Badge>
               </DialogTitle>
@@ -82,21 +82,21 @@ export function SMSAnnouncementModal() {
               Stay connected with instant text message notifications!
             </p>
             
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
-              <p className="text-sm text-blue-900 font-medium mb-2">
+            <div className="bg-[#236383]/5 border-l-4 border-[#236383] p-4 rounded">
+              <p className="text-sm text-[#236383] font-medium mb-2">
                 What you'll receive:
               </p>
-              <ul className="text-sm text-blue-800 space-y-1.5">
+              <ul className="text-sm text-gray-700 space-y-1.5">
                 <li className="flex items-start gap-2">
-                  <Bell className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <Bell className="w-4 h-4 mt-0.5 flex-shrink-0 text-[#236383]" />
                   <span>Event assignment alerts with direct links</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0 text-[#236383]" />
                   <span>Important reminders when you need them</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Smartphone className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <Smartphone className="w-4 h-4 mt-0.5 flex-shrink-0 text-[#236383]" />
                   <span>Simple, friendly messages – no spam!</span>
                 </li>
               </ul>
@@ -121,7 +121,7 @@ export function SMSAnnouncementModal() {
           <Button
             onClick={handleGoToSettings}
             disabled={dismissMutation.isPending}
-            className="flex-1 bg-green-600 hover:bg-green-700"
+            className="flex-1 bg-[#007E8C] hover:bg-[#006B75] text-white"
             data-testid="button-setup-sms"
           >
             <Smartphone className="w-4 h-4 mr-2" />
