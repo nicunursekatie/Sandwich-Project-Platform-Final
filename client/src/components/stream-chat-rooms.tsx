@@ -39,6 +39,7 @@ const customChatStyles = `
   /* Brand colors */
   .str-chat__message--me .str-chat__message-bubble {
     background: #236383 !important;
+    color: #ffffff !important;
   }
 
   .str-chat__message--other .str-chat__message-bubble {
@@ -72,6 +73,7 @@ const customChatStyles = `
   /* Header */
   .str-chat__header-livestream {
     background: #236383 !important;
+    color: #ffffff !important;
   }
 `;
 
