@@ -599,7 +599,7 @@ router.post('/sms/webhook', async (req, res) => {
       if (!hasReceivedWelcome) {
         try {
           const { sendWelcomeSMS } = await import('../sms-service');
-          const welcomeResult = await sendWelcomeSMS(phoneNumber);
+          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
 
           if (welcomeResult.success) {
             logger.log(`✅ Welcome SMS sent to ${redactedPhone} after YES confirmation`);
@@ -723,7 +723,7 @@ router.post('/sms/webhook', async (req, res) => {
       if (!hasReceivedWelcome) {
         try {
           const { sendWelcomeSMS } = await import('../sms-service');
-          const welcomeResult = await sendWelcomeSMS(phoneNumber);
+          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
 
           if (welcomeResult.success) {
             logger.log(`✅ Welcome SMS sent to ${redactedPhone} after code confirmation`);
