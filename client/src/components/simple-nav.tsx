@@ -11,8 +11,9 @@ import { HelpBubble } from '@/components/help-system/HelpBubble';
 import { NavItem } from '@/nav.types';
 import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
 import { logger } from '@/lib/logger';
-import { Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, Sparkles, Command } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { SmartSearch } from '@/components/SmartSearch';
 
 export default function SimpleNav({
   navigationItems,
@@ -153,14 +154,21 @@ export default function SimpleNav({
 
     return (
       <nav className="flex flex-col gap-1.5 p-3" data-tour="navigation">
-        {/* Search Bar */}
+        {/* AI-Powered Smart Search */}
+        {!isCollapsed && (
+          <div className="mb-4 px-1">
+            <SmartSearch />
+          </div>
+        )}
+
+        {/* Local Sidebar Search */}
         {!isCollapsed && (
           <div className="mb-3 px-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Jump to page..."
+                placeholder="Filter sidebar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-9 text-sm bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary"

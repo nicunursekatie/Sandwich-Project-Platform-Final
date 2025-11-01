@@ -12,7 +12,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { SmartSearch } from '@/components/SmartSearch';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
@@ -193,7 +192,6 @@ function Router() {
 
   return (
     <>
-      <SmartSearch />
       <Switch>
         <Route path="/messages">
           {() => <Dashboard initialSection="messages" />}
