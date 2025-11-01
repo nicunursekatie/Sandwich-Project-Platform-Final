@@ -404,13 +404,13 @@ meRouter.put('/notification-preferences', async (req: AuthenticatedRequest, res:
       secondaryReminderType,
     } = req.body as EventNotificationPreferences;
 
-    // Validate hours range (1-36)
-    if (primaryReminderHours < 1 || primaryReminderHours > 36) {
-      return res.status(400).json({ message: 'Primary reminder hours must be between 1 and 36' });
+    // Validate hours range (1-72)
+    if (primaryReminderHours < 1 || primaryReminderHours > 72) {
+      return res.status(400).json({ message: 'Primary reminder hours must be between 1 and 72' });
     }
     
-    if (secondaryReminderEnabled && (secondaryReminderHours < 1 || secondaryReminderHours > 36)) {
-      return res.status(400).json({ message: 'Secondary reminder hours must be between 1 and 36' });
+    if (secondaryReminderEnabled && (secondaryReminderHours < 1 || secondaryReminderHours > 72)) {
+      return res.status(400).json({ message: 'Secondary reminder hours must be between 1 and 72' });
     }
 
     // Validate reminder types

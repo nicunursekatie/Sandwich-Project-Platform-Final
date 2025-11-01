@@ -36,10 +36,10 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 
 const notificationPreferencesSchema = z.object({
   primaryReminderEnabled: z.boolean(),
-  primaryReminderHours: z.number().min(1).max(36),
+  primaryReminderHours: z.number().min(1).max(72),
   primaryReminderType: z.enum(['email', 'sms', 'both']),
   secondaryReminderEnabled: z.boolean(),
-  secondaryReminderHours: z.number().min(1).max(36),
+  secondaryReminderHours: z.number().min(1).max(72),
   secondaryReminderType: z.enum(['email', 'sms', 'both']),
 });
 
@@ -111,8 +111,8 @@ export default function NotificationPreferences() {
     (secondaryEnabled && (secondaryType === 'sms' || secondaryType === 'both'))
   );
 
-  // Generate hour options (1-36)
-  const hourOptions = Array.from({ length: 36 }, (_, i) => i + 1);
+  // Generate hour options (1-72)
+  const hourOptions = Array.from({ length: 72 }, (_, i) => i + 1);
 
   if (isLoading) {
     return (

@@ -24,12 +24,12 @@ export interface SmsConsent {
 export interface EventNotificationPreferences {
   // Primary reminder settings
   primaryReminderEnabled: boolean; // Whether to send first reminder
-  primaryReminderHours: number; // Hours before event (1-36, default 24)
+  primaryReminderHours: number; // Hours before event (1-72, default 24)
   primaryReminderType: 'email' | 'sms' | 'both'; // Notification method
 
   // Secondary reminder settings (optional)
   secondaryReminderEnabled: boolean; // Whether to send second reminder
-  secondaryReminderHours: number; // Hours before event (1-36)
+  secondaryReminderHours: number; // Hours before event (1-72)
   secondaryReminderType: 'email' | 'sms' | 'both'; // Notification method
 }
 
