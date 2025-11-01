@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
@@ -10,6 +11,8 @@ import { HelpBubble } from '@/components/help-system/HelpBubble';
 import { NavItem } from '@/nav.types';
 import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
 import { logger } from '@/lib/logger';
+import { Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
 
 export default function SimpleNav({
   navigationItems,
@@ -26,6 +29,10 @@ export default function SimpleNav({
     const { user } = useAuth();
     const [location] = useLocation();
     const { unreadCounts, totalUnread } = useMessaging();
+
+    // State for search and collapsible sections
+    const [searchQuery, setSearchQuery] = useState('');
+    const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
     // Get Gmail inbox unread count
     const { data: gmailUnreadCount = 0 } = useQuery({
@@ -71,6 +78,28 @@ export default function SimpleNav({
       return hasPermission(user, item.permission);
     });
 
+    // Filter items by search query
+    const searchFilteredItems = useMemo(() => {
+      if (!searchQuery.trim()) return filteredNavigationItems;
+
+      const query = searchQuery.toLowerCase();
+      return filteredNavigationItems.filter(item =>
+        item.label.toLowerCase().includes(query) ||
+        item.id.toLowerCase().includes(query)
+      );
+    }, [filteredNavigationItems, searchQuery]);
+
+    // Toggle section collapse
+    const toggleSection = (group: string) => {
+      const newCollapsed = new Set(collapsedSections);
+      if (newCollapsed.has(group)) {
+        newCollapsed.delete(group);
+      } else {
+        newCollapsed.add(group);
+      }
+      setCollapsedSections(newCollapsed);
+    };
+
     const isActive = (href: string) => {
       if (activeSection) {
         if (href === 'dashboard')
@@ -84,8 +113,8 @@ export default function SimpleNav({
     };
 
     // Group items for visual separation
-    const groupedItems = filteredNavigationItems.reduce((acc, item, index) => {
-      const prevItem = filteredNavigationItems[index - 1];
+    const groupedItems = searchFilteredItems.reduce((acc, item, index) => {
+      const prevItem = searchFilteredItems[index - 1];
       const showSeparator =
         prevItem && prevItem.group !== item.group && item.group;
 
@@ -124,15 +153,45 @@ export default function SimpleNav({
 
     return (
       <nav className="flex flex-col gap-1.5 p-3" data-tour="navigation">
+        {/* Search Bar */}
+        {!isCollapsed && (
+          <div className="mb-3 px-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Jump to page..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 text-sm bg-white border-gray-200 focus:border-brand-primary focus:ring-brand-primary"
+              />
+            </div>
+            {searchQuery && (
+              <p className="text-xs text-gray-500 mt-1 px-1">
+                {searchFilteredItems.length} result{searchFilteredItems.length !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+        )}
+
         {groupedItems.map((groupItem, index) => {
           if (groupItem.type === 'separator') {
+            const isCollapsedSection = collapsedSections.has(groupItem.group);
             return !isCollapsed ? (
               <div key={`separator-${groupItem.group}-${index}`} className="mt-4 mb-3">
-                <div className="from-brand-primary-lighter to-brand-primary-light rounded-lg px-3 py-2 mb-2 shadow-sm bg-[#47b3cbbf]">
-                  <div className="font-bold text-brand-primary tracking-wide text-[14px] bg-[#47b3cb78]">
+                <button
+                  onClick={() => toggleSection(groupItem.group)}
+                  className="w-full from-brand-primary-lighter to-brand-primary-light rounded-lg px-3 py-2 mb-2 shadow-sm bg-[#47b3cbbf] hover:bg-[#47b3cbd0] transition-colors cursor-pointer flex items-center justify-between group"
+                >
+                  <div className="font-bold text-brand-primary tracking-wide text-[14px] bg-[#47b3cb78] flex-1 text-left">
                     {getGroupLabel(groupItem.group)}
                   </div>
-                </div>
+                  {isCollapsedSection ? (
+                    <ChevronRight className="w-4 h-4 text-brand-primary group-hover:scale-110 transition-transform" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-brand-primary group-hover:scale-110 transition-transform" />
+                  )}
+                </button>
                 <div className="border-t-2 border-brand-primary-border mx-2" />
               </div>
             ) : null;
@@ -141,6 +200,12 @@ export default function SimpleNav({
           const item = groupItem;
           const badgeCount = getBadgeCount(item.id);
           const active = isActive(item.href);
+
+          // Hide items in collapsed sections (unless searching or item is dashboard)
+          const isInCollapsedSection = item.group && collapsedSections.has(item.group) && item.group !== 'dashboard';
+          if (isInCollapsedSection && !searchQuery) {
+            return null;
+          }
 
           return (
 
