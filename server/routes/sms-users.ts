@@ -217,8 +217,15 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
       });
     }
 
+    // Debug logging for verification code comparison
+    logger.log(`🔍 SMS Verification Attempt:`);
+    logger.log(`  - User entered: ${verificationCode}`);
+    logger.log(`  - Stored code: ${smsConsent.verificationCode}`);
+    logger.log(`  - Match: ${smsConsent.verificationCode === verificationCode}`);
+
     // Check if verification code matches
     if (smsConsent.verificationCode !== verificationCode) {
+      logger.error(`❌ Verification code mismatch for ${user.email}`);
       return res.status(400).json({ 
         error: 'Invalid verification code' 
       });
