@@ -217,8 +217,15 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
       });
     }
 
+    // Debug logging for verification code comparison
+    logger.log(`🔍 SMS Verification Attempt:`);
+    logger.log(`  - User entered: ${verificationCode}`);
+    logger.log(`  - Stored code: ${smsConsent.verificationCode}`);
+    logger.log(`  - Match: ${smsConsent.verificationCode === verificationCode}`);
+
     // Check if verification code matches
     if (smsConsent.verificationCode !== verificationCode) {
+      logger.error(`❌ Verification code mismatch for ${user.email}`);
       return res.status(400).json({ 
         error: 'Invalid verification code' 
       });
@@ -232,7 +239,9 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Confirm SMS consent
+    // Confirm SMS consent and set default notification preferences
+    const notificationPreferences = metadata.notificationPreferences || {};
+    
     const updatedMetadata = {
       ...(user.metadata as any || {}),
       smsConsent: {
@@ -242,6 +251,15 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
         confirmedAt: new Date().toISOString(),
         verificationCode: undefined, // Remove verification code after confirmation
         verificationCodeExpiry: undefined,
+      },
+      notificationPreferences: {
+        ...notificationPreferences,
+        primaryReminderEnabled: true,
+        primaryReminderHours: 72,
+        primaryReminderType: 'sms',
+        secondaryReminderEnabled: notificationPreferences.secondaryReminderEnabled || false,
+        secondaryReminderHours: notificationPreferences.secondaryReminderHours || 1,
+        secondaryReminderType: notificationPreferences.secondaryReminderType || 'email',
       },
     };
 
@@ -476,13 +494,17 @@ router.post('/sms/webhook', async (req, res) => {
 
       if (!userWithPendingConfirmation) {
         logger.log(`❌ No pending confirmation found for ${phoneNumber}`);
-        return res.status(200).send('OK'); // Still return 200 to Twilio
+        // Return TwiML response with no message (empty response)
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
 
       // Confirm SMS consent via YES reply
       const metadata = userWithPendingConfirmation.metadata as any || {};
       const smsConsent = metadata.smsConsent || {};
+      const notificationPreferences = metadata.notificationPreferences || {};
       
+      // Set default notification preferences: 72 hours before event with SMS
       const updatedMetadata = {
         ...(userWithPendingConfirmation.metadata as any || {}),
         smsConsent: {
@@ -493,6 +515,15 @@ router.post('/sms/webhook', async (req, res) => {
           confirmationMethod: 'sms_reply',
           verificationCode: undefined,
           verificationCodeExpiry: undefined,
+        },
+        notificationPreferences: {
+          ...notificationPreferences,
+          primaryReminderEnabled: true,
+          primaryReminderHours: 72,
+          primaryReminderType: 'sms',
+          secondaryReminderEnabled: notificationPreferences.secondaryReminderEnabled || false,
+          secondaryReminderHours: notificationPreferences.secondaryReminderHours || 1,
+          secondaryReminderType: notificationPreferences.secondaryReminderType || 'email',
         },
       };
 
@@ -513,6 +544,10 @@ router.post('/sms/webhook', async (req, res) => {
       } catch (smsError) {
         logger.error('Failed to send welcome SMS after YES confirmation:', smsError);
       }
+      
+      // Return empty TwiML response (don't send duplicate message)
+      res.type('text/xml');
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     } 
     // Check if message is a verification code
     else if (/^\d{6}$/.test(messageBody)) {
@@ -530,7 +565,8 @@ router.post('/sms/webhook', async (req, res) => {
 
       if (!userWithMatchingCode) {
         logger.log(`❌ No matching verification code found for ${phoneNumber}: ${messageBody}`);
-        return res.status(200).send('OK');
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
 
       // Check expiry
@@ -540,10 +576,15 @@ router.post('/sms/webhook', async (req, res) => {
       
       if (new Date() > expiry) {
         logger.log(`❌ Verification code expired for ${phoneNumber}`);
-        return res.status(200).send('OK');
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
 
       // Confirm SMS consent via verification code
+      const metadata2 = userWithMatchingCode.metadata as any || {};
+      const notificationPreferences2 = metadata2.notificationPreferences || {};
+      
+      // Set default notification preferences: 72 hours before event with SMS
       const updatedMetadata = {
         ...(userWithMatchingCode.metadata as any || {}),
         smsConsent: {
@@ -554,6 +595,15 @@ router.post('/sms/webhook', async (req, res) => {
           confirmationMethod: 'verification_code',
           verificationCode: undefined,
           verificationCodeExpiry: undefined,
+        },
+        notificationPreferences: {
+          ...notificationPreferences2,
+          primaryReminderEnabled: true,
+          primaryReminderHours: 72,
+          primaryReminderType: 'sms',
+          secondaryReminderEnabled: notificationPreferences2.secondaryReminderEnabled || false,
+          secondaryReminderHours: notificationPreferences2.secondaryReminderHours || 1,
+          secondaryReminderType: notificationPreferences2.secondaryReminderType || 'email',
         },
       };
 
@@ -574,16 +624,22 @@ router.post('/sms/webhook', async (req, res) => {
       } catch (smsError) {
         logger.error('Failed to send welcome SMS after code confirmation:', smsError);
       }
+      
+      // Return empty TwiML response
+      res.type('text/xml');
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     } else {
       logger.log(`ℹ️ Unrecognized SMS message from ${phoneNumber}: "${Body}"`);
     }
 
-    // Always respond with 200 OK to Twilio
-    res.status(200).send('OK');
+    // Always respond with TwiML (empty response for unrecognized messages)
+    res.type('text/xml');
+    res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
   } catch (error) {
     logger.error('Error processing SMS webhook:', error);
-    // Always respond with 200 OK to Twilio even on errors
-    res.status(200).send('OK');
+    // Always respond with TwiML even on errors
+    res.type('text/xml');
+    res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
   }
 });
 

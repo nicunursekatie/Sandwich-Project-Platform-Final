@@ -42,6 +42,7 @@ import {
   History,
   FileText,
   MessageSquare,
+  Loader2,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -76,6 +77,7 @@ interface ScheduledCardEnhancedProps {
   inlineRangeMin: number;
   inlineRangeMax: number;
   inlineRangeType: string;
+  isSaving?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onContact: () => void;
@@ -141,6 +143,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   inlineRangeMin,
   inlineRangeMax,
   inlineRangeType,
+  isSaving = false,
   onEdit,
   onDelete,
   onContact,
@@ -204,7 +207,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   });
 
   // Fetch data for recipient resolution
-  const { data: hostContacts = [] } = useQuery<Array<{
+  const { data: hostContacts = [], isLoading: isLoadingHostContacts } = useQuery<Array<{
     id: number;
     displayName: string;
     name: string;
@@ -213,6 +216,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     queryKey: ['/api/hosts/host-contacts'],
     staleTime: 1 * 60 * 1000,
   });
+
+  // Debug logging for host contacts
+  React.useEffect(() => {
+    if (hostContacts.length > 0) {
+      console.log('ScheduledCardEnhanced: hostContacts loaded', hostContacts.length, 'contacts');
+      console.log('ScheduledCardEnhanced: First few contacts:', hostContacts.slice(0, 3));
+    } else if (!isLoadingHostContacts) {
+      console.warn('ScheduledCardEnhanced: No host contacts loaded!');
+    }
+  }, [hostContacts, isLoadingHostContacts]);
 
   const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ['/api/recipients'],
@@ -225,6 +238,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   });
 
   const resolveRecipientName = (recipientId: string): string => {
+    // Handle custom entries with format "custom-timestamp-Name" or "custom:Name"
+    if (recipientId.startsWith('custom-') || recipientId.startsWith('custom:')) {
+      // Extract just the name part from formats like:
+      // - "custom-1761977247368-David" -> "David"
+      // - "custom:David" -> "David"
+      const parts = recipientId.split('-');
+      if (parts.length >= 3) {
+        // Format: custom-timestamp-Name
+        return parts.slice(2).join('-'); // Handle names with dashes
+      } else if (recipientId.includes(':')) {
+        // Format: custom:Name
+        return recipientId.split(':')[1];
+      }
+      return recipientId.replace('custom-', '').replace('custom:', '');
+    }
+
     if (recipientId.includes(':')) {
       const [type, ...rest] = recipientId.split(':');
       const value = rest.join(':');
@@ -233,18 +262,32 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         const numId = Number(value);
 
         if (type === 'host') {
+          console.log(`resolveRecipientName: Looking for host ID ${numId} in ${hostContacts.length} contacts`);
           const hostContact = hostContacts.find(hc => hc.id === numId);
-          if (hostContact) return hostContact.displayName || hostContact.name || hostContact.hostLocationName;
+          if (hostContact) {
+            console.log(`resolveRecipientName: Found host contact:`, hostContact);
+            return hostContact.displayName || hostContact.name || hostContact.hostLocationName;
+          }
+          console.log(`resolveRecipientName: Host contact ${numId} not found, checking host locations`);
           const hostLocation = hostLocations.find(h => h.id === numId);
-          if (hostLocation) return hostLocation.name;
+          if (hostLocation) {
+            console.log(`resolveRecipientName: Found host location:`, hostLocation);
+            return hostLocation.name;
+          }
+          // If host not found, return a helpful message instead of just the ID
+          console.warn(`resolveRecipientName: Host ${numId} not found in either contacts or locations!`);
+          return `Host ID ${numId}`;
         } else if (type === 'recipient') {
           const recipient = recipients.find(r => r.id === numId);
           if (recipient) return recipient.name;
+          // If recipient not found, return a helpful message
+          return `Recipient ID ${numId}`;
         }
       }
       return value;
     }
 
+    // Handle plain numeric IDs (legacy format without "host:" prefix)
     if (!isNaN(Number(recipientId))) {
       const numId = Number(recipientId);
       // Check host contacts first (more specific), then locations, then recipients
@@ -254,6 +297,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       if (hostLocation) return hostLocation.name;
       const recipient = recipients.find(r => r.id === numId);
       if (recipient) return recipient.name;
+      // If not found anywhere, return a helpful message
+      return `ID ${numId}`;
     }
 
     return recipientId;
@@ -816,8 +861,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   )}
 
                   <div className="flex gap-2 pt-2">
-                    <Button size="sm" onClick={saveEdit} className="bg-[#007E8C]">
-                      <Save className="w-3 h-3 mr-1" /> Save
+                    <Button size="sm" onClick={saveEdit} disabled={isSaving} className="bg-[#007E8C]">
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </>
+                      )}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
                       Cancel

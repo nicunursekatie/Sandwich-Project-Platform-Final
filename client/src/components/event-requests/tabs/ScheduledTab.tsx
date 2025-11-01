@@ -281,6 +281,7 @@ export const ScheduledTab: React.FC = () => {
                 inlineRangeMin={inlineRangeMin}
                 inlineRangeMax={inlineRangeMax}
                 inlineRangeType={inlineRangeType}
+                isSaving={updateEventRequestMutation.isPending || updateScheduledFieldMutation.isPending}
                 onEdit={() => {
                   setSelectedEventRequest(request);
                   setIsEditing(true);

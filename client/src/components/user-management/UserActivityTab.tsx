@@ -56,12 +56,12 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-brand-primary-light rounded-lg">
+              <div className="p-3 bg-brand-primary-light rounded-lg flex-shrink-0">
                 <Activity className="h-6 w-6 text-brand-primary" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm text-gray-600">Total Actions</p>
-                <p className="text-2xl font-bold">{totalActions}</p>
+                <p className="text-2xl font-bold truncate">{totalActions}</p>
               </div>
             </div>
           </CardContent>
@@ -70,12 +70,12 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-lg">
+              <div className="p-3 bg-green-100 rounded-lg flex-shrink-0">
                 <TrendingUp className="h-6 w-6 text-green-600" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm text-gray-600">Top Sections</p>
-                <p className="text-lg font-semibold">
+                <p className="text-lg font-semibold truncate" title={activityStats?.sectionBreakdown?.[0]?.section || 'N/A'}>
                   {activityStats?.sectionBreakdown?.[0]?.section || 'N/A'}
                 </p>
               </div>
@@ -86,12 +86,12 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-100 rounded-lg">
+              <div className="p-3 bg-purple-100 rounded-lg flex-shrink-0">
                 <Clock className="h-6 w-6 text-purple-600" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm text-gray-600">Most Active</p>
-                <p className="text-lg font-semibold">
+                <p className="text-lg font-semibold truncate">
                   {activityStats?.peakUsageTimes?.[0]?.hour !== undefined
                     ? (() => {
                         const hour = activityStats.peakUsageTimes[0].hour;
