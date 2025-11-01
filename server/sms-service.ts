@@ -448,6 +448,14 @@ export async function sendConfirmationSMS(
 export async function sendWelcomeSMS(
   phoneNumber: string
 ): Promise<SMSReminderResult> {
+  // Redact phone number for logging (show last 4 digits only)
+  const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
+
+  // Only log stack traces in development
+  if (process.env.NODE_ENV !== 'production') {
+    logger.log(`🔍 [DEBUG] sendWelcomeSMS called with phone: ${redactedPhone}`);
+  }
+
   if (!smsProvider) {
     return {
       success: false,
@@ -472,6 +480,8 @@ export async function sendWelcomeSMS(
       };
     }
 
+    logger.log(`📱 About to send welcome SMS to: ${redactedPhone}`);
+
     const messages = getWelcomeMessages(smsProvider);
     const welcomeMessage = messages.welcome();
 
@@ -481,7 +491,7 @@ export async function sendWelcomeSMS(
     });
 
     if (result.success) {
-      logger.log(`✅ Welcome SMS sent via ${smsProvider.name} to ${phoneNumber} (${result.messageId})`);
+      logger.log(`✅ Welcome SMS sent via ${smsProvider.name} to ${redactedPhone} (${result.messageId})`);
       return {
         success: true,
         message: `Welcome SMS sent successfully to ${phoneNumber}`,
