@@ -88,6 +88,7 @@ export function SmartSearch() {
   const performFuzzySearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
+      setUsedAI(false);
       return;
     }
 
@@ -102,6 +103,7 @@ export function SmartSearch() {
       if (response.ok) {
         const data: SmartSearchResponse = await response.json();
         setResults(data.results);
+        setUsedAI(false); // Reset AI flag for fuzzy results
         setSelectedIndex(0);
       }
     } catch (error) {
