@@ -241,7 +241,7 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
 
     // Confirm SMS consent and set default notification preferences
     const notificationPreferences = metadata.notificationPreferences || {};
-    
+
     const updatedMetadata = {
       ...(user.metadata as any || {}),
       smsConsent: {
@@ -268,20 +268,35 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
     const redactedPhone = smsConsent.phoneNumber ? `***${smsConsent.phoneNumber.slice(-4)}` : 'unknown';
     logger.log(`✅ SMS confirmation successful for user ID: ${userId} (${redactedPhone})`);
 
-    // Send welcome SMS after successful confirmation
-    try {
-      logger.log(`🔍 Manual confirmation: About to send welcome SMS to ${redactedPhone} for user ID: ${userId}`);
+    // Send welcome SMS after successful confirmation (only if not already sent)
+    const hasReceivedWelcome = smsConsent.welcomeSmsSentAt;
+    if (!hasReceivedWelcome) {
+      try {
+        logger.log(`🔍 Manual confirmation: About to send welcome SMS to ${redactedPhone} for user ID: ${userId}`);
 
-      const { sendWelcomeSMS } = await import('../sms-service');
-      const welcomeResult = await sendWelcomeSMS(smsConsent.phoneNumber);
+        const { sendWelcomeSMS } = await import('../sms-service');
+        const welcomeResult = await sendWelcomeSMS(smsConsent.phoneNumber);
 
-      if (welcomeResult.success) {
-        logger.log(`✅ Welcome SMS sent to ${redactedPhone} after confirmation`);
-      } else {
-        logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+        if (welcomeResult.success) {
+          logger.log(`✅ Welcome SMS sent to ${redactedPhone} after confirmation`);
+
+          // Mark that welcome SMS has been sent
+          const finalMetadata = {
+            ...updatedMetadata,
+            smsConsent: {
+              ...updatedMetadata.smsConsent,
+              welcomeSmsSentAt: new Date().toISOString(),
+            },
+          };
+          await storage.updateUser(userId, { metadata: finalMetadata });
+        } else {
+          logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+        }
+      } catch (smsError) {
+        logger.error('Failed to send welcome SMS after confirmation:', smsError);
       }
-    } catch (smsError) {
-      logger.error('Failed to send welcome SMS after confirmation:', smsError);
+    } else {
+      logger.log(`ℹ️ Skipping welcome SMS - already sent to ${redactedPhone} for user ID: ${userId}`);
     }
 
     res.json({
@@ -492,6 +507,18 @@ router.post('/sms/webhook', async (req, res) => {
       // Find user with this phone number and pending confirmation
       const allUsers = await storage.getAllUsers();
 
+      // Check for duplicate phone numbers (potential bug)
+      const usersWithThisPhone = allUsers.filter((user) => {
+        const metadata = user.metadata as any || {};
+        const smsConsent = metadata.smsConsent || {};
+        return smsConsent.phoneNumber === phoneNumber;
+      });
+
+      if (usersWithThisPhone.length > 1) {
+        logger.warn(`⚠️ POTENTIAL BUG: Found ${usersWithThisPhone.length} users with phone ${redactedPhone}`);
+        logger.warn(`  User IDs: ${usersWithThisPhone.map(u => u.id).join(', ')}`);
+      }
+
       const userWithPendingConfirmation = allUsers.find((user) => {
         const metadata = user.metadata as any || {};
         const smsConsent = metadata.smsConsent || {};
@@ -542,18 +569,33 @@ router.post('/sms/webhook', async (req, res) => {
 
       logger.log(`✅ SMS confirmation via YES reply successful for user ID: ${userWithPendingConfirmation.id} (${redactedPhone})`);
 
-      // Send welcome SMS after successful confirmation via YES reply
-      try {
-        const { sendWelcomeSMS } = await import('../sms-service');
-        const welcomeResult = await sendWelcomeSMS(phoneNumber);
+      // Send welcome SMS after successful confirmation via YES reply (only if not already sent)
+      const hasReceivedWelcome = smsConsent.welcomeSmsSentAt;
+      if (!hasReceivedWelcome) {
+        try {
+          const { sendWelcomeSMS } = await import('../sms-service');
+          const welcomeResult = await sendWelcomeSMS(phoneNumber);
 
-        if (welcomeResult.success) {
-          logger.log(`✅ Welcome SMS sent to ${redactedPhone} after YES confirmation`);
-        } else {
-          logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+          if (welcomeResult.success) {
+            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after YES confirmation`);
+
+            // Mark that welcome SMS has been sent
+            const finalMetadata = {
+              ...updatedMetadata,
+              smsConsent: {
+                ...updatedMetadata.smsConsent,
+                welcomeSmsSentAt: new Date().toISOString(),
+              },
+            };
+            await storage.updateUser(userWithPendingConfirmation.id, { metadata: finalMetadata });
+          } else {
+            logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+          }
+        } catch (smsError) {
+          logger.error('Failed to send welcome SMS after YES confirmation:', smsError);
         }
-      } catch (smsError) {
-        logger.error('Failed to send welcome SMS after YES confirmation:', smsError);
+      } else {
+        logger.log(`ℹ️ Skipping welcome SMS - already sent to ${redactedPhone} for user ID: ${userWithPendingConfirmation.id}`);
       }
       
       // Return empty TwiML response (don't send duplicate message)
@@ -568,6 +610,18 @@ router.post('/sms/webhook', async (req, res) => {
 
       // Find user with this phone number and matching verification code
       const allUsers = await storage.getAllUsers();
+
+      // Check for duplicate phone numbers (potential bug)
+      const usersWithThisPhone = allUsers.filter((user) => {
+        const metadata = user.metadata as any || {};
+        const smsConsent = metadata.smsConsent || {};
+        return smsConsent.phoneNumber === phoneNumber;
+      });
+
+      if (usersWithThisPhone.length > 1) {
+        logger.warn(`⚠️ POTENTIAL BUG: Found ${usersWithThisPhone.length} users with phone ${redactedPhone}`);
+        logger.warn(`  User IDs: ${usersWithThisPhone.map(u => u.id).join(', ')}`);
+      }
 
       const userWithMatchingCode = allUsers.find((user) => {
         const metadata = user.metadata as any || {};
@@ -629,18 +683,33 @@ router.post('/sms/webhook', async (req, res) => {
 
       logger.log(`✅ SMS confirmation via verification code successful for user ID: ${userWithMatchingCode.id} (${redactedPhone})`);
 
-      // Send welcome SMS after successful confirmation via verification code
-      try {
-        const { sendWelcomeSMS } = await import('../sms-service');
-        const welcomeResult = await sendWelcomeSMS(phoneNumber);
+      // Send welcome SMS after successful confirmation via verification code (only if not already sent)
+      const hasReceivedWelcome = smsConsent.welcomeSmsSentAt;
+      if (!hasReceivedWelcome) {
+        try {
+          const { sendWelcomeSMS } = await import('../sms-service');
+          const welcomeResult = await sendWelcomeSMS(phoneNumber);
 
-        if (welcomeResult.success) {
-          logger.log(`✅ Welcome SMS sent to ${redactedPhone} after code confirmation`);
-        } else {
-          logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+          if (welcomeResult.success) {
+            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after code confirmation`);
+
+            // Mark that welcome SMS has been sent
+            const finalMetadata = {
+              ...updatedMetadata,
+              smsConsent: {
+                ...updatedMetadata.smsConsent,
+                welcomeSmsSentAt: new Date().toISOString(),
+              },
+            };
+            await storage.updateUser(userWithMatchingCode.id, { metadata: finalMetadata });
+          } else {
+            logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+          }
+        } catch (smsError) {
+          logger.error('Failed to send welcome SMS after code confirmation:', smsError);
         }
-      } catch (smsError) {
-        logger.error('Failed to send welcome SMS after code confirmation:', smsError);
+      } else {
+        logger.log(`ℹ️ Skipping welcome SMS - already sent to ${redactedPhone} for user ID: ${userWithMatchingCode.id}`);
       }
       
       // Return empty TwiML response
