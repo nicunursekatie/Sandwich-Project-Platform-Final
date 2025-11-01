@@ -50,6 +50,10 @@ export function SmartSearch() {
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout>();
 
+  // Detect Mac for keyboard shortcuts (safer than deprecated navigator.platform)
+  const isMac = typeof navigator !== 'undefined' &&
+    (navigator.userAgent.includes('Mac') || navigator.platform.includes('Mac'));
+
   // Keyboard shortcut to open search (Cmd/Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -191,8 +195,8 @@ export function SmartSearch() {
       if (selectedIndex >= 0 && selectedIndex < results.length) {
         navigateToResult(results[selectedIndex]);
       }
-    } else if (e.key === 'Enter' && results.length === 0 && query.trim()) {
-      // Trigger AI search on Enter if no results
+    } else if (e.key === 'Enter' && results.length === 0 && query.trim() && !isLoading) {
+      // Trigger AI search on Enter if no results and not loading
       e.preventDefault();
       performSemanticSearch(query);
     } else if (e.key === 'Escape') {
@@ -228,7 +232,7 @@ export function SmartSearch() {
         <Search className="w-4 h-4" />
         <span className="hidden sm:inline">Search</span>
         <kbd className="hidden sm:inline-block px-2 py-0.5 text-xs font-mono bg-gray-100 border border-gray-300 rounded">
-          {navigator.platform.includes('Mac') ? '⌘K' : 'Ctrl+K'}
+          {isMac ? '⌘K' : 'Ctrl+K'}
         </kbd>
       </button>
 

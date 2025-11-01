@@ -13,8 +13,7 @@ import {
   SmartSearchIndex,
   SmartSearchQuery,
   SmartSearchResult,
-  SearchableFeature,
-  SearchAnalytics
+  SearchableFeature
 } from '../types/smart-search';
 
 export class SmartSearchService {
@@ -22,9 +21,13 @@ export class SmartSearchService {
   private openai: OpenAI | null = null;
   private indexPath: string;
   private embeddingCache: Map<string, number[]> = new Map();
+  private indexLoadPromise: Promise<void> | null = null;
 
   constructor(openaiApiKey?: string) {
-    this.indexPath = path.join(__dirname, '../data/smart-search-index.json');
+    // Use process.cwd() for production build compatibility
+    // In dev: /home/user/project/server/data/smart-search-index.json
+    // In prod: /home/user/project/server/data/smart-search-index.json
+    this.indexPath = path.resolve(process.cwd(), 'server/data/smart-search-index.json');
 
     if (openaiApiKey) {
       this.openai = new OpenAI({
@@ -35,17 +38,35 @@ export class SmartSearchService {
 
   /**
    * Load search index from JSON file
+   * Safe to call multiple times - will only load once
    */
   async loadIndex(): Promise<void> {
-    try {
-      const data = await fs.readFile(this.indexPath, 'utf-8');
-      this.index = JSON.parse(data);
-      console.log(`✓ Smart search index loaded: ${this.index?.features.length} features`);
-    } catch (error) {
-      console.error('Failed to load smart search index:', error);
-      // Initialize with empty index
-      this.index = { features: [], commonQuestions: [] };
+    // If already loaded, return immediately
+    if (this.index) {
+      return;
     }
+
+    // If currently loading, wait for that promise
+    if (this.indexLoadPromise) {
+      return this.indexLoadPromise;
+    }
+
+    // Start loading
+    this.indexLoadPromise = (async () => {
+      try {
+        const data = await fs.readFile(this.indexPath, 'utf-8');
+        this.index = JSON.parse(data);
+        console.log(`✓ Smart search index loaded: ${this.index?.features.length} features`);
+      } catch (error) {
+        console.error('Failed to load smart search index:', error);
+        // Initialize with empty index
+        this.index = { features: [], commonQuestions: [] };
+      } finally {
+        this.indexLoadPromise = null;
+      }
+    })();
+
+    return this.indexLoadPromise;
   }
 
   /**
@@ -90,6 +111,27 @@ export class SmartSearchService {
       console.error('Failed to get embedding:', error);
       return null;
     }
+  }
+
+  /**
+   * Check if user has permission to access a feature
+   */
+  private hasPermission(feature: SearchableFeature, query: SmartSearchQuery): boolean {
+    // If feature has no required permissions, it's accessible to all
+    if (!feature.requiredPermissions || feature.requiredPermissions.length === 0) {
+      return true;
+    }
+
+    // Admin role has access to everything
+    if (query.userRole === 'admin') {
+      return true;
+    }
+
+    // Check if user has any of the required permissions
+    const userPermissions = query.userPermissions || [];
+    return feature.requiredPermissions.some(permission =>
+      userPermissions.includes(permission)
+    );
   }
 
   /**
@@ -169,7 +211,7 @@ export class SmartSearchService {
   }
 
   /**
-   * Perform fuzzy search (client-side, instant)
+   * Perform fuzzy search (server-side, designed for fast/instant client responses)
    */
   async fuzzySearch(query: SmartSearchQuery): Promise<SmartSearchResult[]> {
     if (!this.index) {
@@ -185,10 +227,8 @@ export class SmartSearchService {
 
     for (const feature of this.index.features) {
       // Skip if user doesn't have required permissions
-      if (feature.requiredPermissions && feature.requiredPermissions.length > 0) {
-        if (query.userRole !== 'admin' && !feature.requiredPermissions.includes(query.userRole || '')) {
-          continue;
-        }
+      if (!this.hasPermission(feature, query)) {
+        continue;
       }
 
       let maxScore = 0;
@@ -249,13 +289,12 @@ export class SmartSearchService {
     }
 
     const results: SmartSearchResult[] = [];
+    let embeddingsAdded = false;
 
     for (const feature of this.index.features) {
       // Skip if user doesn't have required permissions
-      if (feature.requiredPermissions && feature.requiredPermissions.length > 0) {
-        if (query.userRole !== 'admin' && !feature.requiredPermissions.includes(query.userRole || '')) {
-          continue;
-        }
+      if (!this.hasPermission(feature, query)) {
+        continue;
       }
 
       // Create searchable text from feature
@@ -267,6 +306,7 @@ export class SmartSearchService {
         featureEmbedding = await this.getEmbedding(searchableText);
         if (featureEmbedding) {
           feature.embedding = featureEmbedding;
+          embeddingsAdded = true;
         }
       }
 
@@ -283,8 +323,8 @@ export class SmartSearchService {
       }
     }
 
-    // Save updated index with embeddings
-    if (results.length > 0) {
+    // Save updated index only if new embeddings were added
+    if (embeddingsAdded) {
       await this.saveIndex();
     }
 

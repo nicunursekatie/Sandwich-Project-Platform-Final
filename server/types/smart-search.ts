@@ -29,6 +29,7 @@ export interface SmartSearchQuery {
   query: string;
   limit?: number;
   userRole?: string;
+  userPermissions?: string[];
 }
 
 export interface SmartSearchResult {
@@ -49,5 +50,5 @@ export interface SearchAnalytics {
   resultId: string | null;
   clicked: boolean;
   timestamp: Date;
-  userId: string;
+  userId: string | undefined;
 }

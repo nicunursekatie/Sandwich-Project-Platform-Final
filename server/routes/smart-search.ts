@@ -8,6 +8,10 @@ import { SmartSearchService } from '../services/smart-search.service';
 import type { SmartSearchQuery, SmartSearchResponse } from '../types/smart-search';
 import type { SessionUser } from '../types/express';
 
+interface ExtendedSmartSearchQuery extends SmartSearchQuery {
+  userPermissions?: string[];
+}
+
 export function createSmartSearchRouter(searchService: SmartSearchService) {
   const router = Router();
 
@@ -19,10 +23,11 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
     try {
       const startTime = Date.now();
       const sessionUser = req.user as SessionUser | undefined;
-      const query: SmartSearchQuery = {
+      const query: ExtendedSmartSearchQuery = {
         query: req.body.query || '',
         limit: req.body.limit || 10,
-        userRole: sessionUser?.role || 'user'
+        userRole: sessionUser?.role || 'user',
+        userPermissions: sessionUser?.permissions || []
       };
 
       if (!query.query.trim()) {
@@ -72,10 +77,11 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
     try {
       const startTime = Date.now();
       const sessionUser = req.user as SessionUser | undefined;
-      const query: SmartSearchQuery = {
+      const query: ExtendedSmartSearchQuery = {
         query: req.body.query || '',
         limit: req.body.limit || 5,
-        userRole: sessionUser?.role || 'user'
+        userRole: sessionUser?.role || 'user',
+        userPermissions: sessionUser?.permissions || []
       };
 
       const results = await searchService.fuzzySearch(query);
