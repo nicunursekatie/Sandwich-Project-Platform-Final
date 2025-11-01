@@ -268,23 +268,38 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
     const redactedPhone = smsConsent.phoneNumber ? `***${smsConsent.phoneNumber.slice(-4)}` : 'unknown';
     logger.log(`✅ SMS confirmation successful for user ID: ${userId} (${redactedPhone})`);
 
-    // Send welcome SMS after successful confirmation (only if not already sent)
-    const hasReceivedWelcome = smsConsent.welcomeSmsSentAt;
+    // Re-read user to get fresh data and check if welcome SMS should be sent (prevents race condition)
+    const freshUser = await storage.getUserById(userId);
+    if (!freshUser) {
+      logger.error(`❌ Failed to re-read user ${userId} for welcome SMS check`);
+      res.json({
+        success: true,
+        message: 'SMS notifications confirmed! You will now receive weekly reminders.',
+        phoneNumber: smsConsent.phoneNumber,
+        status: 'confirmed',
+      });
+      return;
+    }
+
+    const freshMetadata = freshUser.metadata as any || {};
+    const freshSmsConsent = freshMetadata.smsConsent || {};
+    const hasReceivedWelcome = freshSmsConsent.welcomeSmsSentAt;
+
     if (!hasReceivedWelcome) {
       try {
         logger.log(`🔍 Manual confirmation: About to send welcome SMS to ${redactedPhone} for user ID: ${userId}`);
 
         const { sendWelcomeSMS } = await import('../sms-service');
-        const welcomeResult = await sendWelcomeSMS(smsConsent.phoneNumber);
+        const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
 
         if (welcomeResult.success) {
           logger.log(`✅ Welcome SMS sent to ${redactedPhone} after confirmation`);
 
-          // Mark that welcome SMS has been sent
+          // Mark that welcome SMS has been sent using fresh metadata
           const finalMetadata = {
-            ...updatedMetadata,
+            ...freshMetadata,
             smsConsent: {
-              ...updatedMetadata.smsConsent,
+              ...freshSmsConsent,
               welcomeSmsSentAt: new Date().toISOString(),
             },
           };
@@ -569,8 +584,18 @@ router.post('/sms/webhook', async (req, res) => {
 
       logger.log(`✅ SMS confirmation via YES reply successful for user ID: ${userWithPendingConfirmation.id} (${redactedPhone})`);
 
-      // Send welcome SMS after successful confirmation via YES reply (only if not already sent)
-      const hasReceivedWelcome = smsConsent.welcomeSmsSentAt;
+      // Re-read user to get fresh data and check if welcome SMS should be sent (prevents race condition)
+      const freshUser = await storage.getUserById(userWithPendingConfirmation.id);
+      if (!freshUser) {
+        logger.error(`❌ Failed to re-read user ${userWithPendingConfirmation.id} for welcome SMS check`);
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      }
+
+      const freshMetadata = freshUser.metadata as any || {};
+      const freshSmsConsent = freshMetadata.smsConsent || {};
+      const hasReceivedWelcome = freshSmsConsent.welcomeSmsSentAt;
+
       if (!hasReceivedWelcome) {
         try {
           const { sendWelcomeSMS } = await import('../sms-service');
@@ -579,11 +604,11 @@ router.post('/sms/webhook', async (req, res) => {
           if (welcomeResult.success) {
             logger.log(`✅ Welcome SMS sent to ${redactedPhone} after YES confirmation`);
 
-            // Mark that welcome SMS has been sent
+            // Mark that welcome SMS has been sent using fresh metadata
             const finalMetadata = {
-              ...updatedMetadata,
+              ...freshMetadata,
               smsConsent: {
-                ...updatedMetadata.smsConsent,
+                ...freshSmsConsent,
                 welcomeSmsSentAt: new Date().toISOString(),
               },
             };
@@ -683,8 +708,18 @@ router.post('/sms/webhook', async (req, res) => {
 
       logger.log(`✅ SMS confirmation via verification code successful for user ID: ${userWithMatchingCode.id} (${redactedPhone})`);
 
-      // Send welcome SMS after successful confirmation via verification code (only if not already sent)
-      const hasReceivedWelcome = smsConsent.welcomeSmsSentAt;
+      // Re-read user to get fresh data and check if welcome SMS should be sent (prevents race condition)
+      const freshUser = await storage.getUserById(userWithMatchingCode.id);
+      if (!freshUser) {
+        logger.error(`❌ Failed to re-read user ${userWithMatchingCode.id} for welcome SMS check`);
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      }
+
+      const freshMetadata = freshUser.metadata as any || {};
+      const freshSmsConsent = freshMetadata.smsConsent || {};
+      const hasReceivedWelcome = freshSmsConsent.welcomeSmsSentAt;
+
       if (!hasReceivedWelcome) {
         try {
           const { sendWelcomeSMS } = await import('../sms-service');
@@ -693,11 +728,11 @@ router.post('/sms/webhook', async (req, res) => {
           if (welcomeResult.success) {
             logger.log(`✅ Welcome SMS sent to ${redactedPhone} after code confirmation`);
 
-            // Mark that welcome SMS has been sent
+            // Mark that welcome SMS has been sent using fresh metadata
             const finalMetadata = {
-              ...updatedMetadata,
+              ...freshMetadata,
               smsConsent: {
-                ...updatedMetadata.smsConsent,
+                ...freshSmsConsent,
                 welcomeSmsSentAt: new Date().toISOString(),
               },
             };
