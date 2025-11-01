@@ -85,6 +85,7 @@ export function useConfirmation() {
     title: string;
     description: string;
     onConfirm: () => void | Promise<void>;
+    onCancel?: () => void;
     variant?: 'default' | 'destructive';
   } | null>(null);
 
@@ -92,15 +93,23 @@ export function useConfirmation() {
     title: string,
     description: string,
     onConfirm: () => void | Promise<void>,
-    variant: 'default' | 'destructive' = 'default'
+    variant: 'default' | 'destructive' = 'default',
+    onCancel?: () => void
   ) => {
-    setDialogState({ open: true, title, description, onConfirm, variant });
+    setDialogState({ open: true, title, description, onConfirm, onCancel, variant });
+  };
+
+  const handleCancel = () => {
+    if (dialogState?.onCancel) {
+      dialogState.onCancel();
+    }
+    setDialogState(null);
   };
 
   const ConfirmationDialogComponent = dialogState ? (
     <AlertDialog
       open={dialogState.open}
-      onOpenChange={(open) => !open && setDialogState(null)}
+      onOpenChange={(open) => !open && handleCancel()}
     >
       <AlertDialogContent>
         <AlertDialogHeader className="border-b border-[#007E8C]/10 pb-4">
@@ -110,7 +119,7 @@ export function useConfirmation() {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="pt-4">
-          <AlertDialogCancel onClick={() => setDialogState(null)} className="border-gray-300 text-gray-700 hover:bg-gray-50">
+          <AlertDialogCancel onClick={handleCancel} className="border-gray-300 text-gray-700 hover:bg-gray-50">
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
