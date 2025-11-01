@@ -269,9 +269,11 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
 
     // Send welcome SMS after successful confirmation
     try {
+      logger.log(`🔍 Manual confirmation: About to send welcome SMS to ${smsConsent.phoneNumber} for user ${user.email}`);
+
       const { sendWelcomeSMS } = await import('../sms-service');
       const welcomeResult = await sendWelcomeSMS(smsConsent.phoneNumber);
-      
+
       if (welcomeResult.success) {
         logger.log(`✅ Welcome SMS sent to ${smsConsent.phoneNumber} after confirmation`);
       } else {
@@ -481,8 +483,25 @@ router.post('/sms/webhook', async (req, res) => {
 
     // Check if message is "YES" confirmation
     if (messageBody === 'YES') {
+      logger.log(`🔍 YES confirmation received from ${phoneNumber}`);
+
       // Find user with this phone number and pending confirmation
       const allUsers = await storage.getAllUsers();
+
+      // DETAILED LOGGING: Show all users with pending confirmations
+      const usersWithPending = allUsers.filter((user) => {
+        const metadata = user.metadata as any || {};
+        const smsConsent = metadata.smsConsent || {};
+        return smsConsent.status === 'pending_confirmation';
+      });
+
+      logger.log(`🔍 Found ${usersWithPending.length} users with pending confirmations:`);
+      usersWithPending.forEach((user) => {
+        const metadata = user.metadata as any || {};
+        const smsConsent = metadata.smsConsent || {};
+        logger.log(`  - User: ${user.email}, Phone: ${smsConsent.phoneNumber}, Matches: ${smsConsent.phoneNumber === phoneNumber}`);
+      });
+
       const userWithPendingConfirmation = allUsers.find((user) => {
         const metadata = user.metadata as any || {};
         const smsConsent = metadata.smsConsent || {};
@@ -498,6 +517,8 @@ router.post('/sms/webhook', async (req, res) => {
         res.type('text/xml');
         return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
+
+      logger.log(`✅ Matched user: ${userWithPendingConfirmation.email} with phone: ${phoneNumber}`);
 
       // Confirm SMS consent via YES reply
       const metadata = userWithPendingConfirmation.metadata as any || {};
@@ -551,8 +572,25 @@ router.post('/sms/webhook', async (req, res) => {
     } 
     // Check if message is a verification code
     else if (/^\d{6}$/.test(messageBody)) {
+      logger.log(`🔍 Verification code ${messageBody} received from ${phoneNumber}`);
+
       // Find user with this phone number and matching verification code
       const allUsers = await storage.getAllUsers();
+
+      // DETAILED LOGGING: Show all users with pending confirmations and their codes
+      const usersWithPending = allUsers.filter((user) => {
+        const metadata = user.metadata as any || {};
+        const smsConsent = metadata.smsConsent || {};
+        return smsConsent.status === 'pending_confirmation';
+      });
+
+      logger.log(`🔍 Found ${usersWithPending.length} users with pending confirmations:`);
+      usersWithPending.forEach((user) => {
+        const metadata = user.metadata as any || {};
+        const smsConsent = metadata.smsConsent || {};
+        logger.log(`  - User: ${user.email}, Phone: ${smsConsent.phoneNumber}, Code: ${smsConsent.verificationCode}, Matches: ${smsConsent.phoneNumber === phoneNumber && smsConsent.verificationCode === messageBody}`);
+      });
+
       const userWithMatchingCode = allUsers.find((user) => {
         const metadata = user.metadata as any || {};
         const smsConsent = metadata.smsConsent || {};
@@ -568,6 +606,8 @@ router.post('/sms/webhook', async (req, res) => {
         res.type('text/xml');
         return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
+
+      logger.log(`✅ Matched user: ${userWithMatchingCode.email} with phone: ${phoneNumber} and code: ${messageBody}`);
 
       // Check expiry
       const metadata = userWithMatchingCode.metadata as any || {};

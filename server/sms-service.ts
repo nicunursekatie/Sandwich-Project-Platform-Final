@@ -448,6 +448,10 @@ export async function sendConfirmationSMS(
 export async function sendWelcomeSMS(
   phoneNumber: string
 ): Promise<SMSReminderResult> {
+  // DETAILED LOGGING: Track who is calling this function
+  logger.log(`🔍 sendWelcomeSMS called with phone: ${phoneNumber}`);
+  logger.log(`🔍 Stack trace:`, new Error().stack);
+
   if (!smsProvider) {
     return {
       success: false,
@@ -471,6 +475,8 @@ export async function sendWelcomeSMS(
         message: 'Invalid phone number provided',
       };
     }
+
+    logger.log(`📱 About to send welcome SMS to: ${phoneNumber}`);
 
     const messages = getWelcomeMessages(smsProvider);
     const welcomeMessage = messages.welcome();
