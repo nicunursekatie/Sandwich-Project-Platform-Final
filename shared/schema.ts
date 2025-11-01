@@ -1865,6 +1865,8 @@ export const eventRequests = pgTable(
     desiredDateIdx: index('idx_event_requests_desired_date').on(
       table.desiredEventDate
     ),
+    createdAtIdx: index('idx_event_requests_created_at').on(table.createdAt),
+    scheduledDateIdx: index('idx_event_requests_scheduled_date').on(table.scheduledEventDate),
   })
 );
 
