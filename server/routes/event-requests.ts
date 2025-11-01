@@ -535,6 +535,20 @@ router.get(
         'Retrieved all event requests'
       );
       const eventRequests = await storage.getAllEventRequests();
+      
+      // DEBUG: Log details about what we're returning
+      const completedCount = eventRequests.filter(e => e.status === 'completed').length;
+      logger.info(`📊 API returning ${eventRequests.length} total events (${completedCount} completed)`);
+      
+      // Check for duplicate IDs
+      const ids = eventRequests.map(e => e.id);
+      const uniqueIds = new Set(ids);
+      if (ids.length !== uniqueIds.size) {
+        logger.error(`⚠️ DUPLICATE EVENT IDS DETECTED! Total: ${ids.length}, Unique: ${uniqueIds.size}`);
+        const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+        logger.error(`Duplicate IDs: ${[...new Set(duplicates)].join(', ')}`);
+      }
+      
       res.json(eventRequests);
     } catch (error) {
       logger.error('Failed to fetch event requests', error);
