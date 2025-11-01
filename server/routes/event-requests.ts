@@ -1768,7 +1768,7 @@ router.delete(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      const deleted = await storage.deleteEventRequest(id);
+      const deleted = await storage.deleteEventRequest(id, req.user?.id);
 
       if (!deleted) {
         return res.status(404).json({ message: 'Event request not found' });
@@ -1798,6 +1798,55 @@ router.delete(
     } catch (error) {
       logger.error('Error deleting event request:', error);
       res.status(500).json({ message: 'Failed to delete event request' });
+    }
+  }
+);
+
+// Restore (undo delete) event request
+router.post(
+  '/:id/restore',
+  isAuthenticated,
+  requirePermission('EVENT_REQUESTS_DELETE_CARD'), // Same permission as delete
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const restored = await storage.restoreEventRequest(id);
+
+      if (!restored) {
+        return res.status(404).json({ message: 'Event request not found or not deleted' });
+      }
+
+      // Get the restored event for audit logging
+      const restoredEvent = await storage.getEventRequestById(id);
+
+      // Log the restoration
+      if (restoredEvent) {
+        await AuditLogger.logEventRequestChange(
+          id.toString(),
+          null,
+          restoredEvent,
+          {
+            userId: req.user?.id,
+            ipAddress: req.ip || req.connection?.remoteAddress,
+            userAgent: req.get('User-Agent'),
+            sessionId: req.session?.id || req.sessionID,
+          },
+          { actionType: 'RESTORE' }
+        );
+      }
+
+      await logActivity(
+        req,
+        res,
+        'EVENT_REQUESTS_RESTORE',
+        `Restored event request: ${id}`
+      );
+
+      res.json({ message: 'Event request restored successfully', eventRequest: restoredEvent });
+    } catch (error) {
+      logger.error('Error restoring event request:', error);
+      res.status(500).json({ message: 'Failed to restore event request' });
     }
   }
 );

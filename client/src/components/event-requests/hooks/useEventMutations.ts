@@ -28,10 +28,35 @@ export const useEventMutations = () => {
   const deleteEventRequestMutation = useMutation({
     mutationFn: (id: number) =>
       apiRequest('DELETE', `/api/event-requests/${id}`),
-    onSuccess: () => {
-      toast({
+    onSuccess: (_, deletedId) => {
+      const { dismiss } = toast({
         title: 'Event request deleted',
-        description: 'The event request has been successfully deleted.',
+        description: 'Click Undo to restore',
+        duration: 5000,
+        action: (
+          <button
+            onClick={async () => {
+              try {
+                await apiRequest('POST', `/api/event-requests/${deletedId}/restore`);
+                queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+                dismiss();
+                toast({
+                  title: 'Event request restored',
+                  description: 'The event request has been successfully restored.',
+                });
+              } catch (error) {
+                toast({
+                  title: 'Error',
+                  description: 'Failed to restore event request.',
+                  variant: 'destructive',
+                });
+              }
+            }}
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary"
+          >
+            Undo
+          </button>
+        ),
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       setShowEventDetails(false);

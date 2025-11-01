@@ -37,6 +37,7 @@ import SendKudosButton from '@/components/send-kudos-button';
 import { MessageComposer } from '@/components/message-composer';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
 import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
   Dialog,
   DialogContent,
@@ -1035,11 +1036,35 @@ export default function SandwichCollectionLog() {
       // Track successful deletion
       trackDelete('sandwich_collection', 'Collections', 'Collection Log', data.id.toString());
 
-      toast({
-        title: 'Collection Deleted Successfully 🗑️',
-        description:
-          'The sandwich collection record has been permanently removed from the system.',
-        duration: 4000,
+      const { dismiss } = toast({
+        title: 'Collection Deleted 🗑️',
+        description: 'Click Undo to restore',
+        duration: 5000,
+        action: (
+          <button
+            onClick={async () => {
+              try {
+                await apiRequest('POST', `/api/sandwich-collections/${data.id}/restore`);
+                queryClient.invalidateQueries({ queryKey: ['/api/sandwich-collections'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/sandwich-collections/stats'] });
+                dismiss();
+                toast({
+                  title: 'Collection Restored ✅',
+                  description: 'The collection has been successfully restored.',
+                });
+              } catch (error) {
+                toast({
+                  title: 'Error',
+                  description: 'Failed to restore collection.',
+                  variant: 'destructive',
+                });
+              }
+            }}
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary"
+          >
+            Undo
+          </button>
+        ),
       });
     },
     onError: (error: any, id: number) => {
@@ -1779,13 +1804,8 @@ export default function SandwichCollectionLog() {
   };
 
   const handleDelete = (id: number) => {
-    if (
-      confirm(
-        'Are you sure you want to delete this collection? This action cannot be undone.'
-      )
-    ) {
-      deleteMutation.mutate(id);
-    }
+    // Delete is now triggered by ConfirmationDialog's onConfirm
+    deleteMutation.mutate(id);
   };
 
   const handleNewCollectionSubmit = (e: React.FormEvent) => {
@@ -2650,14 +2670,22 @@ export default function SandwichCollectionLog() {
                         </Button>
                       )}
                       {canDeleteCollection(user, collection) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(collection.id)}
-                          className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <ConfirmationDialog
+                          trigger={
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          }
+                          title="Delete Collection Entry"
+                          description="Are you sure you want to delete this collection? You can undo this action within 5 seconds."
+                          confirmText="Delete"
+                          variant="destructive"
+                          onConfirm={() => handleDelete(collection.id)}
+                        />
                       )}
                     </div>
                   </div>
