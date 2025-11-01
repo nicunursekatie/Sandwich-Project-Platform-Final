@@ -371,7 +371,7 @@
       "description": "Generate promotional graphics and materials",
       "category": "Communication",
       "route": "/dashboard?section=promotion",
-      "keywords": ["graphics", "promotion", "marketing", "flyers", "posters"],
+      "keywords": ["graphics", "graphic", "promotion", "promotional", "promote", "marketing", "market", "flyers", "flyer", "posters", "poster", "social media", "images", "image", "design", "create graphics"],
       "requiredPermissions": []
     }
   ],

@@ -54,11 +54,17 @@ export class SmartSearchService {
     // Start loading
     this.indexLoadPromise = (async () => {
       try {
+        console.log(`[Smart Search] Loading index from: ${this.indexPath}`);
         const data = await fs.readFile(this.indexPath, 'utf-8');
         this.index = JSON.parse(data);
-        console.log(`✓ Smart search index loaded: ${this.index?.features.length} features`);
+        console.log(`[Smart Search] ✓ Index loaded: ${this.index?.features.length} features`);
+        console.log(`[Smart Search] Sample keywords:`, this.index?.features.slice(0, 3).map(f => ({
+          title: f.title,
+          keywords: f.keywords.slice(0, 5)
+        })));
       } catch (error) {
-        console.error('Failed to load smart search index:', error);
+        console.error('[Smart Search] Failed to load index:', error);
+        console.error('[Smart Search] Attempted path:', this.indexPath);
         // Initialize with empty index
         this.index = { features: [], commonQuestions: [] };
       } finally {
@@ -223,6 +229,7 @@ export class SmartSearchService {
     }
 
     const q = query.query.toLowerCase().trim();
+    console.log(`[Smart Search] Fuzzy search for: "${q}"`);
     const results: SmartSearchResult[] = [];
 
     for (const feature of this.index.features) {
@@ -268,6 +275,11 @@ export class SmartSearchService {
 
     // Sort by score descending
     results.sort((a, b) => b.score - a.score);
+
+    console.log(`[Smart Search] Found ${results.length} results for "${q}"`);
+    if (results.length > 0) {
+      console.log(`[Smart Search] Top result: ${results[0].feature.title} (score: ${results[0].score.toFixed(2)})`);
+    }
 
     // Apply limit
     return results.slice(0, query.limit || 10);
