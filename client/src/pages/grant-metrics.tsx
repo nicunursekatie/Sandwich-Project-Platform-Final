@@ -453,11 +453,6 @@ export default function GrantMetrics() {
     collections.forEach((collection: any) => {
       const hostName = collection.hostName || 'Unknown';
 
-      // Skip "Groups" rows - they are aggregate rollups that would cause double-counting
-      if (hostName === 'Groups') {
-        return;
-      }
-
       const total = calculateTotalSandwiches(collection);
 
       uniqueHostsSet.add(hostName);
