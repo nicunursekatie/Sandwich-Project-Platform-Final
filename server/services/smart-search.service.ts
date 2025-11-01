@@ -13,27 +13,44 @@ import {
   SmartSearchIndex,
   SmartSearchQuery,
   SmartSearchResult,
-  SearchableFeature
+  SearchableFeature,
+  RegenerationOptions,
+  RegenerationProgress,
+  RegenerationError,
+  CostEstimate,
+  FeatureAnalytics,
+  EmbeddingQualityMetric,
+  SearchAnalytics,
+  SearchTestResult
 } from '../types/smart-search';
 
 export class SmartSearchService {
   private index: SmartSearchIndex | null = null;
   private openai: OpenAI | null = null;
   private indexPath: string;
+  private analyticsPath: string;
   private embeddingCache: Map<string, number[]> = new Map();
   private indexLoadPromise: Promise<void> | null = null;
+  private regenerationProgress: RegenerationProgress | null = null;
+  private isPaused: boolean = false;
+  private analytics: SearchAnalytics[] = [];
+  private shouldStop: boolean = false;
 
   constructor(openaiApiKey?: string) {
     // Use process.cwd() for production build compatibility
     // In dev: /home/user/project/server/data/smart-search-index.json
     // In prod: /home/user/project/server/data/smart-search-index.json
     this.indexPath = path.resolve(process.cwd(), 'server/data/smart-search-index.json');
+    this.analyticsPath = path.resolve(process.cwd(), 'server/data/smart-search-analytics.json');
 
     if (openaiApiKey) {
       this.openai = new OpenAI({
         apiKey: openaiApiKey
       });
     }
+
+    // Load analytics on startup
+    this.loadAnalytics();
   }
 
   /**
@@ -421,26 +438,494 @@ export class SmartSearchService {
   }
 
   /**
-   * Regenerate all embeddings (admin only)
+   * Load analytics from JSON file
    */
-  async regenerateEmbeddings(): Promise<void> {
+  private async loadAnalytics(): Promise<void> {
+    try {
+      const data = await fs.readFile(this.analyticsPath, 'utf-8');
+      this.analytics = JSON.parse(data);
+      console.log(`✓ Smart search analytics loaded: ${this.analytics.length} records`);
+    } catch (error) {
+      // File doesn't exist yet, start with empty array
+      this.analytics = [];
+    }
+  }
+
+  /**
+   * Save analytics to JSON file
+   */
+  private async saveAnalytics(): Promise<void> {
+    try {
+      await fs.writeFile(
+        this.analyticsPath,
+        JSON.stringify(this.analytics, null, 2),
+        'utf-8'
+      );
+    } catch (error) {
+      console.error('Failed to save analytics:', error);
+    }
+  }
+
+  /**
+   * Record search analytics
+   */
+  async recordAnalytics(analytics: SearchAnalytics): Promise<void> {
+    this.analytics.push(analytics);
+    // Keep only last 10000 records
+    if (this.analytics.length > 10000) {
+      this.analytics = this.analytics.slice(-10000);
+    }
+    await this.saveAnalytics();
+  }
+
+  /**
+   * Get analytics summary
+   */
+  async getAnalyticsSummary(): Promise<{
+    totalSearches: number;
+    topSearches: { query: string; count: number }[];
+    featureAnalytics: FeatureAnalytics[];
+    deadFeatures: string[]; // Features never searched
+  }> {
+    if (!this.index) {
+      await this.loadIndex();
+    }
+
+    const featureMap = new Map<string, FeatureAnalytics>();
+    const queryMap = new Map<string, number>();
+
+    // Process analytics
+    for (const record of this.analytics) {
+      // Track queries
+      queryMap.set(record.query, (queryMap.get(record.query) || 0) + 1);
+
+      // Track features
+      if (record.resultId) {
+        const existing = featureMap.get(record.resultId) || {
+          featureId: record.resultId,
+          searchCount: 0,
+          clickCount: 0,
+          averageScore: 0
+        };
+
+        existing.searchCount++;
+        if (record.clicked) {
+          existing.clickCount++;
+        }
+        existing.lastSearched = record.timestamp;
+
+        featureMap.set(record.resultId, existing);
+      }
+    }
+
+    // Get top searches
+    const topSearches = Array.from(queryMap.entries())
+      .map(([query, count]) => ({ query, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    // Find dead features
+    const searchedIds = new Set(featureMap.keys());
+    const deadFeatures = this.index?.features
+      .filter(f => !searchedIds.has(f.id))
+      .map(f => f.id) || [];
+
+    return {
+      totalSearches: this.analytics.length,
+      topSearches,
+      featureAnalytics: Array.from(featureMap.values()),
+      deadFeatures
+    };
+  }
+
+  /**
+   * Get cost estimate for regenerating embeddings
+   */
+  async getCostEstimate(options: RegenerationOptions): Promise<CostEstimate> {
+    if (!this.index) {
+      await this.loadIndex();
+    }
+
+    if (!this.index) {
+      throw new Error('Index not loaded');
+    }
+
+    let featuresToProcess: SearchableFeature[] = [];
+
+    switch (options.mode) {
+      case 'all':
+        featuresToProcess = this.index.features;
+        break;
+      case 'missing':
+        featuresToProcess = this.index.features.filter(f => !f.embedding);
+        break;
+      case 'failed':
+        const failedIds = new Set(
+          this.regenerationProgress?.errors.map(e => e.featureId) || []
+        );
+        featuresToProcess = this.index.features.filter(f => failedIds.has(f.id));
+        break;
+      case 'selected':
+        if (options.featureIds) {
+          const selectedIds = new Set(options.featureIds);
+          featuresToProcess = this.index.features.filter(f => selectedIds.has(f.id));
+        }
+        break;
+    }
+
+    // Estimate tokens: average ~100 tokens per feature (title + description + keywords)
+    const estimatedTokens = featuresToProcess.length * 100;
+
+    // text-embedding-3-small pricing: $0.02 / 1M tokens
+    const estimatedCost = (estimatedTokens / 1_000_000) * 0.02;
+
+    return {
+      totalFeatures: featuresToProcess.length,
+      estimatedTokens,
+      estimatedCost,
+      model: 'text-embedding-3-small'
+    };
+  }
+
+  /**
+   * Get regeneration progress
+   */
+  getRegenerationProgress(): RegenerationProgress | null {
+    return this.regenerationProgress;
+  }
+
+  /**
+   * Pause ongoing regeneration
+   */
+  pauseRegeneration(): void {
+    if (this.regenerationProgress?.inProgress) {
+      this.isPaused = true;
+      if (this.regenerationProgress) {
+        this.regenerationProgress.isPaused = true;
+      }
+    }
+  }
+
+  /**
+   * Resume paused regeneration
+   */
+  resumeRegeneration(): void {
+    this.isPaused = false;
+    if (this.regenerationProgress) {
+      this.regenerationProgress.isPaused = false;
+    }
+  }
+
+  /**
+   * Stop ongoing regeneration
+   */
+  stopRegeneration(): void {
+    this.shouldStop = true;
+    this.isPaused = false;
+  }
+
+  /**
+   * Regenerate embeddings with options (admin only)
+   */
+  async regenerateEmbeddingsWithOptions(options: RegenerationOptions): Promise<void> {
     if (!this.openai || !this.index) {
       throw new Error('OpenAI not configured or index not loaded');
     }
 
-    console.log('Regenerating embeddings for all features...');
+    // Determine which features to process
+    let featuresToProcess: SearchableFeature[] = [];
+
+    switch (options.mode) {
+      case 'all':
+        featuresToProcess = this.index.features;
+        break;
+      case 'missing':
+        featuresToProcess = this.index.features.filter(f => !f.embedding);
+        break;
+      case 'failed':
+        const failedIds = new Set(
+          this.regenerationProgress?.errors.map(e => e.featureId) || []
+        );
+        featuresToProcess = this.index.features.filter(f => failedIds.has(f.id));
+        break;
+      case 'selected':
+        if (options.featureIds) {
+          const selectedIds = new Set(options.featureIds);
+          featuresToProcess = this.index.features.filter(f => selectedIds.has(f.id));
+        }
+        break;
+    }
+
+    // Initialize progress tracking
+    this.regenerationProgress = {
+      total: featuresToProcess.length,
+      completed: 0,
+      failed: 0,
+      inProgress: true,
+      errors: [],
+      startTime: new Date(),
+      isPaused: false
+    };
+
+    this.shouldStop = false;
+    console.log(`Regenerating embeddings for ${featuresToProcess.length} features (mode: ${options.mode})...`);
+
+    const batchSize = options.batchSize || 5;
+
+    for (let i = 0; i < featuresToProcess.length; i += batchSize) {
+      // Check if we should stop
+      if (this.shouldStop) {
+        console.log('Regeneration stopped by user');
+        this.regenerationProgress.inProgress = false;
+        return;
+      }
+
+      // Wait while paused
+      while (this.isPaused) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      const batch = featuresToProcess.slice(i, i + batchSize);
+
+      await Promise.all(batch.map(async (feature) => {
+        try {
+          this.regenerationProgress!.currentFeature = feature.title;
+
+          const searchableText = `${feature.title} ${feature.description} ${feature.keywords.join(' ')}`;
+          const embedding = await this.getEmbedding(searchableText);
+
+          if (embedding) {
+            feature.embedding = embedding;
+            this.regenerationProgress!.completed++;
+            console.log(`✓ Generated embedding for: ${feature.title} (${this.regenerationProgress!.completed}/${this.regenerationProgress!.total})`);
+          } else {
+            throw new Error('Failed to generate embedding');
+          }
+        } catch (error) {
+          this.regenerationProgress!.failed++;
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          this.regenerationProgress!.errors.push({
+            featureId: feature.id,
+            featureTitle: feature.title,
+            error: errorMessage,
+            timestamp: new Date()
+          });
+          console.error(`✗ Failed to generate embedding for: ${feature.title} - ${errorMessage}`);
+        }
+      }));
+
+      // Update estimated time remaining
+      const elapsed = Date.now() - this.regenerationProgress.startTime!.getTime();
+      const rate = this.regenerationProgress.completed / (elapsed / 1000); // features per second
+      const remaining = featuresToProcess.length - this.regenerationProgress.completed;
+      this.regenerationProgress.estimatedTimeRemaining = remaining / rate;
+
+      // Save progress periodically
+      await this.saveIndex();
+    }
+
+    this.regenerationProgress.inProgress = false;
+    this.regenerationProgress.currentFeature = undefined;
+    await this.saveIndex();
+    console.log(`✓ Regeneration complete: ${this.regenerationProgress.completed} succeeded, ${this.regenerationProgress.failed} failed`);
+  }
+
+  /**
+   * Get embedding quality metrics
+   */
+  async getEmbeddingQualityMetrics(): Promise<EmbeddingQualityMetric[]> {
+    if (!this.index) {
+      await this.loadIndex();
+    }
+
+    if (!this.index) return [];
+
+    const metrics: EmbeddingQualityMetric[] = [];
 
     for (const feature of this.index.features) {
-      const searchableText = `${feature.title} ${feature.description} ${feature.keywords.join(' ')}`;
-      const embedding = await this.getEmbedding(searchableText);
+      const metric: EmbeddingQualityMetric = {
+        featureId: feature.id,
+        featureTitle: feature.title,
+        hasEmbedding: !!feature.embedding,
+        embeddingDimension: feature.embedding?.length
+      };
 
-      if (embedding) {
-        feature.embedding = embedding;
-        console.log(`✓ Generated embedding for: ${feature.title}`);
+      // Calculate average similarity to other features (sample-based)
+      if (feature.embedding) {
+        const sampleSize = Math.min(20, this.index.features.length);
+        const samples = this.index.features
+          .filter(f => f.id !== feature.id && f.embedding)
+          .slice(0, sampleSize);
+
+        if (samples.length > 0) {
+          const similarities = samples.map(s =>
+            this.cosineSimilarity(feature.embedding!, s.embedding!)
+          );
+          metric.averageSimilarityToOthers = similarities.reduce((a, b) => a + b, 0) / similarities.length;
+        }
+
+        // Quality score based on:
+        // - Having an embedding (0.5)
+        // - Not too similar to everything else (0.3)
+        // - Proper dimension (0.2)
+        let qualityScore = 0.5;
+        if (metric.embeddingDimension === 1536) qualityScore += 0.2;
+        if (metric.averageSimilarityToOthers && metric.averageSimilarityToOthers < 0.7) {
+          qualityScore += 0.3;
+        }
+        metric.qualityScore = qualityScore;
+      } else {
+        metric.qualityScore = 0;
+      }
+
+      metrics.push(metric);
+    }
+
+    return metrics;
+  }
+
+  /**
+   * Add a new feature
+   */
+  async addFeature(feature: Omit<SearchableFeature, 'id'>): Promise<SearchableFeature> {
+    if (!this.index) {
+      await this.loadIndex();
+    }
+
+    if (!this.index) {
+      throw new Error('Index not loaded');
+    }
+
+    const newFeature: SearchableFeature = {
+      ...feature,
+      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    };
+
+    this.index.features.push(newFeature);
+    await this.saveIndex();
+
+    return newFeature;
+  }
+
+  /**
+   * Update an existing feature
+   */
+  async updateFeature(id: string, updates: Partial<SearchableFeature>): Promise<SearchableFeature | null> {
+    if (!this.index) {
+      await this.loadIndex();
+    }
+
+    if (!this.index) {
+      throw new Error('Index not loaded');
+    }
+
+    const feature = this.index.features.find(f => f.id === id);
+    if (!feature) {
+      return null;
+    }
+
+    Object.assign(feature, updates);
+
+    // If content changed, invalidate embedding
+    if (updates.title || updates.description || updates.keywords) {
+      feature.embedding = undefined;
+    }
+
+    await this.saveIndex();
+    return feature;
+  }
+
+  /**
+   * Delete a feature
+   */
+  async deleteFeature(id: string): Promise<boolean> {
+    if (!this.index) {
+      await this.loadIndex();
+    }
+
+    if (!this.index) {
+      throw new Error('Index not loaded');
+    }
+
+    const initialLength = this.index.features.length;
+    this.index.features = this.index.features.filter(f => f.id !== id);
+
+    if (this.index.features.length < initialLength) {
+      await this.saveIndex();
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Export features to JSON
+   */
+  async exportFeatures(): Promise<SearchableFeature[]> {
+    if (!this.index) {
+      await this.loadIndex();
+    }
+    return this.index?.features || [];
+  }
+
+  /**
+   * Import features from JSON
+   */
+  async importFeatures(features: SearchableFeature[], mode: 'replace' | 'merge'): Promise<void> {
+    if (!this.index) {
+      await this.loadIndex();
+    }
+
+    if (!this.index) {
+      throw new Error('Index not loaded');
+    }
+
+    if (mode === 'replace') {
+      this.index.features = features;
+    } else {
+      // Merge: replace existing, add new
+      const existingIds = new Set(this.index.features.map(f => f.id));
+
+      for (const feature of features) {
+        const existingIndex = this.index.features.findIndex(f => f.id === feature.id);
+        if (existingIndex >= 0) {
+          this.index.features[existingIndex] = feature;
+        } else {
+          this.index.features.push(feature);
+        }
       }
     }
 
     await this.saveIndex();
-    console.log('✓ All embeddings regenerated');
+  }
+
+  /**
+   * Test search functionality
+   */
+  async testSearch(query: string, userRole?: string): Promise<SearchTestResult> {
+    const startTime = Date.now();
+
+    const searchQuery: SmartSearchQuery = {
+      query,
+      limit: 10,
+      userRole
+    };
+
+    const { results, usedAI } = await this.hybridSearch(searchQuery);
+    const queryTime = Date.now() - startTime;
+
+    return {
+      query,
+      results,
+      usedAI,
+      queryTime
+    };
+  }
+
+  /**
+   * Regenerate all embeddings (admin only) - legacy method
+   */
+  async regenerateEmbeddings(): Promise<void> {
+    return this.regenerateEmbeddingsWithOptions({ mode: 'all' });
   }
 }
