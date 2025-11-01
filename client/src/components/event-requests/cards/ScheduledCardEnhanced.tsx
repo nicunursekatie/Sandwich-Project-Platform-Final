@@ -42,6 +42,7 @@ import {
   History,
   FileText,
   MessageSquare,
+  Loader2,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -76,6 +77,7 @@ interface ScheduledCardEnhancedProps {
   inlineRangeMin: number;
   inlineRangeMax: number;
   inlineRangeType: string;
+  isSaving?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onContact: () => void;
@@ -141,6 +143,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   inlineRangeMin,
   inlineRangeMax,
   inlineRangeType,
+  isSaving = false,
   onEdit,
   onDelete,
   onContact,
@@ -810,8 +813,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   )}
 
                   <div className="flex gap-2 pt-2">
-                    <Button size="sm" onClick={saveEdit} className="bg-[#007E8C]">
-                      <Save className="w-3 h-3 mr-1" /> Save
+                    <Button size="sm" onClick={saveEdit} disabled={isSaving} className="bg-[#007E8C]">
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </>
+                      )}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
                       Cancel

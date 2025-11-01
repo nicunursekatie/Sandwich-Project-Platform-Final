@@ -42,6 +42,7 @@ import {
   History,
   ChevronUp,
   ChevronDown,
+  Loader2,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -178,6 +179,7 @@ interface ScheduledCardProps {
   inlineRangeMin: number;
   inlineRangeMax: number;
   inlineRangeType: string;
+  isSaving: boolean;
 
   // Actions
   onEdit: () => void;
@@ -620,10 +622,20 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         <div className="flex items-center justify-between">
           <span className="font-medium text-base">Edit Sandwiches</span>
           <div className="flex gap-2">
-            <Button size="sm" onClick={saveEdit}>
-              <Save className="w-3 h-3 mr-1" /> Save
+            <Button size="sm" onClick={saveEdit} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-3 h-3 mr-1" />
+                  Save
+                </>
+              )}
             </Button>
-            <Button size="sm" variant="ghost" onClick={cancelEdit}>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={isSaving}>
               <X className="w-3 h-3" />
             </Button>
           </div>
