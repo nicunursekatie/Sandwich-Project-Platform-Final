@@ -1,0 +1,404 @@
+{
+  "features": [
+    {
+      "id": "dashboard-overview",
+      "title": "Dashboard",
+      "description": "View your personal dashboard with overview of recent activities, upcoming events, and quick actions",
+      "category": "Dashboard",
+      "route": "/dashboard",
+      "keywords": ["dashboard", "home", "overview", "main", "start", "beginning"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "my-actions",
+      "title": "My Actions",
+      "description": "View and manage your personal action items, tasks, and to-do list",
+      "category": "Dashboard",
+      "route": "/dashboard/my-actions",
+      "keywords": ["actions", "tasks", "todo", "my tasks", "personal", "to do"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "collections-log",
+      "title": "Collections Log",
+      "description": "View and track sandwich collection records from hosts",
+      "category": "Collections",
+      "route": "/collections",
+      "keywords": ["collections", "log", "sandwiches", "tracking", "records", "history"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "add-collection",
+      "title": "Add New Collection",
+      "description": "Record a new sandwich collection from a host",
+      "category": "Collections",
+      "route": "/collections",
+      "action": "openAddDialog",
+      "keywords": ["add", "new", "create", "collection", "record", "log", "entry"],
+      "requiredPermissions": ["collections:write"]
+    },
+    {
+      "id": "hosts-management",
+      "title": "Hosts Management",
+      "description": "Manage host facilities that provide sandwiches for collection",
+      "category": "Operations",
+      "route": "/hosts",
+      "keywords": ["hosts", "facilities", "locations", "providers", "donors"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "add-host",
+      "title": "Add New Host",
+      "description": "Register a new host facility for sandwich collections",
+      "category": "Operations",
+      "route": "/hosts",
+      "action": "openAddDialog",
+      "keywords": ["add", "new", "create", "host", "facility", "location", "provider"],
+      "requiredPermissions": ["hosts:write"]
+    },
+    {
+      "id": "drivers-management",
+      "title": "Drivers Management",
+      "description": "Manage drivers and assign them to collection routes",
+      "category": "Operations",
+      "route": "/drivers",
+      "keywords": ["drivers", "routes", "assignments", "transportation", "vehicles"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "volunteers-management",
+      "title": "Volunteers Management",
+      "description": "Manage volunteer profiles, skills, availability, and assignments",
+      "category": "Operations",
+      "route": "/volunteers",
+      "keywords": ["volunteers", "people", "team", "members", "staff"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "add-volunteer",
+      "title": "Add New Volunteer",
+      "description": "Create a new volunteer profile with contact information and skills",
+      "category": "Operations",
+      "route": "/volunteers",
+      "action": "openAddDialog",
+      "keywords": ["add", "new", "create", "volunteer", "person", "member", "recruit"],
+      "requiredPermissions": ["volunteers:write"]
+    },
+    {
+      "id": "recipients-management",
+      "title": "Recipients Management",
+      "description": "Manage organizations and individuals who receive sandwiches",
+      "category": "Operations",
+      "route": "/recipients",
+      "keywords": ["recipients", "beneficiaries", "distribution", "receiving"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "description": "View and manage long-term projects and initiatives",
+      "category": "Planning",
+      "route": "/projects",
+      "keywords": ["projects", "initiatives", "plans", "programs"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "add-project",
+      "title": "Create New Project",
+      "description": "Start a new project or initiative",
+      "category": "Planning",
+      "route": "/projects",
+      "action": "openAddDialog",
+      "keywords": ["add", "new", "create", "project", "initiative", "start"],
+      "requiredPermissions": ["projects:write"]
+    },
+    {
+      "id": "meetings",
+      "title": "Meetings",
+      "description": "Schedule and manage team meetings with agendas and notes",
+      "category": "Planning",
+      "route": "/meetings",
+      "keywords": ["meetings", "schedule", "calendar", "agenda", "notes"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "event-requests",
+      "title": "Event Requests",
+      "description": "Create and manage sandwich distribution event requests",
+      "category": "Planning",
+      "route": "/event-requests",
+      "keywords": ["events", "requests", "distribution", "planning", "schedule"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "create-event",
+      "title": "Create New Event Request",
+      "description": "Request a new sandwich distribution event",
+      "category": "Planning",
+      "route": "/event-requests",
+      "action": "openAddDialog",
+      "keywords": ["add", "new", "create", "event", "request", "distribution"],
+      "requiredPermissions": ["events:write"]
+    },
+    {
+      "id": "event-reminders",
+      "title": "Event Reminders",
+      "description": "Manage automated reminders for upcoming events",
+      "category": "Planning",
+      "route": "/event-reminders",
+      "keywords": ["reminders", "notifications", "alerts", "events"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "team-chat",
+      "title": "Team Chat",
+      "description": "Communicate with your team in real-time channels",
+      "category": "Communication",
+      "route": "/chat",
+      "keywords": ["chat", "messaging", "communication", "talk", "discuss"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "inbox",
+      "title": "Inbox",
+      "description": "View your personal message inbox",
+      "category": "Communication",
+      "route": "/inbox",
+      "keywords": ["inbox", "messages", "mail", "email", "communications"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "suggestions-portal",
+      "title": "Suggestions Portal",
+      "description": "Submit and view suggestions for improvement",
+      "category": "Communication",
+      "route": "/suggestions",
+      "keywords": ["suggestions", "ideas", "feedback", "improvements", "recommendations"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "team-board",
+      "title": "Team Board",
+      "description": "Collaborate with sticky notes on the team board",
+      "category": "Communication",
+      "route": "/team-board",
+      "keywords": ["board", "sticky notes", "collaboration", "brainstorm"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "analytics",
+      "title": "Analytics",
+      "description": "View impact metrics and analytics dashboards",
+      "category": "Planning",
+      "route": "/analytics",
+      "keywords": ["analytics", "metrics", "stats", "statistics", "data", "reports"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "grant-metrics",
+      "title": "Grant Metrics",
+      "description": "Track performance metrics for grant reporting",
+      "category": "Planning",
+      "route": "/grant-metrics",
+      "keywords": ["grants", "metrics", "reporting", "funding", "performance"],
+      "requiredPermissions": ["grants:read"]
+    },
+    {
+      "id": "weekly-monitoring",
+      "title": "Weekly Monitoring",
+      "description": "View weekly status dashboard and monitoring",
+      "category": "Planning",
+      "route": "/weekly-monitoring",
+      "keywords": ["weekly", "monitoring", "status", "dashboard", "tracking"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "groups-catalog",
+      "title": "Groups Catalog",
+      "description": "Manage organizations and groups in the system",
+      "category": "Operations",
+      "route": "/groups",
+      "keywords": ["groups", "organizations", "catalog", "directory"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "distribution-tracking",
+      "title": "Distribution Tracking",
+      "description": "Monitor sandwich distribution to recipients",
+      "category": "Operations",
+      "route": "/distribution",
+      "keywords": ["distribution", "tracking", "delivery", "recipients"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "inventory-calculator",
+      "title": "Inventory Calculator",
+      "description": "Calculate sandwich quantities and inventory needs",
+      "category": "Operations",
+      "route": "/inventory-calculator",
+      "keywords": ["inventory", "calculator", "quantities", "planning", "count"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "work-log",
+      "title": "Work Log",
+      "description": "Track volunteer hours and work time",
+      "category": "Operations",
+      "route": "/work-log",
+      "keywords": ["work log", "hours", "time", "tracking", "timekeeping"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "expenses",
+      "title": "Expenses & Receipts",
+      "description": "Track expenses and manage receipts",
+      "category": "Operations",
+      "route": "/expenses",
+      "keywords": ["expenses", "receipts", "costs", "spending", "financial"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "cooler-tracking",
+      "title": "Cooler Tracking",
+      "description": "Track cooler inventory and locations",
+      "category": "Operations",
+      "route": "/cooler-tracking",
+      "keywords": ["coolers", "equipment", "inventory", "tracking"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "wishlist",
+      "title": "Amazon Wishlist",
+      "description": "Manage Amazon wishlist items and donations",
+      "category": "Documentation",
+      "route": "/wishlist",
+      "keywords": ["wishlist", "amazon", "donations", "items", "needs"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "documents",
+      "title": "Document Management",
+      "description": "Manage and access important documents",
+      "category": "Documentation",
+      "route": "/documents",
+      "keywords": ["documents", "files", "storage", "library"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "user-management",
+      "title": "User Management",
+      "description": "Manage user accounts, roles, and permissions (admin only)",
+      "category": "Admin",
+      "route": "/user-management",
+      "keywords": ["users", "accounts", "admin", "permissions", "roles"],
+      "requiredPermissions": ["admin"]
+    },
+    {
+      "id": "profile",
+      "title": "My Profile",
+      "description": "View and edit your user profile and settings",
+      "category": "Dashboard",
+      "route": "/profile",
+      "keywords": ["profile", "settings", "account", "preferences", "my account"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "help",
+      "title": "Help & Support",
+      "description": "Access help documentation and support resources",
+      "category": "Documentation",
+      "route": "/help",
+      "keywords": ["help", "support", "documentation", "guide", "tutorial"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "availability",
+      "title": "My Availability",
+      "description": "Set and manage your personal availability schedule",
+      "category": "Dashboard",
+      "route": "/dashboard/availability",
+      "keywords": ["availability", "schedule", "calendar", "when", "free time"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "team-availability",
+      "title": "Team Availability",
+      "description": "View team member availability schedules",
+      "category": "Dashboard",
+      "route": "/dashboard/team-availability",
+      "keywords": ["team", "availability", "schedule", "calendar", "who is available"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "volunteer-calendar",
+      "title": "Volunteer Calendar",
+      "description": "View integrated Google Calendar for volunteer events",
+      "category": "Dashboard",
+      "route": "/dashboard/calendar",
+      "keywords": ["calendar", "events", "schedule", "google calendar"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "google-sheets",
+      "title": "Events Google Sheet",
+      "description": "Access event data synchronized with Google Sheets",
+      "category": "Planning",
+      "route": "/google-sheets",
+      "keywords": ["google sheets", "spreadsheet", "events", "data"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "signup-genius",
+      "title": "Sign Up Genius",
+      "description": "Manage event volunteer signup through Sign Up Genius",
+      "category": "Planning",
+      "route": "/signup-genius",
+      "keywords": ["signup", "sign up genius", "volunteers", "registration"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "resources",
+      "title": "Resources & Quick Tools",
+      "description": "Access quick tools and resource links",
+      "category": "Documentation",
+      "route": "/resources",
+      "keywords": ["resources", "tools", "quick tools", "utilities"],
+      "requiredPermissions": []
+    },
+    {
+      "id": "promotion-graphics",
+      "title": "Promotion Graphics",
+      "description": "Generate promotional graphics and materials",
+      "category": "Communication",
+      "route": "/promotion-graphics",
+      "keywords": ["graphics", "promotion", "marketing", "flyers", "posters"],
+      "requiredPermissions": []
+    }
+  ],
+  "commonQuestions": [
+    {
+      "question": "How do I add a volunteer?",
+      "targetId": "add-volunteer"
+    },
+    {
+      "question": "Where can I see collections?",
+      "targetId": "collections-log"
+    },
+    {
+      "question": "How do I create an event?",
+      "targetId": "create-event"
+    },
+    {
+      "question": "Where do I chat with my team?",
+      "targetId": "team-chat"
+    },
+    {
+      "question": "How do I track my hours?",
+      "targetId": "work-log"
+    },
+    {
+      "question": "Where are the reports?",
+      "targetId": "analytics"
+    }
+  ]
+}
