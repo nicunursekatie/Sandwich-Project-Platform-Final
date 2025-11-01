@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { StandardFilterBar } from '@/components/ui/standard-filter-bar';
 import {
   Table,
   TableBody,
@@ -74,6 +75,12 @@ export default function UserManagementFinal() {
   const [activeTab, setActiveTab] = useState<'users' | 'permissions' | 'impact'>('users');
   const [viewingActivityFor, setViewingActivityFor] = useState<User | null>(null);
 
+  // Filter state
+  const [filters, setFilters] = useState({
+    role: '',
+    status: [] as string[],
+  });
+
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showAddUserDialog, setShowAddUserDialog] = useState(false);
   const [showEditUserDialog, setShowEditDialog] = useState(false);
@@ -121,8 +128,28 @@ export default function UserManagementFinal() {
     updateUserMutation,
   } = useUserManagement();
 
-  const { searchQuery, setSearchQuery, roleFilter, setRoleFilter, filteredUsers } =
+  const { searchQuery, setSearchQuery, roleFilter, setRoleFilter, filteredUsers: baseFilteredUsers } =
     useUserFilters(users as User[]);
+
+  // Apply additional filters from StandardFilterBar
+  const filteredUsers = useMemo(() => {
+    let result = baseFilteredUsers;
+
+    // Role filter from StandardFilterBar (overrides old filter if set)
+    if (filters.role) {
+      result = result.filter(u => u.role === filters.role);
+    }
+
+    // Status filter (active/inactive)
+    if (filters.status.length > 0) {
+      result = result.filter(u =>
+        (filters.status.includes('active') && u.isActive) ||
+        (filters.status.includes('inactive') && !u.isActive)
+      );
+    }
+
+    return result;
+  }, [baseFilteredUsers, filters]);
 
   const userStats = useUserStats(users as User[]);
 
@@ -421,36 +448,47 @@ export default function UserManagementFinal() {
           {/* Search & Filter */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search users by name or email..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => setRoleFilter(e.target.value)}
-                      className="px-3 py-2 border rounded-md text-sm bg-white"
-                    >
-                      <option value="all">All Roles</option>
-                      {Object.entries(USER_ROLES).map(([key, value]) => (
-                        <option key={key} value={value}>
-                          {getRoleDisplayName(value)}
-                        </option>
-                      ))}
-                    </select>
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
-                  </div>
-                </div>
+              <StandardFilterBar
+                searchPlaceholder="Search users by name, email, or phone..."
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                filters={[
+                  {
+                    id: 'role',
+                    label: 'Role',
+                    type: 'select',
+                    options: Object.entries(USER_ROLES).map(([key, value]) => ({
+                      value,
+                      label: getRoleDisplayName(value),
+                      count: users.filter((u: any) => u.role === value).length,
+                    })),
+                  },
+                  {
+                    id: 'status',
+                    label: 'Status',
+                    type: 'multi-select',
+                    options: [
+                      {
+                        value: 'active',
+                        label: 'Active',
+                        count: users.filter((u: any) => u.isActive).length,
+                      },
+                      {
+                        value: 'inactive',
+                        label: 'Inactive',
+                        count: users.filter((u: any) => !u.isActive).length,
+                      },
+                    ],
+                  },
+                ]}
+                filterValues={filters}
+                onFilterChange={(id, value) => setFilters({ ...filters, [id]: value })}
+                showActiveFilters
+                onClearAll={() => {
+                  setSearchQuery('');
+                  setFilters({ role: '', status: [] });
+                }}
+              />
                 
                 {selectedUsers.size > 0 && (
                   <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">

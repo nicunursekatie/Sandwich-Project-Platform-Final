@@ -734,7 +734,253 @@ export default function GroupCatalog({
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600">No organizations found</p>
           <p className="text-sm text-gray-500 mt-2">
-            {searchTerm || filters.status.length > 0 || filters.category.length > 0
+            {searchTerm || filters.status.length < 9
+              ? 'Try adjusting your search or filters'
+              : 'Event requests will populate this directory'}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Status Filter - Multi-select */}
+          <div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start">
+                  <Filter className="w-4 h-4 mr-2" />
+                  {statusFilter.length === 0
+                    ? 'No statuses selected'
+                    : statusFilter.length === 9
+                    ? 'All Statuses'
+                    : `${statusFilter.length} status${statusFilter.length > 1 ? 'es' : ''} selected`}
+                  <ChevronDown className="w-4 h-4 ml-auto" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56">
+                <div className="space-y-2">
+                  <div className="font-medium text-sm mb-2">Filter by Status</div>
+                  {[
+                    { value: 'new', label: 'New Requests' },
+                    { value: 'in_process', label: 'In Process' },
+                    { value: 'contacted', label: 'Contacted' },
+                    { value: 'scheduled', label: 'Upcoming Events' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'declined', label: 'Declined' },
+                    { value: 'postponed', label: 'Postponed' },
+                    { value: 'cancelled', label: 'Cancelled' },
+                    { value: 'past', label: 'Past Events' },
+                  ].map((status) => (
+                    <div key={status.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={status.value}
+                        checked={statusFilter.includes(status.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setStatusFilter([...statusFilter, status.value]);
+                          } else {
+                            setStatusFilter(statusFilter.filter((s) => s !== status.value));
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={status.value}
+                        className="text-sm cursor-pointer"
+                      >
+                        {status.label}
+                      </label>
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setStatusFilter(['new', 'in_process', 'contacted', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled', 'past'])}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setStatusFilter([])}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Category Filter - Multi-select */}
+          <div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start">
+                  <Filter className="w-4 h-4 mr-2" />
+                  {categoryFilter.length === 0
+                    ? 'All Categories'
+                    : `${categoryFilter.length} categor${categoryFilter.length > 1 ? 'ies' : 'y'} selected`}
+                  <ChevronDown className="w-4 h-4 ml-auto" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56">
+                <div className="space-y-2">
+                  <div className="font-medium text-sm mb-2">Filter by Category</div>
+                  {[
+                    { value: 'school', label: 'School' },
+                    { value: 'church_faith', label: 'Church/Faith' },
+                    { value: 'club', label: 'Club' },
+                    { value: 'neighborhood', label: 'Neighborhood' },
+                    { value: 'large_corp', label: 'Corporation' },
+                    { value: 'small_medium_corp', label: 'Small Business' },
+                    { value: 'other', label: 'Other' },
+                  ].map((category) => (
+                    <div key={category.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`category-${category.value}`}
+                        checked={categoryFilter.includes(category.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setCategoryFilter([...categoryFilter, category.value]);
+                          } else {
+                            setCategoryFilter(categoryFilter.filter((c) => c !== category.value));
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`category-${category.value}`}
+                        className="text-sm cursor-pointer"
+                      >
+                        {category.label}
+                      </label>
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setCategoryFilter(['school', 'church_faith', 'club', 'neighborhood', 'large_corp', 'small_medium_corp', 'other'])}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setCategoryFilter([])}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Date Range Filters */}
+          <div className="md:col-span-1">
+            <Input
+              type="date"
+              placeholder="From date"
+              value={dateFilterStart}
+              onChange={(e) => setDateFilterStart(e.target.value)}
+              className="w-full"
+              data-testid="date-filter-start"
+            />
+          </div>
+          <div className="md:col-span-1">
+            <Input
+              type="date"
+              placeholder="To date"
+              value={dateFilterEnd}
+              onChange={(e) => setDateFilterEnd(e.target.value)}
+              className="w-full"
+              data-testid="date-filter-end"
+            />
+          </div>
+        </div>
+
+        {/* Second Row: Sort and Clear Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mt-4">
+          {/* Sort */}
+          <div className="md:col-span-2 flex gap-2">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="groupName">Group</SelectItem>
+                <SelectItem value="contactName">Contact Name</SelectItem>
+                <SelectItem value="eventDate">Event Date</SelectItem>
+                <SelectItem value="totalRequests">Total Requests</SelectItem>
+                <SelectItem value="category">Category</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="px-3"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </Button>
+          </div>
+
+          {/* Clear Date Filters */}
+          {(dateFilterStart || dateFilterEnd) && (
+            <div className="md:col-span-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setDateFilterStart('');
+                  setDateFilterEnd('');
+                }}
+                className="w-full"
+                data-testid="clear-date-filters"
+              >
+                Clear Date Filters
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Results Summary */}
+        <div className="mt-4 pt-3 border-t flex justify-between items-center">
+          <small className="text-gray-600">
+            Showing {activeStartIndex + 1}-
+            {Math.min(activeEndIndex, totalActiveItems)} of {totalActiveItems}{' '}
+            organizations
+          </small>
+          <div className="flex items-center gap-2">
+            <small className="text-gray-600">Items per page:</small>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => setItemsPerPage(Number(value))}
+            >
+              <SelectTrigger className="w-20 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="12">12</SelectItem>
+                <SelectItem value="24">24</SelectItem>
+                <SelectItem value="48">48</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Organizations Display */}
+      {totalActiveItems === 0 ? (
+        <div className="text-center py-12">
+          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">No organizations found</p>
+          <p className="text-sm text-gray-500 mt-2">
+            {searchTerm || statusFilter.length < 9
               ? 'Try adjusting your search or filters'
               : 'Event requests will populate this directory'}
           </p>
