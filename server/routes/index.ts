@@ -388,9 +388,10 @@ export function createMainRoutes(deps: RouterDependencies) {
   router.use('/api/me', createErrorHandler('me'));
 
   // SMS notification routes - SMS users router already includes /users prefix
+  // Note: Individual routes in smsUserRoutes have their own auth middleware
+  // The /sms/webhook endpoint must remain public for Twilio callbacks
   router.use(
     '/api',
-    deps.isAuthenticated,
     ...createStandardMiddleware(),
     smsUserRoutes
   );
