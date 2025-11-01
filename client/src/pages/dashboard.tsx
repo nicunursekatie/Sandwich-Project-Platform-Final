@@ -829,10 +829,10 @@ export default function Dashboard({
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30 min-w-0 pt-6 pl-6">
+          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30 min-w-0">
             <ErrorBoundary
               fallback={
-                <div className="p-8 text-center">
+                <div className="p-4 sm:p-8 text-center">
                   <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
                     <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -861,11 +861,9 @@ export default function Dashboard({
                   <div className="h-full">{renderContent()}</div>
                 ) : (
                   // Normal layout for other content
-                  <div className="h-full overflow-y-auto overflow-x-hidden w-full">
-                    <div className="w-full pb-20 min-h-full">
-                      <div className="w-full overflow-x-visible">
-                        {renderContent()}
-                      </div>
+                  <div className="h-full overflow-y-auto overflow-x-hidden w-full max-w-full">
+                    <div className="w-full max-w-full pb-20 min-h-full px-4 sm:px-6 pt-6">
+                      {renderContent()}
                     </div>
                   </div>
                 )}
