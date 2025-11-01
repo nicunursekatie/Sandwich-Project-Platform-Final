@@ -3229,6 +3229,36 @@ export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type UpdateExpense = z.infer<typeof updateExpenseSchema>;
 
 /**
+ * Search Analytics - Track SmartSearch usage for learning and improvement
+ * Enables ML-powered search result optimization and user behavior analysis
+ */
+export const searchAnalytics = pgTable('search_analytics', {
+  id: serial('id').primaryKey(),
+  query: text('query').notNull(), // The search query
+  resultId: varchar('result_id'), // Which result was clicked (nullable)
+  clicked: boolean('clicked').notNull().default(false), // Whether a result was clicked
+  timestamp: timestamp('timestamp').defaultNow().notNull(), // When the search occurred
+  userId: varchar('user_id'), // Who performed the search (nullable for anonymous)
+  userRole: varchar('user_role'), // User's role at time of search
+  usedAI: boolean('used_ai').notNull().default(false), // Whether AI semantic search was used
+  resultsCount: integer('results_count').notNull().default(0), // How many results were returned
+  queryTime: integer('query_time').notNull().default(0), // Milliseconds to process query
+}, (table) => [
+  index('idx_search_analytics_query').on(table.query),
+  index('idx_search_analytics_user').on(table.userId),
+  index('idx_search_analytics_timestamp').on(table.timestamp),
+  index('idx_search_analytics_clicked').on(table.clicked),
+]);
+
+export const insertSearchAnalyticsSchema = createInsertSchema(searchAnalytics).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type SearchAnalytics = typeof searchAnalytics.$inferSelect;
+export type InsertSearchAnalytics = z.infer<typeof insertSearchAnalyticsSchema>;
+
+/**
  * Dismissed announcements - Track which users have dismissed which announcements
  * Allows for one-time popups and announcements that don't show repeatedly
  */

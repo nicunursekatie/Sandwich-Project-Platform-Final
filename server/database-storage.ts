@@ -47,6 +47,7 @@ import {
   importedExternalIds,
   availabilitySlots,
   dashboardDocuments,
+  searchAnalytics,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -130,6 +131,8 @@ import {
   type InsertAvailabilitySlot,
   type DashboardDocument,
   type InsertDashboardDocument,
+  type SearchAnalytics,
+  type InsertSearchAnalytics,
 } from '@shared/schema';
 import { db } from './db';
 import {
@@ -4344,5 +4347,29 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(dashboardDocuments.documentId, update.documentId));
     }
+  }
+
+  // Search Analytics (SmartSearch usage tracking for ML improvements)
+  async logSearchAnalytics(data: InsertSearchAnalytics): Promise<void> {
+    await db.insert(searchAnalytics).values(data);
+  }
+
+  async getSearchAnalytics(options?: { limit?: number; userId?: string }): Promise<SearchAnalytics[]> {
+    let query = db.select().from(searchAnalytics);
+
+    // Filter by user if specified
+    if (options?.userId) {
+      query = query.where(eq(searchAnalytics.userId, options.userId)) as typeof query;
+    }
+
+    // Order by most recent first
+    query = query.orderBy(desc(searchAnalytics.timestamp)) as typeof query;
+
+    // Apply limit if specified
+    if (options?.limit) {
+      query = query.limit(options.limit) as typeof query;
+    }
+
+    return await query;
   }
 }

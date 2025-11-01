@@ -51,7 +51,6 @@ import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
 import { SMSAnnouncementModal } from '@/components/sms-announcement-modal';
-import { SmartSearch } from '@/components/SmartSearch';
 
 // Lazy load all page/section components for better performance
 const ProjectList = lazy(() => import('@/components/project-list'));
@@ -113,6 +112,7 @@ const Help = lazy(() => import('@/pages/Help'));
 const ExpensesPage = lazy(() => import('@/pages/ExpensesPage'));
 const AdminSettings = lazy(() => import('@/pages/admin-settings'));
 const DesignSystemShowcase = lazy(() => import('@/pages/design-system-showcase'));
+const SmartSearchAdmin = lazy(() => import('@/pages/smart-search-admin'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
@@ -474,6 +474,8 @@ export default function Dashboard({
         return <Help />;
       case 'design-system':
         return <DesignSystemShowcase />;
+      case 'smart-search-admin':
+        return <SmartSearchAdmin />;
       default:
         // Handle project detail pages
         if (projectId) {
@@ -587,11 +589,6 @@ export default function Dashboard({
                 </div>
               </div>
             )}
-
-            {/* Smart Search */}
-            <div className="mr-2 flex-shrink-0">
-              <SmartSearch />
-            </div>
 
             {/* Essential buttons - always visible */}
             <div className="flex items-center gap-0.5 xs:gap-1 relative z-50 flex-shrink-0">
