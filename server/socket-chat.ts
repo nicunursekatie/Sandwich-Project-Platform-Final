@@ -132,6 +132,30 @@ export function setupSocketChat(httpServer: HttpServer) {
       }
     );
 
+    // Handle joining notification channel (for real-time notification updates)
+    socket.on(
+      'join-notification-channel',
+      async (data: { userId: string; userName: string }) => {
+        try {
+          const { userId, userName } = data;
+
+          // Join user-specific notification channel
+          const notificationChannel = `notifications:${userId}`;
+          socket.join(notificationChannel);
+
+          logger.log(
+            `User ${userName} (${userId}) joined notification channel: ${notificationChannel}`
+          );
+
+          // Send confirmation
+          socket.emit('joined-notification-channel', { userId });
+        } catch (error) {
+          logger.error('Error joining notification channel:', error);
+          socket.emit('error', { message: 'Failed to join notification channel' });
+        }
+      }
+    );
+
     // Handle sending messages
     socket.on(
       'send-message',

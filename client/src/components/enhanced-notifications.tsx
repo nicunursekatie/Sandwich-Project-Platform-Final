@@ -35,6 +35,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { NotificationActionButton } from './NotificationActionButton';
+import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 
 interface Notification {
   id: number;
@@ -104,6 +105,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     categories: [] as string[],
     priorities: [] as string[],
   });
+
+  // Connect to Socket.IO for real-time notification updates
+  const { connected: socketConnected } = useNotificationSocket();
 
   if (!user) return null;
 

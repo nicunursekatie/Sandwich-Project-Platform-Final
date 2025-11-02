@@ -10,6 +10,7 @@ import {
 } from '../../../shared/schema';
 import { createStandardMiddleware } from '../../middleware';
 import { logger } from '../../utils/production-safe-logger';
+import { getSocketInstance } from '../../socket-chat';
 
 const actionsRouter = Router();
 
@@ -378,21 +379,24 @@ actionsRouter.post('/:id/actions/:actionType', async (req, res) => {
         .set({ isRead: true })
         .where(eq(notifications.id, notification.id));
 
-      // Track interaction in notification history
-      await db
-        .insert(notificationActionHistory)
-        .values({
-          notificationId: notification.id,
-          userId,
-          actionType: 'clicked',
-          actionStatus: 'success',
-          relatedType: notification.relatedType || null,
-          relatedId: notification.relatedId || null,
-          completedAt: new Date(),
-        })
-        .onConflictDoNothing();
+      // No need to track a separate 'clicked' event - we already have the action history above
 
       logger.info(`Action successful: ${actionType} on notification ${id}`);
+
+      // Emit Socket.IO event for real-time updates
+      const io = getSocketInstance();
+      if (io) {
+        // Broadcast to the user's notification channel
+        io.to(`notifications:${userId}`).emit('notification-action-completed', {
+          notificationId: notification.id,
+          actionType,
+          actionStatus: 'success',
+          userId,
+          result: actionResult,
+        });
+
+        logger.info(`Socket.IO event emitted to notifications:${userId}`);
+      }
 
       res.json({
         success: true,
