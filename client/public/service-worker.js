@@ -50,33 +50,45 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API requests - network first, cache fallback
+  // API requests - network first, cache fallback (GET only)
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Clone the response before caching
-          const responseClone = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(request, responseClone);
-          });
+          // Only cache GET requests - POST/PUT/DELETE cannot be cached
+          if (request.method === 'GET') {
+            const responseClone = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
           return response;
         })
         .catch(() => {
-          // Fallback to cache if network fails
-          return caches.match(request).then((cached) => {
-            if (cached) {
-              return cached;
-            }
-            // Return offline response for API calls
-            return new Response(
-              JSON.stringify({ error: 'Offline', message: 'No network connection' }),
-              { 
-                status: 503, 
-                headers: { 'Content-Type': 'application/json' } 
+          // Fallback to cache if network fails (GET only)
+          if (request.method === 'GET') {
+            return caches.match(request).then((cached) => {
+              if (cached) {
+                return cached;
               }
-            );
-          });
+              // Return offline response for API calls
+              return new Response(
+                JSON.stringify({ error: 'Offline', message: 'No network connection' }),
+                { 
+                  status: 503, 
+                  headers: { 'Content-Type': 'application/json' } 
+                }
+              );
+            });
+          }
+          // For non-GET requests, just return error
+          return new Response(
+            JSON.stringify({ error: 'Offline', message: 'No network connection' }),
+            { 
+              status: 503, 
+              headers: { 'Content-Type': 'application/json' } 
+            }
+          );
         })
     );
     return;
