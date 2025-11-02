@@ -656,31 +656,31 @@ const ActionTracking = () => {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="projects" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Projects ({filteredProjects.length})
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+          <TabsTrigger value="projects" className="flex items-center gap-1 text-xs sm:text-sm">
+            <FileText className="w-4 h-4 shrink-0" />
+            <span className="truncate">Projects ({filteredProjects.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="tasks" className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Tasks ({filteredTasks.length})
+          <TabsTrigger value="tasks" className="flex items-center gap-1 text-xs sm:text-sm">
+            <CheckCircle className="w-4 h-4 shrink-0" />
+            <span className="truncate">Tasks ({filteredTasks.length})</span>
           </TabsTrigger>
           <TabsTrigger
             value="events"
-            className="flex items-center gap-2 relative"
+            className="flex items-center gap-1 text-xs sm:text-sm relative"
           >
-            <Calendar className="w-4 h-4" />
-            Active Events ({sortedActiveEvents.length})
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span className="truncate">Active Events ({sortedActiveEvents.length})</span>
             {sortedActiveEvents.some((e) => e.followUpNeeded) && (
               <Bell className="w-3 h-3 text-yellow-600 animate-pulse" />
             )}
           </TabsTrigger>
           <TabsTrigger
             value="completed-events"
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 text-xs sm:text-sm"
           >
-            <CheckCircle className="w-4 h-4" />
-            Completed Events ({sortedCompletedEvents.length})
+            <CheckCircle className="w-4 h-4 shrink-0" />
+            <span className="truncate">Completed Events ({sortedCompletedEvents.length})</span>
           </TabsTrigger>
         </TabsList>
 
