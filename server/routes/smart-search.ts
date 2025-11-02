@@ -116,7 +116,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
 
   /**
    * POST /api/smart-search/regenerate-embeddings
-   * Regenerate all embeddings (admin only)
+   * Regenerate all embeddings (admin only) - legacy endpoint
    */
   router.post('/regenerate-embeddings', async (req, res) => {
     try {
@@ -135,6 +135,355 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
   });
 
   /**
+   * POST /api/smart-search/regenerate-embeddings-advanced
+   * Regenerate embeddings with options (admin only)
+   */
+  router.post('/regenerate-embeddings-advanced', async (req, res) => {
+    try {
+      // Check if user is admin or super_admin
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const options = req.body;
+
+      // Validate options
+      const allowedModes = ['all', 'missing', 'failed', 'selected'];
+      if (
+        !options ||
+        typeof options.mode !== 'string' ||
+        !allowedModes.includes(options.mode) ||
+        (options.mode === 'selected' && (!Array.isArray(options.featureIds) || options.featureIds.length === 0))
+      ) {
+        return res.status(400).json({
+          error: "Invalid options: 'mode' must be one of 'all', 'missing', 'failed', 'selected'. If 'mode' is 'selected', 'featureIds' must be a non-empty array."
+        });
+      }
+
+      // Start regeneration in background
+      searchService.regenerateEmbeddingsWithOptions(options)
+        .catch(err => console.error('Background regeneration error:', err));
+
+      res.json({ success: true, message: 'Regeneration started' });
+    } catch (error) {
+      console.error('Regenerate embeddings error:', error);
+      res.status(500).json({ error: 'Failed to start regeneration' });
+    }
+  });
+
+  /**
+   * GET /api/smart-search/regeneration-progress
+   * Get regeneration progress (admin only)
+   */
+  router.get('/regeneration-progress', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const progress = searchService.getRegenerationProgress();
+      res.json(progress);
+    } catch (error) {
+      console.error('Get progress error:', error);
+      res.status(500).json({ error: 'Failed to get progress' });
+    }
+  });
+
+  /**
+   * POST /api/smart-search/pause-regeneration
+   * Pause ongoing regeneration (admin only)
+   */
+  router.post('/pause-regeneration', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      searchService.pauseRegeneration();
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Pause error:', error);
+      res.status(500).json({ error: 'Failed to pause' });
+    }
+  });
+
+  /**
+   * POST /api/smart-search/resume-regeneration
+   * Resume paused regeneration (admin only)
+   */
+  router.post('/resume-regeneration', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      searchService.resumeRegeneration();
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Resume error:', error);
+      res.status(500).json({ error: 'Failed to resume' });
+    }
+  });
+
+  /**
+   * POST /api/smart-search/stop-regeneration
+   * Stop ongoing regeneration (admin only)
+   */
+  router.post('/stop-regeneration', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      searchService.stopRegeneration();
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Stop error:', error);
+      res.status(500).json({ error: 'Failed to stop' });
+    }
+  });
+
+  /**
+   * POST /api/smart-search/cost-estimate
+   * Get cost estimate for regeneration (admin only)
+   */
+  router.post('/cost-estimate', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const options = req.body;
+      const estimate = await searchService.getCostEstimate(options);
+      res.json(estimate);
+    } catch (error) {
+      console.error('Cost estimate error:', error);
+      res.status(500).json({ error: 'Failed to estimate cost' });
+    }
+  });
+
+  /**
+   * GET /api/smart-search/analytics-summary
+   * Get analytics summary (admin only)
+   */
+  router.get('/analytics-summary', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const summary = await searchService.getAnalyticsSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error('Analytics summary error:', error);
+      res.status(500).json({ error: 'Failed to get analytics' });
+    }
+  });
+
+  /**
+   * GET /api/smart-search/quality-metrics
+   * Get embedding quality metrics (admin only)
+   */
+  router.get('/quality-metrics', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const metrics = await searchService.getEmbeddingQualityMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Quality metrics error:', error);
+      res.status(500).json({ error: 'Failed to get quality metrics' });
+    }
+  });
+
+  /**
+   * POST /api/smart-search/test-search
+   * Test search functionality (admin only)
+   */
+  router.post('/test-search', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { query, userRole } = req.body;
+      if (typeof query !== 'string' || query.trim().length === 0) {
+        return res.status(400).json({ error: 'Query parameter must be a non-empty string' });
+      }
+
+      const result = await searchService.testSearch(query, userRole);
+      res.json(result);
+    } catch (error) {
+      console.error('Test search error:', error);
+      res.status(500).json({ error: 'Failed to test search' });
+    }
+  });
+
+  /**
+   * POST /api/smart-search/feature
+   * Add a new feature (admin only)
+   */
+  router.post('/feature', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      // Validate required fields
+      const requiredFields = ['title', 'description', 'category', 'route', 'keywords'];
+      const missingFields = requiredFields.filter(field => !(field in req.body));
+      if (missingFields.length > 0) {
+        return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
+      }
+
+      const feature = await searchService.addFeature(req.body);
+      res.json(feature);
+    } catch (error) {
+      console.error('Add feature error:', error);
+      res.status(500).json({ error: 'Failed to add feature' });
+    }
+  });
+
+  /**
+   * PUT /api/smart-search/feature/:id
+   * Update a feature (admin only)
+   */
+  router.put('/feature/:id', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      // Validate and sanitize update payload
+      const allowedFields = ['title', 'description', 'category', 'route', 'keywords', 'requiredPermissions'];
+      const updatePayload: Record<string, any> = {};
+      for (const key of allowedFields) {
+        if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+          updatePayload[key] = req.body[key];
+        }
+      }
+
+      // Prevent attempts to update system fields
+      if ('id' in req.body) {
+        return res.status(400).json({ error: 'Cannot update system-generated field: id' });
+      }
+
+      // Basic type validation
+      if ('title' in updatePayload && typeof updatePayload.title !== 'string') {
+        return res.status(400).json({ error: 'Invalid type for title' });
+      }
+      if ('description' in updatePayload && typeof updatePayload.description !== 'string') {
+        return res.status(400).json({ error: 'Invalid type for description' });
+      }
+      if ('category' in updatePayload && typeof updatePayload.category !== 'string') {
+        return res.status(400).json({ error: 'Invalid type for category' });
+      }
+      if ('route' in updatePayload && typeof updatePayload.route !== 'string') {
+        return res.status(400).json({ error: 'Invalid type for route' });
+      }
+      if ('keywords' in updatePayload && !Array.isArray(updatePayload.keywords)) {
+        return res.status(400).json({ error: 'Invalid type for keywords' });
+      }
+
+      const feature = await searchService.updateFeature(req.params.id, updatePayload);
+      if (!feature) {
+        return res.status(404).json({ error: 'Feature not found' });
+      }
+      res.json(feature);
+    } catch (error) {
+      console.error('Update feature error:', error);
+      res.status(500).json({ error: 'Failed to update feature' });
+    }
+  });
+
+  /**
+   * DELETE /api/smart-search/feature/:id
+   * Delete a feature (admin only)
+   */
+  router.delete('/feature/:id', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const success = await searchService.deleteFeature(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: 'Feature not found' });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete feature error:', error);
+      res.status(500).json({ error: 'Failed to delete feature' });
+    }
+  });
+
+  /**
+   * GET /api/smart-search/export
+   * Export features (admin only)
+   */
+  router.get('/export', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const features = await searchService.exportFeatures();
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', 'attachment; filename=smart-search-features.json');
+      res.json(features);
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ error: 'Failed to export features' });
+    }
+  });
+
+  /**
+   * POST /api/smart-search/import
+   * Import features (admin only)
+   */
+  router.post('/import', async (req, res) => {
+    try {
+      const sessionUser = req.user as SessionUser | undefined;
+      if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      const { features, mode } = req.body;
+
+      // Validate features is an array
+      if (!Array.isArray(features)) {
+        return res.status(400).json({ error: '`features` must be an array' });
+      }
+
+      // Validate mode if provided
+      if (mode && mode !== 'replace' && mode !== 'merge') {
+        return res.status(400).json({ error: "`mode` must be either 'replace' or 'merge'" });
+      }
+
+      await searchService.importFeatures(features, mode || 'merge');
+      res.json({ success: true, message: `Imported ${features.length} features` });
+    } catch (error) {
+      console.error('Import error:', error);
+      res.status(500).json({ error: 'Failed to import features' });
+    }
+  });
+
+  /**
    * POST /api/smart-search/analytics
    * Track search analytics
    */
@@ -142,7 +491,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
     try {
       // Log search analytics for learning and ML improvements
       const sessionUser = req.user as SessionUser | undefined;
-      
+
       await storage.logSearchAnalytics({
         query: req.body.query || '',
         resultId: req.body.resultId || null,
@@ -152,6 +501,15 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
         usedAI: req.body.usedAI || false,
         resultsCount: req.body.resultsCount || 0,
         queryTime: req.body.queryTime || 0,
+      });
+
+      // Also record in service for internal analytics
+      await searchService.recordAnalytics({
+        query: req.body.query || '',
+        resultId: req.body.resultId || null,
+        clicked: req.body.clicked || false,
+        timestamp: new Date(),
+        userId: sessionUser?.id
       });
 
       res.json({ success: true });
