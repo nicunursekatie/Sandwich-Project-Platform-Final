@@ -805,6 +805,21 @@ export class EventRequestsGoogleSheetsService {
           if (result && result.length > 0) {
             // If result has data, it means INSERT succeeded (new record)
             logger.log(`✅ INSERTED new record: ID ${result[0].id} - external_id: ${result[0].externalId} - ${row.organizationName}`);
+            
+            // Add audit logging for Google Sheets sync import
+            await AuditLogger.logEventRequestChange(
+              result[0].id.toString(),
+              null,
+              { ...sanitizedData, id: result[0].id },
+              {
+                userId: 'SYSTEM',
+                ipAddress: 'SYSTEM_SYNC',
+                userAgent: 'Google Sheets - Automatic Sync',
+                sessionId: 'SYNC_SESSION',
+              },
+              { actionType: 'CREATE', operation: 'GOOGLE_SHEETS_SYNC' }
+            );
+            
             createdCount++;
           } else {
             // If result is empty, it means conflict was detected and nothing was done (existing record skipped)
