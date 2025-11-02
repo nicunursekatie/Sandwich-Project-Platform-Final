@@ -9,6 +9,40 @@ import { rateLimiter } from '../utils/rate-limiter';
 const router = Router();
 
 /**
+ * Clean address for geocoding by removing suite/building/apartment numbers
+ * that often cause geocoding failures
+ */
+function cleanAddressForGeocoding(address: string): string {
+  let cleaned = address;
+
+  // Remove suite/building/apartment numbers with various patterns
+  const patternsToRemove = [
+    /\s+building\s+\d+/gi,
+    /\s+bldg\.?\s+\d+/gi,
+    /\s+suite\s+[a-z0-9-]+/gi,
+    /\s+ste\.?\s+[a-z0-9-]+/gi,
+    /\s+apt\.?\s+[a-z0-9-]+/gi,
+    /\s+apartment\s+[a-z0-9-]+/gi,
+    /\s+unit\s+[a-z0-9-]+/gi,
+    /\s+#\s*[a-z0-9-]+/gi,
+    /\s+floor\s+\d+/gi,
+    /\s+\d+(st|nd|rd|th)\s+floor/gi,
+  ];
+
+  for (const pattern of patternsToRemove) {
+    cleaned = cleaned.replace(pattern, '');
+  }
+
+  // Clean up extra spaces
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  
+  // Remove trailing commas that might be left after removal
+  cleaned = cleaned.replace(/,\s*,/g, ',').replace(/,\s*$/, '');
+
+  return cleaned;
+}
+
+/**
  * GET /api/event-map
  * Fetch all event requests that have addresses with their coordinates for map display
  */
@@ -89,16 +123,23 @@ router.post('/geocode/:id', async (req, res) => {
 
     // Rate limit: Wait if needed to comply with Nominatim 1 req/sec policy
     await rateLimiter.checkAndWait('geocode', 1000);
-    logger.log(`Geocoding event ${eventId}: ${event[0].eventAddress}`);
+    
+    // Clean address for geocoding (remove suite/building numbers)
+    const originalAddress = event[0].eventAddress;
+    const cleanedAddress = cleanAddressForGeocoding(originalAddress);
+    
+    logger.log(`Geocoding event ${eventId}:`);
+    logger.log(`  Original: ${originalAddress}`);
+    logger.log(`  Cleaned:  ${cleanedAddress}`);
 
-    // Geocode the address
-    const coordinates = await geocodeAddress(event[0].eventAddress);
+    // Geocode the cleaned address
+    const coordinates = await geocodeAddress(cleanedAddress);
 
     if (!coordinates) {
-      logger.warn(`Geocoding failed for event ${eventId}: "${event[0].eventAddress}"`);
+      logger.warn(`Geocoding failed for event ${eventId}: "${cleanedAddress}" (original: "${originalAddress}")`);
       return res.status(400).json({
         error: 'Failed to geocode address',
-        details: `Could not find coordinates for address: "${event[0].eventAddress}". The address may be incomplete or not recognized by the geocoding service.`
+        details: `Could not find coordinates for address: "${originalAddress}". The address may be incomplete or not recognized by the geocoding service. Tried cleaning to: "${cleanedAddress}"`
       });
     }
 
