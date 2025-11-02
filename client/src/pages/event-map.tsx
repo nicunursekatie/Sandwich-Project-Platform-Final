@@ -96,17 +96,61 @@ const statusColors = {
   cancelled: 'bg-red-100 text-red-800 border-red-300',
 };
 
-// Component to auto-fit map bounds
+// Component to auto-fit map bounds (excludes geographic outliers)
 function MapBounds({ events }: { events: EventMapData[] }) {
   const map = useMap();
 
   useEffect(() => {
-    if (events.length > 0) {
+    if (events.length === 0) return;
+
+    // If only 1-2 events, just fit them all
+    if (events.length <= 2) {
       const bounds = L.latLngBounds(
         events.map(e => [parseFloat(e.latitude!), parseFloat(e.longitude!)])
       );
       map.fitBounds(bounds, { padding: [50, 50] });
+      return;
     }
+
+    // Calculate median lat/lng to find the geographic center
+    const lats = events.map(e => parseFloat(e.latitude!)).sort((a, b) => a - b);
+    const lngs = events.map(e => parseFloat(e.longitude!)).sort((a, b) => a - b);
+    const medianLat = lats[Math.floor(lats.length / 2)];
+    const medianLng = lngs[Math.floor(lngs.length / 2)];
+
+    // Calculate distance from median for each event
+    const eventsWithDistance = events.map(e => {
+      const lat = parseFloat(e.latitude!);
+      const lng = parseFloat(e.longitude!);
+      // Simple Euclidean distance (good enough for filtering outliers)
+      const distance = Math.sqrt(
+        Math.pow(lat - medianLat, 2) + Math.pow(lng - medianLng, 2)
+      );
+      return { event: e, distance, lat, lng };
+    });
+
+    // Calculate threshold: 3x the median distance (excludes far outliers like LA)
+    const distances = eventsWithDistance.map(e => e.distance).sort((a, b) => a - b);
+    const medianDistance = distances[Math.floor(distances.length / 2)];
+    const threshold = medianDistance * 3;
+
+    // Filter out outliers
+    const filteredEvents = eventsWithDistance.filter(e => e.distance <= threshold);
+
+    // If filtering removed all events, use all events
+    if (filteredEvents.length === 0) {
+      const bounds = L.latLngBounds(
+        events.map(e => [parseFloat(e.latitude!), parseFloat(e.longitude!)])
+      );
+      map.fitBounds(bounds, { padding: [50, 50] });
+      return;
+    }
+
+    // Fit bounds to non-outlier events
+    const bounds = L.latLngBounds(
+      filteredEvents.map(e => [e.lat, e.lng])
+    );
+    map.fitBounds(bounds, { padding: [50, 50] });
   }, [events, map]);
 
   return null;
