@@ -1,5 +1,6 @@
 import { storage } from './storage-wrapper';
 import { logger } from './utils/production-safe-logger';
+import { AuditLogger } from './audit-logger';
 
 // Event data extracted from the spreadsheet
 const scheduledEvents = [
@@ -298,6 +299,21 @@ export async function importScheduledEvents(): Promise<{
 
       try {
         const createdEvent = await storage.createEventRequest(newEvent);
+        
+        // Add audit logging for scheduled event import
+        await AuditLogger.logEventRequestChange(
+          createdEvent.id?.toString() || 'unknown',
+          null,
+          createdEvent,
+          {
+            userId: 'SYSTEM',
+            ipAddress: 'SYSTEM_IMPORT',
+            userAgent: 'Scheduled Events Import Script',
+            sessionId: 'IMPORT_SESSION',
+          },
+          { actionType: 'CREATE', operation: 'SCHEDULED_EVENTS_IMPORT' }
+        );
+        
         logger.log(
           `✅ Successfully created event with ID: ${createdEvent.id} for ${event.groupName}`
         );
