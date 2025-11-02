@@ -502,10 +502,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           )}
         </div>
 
-        {/* Main Info Section - Compact Grid */}
+        {/* Main Info Section - 3 Column Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-          {/* Left Column - Event Details & Team Assignments */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Column 1: Event Details */}
+          <div className="space-y-4">
             {/* Event Details */}
             <div className="bg-[#007E8C]/5 rounded-lg p-4 border border-[#007E8C]/10">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] flex items-center gap-2 mb-4">
@@ -513,12 +513,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 Event Details
               </h3>
 
-              {/* Grid layout for Event Details content */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Left Column */}
-                <div className="space-y-3">
-                  {/* Date - Inline Editable */}
-                  <div className="flex items-center gap-2">
+              {/* Event Details Content - Single Column */}
+              <div className="space-y-3">
+                {/* Date - Inline Editable */}
+                <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 shrink-0 text-[#007E8C]" />
               {isEditingThisCard && editingField === dateFieldToEdit ? (
                 <div className="flex items-center gap-2 flex-1">
@@ -778,12 +776,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               )}
             </div>
-                </div>
 
-                {/* Right Column */}
-                <div className="space-y-3">
-                  {/* Sandwiches - Inline Editable */}
-                  <div className="flex items-center gap-2">
+            {/* Sandwiches - Inline Editable */}
+            <div className="flex items-center gap-2">
               <Package className="w-5 h-5 shrink-0" />
               {isEditingThisCard && editingField === 'sandwichTypes' ? (
                 <div className="flex-1 bg-white/10 rounded p-2 space-y-2">
@@ -971,10 +966,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
             </div>
 
-                </div>
-              </div>
-
-              {/* Delivery Logistics - Full width below main grid */}
+            {/* Delivery Logistics */}
               <div className="pt-3 border-t border-[#007E8C]/20 mt-3">
                 <div className="flex items-center gap-2 mb-3">
                   <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
@@ -1094,14 +1086,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Team Assignments - Below Event Details in same column */}
+          {/* Column 2: Team Assignments */}
+          <div className="space-y-4">
             <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-4">
                 {/* Drivers */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -1399,8 +1393,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           </div>
 
-          {/* Contact & Logistics Column - Single column on right */}
-          <div className="lg:col-span-1 space-y-4">
+          {/* Column 3: Contact Information */}
+          <div className="space-y-4">
             {/* Contact Info */}
             <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">

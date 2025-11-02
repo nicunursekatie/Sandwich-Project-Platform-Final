@@ -38,12 +38,12 @@ const CATEGORIES = [
     borderColor: 'border-[#236383]/30',
   },
   {
-    id: 'forms_templates',
-    label: 'Forms & Templates',
-    icon: FileCheck,
-    color: 'text-[#47B3CB]', // Brand light blue
-    bgColor: 'bg-[#47B3CB]/10',
-    borderColor: 'border-[#47B3CB]/30',
+    id: 'brand_marketing',
+    label: 'Brand & Marketing',
+    icon: Briefcase,
+    color: 'text-[#A31C41]', // Brand red
+    bgColor: 'bg-[#A31C41]/10',
+    borderColor: 'border-[#A31C41]/30',
   },
   {
     id: 'operations_safety',
@@ -54,12 +54,28 @@ const CATEGORIES = [
     borderColor: 'border-[#007E8C]/30',
   },
   {
+    id: 'forms_templates',
+    label: 'Forms & Templates',
+    icon: FileCheck,
+    color: 'text-[#47B3CB]', // Brand light blue
+    bgColor: 'bg-[#47B3CB]/10',
+    borderColor: 'border-[#47B3CB]/30',
+  },
+  {
     id: 'training',
     label: 'Training & Resources',
     icon: BookOpen,
     color: 'text-[#FBAD3F]', // Brand orange
     bgColor: 'bg-[#FBAD3F]/10',
     borderColor: 'border-[#FBAD3F]/30',
+  },
+  {
+    id: 'master_documents',
+    label: 'Master Documents',
+    icon: FileEdit,
+    color: 'text-[#236383]', // Brand dark blue
+    bgColor: 'bg-[#236383]/10',
+    borderColor: 'border-[#236383]/30',
   },
 ];
 
@@ -107,6 +123,7 @@ export function Resources() {
   const [recentResources, setRecentResources] = useState<Resource[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -119,6 +136,7 @@ export function Resources() {
   const loadResources = async () => {
     try {
       setLoading(true);
+      setError(null);
       const params = new URLSearchParams({
         sort: sortBy,
         ...(selectedCategory && { category: selectedCategory }),
@@ -126,6 +144,7 @@ export function Resources() {
         ...(selectedTags.length > 0 && { tags: selectedTags.join(',') }),
       });
 
+      console.log('Loading resources from API...');
       const [resourcesRes, favoritesRes, recentRes, tagsRes] = await Promise.all([
         fetch(`/api/resources?${params}`, { credentials: 'include' }),
         fetch('/api/resources/user/favorites', { credentials: 'include' }),
@@ -133,27 +152,42 @@ export function Resources() {
         fetch('/api/resources/tags/all', { credentials: 'include' }),
       ]);
 
+      // Check for critical errors
+      if (!resourcesRes.ok) {
+        const errorText = await resourcesRes.text();
+        console.error('Resources API error:', errorText);
+        throw new Error(`Failed to load resources: ${resourcesRes.status} ${errorText}`);
+      }
+
       if (resourcesRes.ok) {
         const data = await resourcesRes.json();
+        console.log('Resources loaded:', data.length);
         setResources(data);
       }
 
       if (favoritesRes.ok) {
         const data = await favoritesRes.json();
         setFavorites(data);
+      } else {
+        console.warn('Failed to load favorites');
       }
 
       if (recentRes.ok) {
         const data = await recentRes.json();
         setRecentResources(data);
+      } else {
+        console.warn('Failed to load recent resources');
       }
 
       if (tagsRes.ok) {
         const data = await tagsRes.json();
         setTags(data);
+      } else {
+        console.warn('Failed to load tags');
       }
-    } catch (error) {
-      console.error('Error loading resources:', error);
+    } catch (err) {
+      console.error('Error loading resources:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load resources. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -347,6 +381,30 @@ export function Resources() {
     return resources.filter((r) => r.resource.isPinnedGlobal);
   }, [resources]);
 
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="bg-white rounded-lg shadow-sm p-8 max-w-md text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Failed to Load Resources
+          </h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => loadResources()}
+            className="bg-[#236383] text-white px-4 py-2 rounded-lg hover:bg-[#007E8C] transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
   if (loading && resources.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
