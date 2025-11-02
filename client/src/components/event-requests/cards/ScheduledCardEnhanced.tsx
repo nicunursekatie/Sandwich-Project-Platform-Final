@@ -1329,12 +1329,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 )}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Delivery Logistics - Full Width Below Grid */}
-        <div className="mb-4">
-          <div className="bg-[#FBAD3F]/5 rounded-lg p-4 border border-[#FBAD3F]/10">
+            {/* Delivery Logistics */}
+            <div className="bg-[#FBAD3F]/5 rounded-lg p-4 border border-[#FBAD3F]/10">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
                 Delivery Logistics
@@ -1454,6 +1451,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </div>
             </div>
           </div>
+        </div>
 
         {/* Notes & Requirements Section */}
         {(request.message ||
