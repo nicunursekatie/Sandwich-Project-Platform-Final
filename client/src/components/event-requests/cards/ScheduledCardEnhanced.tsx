@@ -971,116 +971,125 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
             </div>
 
-                  {/* Delivery Logistics - Combined with Event Details */}
-                  <div className="pt-3 border-t border-[#007E8C]/20">
-              <div className="flex items-center gap-2 mb-3">
-                <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
-                <h4 className="text-sm uppercase font-bold tracking-wide text-[#236383]">Delivery Logistics</h4>
+                </div>
               </div>
-              
-              {/* Grid layout for Recipients and Overnight Holding */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Recipients - Inline Editable */}
-                <div className="min-w-0">
-                  <div className="text-gray-600 text-xs uppercase mb-1 font-medium">Recipients</div>
-                  {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
-                    <div className="space-y-2">
-                      <MultiRecipientSelector
-                        value={editingValue ? JSON.parse(editingValue) : []}
-                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                        placeholder="Select recipients..."
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90">
-                          <Save className="w-3 h-3 mr-1" /> Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="min-w-0">
-                      {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                        <div className="space-y-2 min-w-0">
-                          <div className="flex flex-wrap gap-2 min-w-0">
-                            {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
-                              const recipientName = resolveRecipientName(id);
-                              return (
-                                <Badge key={idx} className="bg-white text-gray-900 border-2 border-gray-300 text-base font-semibold px-3 py-1.5 shadow-sm inline-flex items-start gap-2 max-w-full min-w-0">
-                                  <span className="text-lg shrink-0 pt-0.5">🏠</span>
-                                  <span className="break-words min-w-0">{recipientName}</span>
-                                </Badge>
-                              );
-                            })}
-                            {request.assignedRecipientIds.length > 3 && (
-                              <Badge className="bg-white/90 text-gray-700 border-2 border-gray-300 text-base font-semibold px-3 py-1.5 shadow-sm shrink-0">
-                                +{request.assignedRecipientIds.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      ) : request.recipientsCount ? (
-                        <Badge className="bg-white text-gray-900 border-2 border-gray-300 text-base font-semibold px-3 py-1.5 shadow-sm inline-flex items-start gap-2 max-w-full min-w-0">
-                          <span className="text-lg shrink-0 pt-0.5">🏠</span>
-                          <span className="break-words min-w-0">Unknown Host ({request.recipientsCount})</span>
-                        </Badge>
-                      ) : (
-                        <div className="text-gray-600 text-sm">No recipients assigned</div>
-                      )}
-                      {canEdit && (
+
+              {/* Delivery Logistics - Full width below main grid */}
+              <div className="pt-3 border-t border-[#007E8C]/20 mt-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
+                  <h4 className="text-sm uppercase font-bold tracking-wide text-[#236383]">Delivery Logistics</h4>
+                </div>
+                
+                {/* Horizontal layout for compact display */}
+                <div className="flex flex-col sm:flex-row gap-4 items-start">
+                  {/* Recipients - Compact display with truncation */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs uppercase text-gray-600 font-medium">Recipients</span>
+                      {canEdit && !(isEditingThisCard && editingField === 'assignedRecipientIds') && (
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
-                          className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2 mt-2"
+                          className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
                         >
-                          <Edit2 className="w-3 h-3 mr-1" /> Edit Recipients
+                          <Edit2 className="w-3 h-3" />
                         </Button>
                       )}
                     </div>
-                  )}
-                </div>
+                    {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+                      <div className="space-y-2">
+                        <MultiRecipientSelector
+                          value={editingValue ? JSON.parse(editingValue) : []}
+                          onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                          placeholder="Select recipients..."
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90">
+                            <Save className="w-3 h-3 mr-1" /> Save
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="min-w-0">
+                        {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 items-center min-w-0">
+                            {request.assignedRecipientIds.slice(0, 4).map((id, idx) => {
+                              const recipientName = resolveRecipientName(id);
+                              // Truncate long names for display
+                              const displayName = recipientName.length > 40 
+                                ? recipientName.substring(0, 37) + '...'
+                                : recipientName;
+                              return (
+                                <Badge 
+                                  key={idx} 
+                                  title={recipientName}
+                                  className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1 max-w-full min-w-0"
+                                >
+                                  <span className="text-sm shrink-0">🏠</span>
+                                  <span className="truncate">{displayName}</span>
+                                </Badge>
+                              );
+                            })}
+                            {request.assignedRecipientIds.length > 4 && (
+                              <Badge className="bg-white/90 text-gray-700 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm shrink-0">
+                                +{request.assignedRecipientIds.length - 4} more
+                              </Badge>
+                            )}
+                          </div>
+                        ) : request.recipientsCount ? (
+                          <Badge className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
+                            <span className="text-sm">🏠</span>
+                            <span>Unknown Host ({request.recipientsCount})</span>
+                          </Badge>
+                        ) : (
+                          <div className="text-gray-600 text-sm">No recipients assigned</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-                {/* Overnight Holding - Inline Editable */}
-                <div className="min-w-0">
-                  <div className="text-gray-600 text-xs uppercase mb-1 font-medium">Overnight Holding</div>
-                  {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
-                    <div className="flex flex-col gap-2">
-                      <Input
-                        value={editingValue}
-                        onChange={(e) => setEditingValue(e.target.value)}
-                        className="bg-white text-gray-900"
-                        placeholder="Overnight holding location"
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90">
-                          <Save className="w-3 h-3 mr-1" /> Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="text-base font-semibold">
-                        {request.overnightHoldingLocation || 'Not set'}
-                      </div>
-                      {canEdit && (
+                  {/* Overnight Holding - Compact display */}
+                  <div className="sm:w-48 shrink-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding</span>
+                      {canEdit && !isEditingThisCard && editingField !== 'overnightHoldingLocation' && (
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
-                          className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2 mt-1"
+                          className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
                         >
-                          <Edit2 className="w-3 h-3 mr-1" /> Edit
+                          <Edit2 className="w-3 h-3" />
                         </Button>
                       )}
                     </div>
-                  )}
-                </div>
-              </div>
+                    {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
+                      <div className="flex flex-col gap-2">
+                        <Input
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="bg-white text-gray-900 h-8 text-sm"
+                          placeholder="Overnight holding location"
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
+                            <Save className="w-3 h-3 mr-1" /> Save
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm font-medium text-gray-900 truncate" title={request.overnightHoldingLocation || undefined}>
+                        {request.overnightHoldingLocation || 'Not set'}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

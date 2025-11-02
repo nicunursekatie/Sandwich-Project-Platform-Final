@@ -198,6 +198,52 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.KUDOS_MANAGE,
     ],
   },
+  RESOURCES: {
+    label: 'Resources & Tools',
+    permissions: [
+      PERMISSIONS.RESOURCES_VIEW,
+      PERMISSIONS.RESOURCES_EDIT,
+      PERMISSIONS.TOOLKIT_VIEW,
+      PERMISSIONS.TOOLKIT_EDIT,
+    ],
+  },
+  MEETINGS: {
+    label: 'Meetings',
+    permissions: [
+      PERMISSIONS.MEETINGS_VIEW,
+      PERMISSIONS.MEETINGS_ADD,
+      PERMISSIONS.MEETINGS_EDIT,
+      PERMISSIONS.MEETINGS_DELETE,
+    ],
+  },
+  EXPENSES: {
+    label: 'Expenses & Receipts',
+    permissions: [
+      PERMISSIONS.EXPENSES_VIEW,
+      PERMISSIONS.EXPENSES_ADD,
+      PERMISSIONS.EXPENSES_EDIT_OWN,
+      PERMISSIONS.EXPENSES_EDIT_ALL,
+      PERMISSIONS.EXPENSES_DELETE_OWN,
+      PERMISSIONS.EXPENSES_DELETE_ALL,
+      PERMISSIONS.EXPENSES_APPROVE,
+    ],
+  },
+  ANALYTICS: {
+    label: 'Analytics & Reporting',
+    permissions: [
+      PERMISSIONS.ANALYTICS_VIEW,
+      PERMISSIONS.ANALYTICS_EXPORT,
+      PERMISSIONS.ANALYTICS_ADVANCED,
+    ],
+  },
+  DATA_MANAGEMENT: {
+    label: 'Data Import/Export',
+    permissions: [
+      PERMISSIONS.DATA_IMPORT,
+      PERMISSIONS.DATA_EXPORT,
+      PERMISSIONS.DATA_DELETE_BULK,
+    ],
+  },
   NAVIGATION: {
     label: 'Navigation Tabs',
     permissions: [
