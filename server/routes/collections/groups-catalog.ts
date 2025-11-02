@@ -647,26 +647,39 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         const decodedOrgName = decodeURIComponent(organizationName);
         const canonicalSearchName = canonicalizeOrgName(decodedOrgName);
 
-        // Get all event requests for this organization using canonical matching
+        // Get all event requests for this organization using FUZZY canonical matching
         const eventRequests = await storage.getAllEventRequests();
         const orgEventRequests = eventRequests.filter(
-          (request) =>
-            canonicalizeOrgName(request.organizationName) ===
-            canonicalSearchName
+          (request) => {
+            const requestCanonical = canonicalizeOrgName(request.organizationName);
+            const matches = organizationNamesMatch(requestCanonical, canonicalSearchName);
+            if (matches) {
+              logger.log(`[Groups Catalog Details] Matched event request: ${request.organizationName} (canonical: ${requestCanonical}) with search: ${decodedOrgName} (canonical: ${canonicalSearchName})`);
+            }
+            return matches;
+          }
         );
+        
+        logger.log(`[Groups Catalog Details] Found ${orgEventRequests.length} event requests for ${decodedOrgName}`);
 
-        // Get all sandwich collections for this organization using canonical matching
+        // Get all sandwich collections for this organization using FUZZY canonical matching
         const allCollections = await storage.getAllSandwichCollections();
         const orgCollections = allCollections.filter((collection) => {
-          // Check if organization name matches in any of the group fields using canonical names
+          // Check if organization name matches in any of the group fields using FUZZY canonical matching
           const matchesGroup1 =
             collection.group1Name &&
-            canonicalizeOrgName(collection.group1Name) === canonicalSearchName;
+            organizationNamesMatch(
+              canonicalizeOrgName(collection.group1Name),
+              canonicalSearchName
+            );
           const matchesGroup2 =
             collection.group2Name &&
-            canonicalizeOrgName(collection.group2Name) === canonicalSearchName;
+            organizationNamesMatch(
+              canonicalizeOrgName(collection.group2Name),
+              canonicalSearchName
+            );
 
-          // Check JSON group collections using canonical names
+          // Check JSON group collections using FUZZY canonical matching
           let matchesGroupCollections = false;
           if (
             collection.groupCollections &&
@@ -675,7 +688,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             matchesGroupCollections = collection.groupCollections.some(
               (group: any) =>
                 group.name &&
-                canonicalizeOrgName(group.name) === canonicalSearchName
+                organizationNamesMatch(
+                  canonicalizeOrgName(group.name),
+                  canonicalSearchName
+                )
             );
           }
 
