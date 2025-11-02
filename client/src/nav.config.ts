@@ -331,6 +331,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'wishlist',
     permission: PERMISSIONS.NAV_WISHLIST,
     group: 'documentation',
+    highlighted: true,
   },
   {
     id: 'cooler-tracking',
