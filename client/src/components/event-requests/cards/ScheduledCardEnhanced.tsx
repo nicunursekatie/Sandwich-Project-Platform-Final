@@ -767,12 +767,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               )}
             </div>
-                </div>
 
-                {/* Right Column */}
-                <div className="space-y-3">
-                  {/* Sandwiches - Inline Editable */}
-                  <div className="flex items-center gap-2">
+            {/* Sandwiches - Inline Editable */}
+            <div className="flex items-center gap-2">
               <Package className="w-5 h-5 shrink-0" />
               {isEditingThisCard && editingField === 'sandwichTypes' ? (
                 <div className="flex-1 bg-white/10 rounded p-2 space-y-2">
@@ -1018,7 +1015,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
+
               <div className="space-y-3">
+
                 {/* Drivers */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
