@@ -212,9 +212,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     displayName: string;
     name: string;
     hostLocationName: string;
+    email?: string;
+    phone?: string;
   }>>({
-    queryKey: ['/api/hosts/host-contacts'],
+    queryKey: ['/api/host-contacts'],
     staleTime: 1 * 60 * 1000,
+    queryFn: async () => {
+      const response = await fetch('/api/host-contacts');
+      if (!response.ok) throw new Error('Failed to fetch host contacts');
+      return response.json();
+    },
   });
 
   // Debug logging for host contacts
@@ -266,7 +273,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           const hostContact = hostContacts.find(hc => hc.id === numId);
           if (hostContact) {
             console.log(`resolveRecipientName: Found host contact:`, hostContact);
-            return hostContact.displayName || hostContact.name || hostContact.hostLocationName;
+            // Prefer displayName (includes host location), then name, then hostLocationName
+            if (hostContact.displayName) {
+              return hostContact.displayName;
+            }
+            if (hostContact.name) {
+              return hostContact.name;
+            }
+            if (hostContact.hostLocationName) {
+              return hostContact.hostLocationName;
+            }
           }
           console.log(`resolveRecipientName: Host contact ${numId} not found, checking host locations`);
           const hostLocation = hostLocations.find(h => h.id === numId);
@@ -275,7 +291,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             return hostLocation.name;
           }
           // If host not found, return a helpful message instead of just the ID
-          console.warn(`resolveRecipientName: Host ${numId} not found in either contacts or locations!`);
+          console.warn(`resolveRecipientName: Host ${numId} not found in either contacts or locations! Available IDs:`, hostContacts.map(h => h.id));
           return `Host ID ${numId}`;
         } else if (type === 'recipient') {
           const recipient = recipients.find(r => r.id === numId);
@@ -292,7 +308,18 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       const numId = Number(recipientId);
       // Check host contacts first (more specific), then locations, then recipients
       const hostContact = hostContacts.find(h => h.id === numId);
-      if (hostContact) return hostContact.displayName || hostContact.name;
+      if (hostContact) {
+        // Prefer displayName (includes host location), then name, then hostLocationName
+        if (hostContact.displayName) {
+          return hostContact.displayName;
+        }
+        if (hostContact.name) {
+          return hostContact.name;
+        }
+        if (hostContact.hostLocationName) {
+          return hostContact.hostLocationName;
+        }
+      }
       const hostLocation = hostLocations.find(h => h.id === numId);
       if (hostLocation) return hostLocation.name;
       const recipient = recipients.find(r => r.id === numId);
@@ -982,8 +1009,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {driverNeeded > 0 ? (
                       <>
                         {parsePostgresArray(request.assignedDriverIds).map((id) => (
-                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-3 py-1.5">
-                            <span className="text-base">{extractCustomName(id) || resolveUserName(id)}</span>
+                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30">
+                            <span className="text-base font-bold text-[#236383]">{extractCustomName(id) || resolveUserName(id)}</span>
                             <div className="flex items-center gap-1">
                               <SendKudosButton
                                 recipientId={id}
@@ -1009,8 +1036,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           </div>
                         ))}
                         {request.assignedVanDriverId && (
-                          <div className="flex items-center justify-between bg-blue-100 rounded px-3 py-1.5 border-2 border-blue-300">
-                            <span className="text-base font-semibold text-blue-900">
+                          <div className="flex items-center justify-between bg-blue-100 rounded px-3 py-1.5 border-2 border-blue-400">
+                            <span className="text-base font-bold text-blue-900">
                               {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
                             </span>
                             <div className="flex items-center gap-1">
@@ -1101,8 +1128,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           const detailName = (request.speakerDetails as any)?.[id]?.name;
                           const displayName = (detailName && !/^\d+$/.test(detailName)) ? detailName : (extractCustomName(id) || resolveUserName(id));
                           return (
-                            <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-3 py-1.5">
-                              <span className="text-base">{displayName}</span>
+                            <div key={id} className="flex items-center justify-between bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30">
+                              <span className="text-base font-bold text-[#236383]">{displayName}</span>
                               <div className="flex items-center gap-1">
                                 <SendKudosButton
                                   recipientId={id}
@@ -1189,8 +1216,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {volunteerNeeded > 0 ? (
                       <>
                         {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
-                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/10 rounded px-3 py-1.5">
-                            <span className="text-base">{extractCustomName(id) || resolveUserName(id)}</span>
+                          <div key={id} className="flex items-center justify-between bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30">
+                            <span className="text-base font-bold text-[#236383]">{extractCustomName(id) || resolveUserName(id)}</span>
                             <div className="flex items-center gap-1">
                               <SendKudosButton
                                 recipientId={id}
