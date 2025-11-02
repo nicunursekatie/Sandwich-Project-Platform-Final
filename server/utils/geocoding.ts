@@ -32,13 +32,14 @@ export async function geocodeAddress(address: string): Promise<{ latitude: strin
 
     if (data && data.length > 0) {
       const result = data[0];
+      logger.log(`Successfully geocoded address: ${address} -> (${result.lat}, ${result.lon})`);
       return {
         latitude: result.lat,
         longitude: result.lon,
       };
     }
 
-    logger.warn(`No geocoding results found for address: ${address}`);
+    logger.warn(`No geocoding results found for address: "${address}" - API returned ${data?.length || 0} results`);
     return null;
   } catch (error) {
     logger.error('Error geocoding address:', error);

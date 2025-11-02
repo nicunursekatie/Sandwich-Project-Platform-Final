@@ -146,10 +146,11 @@ export default function EventMapView() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      const errorDetails = error?.message || error?.details || 'Unable to find coordinates for this address';
       toast({
         title: 'Geocoding Failed',
-        description: error.message,
+        description: errorDetails,
         variant: 'destructive',
       });
     },

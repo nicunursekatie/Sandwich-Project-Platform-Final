@@ -95,7 +95,11 @@ router.post('/geocode/:id', async (req, res) => {
     const coordinates = await geocodeAddress(event[0].eventAddress);
 
     if (!coordinates) {
-      return res.status(400).json({ error: 'Failed to geocode address' });
+      logger.warn(`Geocoding failed for event ${eventId}: "${event[0].eventAddress}"`);
+      return res.status(400).json({
+        error: 'Failed to geocode address',
+        details: `Could not find coordinates for address: "${event[0].eventAddress}". The address may be incomplete or not recognized by the geocoding service.`
+      });
     }
 
     // Update event with coordinates
