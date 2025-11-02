@@ -216,14 +216,14 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
 
-  // PLANNING & COORDINATION
+  // EVENT PLANNING (daily operations)
   {
     id: 'event-requests',
     label: 'Event Requests',
     icon: Calendar,
     href: 'event-requests',
     permission: PERMISSIONS.NAV_EVENT_PLANNING,
-    group: 'planning',
+    group: 'event-planning',
     highlighted: true,
   },
   {
@@ -232,48 +232,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: MapPin,
     href: 'event-map',
     permission: PERMISSIONS.NAV_EVENT_PLANNING,
-    group: 'planning',
-  },
-  {
-    id: 'historical-import',
-    label: 'Historical Import',
-    icon: FileSpreadsheet,
-    href: 'historical-import',
-    permission: PERMISSIONS.DATA_IMPORT,
-    group: 'planning',
-  },
-  {
-    id: 'events',
-    label: 'Events Google Sheet',
-    icon: Sheet,
-    href: 'events',
-    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
-    group: 'planning',
-  },
-  {
-    id: 'signup-genius',
-    label: 'Sign Up Genius',
-    icon: Link,
-    href: 'signup-genius',
-    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
-    group: 'planning',
-  },
-  {
-    id: 'projects',
-    label: 'Projects',
-    icon: ListTodo,
-    href: 'projects',
-    permission: PERMISSIONS.PROJECTS_VIEW,
-    group: 'planning',
-  },
-  {
-    id: 'meetings',
-    label: 'Meetings',
-    icon: ClipboardList,
-    href: 'meetings',
-    permission: PERMISSIONS.MEETINGS_VIEW,
-    group: 'planning',
-    highlighted: true,
+    group: 'event-planning',
   },
   {
     id: 'event-reminders',
@@ -281,15 +240,52 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Clock,
     href: 'event-reminders',
     permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
-    group: 'planning',
+    group: 'event-planning',
   },
+  {
+    id: 'signup-genius',
+    label: 'Sign Up Genius',
+    icon: Link,
+    href: 'signup-genius',
+    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
+    group: 'event-planning',
+  },
+  {
+    id: 'events',
+    label: 'Events Google Sheet',
+    icon: Sheet,
+    href: 'events',
+    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
+    group: 'event-planning',
+  },
+
+  // STRATEGIC PLANNING (long-term coordination)
+  {
+    id: 'projects',
+    label: 'Projects',
+    icon: ListTodo,
+    href: 'projects',
+    permission: PERMISSIONS.PROJECTS_VIEW,
+    group: 'strategic-planning',
+  },
+  {
+    id: 'meetings',
+    label: 'Meetings',
+    icon: ClipboardList,
+    href: 'meetings',
+    permission: PERMISSIONS.MEETINGS_VIEW,
+    group: 'strategic-planning',
+    highlighted: true,
+  },
+
+  // ANALYTICS & REPORTS (insights & metrics)
   {
     id: 'analytics',
     label: 'Analytics',
     icon: BarChart3,
     href: 'analytics',
     permission: PERMISSIONS.ANALYTICS_VIEW,
-    group: 'planning',
+    group: 'analytics',
   },
   {
     id: 'grant-metrics',
@@ -297,7 +293,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Trophy,
     href: 'grant-metrics',
     permission: PERMISSIONS.NAV_GRANT_METRICS,
-    group: 'planning',
+    group: 'analytics',
   },
   {
     id: 'weekly-monitoring',
@@ -305,7 +301,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Clock,
     href: 'weekly-monitoring',
     permission: PERMISSIONS.NAV_WEEKLY_MONITORING,
-    group: 'planning',
+    group: 'analytics',
   },
 
   // DOCUMENTATION
@@ -365,6 +361,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: UserCog,
     href: 'user-management',
     permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
+    group: 'admin',
+  },
+  {
+    id: 'historical-import',
+    label: 'Historical Import',
+    icon: FileSpreadsheet,
+    href: 'historical-import',
+    permission: PERMISSIONS.DATA_IMPORT,
     group: 'admin',
   },
   {

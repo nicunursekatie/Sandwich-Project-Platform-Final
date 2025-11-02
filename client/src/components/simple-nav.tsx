@@ -118,7 +118,9 @@ export default function SimpleNav({
     const getGroupLabel = (group: string) => {
       const labels = {
         operations: 'OPERATIONS',
-        planning: 'PLANNING & COORDINATION',
+        'event-planning': 'EVENT PLANNING',
+        'strategic-planning': 'STRATEGIC PLANNING',
+        analytics: 'ANALYTICS & REPORTS',
         communication: 'COMMUNICATION',
         documentation: 'DOCUMENTATION',
         admin: 'ADMIN',
