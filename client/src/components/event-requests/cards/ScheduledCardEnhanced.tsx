@@ -502,10 +502,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           )}
         </div>
 
-        {/* Main Info Section - 3 Column Layout */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          {/* COLUMN 1: Event Details */}
-          <div className="space-y-3">
+        {/* Main Info Section - 3 Column Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          {/* Column 1: Event Details */}
+          <div className="space-y-4">
+            {/* Event Details Card */}
+            <div className="bg-[#007E8C]/5 rounded-lg p-4 border border-[#007E8C]/10">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] flex items-center gap-2 mb-4">
+                <Calendar className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
+                Event Details
+              </h3>
+              <div className="space-y-3">
             {/* Date - Inline Editable */}
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 shrink-0 text-[#007E8C]" />
@@ -956,66 +963,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               )}
             </div>
+              </div>
+            </div>
           </div>
 
-          {/* COLUMN 2: Event Organizer */}
-          <div className="space-y-3">
-            {(request.firstName || request.lastName) && (
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 shrink-0 text-[#007E8C]" />
-                <span className="text-base font-semibold text-gray-900">
-                  {request.firstName} {request.lastName}
-                </span>
-              </div>
-            )}
-            {request.email && (
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 shrink-0 text-[#007E8C]" />
-                <a href={`mailto:${request.email}`} className="text-base text-gray-900 hover:underline">
-                  {request.email}
-                </a>
-              </div>
-            )}
-            {request.phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 shrink-0 text-[#007E8C]" />
-                <a href={`tel:${request.phone}`} className="text-base text-gray-900 hover:underline">
-                  {request.phone}
-                </a>
-              </div>
-            )}
-            {(request.tspContact || request.customTspContact) && (
-              <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
-                <UserPlus className="w-4 h-4 shrink-0 text-[#007E8C]" />
-                <span className="text-base font-semibold text-gray-900">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
-                {canEdit && (
-                  <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit TSP contact">
-                    <Edit2 className="w-3 h-3" aria-hidden="true" />
-                  </Button>
-                )}
-              </div>
-            )}
-            {!request.tspContact && !request.customTspContact && (
-              <Button
-                size="sm"
-                onClick={onAssignTspContact}
-                className="w-full bg-[#007E8C] hover:bg-[#007E8C]/90 text-white mt-2"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Assign TSP Contact
-              </Button>
-            )}
-          </div>
-
-          {/* COLUMN 3: Team & Delivery */}
+          {/* Column 2: Team Assignments */}
           <div className="space-y-4">
-            {/* Team Assignments */}
             <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
-
               <div className="space-y-3">
 
                 {/* Drivers */}
@@ -1313,9 +1271,70 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Delivery Logistics */}
-            <div className="bg-[#FBAD3F]/5 rounded-lg p-4 border border-[#FBAD3F]/10">
+          {/* Column 3: Contact Information */}
+          <div className="space-y-4">
+            {/* Event Organizer */}
+            <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
+                Event Organizer
+              </h3>
+              <div className="space-y-2 text-sm text-gray-900">
+                {(request.firstName || request.lastName) && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 shrink-0" />
+                    <span className="text-base font-semibold">
+                      {request.firstName} {request.lastName}
+                    </span>
+                  </div>
+                )}
+                {request.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 shrink-0" />
+                    <a href={`mailto:${request.email}`} className="hover:underline">
+                      {request.email}
+                    </a>
+                  </div>
+                )}
+                {request.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <a href={`tel:${request.phone}`} className="hover:underline">
+                      {request.phone}
+                    </a>
+                  </div>
+                )}
+                {(request.tspContact || request.customTspContact) && (
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/30">
+                    <UserPlus className="w-4 h-4 shrink-0" />
+                    <span className="text-base font-semibold">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
+                    {canEdit && (
+                      <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-white hover:bg-white/20" aria-label="Edit TSP contact">
+                        <Edit2 className="w-3 h-3" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {!request.tspContact && !request.customTspContact && (
+                  <Button
+                    size="sm"
+                    onClick={onAssignTspContact}
+                    className="w-full bg-white/20 hover:bg-white/30 text-white mt-2"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Assign TSP Contact
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Delivery Logistics - Full Width Below Grid */}
+        <div className="mb-4">
+          <div className="bg-[#FBAD3F]/5 rounded-lg p-4 border border-[#FBAD3F]/10">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
                 Delivery Logistics
