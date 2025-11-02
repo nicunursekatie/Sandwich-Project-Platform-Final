@@ -1454,7 +1454,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </div>
             </div>
           </div>
-        </div>
 
         {/* Notes & Requirements Section */}
         {(request.message ||
