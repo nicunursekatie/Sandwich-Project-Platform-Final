@@ -503,11 +503,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         </div>
 
         {/* Main Info Section - 3 Column Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 lg:items-start">
           {/* Column 1: Event Details */}
-          <div className="space-y-4">
+          <div className="flex flex-col h-full">
             {/* Event Details Card */}
-            <div className="bg-[#007E8C]/5 rounded-lg p-4 border border-[#007E8C]/10">
+            <div className="bg-[#007E8C]/5 rounded-lg p-4 border border-[#007E8C]/10 flex-1">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] flex items-center gap-2 mb-4">
                 <Calendar className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
                 Event Details
@@ -968,8 +968,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
 
           {/* Column 2: Team Assignments */}
-          <div className="space-y-4">
-            <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10">
+          <div className="flex flex-col h-full">
+            <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10 flex-1">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
@@ -1274,7 +1274,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
 
           {/* Column 3: Contact Information */}
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4 h-full">
             {/* Event Organizer */}
             <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
