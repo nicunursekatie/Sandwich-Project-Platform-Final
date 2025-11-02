@@ -15,7 +15,7 @@ import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
 import { AuditLogger } from '../audit-logger';
 import { db } from '../db';
-import { eq, desc, and, sql, gte } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, or } from 'drizzle-orm';
 import { EmailNotificationService } from '../services/email-notification-service';
 import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
@@ -3047,8 +3047,20 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
     // Build query conditions using Drizzle ORM
     const conditions = [];
 
-    // Always filter for event_requests table
-    conditions.push(eq(auditLogs.tableName, 'event_requests'));
+    // Filter for event_requests table by default, but allow users table entries for user management
+    const tableFilter = req.query.tableName as string;
+    if (tableFilter === 'users' || tableFilter === 'user_management') {
+      // Allow both users and user_management for backward compatibility
+      conditions.push(
+        or(
+          eq(auditLogs.tableName, 'users'),
+          eq(auditLogs.tableName, 'user_management')
+        )
+      );
+    } else {
+      // Default to event_requests table
+      conditions.push(eq(auditLogs.tableName, 'event_requests'));
+    }
 
     // Add time filter if specified - using SQL comparison as a workaround
     if (hours > 0) {
@@ -3114,8 +3126,15 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
           : null;
       } catch {}
 
-      const user = userMap.get(userId);
+      const user = userMap.get(userId); // User who made the change
       const event = eventMap.get(recordId);
+      const tableName = String(getField(log, 'tableName', 'table_name'));
+      
+      // For user management logs, get the user being updated
+      let updatedUser = null;
+      if (tableName === 'users' || tableName === 'user_management') {
+        updatedUser = userMap.get(recordId) || newData || oldData;
+      }
 
       // Extract follow-up context and audit metadata from newData or oldData
       let followUpMethod = null;
@@ -3124,6 +3143,31 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
       let actionDescription = '';
       let changeDescription = '';
       let statusChange = null;
+
+      // Extract change metadata from _auditMetadata if available
+      const metadata = newData?._auditMetadata || oldData?._auditMetadata;
+      if (metadata) {
+        if (metadata.summary) {
+          changeDescription = metadata.summary;
+        }
+        if (metadata.changes && Array.isArray(metadata.changes)) {
+          // Build a summary of changes from the metadata
+          const changeDescriptions = metadata.changes
+            .slice(0, 3)
+            .map((change: any) => {
+              const fieldName = change.fieldDisplayName || change.fieldName || change.field;
+              const oldVal = change.oldValue === null || change.oldValue === undefined ? 'Not set' : change.oldValue;
+              const newVal = change.newValue === null || change.newValue === undefined ? 'Not set' : change.newValue;
+              return `${fieldName}: ${oldVal} → ${newVal}`;
+            });
+          if (changeDescriptions.length > 0) {
+            changeDescription = changeDescriptions.join(', ');
+            if (metadata.changes.length > 3) {
+              changeDescription += ` (+${metadata.changes.length - 3} more)`;
+            }
+          }
+        }
+      }
 
       // Try to extract follow-up context from newData first, then oldData
       const dataWithContext = newData || oldData;
@@ -3138,8 +3182,11 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
                            dataWithContext.actionDescription || 
                            getField(log, 'action', 'action') || '';
         
-        changeDescription = dataWithContext._auditMetadata?.changeDescription || 
-                           dataWithContext.changeDescription || '';
+        // Only override changeDescription if we don't already have one from metadata
+        if (!changeDescription) {
+          changeDescription = dataWithContext._auditMetadata?.changeDescription || 
+                             dataWithContext.changeDescription || '';
+        }
         
         // Extract status change information
         statusChange = dataWithContext._auditMetadata?.statusChange || 
@@ -3151,22 +3198,45 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
         }
       }
 
+      // For user management entries, show the updated user's name instead of organization/contact
+      let organizationName = 'Unknown Organization';
+      let contactName = 'Unknown Contact';
+      
+      if (tableName === 'users' || tableName === 'user_management') {
+        // This is a user profile update - show the updated user's info
+        const displayName = updatedUser?.displayName ||
+                          (updatedUser?.firstName && updatedUser?.lastName 
+                            ? `${updatedUser.firstName} ${updatedUser.lastName}`.trim()
+                            : updatedUser?.email?.split('@')[0] ||
+                              updatedUser?.email ||
+                              'Unknown User');
+        organizationName = displayName;
+        contactName = updatedUser?.email || updatedUser?.preferredEmail || '';
+      } else {
+        // Event request entry - use existing logic
+        organizationName =
+          event?.organizationName ||
+          oldData?.organizationName ||
+          newData?.organizationName ||
+          'Unknown Organization';
+        contactName = event
+          ? `${event.firstName || ''} ${event.lastName || ''}`.trim()
+          : oldData
+            ? `${oldData.firstName || ''} ${oldData.lastName || ''}`.trim()
+            : newData
+              ? `${newData.firstName || ''} ${newData.lastName || ''}`.trim()
+              : 'Unknown Contact';
+      }
+
       return {
         id: getField(log, 'id', 'id'),
         action: getField(log, 'action', 'action'),
         eventId: recordId,
         timestamp: getField(log, 'timestamp', 'timestamp'),
         userId,
-        userEmail: user?.email || user?.preferredEmail || 'Unknown User',
-        organizationName:
-          event?.organizationName ||
-          oldData?.organizationName ||
-          'Unknown Organization',
-        contactName: event
-          ? `${event.firstName} ${event.lastName}`
-          : oldData
-            ? `${oldData.firstName} ${oldData.lastName}`
-            : 'Unknown Contact',
+        userEmail: user?.email || user?.preferredEmail || userId || 'Unknown User',
+        organizationName,
+        contactName,
         // CRITICAL FIX: Expose oldData/newData at top level (not buried in details)
         oldData,
         newData,
@@ -3179,6 +3249,8 @@ router.get('/audit-logs', isAuthenticated, async (req, res) => {
         statusChange,
         // Keep details for backward compatibility but make it secondary
         details: { oldData, newData },
+        // Include table name for filtering
+        tableName,
       };
     });
 

@@ -179,6 +179,9 @@ export class UserService implements IUserService {
     requestUserId?: string
   ): Promise<any> {
     try {
+      // Get old user data before update for audit logging
+      const oldUser = await storage.getUserById(id);
+      
       // Build update object with only provided fields
       const updateData: any = {};
       if (profileData.email !== undefined) updateData.email = profileData.email;
@@ -196,14 +199,18 @@ export class UserService implements IUserService {
 
       const updatedUser = await storage.updateUser(id, updateData);
 
-      // Log the user profile update
+      // Log the user profile update with old and new data for better audit trail
       if (requestUserId) {
-        await AuditLogger.log(
-          'user_profile_updated',
-          'user_management',
+        await AuditLogger.logEntityChange(
+          'users',
           id,
-          { updatedFields: Object.keys(updateData), newValues: updateData },
-          { userId: requestUserId }
+          oldUser || {},
+          updatedUser || {},
+          { userId: requestUserId },
+          {
+            actionType: 'user_profile_updated',
+            section: 'user_management'
+          }
         );
       }
 

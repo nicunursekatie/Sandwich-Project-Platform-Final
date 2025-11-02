@@ -69,6 +69,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
   const [formData, setFormData] = useState({
     eventDate: '',
+    backupDates: [] as string[],
     eventStartTime: '',
     eventEndTime: '',
     pickupTime: '',
@@ -265,6 +266,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
       setFormData({
         eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
+        backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
         eventStartTime: eventRequest?.eventStartTime || '',
         eventEndTime: eventRequest?.eventEndTime || '',
         pickupTime: eventRequest?.pickupTime || '',
@@ -424,6 +426,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       ...(eventRequest && mode === 'edit' ? { status: formData.status } : {}),
       // Serialize date properly to avoid timezone issues
       desiredEventDate: serializeDateToISO(formData.eventDate),
+      backupDates: formData.backupDates.filter(d => d).map(d => serializeDateToISO(d)),
       // If status is scheduled, also set scheduledEventDate
       ...(formData.status === 'scheduled' ? { scheduledEventDate: serializeDateToISO(formData.eventDate) } : {}),
       eventStartTime: formData.eventStartTime || null,
@@ -803,6 +806,71 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   data-testid="input-event-date"
                 />
               </div>
+
+              {/* Backup Dates */}
+              <div className="md:col-span-2 lg:col-span-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Backup Dates (Optional)</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          backupDates: [...prev.backupDates, '']
+                        }));
+                      }}
+                      className="h-7 text-xs"
+                    >
+                      + Add Backup Date
+                    </Button>
+                  </div>
+                  {formData.backupDates.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {formData.backupDates.map((date, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Input
+                            type="date"
+                            value={date}
+                            onChange={(e) => {
+                              const newBackupDates = [...formData.backupDates];
+                              newBackupDates[index] = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                backupDates: newBackupDates
+                              }));
+                            }}
+                            placeholder="Select backup date"
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                backupDates: prev.backupDates.filter((_, i) => i !== index)
+                              }));
+                            }}
+                            className="h-9 w-9 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {formData.backupDates.length === 0 && (
+                    <p className="text-xs text-gray-500">
+                      Add alternate dates if the primary event date is not available
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="eventStartTime">Start Time</Label>
                 <Input
