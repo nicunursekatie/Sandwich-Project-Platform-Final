@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { SmartSearch } from '@/components/SmartSearch';
+import { InstallAppButton } from '@/components/InstallAppButton';
 
 export default function SimpleNav({
   navigationItems,
@@ -146,6 +147,13 @@ export default function SimpleNav({
         {!isCollapsed && (
           <div className="mb-3 px-1">
             <SmartSearch />
+          </div>
+        )}
+
+        {/* PWA Install Button */}
+        {!isCollapsed && (
+          <div className="mb-3 px-1">
+            <InstallAppButton />
           </div>
         )}
 
