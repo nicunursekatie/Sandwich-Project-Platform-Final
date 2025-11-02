@@ -151,6 +151,14 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'operations',
   },
   {
+    id: 'host-map',
+    label: 'Host Map',
+    icon: Route,
+    href: 'route-map',
+    permission: PERMISSIONS.NAV_HOSTS,
+    group: 'operations',
+  },
+  {
     id: 'drivers',
     label: 'Drivers',
     icon: Car,
