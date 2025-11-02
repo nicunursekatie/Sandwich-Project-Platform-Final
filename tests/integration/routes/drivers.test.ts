@@ -5,7 +5,7 @@
  */
 
 import request from 'supertest';
-import { createTestServer, createMockSession, createAdminSession } from '../../setup/test-server';
+import { createTestServer } from '../../setup/test-server';
 import type { Express } from 'express';
 
 describe('Drivers Routes', () => {

@@ -155,14 +155,14 @@ export function StandardFilterBar({
       case 'select':
         return (
           <Select
-            value={value || ''}
-            onValueChange={(val) => onFilterChange?.(filter.id, val)}
+            value={value || '__all__'}
+            onValueChange={(val) => onFilterChange?.(filter.id, val === '__all__' ? '' : val)}
           >
             <SelectTrigger className={cn("w-full sm:w-[180px]", compact && "h-9")}>
               <SelectValue placeholder={filter.placeholder || filter.label} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All {filter.label}</SelectItem>
+              <SelectItem value="__all__">All {filter.label}</SelectItem>
               {filter.options?.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   <span className="flex items-center justify-between w-full">
