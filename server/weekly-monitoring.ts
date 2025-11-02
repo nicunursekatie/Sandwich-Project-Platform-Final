@@ -178,12 +178,11 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
     };
   }
 
-  // Admin emails that can submit for any location (counts as Stephanie/Marcy for Dunwoody)
-  const adminEmails = [
-    'katielong2316@gmail.com',
-    'christine@thesandwichproject.org',
-    'kenig.ka@gmail.com',
-    'admin@sandwich.project',
+  // Admin user IDs that can submit for any location (counts as Stephanie/Marcy for Dunwoody)
+  const adminUserIds = [
+    'committee_1756853842170', // Katie Long
+    'user_1756855040337_5ix2krxc7', // Christine
+    'driver_1756853842645_3rhyj78ot', // kenig.ka@gmail.com
   ];
 
   // Check for Lisa Hiles
@@ -196,15 +195,14 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
   // Check for Stephanie or Marcy OR admin accounts
   const stephanieOrMarcySubmission = dunwoodySubmissions.some((sub) => {
     const submitter = sub.submittedBy?.toLowerCase() || '';
+    const createdBy = sub.createdBy || '';
 
-    // Check for Stephanie or Marcy
+    // Check for Stephanie or Marcy by name
     const isStephanieOrMarcy =
       submitter.includes('stephanie') || submitter.includes('marcy');
 
-    // Check if submitted by an admin account
-    const isAdminSubmission = adminEmails.some((email) =>
-      submitter.includes(email.toLowerCase())
-    );
+    // Check if submitted by an admin account (by user ID)
+    const isAdminSubmission = adminUserIds.includes(createdBy);
 
     return isStephanieOrMarcy || isAdminSubmission;
   });
@@ -241,6 +239,7 @@ export async function checkWeeklySubmissions(
         hostName: sandwichCollections.hostName,
         collectionDate: sandwichCollections.collectionDate,
         submittedBy: sandwichCollections.createdByName,
+        createdBy: sandwichCollections.createdBy,
       })
       .from(sandwichCollections)
       .where(
