@@ -15,9 +15,9 @@ import {
 
 // This will be populated by setup
 let app: express.Application;
-let testUser: any;
-let adminUser: any;
-let noPermissionsUser: any;
+let testUser: Record<string, unknown>;
+let adminUser: Record<string, unknown>;
+let noPermissionsUser: Record<string, unknown>;
 let authenticatedAgent: request.SuperAgentTest;
 let adminAgent: request.SuperAgentTest;
 let noPermissionsAgent: request.SuperAgentTest;
@@ -200,7 +200,7 @@ describe('Collections Routes', () => {
   });
 
   describe('PATCH /api/collections/:id', () => {
-    let testCollection: any;
+    let testCollection: Record<string, unknown>;
 
     beforeEach(async () => {
       // Create a test collection
@@ -276,7 +276,7 @@ describe('Collections Routes', () => {
   });
 
   describe('DELETE /api/collections/:id', () => {
-    let testCollection: any;
+    let testCollection: Record<string, unknown>;
 
     beforeEach(async () => {
       const response = await authenticatedAgent
