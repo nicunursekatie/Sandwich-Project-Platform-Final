@@ -162,6 +162,7 @@ export default function EventMapView() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
@@ -246,18 +247,49 @@ export default function EventMapView() {
     return events.filter(e => !e.latitude || !e.longitude);
   }, [events]);
 
-  // Search filtering
+  // Extract unique years from events
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    events.forEach(event => {
+      const date = event.scheduledEventDate || event.desiredEventDate;
+      if (date) {
+        const year = new Date(date).getFullYear();
+        if (!isNaN(year)) {
+          years.add(year);
+        }
+      }
+    });
+    return Array.from(years).sort((a, b) => b - a); // Most recent first
+  }, [events]);
+
+  // Search and year filtering
   const filteredEvents = useMemo(() => {
-    if (!searchTerm.trim()) return eventsWithCoordinates;
-    
-    const search = searchTerm.toLowerCase();
-    return eventsWithCoordinates.filter(event => 
-      event.organizationName?.toLowerCase().includes(search) ||
-      event.department?.toLowerCase().includes(search) ||
-      event.eventAddress?.toLowerCase().includes(search) ||
-      `${event.firstName} ${event.lastName}`.toLowerCase().includes(search)
-    );
-  }, [eventsWithCoordinates, searchTerm]);
+    let filtered = eventsWithCoordinates;
+
+    // Year filter
+    if (yearFilter !== 'all') {
+      const targetYear = parseInt(yearFilter);
+      filtered = filtered.filter(event => {
+        const date = event.scheduledEventDate || event.desiredEventDate;
+        if (!date) return false;
+        const year = new Date(date).getFullYear();
+        return year === targetYear;
+      });
+    }
+
+    // Search filter
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(event => 
+        event.organizationName?.toLowerCase().includes(search) ||
+        event.department?.toLowerCase().includes(search) ||
+        event.eventAddress?.toLowerCase().includes(search) ||
+        `${event.firstName} ${event.lastName}`.toLowerCase().includes(search)
+      );
+    }
+
+    return filtered;
+  }, [eventsWithCoordinates, searchTerm, yearFilter]);
 
   // Calculate map center
   const mapCenter: [number, number] = useMemo(() => {
@@ -359,6 +391,20 @@ export default function EventMapView() {
               className="pl-10"
             />
           </div>
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="w-full md:w-40">
+              <Calendar className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Years</SelectItem>
+              {availableYears.map(year => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full md:w-48">
               <Filter className="w-4 h-4 mr-2" />
