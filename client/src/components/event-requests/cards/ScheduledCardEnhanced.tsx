@@ -502,23 +502,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           )}
         </div>
 
-        {/* Main Info Section - Compact Grid */}
+        {/* Main Info Section - 3 Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-          {/* Left Column - Event Details & Team Assignments */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* Event Details */}
-            <div className="bg-[#007E8C]/5 rounded-lg p-4 border border-[#007E8C]/10">
-              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] flex items-center gap-2 mb-4">
-                <Calendar className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
-                Event Details
-              </h3>
-
-              {/* Grid layout for Event Details content */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Left Column */}
-                <div className="space-y-3">
-                  {/* Date - Inline Editable */}
-                  <div className="flex items-center gap-2">
+          {/* COLUMN 1: Event Details */}
+          <div className="space-y-3">
+            {/* Date - Inline Editable */}
+            <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 shrink-0 text-[#007E8C]" />
               {isEditingThisCard && editingField === dateFieldToEdit ? (
                 <div className="flex items-center gap-2 flex-1">
@@ -970,142 +959,66 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               )}
             </div>
+          </div>
 
-                </div>
+          {/* COLUMN 2: Event Organizer */}
+          <div className="space-y-3">
+            {(request.firstName || request.lastName) && (
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 shrink-0 text-[#007E8C]" />
+                <span className="text-base font-semibold text-gray-900">
+                  {request.firstName} {request.lastName}
+                </span>
               </div>
-
-              {/* Delivery Logistics - Full width below main grid */}
-              <div className="pt-3 border-t border-[#007E8C]/20 mt-3">
-                <div className="flex items-center gap-2 mb-3">
-                  <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
-                  <h4 className="text-sm uppercase font-bold tracking-wide text-[#236383]">Delivery Logistics</h4>
-                </div>
-                
-                {/* Horizontal layout for compact display */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start">
-                  {/* Recipients - Compact display with truncation */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs uppercase text-gray-600 font-medium">Recipients</span>
-                      {canEdit && !(isEditingThisCard && editingField === 'assignedRecipientIds') && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
-                          className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                    {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
-                      <div className="space-y-2">
-                        <MultiRecipientSelector
-                          value={editingValue ? JSON.parse(editingValue) : []}
-                          onChange={(ids) => setEditingValue(JSON.stringify(ids))}
-                          placeholder="Select recipients..."
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90">
-                            <Save className="w-3 h-3 mr-1" /> Save
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="min-w-0">
-                        {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                          <div className="flex flex-col gap-1.5 min-w-0">
-                            {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
-                              const recipientName = resolveRecipientName(id);
-                              // Extract just the name part if it has parentheses with locations
-                              const cleanName = recipientName.includes('(') 
-                                ? recipientName.substring(0, recipientName.indexOf('(')).trim()
-                                : recipientName;
-                              // Truncate if still too long
-                              const displayName = cleanName.length > 25 
-                                ? cleanName.substring(0, 22) + '...'
-                                : cleanName;
-                              return (
-                                <Badge 
-                                  key={idx} 
-                                  title={recipientName}
-                                  className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
-                                >
-                                  <span className="text-sm shrink-0">🏠</span>
-                                  <span className="truncate">{displayName}</span>
-                                </Badge>
-                              );
-                            })}
-                            {request.assignedRecipientIds.length > 3 && (
-                              <Badge className="bg-gray-100 text-gray-700 border border-gray-300 text-xs font-medium px-2 py-1 shadow-sm w-fit">
-                                +{request.assignedRecipientIds.length - 3} more recipients
-                              </Badge>
-                            )}
-                          </div>
-                        ) : request.recipientsCount ? (
-                          <Badge className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
-                            <span className="text-sm">🏠</span>
-                            <span>Unknown Host ({request.recipientsCount})</span>
-                          </Badge>
-                        ) : (
-                          <div className="text-gray-600 text-sm">No recipients assigned</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Overnight Holding - Compact display */}
-                  <div className="sm:w-48 shrink-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding</span>
-                      {canEdit && !isEditingThisCard && editingField !== 'overnightHoldingLocation' && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
-                          className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                    {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
-                      <div className="flex flex-col gap-2">
-                        <Input
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          className="bg-white text-gray-900 h-8 text-sm"
-                          placeholder="Overnight holding location"
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
-                            <Save className="w-3 h-3 mr-1" /> Save
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm font-medium text-gray-900 truncate" title={request.overnightHoldingLocation || undefined}>
-                        {request.overnightHoldingLocation || 'Not set'}
-                      </div>
-                    )}
-                  </div>
-                </div>
+            )}
+            {request.email && (
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 shrink-0 text-[#007E8C]" />
+                <a href={`mailto:${request.email}`} className="text-base text-gray-900 hover:underline">
+                  {request.email}
+                </a>
               </div>
-            </div>
+            )}
+            {request.phone && (
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 shrink-0 text-[#007E8C]" />
+                <a href={`tel:${request.phone}`} className="text-base text-gray-900 hover:underline">
+                  {request.phone}
+                </a>
+              </div>
+            )}
+            {(request.tspContact || request.customTspContact) && (
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                <UserPlus className="w-4 h-4 shrink-0 text-[#007E8C]" />
+                <span className="text-base font-semibold text-gray-900">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
+                {canEdit && (
+                  <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-[#007E8C] hover:bg-[#007E8C]/10" aria-label="Edit TSP contact">
+                    <Edit2 className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                )}
+              </div>
+            )}
+            {!request.tspContact && !request.customTspContact && (
+              <Button
+                size="sm"
+                onClick={onAssignTspContact}
+                className="w-full bg-[#007E8C] hover:bg-[#007E8C]/90 text-white mt-2"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Assign TSP Contact
+              </Button>
+            )}
+          </div>
 
-            {/* Team Assignments - Below Event Details in same column */}
+          {/* COLUMN 3: Team & Delivery */}
+          <div className="space-y-4">
+            {/* Team Assignments */}
             <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-3">
                 {/* Drivers */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -1401,65 +1314,127 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Contact & Logistics Column - Single column on right */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* Contact Info */}
-            <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10">
-              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
-                Event Organizer
+            {/* Delivery Logistics */}
+            <div className="bg-[#FBAD3F]/5 rounded-lg p-4 border border-[#FBAD3F]/10">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
+                <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
+                Delivery Logistics
               </h3>
-              <div className="space-y-2 text-sm text-gray-900">
-                {(request.firstName || request.lastName) && (
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 shrink-0" />
-                    <span className="text-base font-semibold">
-                      {request.firstName} {request.lastName}
-                    </span>
-                  </div>
-                )}
-                {request.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 shrink-0" />
-                    <a href={`mailto:${request.email}`} className="hover:underline">
-                      {request.email}
-                    </a>
-                  </div>
-                )}
-                {request.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 shrink-0" />
-                    <a href={`tel:${request.phone}`} className="hover:underline">
-                      {request.phone}
-                    </a>
-                  </div>
-                )}
-                {(request.tspContact || request.customTspContact) && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-white/30">
-                    <UserPlus className="w-4 h-4 shrink-0" />
-                    <span className="text-base font-semibold">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
-                    {canEdit && (
-                      <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-white hover:bg-white/20" aria-label="Edit TSP contact">
-                        <Edit2 className="w-3 h-3" aria-hidden="true" />
+              
+              <div className="space-y-4">
+                {/* Recipients */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs uppercase text-gray-600 font-medium">Recipients</span>
+                    {canEdit && !(isEditingThisCard && editingField === 'assignedRecipientIds') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []))}
+                        className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                      >
+                        <Edit2 className="w-3 h-3" />
                       </Button>
                     )}
                   </div>
-                )}
-                {!request.tspContact && !request.customTspContact && (
-                  <Button
-                    size="sm"
-                    onClick={onAssignTspContact}
-                    className="w-full bg-white/20 hover:bg-white/30 text-white mt-2"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Assign TSP Contact
-                  </Button>
-                )}
+                  {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+                    <div className="space-y-2">
+                      <MultiRecipientSelector
+                        value={editingValue ? JSON.parse(editingValue) : []}
+                        onChange={(ids) => setEditingValue(JSON.stringify(ids))}
+                        placeholder="Select recipients..."
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90">
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="min-w-0">
+                      {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+                        <div className="flex flex-col gap-1.5 min-w-0">
+                          {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
+                            const recipientName = resolveRecipientName(id);
+                            const cleanName = recipientName.includes('(') 
+                              ? recipientName.substring(0, recipientName.indexOf('(')).trim()
+                              : recipientName;
+                            const displayName = cleanName.length > 25 
+                              ? cleanName.substring(0, 22) + '...'
+                              : cleanName;
+                            return (
+                              <Badge 
+                                key={idx} 
+                                title={recipientName}
+                                className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
+                              >
+                                <span className="text-sm shrink-0">🏠</span>
+                                <span className="truncate">{displayName}</span>
+                              </Badge>
+                            );
+                          })}
+                          {request.assignedRecipientIds.length > 3 && (
+                            <Badge className="bg-gray-100 text-gray-700 border border-gray-300 text-xs font-medium px-2 py-1 shadow-sm w-fit">
+                              +{request.assignedRecipientIds.length - 3} more recipients
+                            </Badge>
+                          )}
+                        </div>
+                      ) : request.recipientsCount ? (
+                        <Badge className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
+                          <span className="text-sm">🏠</span>
+                          <span>Unknown Host ({request.recipientsCount})</span>
+                        </Badge>
+                      ) : (
+                        <div className="text-gray-600 text-sm">No recipients assigned</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Overnight Holding */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding</span>
+                    {canEdit && !isEditingThisCard && editingField !== 'overnightHoldingLocation' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
+                        className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingThisCard && editingField === 'overnightHoldingLocation' ? (
+                    <div className="flex flex-col gap-2">
+                      <Input
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        className="bg-white text-gray-900 h-8 text-sm"
+                        placeholder="Overnight holding location"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] text-white hover:bg-[#007E8C]/90 h-7">
+                          <Save className="w-3 h-3 mr-1" /> Save
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100 h-7">
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm font-medium text-gray-900" title={request.overnightHoldingLocation || undefined}>
+                      {request.overnightHoldingLocation || 'Not set'}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-
           </div>
         </div>
 
