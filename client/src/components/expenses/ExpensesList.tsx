@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
@@ -96,6 +96,12 @@ export function ExpensesList({
   const [statusFilter, setStatusFilter] = useState<string>(expenseDefaults.defaultStatusFilter);
   const [categoryFilter, setCategoryFilter] = useState<string>(expenseDefaults.defaultCategoryFilter);
   const [messageExpense, setMessageExpense] = useState<Expense | null>(null);
+
+  // Sync filters with role defaults when user loads (handles async user fetch)
+  useEffect(() => {
+    setStatusFilter(expenseDefaults.defaultStatusFilter);
+    setCategoryFilter(expenseDefaults.defaultCategoryFilter);
+  }, [expenseDefaults.defaultStatusFilter, expenseDefaults.defaultCategoryFilter]);
 
   // Build query params
   const queryParams = new URLSearchParams();

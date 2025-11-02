@@ -266,6 +266,12 @@ export default function SandwichCollectionLog() {
   const [newCollectionGroupOnlyMode, setNewCollectionGroupOnlyMode] =
     useState(false);
 
+  // Sync state with role defaults when user loads (handles async user fetch)
+  useEffect(() => {
+    setSortConfig(getInitialSortConfig());
+    setItemsPerPage(collectionDefaults.itemsPerPage);
+  }, [collectionDefaults.defaultSort, collectionDefaults.itemsPerPage, getInitialSortConfig]);
+
   // Use standardized calculation functions from analytics-utils.ts for data consistency
   const calculateGroupTotal = calculateGroupSandwiches;
   const calculateTotal = calculateTotalSandwiches;
@@ -631,6 +637,8 @@ export default function SandwichCollectionLog() {
       itemsPerPage,
       debouncedSearchFilters,
       sortConfig,
+      collectionDefaults.showOwnFirst,
+      user?.id,
     ]),
   });
 

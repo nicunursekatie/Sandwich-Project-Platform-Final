@@ -383,6 +383,17 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     ).length,
   };
 
+  // Sync state with role defaults when user loads (handles async user fetch)
+  // Only applies defaults if no explicit initialTab was provided (respects URL navigation)
+  useEffect(() => {
+    if (!initialTab) {
+      setActiveTab(roleDefaults.defaultTab);
+      setConfirmationFilter(roleDefaults.defaultConfirmationFilter);
+      setSortBy(roleDefaults.defaultSort);
+      setItemsPerPage(roleDefaults.itemsPerPage);
+    }
+  }, [roleDefaults.defaultTab, roleDefaults.defaultConfirmationFilter, roleDefaults.defaultSort, roleDefaults.itemsPerPage, initialTab]);
+
   // Synchronize statusFilter with activeTab
   useEffect(() => {
     setStatusFilter(activeTab);
