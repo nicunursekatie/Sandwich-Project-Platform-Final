@@ -1730,6 +1730,8 @@ export const eventRequests = pgTable(
     communicationMethod: varchar('communication_method'), // 'phone', 'email', 'video_meeting'
     contactCompletionNotes: text('contact_completion_notes'), // Free text notes from the contact
     eventAddress: text('event_address'), // Event location address collected
+    latitude: varchar('latitude'), // Geocoded latitude for map display
+    longitude: varchar('longitude'), // Geocoded longitude for map display
     estimatedSandwichCount: integer('estimated_sandwich_count'), // Number of sandwiches planned
     estimatedSandwichCountMin: integer('estimated_sandwich_count_min'), // Minimum sandwiches in range (optional)
     estimatedSandwichCountMax: integer('estimated_sandwich_count_max'), // Maximum sandwiches in range (optional)

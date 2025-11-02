@@ -12,6 +12,7 @@ import createMeetingsRouter from './meetings/index';
 import meetingNotesRouter from './meeting-notes';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
+import eventMapRouter from './event-map';
 import importCollectionsRouter from './import-collections';
 import notificationsRouter from './notifications';
 import reportsRouter from './reports';
@@ -386,6 +387,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     eventRequestsRouter
   );
   router.use('/api/event-requests', createErrorHandler('event-requests'));
+
+  // Event map routes - map view of events with addresses
+  router.use(
+    '/api/event-map',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventMapRouter
+  );
+  router.use('/api/event-map', createErrorHandler('event-map'));
 
   // Expenses routes - expense and receipt tracking
   router.use(
