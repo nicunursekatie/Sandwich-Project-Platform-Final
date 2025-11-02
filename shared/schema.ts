@@ -2817,6 +2817,52 @@ export const notificationABTests = pgTable(
   })
 );
 
+// Notification action history - tracks when users execute actions from notifications
+export const notificationActionHistory = pgTable(
+  'notification_action_history',
+  {
+    id: serial('id').primaryKey(),
+    notificationId: integer('notification_id')
+      .notNull()
+      .references(() => notifications.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+
+    // Action details
+    actionType: varchar('action_type').notNull(), // 'approve', 'decline', 'mark_complete', 'assign', etc.
+    actionStatus: varchar('action_status').notNull().default('pending'), // 'pending', 'success', 'failed'
+
+    // Execution tracking
+    startedAt: timestamp('started_at').defaultNow().notNull(),
+    completedAt: timestamp('completed_at'),
+    errorMessage: text('error_message'),
+
+    // Related entity changes
+    relatedType: varchar('related_type'), // 'event_request', 'task', 'project', etc.
+    relatedId: integer('related_id'),
+
+    // Undo support
+    undoneAt: timestamp('undone_at'),
+    undoneBy: varchar('undone_by').references(() => users.id),
+
+    // Additional context
+    metadata: jsonb('metadata').default('{}'), // Action-specific data
+  },
+  (table) => ({
+    notificationActionIdx: index('idx_notif_action_history_notif').on(
+      table.notificationId
+    ),
+    userActionIdx: index('idx_notif_action_history_user').on(
+      table.userId,
+      table.actionType
+    ),
+    statusIdx: index('idx_notif_action_history_status').on(
+      table.actionStatus
+    ),
+  })
+);
+
 // =============================================================================
 // SMART NOTIFICATIONS SYSTEM - INSERT SCHEMAS AND TYPES
 // =============================================================================
@@ -2851,6 +2897,13 @@ export const insertUserNotificationPatternsSchema = createInsertSchema(
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertNotificationActionHistorySchema = createInsertSchema(
+  notificationActionHistory
+).omit({
+  id: true,
+  startedAt: true,
 });
 
 export const insertNotificationAnalyticsSchema = createInsertSchema(
@@ -2899,6 +2952,12 @@ export type InsertNotificationAnalytics = z.infer<
 export type NotificationABTests = typeof notificationABTests.$inferSelect;
 export type InsertNotificationABTests = z.infer<
   typeof insertNotificationABTestsSchema
+>;
+
+export type NotificationActionHistory =
+  typeof notificationActionHistory.$inferSelect;
+export type InsertNotificationActionHistory = z.infer<
+  typeof insertNotificationActionHistorySchema
 >;
 
 // Availability slots insert schema and types

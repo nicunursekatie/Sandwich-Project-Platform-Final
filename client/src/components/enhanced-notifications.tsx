@@ -34,6 +34,8 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { NotificationActionButton } from './NotificationActionButton';
+import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 
 interface Notification {
   id: number;
@@ -104,6 +106,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     priorities: [] as string[],
   });
 
+  // Connect to Socket.IO for real-time notification updates
+  const { connected: socketConnected } = useNotificationSocket();
+
   if (!user) return null;
 
   // Query for notification counts
@@ -161,8 +166,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     if (!notification.isRead) {
       markAsReadMutation.mutate(notification.id);
     }
-    
-    if (notification.actionUrl) {
+
+    // If there's an action button, don't auto-navigate - let the button handle it
+    if (notification.actionUrl && !notification.actionText) {
       if (notification.actionUrl.startsWith('http')) {
         window.open(notification.actionUrl, '_blank');
       } else {
@@ -328,11 +334,16 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                         </div>
 
                         {notification.actionText && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {notification.actionText}
-                              <ExternalLink className="h-3 w-3 ml-1" />
-                            </Badge>
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
+                            <NotificationActionButton
+                              notificationId={notification.id}
+                              actionType={notification.actionText.toLowerCase().replace(/\s+/g, '_')}
+                              actionText={notification.actionText}
+                              actionUrl={notification.actionUrl}
+                              onSuccess={() => {
+                                // Notification list will auto-refresh via query invalidation
+                              }}
+                            />
                           </div>
                         )}
                       </div>
