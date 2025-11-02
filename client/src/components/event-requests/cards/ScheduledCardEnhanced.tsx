@@ -503,7 +503,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         </div>
 
         {/* Main Info Section - 3 Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           {/* COLUMN 1: Event Details */}
           <div className="space-y-3">
             {/* Date - Inline Editable */}
