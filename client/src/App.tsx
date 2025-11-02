@@ -12,6 +12,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { LoadingState } from '@/components/ui/loading';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
@@ -301,6 +302,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
+          <PWAInstallPrompt />
           <Router />
         </TooltipProvider>
       </QueryClientProvider>

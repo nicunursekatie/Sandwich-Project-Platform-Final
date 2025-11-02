@@ -1,12 +1,9 @@
 const CACHE_NAME = 'tsp-v1';
 const RUNTIME_CACHE = 'tsp-runtime-v1';
 
-// Assets to cache on install
+// Assets to cache on install (only files guaranteed to exist in production)
 const PRECACHE_URLS = [
   '/',
-  '/index.html',
-  '/src/main.tsx',
-  '/src/index.css',
   '/attached_assets/LOGOS/TSP_transparent.png',
   '/attached_assets/LOGOS/sandwich logo.png',
 ];
@@ -17,7 +14,11 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[Service Worker] Precaching assets');
-        return cache.addAll(PRECACHE_URLS);
+        // Use addAll with error handling for missing assets
+        return cache.addAll(PRECACHE_URLS).catch((err) => {
+          console.warn('[Service Worker] Failed to precache some assets:', err);
+          // Continue installation even if some assets fail
+        });
       })
       .then(() => self.skipWaiting())
   );
