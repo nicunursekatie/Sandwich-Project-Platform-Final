@@ -88,10 +88,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       const departmentsMap = new Map();
       
       // Helper: find existing matching canonical name in departmentsMap
-      const findMatchingCanonicalName = (canonicalName: string, department: string): string | null => {
+      const findMatchingCanonicalName = (canonicalName: string, department: string, contactEmail: string): string | null => {
         for (const [key, dept] of departmentsMap.entries()) {
-          // Only match within the same department
-          if (dept.department === department && organizationNamesMatch(dept.canonicalName, canonicalName)) {
+          // Only match within the same department and contact
+          if (dept.department === department && dept.contactEmail === contactEmail && organizationNamesMatch(dept.canonicalName, canonicalName)) {
             return dept.canonicalName;
           }
         }
@@ -105,27 +105,35 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           request.firstName && request.lastName
             ? `${request.firstName} ${request.lastName}`.trim()
             : request.firstName || request.lastName || request.email || 'Unknown Contact';
-        const contactEmail = request.email;
+        const contactEmail = request.email || '';
 
         if (!orgName) return;
 
         // Create a unique key using canonical name for matching
         // ENHANCED: Check if a similar organization already exists and use its canonical name
         let canonicalOrgName = canonicalizeOrgName(orgName);
-        const matchingCanonical = findMatchingCanonicalName(canonicalOrgName, department);
+        const matchingCanonical = findMatchingCanonicalName(canonicalOrgName, department, contactEmail);
         if (matchingCanonical) {
           canonicalOrgName = matchingCanonical; // Use existing canonical name for consistency
         }
         
-        const departmentKey = `${canonicalOrgName}|${department}`;
+        // Group by organization + department + contact (one card per unique contact)
+        const departmentKey = `${canonicalOrgName}|${department}|${contactEmail}`;
 
-        // Track department-level aggregation
+        // Track contact-level aggregation (one entry per unique contact)
         if (!departmentsMap.has(departmentKey)) {
           departmentsMap.set(departmentKey, {
             organizationName: orgName, // Preserve original display name
             canonicalName: canonicalOrgName, // Store canonical for matching
             department: department,
-            contacts: [],
+            contactName: contactName,
+            contactEmail: contactEmail,
+            contactPhone: request.phone,
+            contacts: [{
+              name: contactName,
+              email: contactEmail,
+              phone: request.phone,
+            }],
             totalRequests: 0,
             latestStatus: 'new',
             latestRequestDate: request.createdAt || new Date(),
@@ -149,19 +157,6 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           request.status === 'contact_completed'
         ) {
           dept.completedEventsFromRequests = (dept.completedEventsFromRequests || 0) + 1;
-        }
-
-        // Add contact if not already present
-        const existingContact = dept.contacts.find(
-          (c: { name: string; email: string; phone?: string }) => c.name === contactName && c.email === contactEmail
-        );
-
-        if (!existingContact) {
-          dept.contacts.push({
-            name: contactName,
-            email: contactEmail,
-            phone: request.phone,
-          });
         }
 
         // Update department status based on most recent request
@@ -480,7 +475,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
         // Add as historical organization if not found in event requests
         if (!foundExisting) {
-          const departmentKey = `${canonicalOrgName}|`; // Empty department for historical entries
+          const departmentKey = `${canonicalOrgName}||`; // Empty department and contact for historical entries
           const latestCollectionDate = Math.max(
             ...(Array.from(orgData.eventDates) as string[]).map((d: string) => new Date(d).getTime())
           );
@@ -489,6 +484,9 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             organizationName: orgData.originalName,
             canonicalName: canonicalOrgName,
             department: '',
+            contactName: '',
+            contactEmail: '',
+            contactPhone: '',
             contacts: [],
             totalRequests: 0,
             latestStatus: 'past',
@@ -545,25 +543,22 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           org.displayName = dept.organizationName;
         }
 
-        // Determine contact name label
+        // Determine contact name label for entries without contact info
         let contactNameLabel = 'Historical Organization';
-        if (!dept.contacts || dept.contacts.length === 0) {
-          // Check if latest collection date is in 2025 or later
-          if (dept.latestCollectionDate) {
-            const collectionYear = new Date(dept.latestCollectionDate).getFullYear();
-            if (collectionYear >= 2025) {
-              contactNameLabel = 'Collection Logged Only';
-            }
+        if (!dept.contactName && dept.latestCollectionDate) {
+          const collectionYear = new Date(dept.latestCollectionDate).getFullYear();
+          if (collectionYear >= 2025) {
+            contactNameLabel = 'Collection Logged Only';
           }
         }
 
-        // Always create a single entry per department, with all events included
+        // Each entry now represents a unique contact (one card per contact/event)
         org.departments.push({
           organizationName: org.displayName, // Use unified display name
           department: dept.department,
-          contactName: dept.contacts[0]?.name || contactNameLabel,
-          email: dept.contacts[0]?.email || '',
-          phone: dept.contacts[0]?.phone || '',
+          contactName: dept.contactName || contactNameLabel,
+          email: dept.contactEmail || '',
+          phone: dept.contactPhone || '',
           allContacts: dept.contacts,
           status: dept.latestStatus,
           totalRequests: dept.totalRequests,
