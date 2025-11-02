@@ -603,6 +603,9 @@ export const sandwichCollections = pgTable('sandwich_collections', {
   submittedAt: timestamp('submitted_at').notNull().defaultNow(), // When form was submitted
   // Add field to track if this was submitted via walkthrough
   submissionMethod: text('submission_method').default('standard'), // 'standard' or 'walkthrough'
+  // Soft delete tracking
+  deletedAt: timestamp('deleted_at'), // When this record was soft-deleted
+  deletedBy: text('deleted_by'), // User ID who deleted this record
 });
 
 // Authoritative weekly collections from Scott's Excel tracking system
@@ -1857,6 +1860,10 @@ export const eventRequests = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     createdBy: varchar('created_by'), // User ID who created this record (if manually entered)
+
+    // Soft delete tracking
+    deletedAt: timestamp('deleted_at'), // When this record was soft-deleted
+    deletedBy: varchar('deleted_by'), // User ID who deleted this record
   },
   (table) => ({
     orgNameIdx: index('idx_event_requests_org_name').on(table.organizationName),

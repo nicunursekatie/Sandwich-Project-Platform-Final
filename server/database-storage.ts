@@ -1127,6 +1127,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(sandwichCollections)
+      .where(isNull(sandwichCollections.deletedAt)) // Exclude soft-deleted records
       .orderBy(desc(sandwichCollections.collectionDate));
   }
 
@@ -1148,6 +1149,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(sandwichCollections)
+      .where(isNull(sandwichCollections.deletedAt)) // Exclude soft-deleted records
       .orderBy(orderByClause)
       .limit(limit)
       .offset(offset);
@@ -1166,7 +1168,8 @@ export class DatabaseStorage implements IStorage {
   async getSandwichCollectionsCount(): Promise<number> {
     const result = await db
       .select({ count: sql<number>`count(*)::int` })
-      .from(sandwichCollections);
+      .from(sandwichCollections)
+      .where(isNull(sandwichCollections.deletedAt)); // Exclude soft-deleted records
     return Number(result[0].count);
   }
 
@@ -1189,7 +1192,8 @@ export class DatabaseStorage implements IStorage {
             ), 0)::int
         `,
       })
-      .from(sandwichCollections);
+      .from(sandwichCollections)
+      .where(isNull(sandwichCollections.deletedAt)); // Exclude soft-deleted records
 
     return {
       totalEntries: Number(result[0].totalEntries),
@@ -1219,9 +1223,26 @@ export class DatabaseStorage implements IStorage {
     return collection || undefined;
   }
 
-  async deleteSandwichCollection(id: number): Promise<boolean> {
+  async deleteSandwichCollection(id: number, userId?: string): Promise<boolean> {
+    // Soft delete: set deletedAt and deletedBy instead of actually deleting
     const result = await db
-      .delete(sandwichCollections)
+      .update(sandwichCollections)
+      .set({
+        deletedAt: new Date(),
+        deletedBy: userId || null,
+      })
+      .where(eq(sandwichCollections.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async restoreSandwichCollection(id: number): Promise<boolean> {
+    // Restore a soft-deleted sandwich collection
+    const result = await db
+      .update(sandwichCollections)
+      .set({
+        deletedAt: null,
+        deletedBy: null,
+      })
       .where(eq(sandwichCollections.id, id));
     return (result.rowCount ?? 0) > 0;
   }
@@ -1564,7 +1585,10 @@ export class DatabaseStorage implements IStorage {
     const [collectionCount] = await db
       .select({ count: sql`count(*)` })
       .from(sandwichCollections)
-      .where(eq(sandwichCollections.hostName, hostName));
+      .where(and(
+        eq(sandwichCollections.hostName, hostName),
+        isNull(sandwichCollections.deletedAt) // Exclude soft-deleted collections
+      ));
 
     if (Number(collectionCount.count) > 0) {
       throw new Error(
@@ -3859,10 +3883,11 @@ export class DatabaseStorage implements IStorage {
     const results = await db
       .select()
       .from(eventRequests)
+      .where(isNull(eventRequests.deletedAt)) // Exclude soft-deleted records
       .orderBy(desc(eventRequests.createdAt));
-    
+
     logger.log(`🔍 getAllEventRequests: Database returned ${results.length} rows`);
-    
+
     // Check for duplicate IDs
     const ids = results.map(r => r.id);
     const uniqueIds = new Set(ids);
@@ -3871,7 +3896,7 @@ export class DatabaseStorage implements IStorage {
       const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
       logger.error(`Duplicate IDs from DB: ${[...new Set(duplicates)].join(', ')}`);
     }
-    
+
     return results;
   }
 
@@ -3913,9 +3938,26 @@ export class DatabaseStorage implements IStorage {
     return result || undefined;
   }
 
-  async deleteEventRequest(id: number): Promise<boolean> {
+  async deleteEventRequest(id: number, userId?: string): Promise<boolean> {
+    // Soft delete: set deletedAt and deletedBy instead of actually deleting
     const result = await db
-      .delete(eventRequests)
+      .update(eventRequests)
+      .set({
+        deletedAt: new Date(),
+        deletedBy: userId || null,
+      })
+      .where(eq(eventRequests.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async restoreEventRequest(id: number): Promise<boolean> {
+    // Restore a soft-deleted event request
+    const result = await db
+      .update(eventRequests)
+      .set({
+        deletedAt: null,
+        deletedBy: null,
+      })
       .where(eq(eventRequests.id, id));
     return (result.rowCount ?? 0) > 0;
   }
@@ -3924,7 +3966,10 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(eventRequests)
-      .where(eq(eventRequests.status, status))
+      .where(and(
+        eq(eventRequests.status, status),
+        isNull(eventRequests.deletedAt) // Exclude soft-deleted records
+      ))
       .orderBy(desc(eventRequests.createdAt));
   }
 
@@ -3934,7 +3979,10 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(eventRequests)
-      .where(ilike(eventRequests.organizationName, `%${organizationName}%`))
+      .where(and(
+        ilike(eventRequests.organizationName, `%${organizationName}%`),
+        isNull(eventRequests.deletedAt) // Exclude soft-deleted records
+      ))
       .orderBy(desc(eventRequests.createdAt));
   }
 

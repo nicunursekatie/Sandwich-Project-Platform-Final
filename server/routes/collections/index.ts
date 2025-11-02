@@ -1173,7 +1173,7 @@ collectionsRouter.delete(
         return res.status(400).json({ message: 'Invalid collection ID' });
       }
 
-      const deleted = await storage.deleteSandwichCollection(id);
+      const deleted = await storage.deleteSandwichCollection(id, req.user?.id);
       if (!deleted) {
         return res.status(404).json({ message: 'Collection not found' });
       }
@@ -1181,10 +1181,62 @@ collectionsRouter.delete(
       // Invalidate cache when collection is deleted
       QueryOptimizer.invalidateCache('sandwich-collections');
 
+      await logActivity(
+        req,
+        res,
+        'COLLECTIONS_DELETE',
+        `Deleted sandwich collection: ${id}`
+      );
+
       res.status(204).send();
     } catch (error) {
       logger.error('Failed to delete sandwich collection', error);
       res.status(500).json({ message: 'Failed to delete collection' });
+    }
+  }
+);
+
+// Restore (undo delete) sandwich collection
+collectionsRouter.post(
+  '/:id/restore',
+  requireOwnershipPermission(
+    'COLLECTIONS_DELETE_OWN',
+    'COLLECTIONS_DELETE_ALL',
+    async (req) => {
+      const id = parseInt(req.params.id);
+      const collection = await storage.getSandwichCollectionById(id);
+      return collection?.createdBy || collection?.userId || null;
+    }
+  ),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid collection ID' });
+      }
+
+      const restored = await storage.restoreSandwichCollection(id);
+      if (!restored) {
+        return res.status(404).json({ message: 'Collection not found or not deleted' });
+      }
+
+      // Invalidate cache when collection is restored
+      QueryOptimizer.invalidateCache('sandwich-collections');
+
+      await logActivity(
+        req,
+        res,
+        'COLLECTIONS_RESTORE',
+        `Restored sandwich collection: ${id}`
+      );
+
+      // Get the restored collection
+      const collection = await storage.getSandwichCollectionById(id);
+
+      res.json({ message: 'Collection restored successfully', collection });
+    } catch (error) {
+      logger.error('Failed to restore sandwich collection', error);
+      res.status(500).json({ message: 'Failed to restore collection' });
     }
   }
 );
