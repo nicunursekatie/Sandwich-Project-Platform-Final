@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { storage } from '../../storage-wrapper';
 import { logger } from '../../middleware/logger';
+import { AuditLogger } from '../../audit-logger';
 
 export interface ExcelImportRow {
   organizationName?: string;
@@ -373,7 +374,7 @@ export class ExcelImportService {
         // Create event request if we have an event date
         if (normalized.eventDate) {
           try {
-            await storage.createEventRequest({
+            const createdEvent = await storage.createEventRequest({
               // Required fields
               firstName: normalized.contactName?.split(' ')[0] || 'Historical',
               lastName: normalized.contactName?.split(' ').slice(1).join(' ') || 'Import',
@@ -393,6 +394,20 @@ export class ExcelImportService {
               notes: normalized.notes,
               tspContact: normalized.tspContact,
             });
+
+            // Add audit logging for Excel import
+            await AuditLogger.logEventRequestChange(
+              createdEvent.id?.toString() || 'unknown',
+              null,
+              createdEvent,
+              {
+                userId: 'SYSTEM',
+                ipAddress: 'SYSTEM_IMPORT',
+                userAgent: 'Excel - Historical Records Import Service',
+                sessionId: 'IMPORT_SESSION',
+              },
+              { actionType: 'CREATE', operation: 'EXCEL_HISTORICAL_RECORDS_IMPORT' }
+            );
 
             totalSandwiches += normalized.sandwichesProvided;
           } catch (eventError) {
