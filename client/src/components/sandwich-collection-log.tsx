@@ -32,6 +32,7 @@ import {
   CheckCircle,
   AlertCircle,
   MessageCircle,
+  Info,
 } from 'lucide-react';
 import SendKudosButton from '@/components/send-kudos-button';
 import { MessageComposer } from '@/components/message-composer';
@@ -75,6 +76,7 @@ import {
   calculateGroupSandwiches,
 } from '@/lib/analytics-utils';
 import { logger } from '@/lib/logger';
+import { getCollectionDefaults, getRoleViewDescription } from '@shared/role-view-defaults';
 
 interface ImportResult {
   totalRecords: number;
@@ -129,6 +131,14 @@ export default function SandwichCollectionLog() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { trackDataEntry, trackButtonClick, trackDownload } = useAnalytics();
+
+  // Get role-based defaults for collections
+  const collectionDefaults = useMemo(() => {
+    if (!user?.role) {
+      return getCollectionDefaults('viewer');
+    }
+    return getCollectionDefaults(user.role);
+  }, [user?.role]);
 
   // Activity Tracking Integration
   const {
@@ -209,13 +219,23 @@ export default function SandwichCollectionLog() {
     createdAtTo: '',
   });
 
-  const [sortConfig, setSortConfig] = useState({
-    field: 'collectionDate' as keyof SandwichCollection,
-    direction: 'desc' as 'asc' | 'desc',
-  });
+  // Convert role-based sort default to component format
+  const getInitialSortConfig = useCallback(() => {
+    const sortMap: Record<string, { field: keyof SandwichCollection; direction: 'asc' | 'desc' }> = {
+      'date_desc': { field: 'collectionDate', direction: 'desc' },
+      'date_asc': { field: 'collectionDate', direction: 'asc' },
+      'host_asc': { field: 'hostName', direction: 'asc' },
+      'host_desc': { field: 'hostName', direction: 'desc' },
+      'sandwiches_desc': { field: 'individualSandwiches', direction: 'desc' },
+      'sandwiches_asc': { field: 'individualSandwiches', direction: 'asc' },
+    };
+    return sortMap[collectionDefaults.defaultSort] || { field: 'collectionDate', direction: 'desc' };
+  }, [collectionDefaults.defaultSort]);
+
+  const [sortConfig, setSortConfig] = useState(getInitialSortConfig());
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [itemsPerPage, setItemsPerPage] = useState(collectionDefaults.itemsPerPage);
   const [editFormData, setEditFormData] = useState({
     collectionDate: '',
     hostName: '',
@@ -245,6 +265,12 @@ export default function SandwichCollectionLog() {
   >([{ id: Math.random().toString(36), groupName: '', sandwichCount: 0 }]);
   const [newCollectionGroupOnlyMode, setNewCollectionGroupOnlyMode] =
     useState(false);
+
+  // Sync state with role defaults when user loads (handles async user fetch)
+  useEffect(() => {
+    setSortConfig(getInitialSortConfig());
+    setItemsPerPage(collectionDefaults.itemsPerPage);
+  }, [collectionDefaults.defaultSort, collectionDefaults.itemsPerPage, getInitialSortConfig]);
 
   // Use standardized calculation functions from analytics-utils.ts for data consistency
   const calculateGroupTotal = calculateGroupSandwiches;
@@ -488,8 +514,18 @@ export default function SandwichCollectionLog() {
           );
         }
 
-        // Apply sorting
+        // Apply role-based sorting - show user's own collections first if role specifies
         filteredCollections.sort((a: any, b: any) => {
+          // First, if role specifies showing own first, prioritize user's collections
+          if (collectionDefaults.showOwnFirst && user?.id) {
+            const aIsOwn = a.createdBy === user.id;
+            const bIsOwn = b.createdBy === user.id;
+
+            if (aIsOwn && !bIsOwn) return -1;
+            if (!aIsOwn && bIsOwn) return 1;
+          }
+
+          // Then apply normal sorting
           const aVal = a[sortConfig.field];
           const bVal = b[sortConfig.field];
 
@@ -601,6 +637,8 @@ export default function SandwichCollectionLog() {
       itemsPerPage,
       debouncedSearchFilters,
       sortConfig,
+      collectionDefaults.showOwnFirst,
+      user?.id,
     ]),
   });
 
@@ -2001,6 +2039,21 @@ export default function SandwichCollectionLog() {
       </div>
 
       <div className="px-3 sm:px-6 py-4">
+        {/* Role-customized view indicator */}
+        {user?.role && user.role !== 'super_admin' && user.role !== 'admin' && (
+          <div className="mb-4 p-3 rounded border-l-4" style={{
+            backgroundColor: 'rgba(0, 126, 140, 0.08)',
+            borderLeftColor: '#007E8C'
+          }}>
+            <div className="flex items-start gap-2">
+              <Info className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#007E8C' }} />
+              <p className="text-sm" style={{ color: '#236383' }}>
+                {getRoleViewDescription(user.role, 'collections')}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Global Search Field - Prominent placement at top */}
         <div className="mb-6">
           <div className="relative max-w-md mx-auto">
