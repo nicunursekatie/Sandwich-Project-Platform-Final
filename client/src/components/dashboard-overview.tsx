@@ -394,12 +394,12 @@ export default function DashboardOverview({
   // Remove fake mini chart data - only use real data
 
   return (
-    <div className="min-h-screen premium-gradient-subtle relative w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen premium-gradient-subtle relative w-full overflow-x-hidden">
       {/* Dark Mode Toggle */}
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
       </div>
-      <div className="space-y-8 pb-8 w-full max-w-full">
+      <div className="space-y-8 pb-8 w-full">
         {/* Header */}
         <div className="premium-card mx-4 mt-8 p-6 sm:p-8 text-center max-w-full">
           <div className="relative max-w-full">
