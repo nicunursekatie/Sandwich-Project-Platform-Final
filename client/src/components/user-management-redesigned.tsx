@@ -65,6 +65,8 @@ import type { User } from '@/types/user';
  * 1. Users - Simplified table with inline summary stats
  * 2. Permissions - Users View for per-user assignments
  * 3. Impact - Contribution metrics that matter
+ *
+ * Features StandardFilterBar for multi-criteria filtering
  */
 export default function UserManagementFinal() {
   const { user: currentUser } = useAuth();
