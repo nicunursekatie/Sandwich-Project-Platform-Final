@@ -527,7 +527,7 @@ export default function Dashboard({
         <AnnouncementBanner />
         
         {/* Top Header */}
-        <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-x-auto">
+        <div className="bg-gradient-to-r from-white to-teal-50/30 border-b-2 border-teal-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-x-auto">
           <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
             {/* Mobile menu button - positioned first for easy access */}
             <button
@@ -563,7 +563,7 @@ export default function Dashboard({
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Compact user indicator for tablets */}
             {user && (
-              <div className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 shadow-sm max-w-[120px] xs:max-w-[150px] sm:max-w-[180px] md:max-w-none">
+              <div className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-200 shadow-sm max-w-[120px] xs:max-w-[150px] sm:max-w-[180px] md:max-w-none">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-teal-100 to-teal-200 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
                   <span className="text-xs font-medium text-teal-800">
                     {(user as any)?.firstName?.charAt(0) ||
@@ -579,7 +579,7 @@ export default function Dashboard({
                         }`.trim()
                       : (user as any)?.email}
                   </span>
-                  <span className="text-xs text-amber-600 truncate">
+                  <span className="text-xs text-teal-600 truncate">
                     {(user as any)?.email}
                   </span>
                 </div>
