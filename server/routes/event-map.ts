@@ -65,6 +65,7 @@ router.get('/', async (req, res) => {
       .select({
         id: eventRequests.id,
         organizationName: eventRequests.organizationName,
+        organizationCategory: eventRequests.organizationCategory,
         department: eventRequests.department,
         firstName: eventRequests.firstName,
         lastName: eventRequests.lastName,

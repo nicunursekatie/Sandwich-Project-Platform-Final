@@ -47,6 +47,7 @@ L.Icon.Default.mergeOptions({
 interface EventMapData {
   id: number;
   organizationName: string | null;
+  organizationCategory: string | null;
   department: string | null;
   firstName: string | null;
   lastName: string | null;
@@ -163,6 +164,7 @@ export default function EventMapView() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
@@ -262,7 +264,18 @@ export default function EventMapView() {
     return Array.from(years).sort((a, b) => b - a); // Most recent first
   }, [events]);
 
-  // Search and year filtering
+  // Extract unique organization categories from events
+  const availableCategories = useMemo(() => {
+    const categories = new Set<string>();
+    events.forEach(event => {
+      if (event.organizationCategory && event.organizationCategory.trim()) {
+        categories.add(event.organizationCategory);
+      }
+    });
+    return Array.from(categories).sort(); // Alphabetically
+  }, [events]);
+
+  // Search and filtering
   const filteredEvents = useMemo(() => {
     let filtered = eventsWithCoordinates;
 
@@ -277,6 +290,11 @@ export default function EventMapView() {
       });
     }
 
+    // Category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(event => event.organizationCategory === categoryFilter);
+    }
+
     // Search filter
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
@@ -289,7 +307,7 @@ export default function EventMapView() {
     }
 
     return filtered;
-  }, [eventsWithCoordinates, searchTerm, yearFilter]);
+  }, [eventsWithCoordinates, searchTerm, yearFilter, categoryFilter]);
 
   // Calculate map center
   const mapCenter: [number, number] = useMemo(() => {
@@ -391,6 +409,20 @@ export default function EventMapView() {
               className="pl-10"
             />
           </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-full md:w-48">
+              <Users className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {availableCategories.map(category => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={yearFilter} onValueChange={setYearFilter}>
             <SelectTrigger className="w-full md:w-40">
               <Calendar className="w-4 h-4 mr-2" />
