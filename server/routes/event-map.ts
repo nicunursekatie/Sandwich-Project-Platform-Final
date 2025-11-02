@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { db } from '../db';
 import { eventRequests } from '@shared/schema';
-import { isNotNull, and, or, ne } from 'drizzle-orm';
-import { isAuthenticated } from '../middleware';
+import { isNotNull, and, or, ne, eq } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { geocodeAddress } from '../utils/geocoding';
+import { rateLimiter } from '../utils/rate-limiter';
 
 const router = Router();
 
@@ -12,7 +12,7 @@ const router = Router();
  * GET /api/event-map
  * Fetch all event requests that have addresses with their coordinates for map display
  */
-router.get('/', isAuthenticated, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { status } = req.query;
 
@@ -24,9 +24,7 @@ router.get('/', isAuthenticated, async (req, res) => {
 
     // Filter by status if provided
     if (status && typeof status === 'string' && status !== 'all') {
-      conditions.push(or(
-        ...status.split(',').map(s => ({ status: s.trim() } as any))
-      ) as any);
+      conditions.push(eq(eventRequests.status, status));
     }
 
     const events = await db
@@ -65,8 +63,9 @@ router.get('/', isAuthenticated, async (req, res) => {
 /**
  * POST /api/event-map/geocode/:id
  * Geocode a specific event request's address
+ * RATE LIMITED: 1 request per second to comply with Nominatim usage policy
  */
-router.post('/geocode/:id', isAuthenticated, async (req, res) => {
+router.post('/geocode/:id', async (req, res) => {
   try {
     const eventId = parseInt(req.params.id);
 
@@ -77,7 +76,7 @@ router.post('/geocode/:id', isAuthenticated, async (req, res) => {
         eventAddress: eventRequests.eventAddress,
       })
       .from(eventRequests)
-      .where({ id: eventId } as any)
+      .where(eq(eventRequests.id, eventId))
       .limit(1);
 
     if (!event || event.length === 0) {
@@ -87,6 +86,10 @@ router.post('/geocode/:id', isAuthenticated, async (req, res) => {
     if (!event[0].eventAddress) {
       return res.status(400).json({ error: 'Event has no address to geocode' });
     }
+
+    // Rate limit: Wait if needed to comply with Nominatim 1 req/sec policy
+    await rateLimiter.checkAndWait('geocode', 1000);
+    logger.log(`Geocoding event ${eventId}: ${event[0].eventAddress}`);
 
     // Geocode the address
     const coordinates = await geocodeAddress(event[0].eventAddress);
@@ -103,7 +106,7 @@ router.post('/geocode/:id', isAuthenticated, async (req, res) => {
         longitude: coordinates.longitude,
         updatedAt: new Date(),
       })
-      .where({ id: eventId } as any);
+      .where(eq(eventRequests.id, eventId));
 
     res.json({
       success: true,

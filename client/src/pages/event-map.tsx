@@ -134,7 +134,7 @@ export default function EventMapView() {
     },
   });
 
-  // Geocode mutation
+  // Geocode mutation (server-side rate limited to 1 req/sec)
   const geocodeMutation = useMutation({
     mutationFn: async (eventId: number) => {
       return await apiRequest('POST', `/api/event-map/geocode/${eventId}`);
@@ -142,7 +142,7 @@ export default function EventMapView() {
     onSuccess: () => {
       toast({
         title: 'Address Geocoded',
-        description: 'Event location has been added to the map',
+        description: 'Event location has been added to the map (rate limited: 1 per second)',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
     },
@@ -385,8 +385,16 @@ export default function EventMapView() {
                 {eventsNeedingGeocode.map((event) => (
                   <Card
                     key={event.id}
-                    className="p-3 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => geocodeMutation.mutate(event.id)}
+                    className={`p-3 transition-shadow ${
+                      geocodeMutation.isPending 
+                        ? 'cursor-not-allowed opacity-50' 
+                        : 'hover:shadow-md cursor-pointer'
+                    }`}
+                    onClick={() => {
+                      if (!geocodeMutation.isPending) {
+                        geocodeMutation.mutate(event.id);
+                      }
+                    }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -400,7 +408,11 @@ export default function EventMapView() {
                           {event.status.replace('_', ' ')}
                         </Badge>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
+                      {geocodeMutation.isPending ? (
+                        <RefreshCw className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1 animate-spin" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
+                      )}
                     </div>
                   </Card>
                 ))}

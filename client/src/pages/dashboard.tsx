@@ -108,6 +108,7 @@ const MyAvailability = lazy(() => import('@/pages/my-availability'));
 const TeamAvailability = lazy(() => import('@/pages/team-availability'));
 const GoogleCalendarAvailability = lazy(() => import('@/pages/google-calendar-availability'));
 const RouteMapView = lazy(() => import('@/pages/route-map'));
+const EventMapView = lazy(() => import('@/pages/event-map'));
 const Help = lazy(() => import('@/pages/Help'));
 const ExpensesPage = lazy(() => import('@/pages/ExpensesPage'));
 const AdminSettings = lazy(() => import('@/pages/admin-settings'));
@@ -344,6 +345,8 @@ export default function Dashboard({
         return <HostsManagement />;
       case 'route-map':
         return <RouteMapView />;
+      case 'event-map':
+        return <EventMapView />;
       case 'recipients':
         return <RecipientsManagement />;
       case 'drivers':

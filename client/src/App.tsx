@@ -236,6 +236,9 @@ function Router() {
         <Route path="/event-requests">
           {() => <Dashboard initialSection="event-requests" />}
         </Route>
+        <Route path="/event-map">
+          {() => <Dashboard initialSection="event-map" />}
+        </Route>
         <Route path="/event-reminders">
           {() => <Dashboard initialSection="event-reminders" />}
         </Route>
