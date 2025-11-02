@@ -142,17 +142,28 @@ async function handleTaskAction(
       if (!actionData?.assigneeId) {
         throw new Error('Assignee ID required');
       }
-      const currentAssignees = task.assignedTo || [];
-      const newAssignees = Array.isArray(currentAssignees)
-        ? [...currentAssignees, actionData.assigneeId]
+      // projectTasks uses assigneeIds (text array) for multiple assignees
+      const currentAssigneeIds = task.assigneeIds || [];
+      const newAssigneeIds = Array.isArray(currentAssigneeIds)
+        ? [...currentAssigneeIds, actionData.assigneeId]
         : [actionData.assigneeId];
+
+      // Also update assigneeNames if provided
+      const updateData: any = {
+        assigneeIds: newAssigneeIds,
+        updatedAt: new Date()
+      };
+
+      if (actionData.assigneeName) {
+        const currentNames = task.assigneeNames || [];
+        updateData.assigneeNames = Array.isArray(currentNames)
+          ? [...currentNames, actionData.assigneeName]
+          : [actionData.assigneeName];
+      }
 
       result = await db
         .update(projectTasks)
-        .set({
-          assignedTo: newAssignees,
-          updatedAt: new Date()
-        })
+        .set(updateData)
         .where(eq(projectTasks.id, taskId))
         .returning();
       break;
@@ -216,17 +227,28 @@ async function handleProjectAction(
       if (!actionData?.assigneeId) {
         throw new Error('Assignee ID required');
       }
-      const currentAssignees = project.assignedTo || [];
-      const newAssignees = Array.isArray(currentAssignees)
-        ? [...currentAssignees, actionData.assigneeId]
+      // projects uses assigneeIds (jsonb) for multiple assignees
+      const currentProjectAssignees = project.assigneeIds || [];
+      const newProjectAssignees = Array.isArray(currentProjectAssignees)
+        ? [...currentProjectAssignees, actionData.assigneeId]
         : [actionData.assigneeId];
+
+      // Also update assigneeNames if provided (comma-separated string)
+      const projectUpdateData: any = {
+        assigneeIds: newProjectAssignees,
+        updatedAt: new Date()
+      };
+
+      if (actionData.assigneeName) {
+        const currentNamesStr = project.assigneeNames || '';
+        const namesList = currentNamesStr ? currentNamesStr.split(',').map(n => n.trim()) : [];
+        namesList.push(actionData.assigneeName);
+        projectUpdateData.assigneeNames = namesList.join(', ');
+      }
 
       result = await db
         .update(projects)
-        .set({
-          assignedTo: newAssignees,
-          updatedAt: new Date()
-        })
+        .set(projectUpdateData)
         .where(eq(projects.id, projectId))
         .returning();
       break;
