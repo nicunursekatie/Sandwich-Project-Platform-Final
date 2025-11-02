@@ -189,6 +189,73 @@ async function bootstrap() {
       });
     });
 
+    // Dynamic PWA manifest with correct production URL
+    app.get('/manifest.json', (_req: Request, res: Response) => {
+      const productionUrl = 'https://sandwich-project-platform-final-katielong2316.replit.app';
+      const devUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}`;
+      const isProduction = process.env.NODE_ENV === 'production';
+      const baseUrl = isProduction ? productionUrl : devUrl;
+
+      res.setHeader('Content-Type', 'application/manifest+json');
+      res.json({
+        name: "The Sandwich Project",
+        short_name: "TSP",
+        description: "Comprehensive operations platform for The Sandwich Project nonprofit managing sandwich collections, volunteer coordination, and event planning",
+        start_url: baseUrl + "/",
+        display: "standalone",
+        background_color: "#FFFFFF",
+        theme_color: "#F7931E",
+        orientation: "portrait-primary",
+        scope: "/",
+        icons: [
+          {
+            src: "/attached_assets/LOGOS/TSP_transparent.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable"
+          },
+          {
+            src: "/attached_assets/LOGOS/TSP_transparent.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable"
+          }
+        ],
+        categories: ["productivity", "business"],
+        shortcuts: [
+          {
+            name: "Collection Log",
+            short_name: "Collections",
+            description: "View and manage sandwich collections",
+            url: baseUrl + "/?section=collection-log",
+            icons: [{ src: "/attached_assets/LOGOS/sandwich logo.png", sizes: "96x96" }]
+          },
+          {
+            name: "Event Requests",
+            short_name: "Events",
+            description: "Manage event requests and planning",
+            url: baseUrl + "/?section=event-requests",
+            icons: [{ src: "/attached_assets/LOGOS/TSP_transparent.png", sizes: "96x96" }]
+          },
+          {
+            name: "Messages",
+            short_name: "Messages",
+            description: "View team messages and notifications",
+            url: baseUrl + "/?section=real-time-messages",
+            icons: [{ src: "/attached_assets/LOGOS/TSP_transparent.png", sizes: "96x96" }]
+          }
+        ],
+        screenshots: [
+          {
+            src: "/attached_assets/LOGOS/TSP_transparent.png",
+            sizes: "540x720",
+            type: "image/png",
+            form_factor: "narrow"
+          }
+        ]
+      });
+    });
+
     const httpServer = createServer(app);
 
     // CRITICAL: Start listening IMMEDIATELY to open port for health checks
