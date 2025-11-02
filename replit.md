@@ -26,7 +26,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications.
 -   **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool.
 -   **Meeting Management**: Full-featured system with agenda compilation, project integration, and PDF export.
--   **Event Requests Management System**: Tracking, duplicate detection, status tracking, Google Sheets integration, van driver staffing calculations, multi-recipient assignment, and comprehensive intake validation. Includes an interactive Leaflet map view with intelligent marker clustering, color-coding by status, search/filter capabilities, and dual-layer geocoding (OpenStreetMap with Google Geocoding fallback). Addresses are cleaned before geocoding. All event request creation paths (manual, Google Sheets, Excel, scheduled imports) have audit logging.
+-   **Event Requests Management System**: Tracking, duplicate detection, status tracking, Google Sheets integration, van driver staffing calculations, multi-recipient assignment, and comprehensive intake validation. Includes an interactive Leaflet map view with **toggle button for clustered view (organized) vs. all-pins view (impressive visual impact)**, intelligent marker clustering with custom TSP-branded teal gradient icons, color-coding by status, search/filter capabilities (search, category, year, status), and dual-layer geocoding (OpenStreetMap with Google Geocoding fallback). Clustering automatically groups nearby events and scales markers by count. Addresses are cleaned before geocoding. All event request creation paths (manual, Google Sheets, Excel, scheduled imports) have audit logging.
 -   **Google Sheets Integration**: Bidirectional automatic synchronization for project tracker and event requests with duplicate prevention.
 -   **User Activity Logging System**: Comprehensive tracking of authenticated user actions via middleware, displayed in User Management.
 -   **Sandwich Type Tracking System**: Comprehensive tracking for individual and group collections with real-time validation and analytics.
@@ -51,4 +51,4 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 -   **Authentication**: `connect-pg-simple`
 -   **File Uploads**: `multer`
 -   **Google Integration**: Google Sheets API, `@google-cloud/storage`, Google Analytics
--   **Mapping**: `leaflet@1.9.4`, `react-leaflet@4.2.1`
+-   **Mapping**: `leaflet@1.9.4`, `react-leaflet@4.2.1`, `react-leaflet-cluster`

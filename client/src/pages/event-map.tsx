@@ -195,6 +195,7 @@ export default function EventMapView() {
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
   const [editedAddress, setEditedAddress] = useState('');
+  const [clusteringEnabled, setClusteringEnabled] = useState(true);
 
   useEffect(() => {
     trackView(
@@ -419,10 +420,21 @@ export default function EventMapView() {
               </p>
             </div>
           </div>
-          <Button onClick={() => refetch()} variant="outline" size="sm">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setClusteringEnabled(!clusteringEnabled)} 
+              variant={clusteringEnabled ? "default" : "outline"}
+              size="sm"
+              data-testid="button-toggle-clustering"
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              {clusteringEnabled ? 'Show All Pins' : 'Show Clusters'}
+            </Button>
+            <Button onClick={() => refetch()} variant="outline" size="sm">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -497,54 +509,99 @@ export default function EventMapView() {
               />
               <MapBounds events={filteredEvents} />
               
-              <MarkerClusterGroup
-                chunkedLoading
-                iconCreateFunction={createClusterCustomIcon}
-                showCoverageOnHover={true}
-                spiderfyDistanceMultiplier={1.5}
-                maxClusterRadius={60}
-              >
-                {filteredEvents.map((event) => (
-                  <Marker
-                    key={event.id}
-                    position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                    icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
-                    eventHandlers={{
-                      click: () => setSelectedEvent(event),
-                    }}
-                  >
-                    <Popup>
-                      <div className="p-2 min-w-[250px]">
-                        <h3 className="font-semibold text-base mb-2">
-                          {event.organizationName || 'Unknown Organization'}
-                        </h3>
-                        {event.department && (
-                          <p className="text-sm text-gray-600 mb-2">{event.department}</p>
-                        )}
-                        <div className="space-y-1 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-3 h-3 text-gray-500" />
-                            <span>{getEventDate(event)}</span>
-                          </div>
-                          {event.estimatedSandwichCount && (
-                            <div className="flex items-center gap-2">
-                              <Package className="w-3 h-3 text-gray-500" />
-                              <span>~{event.estimatedSandwichCount} sandwiches</span>
-                            </div>
+              {clusteringEnabled ? (
+                <MarkerClusterGroup
+                  chunkedLoading
+                  iconCreateFunction={createClusterCustomIcon}
+                  showCoverageOnHover={true}
+                  spiderfyDistanceMultiplier={1.5}
+                  maxClusterRadius={60}
+                >
+                  {filteredEvents.map((event) => (
+                    <Marker
+                      key={event.id}
+                      position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+                      icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
+                      eventHandlers={{
+                        click: () => setSelectedEvent(event),
+                      }}
+                    >
+                      <Popup>
+                        <div className="p-2 min-w-[250px]">
+                          <h3 className="font-semibold text-base mb-2">
+                            {event.organizationName || 'Unknown Organization'}
+                          </h3>
+                          {event.department && (
+                            <p className="text-sm text-gray-600 mb-2">{event.department}</p>
                           )}
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-3 h-3 text-gray-500" />
-                            <span className="text-xs">{event.eventAddress}</span>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3 h-3 text-gray-500" />
+                              <span>{getEventDate(event)}</span>
+                            </div>
+                            {event.estimatedSandwichCount && (
+                              <div className="flex items-center gap-2">
+                                <Package className="w-3 h-3 text-gray-500" />
+                                <span>~{event.estimatedSandwichCount} sandwiches</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-3 h-3 text-gray-500" />
+                              <span className="text-xs">{event.eventAddress}</span>
+                            </div>
                           </div>
+                          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} mt-2`}>
+                            {event.status.replace('_', ' ').toUpperCase()}
+                          </Badge>
                         </div>
-                        <Badge className={`${statusColors[event.status as keyof typeof statusColors]} mt-2`}>
-                          {event.status.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              </MarkerClusterGroup>
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MarkerClusterGroup>
+              ) : (
+                <>
+                  {filteredEvents.map((event) => (
+                    <Marker
+                      key={event.id}
+                      position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+                      icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
+                      eventHandlers={{
+                        click: () => setSelectedEvent(event),
+                      }}
+                    >
+                      <Popup>
+                        <div className="p-2 min-w-[250px]">
+                          <h3 className="font-semibold text-base mb-2">
+                            {event.organizationName || 'Unknown Organization'}
+                          </h3>
+                          {event.department && (
+                            <p className="text-sm text-gray-600 mb-2">{event.department}</p>
+                          )}
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3 h-3 text-gray-500" />
+                              <span>{getEventDate(event)}</span>
+                            </div>
+                            {event.estimatedSandwichCount && (
+                              <div className="flex items-center gap-2">
+                                <Package className="w-3 h-3 text-gray-500" />
+                                <span>~{event.estimatedSandwichCount} sandwiches</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-3 h-3 text-gray-500" />
+                              <span className="text-xs">{event.eventAddress}</span>
+                            </div>
+                          </div>
+                          <Badge className={`${statusColors[event.status as keyof typeof statusColors]} mt-2`}>
+                            {event.status.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+                </>
+              )}
             </MapContainer>
           ) : (
             <div className="h-full flex items-center justify-center bg-gray-50">
