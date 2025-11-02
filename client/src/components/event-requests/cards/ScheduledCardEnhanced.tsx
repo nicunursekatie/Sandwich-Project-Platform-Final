@@ -1356,28 +1356,30 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     <div>
                       {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
                         <div className="space-y-2">
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-2">
                             {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
                               const recipientName = resolveRecipientName(id);
                               return (
-                                <Badge key={idx} className="bg-white text-gray-900 border-gray-300">
-                                  🏠 {recipientName}
+                                <Badge key={idx} className="bg-white text-gray-900 border-2 border-gray-300 text-base font-semibold px-3 py-1.5 shadow-sm flex items-center gap-2">
+                                  <span className="text-lg">🏠</span>
+                                  <span className="break-words">{recipientName}</span>
                                 </Badge>
                               );
                             })}
                             {request.assignedRecipientIds.length > 3 && (
-                              <Badge className="bg-white/90 text-gray-700 border-gray-300">
+                              <Badge className="bg-white/90 text-gray-700 border-2 border-gray-300 text-base font-semibold px-3 py-1.5 shadow-sm">
                                 +{request.assignedRecipientIds.length - 3} more
                               </Badge>
                             )}
                           </div>
                         </div>
                       ) : request.recipientsCount ? (
-                        <Badge className="bg-white text-gray-900 border-gray-300">
-                          🏠 Unknown Host ({request.recipientsCount})
+                        <Badge className="bg-white text-gray-900 border-2 border-gray-300 text-base font-semibold px-3 py-1.5 shadow-sm flex items-center gap-2">
+                          <span className="text-lg">🏠</span>
+                          <span>Unknown Host ({request.recipientsCount})</span>
                         </Badge>
                       ) : (
-                        <div className="text-white/60 text-xs">No recipients assigned</div>
+                        <div className="text-gray-600 text-sm">No recipients assigned</div>
                       )}
                       {canEdit && (
                         <Button
