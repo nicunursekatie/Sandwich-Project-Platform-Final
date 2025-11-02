@@ -1017,27 +1017,31 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     ) : (
                       <div className="min-w-0">
                         {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5 items-center min-w-0">
-                            {request.assignedRecipientIds.slice(0, 4).map((id, idx) => {
+                          <div className="flex flex-col gap-1.5 min-w-0">
+                            {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
                               const recipientName = resolveRecipientName(id);
-                              // Truncate long names for display
-                              const displayName = recipientName.length > 40 
-                                ? recipientName.substring(0, 37) + '...'
+                              // Extract just the name part if it has parentheses with locations
+                              const cleanName = recipientName.includes('(') 
+                                ? recipientName.substring(0, recipientName.indexOf('(')).trim()
                                 : recipientName;
+                              // Truncate if still too long
+                              const displayName = cleanName.length > 25 
+                                ? cleanName.substring(0, 22) + '...'
+                                : cleanName;
                               return (
                                 <Badge 
                                   key={idx} 
                                   title={recipientName}
-                                  className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1 max-w-full min-w-0"
+                                  className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
                                 >
                                   <span className="text-sm shrink-0">🏠</span>
                                   <span className="truncate">{displayName}</span>
                                 </Badge>
                               );
                             })}
-                            {request.assignedRecipientIds.length > 4 && (
-                              <Badge className="bg-white/90 text-gray-700 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm shrink-0">
-                                +{request.assignedRecipientIds.length - 4} more
+                            {request.assignedRecipientIds.length > 3 && (
+                              <Badge className="bg-gray-100 text-gray-700 border border-gray-300 text-xs font-medium px-2 py-1 shadow-sm w-fit">
+                                +{request.assignedRecipientIds.length - 3} more recipients
                               </Badge>
                             )}
                           </div>
