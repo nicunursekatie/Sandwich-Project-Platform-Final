@@ -53,19 +53,18 @@ export default function ImportantLinks() {
       url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/NCLflyer.html',
       description: 'Social media QR codes, newsletter signup, and Amazon wishlist',
     },
-    // Add more flyers here in the future:
-    // {
-    //   id: 'volunteer',
-    //   name: 'Volunteer Recruitment Flyer',
-    //   url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/volunteer.html',
-    //   description: 'Flyer for recruiting volunteers',
-    // },
-    // {
-    //   id: 'group-host',
-    //   name: 'Group Host Flyer',
-    //   url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/grouphost.html',
-    //   description: 'Information for organizations that want to host group events',
-    // },
+    {
+      id: 'volunteer',
+      name: 'Volunteer Recruitment Flyer',
+      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/volunteer.html',
+      description: 'Flyer for recruiting volunteers',
+    },
+    {
+      id: 'group-host',
+      name: 'Group Host Flyer',
+      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/grouphost.html',
+      description: 'Information for organizations that want to host group events',
+    },
   ];
 
   const [selectedFlyerId, setSelectedFlyerId] = useState(flyers[0].id);
