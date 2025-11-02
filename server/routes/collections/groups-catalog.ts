@@ -84,19 +84,32 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
         // Otherwise keep the existing entry (prefer first match or org-level entry)
       });
 
-      // Create a map to aggregate data by organization and department
-      const departmentsMap = new Map();
+      // STEP 1: Build canonical organization name mapping
+      // This ensures all name variations (e.g., "Allstate" and "Allstate/Pebble Tossers") map to same canonical name
+      const canonicalOrgNameMap = new Map<string, string>(); // Maps original org name -> canonical name
       
-      // Helper: find existing matching canonical name in departmentsMap
-      const findMatchingCanonicalName = (canonicalName: string, department: string, contactEmail: string): string | null => {
-        for (const [key, dept] of departmentsMap.entries()) {
-          // Only match within the same department and contact
-          if (dept.department === department && dept.contactEmail === contactEmail && organizationNamesMatch(dept.canonicalName, canonicalName)) {
-            return dept.canonicalName;
+      allEventRequests.forEach((request) => {
+        const orgName = request.organizationName;
+        if (!orgName) return;
+        
+        const candidateCanonical = canonicalizeOrgName(orgName);
+        
+        // Check if a matching canonical name already exists
+        let matchingCanonical: string | null = null;
+        for (const [existingOrgName, existingCanonical] of canonicalOrgNameMap.entries()) {
+          if (organizationNamesMatch(candidateCanonical, existingCanonical)) {
+            matchingCanonical = existingCanonical;
+            break;
           }
         }
-        return null;
-      };
+        
+        // Use existing canonical or create new one
+        const finalCanonical = matchingCanonical || candidateCanonical;
+        canonicalOrgNameMap.set(orgName, finalCanonical);
+      });
+      
+      // STEP 2: Create a map to aggregate data by organization + department + contact
+      const departmentsMap = new Map();
 
       allEventRequests.forEach((request) => {
         const orgName = request.organizationName;
@@ -109,13 +122,8 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
 
         if (!orgName) return;
 
-        // Create a unique key using canonical name for matching
-        // ENHANCED: Check if a similar organization already exists and use its canonical name
-        let canonicalOrgName = canonicalizeOrgName(orgName);
-        const matchingCanonical = findMatchingCanonicalName(canonicalOrgName, department, contactEmail);
-        if (matchingCanonical) {
-          canonicalOrgName = matchingCanonical; // Use existing canonical name for consistency
-        }
+        // Use the canonical name from our mapping (this groups "Allstate" and "Allstate/Pebble Tossers" together)
+        const canonicalOrgName = canonicalOrgNameMap.get(orgName) || canonicalizeOrgName(orgName);
         
         // Group by organization + department + contact (one card per unique contact)
         const departmentKey = `${canonicalOrgName}|${department}|${contactEmail}`;
@@ -288,7 +296,24 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
           }
 
           const cleanOrgName = orgName.trim();
-          const canonicalOrgName = canonicalizeOrgName(cleanOrgName);
+          
+          // Use canonical name mapping if available, otherwise create new canonical name
+          // This ensures collections use same canonical names as event requests
+          let canonicalOrgName = canonicalOrgNameMap.get(cleanOrgName);
+          if (!canonicalOrgName) {
+            const candidateCanonical = canonicalizeOrgName(cleanOrgName);
+            // Check if this matches an existing canonical name
+            for (const existingCanonical of canonicalOrgNameMap.values()) {
+              if (organizationNamesMatch(candidateCanonical, existingCanonical)) {
+                canonicalOrgName = existingCanonical;
+                break;
+              }
+            }
+            if (!canonicalOrgName) {
+              canonicalOrgName = candidateCanonical;
+            }
+            canonicalOrgNameMap.set(cleanOrgName, canonicalOrgName);
+          }
 
           // DEDUPLICATION: Check if this collection matches an event request within ±7 days
           // This prevents the same event from being counted twice when it appears in both:
@@ -328,18 +353,9 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             }
           }
 
-          // Track sandwich totals using canonical name for matching
-          // ENHANCED: Check if a similar organization already exists and consolidate
-          let matchingKey = canonicalOrgName;
-          for (const [existingKey] of organizationSandwichData.entries()) {
-            if (organizationNamesMatch(existingKey, canonicalOrgName)) {
-              matchingKey = existingKey; // Use existing key for consolidation
-              break;
-            }
-          }
-          
-          if (!organizationSandwichData.has(matchingKey)) {
-            organizationSandwichData.set(matchingKey, {
+          // Track sandwich totals using canonical name (already normalized above)
+          if (!organizationSandwichData.has(canonicalOrgName)) {
+            organizationSandwichData.set(canonicalOrgName, {
               originalName: cleanOrgName, // Preserve original display name
               totalSandwiches: 0,
               eventCount: 0,
@@ -348,7 +364,7 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             });
           }
 
-          const orgData = organizationSandwichData.get(matchingKey);
+          const orgData = organizationSandwichData.get(canonicalOrgName);
           orgData.totalSandwiches += sandwichCount || 0;
 
           // Track unique event dates to calculate frequency
