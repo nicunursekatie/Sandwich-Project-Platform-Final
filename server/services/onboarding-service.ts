@@ -385,8 +385,8 @@ export class OnboardingService {
       // Documents challenges
       {
         actionKey: 'view_important_documents',
-        title: 'View Important Documents',
-        description: 'Check out the Important Documents section on the dashboard.',
+        title: 'View Resources',
+        description: 'Check out the Resources tab to find important documents, links, and tools.',
         category: 'documents',
         points: 10,
         icon: 'FileText',
