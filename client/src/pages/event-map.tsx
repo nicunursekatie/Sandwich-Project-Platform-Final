@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import {
   MapPin, Search, Calendar, Users, Package, Phone, Mail, AlertCircle,
   ChevronRight, Filter, RefreshCw, Navigation, Pencil, Save, X
@@ -8,6 +9,8 @@ import {
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { format } from 'date-fns';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -95,6 +98,30 @@ const statusColors = {
   declined: 'bg-gray-100 text-gray-800 border-gray-300',
   postponed: 'bg-orange-100 text-orange-800 border-orange-300',
   cancelled: 'bg-red-100 text-red-800 border-red-300',
+};
+
+// Custom cluster icon - branded with TSP colors
+const createClusterCustomIcon = (cluster: any) => {
+  const count = cluster.getChildCount();
+  
+  // Size based on count
+  let size = 'medium';
+  if (count < 10) size = 'small';
+  else if (count >= 50) size = 'large';
+  
+  const sizeClasses = {
+    small: 'w-10 h-10 text-sm',
+    medium: 'w-14 h-14 text-base',
+    large: 'w-20 h-20 text-xl'
+  };
+  
+  return L.divIcon({
+    html: `<div class="${sizeClasses[size]} rounded-full bg-gradient-to-br from-[#236383] to-[#007E8C] text-white font-bold flex items-center justify-center shadow-lg border-4 border-white">
+      ${count}
+    </div>`,
+    className: 'custom-marker-cluster',
+    iconSize: L.point(40, 40, true),
+  });
 };
 
 // Component to auto-fit map bounds (excludes geographic outliers)
@@ -469,46 +496,55 @@ export default function EventMapView() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <MapBounds events={filteredEvents} />
-              {filteredEvents.map((event) => (
-                <Marker
-                  key={event.id}
-                  position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                  icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
-                  eventHandlers={{
-                    click: () => setSelectedEvent(event),
-                  }}
-                >
-                  <Popup>
-                    <div className="p-2 min-w-[250px]">
-                      <h3 className="font-semibold text-base mb-2">
-                        {event.organizationName || 'Unknown Organization'}
-                      </h3>
-                      {event.department && (
-                        <p className="text-sm text-gray-600 mb-2">{event.department}</p>
-                      )}
-                      <div className="space-y-1 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-3 h-3 text-gray-500" />
-                          <span>{getEventDate(event)}</span>
-                        </div>
-                        {event.estimatedSandwichCount && (
-                          <div className="flex items-center gap-2">
-                            <Package className="w-3 h-3 text-gray-500" />
-                            <span>~{event.estimatedSandwichCount} sandwiches</span>
-                          </div>
+              
+              <MarkerClusterGroup
+                chunkedLoading
+                iconCreateFunction={createClusterCustomIcon}
+                showCoverageOnHover={true}
+                spiderfyDistanceMultiplier={1.5}
+                maxClusterRadius={60}
+              >
+                {filteredEvents.map((event) => (
+                  <Marker
+                    key={event.id}
+                    position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
+                    icon={statusIcons[event.status as keyof typeof statusIcons] || statusIcons.new}
+                    eventHandlers={{
+                      click: () => setSelectedEvent(event),
+                    }}
+                  >
+                    <Popup>
+                      <div className="p-2 min-w-[250px]">
+                        <h3 className="font-semibold text-base mb-2">
+                          {event.organizationName || 'Unknown Organization'}
+                        </h3>
+                        {event.department && (
+                          <p className="text-sm text-gray-600 mb-2">{event.department}</p>
                         )}
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-3 h-3 text-gray-500" />
-                          <span className="text-xs">{event.eventAddress}</span>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-3 h-3 text-gray-500" />
+                            <span>{getEventDate(event)}</span>
+                          </div>
+                          {event.estimatedSandwichCount && (
+                            <div className="flex items-center gap-2">
+                              <Package className="w-3 h-3 text-gray-500" />
+                              <span>~{event.estimatedSandwichCount} sandwiches</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-3 h-3 text-gray-500" />
+                            <span className="text-xs">{event.eventAddress}</span>
+                          </div>
                         </div>
+                        <Badge className={`${statusColors[event.status as keyof typeof statusColors]} mt-2`}>
+                          {event.status.replace('_', ' ').toUpperCase()}
+                        </Badge>
                       </div>
-                      <Badge className={`${statusColors[event.status as keyof typeof statusColors]} mt-2`}>
-                        {event.status.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
+                    </Popup>
+                  </Marker>
+                ))}
+              </MarkerClusterGroup>
             </MapContainer>
           ) : (
             <div className="h-full flex items-center justify-center bg-gray-50">
