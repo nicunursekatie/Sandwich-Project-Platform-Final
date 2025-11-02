@@ -1585,7 +1585,10 @@ export class DatabaseStorage implements IStorage {
     const [collectionCount] = await db
       .select({ count: sql`count(*)` })
       .from(sandwichCollections)
-      .where(eq(sandwichCollections.hostName, hostName));
+      .where(and(
+        eq(sandwichCollections.hostName, hostName),
+        isNull(sandwichCollections.deletedAt) // Exclude soft-deleted collections
+      ));
 
     if (Number(collectionCount.count) > 0) {
       throw new Error(
