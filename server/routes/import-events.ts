@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { isValid, parseISO } from 'date-fns';
 import { logger } from '../utils/production-safe-logger';
+import { AuditLogger } from '../audit-logger';
 
 export function createImportEventsRouter(deps: RouterDependencies) {
   const router = Router();
@@ -194,6 +195,21 @@ const __dirname = path.dirname(__filename);
         }
 
         const result = await storage.createEventRequest(event);
+        
+        // Add audit logging for imported event
+        await AuditLogger.logEventRequestChange(
+          result.id?.toString() || 'unknown',
+          null,
+          result,
+          {
+            userId: 'SYSTEM',
+            ipAddress: 'SYSTEM_IMPORT',
+            userAgent: 'Google Sheets - Past Events Import',
+            sessionId: 'IMPORT_SESSION',
+          },
+          { actionType: 'CREATE', operation: 'GOOGLE_SHEETS_IMPORT' }
+        );
+        
         importedEvents.push(result);
         logger.log(
           `✅ Imported past event: ${event.firstName} ${event.lastName} - ${event.organizationName}`
@@ -451,6 +467,21 @@ const __dirname = path.dirname(__filename);
         }
 
         const result = await storage.createEventRequest(event);
+        
+        // Add audit logging for imported historical event
+        await AuditLogger.logEventRequestChange(
+          result.id?.toString() || 'unknown',
+          null,
+          result,
+          {
+            userId: 'SYSTEM',
+            ipAddress: 'SYSTEM_IMPORT',
+            userAgent: 'Excel - Historical 2024 Import',
+            sessionId: 'IMPORT_SESSION',
+          },
+          { actionType: 'CREATE', operation: 'EXCEL_HISTORICAL_IMPORT' }
+        );
+        
         importedEvents.push(result);
         logger.log(
           `✅ Imported historical: ${event.firstName} ${event.lastName} - ${event.organizationName}`
@@ -703,6 +734,21 @@ const __dirname = path.dirname(__filename);
         }
 
         const result = await storage.createEventRequest(event);
+        
+        // Add audit logging for imported event
+        await AuditLogger.logEventRequestChange(
+          result.id?.toString() || 'unknown',
+          null,
+          result,
+          {
+            userId: 'SYSTEM',
+            ipAddress: 'SYSTEM_IMPORT',
+            userAgent: 'Excel - General Events Import',
+            sessionId: 'IMPORT_SESSION',
+          },
+          { actionType: 'CREATE', operation: 'EXCEL_IMPORT' }
+        );
+        
         importedEvents.push(result);
         logger.log(
           `✅ Imported: ${event.firstName} ${event.lastName} - ${event.organizationName}`
@@ -1028,6 +1074,21 @@ const __dirname = path.dirname(__filename);
         }
 
         const result = await storage.createEventRequest(event);
+        
+        // Add audit logging for imported 2023 event
+        await AuditLogger.logEventRequestChange(
+          result.id?.toString() || 'unknown',
+          null,
+          result,
+          {
+            userId: 'SYSTEM',
+            ipAddress: 'SYSTEM_IMPORT',
+            userAgent: 'Excel - Historical 2023 Import',
+            sessionId: 'IMPORT_SESSION',
+          },
+          { actionType: 'CREATE', operation: 'EXCEL_HISTORICAL_2023_IMPORT' }
+        );
+        
         importedEvents.push(result);
         logger.log(
           `✅ Imported 2023: ${event.firstName} ${event.lastName} - ${event.organizationName}`
