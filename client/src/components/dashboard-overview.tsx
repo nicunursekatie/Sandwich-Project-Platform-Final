@@ -394,19 +394,19 @@ export default function DashboardOverview({
   // Remove fake mini chart data - only use real data
 
   return (
-    <div className="min-h-screen premium-gradient-subtle relative">
+    <div className="min-h-screen premium-gradient-subtle relative w-full overflow-x-hidden">
       {/* Dark Mode Toggle */}
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
       </div>
-      <div className="space-y-8 pb-8">
+      <div className="space-y-8 pb-8 w-full">
         {/* Header */}
-        <div className="premium-card mx-4 mt-8 p-6 sm:p-8 text-center">
-          <div className="relative">
+        <div className="premium-card mx-4 mt-8 p-6 sm:p-8 text-center max-w-full">
+          <div className="relative max-w-full">
             <img
               src={CMYK_PRINT_TSP_01__2_}
               alt="The Sandwich Project"
-              className="w-[200px] sm:w-[250px] md:w-[400px] mb-4 sm:mb-6 mx-auto"
+              className="w-[200px] sm:w-[250px] md:w-[400px] max-w-full mb-4 sm:mb-6 mx-auto"
               width="400"
               height="125"
             />
@@ -418,8 +418,8 @@ export default function DashboardOverview({
 
         {/* Collection Call-to-Action */}
         {(COLLECTIONS_ADD || COLLECTIONS_EDIT_OWN) && (
-          <div className="premium-card-elevated mx-4 p-4 sm:p-6">
-            <div className="text-center">
+          <div className="premium-card-elevated mx-4 p-4 sm:p-6 max-w-full">
+            <div className="text-center max-w-full">
               <div className="mb-4 sm:mb-6">
                 <h2 className="premium-text-h3 text-brand-primary mb-2">
                   Record Collection Data
@@ -469,8 +469,8 @@ export default function DashboardOverview({
         )}
 
         {/* Hero Impact Section */}
-        <div className="mx-4 mb-8 sm:mb-12">
-          <div className="premium-card-featured p-8 sm:p-12 text-center">
+        <div className="mx-4 mb-8 sm:mb-12 max-w-full">
+          <div className="premium-card-featured p-8 sm:p-12 text-center max-w-full">
             <div className="mb-4">
               <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-brand-orange tracking-tight">
                 <AnimatedCounter
@@ -493,17 +493,17 @@ export default function DashboardOverview({
         </div>
 
         {/* Action Tracker Widget */}
-        <div className="mx-4 mb-8">
+        <div className="mx-4 mb-8 max-w-full">
           <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
         </div>
 
         {/* Recently Accessed Resources Widget */}
-        <div className="mx-4 mb-8">
+        <div className="mx-4 mb-8 max-w-full">
           <RecentlyAccessedResources />
         </div>
 
         {/* Key Metrics Grid */}
-        <div className="premium-grid sm:grid-cols-2 lg:grid-cols-3 mx-4 mb-6 sm:mb-8">
+        <div className="premium-grid sm:grid-cols-2 lg:grid-cols-3 mx-4 mb-6 sm:mb-8 max-w-full">
           <div className="premium-card premium-interactive p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="premium-text-caption text-brand-primary uppercase">
@@ -562,12 +562,12 @@ export default function DashboardOverview({
         </div>
 
         {/* Operational Capacity - Clean Design with Brand Color Accents */}
-        <div className="mx-4 mb-6 sm:mb-8">
-          <div className="premium-card p-4 sm:p-6">
+        <div className="mx-4 mb-6 sm:mb-8 max-w-full">
+          <div className="premium-card p-4 sm:p-6 max-w-full">
             <h2 className="premium-text-h3 text-gray-700 mb-4 sm:mb-6">
               Operational Capacity
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-full">
               {/* Peak Week - Burgundy accent */}
               <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all">
                 <div className="premium-text-h3 text-brand-burgundy mb-1">
@@ -618,13 +618,13 @@ export default function DashboardOverview({
         </div>
 
         {/* Planning Tools Section */}
-        <div className="mx-4 mb-8">
+        <div className="mx-4 mb-8 max-w-full">
           <h3 className="premium-text-h3 text-brand-primary mb-6">
             Planning Tools
           </h3>
 
           {/* Inventory Calculator - Clean and prominent */}
-          <div className="premium-card-elevated p-6 mb-6" style={{ borderTop: '3px solid #236383' }}>
+          <div className="premium-card-elevated p-6 mb-6 max-w-full" style={{ borderTop: '3px solid #236383' }}>
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mr-4">
                 <Calculator className="w-6 h-6 text-white" />
@@ -662,7 +662,7 @@ export default function DashboardOverview({
           </div>
 
           {/* Event Toolkit - Share with volunteers */}
-          <div className="premium-card-elevated p-6 mb-6" style={{ borderTop: '3px solid #FBAD3F' }}>
+          <div className="premium-card-elevated p-6 mb-6 max-w-full" style={{ borderTop: '3px solid #FBAD3F' }}>
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-brand-orange rounded-lg flex items-center justify-center mr-4">
                 <span className="text-2xl">📦</span>
@@ -700,7 +700,7 @@ export default function DashboardOverview({
           </div>
 
           {/* Host Collection Sites Directory */}
-          <div className="premium-card-elevated p-6 mb-6" style={{ borderTop: '3px solid #007E8C' }}>
+          <div className="premium-card-elevated p-6 mb-6 max-w-full" style={{ borderTop: '3px solid #007E8C' }}>
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mr-4">
                 <Building2 className="w-6 h-6 text-white" />
@@ -738,7 +738,7 @@ export default function DashboardOverview({
           </div>
 
           {/* Quick Actions Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-full">
             <div
               className="premium-card premium-interactive p-4 group cursor-pointer"
               onClick={() => onSectionChange?.('collections')}
@@ -806,11 +806,11 @@ export default function DashboardOverview({
         </div>
 
         {/* Resources Section */}
-        <div className="mx-4 mb-8">
+        <div className="mx-4 mb-8 max-w-full">
           <h3 className="text-lg font-semibold text-brand-primary mb-6">
             Resources
           </h3>
-          <div className="bg-white rounded-xl p-6 shadow-md">
+          <div className="bg-white rounded-xl p-6 shadow-md max-w-full">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" />
@@ -827,7 +827,7 @@ export default function DashboardOverview({
 
             {/* Documents Grid - Compact design */}
             {importantDocuments.length === 0 ? (
-              <div className="text-center py-8 px-4" data-testid="no-documents-message">
+              <div className="text-center py-8 px-4 max-w-full" data-testid="no-documents-message">
                 <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-sm text-gray-500 mb-2">No documents configured for dashboard</p>
                 {ADMIN_ACCESS && (
@@ -841,7 +841,7 @@ export default function DashboardOverview({
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-full">
                 {importantDocuments.map((doc, index) => (
                 <div
                   key={index}
@@ -893,7 +893,7 @@ export default function DashboardOverview({
         </div>
 
         {/* Help System */}
-        <div className="mx-4 mt-6 sm:mt-8">
+        <div className="mx-4 mt-6 sm:mt-8 max-w-full">
           <HelpBubble
             title="Dashboard Overview"
             content="This dashboard shows your impact at a glance! These numbers represent real meals provided to community members in your area. Use the forms above to submit new collection data or browse documents for guidance."
