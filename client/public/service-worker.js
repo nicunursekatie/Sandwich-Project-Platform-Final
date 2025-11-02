@@ -1,5 +1,5 @@
-const CACHE_NAME = 'tsp-v1';
-const RUNTIME_CACHE = 'tsp-runtime-v1';
+const CACHE_NAME = 'tsp-v1.0.1';
+const RUNTIME_CACHE = 'tsp-runtime-v1.0.1';
 
 // Assets to cache on install (only files guaranteed to exist in production)
 const PRECACHE_URLS = [
@@ -107,11 +107,14 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
 
-        // Clone and cache the response
-        const responseClone = response.clone();
-        caches.open(RUNTIME_CACHE).then((cache) => {
-          cache.put(request, responseClone);
-        });
+        // Only cache GET requests (Cache API doesn't support POST/PUT/DELETE)
+        if (request.method === 'GET') {
+          // Clone and cache the response
+          const responseClone = response.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put(request, responseClone);
+          });
+        }
 
         return response;
       });
