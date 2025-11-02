@@ -448,48 +448,49 @@ export default function UserManagementFinal() {
           {/* Search & Filter */}
           <Card>
             <CardContent className="pt-6">
-              <StandardFilterBar
-                searchPlaceholder="Search users by name, email, or phone..."
-                searchValue={searchQuery}
-                onSearchChange={setSearchQuery}
-                filters={[
-                  {
-                    id: 'role',
-                    label: 'Role',
-                    type: 'select',
-                    options: Object.entries(USER_ROLES).map(([key, value]) => ({
-                      value,
-                      label: getRoleDisplayName(value),
-                      count: users.filter((u: any) => u.role === value).length,
-                    })),
-                  },
-                  {
-                    id: 'status',
-                    label: 'Status',
-                    type: 'multi-select',
-                    options: [
-                      {
-                        value: 'active',
-                        label: 'Active',
-                        count: users.filter((u: any) => u.isActive).length,
-                      },
-                      {
-                        value: 'inactive',
-                        label: 'Inactive',
-                        count: users.filter((u: any) => !u.isActive).length,
-                      },
-                    ],
-                  },
-                ]}
-                filterValues={filters}
-                onFilterChange={(id, value) => setFilters({ ...filters, [id]: value })}
-                showActiveFilters
-                onClearAll={() => {
-                  setSearchQuery('');
-                  setFilters({ role: '', status: [] });
-                }}
-              />
-                
+              <div className="space-y-4">
+                <StandardFilterBar
+                  searchPlaceholder="Search users by name, email, or phone..."
+                  searchValue={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  filters={[
+                    {
+                      id: 'role',
+                      label: 'Role',
+                      type: 'select',
+                      options: Object.entries(USER_ROLES).map(([key, value]) => ({
+                        value,
+                        label: getRoleDisplayName(value),
+                        count: users.filter((u: any) => u.role === value).length,
+                      })),
+                    },
+                    {
+                      id: 'status',
+                      label: 'Status',
+                      type: 'multi-select',
+                      options: [
+                        {
+                          value: 'active',
+                          label: 'Active',
+                          count: users.filter((u: any) => u.isActive).length,
+                        },
+                        {
+                          value: 'inactive',
+                          label: 'Inactive',
+                          count: users.filter((u: any) => !u.isActive).length,
+                        },
+                      ],
+                    },
+                  ]}
+                  filterValues={filters}
+                  onFilterChange={(id, value) => setFilters({ ...filters, [id]: value })}
+                  showActiveFilters
+                  onClearAll={() => {
+                    setSearchQuery('');
+                    setFilters({ role: '', status: [] });
+                  }}
+                />
+
                 {selectedUsers.size > 0 && (
                   <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
                     <div className="flex items-center gap-2 text-sm text-blue-900">
