@@ -42,6 +42,9 @@ export function usePWA() {
       console.log('[PWA] App installed successfully');
       setIsInstalled(true);
       setInstallPrompt(null);
+      // Permanently remember installation
+      localStorage.setItem('pwa-installed', 'true');
+      localStorage.setItem('pwa-install-dismissed', 'true');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

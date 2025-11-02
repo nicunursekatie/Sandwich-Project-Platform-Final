@@ -10,9 +10,10 @@ export function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    // Check if user previously dismissed the prompt
+    // Check if user previously dismissed the prompt OR if app was already installed
     const wasDismissed = localStorage.getItem('pwa-install-dismissed');
-    if (wasDismissed) {
+    const wasInstalled = localStorage.getItem('pwa-installed');
+    if (wasDismissed || wasInstalled) {
       setDismissed(true);
     }
 
@@ -28,6 +29,9 @@ export function PWAInstallPrompt() {
     const installed = await promptInstall();
     if (installed) {
       setDismissed(true);
+      // Mark as installed permanently
+      localStorage.setItem('pwa-installed', 'true');
+      localStorage.setItem('pwa-install-dismissed', 'true');
     }
   };
 
