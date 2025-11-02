@@ -826,7 +826,7 @@ export class SmartSearchService {
 
     const newFeature: SearchableFeature = {
       ...feature,
-      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
     };
 
     this.index.features.push(newFeature);
@@ -852,10 +852,16 @@ export class SmartSearchService {
       return null;
     }
 
+    // Check if content actually changed before invalidating embedding
+    const contentChanged = 
+      (updates.title !== undefined && updates.title !== feature.title) ||
+      (updates.description !== undefined && updates.description !== feature.description) ||
+      (updates.keywords !== undefined && JSON.stringify(updates.keywords) !== JSON.stringify(feature.keywords));
+
     Object.assign(feature, updates);
 
     // If content changed, invalidate embedding
-    if (updates.title || updates.description || updates.keywords) {
+    if (contentChanged) {
       feature.embedding = undefined;
     }
 
@@ -912,11 +918,11 @@ export class SmartSearchService {
       this.index.features = features;
     } else {
       // Merge: replace existing, add new
-      const existingIds = new Set(this.index.features.map(f => f.id));
+      const existingMap = new Map(this.index.features.map((f, idx) => [f.id, idx]));
 
       for (const feature of features) {
-        const existingIndex = this.index.features.findIndex(f => f.id === feature.id);
-        if (existingIndex >= 0) {
+        const existingIndex = existingMap.get(feature.id);
+        if (existingIndex !== undefined) {
           this.index.features[existingIndex] = feature;
         } else {
           this.index.features.push(feature);

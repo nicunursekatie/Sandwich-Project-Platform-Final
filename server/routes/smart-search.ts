@@ -148,6 +148,19 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
 
       const options = req.body;
 
+      // Validate options
+      const allowedModes = ['all', 'missing', 'failed', 'selected'];
+      if (
+        !options ||
+        typeof options.mode !== 'string' ||
+        !allowedModes.includes(options.mode) ||
+        (options.mode === 'selected' && (!Array.isArray(options.featureIds) || options.featureIds.length === 0))
+      ) {
+        return res.status(400).json({
+          error: "Invalid options: 'mode' must be one of 'all', 'missing', 'failed', 'selected'. If 'mode' is 'selected', 'featureIds' must be a non-empty array."
+        });
+      }
+
       // Start regeneration in background
       searchService.regenerateEmbeddingsWithOptions(options)
         .catch(err => console.error('Background regeneration error:', err));
@@ -305,6 +318,10 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       }
 
       const { query, userRole } = req.body;
+      if (typeof query !== 'string' || query.trim().length === 0) {
+        return res.status(400).json({ error: 'Query parameter must be a non-empty string' });
+      }
+
       const result = await searchService.testSearch(query, userRole);
       res.json(result);
     } catch (error) {
@@ -322,6 +339,13 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       const sessionUser = req.user as SessionUser | undefined;
       if (sessionUser?.role !== 'admin' && sessionUser?.role !== 'super_admin') {
         return res.status(403).json({ error: 'Admin access required' });
+      }
+
+      // Validate required fields
+      const requiredFields = ['title', 'description', 'category', 'route', 'keywords'];
+      const missingFields = requiredFields.filter(field => !(field in req.body));
+      if (missingFields.length > 0) {
+        return res.status(400).json({ error: `Missing required fields: ${missingFields.join(', ')}` });
       }
 
       const feature = await searchService.addFeature(req.body);
@@ -343,7 +367,38 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
-      const feature = await searchService.updateFeature(req.params.id, req.body);
+      // Validate and sanitize update payload
+      const allowedFields = ['title', 'description', 'category', 'route', 'keywords', 'requiredPermissions'];
+      const updatePayload: Record<string, any> = {};
+      for (const key of allowedFields) {
+        if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+          updatePayload[key] = req.body[key];
+        }
+      }
+
+      // Prevent attempts to update system fields
+      if ('id' in req.body) {
+        return res.status(400).json({ error: 'Cannot update system-generated field: id' });
+      }
+
+      // Basic type validation
+      if ('title' in updatePayload && typeof updatePayload.title !== 'string') {
+        return res.status(400).json({ error: 'Invalid type for title' });
+      }
+      if ('description' in updatePayload && typeof updatePayload.description !== 'string') {
+        return res.status(400).json({ error: 'Invalid type for description' });
+      }
+      if ('category' in updatePayload && typeof updatePayload.category !== 'string') {
+        return res.status(400).json({ error: 'Invalid type for category' });
+      }
+      if ('route' in updatePayload && typeof updatePayload.route !== 'string') {
+        return res.status(400).json({ error: 'Invalid type for route' });
+      }
+      if ('keywords' in updatePayload && !Array.isArray(updatePayload.keywords)) {
+        return res.status(400).json({ error: 'Invalid type for keywords' });
+      }
+
+      const feature = await searchService.updateFeature(req.params.id, updatePayload);
       if (!feature) {
         return res.status(404).json({ error: 'Feature not found' });
       }
@@ -409,6 +464,17 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       }
 
       const { features, mode } = req.body;
+
+      // Validate features is an array
+      if (!Array.isArray(features)) {
+        return res.status(400).json({ error: '`features` must be an array' });
+      }
+
+      // Validate mode if provided
+      if (mode && mode !== 'replace' && mode !== 'merge') {
+        return res.status(400).json({ error: "`mode` must be either 'replace' or 'merge'" });
+      }
+
       await searchService.importFeatures(features, mode || 'merge');
       res.json({ success: true, message: `Imported ${features.length} features` });
     } catch (error) {
