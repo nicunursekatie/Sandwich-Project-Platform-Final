@@ -355,6 +355,8 @@ export function createHostsRouter(deps: RouterDependencies) {
     const id = validateId(req.params.id, 'host contact');
     const updates = req.body;
 
+    logger.info(`Updating host contact ${id} with data:`, updates);
+
     if (!updates || Object.keys(updates).length === 0) {
       throw createHostsError('No update data provided', 400, 'NO_UPDATE_DATA');
     }
@@ -365,7 +367,19 @@ export function createHostsRouter(deps: RouterDependencies) {
       throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
     }
 
-    const contact = await storage.updateHostContact(id, updates);
+    let contact;
+    try {
+      contact = await storage.updateHostContact(id, updates);
+    } catch (dbError: any) {
+      logger.error(`Database error updating host contact ${id}:`, dbError);
+      throw createHostsError(
+        `Database error: ${dbError.message || 'Unknown database error'}`,
+        500,
+        'DATABASE_ERROR',
+        { originalError: dbError.message, updates }
+      );
+    }
+
     if (!contact) {
       throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
     }
