@@ -227,6 +227,14 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
   {
+    id: 'event-map',
+    label: 'Event Map',
+    icon: MapPin,
+    href: 'event-map',
+    permission: PERMISSIONS.NAV_EVENT_PLANNING,
+    group: 'planning',
+  },
+  {
     id: 'historical-import',
     label: 'Historical Import',
     icon: FileSpreadsheet,
