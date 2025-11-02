@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { trackEvent, trackPageView } from '../lib/analytics';
+import { useAuth } from '../hooks/useAuth';
 
 interface TrackingData {
   section: string;
@@ -12,6 +13,7 @@ interface TrackingData {
 
 export const useEnhancedTracking = () => {
   const [location] = useLocation();
+  const { user } = useAuth();
   const startTimeRef = useRef<number>(Date.now());
   const currentSectionRef = useRef<string>('');
 
@@ -23,8 +25,8 @@ export const useEnhancedTracking = () => {
     const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
 
     // Send time spent data for previous section if it exists
-    if (currentSectionRef.current && timeSpent > 2) {
-      // Only track if spent more than 2 seconds
+    if (currentSectionRef.current && timeSpent > 2 && user?.id) {
+      // Only track if spent more than 2 seconds and user is logged in
       trackEvent(
         'page_duration',
         'engagement',
@@ -38,6 +40,7 @@ export const useEnhancedTracking = () => {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
+          userId: user.id,
           action: 'Page View',
           section: getSectionFromPath(currentSectionRef.current),
           page: currentSectionRef.current,
@@ -62,25 +65,28 @@ export const useEnhancedTracking = () => {
     // Track in Google Analytics
     trackEvent(data.action, data.section, data.feature);
 
-    // Track in our backend (silently ignore errors)
-    fetch('/api/enhanced-user-activity/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        action: data.action,
-        section: data.section,
-        page: location,
-        feature: data.feature,
-        duration: data.duration,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          ...data.metadata,
-        },
-      }),
-    }).catch(() => {
-      // Silently ignore tracking errors - non-critical functionality
-    });
+    // Track in our backend (silently ignore errors) - only if user is logged in
+    if (user?.id) {
+      fetch('/api/enhanced-user-activity/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: user.id,
+          action: data.action,
+          section: data.section,
+          page: location,
+          feature: data.feature,
+          duration: data.duration,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            ...data.metadata,
+          },
+        }),
+      }).catch(() => {
+        // Silently ignore tracking errors - non-critical functionality
+      });
+    }
   };
 
   const trackButtonClick = (buttonName: string, section: string) => {
