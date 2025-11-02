@@ -157,6 +157,8 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'route-map',
     permission: PERMISSIONS.NAV_HOSTS,
     group: 'operations',
+    parentId: 'hosts',
+    isSubItem: true,
   },
   {
     id: 'drivers',

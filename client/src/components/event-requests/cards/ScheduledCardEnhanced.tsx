@@ -964,9 +964,67 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           </div>
 
-          {/* Column 2: Team Assignments */}
+          {/* Column 2: Event Organizer */}
           <div className="flex flex-col h-full">
-            <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10 flex-1">
+            <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10 flex-1">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
+                Event Organizer
+              </h3>
+              <div className="space-y-2 text-sm text-gray-900">
+                {(request.firstName || request.lastName) && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 shrink-0" />
+                    <span className="text-base font-semibold">
+                      {request.firstName} {request.lastName}
+                    </span>
+                  </div>
+                )}
+                {request.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 shrink-0" />
+                    <a href={`mailto:${request.email}`} className="hover:underline">
+                      {request.email}
+                    </a>
+                  </div>
+                )}
+                {request.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <a href={`tel:${request.phone}`} className="hover:underline">
+                      {request.phone}
+                    </a>
+                  </div>
+                )}
+                {(request.tspContact || request.customTspContact) && (
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/30">
+                    <UserPlus className="w-4 h-4 shrink-0" />
+                    <span className="text-base font-semibold">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
+                    {canEdit && (
+                      <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-white hover:bg-white/20" aria-label="Edit TSP contact">
+                        <Edit2 className="w-3 h-3" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {!request.tspContact && !request.customTspContact && (
+                  <Button
+                    size="sm"
+                    onClick={onAssignTspContact}
+                    className="w-full bg-white/20 hover:bg-white/30 text-white mt-2"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Assign TSP Contact
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Team Assignments & Delivery */}
+          <div className="flex flex-col gap-4 h-full">
+            {/* Team Assignments */}
+            <div className="bg-[#236383]/5 rounded-lg p-4 border border-[#236383]/10">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
@@ -1266,64 +1324,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Column 3: Contact Information */}
-          <div className="flex flex-col gap-4 h-full">
-            {/* Event Organizer */}
-            <div className="bg-[#47B3CB]/5 rounded-lg p-4 border border-[#47B3CB]/10">
-              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
-                Event Organizer
-              </h3>
-              <div className="space-y-2 text-sm text-gray-900">
-                {(request.firstName || request.lastName) && (
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 shrink-0" />
-                    <span className="text-base font-semibold">
-                      {request.firstName} {request.lastName}
-                    </span>
-                  </div>
-                )}
-                {request.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 shrink-0" />
-                    <a href={`mailto:${request.email}`} className="hover:underline">
-                      {request.email}
-                    </a>
-                  </div>
-                )}
-                {request.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 shrink-0" />
-                    <a href={`tel:${request.phone}`} className="hover:underline">
-                      {request.phone}
-                    </a>
-                  </div>
-                )}
-                {(request.tspContact || request.customTspContact) && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-white/30">
-                    <UserPlus className="w-4 h-4 shrink-0" />
-                    <span className="text-base font-semibold">TSP: {request.customTspContact || resolveUserName(request.tspContact || '')}</span>
-                    {canEdit && (
-                      <Button size="sm" variant="ghost" onClick={onEditTspContact} className="h-6 px-2 text-white hover:bg-white/20" aria-label="Edit TSP contact">
-                        <Edit2 className="w-3 h-3" aria-hidden="true" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-                {!request.tspContact && !request.customTspContact && (
-                  <Button
-                    size="sm"
-                    onClick={onAssignTspContact}
-                    className="w-full bg-white/20 hover:bg-white/30 text-white mt-2"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Assign TSP Contact
-                  </Button>
-                )}
               </div>
             </div>
 
