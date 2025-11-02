@@ -687,32 +687,52 @@ export class SmartSearchService {
 
       const batch = featuresToProcess.slice(i, i + batchSize);
 
-      await Promise.all(batch.map(async (feature) => {
+      // Process batch and collect results to avoid race conditions
+      const results = await Promise.all(batch.map(async (feature) => {
         try {
-          this.regenerationProgress!.currentFeature = feature.title;
-
           const searchableText = `${feature.title} ${feature.description} ${feature.keywords.join(' ')}`;
           const embedding = await this.getEmbedding(searchableText);
 
           if (embedding) {
             feature.embedding = embedding;
-            this.regenerationProgress!.completed++;
-            console.log(`✓ Generated embedding for: ${feature.title} (${this.regenerationProgress!.completed}/${this.regenerationProgress!.total})`);
+            console.log(`✓ Generated embedding for: ${feature.title}`);
+            return { success: true, feature };
           } else {
             throw new Error('Failed to generate embedding');
           }
         } catch (error) {
-          this.regenerationProgress!.failed++;
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          this.regenerationProgress!.errors.push({
-            featureId: feature.id,
-            featureTitle: feature.title,
-            error: errorMessage,
-            timestamp: new Date()
-          });
           console.error(`✗ Failed to generate embedding for: ${feature.title} - ${errorMessage}`);
+          return {
+            success: false,
+            feature,
+            error: {
+              featureId: feature.id,
+              featureTitle: feature.title,
+              error: errorMessage,
+              timestamp: new Date()
+            }
+          };
         }
       }));
+
+      // Atomically update progress counters to avoid race conditions
+      for (const result of results) {
+        if (result.success) {
+          this.regenerationProgress!.completed++;
+        } else {
+          this.regenerationProgress!.failed++;
+          this.regenerationProgress!.errors.push(result.error!);
+        }
+      }
+
+      // Update current feature for display (use last successful or last in batch)
+      const lastFeature = results[results.length - 1]?.feature;
+      if (lastFeature) {
+        this.regenerationProgress!.currentFeature = lastFeature.title;
+      }
+
+      console.log(`Batch complete: ${this.regenerationProgress!.completed}/${this.regenerationProgress!.total}`);
 
       // Update estimated time remaining
       const elapsed = Date.now() - this.regenerationProgress.startTime!.getTime();

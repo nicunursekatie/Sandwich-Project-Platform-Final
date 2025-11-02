@@ -822,6 +822,252 @@ export default function SmartSearchAdmin() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Feature Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Feature</DialogTitle>
+            <DialogDescription>
+              Add a new searchable feature to the index. Embedding will be generated on next regeneration.
+            </DialogDescription>
+          </DialogHeader>
+          <AddFeatureForm
+            onSuccess={() => {
+              setIsAddDialogOpen(false);
+              refetchFeatures();
+              toast({ title: 'Success', description: 'Feature added' });
+            }}
+            onCancel={() => setIsAddDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Feature Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Feature</DialogTitle>
+            <DialogDescription>
+              Modify feature details. Embedding will be regenerated if content changes.
+            </DialogDescription>
+          </DialogHeader>
+          {editingFeature && (
+            <EditFeatureForm
+              feature={editingFeature}
+              onSuccess={() => {
+                setIsEditDialogOpen(false);
+                setEditingFeature(null);
+                refetchFeatures();
+                toast({ title: 'Success', description: 'Feature updated' });
+              }}
+              onCancel={() => {
+                setIsEditDialogOpen(false);
+                setEditingFeature(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+// Add Feature Form Component
+function AddFeatureForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    route: '',
+    keywords: '',
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/smart-search/feature', data),
+    onSuccess,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addMutation.mutate({
+      ...formData,
+      keywords: formData.keywords.split(',').map(k => k.trim()).filter(Boolean),
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="title">Title *</Label>
+        <Input
+          id="title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          placeholder="e.g., User Management"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Description *</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Describe what this feature does..."
+          rows={3}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="category">Category *</Label>
+        <Input
+          id="category"
+          value={formData.category}
+          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          placeholder="e.g., Admin, Users, Settings"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="route">Route *</Label>
+        <Input
+          id="route"
+          value={formData.route}
+          onChange={(e) => setFormData({ ...formData, route: e.target.value })}
+          placeholder="e.g., /users or users"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="keywords">Keywords (comma-separated)</Label>
+        <Input
+          id="keywords"
+          value={formData.keywords}
+          onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+          placeholder="e.g., user, manage, admin, people"
+        />
+        <p className="text-xs text-muted-foreground">
+          Enter keywords separated by commas
+        </p>
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={addMutation.isPending}>
+          {addMutation.isPending ? 'Adding...' : 'Add Feature'}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+// Edit Feature Form Component
+function EditFeatureForm({
+  feature,
+  onSuccess,
+  onCancel,
+}: {
+  feature: SearchableFeature;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    title: feature.title,
+    description: feature.description,
+    category: feature.category,
+    route: feature.route,
+    keywords: feature.keywords.join(', '),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('PUT', `/api/smart-search/feature/${feature.id}`, data),
+    onSuccess,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateMutation.mutate({
+      ...formData,
+      keywords: formData.keywords.split(',').map(k => k.trim()).filter(Boolean),
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="edit-title">Title *</Label>
+        <Input
+          id="edit-title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="edit-description">Description *</Label>
+        <Textarea
+          id="edit-description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          rows={3}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="edit-category">Category *</Label>
+        <Input
+          id="edit-category"
+          value={formData.category}
+          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="edit-route">Route *</Label>
+        <Input
+          id="edit-route"
+          value={formData.route}
+          onChange={(e) => setFormData({ ...formData, route: e.target.value })}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="edit-keywords">Keywords (comma-separated)</Label>
+        <Input
+          id="edit-keywords"
+          value={formData.keywords}
+          onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+        />
+      </div>
+
+      {feature.embedding && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Modifying this feature will invalidate its embedding. You'll need to regenerate it.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={updateMutation.isPending}>
+          {updateMutation.isPending ? 'Updating...' : 'Update Feature'}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }
