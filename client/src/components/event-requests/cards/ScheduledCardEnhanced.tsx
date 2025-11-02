@@ -413,9 +413,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </Badge>
 
               {/* Sandwich count badge */}
-              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium">
-                <Package className="w-3 h-3 mr-1" aria-hidden="true" />
-                {sandwichInfo} Sandwiches
+              <Badge className="bg-[#FBAD3F] text-white text-base font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
+                <span className="text-lg">🥪</span>
+                <span>{sandwichInfo} Sandwiches</span>
               </Badge>
 
               {request.externalId && request.externalId.startsWith('manual-') && (
@@ -906,7 +906,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <div className="flex-1 group flex items-center gap-2">
-                  <span className="text-base font-bold text-[#FBAD3F]">{sandwichInfo}</span>
+                  <Badge className="bg-[#FBAD3F] text-white text-lg font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
+                    <span className="text-xl">🥪</span>
+                    <span>{sandwichInfo}</span>
+                  </Badge>
                   {canEdit && (
                     <Button
                       size="sm"
@@ -1009,38 +1012,38 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {driverNeeded > 0 ? (
                       <>
                         {parsePostgresArray(request.assignedDriverIds).map((id) => (
-                          <div key={id} className="flex items-center gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                            <span className="text-base font-bold text-[#236383] truncate flex-1 min-w-0">{extractCustomName(id) || resolveUserName(id)}</span>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <SendKudosButton
-                                recipientId={id}
-                                recipientName={extractCustomName(id) || resolveUserName(id)}
-                                contextType="project"
-                                contextId={request.id.toString()}
-                                contextTitle={`${request.organizationName} event`}
-                                size="sm"
-                                variant="outline"
-                                iconOnly
-                              />
-                              {canEdit && (
-                                <Button
+                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                              <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                <SendKudosButton
+                                  recipientId={id}
+                                  recipientName={extractCustomName(id) || resolveUserName(id)}
+                                  contextType="project"
+                                  contextId={request.id.toString()}
+                                  contextTitle={`${request.organizationName} event`}
                                   size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('driver', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
+                                  variant="outline"
+                                  iconOnly
+                                />
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveAssignment('driver', id)}
+                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
                           </div>
                         ))}
                         {request.assignedVanDriverId && (
-                          <div className="flex items-center gap-2 bg-blue-100 rounded px-3 py-1.5 border-2 border-blue-400 min-w-0">
-                            <span className="text-base font-bold text-blue-900 truncate flex-1 min-w-0">
+                          <div className="flex items-start gap-2 bg-blue-100 rounded px-3 py-1.5 border-2 border-blue-400 min-w-0">
+                            <span className="text-base font-bold text-blue-900 flex-1 min-w-0 break-words leading-tight">
                               {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
                             </span>
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
                               <SendKudosButton
                                 recipientId={request.assignedVanDriverId}
                                 recipientName={resolveUserName(request.assignedVanDriverId)}
@@ -1128,9 +1131,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           const detailName = (request.speakerDetails as any)?.[id]?.name;
                           const displayName = (detailName && !/^\d+$/.test(detailName)) ? detailName : (extractCustomName(id) || resolveUserName(id));
                           return (
-                            <div key={id} className="flex items-center gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                              <span className="text-base font-bold text-[#236383] truncate flex-1 min-w-0">{displayName}</span>
-                              <div className="flex items-center gap-1 shrink-0">
+                            <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                              <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
+                              <div className="flex items-center gap-1 shrink-0 pt-0.5">
                                 <SendKudosButton
                                   recipientId={id}
                                   recipientName={displayName}
@@ -1216,9 +1219,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {volunteerNeeded > 0 ? (
                       <>
                         {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
-                          <div key={id} className="flex items-center gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                            <span className="text-base font-bold text-[#236383] truncate flex-1 min-w-0">{extractCustomName(id) || resolveUserName(id)}</span>
-                            <div className="flex items-center gap-1 shrink-0">
+                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                            <div className="flex items-center gap-1 shrink-0 pt-0.5">
                               <SendKudosButton
                                 recipientId={id}
                                 recipientName={extractCustomName(id) || resolveUserName(id)}
