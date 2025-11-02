@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import {
   MapPin, Search, Calendar, Users, Package, Phone, Mail, AlertCircle,
-  ChevronRight, Filter, RefreshCw, Navigation
+  ChevronRight, Filter, RefreshCw, Navigation, Pencil, Save, X
 } from 'lucide-react';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import L from 'leaflet';
@@ -23,6 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -110,6 +119,8 @@ export default function EventMapView() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EventMapData | null>(null);
+  const [editedAddress, setEditedAddress] = useState('');
 
   useEffect(() => {
     trackView(
@@ -131,6 +142,31 @@ export default function EventMapView() {
       const response = await fetch(`/api/event-map?${params}`);
       if (!response.ok) throw new Error('Failed to fetch event map data');
       return response.json();
+    },
+  });
+
+  // Update address mutation
+  const updateAddressMutation = useMutation({
+    mutationFn: async ({ eventId, address }: { eventId: number; address: string }) => {
+      return await apiRequest('PATCH', `/api/event-requests/${eventId}`, {
+        eventAddress: address,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Address Updated',
+        description: 'Event address has been updated successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+      setEditingEvent(null);
+      setEditedAddress('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Update Failed',
+        description: error?.message || 'Failed to update event address',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -386,16 +422,7 @@ export default function EventMapView() {
                 {eventsNeedingGeocode.map((event) => (
                   <Card
                     key={event.id}
-                    className={`p-3 transition-shadow ${
-                      geocodeMutation.isPending 
-                        ? 'cursor-not-allowed opacity-50' 
-                        : 'hover:shadow-md cursor-pointer'
-                    }`}
-                    onClick={() => {
-                      if (!geocodeMutation.isPending) {
-                        geocodeMutation.mutate(event.id);
-                      }
-                    }}
+                    className="p-3 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -408,12 +435,36 @@ export default function EventMapView() {
                         <Badge className={`${statusColors[event.status as keyof typeof statusColors]} text-xs mt-2`}>
                           {event.status.replace('_', ' ')}
                         </Badge>
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7"
+                            onClick={() => {
+                              setEditingEvent(event);
+                              setEditedAddress(event.eventAddress || '');
+                            }}
+                            data-testid={`button-edit-address-${event.id}`}
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Edit Address
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="text-xs h-7"
+                            onClick={() => geocodeMutation.mutate(event.id)}
+                            disabled={geocodeMutation.isPending}
+                            data-testid={`button-geocode-${event.id}`}
+                          >
+                            {geocodeMutation.isPending ? (
+                              <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                            ) : (
+                              <MapPin className="w-3 h-3 mr-1" />
+                            )}
+                            Geocode
+                          </Button>
+                        </div>
                       </div>
-                      {geocodeMutation.isPending ? (
-                        <RefreshCw className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1 animate-spin" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
-                      )}
                     </div>
                   </Card>
                 ))}
@@ -422,6 +473,78 @@ export default function EventMapView() {
           </div>
         )}
       </div>
+
+      {/* Edit Address Dialog */}
+      <Dialog open={!!editingEvent} onOpenChange={(open) => {
+        if (!open) {
+          setEditingEvent(null);
+          setEditedAddress('');
+        }
+      }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Event Address</DialogTitle>
+            <DialogDescription>
+              Update the address for <strong>{editingEvent?.organizationName || 'this event'}</strong>. 
+              Make sure the address is accurate for geocoding.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Event Address
+              </label>
+              <Textarea
+                value={editedAddress}
+                onChange={(e) => setEditedAddress(e.target.value)}
+                placeholder="Enter full address (street, city, state, zip)"
+                className="min-h-[100px]"
+                data-testid="input-edit-address"
+              />
+              <p className="text-xs text-gray-500">
+                Include street address, city, state, and ZIP code for best results
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingEvent(null);
+                setEditedAddress('');
+              }}
+              data-testid="button-cancel-edit"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingEvent && editedAddress.trim()) {
+                  updateAddressMutation.mutate({
+                    eventId: editingEvent.id,
+                    address: editedAddress.trim(),
+                  });
+                }
+              }}
+              disabled={!editedAddress.trim() || updateAddressMutation.isPending}
+              data-testid="button-save-address"
+            >
+              {updateAddressMutation.isPending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Address
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
