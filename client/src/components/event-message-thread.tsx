@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useMessaging } from '@/hooks/useMessaging';
+import React, { useMemo } from 'react';
+import { useEventMessages } from '@/hooks/useEventMessages';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -31,61 +31,23 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
   maxHeight = '400px',
   showHeader = true,
 }) => {
-  const { getContextMessages } = useMessaging();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use lightweight hook that doesn't create WebSocket connections
+  const { data: rawMessages, isLoading, isError } = useEventMessages(eventId);
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!eventId) return;
+  // Filter out deleted messages and sort by creation date
+  const messages = useMemo(() => {
+    if (!rawMessages || !Array.isArray(rawMessages)) {
+      return [];
+    }
 
-      setLoading(true);
-      setError(null);
+    return rawMessages
+      .filter((msg: Message) => !msg.deletedAt)
+      .sort((a: Message, b: Message) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+  }, [rawMessages]);
 
-      try {
-        const contextMessages = await getContextMessages('event', eventId);
-        // Filter out deleted messages and sort by creation date
-        const activeMessages = contextMessages
-          .filter((msg: Message) => !msg.deletedAt)
-          .sort((a: Message, b: Message) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
-        setMessages(activeMessages);
-      } catch (err) {
-        console.error('Failed to fetch event messages:', err);
-        setError('Failed to load messages');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMessages();
-
-    // Refresh messages every 30 seconds, but only when page is visible
-    const interval = setInterval(() => {
-      if (!document.hidden) {
-        fetchMessages();
-      }
-    }, 30000);
-
-    // Also fetch when page becomes visible again
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchMessages();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-    // getContextMessages is stable (wrapped in useCallback with empty deps in useMessaging)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -94,10 +56,10 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-red-500">{error}</p>
+        <p className="text-sm text-red-500">Failed to load messages</p>
       </div>
     );
   }
