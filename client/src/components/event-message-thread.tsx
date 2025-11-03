@@ -3,7 +3,7 @@ import { useEventMessages } from '@/hooks/useEventMessages';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList } from 'lucide-react';
+import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList, AlertCircle, Users, Truck, Car, Bell, Package, Copy, PhoneOff, Share2 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 
@@ -53,7 +53,7 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
   // Build combined activity items from contact attempts and notes
   const activityItems = useMemo(() => {
     const items: Array<{
-      type: 'contact' | 'note' | 'message';
+      type: 'contact' | 'note' | 'message' | 'initial';
       icon: React.ReactNode;
       title: string;
       content: string;
@@ -62,6 +62,16 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
     }> = [];
 
     if (!eventRequest) return items;
+
+    // Add initial request message at the top (if present)
+    if (eventRequest.message) {
+      items.push({
+        type: 'initial',
+        icon: <FileText className="h-4 w-4" />,
+        title: 'Initial Request Message',
+        content: eventRequest.message,
+      });
+    }
 
     // Add contact attempt info
     if (eventRequest.contactAttempts && eventRequest.contactAttempts > 0) {
@@ -100,6 +110,96 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
         icon: <Calendar className="h-4 w-4" />,
         title: 'Scheduling Notes',
         content: eventRequest.schedulingNotes,
+      });
+    }
+
+    // Add additional requirements
+    if (eventRequest.additionalRequirements) {
+      items.push({
+        type: 'note',
+        icon: <AlertCircle className="h-4 w-4" />,
+        title: 'Special Requirements',
+        content: eventRequest.additionalRequirements,
+      });
+    }
+
+    // Add volunteer notes
+    if (eventRequest.volunteerNotes) {
+      items.push({
+        type: 'note',
+        icon: <Users className="h-4 w-4" />,
+        title: 'Volunteer Notes',
+        content: eventRequest.volunteerNotes,
+      });
+    }
+
+    // Add driver notes
+    if (eventRequest.driverNotes) {
+      items.push({
+        type: 'note',
+        icon: <Car className="h-4 w-4" />,
+        title: 'Driver Notes',
+        content: eventRequest.driverNotes,
+      });
+    }
+
+    // Add van driver notes
+    if (eventRequest.vanDriverNotes) {
+      items.push({
+        type: 'note',
+        icon: <Truck className="h-4 w-4" />,
+        title: 'Van Driver Notes',
+        content: eventRequest.vanDriverNotes,
+      });
+    }
+
+    // Add follow-up notes
+    if (eventRequest.followUpNotes) {
+      items.push({
+        type: 'note',
+        icon: <Bell className="h-4 w-4" />,
+        title: 'Follow-up Notes',
+        content: eventRequest.followUpNotes,
+      });
+    }
+
+    // Add distribution notes
+    if (eventRequest.distributionNotes) {
+      items.push({
+        type: 'note',
+        icon: <Package className="h-4 w-4" />,
+        title: 'Distribution Notes',
+        content: eventRequest.distributionNotes,
+      });
+    }
+
+    // Add duplicate check notes
+    if (eventRequest.duplicateNotes) {
+      items.push({
+        type: 'note',
+        icon: <Copy className="h-4 w-4" />,
+        title: 'Duplicate Check Notes',
+        content: eventRequest.duplicateNotes,
+      });
+    }
+
+    // Add unresponsive/contact attempts logged
+    if (eventRequest.unresponsiveNotes) {
+      items.push({
+        type: 'note',
+        icon: <PhoneOff className="h-4 w-4" />,
+        title: 'Contact Attempts Logged',
+        content: eventRequest.unresponsiveNotes,
+      });
+    }
+
+    // Add social media notes
+    if (eventRequest.socialMediaPostNotes) {
+      items.push({
+        type: 'note',
+        icon: <Share2 className="h-4 w-4" />,
+        title: 'Social Media Notes',
+        content: eventRequest.socialMediaPostNotes,
       });
     }
 
