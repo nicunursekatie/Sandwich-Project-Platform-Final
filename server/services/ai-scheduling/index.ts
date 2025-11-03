@@ -65,17 +65,23 @@ export async function suggestOptimalEventDate(
       messages: [
         {
           role: 'system',
-          content: `You are an AI assistant for The Sandwich Project, a nonprofit that coordinates volunteers to make sandwiches for people experiencing food insecurity. Your goal is to help schedule events that balance sandwich production throughout the year, preventing weeks with too many or too few events.
+          content: `You are an AI assistant for The Sandwich Project, a nonprofit that coordinates volunteers to make sandwiches for people experiencing food insecurity. Your goal is to help analyze their requested event date and suggest alternatives only when needed.
 
-When analyzing dates, consider:
-1. Balance - Prefer weeks with fewer scheduled sandwiches
-2. Distribution - Avoid clustering too many events in one week
-3. Feasibility - Account for the organization's message and constraints
-4. Impact - Help maintain steady sandwich production toward the 500,000 annual goal
+Most event requests are NOT flexible, so:
+1. Start by analyzing what's happening on their requested date
+2. If their requested date looks fine (fewer than 4 events that week, under 4,000 sandwiches), recommend it
+3. Only suggest an alternative if their requested date is very busy or creates an imbalance
+4. Explain what events are already scheduled that week so they understand the context
+
+When suggesting alternatives, consider:
+- Balance - Prefer weeks with fewer scheduled sandwiches
+- Distribution - Avoid clustering too many events in one week  
+- Nearby dates - Only suggest dates close to their request (within 1-3 days)
+- Impact - Help maintain steady sandwich production toward the 500,000 annual goal
 
 You must respond with a JSON object containing exactly these fields:
-- recommendedDate: The date in YYYY-MM-DD format that you recommend
-- reasoning: A clear explanation of why this date is optimal (2-3 sentences)
+- recommendedDate: The date in YYYY-MM-DD format that you recommend (can be their original request!)
+- reasoning: A clear explanation focusing on what's happening that week and why you're recommending this date (2-3 sentences)
 - confidence: A number from 0-100 indicating your confidence in this recommendation`
         },
         {
@@ -142,6 +148,7 @@ You must respond with a JSON object containing exactly these fields:
 
 /**
  * Extracts all possible dates from an event request
+ * Focus on requested date + a few nearby alternatives if needed
  */
 function extractPossibleDates(eventRequest: EventRequest): string[] {
   const dates: string[] = [];
@@ -152,28 +159,29 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
     return dates;
   }
 
-  // Add the desired event date
+  // Add the desired event date (primary focus)
   dates.push(desiredDate);
 
-  // Generate nearby date options (3 days before and 7 days after the desired date)
-  // This gives the AI flexibility to suggest better dates for balancing
+  // Add 1-2 nearby alternatives to give AI flexibility for very busy weeks
+  // This keeps the analysis focused while still allowing smart suggestions
   const baseDate = new Date(desiredDate);
   
-  // Add 3 days before (for events that might work better earlier in the week)
-  for (let i = 1; i <= 3; i++) {
-    const earlierDate = new Date(baseDate);
-    earlierDate.setDate(earlierDate.getDate() - i);
-    dates.unshift(earlierDate.toISOString().split('T')[0]);
-  }
+  // Add the day before
+  const dayBefore = new Date(baseDate);
+  dayBefore.setDate(dayBefore.getDate() - 1);
+  dates.unshift(dayBefore.toISOString().split('T')[0]);
   
-  // Add 7 days after (for events that might work better later)
-  for (let i = 1; i <= 7; i++) {
-    const laterDate = new Date(baseDate);
-    laterDate.setDate(laterDate.getDate() + i);
-    dates.push(laterDate.toISOString().split('T')[0]);
-  }
+  // Add the day after
+  const dayAfter = new Date(baseDate);
+  dayAfter.setDate(dayAfter.getDate() + 1);
+  dates.push(dayAfter.toISOString().split('T')[0]);
+  
+  // Add 3 days later as another option
+  const threeDaysLater = new Date(baseDate);
+  threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+  dates.push(threeDaysLater.toISOString().split('T')[0]);
 
-  // Add backup dates if available
+  // Add backup dates if explicitly provided
   if (eventRequest.backupDates && eventRequest.backupDates.length > 0) {
     eventRequest.backupDates.forEach(backupDate => {
       if (!dates.includes(backupDate)) {
