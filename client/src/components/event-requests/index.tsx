@@ -52,6 +52,7 @@ import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog
 import { AssignmentDialog } from './dialogs/AssignmentDialog';
 import { MissingInfoSummaryDialog } from './MissingInfoSummaryDialog';
 import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
+import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
 import { logger } from '@/lib/logger';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
@@ -106,6 +107,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowStaffingPlanningModal,
     showLogContactDialog,
     setShowLogContactDialog,
+    showAiDateSuggestionDialog,
+    setShowAiDateSuggestionDialog,
 
     // Assignment dialog state
     assignmentType,
@@ -132,6 +135,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setTspContactEventRequest,
     logContactEventRequest,
     setLogContactEventRequest,
+    aiSuggestionEventRequest,
+    setAiSuggestionEventRequest,
 
     // Other states
     scheduleCallDate,
@@ -475,6 +480,25 @@ const EventRequestsManagementContent: React.FC = () => {
             });
           }}
         />
+
+        {/* AI Date Suggestion Dialog */}
+        {aiSuggestionEventRequest && (
+          <AiDateSuggestionDialog
+            open={showAiDateSuggestionDialog}
+            onClose={() => {
+              setShowAiDateSuggestionDialog(false);
+              setAiSuggestionEventRequest(null);
+            }}
+            eventRequest={aiSuggestionEventRequest}
+            onSelectDate={(date) => {
+              // Automatically open scheduling dialog with the recommended date
+              setSchedulingEventRequest(aiSuggestionEventRequest);
+              setShowSchedulingDialog(true);
+              setShowAiDateSuggestionDialog(false);
+              setAiSuggestionEventRequest(null);
+            }}
+          />
+        )}
 
         {/* TSP Contact Assignment Dialog */}
         <TspContactAssignmentDialog

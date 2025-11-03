@@ -37,6 +37,8 @@ export const InProcessTab: React.FC = () => {
     setShowTspContactAssignmentDialog,
     setShowLogContactDialog,
     setLogContactEventRequest,
+    setShowAiDateSuggestionDialog,
+    setAiSuggestionEventRequest,
   } = useEventRequestContext();
 
   const inProcessRequests = filterRequestsByStatus('in_process');
@@ -222,6 +224,10 @@ export const InProcessTab: React.FC = () => {
               onLogContact={() => {
                 setLogContactEventRequest(request);
                 setShowLogContactDialog(true);
+              }}
+              onAiSuggest={() => {
+                setAiSuggestionEventRequest(request);
+                setShowAiDateSuggestionDialog(true);
               }}
               // Inline editing props
               startEditing={(field, value) => startEditing(request.id, field, value)}

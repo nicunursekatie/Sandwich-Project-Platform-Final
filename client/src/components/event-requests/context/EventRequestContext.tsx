@@ -62,6 +62,8 @@ interface EventRequestContextType {
   setShowStaffingPlanningModal: (show: boolean) => void;
   showLogContactDialog: boolean;
   setShowLogContactDialog: (show: boolean) => void;
+  showAiDateSuggestionDialog: boolean;
+  setShowAiDateSuggestionDialog: (show: boolean) => void;
 
   // Event being acted upon
   schedulingEventRequest: EventRequest | null;
@@ -76,6 +78,8 @@ interface EventRequestContextType {
   setTspContactEventRequest: (event: EventRequest | null) => void;
   logContactEventRequest: EventRequest | null;
   setLogContactEventRequest: (event: EventRequest | null) => void;
+  aiSuggestionEventRequest: EventRequest | null;
+  setAiSuggestionEventRequest: (event: EventRequest | null) => void;
 
   // Assignment state
   assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
@@ -230,6 +234,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [showSandwichPlanningModal, setShowSandwichPlanningModal] = useState(false);
   const [showStaffingPlanningModal, setShowStaffingPlanningModal] = useState(false);
   const [showLogContactDialog, setShowLogContactDialog] = useState(false);
+  const [showAiDateSuggestionDialog, setShowAiDateSuggestionDialog] = useState(false);
 
   // Event being acted upon
   const [schedulingEventRequest, setSchedulingEventRequest] = useState<EventRequest | null>(null);
@@ -238,6 +243,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [contactEventRequest, setContactEventRequest] = useState<EventRequest | null>(null);
   const [tspContactEventRequest, setTspContactEventRequest] = useState<EventRequest | null>(null);
   const [logContactEventRequest, setLogContactEventRequest] = useState<EventRequest | null>(null);
+  const [aiSuggestionEventRequest, setAiSuggestionEventRequest] = useState<EventRequest | null>(null);
 
   // Assignment state
   const [assignmentType, setAssignmentType] = useState<'driver' | 'speaker' | 'volunteer' | null>(null);
@@ -515,6 +521,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setShowStaffingPlanningModal,
     showLogContactDialog,
     setShowLogContactDialog,
+    showAiDateSuggestionDialog,
+    setShowAiDateSuggestionDialog,
 
     // Event references
     schedulingEventRequest,
@@ -529,6 +537,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setTspContactEventRequest,
     logContactEventRequest,
     setLogContactEventRequest,
+    aiSuggestionEventRequest,
+    setAiSuggestionEventRequest,
 
     // Assignment
     assignmentType,

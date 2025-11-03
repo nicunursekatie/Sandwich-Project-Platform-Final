@@ -37,6 +37,8 @@ export const NewRequestsTab: React.FC = () => {
     setTspContactEventRequest,
     setShowLogContactDialog,
     setLogContactEventRequest,
+    setShowAiDateSuggestionDialog,
+    setAiSuggestionEventRequest,
   } = useEventRequestContext();
 
   const newRequests = filterRequestsByStatus('new');
@@ -180,6 +182,10 @@ export const NewRequestsTab: React.FC = () => {
               onLogContact={() => {
                 setLogContactEventRequest(request);
                 setShowLogContactDialog(true);
+              }}
+              onAiSuggest={() => {
+                setAiSuggestionEventRequest(request);
+                setShowAiDateSuggestionDialog(true);
               }}
               // Inline editing props
               startEditing={(field, value) => startEditing(request.id, field, value)}
