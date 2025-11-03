@@ -20,6 +20,8 @@ export const PostponedTab: React.FC = () => {
     setShowEventDetails,
     setShowContactOrganizerDialog,
     setContactEventRequest,
+    setShowLogContactDialog,
+    setLogContactEventRequest,
   } = useEventRequestContext();
 
   const postponedRequests = filterRequestsByStatus('postponed');
@@ -80,6 +82,10 @@ export const PostponedTab: React.FC = () => {
                   description: 'The event request has been moved back to New Requests.',
                 });
               }
+            }}
+            onLogContact={() => {
+              setLogContactEventRequest(request);
+              setShowLogContactDialog(true);
             }}
           />
         ))

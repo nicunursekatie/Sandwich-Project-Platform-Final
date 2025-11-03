@@ -45,7 +45,9 @@ export const MyAssignmentsTab: React.FC = () => {
     setShowOneMonthFollowUpDialog,
     setShowCollectionLog,
     setCollectionLogEventRequest,
-    
+    setShowLogContactDialog,
+    setLogContactEventRequest,
+
     // Inline editing states for scheduled events
     editingScheduledId,
     setEditingScheduledId,
@@ -59,7 +61,7 @@ export const MyAssignmentsTab: React.FC = () => {
     setInlineTotalCount,
     inlineSandwichTypes,
     setInlineSandwichTypes,
-    
+
     // Completed editing
     editingCompletedId,
     setEditingCompletedId,
@@ -132,6 +134,10 @@ export const MyAssignmentsTab: React.FC = () => {
             }}
             onApprove={() => handleStatusChange(request.id, 'in_process')}
             onDecline={() => handleStatusChange(request.id, 'declined')}
+            onLogContact={() => {
+              setLogContactEventRequest(request);
+              setShowLogContactDialog(true);
+            }}
           />
         );
 
@@ -195,6 +201,10 @@ export const MyAssignmentsTab: React.FC = () => {
               setTspContactEventRequest(request);
               setShowTspContactAssignmentDialog(true);
             }}
+            onLogContact={() => {
+              setLogContactEventRequest(request);
+              setShowLogContactDialog(true);
+            }}
             startEditing={(field, value) => {
               setEditingScheduledId(request.id);
               setEditingField(field);
@@ -246,22 +256,47 @@ export const MyAssignmentsTab: React.FC = () => {
         return (
           <CompletedCard
             {...commonProps}
-            onStatusChange={(status) => handleStatusChange(request.id, status)}
-            onCollectionLog={() => {
-              setCollectionLogEventRequest(request);
-              setShowCollectionLog(true);
+            onView={() => {
+              setSelectedEventRequest(request);
+              setIsEditing(false);
+              setShowEventDetails(true);
             }}
-            onFollowUp={() => {
+            onFollowUp1Day={() => {
+              setSelectedEventRequest(request);
+              setShowOneDayFollowUpDialog(true);
+            }}
+            onFollowUp1Month={() => {
               setSelectedEventRequest(request);
               setShowOneMonthFollowUpDialog(true);
             }}
+            onViewCollectionLog={() => {
+              setCollectionLogEventRequest(request);
+              setShowCollectionLog(true);
+            }}
+            onReschedule={() => {
+              if (window.confirm('Do you want to create a new event request based on this completed event?')) {
+                handleStatusChange(request.id, 'new');
+              }
+            }}
+            onAssignTspContact={() => {
+              setTspContactEventRequest(request);
+              setShowTspContactAssignmentDialog(true);
+            }}
+            onEditTspContact={() => {
+              setTspContactEventRequest(request);
+              setShowTspContactAssignmentDialog(true);
+            }}
+            onLogContact={() => {
+              setLogContactEventRequest(request);
+              setShowLogContactDialog(true);
+            }}
             resolveUserName={resolveUserName}
-            resolveRecipientName={resolveRecipientName}
-            editingCompletedId={editingCompletedId}
-            setEditingCompletedId={setEditingCompletedId}
-            completedEdit={completedEdit}
-            setCompletedEdit={setCompletedEdit}
-            updateEventRequestMutation={updateEventRequestMutation}
+            openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
+            openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}
+            handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
+            handleSelfSignup={(type) => handleSelfSignup(request.id, type)}
+            canSelfSignup={canSelfSignup}
+            isUserSignedUp={isUserSignedUp}
           />
         );
 
@@ -269,7 +304,25 @@ export const MyAssignmentsTab: React.FC = () => {
         return (
           <DeclinedCard
             {...commonProps}
-            onStatusChange={(status) => handleStatusChange(request.id, status)}
+            onView={() => {
+              setSelectedEventRequest(request);
+              setIsEditing(false);
+              setShowEventDetails(true);
+            }}
+            onReactivate={() => {
+              if (window.confirm('Do you want to reactivate this event request?')) {
+                handleStatusChange(request.id, 'new');
+                toast({
+                  title: 'Event reactivated',
+                  description: 'The event request has been moved back to New Requests.',
+                });
+              }
+            }}
+            onLogContact={() => {
+              setLogContactEventRequest(request);
+              setShowLogContactDialog(true);
+            }}
+            resolveUserName={resolveUserName}
           />
         );
 
@@ -296,6 +349,10 @@ export const MyAssignmentsTab: React.FC = () => {
             }}
             onApprove={() => handleStatusChange(request.id, 'in_process')}
             onDecline={() => handleStatusChange(request.id, 'declined')}
+            onLogContact={() => {
+              setLogContactEventRequest(request);
+              setShowLogContactDialog(true);
+            }}
           />
         );
     }
