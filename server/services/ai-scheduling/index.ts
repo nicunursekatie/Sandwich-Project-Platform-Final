@@ -114,8 +114,21 @@ You must respond with a JSON object containing exactly these fields:
       throw new Error('Invalid AI response structure');
     }
 
-    // Normalize the AI-recommended date to YYYY-MM-DD format (remove timestamps if present)
-    const normalizedRecommendedDate = parsedResponse.recommendedDate.split('T')[0];
+    // Normalize the AI-recommended date to YYYY-MM-DD format
+    // AI might return "Wednesday, December 3, 2025" or "2025-12-03T00:00:00.000Z" or "2025-12-03"
+    let normalizedRecommendedDate = parsedResponse.recommendedDate;
+    
+    // Try to parse it as a date and convert to YYYY-MM-DD
+    const parsedDate = new Date(normalizedRecommendedDate);
+    if (!isNaN(parsedDate.getTime())) {
+      normalizedRecommendedDate = parsedDate.toISOString().split('T')[0];
+    } else {
+      // If parsing fails, try to extract YYYY-MM-DD pattern
+      const dateMatch = normalizedRecommendedDate.match(/\d{4}-\d{2}-\d{2}/);
+      if (dateMatch) {
+        normalizedRecommendedDate = dateMatch[0];
+      }
+    }
     
     logger.log(`Normalized recommended date: ${normalizedRecommendedDate}`);
 
@@ -390,12 +403,41 @@ Provide a clear recommendation with specific reasoning that references their mes
 }
 
 /**
+ * Checks if a date is a major holiday that should be avoided
+ */
+function isHoliday(dateStr: string): boolean {
+  const date = new Date(dateStr);
+  const month = date.getUTCMonth() + 1; // 0-indexed
+  const day = date.getUTCDate();
+  
+  // Major US holidays to avoid
+  const holidays = [
+    { month: 1, day: 1 },    // New Year's Day
+    { month: 7, day: 4 },    // Independence Day
+    { month: 12, day: 24 },  // Christmas Eve
+    { month: 12, day: 25 },  // Christmas Day
+    { month: 12, day: 31 },  // New Year's Eve
+    { month: 11, day: 26 },  // Day after Thanksgiving (approximate)
+    { month: 11, day: 27 },  // Day after Thanksgiving (approximate)
+    { month: 11, day: 28 },  // Day after Thanksgiving (approximate)
+  ];
+  
+  return holidays.some(h => h.month === month && h.day === day);
+}
+
+/**
  * Determines the recommended date using heuristics (fallback method)
  * Used when AI recommendation is unavailable or invalid
  */
 function determineRecommendedDateHeuristic(dateAnalyses: DateAnalysis[]): string {
+  // Filter out holidays first
+  const nonHolidayDates = dateAnalyses.filter(d => !isHoliday(d.date));
+  
+  // If all dates are holidays (unlikely), use the original list
+  const datesToSort = nonHolidayDates.length > 0 ? nonHolidayDates : dateAnalyses;
+  
   // Find the optimal date (fewest events + sandwiches)
-  const sorted = [...dateAnalyses].sort((a, b) => {
+  const sorted = datesToSort.sort((a, b) => {
     // Prioritize weeks with fewer events
     if (a.eventCount !== b.eventCount) {
       return a.eventCount - b.eventCount;
