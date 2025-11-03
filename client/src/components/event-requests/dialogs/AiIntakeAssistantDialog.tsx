@@ -300,15 +300,65 @@ export function AiIntakeAssistantDialog({
 
               {/* AI Recommendations */}
               {analysis.aiRecommendations && (
-                <div className="bg-gradient-to-br from-[#47B3CB]/10 to-[#236383]/10 dark:from-[#47B3CB]/20 dark:to-[#236383]/20 border border-[#236383]/30 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="h-5 w-5 text-[#236383] mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-sm mb-2 text-[#236383]">AI Recommendations</h4>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                        {analysis.aiRecommendations}
-                      </p>
-                    </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-5 w-5 text-[#236383]" />
+                    <h3 className="font-semibold text-base">AI Recommendations</h3>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    To complete the intake for {eventRequest.organizationName}, please take the following actions:
+                  </p>
+                  <div className="space-y-3">
+                    {analysis.aiRecommendations.split(/\d+\.\s+\*\*/).filter(Boolean).map((recommendation, idx) => {
+                      // Parse title and content
+                      const titleMatch = recommendation.match(/^(.+?)\*\*/);
+                      const title = titleMatch ? titleMatch[1].trim() : '';
+                      const content = recommendation.replace(/^.+?\*\*\s*-?\s*/, '').trim();
+                      
+                      if (!title) return null;
+                      
+                      // Determine icon and color based on title keywords
+                      let icon = ListChecks;
+                      let iconColor = 'text-[#236383]';
+                      let bgColor = 'bg-blue-50 dark:bg-blue-950';
+                      let borderColor = 'border-blue-200 dark:border-blue-800';
+                      
+                      if (title.toLowerCase().includes('contact') || title.toLowerCase().includes('reach out')) {
+                        icon = Users;
+                      } else if (title.toLowerCase().includes('document') || title.toLowerCase().includes('busy')) {
+                        icon = AlertTriangle;
+                        iconColor = 'text-amber-600 dark:text-amber-400';
+                        bgColor = 'bg-amber-50 dark:bg-amber-950';
+                        borderColor = 'border-amber-200 dark:border-amber-800';
+                      } else if (title.toLowerCase().includes('reminder') || title.toLowerCase().includes('follow')) {
+                        icon = Calendar;
+                      } else if (title.toLowerCase().includes('confirm') || title.toLowerCase().includes('verify')) {
+                        icon = CheckCircle2;
+                        iconColor = 'text-green-600 dark:text-green-400';
+                        bgColor = 'bg-green-50 dark:bg-green-950';
+                        borderColor = 'border-green-200 dark:border-green-800';
+                      }
+                      
+                      const IconComponent = icon;
+                      
+                      return (
+                        <div key={idx} className={`${bgColor} border ${borderColor} rounded-lg p-4`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`${iconColor} mt-0.5 flex-shrink-0`}>
+                              <IconComponent className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-base mb-2 text-gray-900 dark:text-gray-100">
+                                {title}
+                              </h4>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                {content}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
