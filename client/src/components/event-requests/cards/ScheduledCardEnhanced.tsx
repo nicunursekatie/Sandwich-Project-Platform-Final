@@ -246,7 +246,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     staleTime: 1 * 60 * 1000,
   });
 
-  const resolveRecipientName = (recipientId: string): string => {
+  const resolveRecipientNameLocal = (recipientId: string): string => {
     // Handle custom entries with format "custom-timestamp-Name" or "custom:Name"
     if (recipientId.startsWith('custom-') || recipientId.startsWith('custom:')) {
       // Extract just the name part from formats like:
@@ -332,6 +332,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
     return recipientId;
   };
+
+  // Use the prop if provided, otherwise use local implementation
+  const getRecipientName = resolveRecipientName || resolveRecipientNameLocal;
 
   // Get display date
   const displayDate = request.scheduledEventDate || request.desiredEventDate;
@@ -1134,9 +1137,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           const detailName = (request.speakerDetails as any)?.[id]?.name;
                           const customName = extractCustomName(id);
                           const userName = resolveUserName(id);
-                          // Try resolveRecipientName for host-contact IDs
-                          const recipientName = id.startsWith('host-contact-') && resolveRecipientName
-                            ? resolveRecipientName(id)
+                          // Try getRecipientName for host-contact IDs
+                          const recipientName = id.startsWith('host-contact-') && getRecipientName
+                            ? getRecipientName(id)
                             : null;
                           // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > id as fallback
                           const displayName = (detailName && !/^\d+$/.test(detailName))
@@ -1382,7 +1385,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
                         <div className="flex flex-col gap-1.5 min-w-0">
                           {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
-                            const recipientName = resolveRecipientName(id);
+                            const recipientName = getRecipientName(id);
                             const cleanName = recipientName.includes('(') 
                               ? recipientName.substring(0, recipientName.indexOf('(')).trim()
                               : recipientName;

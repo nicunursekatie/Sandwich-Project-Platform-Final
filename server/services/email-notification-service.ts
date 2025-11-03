@@ -641,4 +641,151 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
 
     return `${baseUrl}/dashboard?section=team-board`;
   }
+
+  /**
+   * Send email notification for team board comment mentions
+   */
+  static async sendTeamBoardCommentMentionNotification(
+    mentionedUserEmail: string,
+    mentionedUserName: string,
+    commenterName: string,
+    itemContent: string,
+    commentContent: string,
+    itemId: number
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping team board comment mention notification');
+      return false;
+    }
+
+    try {
+      // Truncate content if too long for email
+      const displayItemContent = itemContent.length > 100
+        ? itemContent.substring(0, 100) + '...'
+        : itemContent;
+
+      const displayCommentContent = commentContent.length > 200
+        ? commentContent.substring(0, 200) + '...'
+        : commentContent;
+
+      // Generate team board URL
+      const teamBoardUrl = this.getTeamBoardUrl();
+
+      const msg = {
+        to: mentionedUserEmail,
+        from: 'katie@thesandwichproject.org',
+        subject: `You were mentioned in a team board comment - The Sandwich Project`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: #236383; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+              .item-box { background: #e6f7f9; padding: 12px; border-left: 4px solid #47B3CB; margin: 15px 0; font-size: 14px; }
+              .comment-box { background: white; padding: 15px; border-left: 4px solid #236383; margin: 15px 0; }
+              .btn { display: inline-block; background: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 15px 0; }
+              .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>💬 You were mentioned in a team board comment!</h1>
+              </div>
+              <div class="content">
+                <p>Hello ${mentionedUserName}!</p>
+                <p><strong>${commenterName}</strong> mentioned you in a comment on a team board item:</p>
+
+                <div class="item-box">
+                  <strong>Team Board Item:</strong><br>
+                  ${displayItemContent}
+                </div>
+
+                <div class="comment-box">
+                  <strong>${commenterName} commented:</strong><br>
+                  "${displayCommentContent}"
+                </div>
+
+                <p>Click the button below to view and respond:</p>
+                <a href="${teamBoardUrl}" class="btn">View Team Board</a>
+
+                ${EMAIL_FOOTER_HTML}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `
+Hello ${mentionedUserName}!
+
+${commenterName} mentioned you in a comment on a team board item:
+
+Team Board Item:
+${displayItemContent}
+
+${commenterName} commented:
+"${displayCommentContent}"
+
+View team board: ${teamBoardUrl}
+
+---
+The Sandwich Project - Fighting food insecurity one sandwich at a time
+
+To unsubscribe from these emails, please contact us at katie@thesandwichproject.org or reply STOP.
+        `.trim(),
+      };
+
+      await sgMail.send(msg);
+      logger.log(`Team board comment mention notification sent to ${mentionedUserEmail}`);
+      return true;
+    } catch (error) {
+      logger.error('Error sending team board comment mention notification:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Process a team board comment for mentions and send notifications
+   */
+  static async processTeamBoardComment(
+    commentContent: string,
+    commenterId: string,
+    commenterName: string,
+    itemId: number,
+    itemContent: string
+  ): Promise<void> {
+    try {
+      // Detect mentions in the comment
+      const mentions = this.detectMentions(commentContent);
+      if (mentions.length === 0) return;
+
+      // Find users who were mentioned
+      const mentionedUsers = await this.findMentionedUsers(mentions);
+
+      // Send notifications to each mentioned user (except the commenter)
+      for (const user of mentionedUsers) {
+        if (user.id === commenterId) continue; // Don't notify the commenter
+
+        const userName =
+          user.displayName ||
+          user.firstName ||
+          user.email?.split('@')[0] ||
+          'User';
+
+        await this.sendTeamBoardCommentMentionNotification(
+          user.email!,
+          userName,
+          commenterName,
+          itemContent,
+          commentContent,
+          itemId
+        );
+      }
+    } catch (error) {
+      logger.error('Error processing team board comment for mentions:', error);
+    }
+  }
 }

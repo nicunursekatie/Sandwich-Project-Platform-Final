@@ -47,7 +47,7 @@ import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
-import { MessageComposer } from '@/components/messaging/message-composer';
+import { MessageComposer } from '@/components/message-composer';
 
 interface InProcessCardProps {
   request: EventRequest;
