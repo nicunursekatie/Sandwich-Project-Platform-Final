@@ -507,16 +507,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Submission Message */}
-            {request.message && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-1">
-                  Message from submission:
-                </p>
-                <p className="text-gray-600 text-base">{request.message}</p>
-              </div>
-            )}
           </div>
 
           {/* Right Column - Contact Info */}
