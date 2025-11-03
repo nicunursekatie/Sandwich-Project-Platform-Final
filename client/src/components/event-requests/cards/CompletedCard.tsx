@@ -30,6 +30,7 @@ import {
   Share2,
   Instagram,
   Home,
+  MessageSquare,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
@@ -49,6 +50,7 @@ import {
 } from '@/components/ui/select';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import { MessageComposer } from '@/components/message-composer';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -76,6 +78,7 @@ interface CompletedCardProps {
   onReschedule: () => void;
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
+  onLogContact: () => void;
   resolveUserName: (id: string) => string;
   canDelete?: boolean;
   openAssignmentDialog?: (type: 'driver' | 'speaker' | 'volunteer') => void;
@@ -1332,6 +1335,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   onReschedule,
   onAssignTspContact,
   onEditTspContact,
+  onLogContact,
   resolveUserName,
   canDelete = true,
   openAssignmentDialog,
@@ -1345,6 +1349,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showInstagramDialog, setShowInstagramDialog] = useState(false);
   const [instagramLink, setInstagramLink] = useState('');
 
@@ -2406,6 +2411,16 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             Contact
           </Button>
 
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onLogContact}
+            className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+          >
+            <FileText className="w-4 h-4 mr-1" />
+            Log Contact
+          </Button>
+
           {/* TSP Contact Assignment - only show if not already assigned */}
           {!(request.tspContact || request.customTspContact) && (
             <Button
@@ -2420,6 +2435,16 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           )}
 
           <div className="flex-1" />
+
+          <Button
+            size="sm"
+            onClick={() => setShowMessageDialog(true)}
+            variant="ghost"
+            className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+            aria-label="Message about this event"
+          >
+            <MessageSquare className="w-4 h-4" aria-hidden="true" />
+          </Button>
 
           <Button
             size="sm"
@@ -2532,6 +2557,22 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               Mark as Posted
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
+          </DialogHeader>
+          <MessageComposer
+            contextType="event"
+            contextId={request.id.toString()}
+            contextTitle={`${request.organizationName} event`}
+            onSent={() => setShowMessageDialog(false)}
+            onCancel={() => setShowMessageDialog(false)}
+          />
         </DialogContent>
       </Dialog>
     </Card>
