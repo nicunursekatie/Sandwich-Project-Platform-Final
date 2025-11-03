@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -17,7 +23,7 @@ import {
   Phone,
   Mail,
   StickyNote,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -26,7 +32,13 @@ import { useState } from 'react';
 import type { EventRequest } from '@shared/schema';
 
 type ValidationSeverity = 'critical' | 'warning' | 'suggestion';
-type ValidationCategory = 'scheduling' | 'logistics' | 'sandwiches' | 'contact' | 'verification' | 'general';
+type ValidationCategory =
+  | 'scheduling'
+  | 'logistics'
+  | 'sandwiches'
+  | 'contact'
+  | 'verification'
+  | 'general';
 
 interface ValidationIssue {
   category: ValidationCategory;
@@ -65,7 +77,7 @@ export function AiIntakeAssistantDialog({
   onEditEvent,
   onLogContact,
   onScheduleCall,
-  onAddNote
+  onAddNote,
 }: AiIntakeAssistantDialogProps) {
   const { toast } = useToast();
   const [analysis, setAnalysis] = useState<AiIntakeAssistance | null>(null);
@@ -100,7 +112,12 @@ export function AiIntakeAssistantDialog({
     const buttons = [];
 
     // Contact-related actions
-    if (lowerText.includes('contact') || lowerText.includes('reach out') || lowerText.includes('call') || lowerText.includes('speak')) {
+    if (
+      lowerText.includes('contact') ||
+      lowerText.includes('reach out') ||
+      lowerText.includes('call') ||
+      lowerText.includes('speak')
+    ) {
       if (onLogContact) {
         buttons.push({
           label: 'Log Contact',
@@ -109,7 +126,7 @@ export function AiIntakeAssistantDialog({
             handleClose();
             onLogContact();
           },
-          variant: 'default' as const
+          variant: 'default' as const,
         });
       }
       if (onScheduleCall) {
@@ -120,15 +137,22 @@ export function AiIntakeAssistantDialog({
             handleClose();
             onScheduleCall();
           },
-          variant: 'outline' as const
+          variant: 'outline' as const,
         });
       }
     }
 
     // Edit-related actions (for missing data like address, times, counts, etc.)
-    if (lowerText.includes('address') || lowerText.includes('time') || lowerText.includes('count') || 
-        lowerText.includes('sandwich') || lowerText.includes('refrigeration') || lowerText.includes('date') ||
-        lowerText.includes('get ') || lowerText.includes('determine')) {
+    if (
+      lowerText.includes('address') ||
+      lowerText.includes('time') ||
+      lowerText.includes('count') ||
+      lowerText.includes('sandwich') ||
+      lowerText.includes('refrigeration') ||
+      lowerText.includes('date') ||
+      lowerText.includes('get ') ||
+      lowerText.includes('determine')
+    ) {
       if (onEditEvent) {
         buttons.push({
           label: 'Edit Event',
@@ -137,13 +161,17 @@ export function AiIntakeAssistantDialog({
             handleClose();
             onEditEvent();
           },
-          variant: 'default' as const
+          variant: 'default' as const,
         });
       }
     }
 
     // Note-related actions
-    if (lowerText.includes('note') || lowerText.includes('document') || lowerText.includes('record')) {
+    if (
+      lowerText.includes('note') ||
+      lowerText.includes('document') ||
+      lowerText.includes('record')
+    ) {
       if (onAddNote) {
         buttons.push({
           label: 'Add Note',
@@ -152,7 +180,7 @@ export function AiIntakeAssistantDialog({
             handleClose();
             onAddNote();
           },
-          variant: 'outline' as const
+          variant: 'outline' as const,
         });
       }
     }
@@ -166,7 +194,7 @@ export function AiIntakeAssistantDialog({
           handleClose();
           onEditEvent();
         },
-        variant: 'outline' as const
+        variant: 'outline' as const,
       });
     }
 
@@ -197,8 +225,10 @@ export function AiIntakeAssistantDialog({
   const getSeverityBadge = (severity: ValidationSeverity) => {
     const styles = {
       critical: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-      warning: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-      suggestion: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      warning:
+        'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+      suggestion:
+        'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     };
 
     const labels = {
@@ -214,11 +244,16 @@ export function AiIntakeAssistantDialog({
     );
   };
 
-  const getOverallStatusBadge = (status: 'complete' | 'needs_attention' | 'critical_missing') => {
+  const getOverallStatusBadge = (
+    status: 'complete' | 'needs_attention' | 'critical_missing'
+  ) => {
     const styles = {
-      complete: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-800',
-      needs_attention: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-800',
-      critical_missing: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-800',
+      complete:
+        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-800',
+      needs_attention:
+        'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-800',
+      critical_missing:
+        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-800',
     };
 
     const labels = {
@@ -236,7 +271,9 @@ export function AiIntakeAssistantDialog({
     const Icon = icons[status];
 
     return (
-      <Badge className={`${styles[status]} text-sm font-semibold px-3 py-1.5 border`}>
+      <Badge
+        className={`${styles[status]} text-sm font-semibold px-3 py-1.5 border`}
+      >
         <Icon className="w-4 h-4 mr-1.5" />
         {labels[status]}
       </Badge>
@@ -246,26 +283,48 @@ export function AiIntakeAssistantDialog({
   const IssueCard = ({ issue }: { issue: ValidationIssue }) => {
     const Icon = getCategoryIcon(issue.category);
     const severityColor = getSeverityColor(issue.severity);
-    const actionButtons = getActionButtons(issue.title + ' ' + issue.message + ' ' + (issue.suggestion || ''));
+    const actionButtons = getActionButtons(
+      issue.title + ' ' + issue.message + ' ' + (issue.suggestion || '')
+    );
+
+    // Get border color based on severity
+    const getBorderColor = (severity: ValidationSeverity) => {
+      const colors = {
+        critical: 'border-l-red-500',
+        warning: 'border-l-amber-500',
+        suggestion: 'border-l-blue-500',
+      };
+      return colors[severity];
+    };
+
+    // Truncate message if too long
+    const displayMessage =
+      issue.message.length > 150
+        ? issue.message.substring(0, 150) + '...'
+        : issue.message;
 
     return (
-      <div className="border rounded-lg p-4 space-y-3 bg-white dark:bg-gray-950">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
+      <div
+        className={`border-l-4 ${getBorderColor(issue.severity)} border rounded-lg shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-gray-900`}
+      >
+        <div className="p-4">
+          <div className="flex items-start gap-3 mb-3">
             <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${severityColor}`} />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h4 className="font-semibold text-sm">{issue.title}</h4>
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <h4 className="font-semibold text-base text-gray-900 dark:text-gray-100">
+                  {issue.title}
+                </h4>
                 {getSeverityBadge(issue.severity)}
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                {issue.message}
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                {displayMessage}
               </p>
               {issue.suggestion && (
-                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3 mt-2">
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-2.5 mt-2.5">
                   <div className="flex items-start gap-2">
-                    <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-blue-900 dark:text-blue-100">
+                    <Lightbulb className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-blue-900 dark:text-blue-100 leading-relaxed">
                       {issue.suggestion}
                     </p>
                   </div>
@@ -278,29 +337,29 @@ export function AiIntakeAssistantDialog({
                   </p>
                 </div>
               )}
-              
-              {/* Action Buttons */}
-              {actionButtons.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
-                  {actionButtons.map((btn, btnIdx) => {
-                    const BtnIcon = btn.icon;
-                    return (
-                      <Button
-                        key={btnIdx}
-                        size="sm"
-                        variant={btn.variant}
-                        onClick={btn.action}
-                        className="text-xs"
-                      >
-                        <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
-                        {btn.label}
-                      </Button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
+
+          {/* Action Buttons - Always show consistently */}
+          {actionButtons.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-2.5 border-t border-gray-200 dark:border-gray-700">
+              {actionButtons.map((btn, btnIdx) => {
+                const BtnIcon = btn.icon;
+                return (
+                  <Button
+                    key={btnIdx}
+                    size="sm"
+                    variant={btn.variant}
+                    onClick={btn.action}
+                    className="text-xs h-8"
+                  >
+                    <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
+                    {btn.label}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -312,27 +371,41 @@ export function AiIntakeAssistantDialog({
         <DialogHeader className="space-y-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-[#236383]" />
-            <DialogTitle className="text-lg sm:text-xl">AI Intake Assistant</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
+              AI Intake Assistant
+            </DialogTitle>
           </div>
           <DialogDescription className="text-sm sm:text-base">
-            Get comprehensive analysis and reminders to ensure all necessary event details are collected
+            Get comprehensive analysis and reminders to ensure all necessary
+            event details are collected
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 sm:space-y-6 mt-4">
           {/* Event Info */}
           <div className="bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-            <h3 className="font-semibold text-xs sm:text-sm mb-2 text-gray-700 dark:text-gray-300">Event Request</h3>
+            <h3 className="font-semibold text-xs sm:text-sm mb-2 text-gray-700 dark:text-gray-300">
+              Event Request
+            </h3>
             <p className="text-sm sm:text-base">
-              <span className="font-medium">{eventRequest.organizationName || 'Unnamed Organization'}</span>
-              {(eventRequest.estimatedSandwichCount !== null && eventRequest.estimatedSandwichCount !== undefined && eventRequest.estimatedSandwichCount > 0) && (
-                <span className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
-                  {' '}• ~{eventRequest.estimatedSandwichCount.toLocaleString()} sandwiches
-                </span>
-              )}
+              <span className="font-medium">
+                {eventRequest.organizationName || 'Unnamed Organization'}
+              </span>
+              {eventRequest.estimatedSandwichCount !== null &&
+                eventRequest.estimatedSandwichCount !== undefined &&
+                eventRequest.estimatedSandwichCount > 0 && (
+                  <span className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+                    {' '}
+                    • ~{eventRequest.estimatedSandwichCount.toLocaleString()}{' '}
+                    sandwiches
+                  </span>
+                )}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-              Status: <span className="capitalize">{eventRequest.status?.replace('_', ' ')}</span>
+              Status:{' '}
+              <span className="capitalize">
+                {eventRequest.status?.replace('_', ' ')}
+              </span>
             </p>
           </div>
 
@@ -342,7 +415,8 @@ export function AiIntakeAssistantDialog({
               <div className="bg-gradient-to-br from-[#236383]/5 to-[#47B3CB]/5 dark:from-[#236383]/10 dark:to-[#47B3CB]/10 p-6 sm:p-8 rounded-xl border border-[#236383]/20">
                 <Sparkles className="h-10 w-10 sm:h-12 sm:w-12 text-[#236383] mx-auto mb-3 sm:mb-4" />
                 <p className="text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base px-2">
-                  Analyze this event request for missing information and get AI-powered suggestions
+                  Analyze this event request for missing information and get
+                  AI-powered suggestions
                 </p>
                 <Button
                   onClick={() => analyzeEventMutation.mutate()}
@@ -386,7 +460,10 @@ export function AiIntakeAssistantDialog({
                       <p className="text-xs text-gray-500">Complete</p>
                     </div>
                   </div>
-                  <Progress value={analysis.completionPercentage} className="h-2 mb-4" />
+                  <Progress
+                    value={analysis.completionPercentage}
+                    className="h-2 mb-4"
+                  />
 
                   {/* Summary Stats */}
                   <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center text-xs sm:text-sm">
@@ -394,19 +471,25 @@ export function AiIntakeAssistantDialog({
                       <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                         {analysis.criticalIssues.length}
                       </p>
-                      <p className="text-gray-600 dark:text-gray-400">Critical</p>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Critical
+                      </p>
                     </div>
                     <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-2 sm:p-3">
                       <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                         {analysis.warnings.length}
                       </p>
-                      <p className="text-gray-600 dark:text-gray-400">Warnings</p>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Warnings
+                      </p>
                     </div>
                     <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-2 sm:p-3">
                       <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {analysis.suggestions.length}
                       </p>
-                      <p className="text-gray-600 dark:text-gray-400">Suggestions</p>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Suggestions
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -415,108 +498,180 @@ export function AiIntakeAssistantDialog({
               {/* AI Recommendations */}
               {analysis.aiRecommendations && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="h-5 w-5 text-[#236383]" />
-                    <h3 className="font-semibold text-base">AI Recommendations</h3>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                      Required Actions
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Complete the intake for{' '}
+                      <span className="font-medium">
+                        {eventRequest.organizationName}
+                      </span>
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    To complete the intake for {eventRequest.organizationName}, please take the following actions:
-                  </p>
-                  <div className="space-y-3">
-                    {analysis.aiRecommendations.split(/\d+\.\s+\*\*/).filter(Boolean).map((recommendation, idx) => {
-                      // Parse title and content
-                      const titleMatch = recommendation.match(/^(.+?)\*\*/);
-                      const title = titleMatch ? titleMatch[1].trim() : '';
-                      const content = recommendation.replace(/^.+?\*\*\s*-?\s*/, '').trim();
-                      
-                      if (!title) return null;
-                      
-                      // Determine icon and color based on title keywords
-                      let icon = ListChecks;
-                      let iconColor = 'text-[#236383]';
-                      let bgColor = 'bg-blue-50 dark:bg-blue-950';
-                      let borderColor = 'border-blue-200 dark:border-blue-800';
-                      
-                      if (title.toLowerCase().includes('contact') || title.toLowerCase().includes('reach out')) {
-                        icon = Users;
-                      } else if (title.toLowerCase().includes('document') || title.toLowerCase().includes('busy')) {
-                        icon = AlertTriangle;
-                        iconColor = 'text-amber-600 dark:text-amber-400';
-                        bgColor = 'bg-amber-50 dark:bg-amber-950';
-                        borderColor = 'border-amber-200 dark:border-amber-800';
-                      } else if (title.toLowerCase().includes('reminder') || title.toLowerCase().includes('follow')) {
-                        icon = Calendar;
-                      } else if (title.toLowerCase().includes('confirm') || title.toLowerCase().includes('verify')) {
-                        icon = CheckCircle2;
-                        iconColor = 'text-green-600 dark:text-green-400';
-                        bgColor = 'bg-green-50 dark:bg-green-950';
-                        borderColor = 'border-green-200 dark:border-green-800';
-                      }
-                      
-                      const IconComponent = icon;
-                      
-                      const actionButtons = getActionButtons(title + ' ' + content);
-                      
-                      return (
-                        <div key={idx} className={`${bgColor} border ${borderColor} rounded-lg p-4`}>
-                          <div className="flex items-start gap-3">
-                            <div className={`${iconColor} mt-0.5 flex-shrink-0`}>
-                              <IconComponent className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-base mb-2 text-gray-900 dark:text-gray-100">
-                                {title}
-                              </h4>
-                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
-                                {content}
-                              </p>
-                              
-                              {/* Action Buttons */}
-                              {actionButtons.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-3">
-                                  {actionButtons.map((btn, btnIdx) => {
-                                    const BtnIcon = btn.icon;
-                                    return (
-                                      <Button
-                                        key={btnIdx}
-                                        size="sm"
-                                        variant={btn.variant}
-                                        onClick={btn.action}
-                                        className="text-xs"
-                                      >
-                                        <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
-                                        {btn.label}
-                                      </Button>
-                                    );
-                                  })}
+                  <div className="grid gap-3">
+                    {analysis.aiRecommendations
+                      .split(/\d+\.\s+\*\*/)
+                      .filter(Boolean)
+                      .map((recommendation, idx) => {
+                        // Parse title and content
+                        const titleMatch = recommendation.match(/^(.+?)\*\*/);
+                        const title = titleMatch ? titleMatch[1].trim() : '';
+                        const content = recommendation
+                          .replace(/^.+?\*\*\s*-?\s*/, '')
+                          .trim();
+
+                        if (!title) return null;
+
+                        // Extract key points from content (first sentence or up to 120 chars)
+                        const shortDescription = content
+                          .split(/[.!?]/)[0]
+                          .trim();
+                        const displayDescription =
+                          shortDescription.length > 120
+                            ? shortDescription.substring(0, 120) + '...'
+                            : shortDescription;
+
+                        // Determine icon and color based on title keywords
+                        let icon = ListChecks;
+                        let iconColor = 'text-[#236383]';
+                        let bgColor = 'bg-white dark:bg-gray-900';
+                        let borderColor =
+                          'border-[#236383]/30 dark:border-[#236383]/50';
+                        let borderLeftColor = 'border-l-[#236383]';
+
+                        if (
+                          title.toLowerCase().includes('contact') ||
+                          title.toLowerCase().includes('reach out')
+                        ) {
+                          icon = Users;
+                        } else if (
+                          title.toLowerCase().includes('document') ||
+                          title.toLowerCase().includes('busy')
+                        ) {
+                          icon = AlertTriangle;
+                          iconColor = 'text-amber-600 dark:text-amber-400';
+                          borderLeftColor = 'border-l-amber-500';
+                        } else if (
+                          title.toLowerCase().includes('reminder') ||
+                          title.toLowerCase().includes('follow')
+                        ) {
+                          icon = Calendar;
+                        } else if (
+                          title.toLowerCase().includes('confirm') ||
+                          title.toLowerCase().includes('verify')
+                        ) {
+                          icon = CheckCircle2;
+                          iconColor = 'text-green-600 dark:text-green-400';
+                          borderLeftColor = 'border-l-green-500';
+                        } else if (
+                          title.toLowerCase().includes('refrigeration')
+                        ) {
+                          icon = AlertCircle;
+                          iconColor = 'text-red-600 dark:text-red-400';
+                          borderLeftColor = 'border-l-red-500';
+                        }
+
+                        const IconComponent = icon;
+
+                        const actionButtons = getActionButtons(
+                          title + ' ' + content
+                        );
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`${bgColor} border-l-4 ${borderLeftColor} border ${borderColor} rounded-lg shadow-sm hover:shadow-md transition-shadow`}
+                          >
+                            <div className="p-4">
+                              <div className="flex items-start gap-3 mb-3">
+                                <div
+                                  className={`${iconColor} mt-0.5 flex-shrink-0`}
+                                >
+                                  <IconComponent className="h-5 w-5" />
                                 </div>
-                              )}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-base mb-1.5 text-gray-900 dark:text-gray-100">
+                                    {title}
+                                  </h4>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                                    {displayDescription}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Action Buttons - Always show consistently */}
+                              <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                {actionButtons.length > 0
+                                  ? actionButtons.map((btn, btnIdx) => {
+                                      const BtnIcon = btn.icon;
+                                      return (
+                                        <Button
+                                          key={btnIdx}
+                                          size="sm"
+                                          variant={btn.variant}
+                                          onClick={btn.action}
+                                          className="text-xs h-8"
+                                        >
+                                          <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
+                                          {btn.label}
+                                        </Button>
+                                      );
+                                    })
+                                  : onEditEvent && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          handleClose();
+                                          onEditEvent();
+                                        }}
+                                        className="text-xs h-8"
+                                      >
+                                        <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                        Edit Event
+                                      </Button>
+                                    )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                   </div>
                 </div>
               )}
 
               {/* Next Steps */}
               {analysis.nextSteps.length > 0 && (
-                <div className="border rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900/50">
+                  <div className="flex items-center gap-2 mb-4">
                     <ListChecks className="h-5 w-5 text-[#236383]" />
-                    <h3 className="font-semibold text-sm">Next Steps</h3>
+                    <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100">
+                      Next Steps
+                    </h3>
                   </div>
                   <div className="space-y-3">
                     {analysis.nextSteps.map((step, idx) => {
                       const actionButtons = getActionButtons(step);
-                      
+                      // Truncate step if too long
+                      const displayStep =
+                        step.length > 200
+                          ? step.substring(0, 200) + '...'
+                          : step;
+
                       return (
-                        <div key={idx} className="flex gap-3 items-start">
-                          <span className="font-semibold text-[#236383] flex-shrink-0 mt-0.5">{idx + 1}.</span>
-                          <div className="flex-1">
-                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{step}</p>
-                            
+                        <div
+                          key={idx}
+                          className="flex gap-3 items-start pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:pb-0"
+                        >
+                          <span className="font-semibold text-[#236383] flex-shrink-0 mt-0.5 text-sm w-6">
+                            {idx + 1}.
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-2">
+                              {displayStep}
+                            </p>
+
                             {/* Action Buttons */}
                             {actionButtons.length > 0 && (
                               <div className="flex flex-wrap gap-2">
@@ -528,7 +683,7 @@ export function AiIntakeAssistantDialog({
                                       size="sm"
                                       variant={btn.variant}
                                       onClick={btn.action}
-                                      className="text-xs"
+                                      className="text-xs h-8"
                                     >
                                       <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
                                       {btn.label}
@@ -548,14 +703,16 @@ export function AiIntakeAssistantDialog({
               {/* Critical Issues */}
               {analysis.criticalIssues.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-4">
                     <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                    <h3 className="font-semibold text-base">Critical Issues</h3>
-                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                      Critical Issues
+                    </h3>
+                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 text-xs">
                       {analysis.criticalIssues.length}
                     </Badge>
                   </div>
-                  <div className="space-y-3">
+                  <div className="grid gap-3">
                     {analysis.criticalIssues.map((issue, idx) => (
                       <IssueCard key={idx} issue={issue} />
                     ))}
@@ -566,14 +723,16 @@ export function AiIntakeAssistantDialog({
               {/* Warnings */}
               {analysis.warnings.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-4">
                     <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                    <h3 className="font-semibold text-base">Warnings</h3>
-                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                      Warnings
+                    </h3>
+                    <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs">
                       {analysis.warnings.length}
                     </Badge>
                   </div>
-                  <div className="space-y-3">
+                  <div className="grid gap-3">
                     {analysis.warnings.map((issue, idx) => (
                       <IssueCard key={idx} issue={issue} />
                     ))}
@@ -584,14 +743,16 @@ export function AiIntakeAssistantDialog({
               {/* Suggestions */}
               {analysis.suggestions.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-4">
                     <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <h3 className="font-semibold text-base">Suggestions</h3>
-                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+                      Suggestions
+                    </h3>
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">
                       {analysis.suggestions.length}
                     </Badge>
                   </div>
-                  <div className="space-y-3">
+                  <div className="grid gap-3">
                     {analysis.suggestions.map((issue, idx) => (
                       <IssueCard key={idx} issue={issue} />
                     ))}
@@ -601,18 +762,19 @@ export function AiIntakeAssistantDialog({
 
               {/* All Good Message */}
               {analysis.criticalIssues.length === 0 &&
-               analysis.warnings.length === 0 &&
-               analysis.suggestions.length === 0 && (
-                <div className="text-center py-8 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                  <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400 mx-auto mb-3" />
-                  <h3 className="font-semibold text-lg text-green-900 dark:text-green-100 mb-2">
-                    All Set!
-                  </h3>
-                  <p className="text-sm text-green-700 dark:text-green-300">
-                    All critical information has been collected for this event request.
-                  </p>
-                </div>
-              )}
+                analysis.warnings.length === 0 &&
+                analysis.suggestions.length === 0 && (
+                  <div className="text-center py-8 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                    <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400 mx-auto mb-3" />
+                    <h3 className="font-semibold text-lg text-green-900 dark:text-green-100 mb-2">
+                      All Set!
+                    </h3>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      All critical information has been collected for this event
+                      request.
+                    </p>
+                  </div>
+                )}
             </div>
           )}
 
