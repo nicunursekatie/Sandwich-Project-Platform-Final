@@ -37,7 +37,7 @@ import { formatTime12Hour, formatEventDate } from '@/components/event-requests/u
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
+import { statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -1913,7 +1913,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     : 'No time set';
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-white shadow-sm">
+    <Card 
+      className={`transition-all duration-200 hover:shadow-lg border-l-4 bg-white shadow-sm ${statusBgColors.completed}`}
+      style={{ borderLeftColor: statusBorderColors.completed }}
+    >
       <CardContent className="p-4">
         <CardHeader
           request={request}

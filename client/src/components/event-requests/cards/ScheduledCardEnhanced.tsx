@@ -393,7 +393,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   }
 
   return (
-    <Card className="w-full bg-white border-l-4 border-l-[#007E8C] shadow-sm hover:shadow-lg transition-all">
+    <Card 
+      className="w-full bg-white border-l-4 shadow-sm hover:shadow-lg transition-all bg-[#236383]/5"
+      style={{ borderLeftColor: '#236383' }}
+    >
       <CardContent className="p-6">
         {/* Header Row - Organization & Status */}
         <div className="flex items-start justify-between gap-4 mb-4 pb-4 border-b-2 border-[#007E8C]/10">

@@ -90,7 +90,10 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
   const missingInfo = getMissingIntakeInfo(request);
 
   return (
-    <Card className="w-full bg-white border-l-4 border-l-[#007E8C] shadow-sm hover:shadow-md transition-all">
+    <Card 
+      className="w-full bg-white border-l-4 shadow-sm hover:shadow-md transition-all bg-[#236383]/5"
+      style={{ borderLeftColor: '#236383' }}
+    >
       <CardContent className="p-4">
         {/* Compact Header Row */}
         <div className="flex items-start justify-between gap-4 mb-3">

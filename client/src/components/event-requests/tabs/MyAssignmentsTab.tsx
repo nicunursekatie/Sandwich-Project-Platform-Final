@@ -372,7 +372,14 @@ export const MyAssignmentsTab: React.FC = () => {
           <div className="text-sm text-gray-600 mb-4">
             Showing {myAssignments.length} active event{myAssignments.length !== 1 ? 's' : ''} where you are assigned as TSP contact, driver, speaker, or volunteer (completed events excluded)
           </div>
-          {myAssignments.map(renderEventCard)}
+          {myAssignments.map((request) => (
+            <div
+              key={request.id}
+              className="border-2 border-[#47B3CB] rounded-lg p-1 bg-[#47B3CB]/5 shadow-sm hover:shadow-md transition-all"
+            >
+              {renderEventCard(request)}
+            </div>
+          ))}
         </div>
       )}
     </div>

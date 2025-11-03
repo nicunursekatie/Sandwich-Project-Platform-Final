@@ -33,7 +33,7 @@ import {
   MessageSquare,
   Sparkles,
 } from 'lucide-react';
-import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
+import { statusColors, statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
@@ -415,7 +415,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   );
   return (
     <Card
-      className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-[#007E8C] bg-white shadow-sm"
+      className={`transition-all duration-200 hover:shadow-lg border-l-4 bg-white shadow-sm ${statusBgColors.new}`}
+      style={{ borderLeftColor: statusBorderColors.new }}
     >
       <CardContent className="p-6">
         <CardHeader

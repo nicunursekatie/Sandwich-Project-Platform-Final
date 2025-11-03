@@ -42,6 +42,8 @@ import {
   statusColors,
   statusIcons,
   statusOptions,
+  statusBorderColors,
+  statusBgColors,
 } from '@/components/event-requests/constants';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
@@ -407,11 +409,10 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   return (
     <Card
       id={`event-card-${request.id}`}
-      className={`transition-all duration-200 hover:shadow-lg border-l-4 bg-white shadow-sm ${
-        isStale
-          ? 'border-l-[#A31C41]'
-          : 'border-l-[#FBAD3F]'
+      className={`transition-all duration-200 hover:shadow-lg border-l-4 bg-white shadow-sm ${statusBgColors.in_process} ${
+        isStale ? 'border-l-[#A31C41]' : ''
       }`}
+      style={!isStale ? { borderLeftColor: statusBorderColors.in_process } : {}}
     >
       <CardContent className="p-6">
         {headerContent.header}

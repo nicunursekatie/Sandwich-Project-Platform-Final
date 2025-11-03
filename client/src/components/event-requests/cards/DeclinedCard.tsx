@@ -19,7 +19,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
-import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
+import { statusColors, statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
 import {
@@ -251,7 +251,10 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
   const dateInfo = formatEventDate(request.desiredEventDate || '');
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-lg border-l-4 border-l-gray-400 bg-white shadow-sm opacity-90">
+    <Card 
+      className={`transition-all duration-200 hover:shadow-lg border-l-4 bg-white shadow-sm opacity-90 ${statusBgColors[request.status as keyof typeof statusBgColors] || statusBgColors.declined}`}
+      style={{ borderLeftColor: statusBorderColors[request.status as keyof typeof statusBorderColors] || statusBorderColors.declined }}
+    >
       <CardContent className="p-6">
         <CardHeader request={request} resolveUserName={resolveUserName} />
 
