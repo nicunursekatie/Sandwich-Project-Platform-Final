@@ -51,6 +51,7 @@ import {
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
+import { EventMessageThread } from '@/components/event-message-thread';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -2362,6 +2363,17 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             isUserSignedUp={isUserSignedUp}
           />
         </div>
+
+        {/* Message Thread Section */}
+        {request.id && (
+          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+            <EventMessageThread
+              eventId={request.id.toString()}
+              eventTitle={`${request.organizationName} event`}
+              maxHeight="300px"
+            />
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">

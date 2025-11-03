@@ -43,6 +43,7 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
+import { EventMessageThread } from '@/components/event-message-thread';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -563,6 +564,17 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             )}
           </div>
         </div>
+
+        {/* Message Thread Section */}
+        {request.id && (
+          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+            <EventMessageThread
+              eventId={request.id.toString()}
+              eventTitle={`${request.organizationName} event`}
+              maxHeight="300px"
+            />
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
