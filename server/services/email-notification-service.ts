@@ -644,8 +644,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     mentionedUserName: string,
     commenterName: string,
     itemContent: string,
-    commentContent: string,
-    itemId: number
+    commentContent: string
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
       logger.log('SendGrid not configured - skipping team board comment mention notification');
@@ -763,19 +762,23 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       for (const user of mentionedUsers) {
         if (user.id === commenterId) continue; // Don't notify the commenter
 
+        if (!user.email) {
+          logger.warn(`Skipping mention notification: user ${user.id} has no email.`);
+          continue;
+        }
+
         const userName =
           user.displayName ||
           user.firstName ||
-          user.email?.split('@')[0] ||
+          user.email.split('@')[0] ||
           'User';
 
         await this.sendTeamBoardCommentMentionNotification(
-          user.email!,
+          user.email,
           userName,
           commenterName,
           itemContent,
-          commentContent,
-          itemId
+          commentContent
         );
       }
     } catch (error) {
