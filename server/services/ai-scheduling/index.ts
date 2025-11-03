@@ -145,15 +145,41 @@ You must respond with a JSON object containing exactly these fields:
  */
 function extractPossibleDates(eventRequest: EventRequest): string[] {
   const dates: string[] = [];
+  const desiredDate = eventRequest.desiredEventDate;
 
-  // Add desired event date
-  if (eventRequest.desiredEventDate) {
-    dates.push(eventRequest.desiredEventDate);
+  // If no desired date, we can't suggest alternatives
+  if (!desiredDate) {
+    return dates;
+  }
+
+  // Add the desired event date
+  dates.push(desiredDate);
+
+  // Generate nearby date options (3 days before and 7 days after the desired date)
+  // This gives the AI flexibility to suggest better dates for balancing
+  const baseDate = new Date(desiredDate);
+  
+  // Add 3 days before (for events that might work better earlier in the week)
+  for (let i = 1; i <= 3; i++) {
+    const earlierDate = new Date(baseDate);
+    earlierDate.setDate(earlierDate.getDate() - i);
+    dates.unshift(earlierDate.toISOString().split('T')[0]);
+  }
+  
+  // Add 7 days after (for events that might work better later)
+  for (let i = 1; i <= 7; i++) {
+    const laterDate = new Date(baseDate);
+    laterDate.setDate(laterDate.getDate() + i);
+    dates.push(laterDate.toISOString().split('T')[0]);
   }
 
   // Add backup dates if available
   if (eventRequest.backupDates && eventRequest.backupDates.length > 0) {
-    dates.push(...eventRequest.backupDates);
+    eventRequest.backupDates.forEach(backupDate => {
+      if (!dates.includes(backupDate)) {
+        dates.push(backupDate);
+      }
+    });
   }
 
   // Parse dates from message field
