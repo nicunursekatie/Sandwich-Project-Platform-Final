@@ -176,8 +176,13 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
     return dates;
   }
 
+  // Convert desired date to string format (YYYY-MM-DD)
+  const desiredDateString = typeof desiredDate === 'string' 
+    ? desiredDate 
+    : desiredDate.toISOString().split('T')[0];
+
   // Add the desired event date (primary focus)
-  dates.push(desiredDate);
+  dates.push(desiredDateString);
 
   // Add 1-2 nearby alternatives to give AI flexibility for very busy weeks
   // This keeps the analysis focused while still allowing smart suggestions
@@ -196,7 +201,7 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
   // Add backup dates if explicitly provided (must be on or after desired date)
   if (eventRequest.backupDates && eventRequest.backupDates.length > 0) {
     eventRequest.backupDates.forEach(backupDate => {
-      if (!dates.includes(backupDate) && backupDate >= desiredDate) {
+      if (!dates.includes(backupDate) && backupDate >= desiredDateString) {
         dates.push(backupDate);
       }
     });
@@ -206,7 +211,7 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
   if (eventRequest.message) {
     const extractedDates = extractDatesFromText(eventRequest.message);
     extractedDates.forEach(date => {
-      if (!dates.includes(date) && date >= desiredDate) {
+      if (!dates.includes(date) && date >= desiredDateString) {
         dates.push(date);
       }
     });
@@ -214,7 +219,7 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
 
   // CRITICAL: Filter out any dates before the requested date
   // This ensures we never recommend a date earlier than what they asked for
-  return dates.filter(date => date && date >= desiredDate);
+  return dates.filter(date => date && date >= desiredDateString);
 }
 
 /**
