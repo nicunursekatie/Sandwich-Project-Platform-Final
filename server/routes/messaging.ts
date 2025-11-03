@@ -155,8 +155,8 @@ router.get('/kudos/check', isAuthenticated, async (req: AuthenticatedRequest, re
     const { recipientId, contextType, contextId } = req.query;
 
     if (!recipientId || !contextType || !contextId) {
-      return res.status(400).json({ 
-        message: 'recipientId, contextType, and contextId are required' 
+      return res.status(400).json({
+        message: 'recipientId, contextType, and contextId are required'
       });
     }
 
@@ -171,6 +171,50 @@ router.get('/kudos/check', isAuthenticated, async (req: AuthenticatedRequest, re
   } catch (error) {
     logger.error('[Messaging API] Error checking kudos status:', error);
     res.status(500).json({ message: 'Failed to check kudos status' });
+  }
+});
+
+// Send message
+router.post('/send', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const {
+      recipientIds,
+      content,
+      contextType,
+      contextId,
+      contextTitle,
+      parentMessageId,
+    } = req.body;
+
+    if (!recipientIds || !Array.isArray(recipientIds) || recipientIds.length === 0) {
+      return res.status(400).json({ message: 'recipientIds array is required' });
+    }
+
+    if (!content) {
+      return res.status(400).json({ message: 'content is required' });
+    }
+
+    logger.log(`[Messaging API] Sending message from ${user.email} to ${recipientIds.length} recipient(s)`);
+
+    const result = await messagingService.sendMessage({
+      senderId: user.id,
+      recipientIds,
+      content,
+      contextType,
+      contextId,
+      contextTitle,
+      parentMessageId,
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error('[Messaging API] Error sending message:', error);
+    res.status(500).json({ message: 'Failed to send message' });
   }
 });
 

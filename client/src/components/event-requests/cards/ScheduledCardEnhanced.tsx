@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -29,11 +28,9 @@ import {
   Trash2,
   Calendar,
   Users,
-  Building,
   Car,
   Megaphone,
   UserPlus,
-  Check,
   Phone,
   Mail,
   AlertTriangle,
@@ -108,12 +105,12 @@ interface ScheduledCardEnhancedProps {
   canEdit?: boolean;
 }
 
-const parsePostgresArray = (arr: any): string[] => {
+const parsePostgresArray = (arr: unknown): string[] => {
   if (!arr) return [];
   if (Array.isArray(arr)) return arr;
   if (typeof arr === 'string') {
     if (arr === '{}' || arr === '') return [];
-    let cleaned = arr.replace(/^{|}$/g, '');
+    const cleaned = arr.replace(/^{|}$/g, '');
     if (!cleaned) return [];
     return cleaned.split(',').map((item) => item.trim()).filter((item) => item);
   }
@@ -185,7 +182,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   // Mutation for updating event request fields
   const updateFieldsMutation = useMutation({
-    mutationFn: async (updates: Record<string, any>) => {
+    mutationFn: async (updates: Record<string, unknown>) => {
       const response = await fetch(`/api/event-requests/${request.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -246,7 +243,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     staleTime: 1 * 60 * 1000,
   });
 
-  const resolveRecipientNameLocal = (recipientId: string): string => {
+  const resolveLocalRecipientName = (recipientId: string): string => {
     // Handle custom entries with format "custom-timestamp-Name" or "custom:Name"
     if (recipientId.startsWith('custom-') || recipientId.startsWith('custom:')) {
       // Extract just the name part from formats like:
@@ -271,10 +268,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         const numId = Number(value);
 
         if (type === 'host') {
-          console.log(`resolveRecipientName: Looking for host ID ${numId} in ${hostContacts.length} contacts`);
+          console.log(`resolveLocalRecipientName: Looking for host ID ${numId} in ${hostContacts.length} contacts`);
           const hostContact = hostContacts.find(hc => hc.id === numId);
           if (hostContact) {
-            console.log(`resolveRecipientName: Found host contact:`, hostContact);
+            console.log(`resolveLocalRecipientName: Found host contact:`, hostContact);
             // Prefer displayName (includes host location), then name, then hostLocationName
             if (hostContact.displayName) {
               return hostContact.displayName;
@@ -286,14 +283,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               return hostContact.hostLocationName;
             }
           }
-          console.log(`resolveRecipientName: Host contact ${numId} not found, checking host locations`);
+          console.log(`resolveLocalRecipientName: Host contact ${numId} not found, checking host locations`);
           const hostLocation = hostLocations.find(h => h.id === numId);
           if (hostLocation) {
-            console.log(`resolveRecipientName: Found host location:`, hostLocation);
+            console.log(`resolveLocalRecipientName: Found host location:`, hostLocation);
             return hostLocation.name;
           }
           // If host not found, return a helpful message instead of just the ID
-          console.warn(`resolveRecipientName: Host ${numId} not found in either contacts or locations! Available IDs:`, hostContacts.map(h => h.id));
+          console.warn(`resolveLocalRecipientName: Host ${numId} not found in either contacts or locations! Available IDs:`, hostContacts.map(h => h.id));
           return `Host ID ${numId}`;
         } else if (type === 'recipient') {
           const recipient = recipients.find(r => r.id === numId);
@@ -334,7 +331,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   };
 
   // Use the prop if provided, otherwise use local implementation
-  const getRecipientName = resolveRecipientName || resolveRecipientNameLocal;
+  const getRecipientName = resolveRecipientName || resolveLocalRecipientName;
 
   // Get display date
   const displayDate = request.scheduledEventDate || request.desiredEventDate;
@@ -497,7 +494,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
 
               {request.assignedVanDriverId && (
-                <Badge className="bg-blue-600 text-white border border-blue-600 font-medium">
+                <Badge className="bg-[#007E8C] text-white border border-[#007E8C] font-medium">
                   🚐 Van Assigned
                 </Badge>
               )}
@@ -1045,8 +1042,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           </div>
                         ))}
                         {request.assignedVanDriverId && (
-                          <div className="flex items-start gap-2 bg-blue-100 rounded px-3 py-1.5 border-2 border-blue-400 min-w-0">
-                            <span className="text-base font-bold text-blue-900 flex-1 min-w-0 break-words leading-tight">
+                          <div className="flex items-start gap-2 bg-[#007E8C]/20 rounded px-3 py-1.5 border-2 border-[#007E8C]/40 min-w-0">
+                            <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
                               {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
                             </span>
                             <div className="flex items-center gap-1 shrink-0 pt-0.5">
@@ -1141,10 +1138,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           const recipientName = id.startsWith('host-contact-') && getRecipientName
                             ? getRecipientName(id)
                             : null;
-                          // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > id as fallback
-                          const displayName = (detailName && !/^\d+$/.test(detailName))
+                          // Check if detailName is actually just the ID (common with host-contact and custom IDs)
+                          const isDetailNameJustId = detailName === id ||
+                            detailName?.startsWith('host-contact-') ||
+                            detailName?.startsWith('custom-');
+                          // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > detail name as fallback
+                          const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
                             ? detailName
-                            : customName || recipientName || (userName !== id ? userName : 'Unknown Speaker');
+                            : customName || recipientName || (userName !== id ? userName : detailName || 'Unknown Speaker');
                           return (
                             <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
                               <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
@@ -1302,9 +1303,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 )}
                 {request.email && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <Mail className="w-4 h-4 shrink-0" />
-                    <a href={`mailto:${request.email}`} className="hover:underline">
+                    <a href={`mailto:${request.email}`} className="hover:underline break-all min-w-0">
                       {request.email}
                     </a>
                   </div>
@@ -1486,7 +1487,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {request.message && (
                 <div className="sm:col-span-2">
                   <p className="text-sm font-medium mb-1 text-gray-900">Original Request Message:</p>
-                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
                     {request.message}
                   </p>
                 </div>
@@ -1596,7 +1597,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {request.driverNotes && (
                 <div>
                   <p className="text-sm font-medium mb-1 text-gray-900">Driver Notes:</p>
-                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
                     {request.driverNotes}
                   </p>
                 </div>
