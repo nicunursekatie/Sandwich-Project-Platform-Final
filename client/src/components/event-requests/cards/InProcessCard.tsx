@@ -373,6 +373,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onAssignTspContact,
   onEditTspContact,
   onLogContact,
+  onAiSuggest,
   canEdit = true,
   canDelete = true,
   // Inline editing props
