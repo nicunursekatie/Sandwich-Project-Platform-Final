@@ -493,7 +493,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
 
               {request.assignedVanDriverId && (
-                <Badge className="bg-blue-600 text-white border border-blue-600 font-medium">
+                <Badge className="bg-[#007E8C] text-white border border-[#007E8C] font-medium">
                   🚐 Van Assigned
                 </Badge>
               )}
@@ -1041,8 +1041,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           </div>
                         ))}
                         {request.assignedVanDriverId && (
-                          <div className="flex items-start gap-2 bg-blue-100 rounded px-3 py-1.5 border-2 border-blue-400 min-w-0">
-                            <span className="text-base font-bold text-blue-900 flex-1 min-w-0 break-words leading-tight">
+                          <div className="flex items-start gap-2 bg-[#007E8C]/20 rounded px-3 py-1.5 border-2 border-[#007E8C]/40 min-w-0">
+                            <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
                               {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
                             </span>
                             <div className="flex items-center gap-1 shrink-0 pt-0.5">
@@ -1486,7 +1486,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {request.message && (
                 <div className="sm:col-span-2">
                   <p className="text-sm font-medium mb-1 text-gray-900">Original Request Message:</p>
-                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
                     {request.message}
                   </p>
                 </div>
@@ -1596,7 +1596,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {request.driverNotes && (
                 <div>
                   <p className="text-sm font-medium mb-1 text-gray-900">Driver Notes:</p>
-                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
                     {request.driverNotes}
                   </p>
                 </div>
