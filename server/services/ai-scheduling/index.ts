@@ -99,16 +99,25 @@ You must respond with a JSON object containing exactly these fields:
 
     const aiResponse = completion.choices[0].message.content || '';
     
+    // Log the raw AI response for debugging
+    logger.log(`Raw AI response: ${aiResponse}`);
+    
     // Parse the JSON response from OpenAI
     const parsedResponse: OpenAiDateResponse = JSON.parse(aiResponse);
     
+    // Log the parsed response
+    logger.log(`Parsed AI response: ${JSON.stringify(parsedResponse)}`);
+    
     // Validate the response has required fields
     if (!parsedResponse.recommendedDate || !parsedResponse.reasoning || typeof parsedResponse.confidence !== 'number') {
+      logger.error(`Invalid AI response structure. recommendedDate: ${parsedResponse.recommendedDate}, reasoning: ${parsedResponse.reasoning}, confidence: ${parsedResponse.confidence}`);
       throw new Error('Invalid AI response structure');
     }
 
     // Normalize the AI-recommended date to YYYY-MM-DD format (remove timestamps if present)
     const normalizedRecommendedDate = parsedResponse.recommendedDate.split('T')[0];
+    
+    logger.log(`Normalized recommended date: ${normalizedRecommendedDate}`);
 
     // Validate the recommended date is one of the available options
     const isValidDate = dateAnalyses.some(analysis => analysis.date === normalizedRecommendedDate);
@@ -196,10 +205,13 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
   const hasFlexibility = /pivot|flexible|any time|whenever|different month|alternative|open to/i.test(message);
   const mentionsLaterMonth = /december|january|february|march|next month|later/i.test(message);
 
+  logger.log(`Flexibility detection - hasFlexibility: ${hasFlexibility}, mentionsLaterMonth: ${mentionsLaterMonth}, message: "${eventRequest.message}"`);
+
   const baseDate = new Date(desiredDate);
   
   // If they're flexible or mention moving to a later month, analyze a wider range
   if (hasFlexibility && mentionsLaterMonth) {
+    logger.log(`Detected flexibility - analyzing extended date range (5 weeks)`);
     // Add dates spread across several weeks to give AI real alternatives
     const daysToAdd = [1, 3, 7, 14, 21, 28, 35]; // 1 day, 3 days, 1 week, 2 weeks, 3 weeks, 4 weeks, 5 weeks
     daysToAdd.forEach(days => {
@@ -208,6 +220,7 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
       dates.push(futureDate.toISOString().split('T')[0]);
     });
   } else {
+    logger.log(`No flexibility detected - analyzing standard 3-date range`);
     // Add 1-2 nearby alternatives for minor adjustments
     const dayAfter = new Date(baseDate);
     dayAfter.setDate(dayAfter.getDate() + 1);
@@ -217,6 +230,9 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
     threeDaysLater.setDate(threeDaysLater.getDate() + 3);
     dates.push(threeDaysLater.toISOString().split('T')[0]);
   }
+  
+  logger.log(`Final extracted dates: ${dates.join(', ')}`);
+
 
   // Add backup dates if explicitly provided (must be on or after desired date)
   if (eventRequest.backupDates && eventRequest.backupDates.length > 0) {
