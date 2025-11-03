@@ -345,6 +345,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onApprove,
   onDecline,
   onLogContact,
+  onAiSuggest,
   canEdit = true,
   canDelete = true,
   // Inline editing props
