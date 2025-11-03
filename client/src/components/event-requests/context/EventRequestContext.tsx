@@ -375,11 +375,13 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     completed: requestsByStatus.completed?.length || 0,
     declined: requestsByStatus.declined?.length || 0,
     postponed: requestsByStatus.postponed?.length || 0,
+    cancelled: requestsByStatus.cancelled?.length || 0,
     my_assignments: eventRequests.filter(req => 
       isUserAssignedToEvent(req) && 
       req.status !== 'completed' && 
       req.status !== 'declined' &&
-      req.status !== 'postponed'
+      req.status !== 'postponed' &&
+      req.status !== 'cancelled'
     ).length,
   };
 
