@@ -48,6 +48,7 @@ import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { MessageComposer } from '@/components/message-composer';
+import { EventMessageThread } from '@/components/event-message-thread';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -682,6 +683,17 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Message Thread Section */}
+        {request.id && (
+          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+            <EventMessageThread
+              eventId={request.id.toString()}
+              eventTitle={`${request.organizationName} event`}
+              maxHeight="300px"
+            />
           </div>
         )}
 
