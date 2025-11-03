@@ -29,30 +29,24 @@ export class EmailNotificationService {
   /**
    * Detect @mentions in chat message content
    * Supports formats like @username, @"display name", @email@domain.com
+   *
+   * Uses a single combined regex to prevent overlapping matches.
+   * Priority order: quoted names > email addresses > simple usernames
    */
   static detectMentions(content: string): string[] {
     const mentions: string[] = [];
 
-    // Match @username (alphanumeric and underscore)
-    const usernameMatches = content.match(/@([a-zA-Z0-9_]+)/g);
-    if (usernameMatches) {
-      mentions.push(...usernameMatches.map((match) => match.substring(1)));
-    }
+    // Combined regex with alternation to prevent overlapping matches
+    // Priority: 1) Quoted names 2) Email addresses 3) Simple usernames
+    const mentionRegex = /@(?:"([^"]+)"|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|([a-zA-Z0-9._-]+))/g;
 
-    // Match @"display name" (quoted names)
-    const quotedMatches = content.match(/@"([^"]+)"/g);
-    if (quotedMatches) {
-      mentions.push(
-        ...quotedMatches.map((match) => match.substring(2, match.length - 1))
-      );
-    }
-
-    // Match @email@domain.com (email addresses)
-    const emailMatches = content.match(
-      /@([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g
-    );
-    if (emailMatches) {
-      mentions.push(...emailMatches.map((match) => match.substring(1)));
+    let match;
+    while ((match = mentionRegex.exec(content)) !== null) {
+      // Extract the matched mention from whichever group captured it
+      const mention = match[1] || match[2] || match[3];
+      if (mention) {
+        mentions.push(mention);
+      }
     }
 
     return [...new Set(mentions)]; // Remove duplicates
