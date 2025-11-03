@@ -12,7 +12,6 @@ import {
   Calendar,
   MapPin,
   Sandwich as SandwichIcon,
-  Refrigerator,
   Users
 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
