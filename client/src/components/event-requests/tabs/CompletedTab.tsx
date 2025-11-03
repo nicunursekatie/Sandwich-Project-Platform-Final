@@ -33,6 +33,8 @@ export const CompletedTab: React.FC = () => {
     setShowOneMonthFollowUpDialog,
     setTspContactEventRequest,
     setShowTspContactAssignmentDialog,
+    setShowLogContactDialog,
+    setLogContactEventRequest,
   } = useEventRequestContext();
 
   const completedRequests = filterRequestsByStatus('completed') || [];
@@ -115,6 +117,10 @@ export const CompletedTab: React.FC = () => {
             onEditTspContact={() => {
               setTspContactEventRequest(request);
               setShowTspContactAssignmentDialog(true);
+            }}
+            onLogContact={() => {
+              setLogContactEventRequest(request);
+              setShowLogContactDialog(true);
             }}
             openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
             openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}

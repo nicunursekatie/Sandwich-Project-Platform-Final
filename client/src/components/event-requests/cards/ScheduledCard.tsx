@@ -67,6 +67,7 @@ import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import { MessageComposer } from '@/components/message-composer';
 
 interface TimeDialogContentProps {
   request: EventRequest;
@@ -295,6 +296,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
 
   // Fetch host contacts and recipients for recipient display names
   const { data: hostContacts = [], isLoading: hostContactsLoading } = useQuery<Array<{
@@ -894,6 +896,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           {/* Quick Actions */}
           {canEdit && (
             <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => setShowMessageDialog(true)}
+                variant="ghost"
+                className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                aria-label="Message about this event"
+              >
+                <MessageSquare className="w-4 h-4" aria-hidden="true" />
+              </Button>
               <Button
                 size="sm"
                 variant="ghost"
@@ -1774,6 +1785,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           )}
         </div>
       </CardContent>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
+          </DialogHeader>
+          <MessageComposer
+            contextType="event"
+            contextId={request.id.toString()}
+            contextTitle={`${request.organizationName} event`}
+            onSent={() => setShowMessageDialog(false)}
+            onCancel={() => setShowMessageDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

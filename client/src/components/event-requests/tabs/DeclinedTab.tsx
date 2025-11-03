@@ -20,6 +20,8 @@ export const DeclinedTab: React.FC = () => {
     setShowEventDetails,
     setShowContactOrganizerDialog,
     setContactEventRequest,
+    setShowLogContactDialog,
+    setLogContactEventRequest,
   } = useEventRequestContext();
 
   const declinedRequests = filterRequestsByStatus('declined');
@@ -91,6 +93,10 @@ export const DeclinedTab: React.FC = () => {
                       });
                     }
                   }}
+                  onLogContact={() => {
+                    setLogContactEventRequest(request);
+                    setShowLogContactDialog(true);
+                  }}
                 />
               ))}
             </div>
@@ -132,6 +138,10 @@ export const DeclinedTab: React.FC = () => {
                       });
                     }
                   }}
+                  onLogContact={() => {
+                    setLogContactEventRequest(request);
+                    setShowLogContactDialog(true);
+                  }}
                 />
               ))}
             </div>
@@ -172,6 +182,10 @@ export const DeclinedTab: React.FC = () => {
                         description: 'The event request has been moved back to New Requests.',
                       });
                     }
+                  }}
+                  onLogContact={() => {
+                    setLogContactEventRequest(request);
+                    setShowLogContactDialog(true);
                   }}
                 />
               ))}

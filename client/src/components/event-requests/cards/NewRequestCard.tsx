@@ -3,6 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import {
   Calendar,
@@ -36,6 +42,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import { MessageComposer } from '@/components/message-composer';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -348,6 +355,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   tempIsConfirmed = false,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showConfirmToggle, setShowConfirmToggle] = useState(false);
   const [pendingConfirmValue, setPendingConfirmValue] = useState(false);
   const queryClient = useQueryClient();
@@ -603,9 +611,20 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
           {/* Edit/Delete */}
           {canEdit && (
-            <Button size="sm" variant="ghost" onClick={onEdit}>
-              <Edit className="w-4 h-4" />
-            </Button>
+            <>
+              <Button
+                size="sm"
+                onClick={() => setShowMessageDialog(true)}
+                variant="ghost"
+                className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                aria-label="Message about this event"
+              >
+                <MessageSquare className="w-4 h-4" aria-hidden="true" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onEdit}>
+                <Edit className="w-4 h-4" />
+              </Button>
+            </>
           )}
           {canDelete && (
             <ConfirmationDialog
@@ -675,6 +694,22 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           cancelText="Cancel"
         />
       </CardContent>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
+          </DialogHeader>
+          <MessageComposer
+            contextType="event"
+            contextId={request.id.toString()}
+            contextTitle={`${request.organizationName} event`}
+            onSent={() => setShowMessageDialog(false)}
+            onCancel={() => setShowMessageDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
