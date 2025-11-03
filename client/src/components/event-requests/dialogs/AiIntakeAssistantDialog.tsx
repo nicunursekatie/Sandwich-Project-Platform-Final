@@ -145,7 +145,23 @@ export function AiIntakeAssistantDialog({
 
   const startEditing = (field: string, currentValue: any) => {
     setEditingField(field);
-    setEditValue(currentValue ?? '');
+
+    // For date fields, convert ISO string to YYYY-MM-DD format for input
+    const fieldConfig = {
+      scheduledEventDate: 'date',
+      desiredEventDate: 'date',
+      eventStartTime: 'time',
+      eventEndTime: 'time',
+      sandwichPickupTime: 'time',
+    } as Record<string, string>;
+
+    if (fieldConfig[field] === 'date' && currentValue) {
+      const date = new Date(currentValue);
+      const formatted = date.toISOString().split('T')[0]; // Get YYYY-MM-DD
+      setEditValue(formatted);
+    } else {
+      setEditValue(currentValue ?? '');
+    }
   };
 
   const cancelEditing = () => {
@@ -373,6 +389,42 @@ export function AiIntakeAssistantDialog({
     const config = fieldConfigs[field];
     if (!config) return null;
 
+    const formatDisplayValue = (value: any, type: string) => {
+      if (value === null || value === undefined) {
+        return <span className="text-gray-400 italic">Not set</span>;
+      }
+
+      if (type === 'boolean') {
+        return value ? 'Yes' : 'No';
+      }
+
+      if (type === 'date') {
+        // Format date as readable string (e.g., "November 4, 2025")
+        const date = new Date(value);
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+
+      if (type === 'time') {
+        // Format time as readable string (e.g., "2:30 PM")
+        if (!value) return value;
+        // Handle both "HH:MM" and "HH:MM:SS" formats
+        const [hours, minutes] = value.split(':').map(Number);
+        const date = new Date();
+        date.setHours(hours, minutes);
+        return date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
+
+      return String(value);
+    };
+
     if (!isEditing) {
       return (
         <div className="bg-gray-50 dark:bg-gray-900/50 rounded-md p-3 border border-gray-200 dark:border-gray-700">
@@ -380,13 +432,7 @@ export function AiIntakeAssistantDialog({
             <div>
               <Label className="text-xs text-gray-600 dark:text-gray-400">{config.label}</Label>
               <p className="text-sm font-medium mt-1">
-                {currentValue !== null && currentValue !== undefined
-                  ? config.type === 'boolean'
-                    ? currentValue
-                      ? 'Yes'
-                      : 'No'
-                    : String(currentValue)
-                  : <span className="text-gray-400 italic">Not set</span>}
+                {formatDisplayValue(currentValue, config.type)}
               </p>
             </div>
             <Button
