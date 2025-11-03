@@ -38,7 +38,6 @@ export function MentionInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<MentionSuggestion[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
-  const [mentionSearch, setMentionSearch] = useState('');
   const [mentionPosition, setMentionPosition] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -122,7 +121,6 @@ export function MentionInput({
 
       // Check if it's a valid mention context (no spaces after @)
       if (!textAfterAt.includes(' ') && textAfterAt.length >= 0) {
-        setMentionSearch(textAfterAt.toLowerCase());
         setMentionPosition(lastAtIndex);
 
         // Filter users based on search and sort alphabetically
@@ -363,7 +361,6 @@ export function MentionTextarea({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<MentionSuggestion[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
-  const [mentionSearch, setMentionSearch] = useState('');
   const [mentionPosition, setMentionPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -411,7 +408,6 @@ export function MentionTextarea({
 
       // Check if it's a valid mention context (no spaces after @)
       if (!textAfterAt.includes(' ') && textAfterAt.length >= 0) {
-        setMentionSearch(textAfterAt.toLowerCase());
         setMentionPosition(lastAtIndex);
 
         // Filter users based on search and sort alphabetically
@@ -488,6 +484,9 @@ export function MentionTextarea({
       } else if (e.key === 'Enter' && !e.shiftKey && suggestions.length > 0) {
         e.preventDefault();
         insertMention(suggestions[selectedSuggestion]);
+        if (onSubmit) {
+          onSubmit();
+        }
       } else if (e.key === 'Escape') {
         setShowSuggestions(false);
       }

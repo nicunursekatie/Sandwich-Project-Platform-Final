@@ -166,8 +166,8 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
     },
   });
 
-  const handleSubmitComment = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitComment = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!newComment.trim()) return;
     createCommentMutation.mutate(newComment.trim());
   };
@@ -252,7 +252,7 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
               onChange={setNewComment}
               onSubmit={() => {
                 if (newComment.trim()) {
-                  handleSubmitComment(new Event('submit') as any);
+                  handleSubmitComment();
                 }
               }}
               placeholder="Add a comment... (Type @ to mention someone)"
