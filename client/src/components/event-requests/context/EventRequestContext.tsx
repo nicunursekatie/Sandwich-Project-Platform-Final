@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
@@ -185,7 +185,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const { user } = useAuth();
 
   // Get role-based defaults for this user
-  const roleDefaults = React.useMemo(() => {
+  const roleDefaults = useMemo(() => {
     if (!user?.role) {
       return getEventRequestDefaults('viewer'); // Default fallback
     }
@@ -297,7 +297,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   });
 
   // Group requests by status
-  const requestsByStatus = React.useMemo(() => {
+  const requestsByStatus = useMemo(() => {
     const groups = eventRequests.reduce((acc: any, request: EventRequest) => {
       if (!acc[request.status]) {
         acc[request.status] = [];
@@ -318,7 +318,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   }, [eventRequests]);
 
   // Helper function to check if current user is assigned to an event
-  const isUserAssignedToEvent = React.useCallback((request: EventRequest): boolean => {
+  const isUserAssignedToEvent = useCallback((request: EventRequest): boolean => {
     if (!user?.id) return false;
 
     // Check TSP Contact assignment (check both tspContactAssigned and tspContact columns)
