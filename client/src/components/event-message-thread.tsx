@@ -3,8 +3,9 @@ import { useEventMessages } from '@/hooks/useEventMessages';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Loader2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList } from 'lucide-react';
+import { formatDistanceToNow, format } from 'date-fns';
+import type { EventRequest } from '@shared/schema';
 
 interface Message {
   id: number;
@@ -20,6 +21,7 @@ interface Message {
 
 interface EventMessageThreadProps {
   eventId: string;
+  eventRequest?: EventRequest;
   eventTitle?: string;
   maxHeight?: string;
   showHeader?: boolean;
@@ -27,6 +29,7 @@ interface EventMessageThreadProps {
 
 export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
   eventId,
+  eventRequest,
   eventTitle,
   maxHeight = '400px',
   showHeader = true,
@@ -47,30 +50,97 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       );
   }, [rawMessages]);
 
+  // Build combined activity items from contact attempts and notes
+  const activityItems = useMemo(() => {
+    const items: Array<{
+      type: 'contact' | 'note' | 'message';
+      icon: React.ReactNode;
+      title: string;
+      content: string;
+      date?: Date;
+      badge?: string;
+    }> = [];
+
+    if (!eventRequest) return items;
+
+    // Add contact attempt info
+    if (eventRequest.contactAttempts && eventRequest.contactAttempts > 0) {
+      const methodIcons = {
+        phone: <Phone className="h-4 w-4" />,
+        email: <Mail className="h-4 w-4" />,
+        video_meeting: <Video className="h-4 w-4" />,
+      };
+
+      items.push({
+        type: 'contact',
+        icon: eventRequest.communicationMethod 
+          ? methodIcons[eventRequest.communicationMethod as keyof typeof methodIcons] || <MessageSquare className="h-4 w-4" />
+          : <MessageSquare className="h-4 w-4" />,
+        title: `Contact Attempt${eventRequest.contactAttempts > 1 ? 's' : ''}`,
+        content: eventRequest.contactCompletionNotes || 'Contact made',
+        date: eventRequest.lastContactAttempt ? new Date(eventRequest.lastContactAttempt) : undefined,
+        badge: `${eventRequest.contactAttempts} attempt${eventRequest.contactAttempts > 1 ? 's' : ''}`,
+      });
+    }
+
+    // Add planning notes
+    if (eventRequest.planningNotes) {
+      items.push({
+        type: 'note',
+        icon: <ClipboardList className="h-4 w-4" />,
+        title: 'Planning Notes',
+        content: eventRequest.planningNotes,
+      });
+    }
+
+    // Add scheduling notes
+    if (eventRequest.schedulingNotes) {
+      items.push({
+        type: 'note',
+        icon: <Calendar className="h-4 w-4" />,
+        title: 'Scheduling Notes',
+        content: eventRequest.schedulingNotes,
+      });
+    }
+
+    // Add messages
+    messages.forEach((message) => {
+      items.push({
+        type: 'message',
+        icon: <MessageSquare className="h-4 w-4" />,
+        title: message.senderName || message.senderEmail || 'Unknown User',
+        content: message.content,
+        date: new Date(message.createdAt),
+      });
+    });
+
+    // Sort by date (most recent first), putting items without dates at the top
+    return items.sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return -1;
+      if (!b.date) return 1;
+      return b.date.getTime() - a.date.getTime();
+    });
+  }, [eventRequest, messages]);
+
+  const totalCount = activityItems.length;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-        <span className="ml-2 text-sm text-gray-500">Loading messages...</span>
+        <span className="ml-2 text-sm text-gray-500">Loading activity...</span>
       </div>
     );
   }
 
-  if (isError) {
+  if (totalCount === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-red-500">Failed to load messages</p>
-      </div>
-    );
-  }
-
-  if (messages.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-        <p className="text-sm text-gray-500">No messages yet</p>
+        <FileText className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+        <p className="text-sm text-gray-500">No communication or notes yet</p>
         <p className="text-xs text-gray-400 mt-1">
-          Use the message button to start a conversation
+          Contact attempts and notes will appear here
         </p>
       </div>
     );
@@ -82,10 +152,10 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Message Thread
+              <FileText className="h-4 w-4" />
+              Communication & Notes
               <Badge variant="secondary" className="text-xs">
-                {messages.length}
+                {totalCount}
               </Badge>
             </h3>
             {eventTitle && (
@@ -97,29 +167,38 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
 
       <ScrollArea style={{ maxHeight }} className="pr-4">
         <div className="space-y-3">
-          {messages.map((message) => (
-            <Card key={message.id} className="p-3 bg-gray-50 border-gray-200">
+          {activityItems.map((item, index) => (
+            <Card key={index} className="p-3 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
               <div className="space-y-2">
-                {/* Message Header */}
+                {/* Activity Header */}
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
-                      {message.senderName || message.senderEmail || 'Unknown User'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {formatDistanceToNow(new Date(message.createdAt), {
-                        addSuffix: true
-                      })}
-                      {message.editedAt && (
-                        <span className="ml-1 text-gray-400">(edited)</span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="text-[#236383] dark:text-[#47B3CB]">
+                      {item.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {item.title}
+                      </p>
+                      {item.date && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatDistanceToNow(item.date, { addSuffix: true })}
+                          {' • '}
+                          {format(item.date, 'MMM d, yyyy h:mm a')}
+                        </p>
                       )}
-                    </p>
+                    </div>
                   </div>
+                  {item.badge && (
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </div>
 
-                {/* Message Content */}
-                <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-                  {message.content}
+                {/* Activity Content */}
+                <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words ml-6">
+                  {item.content}
                 </div>
               </div>
             </Card>

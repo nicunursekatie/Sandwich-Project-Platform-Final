@@ -568,11 +568,12 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           </div>
         </div>
 
-        {/* Message Thread Section */}
+        {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
             <EventMessageThread
               eventId={request.id.toString()}
+              eventRequest={request}
               eventTitle={`${request.organizationName} event`}
               maxHeight="300px"
             />
