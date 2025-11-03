@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { MentionTextarea, MessageWithMentions } from '@/components/mention-input';
 import {
   Loader2,
   Plus,
@@ -165,8 +166,8 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
     },
   });
 
-  const handleSubmitComment = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitComment = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!newComment.trim()) return;
     createCommentMutation.mutate(newComment.trim());
   };
@@ -233,7 +234,7 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
                     )}
                   </div>
                   <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {comment.content}
+                    <MessageWithMentions content={comment.content} />
                   </p>
                 </div>
               ))}
@@ -246,19 +247,18 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
 
           {/* Add comment form */}
           <form onSubmit={handleSubmitComment} className="flex gap-2 items-end">
-            <Textarea
+            <MentionTextarea
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="text-sm min-h-[60px] max-h-[200px] resize-y"
-              data-testid={`input-new-comment-${itemId}`}
-              onKeyDown={(e) => {
-                // Submit on Enter, but allow Shift+Enter for new lines
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmitComment(e as any);
+              onChange={setNewComment}
+              onSubmit={() => {
+                if (newComment.trim()) {
+                  handleSubmitComment();
                 }
               }}
+              placeholder="Add a comment... (Type @ to mention someone)"
+              className="text-sm min-h-[60px] max-h-[200px] resize-y"
+              dataTestId={`input-new-comment-${itemId}`}
+              disabled={createCommentMutation.isPending}
             />
             <Button
               type="submit"

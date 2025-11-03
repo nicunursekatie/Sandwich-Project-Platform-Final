@@ -330,6 +330,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     return recipientId;
   };
 
+  // Use the prop if provided, otherwise use local implementation
+  const getRecipientName = resolveRecipientName || resolveLocalRecipientName;
+
   // Get display date
   const displayDate = request.scheduledEventDate || request.desiredEventDate;
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
@@ -1131,9 +1134,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           const detailName = (request.speakerDetails as any)?.[id]?.name;
                           const customName = extractCustomName(id);
                           const userName = resolveUserName(id);
-                          // Try resolveRecipientName for host-contact IDs
-                          const recipientName = id.startsWith('host-contact-') && resolveRecipientName
-                            ? resolveRecipientName(id)
+                          // Try getRecipientName for host-contact IDs
+                          const recipientName = id.startsWith('host-contact-') && getRecipientName
+                            ? getRecipientName(id)
                             : null;
                           // Check if detailName is actually just the ID (common with host-contact and custom IDs)
                           const isDetailNameJustId = detailName === id ||
@@ -1383,7 +1386,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
                         <div className="flex flex-col gap-1.5 min-w-0">
                           {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
-                            const recipientName = resolveLocalRecipientName(id);
+                            const recipientName = getRecipientName(id);
                             const cleanName = recipientName.includes('(') 
                               ? recipientName.substring(0, recipientName.indexOf('(')).trim()
                               : recipientName;

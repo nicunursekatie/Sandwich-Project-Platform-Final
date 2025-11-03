@@ -442,11 +442,36 @@ teamBoardRouter.post('/:id/comments', async (req: AuthenticatedRequest, res: Res
       .values(newComment)
       .returning();
 
-    logger.info('Successfully created comment', { 
+    logger.info('Successfully created comment', {
       commentId: createdComment.id,
       itemId,
-      userId: req.user.id 
+      userId: req.user.id
     });
+
+    // Process mentions in the comment asynchronously (don't block the response)
+    // First, fetch the item to get its content
+    const [item] = await db
+      .select()
+      .from(teamBoardItems)
+      .where(eq(teamBoardItems.id, itemId))
+      .limit(1);
+
+    if (item) {
+      EmailNotificationService.processTeamBoardComment(
+        commentData.content,
+        req.user.id,
+        displayName,
+        itemId,
+        item.content
+      ).catch((error) => {
+        logger.error('Failed to process team board comment mentions', error);
+      });
+
+      logger.info('Team board comment mention processing queued', {
+        commentId: createdComment.id,
+        itemId
+      });
+    }
 
     res.status(201).json(createdComment);
   } catch (error) {
