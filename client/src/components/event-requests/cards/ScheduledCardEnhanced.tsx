@@ -297,9 +297,24 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           console.warn(`resolveLocalRecipientName: Host ${numId} not found in either contacts or locations! Available IDs:`, hostContacts.map(h => h.id));
           return `Host ID ${numId}`;
         } else if (type === 'recipient') {
+          // Check recipients first
           const recipient = recipients.find(r => r.id === numId);
           if (recipient) return recipient.name;
-          // If recipient not found, return a helpful message
+
+          // Fallback: check host contacts (in case data was mislabeled)
+          console.log(`resolveLocalRecipientName: Recipient ${numId} not found, checking hosts as fallback`);
+          const hostContact = hostContacts.find(hc => hc.id === numId);
+          if (hostContact) {
+            if (hostContact.displayName) return hostContact.displayName;
+            if (hostContact.name) return hostContact.name;
+            if (hostContact.hostLocationName) return hostContact.hostLocationName;
+          }
+
+          // Fallback: check host locations
+          const hostLocation = hostLocations.find(h => h.id === numId);
+          if (hostLocation) return hostLocation.name;
+
+          // If not found anywhere, return a helpful message
           return `Recipient ID ${numId}`;
         }
       }
