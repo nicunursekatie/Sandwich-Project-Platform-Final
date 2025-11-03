@@ -246,7 +246,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     staleTime: 1 * 60 * 1000,
   });
 
-  const resolveRecipientName = (recipientId: string): string => {
+  const resolveLocalRecipientName = (recipientId: string): string => {
     // Handle custom entries with format "custom-timestamp-Name" or "custom:Name"
     if (recipientId.startsWith('custom-') || recipientId.startsWith('custom:')) {
       // Extract just the name part from formats like:
@@ -271,10 +271,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         const numId = Number(value);
 
         if (type === 'host') {
-          console.log(`resolveRecipientName: Looking for host ID ${numId} in ${hostContacts.length} contacts`);
+          console.log(`resolveLocalRecipientName: Looking for host ID ${numId} in ${hostContacts.length} contacts`);
           const hostContact = hostContacts.find(hc => hc.id === numId);
           if (hostContact) {
-            console.log(`resolveRecipientName: Found host contact:`, hostContact);
+            console.log(`resolveLocalRecipientName: Found host contact:`, hostContact);
             // Prefer displayName (includes host location), then name, then hostLocationName
             if (hostContact.displayName) {
               return hostContact.displayName;
@@ -286,14 +286,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               return hostContact.hostLocationName;
             }
           }
-          console.log(`resolveRecipientName: Host contact ${numId} not found, checking host locations`);
+          console.log(`resolveLocalRecipientName: Host contact ${numId} not found, checking host locations`);
           const hostLocation = hostLocations.find(h => h.id === numId);
           if (hostLocation) {
-            console.log(`resolveRecipientName: Found host location:`, hostLocation);
+            console.log(`resolveLocalRecipientName: Found host location:`, hostLocation);
             return hostLocation.name;
           }
           // If host not found, return a helpful message instead of just the ID
-          console.warn(`resolveRecipientName: Host ${numId} not found in either contacts or locations! Available IDs:`, hostContacts.map(h => h.id));
+          console.warn(`resolveLocalRecipientName: Host ${numId} not found in either contacts or locations! Available IDs:`, hostContacts.map(h => h.id));
           return `Host ID ${numId}`;
         } else if (type === 'recipient') {
           const recipient = recipients.find(r => r.id === numId);
@@ -1382,7 +1382,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
                         <div className="flex flex-col gap-1.5 min-w-0">
                           {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
-                            const recipientName = resolveRecipientName(id);
+                            const recipientName = resolveLocalRecipientName(id);
                             const cleanName = recipientName.includes('(') 
                               ? recipientName.substring(0, recipientName.indexOf('(')).trim()
                               : recipientName;
