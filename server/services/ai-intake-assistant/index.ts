@@ -228,19 +228,41 @@ const VALIDATION_RULES: ValidationRule[] = [
     category: 'sandwiches',
     severity: 'suggestion',
     check: (event) => {
+      // Check structured sandwich types field
       const types = event.sandwichTypes as any;
-      if (!types || !Array.isArray(types) || types.length === 0) return null;
+      let hasDeli = false;
+      let hasTurkey = false;
+      
+      if (types && Array.isArray(types) && types.length > 0) {
+        hasDeli = types.some((t: any) =>
+          ['turkey', 'ham', 'roast beef', 'chicken', 'deli'].some(meat =>
+            t.type?.toLowerCase().includes(meat)
+          )
+        );
 
-      const hasDeli = types.some((t: any) =>
-        ['turkey', 'ham', 'roast beef', 'chicken'].some(meat =>
-          t.type?.toLowerCase().includes(meat)
-        )
-      );
-
-      const hasTurkey = types.some((t: any) =>
-        t.type?.toLowerCase().includes('turkey')
-      );
-
+        hasTurkey = types.some((t: any) =>
+          t.type?.toLowerCase().includes('turkey')
+        );
+      }
+      
+      // Also check notes fields for mentions of deli meats (case insensitive)
+      const notesFields = [
+        event.planningNotes,
+        event.schedulingNotes,
+        event.additionalRequirements,
+        event.message
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      if (notesFields) {
+        if (!hasDeli && /(turkey|ham|roast beef|chicken|deli)/i.test(notesFields)) {
+          hasDeli = true;
+        }
+        if (!hasTurkey && /turkey/i.test(notesFields)) {
+          hasTurkey = true;
+        }
+      }
+      
+      // Only suggest if NO deli meat detected anywhere
       if (!hasDeli) {
         return {
           category: 'sandwiches',
