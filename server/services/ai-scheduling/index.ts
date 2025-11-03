@@ -67,20 +67,23 @@ export async function suggestOptimalEventDate(
           role: 'system',
           content: `You are an AI assistant for The Sandwich Project, a nonprofit that coordinates volunteers to make sandwiches for people experiencing food insecurity. Your goal is to help analyze their requested event date and suggest alternatives only when needed.
 
+CRITICAL CONSTRAINT: You may ONLY recommend dates on or after their originally requested date. NEVER recommend a date before what they requested.
+
 Most event requests are NOT flexible, so:
 1. Start by analyzing what's happening on their requested date
 2. If their requested date looks fine (fewer than 4 events that week, under 4,000 sandwiches), recommend it
 3. Only suggest an alternative if their requested date is very busy or creates an imbalance
-4. Explain what events are already scheduled that week so they understand the context
+4. All alternatives must be on or after their requested date - never suggest earlier dates
+5. Explain what events are already scheduled that week so they understand the context
 
 When suggesting alternatives, consider:
 - Balance - Prefer weeks with fewer scheduled sandwiches
 - Distribution - Avoid clustering too many events in one week  
-- Nearby dates - Only suggest dates close to their request (within 1-3 days)
+- Nearby dates - Only suggest dates close to their request (within 1-3 days) and AFTER their request
 - Impact - Help maintain steady sandwich production toward the 500,000 annual goal
 
 You must respond with a JSON object containing exactly these fields:
-- recommendedDate: The date in YYYY-MM-DD format that you recommend (can be their original request!)
+- recommendedDate: The date in YYYY-MM-DD format that you recommend (MUST be on or after their requested date!)
 - reasoning: A clear explanation focusing on what's happening that week and why you're recommending this date (2-3 sentences)
 - confidence: A number from 0-100 indicating your confidence in this recommendation`
         },
@@ -109,6 +112,13 @@ You must respond with a JSON object containing exactly these fields:
     if (!isValidDate) {
       logger.warn(`AI recommended date ${parsedResponse.recommendedDate} is not in available options, falling back to heuristic`);
       throw new Error('AI recommended date not in available options');
+    }
+
+    // CRITICAL VALIDATION: Ensure recommended date is not before the requested date
+    const desiredDate = eventRequest.desiredEventDate;
+    if (desiredDate && parsedResponse.recommendedDate < desiredDate) {
+      logger.error(`AI recommended date ${parsedResponse.recommendedDate} is BEFORE requested date ${desiredDate}, falling back to heuristic`);
+      throw new Error('AI recommended date before requested date - this should never happen');
     }
 
     // Convert numeric confidence (0-100) to categorical
@@ -166,11 +176,6 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
   // This keeps the analysis focused while still allowing smart suggestions
   const baseDate = new Date(desiredDate);
   
-  // Add the day before
-  const dayBefore = new Date(baseDate);
-  dayBefore.setDate(dayBefore.getDate() - 1);
-  dates.unshift(dayBefore.toISOString().split('T')[0]);
-  
   // Add the day after
   const dayAfter = new Date(baseDate);
   dayAfter.setDate(dayAfter.getDate() + 1);
@@ -181,26 +186,28 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
   threeDaysLater.setDate(threeDaysLater.getDate() + 3);
   dates.push(threeDaysLater.toISOString().split('T')[0]);
 
-  // Add backup dates if explicitly provided
+  // Add backup dates if explicitly provided (must be on or after desired date)
   if (eventRequest.backupDates && eventRequest.backupDates.length > 0) {
     eventRequest.backupDates.forEach(backupDate => {
-      if (!dates.includes(backupDate)) {
+      if (!dates.includes(backupDate) && backupDate >= desiredDate) {
         dates.push(backupDate);
       }
     });
   }
 
-  // Parse dates from message field
+  // Parse dates from message field (must be on or after desired date)
   if (eventRequest.message) {
     const extractedDates = extractDatesFromText(eventRequest.message);
     extractedDates.forEach(date => {
-      if (!dates.includes(date)) {
+      if (!dates.includes(date) && date >= desiredDate) {
         dates.push(date);
       }
     });
   }
 
-  return dates.filter(Boolean);
+  // CRITICAL: Filter out any dates before the requested date
+  // This ensures we never recommend a date earlier than what they asked for
+  return dates.filter(date => date && date >= desiredDate);
 }
 
 /**
@@ -286,16 +293,22 @@ function getWeekStart(date: Date): Date {
  * Builds the prompt for OpenAI
  */
 function buildPrompt(eventRequest: EventRequest, dateAnalyses: DateAnalysis[]): string {
+  const requestedDate = eventRequest.desiredEventDate 
+    ? new Date(eventRequest.desiredEventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    : 'Not specified';
+
   const organizationInfo = `
 Organization: ${eventRequest.organizationName}
 ${eventRequest.department ? `Department: ${eventRequest.department}` : ''}
 Estimated Participants: ${eventRequest.estimatedSandwichCount || 'Not specified'}
+Originally Requested Date: ${requestedDate}
 ${eventRequest.message ? `Message: ${eventRequest.message}` : ''}
 `.trim();
 
   const dateOptions = dateAnalyses.map((analysis, idx) => {
+    const isRequestedDate = analysis.date === eventRequest.desiredEventDate;
     return `
-Option ${idx + 1}: ${new Date(analysis.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+Option ${idx + 1}: ${new Date(analysis.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}${isRequestedDate ? ' [ORIGINALLY REQUESTED]' : ''}
   - Week of: ${new Date(analysis.weekStarting).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
   - Events already scheduled that week: ${analysis.eventCount}
   - Total sandwiches scheduled that week: ${analysis.totalScheduledSandwiches.toLocaleString()}
@@ -305,13 +318,16 @@ Option ${idx + 1}: ${new Date(analysis.date).toLocaleDateString('en-US', { weekd
 
   return `${organizationInfo}
 
-AVAILABLE DATE OPTIONS:
+AVAILABLE DATE OPTIONS (all on or after their requested date):
 ${dateOptions}
+
+IMPORTANT: You may ONLY recommend dates on or after their originally requested date (${requestedDate}).
 
 Based on this information, which date would you recommend and why? Consider:
 1. Balancing sandwich production across weeks
 2. Avoiding overburdening volunteers in busy weeks
 3. The organization's needs and constraints
+4. Their originally requested date should be preferred unless there's a compelling reason to suggest an alternative
 
 Provide a clear recommendation with specific reasoning.`;
 }
