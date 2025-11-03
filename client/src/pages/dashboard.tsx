@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   ListTodo,
   MessageCircle,
+  MessageSquare,
   ClipboardList,
   FolderOpen,
   BarChart3,
@@ -84,6 +85,7 @@ const SuggestionsPortal = lazy(() => import('@/pages/suggestions'));
 const GoogleSheetsPage = lazy(() => import('@/pages/google-sheets'));
 const RealTimeMessages = lazy(() => import('@/pages/real-time-messages'));
 const GmailStyleInbox = lazy(() => import('@/components/gmail-style-inbox'));
+const MessagingInbox = lazy(() => import('@/pages/messaging-inbox'));
 const ToolkitTabs = lazy(() => import('@/components/toolkit-tabs').then(m => ({ default: m.ToolkitTabs })));
 const KudosInbox = lazy(() => import('@/components/kudos-inbox').then(m => ({ default: m.KudosInbox })));
 const StreamChatRooms = lazy(() => import('@/components/stream-chat-rooms'));
@@ -290,6 +292,8 @@ export default function Dashboard({
         return <GmailStyleInbox />;
       case 'inbox':
         return <GmailStyleInbox />;
+      case 'messaging-inbox':
+        return <MessagingInbox />;
       case 'stream-messages':
         return <RealTimeMessages />;
       case 'chat':
@@ -611,6 +615,24 @@ export default function Dashboard({
                 aria-label="Messages"
               >
                 <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+
+              <button
+                onClick={() => {
+                  logger.log('Comments button clicked');
+                  trackButtonClick('comments', 'dashboard_header');
+                  setActiveSection('messaging-inbox');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
+                  activeSection === 'messaging-inbox'
+                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
+                    : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
+                }`}
+                title="Comments"
+                aria-label="Comments"
+              >
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               {/* Enhanced In-App Notifications - the main notification bell */}
