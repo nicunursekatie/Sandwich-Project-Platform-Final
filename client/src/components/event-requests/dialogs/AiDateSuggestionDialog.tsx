@@ -85,7 +85,8 @@ export function AiDateSuggestionDialog({
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'UTC'
     });
   };
 
@@ -93,7 +94,8 @@ export function AiDateSuggestionDialog({
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'UTC'
     });
   };
 
