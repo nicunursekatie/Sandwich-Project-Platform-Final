@@ -1302,9 +1302,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 )}
                 {request.email && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <Mail className="w-4 h-4 shrink-0" />
-                    <a href={`mailto:${request.email}`} className="hover:underline">
+                    <a href={`mailto:${request.email}`} className="hover:underline break-all min-w-0">
                       {request.email}
                     </a>
                   </div>
