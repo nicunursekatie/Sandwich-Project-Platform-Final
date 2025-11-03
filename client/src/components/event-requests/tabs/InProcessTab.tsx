@@ -39,6 +39,8 @@ export const InProcessTab: React.FC = () => {
     setLogContactEventRequest,
     setShowAiDateSuggestionDialog,
     setAiSuggestionEventRequest,
+    setShowAiIntakeAssistantDialog,
+    setAiIntakeAssistantEventRequest,
   } = useEventRequestContext();
 
   const inProcessRequests = filterRequestsByStatus('in_process');
@@ -228,6 +230,10 @@ export const InProcessTab: React.FC = () => {
               onAiSuggest={() => {
                 setAiSuggestionEventRequest(request);
                 setShowAiDateSuggestionDialog(true);
+              }}
+              onAiIntakeAssist={() => {
+                setAiIntakeAssistantEventRequest(request);
+                setShowAiIntakeAssistantDialog(true);
               }}
               // Inline editing props
               startEditing={(field, value) => startEditing(request.id, field, value)}

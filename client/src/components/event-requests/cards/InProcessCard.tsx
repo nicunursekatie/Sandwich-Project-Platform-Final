@@ -67,6 +67,7 @@ interface InProcessCardProps {
   onEditTspContact: () => void;
   onLogContact: () => void;
   onAiSuggest?: () => void;
+  onAiIntakeAssist?: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
   // Inline editing props
@@ -761,6 +762,20 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             >
               <Sparkles className="w-4 h-4 mr-1" />
               AI Date Suggest
+            </Button>
+          )}
+
+          {/* AI Intake Assistant - always available */}
+          {onAiIntakeAssist && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAiIntakeAssist}
+              className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10"
+              data-testid="button-ai-intake-assist"
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              AI Intake Check
             </Button>
           )}
 
