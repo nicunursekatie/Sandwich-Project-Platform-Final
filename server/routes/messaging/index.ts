@@ -61,13 +61,16 @@ router.get('/context/:contextType/:contextId', isAuthenticated, async (req: Auth
     }
 
     const { contextType, contextId } = req.params;
+    logger.log(`[Messaging API] Fetching messages for context: ${contextType}/${contextId}`);
 
     const messages = await messagingService.getContextMessages(contextType, contextId);
 
+    logger.log(`[Messaging API] Found ${messages.length} messages for context: ${contextType}/${contextId}`);
     res.json({ messages });
   } catch (error) {
     logger.error('[Messaging API] Error fetching context messages:', error);
-    res.status(500).json({ message: 'Failed to fetch context messages' });
+    logger.error(`[Messaging API] Context details - Type: ${contextType}, ID: ${contextId}`);
+    res.status(500).json({ message: 'DATABASE_ERROR', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 

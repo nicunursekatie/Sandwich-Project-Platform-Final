@@ -325,7 +325,7 @@ export function AiIntakeAssistantDialog({
             <h3 className="font-semibold text-xs sm:text-sm mb-2 text-gray-700 dark:text-gray-300">Event Request</h3>
             <p className="text-sm sm:text-base">
               <span className="font-medium">{eventRequest.organizationName || 'Unnamed Organization'}</span>
-              {eventRequest.estimatedSandwichCount && (
+              {(eventRequest.estimatedSandwichCount !== null && eventRequest.estimatedSandwichCount !== undefined && eventRequest.estimatedSandwichCount > 0) && (
                 <span className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                   {' '}• ~{eventRequest.estimatedSandwichCount.toLocaleString()} sandwiches
                 </span>
