@@ -120,9 +120,16 @@ You must respond with a JSON object containing exactly these fields:
 
     // CRITICAL VALIDATION: Ensure recommended date is not before the requested date
     const desiredDate = eventRequest.desiredEventDate;
-    if (desiredDate && normalizedRecommendedDate < desiredDate) {
-      logger.error(`AI recommended date ${normalizedRecommendedDate} is BEFORE requested date ${desiredDate}, falling back to heuristic`);
-      throw new Error('AI recommended date before requested date - this should never happen');
+    if (desiredDate) {
+      // Convert desiredDate to string format for comparison
+      const desiredDateString = typeof desiredDate === 'string' 
+        ? desiredDate 
+        : desiredDate.toISOString().split('T')[0];
+      
+      if (normalizedRecommendedDate < desiredDateString) {
+        logger.error(`AI recommended date ${normalizedRecommendedDate} is BEFORE requested date ${desiredDateString}, falling back to heuristic`);
+        throw new Error('AI recommended date before requested date - this should never happen');
+      }
     }
 
     // Convert numeric confidence (0-100) to categorical
