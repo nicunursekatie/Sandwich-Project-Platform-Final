@@ -3475,4 +3475,58 @@ router.patch('/:id/schedule-call', isAuthenticated, requirePermission('EVENT_REQ
   }
 });
 
+// Mark event as MLK Day event
+router.patch('/:id/mlk-day', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { isMlkDayEvent } = req.body;
+
+    // Get original data for audit logging
+    const originalEvent = await storage.getEventRequestById(id);
+    if (!originalEvent) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Update the event request
+    const updatedEventRequest = await storage.updateEventRequest(id, {
+      isMlkDayEvent,
+      mlkDayMarkedAt: isMlkDayEvent ? new Date() : null,
+      mlkDayMarkedBy: isMlkDayEvent ? req.user?.id : null,
+    });
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ message: 'Event request not found' });
+    }
+
+    // Log the change
+    await AuditLogger.logEventRequestChange(
+      id.toString(),
+      originalEvent,
+      updatedEventRequest,
+      {
+        userId: req.user?.id,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.session?.id || req.sessionID,
+      }
+    );
+
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_MLK_DAY_UPDATE',
+      `${isMlkDayEvent ? 'Marked' : 'Unmarked'} event as MLK Day event: ${id}`,
+      { isMlkDayEvent }
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    logger.error('Error updating MLK Day status:', error);
+    res.status(500).json({ 
+      message: 'Failed to update MLK Day status',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

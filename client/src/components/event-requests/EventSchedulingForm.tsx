@@ -42,6 +42,8 @@ import { getPickupDateTimeForInput } from './utils';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { logger } from '@/lib/logger';
+import { isInMlkDayWeek } from '@/lib/mlk-day-utils';
+import { MlkDayDialog } from '@/components/event-requests/MlkDayDialog';
 
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
@@ -136,6 +138,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showDateConfirmation, setShowDateConfirmation] = useState(false);
   const [pendingDateChange, setPendingDateChange] = useState('');
   const [isMessageEditable, setIsMessageEditable] = useState(false);
+  const [showMlkDayDialog, setShowMlkDayDialog] = useState(false);
+  const [mlkDayAsked, setMlkDayAsked] = useState(false);
+  const [pendingMlkDayDecision, setPendingMlkDayDecision] = useState<boolean | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -346,7 +351,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       apiRequest('PATCH', `/api/event-requests/${id}`, data),
     retry: false,
     networkMode: 'always',
-    onSuccess: () => {
+    onSuccess: (updatedEvent: any) => {
+      // Mark as MLK Day if user decided to
+      if (pendingMlkDayDecision === true && updatedEvent?.id) {
+        markMlkDayMutation.mutate({ id: updatedEvent.id, isMlkDayEvent: true });
+      }
       const isEditMode = mode === 'edit';
       toast({
         title: isEditMode ? 'Event updated successfully' : 'Event scheduled successfully',
@@ -355,6 +364,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       onSuccessCallback();
       onClose();
+      setPendingMlkDayDecision(null);
     },
     onError: () => {
       const isEditMode = mode === 'edit';
@@ -373,6 +383,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     },
     onSuccess: (response) => {
       logger.log('✅ CREATE MUTATION SUCCESS: Response:', response);
+      // Mark as MLK Day if user decided to
+      if (pendingMlkDayDecision === true && response?.id) {
+        markMlkDayMutation.mutate({ id: response.id, isMlkDayEvent: true });
+      }
       toast({
         title: 'Event created successfully',
         description: 'The new event request has been created.',
@@ -380,6 +394,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
       onSuccessCallback();
       onClose();
+      setPendingMlkDayDecision(null);
     },
     onError: (error) => {
       logger.error('❌ CREATE MUTATION ERROR:', error);
@@ -411,8 +426,24 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     },
   });
 
+  // Mutation to mark event as MLK Day event
+  const markMlkDayMutation = useMutation({
+    mutationFn: ({ id, isMlkDayEvent }: { id: number; isMlkDayEvent: boolean }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}/mlk-day`, { isMlkDayEvent }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if event is in MLK Day week and we haven't asked yet
+    if (formData.eventDate && isInMlkDayWeek(formData.eventDate) && !mlkDayAsked && !eventRequest?.isMlkDayEvent) {
+      setShowMlkDayDialog(true);
+      setMlkDayAsked(true);
+      return; // Stop submission until user responds
+    }
 
     // All fields are optional - no validation required
 
@@ -591,7 +622,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const handleDateChangeCancellation = () => {
     setShowDateConfirmation(false);
-    setPendingDateChange('');
+  };
+
+  // MLK Day dialog handlers
+  const handleMlkDayMark = () => {
+    setPendingMlkDayDecision(true);
+    setShowMlkDayDialog(false);
+    // Re-trigger submission with MLK Day decision made
+    handleSubmit(new Event('submit') as any);
+  };
+
+  const handleMlkDaySkip = () => {
+    setPendingMlkDayDecision(false);
+    setShowMlkDayDialog(false);
+    // Re-trigger submission with MLK Day decision made
+    handleSubmit(new Event('submit') as any);
   };
 
   // For create mode, we can work with null eventRequest
@@ -1911,6 +1956,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* MLK Day Dialog */}
+      <MlkDayDialog
+        isOpen={showMlkDayDialog}
+        onClose={() => setShowMlkDayDialog(false)}
+        onMarkAsMLK={handleMlkDayMark}
+        onSkip={handleMlkDaySkip}
+        eventDate={formData.eventDate}
+      />
     </Dialog>
   );
 };

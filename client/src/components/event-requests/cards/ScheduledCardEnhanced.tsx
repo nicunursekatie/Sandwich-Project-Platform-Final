@@ -62,6 +62,7 @@ import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import SendKudosButton from '@/components/send-kudos-button';
 import { MessageComposer } from '@/components/message-composer';
+import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -446,8 +447,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
                 }`}
               >
-                {request.addedToOfficialSheet ? '✓ On Official Sheet' : 'Not on Sheet'}
+                {request.addedToOfficialSheet ? 'On Calendar' : 'Not on Calendar'}
               </Badge>
+
+              {request.isMlkDayEvent && <MlkDayBadge />}
 
               {/* Sandwich count badge */}
               <Badge className="bg-[#FBAD3F] text-white text-base font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
