@@ -703,6 +703,10 @@ async function generateAiRecommendations(
 
 Be concise, actionable, and supportive. Focus on what the coordinator should do next to complete the intake process. Your tone should be helpful and professional.
 
+IMPORTANT WORKFLOW RULES:
+• Recipient Assignment: NEVER suggest contacting the organization to find recipients. The Sandwich Project staff handles recipient matching internally through networking and research. If a recipient is needed, suggest "Research and identify recipient organizations near [location]" directed at TSP staff, not the organization contact.
+• Organization Contact: Only suggest contacting the organization for information they would know (event details, sandwich count, timing, etc.), NOT for TSP internal logistics like finding recipients.
+
 Provide 2-3 specific, actionable recommendations based on the current state of the event request. Format your response as a bulleted list using "•" as the bullet character, with one recommendation per line.`
       },
       {
