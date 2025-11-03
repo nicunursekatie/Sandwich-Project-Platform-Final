@@ -389,6 +389,154 @@ const VALIDATION_RULES: ValidationRule[] = [
       return null;
     }
   },
+
+  // CRITICAL: Driver Needs Assessment (for scheduled events)
+  {
+    id: 'driver_needs_assessment',
+    category: 'logistics',
+    severity: 'critical',
+    check: (event) => {
+      // Only check for scheduled events
+      if (event.status !== 'scheduled') return null;
+      
+      if (event.driversNeeded === null || event.driversNeeded === undefined) {
+        return {
+          category: 'logistics',
+          severity: 'critical',
+          field: 'driversNeeded',
+          title: 'Driver Needs Not Assessed',
+          message: 'For scheduled events, we need to know how many drivers are required.',
+          suggestion: 'Determine if drivers are needed based on delivery destination and sandwich count.',
+          action: 'Assess driver needs and update the event'
+        };
+      }
+      return null;
+    }
+  },
+
+  // WARNING: Drivers Needed But Not Assigned
+  {
+    id: 'drivers_needed_not_assigned',
+    category: 'logistics',
+    severity: 'warning',
+    check: (event) => {
+      // Only check for scheduled events
+      if (event.status !== 'scheduled') return null;
+      
+      const driversNeeded = event.driversNeeded || 0;
+      const assignedDrivers = event.assignedDriverIds?.length || 0;
+      
+      if (driversNeeded > 0 && assignedDrivers === 0) {
+        return {
+          category: 'logistics',
+          severity: 'warning',
+          field: 'assignedDriverIds',
+          title: `${driversNeeded} Driver${driversNeeded > 1 ? 's' : ''} Needed - None Assigned`,
+          message: `This event needs ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} but none have been assigned yet.`,
+          suggestion: 'Assign drivers to this event to ensure sandwiches can be delivered.',
+          action: `Assign ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} to this event`
+        };
+      } else if (driversNeeded > assignedDrivers) {
+        return {
+          category: 'logistics',
+          severity: 'warning',
+          field: 'assignedDriverIds',
+          title: `More Drivers Needed`,
+          message: `This event needs ${driversNeeded} drivers but only ${assignedDrivers} assigned.`,
+          suggestion: 'Assign additional drivers to meet the requirement.',
+          action: `Assign ${driversNeeded - assignedDrivers} more driver${driversNeeded - assignedDrivers > 1 ? 's' : ''}`
+        };
+      }
+      
+      return null;
+    }
+  },
+
+  // CRITICAL: Speaker Needs Assessment (for scheduled events)
+  {
+    id: 'speaker_needs_assessment',
+    category: 'logistics',
+    severity: 'critical',
+    check: (event) => {
+      // Only check for scheduled events
+      if (event.status !== 'scheduled') return null;
+      
+      if (event.speakersNeeded === null || event.speakersNeeded === undefined) {
+        return {
+          category: 'logistics',
+          severity: 'critical',
+          field: 'speakersNeeded',
+          title: 'Speaker Needs Not Assessed',
+          message: 'For scheduled events, we need to know if speakers are required.',
+          suggestion: 'Determine if the organization wants a speaker for their event.',
+          action: 'Assess speaker needs and update the event'
+        };
+      }
+      return null;
+    }
+  },
+
+  // WARNING: Speakers Needed But Not Assigned
+  {
+    id: 'speakers_needed_not_assigned',
+    category: 'logistics',
+    severity: 'warning',
+    check: (event) => {
+      // Only check for scheduled events
+      if (event.status !== 'scheduled') return null;
+      
+      const speakersNeeded = event.speakersNeeded || 0;
+      const assignedSpeakers = event.assignedSpeakerIds?.length || 0;
+      
+      if (speakersNeeded > 0 && assignedSpeakers === 0) {
+        return {
+          category: 'logistics',
+          severity: 'warning',
+          field: 'assignedSpeakerIds',
+          title: `${speakersNeeded} Speaker${speakersNeeded > 1 ? 's' : ''} Needed - None Assigned`,
+          message: `This event needs ${speakersNeeded} speaker${speakersNeeded > 1 ? 's' : ''} but none have been assigned yet.`,
+          suggestion: 'Assign speakers to this event.',
+          action: `Assign ${speakersNeeded} speaker${speakersNeeded > 1 ? 's' : ''} to this event`
+        };
+      } else if (speakersNeeded > assignedSpeakers) {
+        return {
+          category: 'logistics',
+          severity: 'warning',
+          field: 'assignedSpeakerIds',
+          title: `More Speakers Needed`,
+          message: `This event needs ${speakersNeeded} speakers but only ${assignedSpeakers} assigned.`,
+          suggestion: 'Assign additional speakers to meet the requirement.',
+          action: `Assign ${speakersNeeded - assignedSpeakers} more speaker${speakersNeeded - assignedSpeakers > 1 ? 's' : ''}`
+        };
+      }
+      
+      return null;
+    }
+  },
+
+  // SUGGESTION: Volunteer Needs Assessment
+  {
+    id: 'volunteer_needs_assessment',
+    category: 'logistics',
+    severity: 'suggestion',
+    check: (event) => {
+      // Only check for scheduled events
+      if (event.status !== 'scheduled') return null;
+      
+      if (event.volunteersNeeded === null || event.volunteersNeeded === undefined) {
+        return {
+          category: 'logistics',
+          severity: 'suggestion',
+          field: 'volunteersNeeded',
+          title: 'Volunteer Needs Not Assessed',
+          message: 'Consider whether additional volunteers are needed for this event.',
+          suggestion: 'Check if the organization needs extra volunteers to help with the event.',
+          action: 'Assess if additional volunteers are needed'
+        };
+      }
+      return null;
+    }
+  },
 ];
 
 /**
@@ -584,7 +732,28 @@ Contact: ${eventRequest.firstName || ''} ${eventRequest.lastName || ''}
 Status: ${eventRequest.status}
 ${eventRequest.estimatedSandwichCount ? `Estimated Sandwiches: ${eventRequest.estimatedSandwichCount}` : ''}
 ${eventRequest.scheduledEventDate ? `Scheduled Date: ${new Date(eventRequest.scheduledEventDate).toLocaleDateString()}` : ''}
+${eventRequest.eventStartTime && eventRequest.eventEndTime ? `Event Time: ${eventRequest.eventStartTime} - ${eventRequest.eventEndTime}` : ''}
+${eventRequest.eventAddress ? `Address: ${eventRequest.eventAddress}` : ''}
 `.trim();
+
+  // Collect all notes fields
+  const notesFields = [
+    eventRequest.message ? `Initial Request: ${eventRequest.message}` : null,
+    eventRequest.planningNotes ? `Planning Notes: ${eventRequest.planningNotes}` : null,
+    eventRequest.schedulingNotes ? `Scheduling Notes: ${eventRequest.schedulingNotes}` : null,
+    eventRequest.additionalRequirements ? `Additional Requirements: ${eventRequest.additionalRequirements}` : null,
+    eventRequest.volunteerNotes ? `Volunteer Notes: ${eventRequest.volunteerNotes}` : null,
+    eventRequest.driverNotes ? `Driver Notes: ${eventRequest.driverNotes}` : null,
+    eventRequest.vanDriverNotes ? `Van Driver Notes: ${eventRequest.vanDriverNotes}` : null,
+    eventRequest.followUpNotes ? `Follow-up Notes: ${eventRequest.followUpNotes}` : null,
+  ].filter(Boolean);
+
+  const notesSection = notesFields.length > 0 ? `
+
+Notes and Comments:
+${notesFields.join('\n')}
+
+IMPORTANT: Review the notes above for any unstructured information about driver needs, speaker requests, volunteer requirements, or logistics that should have been captured in dedicated fields but weren't. Flag these if found.` : '';
 
   const issuesSummary = `
 Critical Issues (${critical.length}): ${critical.length > 0 ? critical.map(i => i.title).join(', ') : 'None'}
@@ -592,11 +761,11 @@ Warnings (${warnings.length}): ${warnings.length > 0 ? warnings.map(i => i.title
 Suggestions (${suggestions.length}): ${suggestions.length > 0 ? suggestions.map(i => i.title).join(', ') : 'None'}
 `.trim();
 
-  return `${orgInfo}
+  return `${orgInfo}${notesSection}
 
 ${issuesSummary}
 
-What should the intake coordinator focus on next to complete this event request? Provide specific, actionable recommendations.`;
+What should the intake coordinator focus on next to complete this event request? Provide specific, actionable recommendations. If the notes contain any information about drivers, speakers, volunteers, or logistics that weren't properly captured in structured fields, flag that.`;
 }
 
 /**

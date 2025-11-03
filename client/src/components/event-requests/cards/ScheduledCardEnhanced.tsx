@@ -40,6 +40,7 @@ import {
   FileText,
   MessageSquare,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -84,6 +85,7 @@ interface ScheduledCardEnhancedProps {
   onLogContact: () => void;
   onFollowUp: () => void;
   onReschedule: () => void;
+  onAiIntakeAssist?: () => void;
   startEditing: (field: string, value: string) => void;
   saveEdit: () => void;
   cancelEdit: () => void;
@@ -1675,6 +1677,18 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
           </Button>
+          {onAiIntakeAssist && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAiIntakeAssist}
+              className="border-purple-500/30 text-purple-600 hover:bg-purple-50"
+              data-testid="button-ai-intake-check"
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              AI Intake Check
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={onReschedule} className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10">
             Reschedule
           </Button>
