@@ -371,12 +371,18 @@ export function createHostsRouter(deps: RouterDependencies) {
     try {
       contact = await storage.updateHostContact(id, updates);
     } catch (dbError: any) {
-      logger.error(`Database error updating host contact ${id}:`, dbError);
+      logger.error(`Database error updating host contact ${id}:`, {
+        error: dbError,
+        errorMessage: dbError.message,
+        errorStack: dbError.stack,
+        updates: updates,
+        updateKeys: Object.keys(updates)
+      });
       throw createHostsError(
         `Database error: ${dbError.message || 'Unknown database error'}`,
         500,
         'DATABASE_ERROR',
-        { originalError: dbError.message, updates }
+        { originalError: dbError.message, errorStack: dbError.stack, updates }
       );
     }
 
