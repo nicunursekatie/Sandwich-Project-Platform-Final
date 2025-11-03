@@ -14,6 +14,7 @@ import {
 } from './hosts/error-handler';
 import { z } from 'zod';
 import { AuditLogger } from '../audit-logger';
+import { logger } from '../utils/production-safe-logger';
 
 export function createHostsRouter(deps: RouterDependencies) {
   const router = Router();
