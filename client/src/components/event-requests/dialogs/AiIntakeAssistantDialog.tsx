@@ -60,8 +60,8 @@ export function AiIntakeAssistantDialog({
   const analyzeEventMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest<AiIntakeAssistance>(
-        `/api/event-requests/${eventRequest.id}/ai-intake-assist`,
-        'POST'
+        'POST',
+        `/api/event-requests/${eventRequest.id}/ai-intake-assist`
       );
     },
     onSuccess: (data) => {
