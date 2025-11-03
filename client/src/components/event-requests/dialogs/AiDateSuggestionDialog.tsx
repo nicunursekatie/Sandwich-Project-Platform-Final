@@ -92,7 +92,13 @@ export function AiDateSuggestionDialog({
     const colors = {
       high: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
       medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      low: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+      low: 'bg-[#FBAD3F]/20 text-[#FBAD3F] dark:bg-[#FBAD3F]/30 dark:text-[#FBAD3F]',
+    };
+
+    const icons = {
+      high: '✓',
+      medium: '○',
+      low: '!',
     };
 
     const labels = {
@@ -102,7 +108,8 @@ export function AiDateSuggestionDialog({
     };
 
     return (
-      <Badge className={colors[confidence]}>
+      <Badge className={`${colors[confidence]} text-sm font-semibold px-3 py-1`}>
+        <span className="mr-1">{icons[confidence]}</span>
         {labels[confidence]}
       </Badge>
     );
@@ -110,25 +117,25 @@ export function AiDateSuggestionDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader className="space-y-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-[#236383]" />
-            <DialogTitle>AI Scheduling Assistant</DialogTitle>
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-[#236383]" />
+            <DialogTitle className="text-lg sm:text-xl">AI Scheduling Assistant</DialogTitle>
           </div>
-          <DialogDescription>
+          <DialogDescription className="text-sm sm:text-base">
             Let AI analyze available dates and suggest the optimal time based on your current schedule
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 mt-4">
           {/* Event Info */}
-          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-            <h3 className="font-semibold text-sm mb-2">Event Details</h3>
-            <p className="text-sm">
+          <div className="bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+            <h3 className="font-semibold text-xs sm:text-sm mb-2 text-gray-700 dark:text-gray-300">Event Details</h3>
+            <p className="text-sm sm:text-base">
               <span className="font-medium">{eventRequest.organizationName}</span>
               {eventRequest.estimatedSandwichCount && (
-                <span className="text-gray-600 dark:text-gray-400">
+                <span className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                   {' '}• ~{eventRequest.estimatedSandwichCount.toLocaleString()} sandwiches
                 </span>
               )}
@@ -137,112 +144,145 @@ export function AiDateSuggestionDialog({
 
           {/* Generate or Show Suggestions */}
           {!suggestion && !generateSuggestionMutation.isPending && (
-            <div className="text-center py-8">
-              <Sparkles className="h-12 w-12 text-[#236383] mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Analyze the available dates and get AI-powered scheduling recommendations
-              </p>
-              <Button
-                onClick={() => generateSuggestionMutation.mutate()}
-                className="bg-[#236383] hover:bg-[#1a4d66]"
-                data-testid="button-generate-ai-suggestion"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate Suggestions
-              </Button>
+            <div className="text-center py-6 sm:py-8 px-4">
+              <div className="bg-gradient-to-br from-[#236383]/5 to-[#47B3CB]/5 dark:from-[#236383]/10 dark:to-[#47B3CB]/10 p-6 sm:p-8 rounded-xl border border-[#236383]/20">
+                <Sparkles className="h-10 w-10 sm:h-12 sm:w-12 text-[#236383] mx-auto mb-3 sm:mb-4" />
+                <p className="text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base px-2">
+                  Analyze the available dates and get AI-powered scheduling recommendations
+                </p>
+                <Button
+                  onClick={() => generateSuggestionMutation.mutate()}
+                  className="bg-[#236383] hover:bg-[#1a4d66] text-white font-semibold px-6 py-2 sm:px-8 sm:py-3 text-sm sm:text-base shadow-md hover:shadow-lg transition-all"
+                  data-testid="button-generate-ai-suggestion"
+                >
+                  <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                  Generate AI Suggestions
+                </Button>
+              </div>
             </div>
           )}
 
           {generateSuggestionMutation.isPending && (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#236383] mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">
-                Analyzing dates and current schedule...
-              </p>
+            <div className="text-center py-8 sm:py-12 px-4">
+              <div className="bg-gradient-to-br from-[#236383]/5 to-[#47B3CB]/5 dark:from-[#236383]/10 dark:to-[#47B3CB]/10 p-6 sm:p-8 rounded-xl border border-[#236383]/20">
+                <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-2 border-[#236383] mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400 font-medium text-sm sm:text-base">
+                  Analyzing dates and current schedule...
+                </p>
+                <p className="text-gray-500 dark:text-gray-500 text-xs sm:text-sm mt-2">
+                  This may take a moment
+                </p>
+              </div>
             </div>
           )}
 
           {suggestion && (
-            <div className="space-y-6">
-              {/* Confidence Badge */}
-              <div className="flex justify-center">
-                {getConfidenceBadge(suggestion.confidence)}
-              </div>
+            <div className="space-y-4 sm:space-y-6">
+              {/* AI Recommendation - Prominent Section */}
+              <div className="bg-gradient-to-br from-[#236383] to-[#47B3CB] p-1 rounded-xl shadow-lg">
+                <div className="bg-white dark:bg-gray-950 p-4 sm:p-6 rounded-lg">
+                  {/* Header with Icon and Confidence Badge */}
+                  <div className="flex items-start justify-between gap-3 mb-4 sm:mb-6">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-[#236383]/10 p-2 rounded-lg">
+                        <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-[#236383]" />
+                      </div>
+                      <h3 className="font-bold text-lg sm:text-xl text-[#236383]">
+                        AI Recommended Date
+                      </h3>
+                    </div>
+                    {getConfidenceBadge(suggestion.confidence)}
+                  </div>
 
-              {/* AI Recommendation */}
-              <div className="bg-gradient-to-br from-[#236383]/10 to-[#47B3CB]/10 dark:from-[#236383]/20 dark:to-[#47B3CB]/20 p-6 rounded-lg border border-[#236383]/20">
-                <div className="flex items-start gap-3 mb-4">
-                  <CheckCircle2 className="h-5 w-5 text-[#236383] flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-2">Recommended Date</h3>
-                    <p className="text-2xl font-bold text-[#236383] mb-3">
-                      {formatDate(suggestion.recommendedDate)}
-                    </p>
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                        {suggestion.reasoning}
+                  {/* The Recommended Date - Extra Prominent */}
+                  <div className="text-center py-4 sm:py-6 mb-4 sm:mb-6 bg-gradient-to-br from-[#236383]/5 to-[#47B3CB]/5 dark:from-[#236383]/10 dark:to-[#47B3CB]/10 rounded-lg border-2 border-[#236383]/20">
+                    <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+                      <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-[#236383]" />
+                      <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#236383] leading-tight">
+                        {formatDate(suggestion.recommendedDate).split(',')[0]}
                       </p>
                     </div>
+                    <p className="text-xl sm:text-2xl font-semibold text-[#47B3CB] px-2">
+                      {formatDate(suggestion.recommendedDate).split(',').slice(1).join(',').trim()}
+                    </p>
                   </div>
-                </div>
 
-                {onSelectDate && (
-                  <Button
-                    onClick={() => handleSelectDate(suggestion.recommendedDate)}
-                    className="w-full bg-[#236383] hover:bg-[#1a4d66] mt-4"
-                    data-testid="button-select-recommended-date"
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Use This Date for Scheduling
-                  </Button>
-                )}
+                  {/* Reasoning - Clearly Secondary */}
+                  <div className="mb-4 sm:mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle2 className="h-4 w-4 text-[#236383] flex-shrink-0" />
+                      <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300">
+                        Why This Date?
+                      </h4>
+                    </div>
+                    <div className="pl-6 text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                      <p className="whitespace-pre-wrap">{suggestion.reasoning}</p>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  {onSelectDate && (
+                    <Button
+                      onClick={() => handleSelectDate(suggestion.recommendedDate)}
+                      className="w-full bg-[#236383] hover:bg-[#1a4d66] text-white font-semibold py-3 sm:py-4 text-base sm:text-lg shadow-md hover:shadow-lg transition-all"
+                      data-testid="button-select-recommended-date"
+                    >
+                      <Calendar className="h-5 w-5 mr-2" />
+                      Use Recommended Date ({formatDate(suggestion.recommendedDate).split(',')[0]})
+                    </Button>
+                  )}
+                </div>
               </div>
 
-              {/* Date Analysis Details */}
-              <div>
-                <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Date Analysis
+              {/* Date Analysis Details - Secondary Section */}
+              <div className="border-t pt-4 sm:pt-6">
+                <h3 className="font-semibold text-sm sm:text-base mb-3 sm:mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                  <TrendingUp className="h-4 w-4 text-gray-500" />
+                  Additional Date Analysis
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {suggestion.dateAnalysis.map((analysis, idx) => (
                     <div
                       key={idx}
-                      className={`p-4 rounded-lg border ${
+                      className={`p-3 sm:p-4 rounded-lg border transition-all ${
                         analysis.isOptimal
                           ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950'
                           : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
                       }`}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <p className="font-medium">{formatDate(analysis.date)}</p>
-                            {analysis.isOptimal && (
-                              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                Good Balance
-                              </Badge>
-                            )}
-                            {!analysis.isOptimal && analysis.eventCount > 3 && (
-                              <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                                Busy Week
-                              </Badge>
-                            )}
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                            <p className="font-medium text-sm sm:text-base truncate">
+                              {formatDate(analysis.date)}
+                            </p>
+                            <div className="flex gap-2 flex-wrap">
+                              {analysis.isOptimal && (
+                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
+                                  Good Balance
+                                </Badge>
+                              )}
+                              {!analysis.isOptimal && analysis.eventCount > 3 && (
+                                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs">
+                                  Busy Week
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 space-y-1">
                             <p>Week of {formatWeek(analysis.weekStarting)}</p>
-                            <div className="flex gap-4">
-                              <span>
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                              <span className="whitespace-nowrap">
                                 📅 {analysis.eventCount} {analysis.eventCount === 1 ? 'event' : 'events'} scheduled
                               </span>
-                              <span>
+                              <span className="whitespace-nowrap">
                                 🥪 {analysis.totalScheduledSandwiches.toLocaleString()} sandwiches
                               </span>
                             </div>
                           </div>
                         </div>
                         {analysis.date === suggestion.recommendedDate && (
-                          <CheckCircle2 className="h-6 w-6 text-[#236383] flex-shrink-0" />
+                          <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-[#236383] flex-shrink-0 self-start" />
                         )}
                       </div>
                     </div>
@@ -253,10 +293,11 @@ export function AiDateSuggestionDialog({
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 sm:pt-6 border-t mt-4 sm:mt-6">
             <Button
               variant="outline"
               onClick={handleClose}
+              className="w-full sm:w-auto order-2 sm:order-1"
               data-testid="button-close-ai-dialog"
             >
               Close

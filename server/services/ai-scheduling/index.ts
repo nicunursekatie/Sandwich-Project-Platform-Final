@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import type { EventRequest } from '@shared/schema';
+import { logger } from '../../utils/production-safe-logger';
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -19,6 +20,12 @@ interface AiDateSuggestion {
   reasoning: string;
   dateAnalysis: DateAnalysis[];
   confidence: 'high' | 'medium' | 'low';
+}
+
+interface OpenAiDateResponse {
+  recommendedDate: string;
+  reasoning: string;
+  confidence: number;
 }
 
 /**
@@ -42,13 +49,14 @@ export async function suggestOptimalEventDate(
   // Create prompt for OpenAI
   const prompt = buildPrompt(eventRequest, dateAnalyses);
 
-  // Call OpenAI for intelligent recommendation
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      {
-        role: 'system',
-        content: `You are an AI assistant for The Sandwich Project, a nonprofit that coordinates volunteers to make sandwiches for people experiencing food insecurity. Your goal is to help schedule events that balance sandwich production throughout the year, preventing weeks with too many or too few events.
+  // Call OpenAI for intelligent recommendation with structured JSON output
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an AI assistant for The Sandwich Project, a nonprofit that coordinates volunteers to make sandwiches for people experiencing food insecurity. Your goal is to help schedule events that balance sandwich production throughout the year, preventing weeks with too many or too few events.
 
 When analyzing dates, consider:
 1. Balance - Prefer weeks with fewer scheduled sandwiches
@@ -56,29 +64,65 @@ When analyzing dates, consider:
 3. Feasibility - Account for the organization's message and constraints
 4. Impact - Help maintain steady sandwich production toward the 500,000 annual goal
 
-Provide clear, actionable recommendations with reasoning.`
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ],
-    temperature: 0.7,
-    max_tokens: 500,
-  });
+You must respond with a JSON object containing exactly these fields:
+- recommendedDate: The date in YYYY-MM-DD format that you recommend
+- reasoning: A clear explanation of why this date is optimal (2-3 sentences)
+- confidence: A number from 0-100 indicating your confidence in this recommendation`
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 500,
+    });
 
-  const aiResponse = completion.choices[0].message.content || '';
+    const aiResponse = completion.choices[0].message.content || '';
+    
+    // Parse the JSON response from OpenAI
+    const parsedResponse: OpenAiDateResponse = JSON.parse(aiResponse);
+    
+    // Validate the response has required fields
+    if (!parsedResponse.recommendedDate || !parsedResponse.reasoning || typeof parsedResponse.confidence !== 'number') {
+      throw new Error('Invalid AI response structure');
+    }
 
-  // Parse AI response and determine recommended date
-  const recommendedDate = determineRecommendedDate(dateAnalyses, aiResponse);
-  const confidence = calculateConfidence(dateAnalyses);
+    // Validate the recommended date is one of the available options
+    const isValidDate = dateAnalyses.some(analysis => analysis.date === parsedResponse.recommendedDate);
+    if (!isValidDate) {
+      logger.warn(`AI recommended date ${parsedResponse.recommendedDate} is not in available options, falling back to heuristic`);
+      throw new Error('AI recommended date not in available options');
+    }
 
-  return {
-    recommendedDate,
-    reasoning: aiResponse,
-    dateAnalysis: dateAnalyses,
-    confidence,
-  };
+    // Convert numeric confidence (0-100) to categorical
+    const confidence: 'high' | 'medium' | 'low' = 
+      parsedResponse.confidence >= 70 ? 'high' :
+      parsedResponse.confidence >= 40 ? 'medium' : 'low';
+
+    logger.log(`AI scheduling recommendation: ${parsedResponse.recommendedDate} (confidence: ${parsedResponse.confidence})`);
+
+    return {
+      recommendedDate: parsedResponse.recommendedDate,
+      reasoning: parsedResponse.reasoning,
+      dateAnalysis: dateAnalyses,
+      confidence,
+    };
+  } catch (error) {
+    // Log the error and fall back to heuristic-based recommendation
+    logger.error('OpenAI scheduling failed, falling back to heuristic', error);
+    
+    const fallbackDate = determineRecommendedDateHeuristic(dateAnalyses);
+    const fallbackConfidence = calculateConfidence(dateAnalyses);
+
+    return {
+      recommendedDate: fallbackDate,
+      reasoning: 'Automatic recommendation based on balancing sandwich production across weeks. (AI suggestion unavailable)',
+      dateAnalysis: dateAnalyses,
+      confidence: fallbackConfidence,
+    };
+  }
 }
 
 /**
@@ -210,9 +254,10 @@ Provide a clear recommendation with specific reasoning.`;
 }
 
 /**
- * Determines the recommended date from analyses
+ * Determines the recommended date using heuristics (fallback method)
+ * Used when AI recommendation is unavailable or invalid
  */
-function determineRecommendedDate(dateAnalyses: DateAnalysis[], aiResponse: string): string {
+function determineRecommendedDateHeuristic(dateAnalyses: DateAnalysis[]): string {
   // Find the optimal date (fewest events + sandwiches)
   const sorted = [...dateAnalyses].sort((a, b) => {
     // Prioritize weeks with fewer events
