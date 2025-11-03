@@ -107,17 +107,21 @@ You must respond with a JSON object containing exactly these fields:
       throw new Error('Invalid AI response structure');
     }
 
+    // Normalize the AI-recommended date to YYYY-MM-DD format (remove timestamps if present)
+    const normalizedRecommendedDate = parsedResponse.recommendedDate.split('T')[0];
+
     // Validate the recommended date is one of the available options
-    const isValidDate = dateAnalyses.some(analysis => analysis.date === parsedResponse.recommendedDate);
+    const isValidDate = dateAnalyses.some(analysis => analysis.date === normalizedRecommendedDate);
     if (!isValidDate) {
-      logger.warn(`AI recommended date ${parsedResponse.recommendedDate} is not in available options, falling back to heuristic`);
+      logger.warn(`AI recommended date ${normalizedRecommendedDate} is not in available options, falling back to heuristic`);
+      logger.warn(`Available options: ${dateAnalyses.map(d => d.date).join(', ')}`);
       throw new Error('AI recommended date not in available options');
     }
 
     // CRITICAL VALIDATION: Ensure recommended date is not before the requested date
     const desiredDate = eventRequest.desiredEventDate;
-    if (desiredDate && parsedResponse.recommendedDate < desiredDate) {
-      logger.error(`AI recommended date ${parsedResponse.recommendedDate} is BEFORE requested date ${desiredDate}, falling back to heuristic`);
+    if (desiredDate && normalizedRecommendedDate < desiredDate) {
+      logger.error(`AI recommended date ${normalizedRecommendedDate} is BEFORE requested date ${desiredDate}, falling back to heuristic`);
       throw new Error('AI recommended date before requested date - this should never happen');
     }
 
@@ -126,10 +130,10 @@ You must respond with a JSON object containing exactly these fields:
       parsedResponse.confidence >= 70 ? 'high' :
       parsedResponse.confidence >= 40 ? 'medium' : 'low';
 
-    logger.log(`AI scheduling recommendation: ${parsedResponse.recommendedDate} (confidence: ${parsedResponse.confidence})`);
+    logger.log(`AI scheduling recommendation: ${normalizedRecommendedDate} (confidence: ${parsedResponse.confidence})`);
 
     return {
-      recommendedDate: parsedResponse.recommendedDate,
+      recommendedDate: normalizedRecommendedDate,
       reasoning: parsedResponse.reasoning,
       dateAnalysis: dateAnalyses,
       confidence,
@@ -172,27 +176,45 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
     return dates;
   }
 
-  // Add the desired event date (primary focus)
-  dates.push(desiredDate);
+  // Convert desired date to string format (YYYY-MM-DD)
+  const desiredDateString = typeof desiredDate === 'string' 
+    ? desiredDate 
+    : desiredDate.toISOString().split('T')[0];
 
-  // Add 1-2 nearby alternatives to give AI flexibility for very busy weeks
-  // This keeps the analysis focused while still allowing smart suggestions
+  // Add the desired event date (primary focus)
+  dates.push(desiredDateString);
+
+  // Check if message indicates flexibility (e.g., "pivot to December", "flexible", "any time")
+  const message = eventRequest.message?.toLowerCase() || '';
+  const hasFlexibility = /pivot|flexible|any time|whenever|different month|alternative|open to/i.test(message);
+  const mentionsLaterMonth = /december|january|february|march|next month|later/i.test(message);
+
   const baseDate = new Date(desiredDate);
   
-  // Add the day after
-  const dayAfter = new Date(baseDate);
-  dayAfter.setDate(dayAfter.getDate() + 1);
-  dates.push(dayAfter.toISOString().split('T')[0]);
-  
-  // Add 3 days later as another option
-  const threeDaysLater = new Date(baseDate);
-  threeDaysLater.setDate(threeDaysLater.getDate() + 3);
-  dates.push(threeDaysLater.toISOString().split('T')[0]);
+  // If they're flexible or mention moving to a later month, analyze a wider range
+  if (hasFlexibility && mentionsLaterMonth) {
+    // Add dates spread across several weeks to give AI real alternatives
+    const daysToAdd = [1, 3, 7, 14, 21, 28, 35]; // 1 day, 3 days, 1 week, 2 weeks, 3 weeks, 4 weeks, 5 weeks
+    daysToAdd.forEach(days => {
+      const futureDate = new Date(baseDate);
+      futureDate.setDate(futureDate.getDate() + days);
+      dates.push(futureDate.toISOString().split('T')[0]);
+    });
+  } else {
+    // Add 1-2 nearby alternatives for minor adjustments
+    const dayAfter = new Date(baseDate);
+    dayAfter.setDate(dayAfter.getDate() + 1);
+    dates.push(dayAfter.toISOString().split('T')[0]);
+    
+    const threeDaysLater = new Date(baseDate);
+    threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+    dates.push(threeDaysLater.toISOString().split('T')[0]);
+  }
 
   // Add backup dates if explicitly provided (must be on or after desired date)
   if (eventRequest.backupDates && eventRequest.backupDates.length > 0) {
     eventRequest.backupDates.forEach(backupDate => {
-      if (!dates.includes(backupDate) && backupDate >= desiredDate) {
+      if (!dates.includes(backupDate) && backupDate >= desiredDateString) {
         dates.push(backupDate);
       }
     });
@@ -202,7 +224,7 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
   if (eventRequest.message) {
     const extractedDates = extractDatesFromText(eventRequest.message);
     extractedDates.forEach(date => {
-      if (!dates.includes(date) && date >= desiredDate) {
+      if (!dates.includes(date) && date >= desiredDateString) {
         dates.push(date);
       }
     });
@@ -210,7 +232,7 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
 
   // CRITICAL: Filter out any dates before the requested date
   // This ensures we never recommend a date earlier than what they asked for
-  return dates.filter(date => date && date >= desiredDate);
+  return dates.filter(date => date && date >= desiredDateString);
 }
 
 /**
@@ -245,7 +267,7 @@ function analyzeDateOption(date: string, scheduledEvents: EventRequest[]): DateA
   weekEnd.setDate(weekEnd.getDate() + 7);
 
   // Get day of week
-  const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
 
   // Find all events in the same week
   const eventsInWeek = scheduledEvents.filter(event => {
@@ -297,22 +319,29 @@ function getWeekStart(date: Date): Date {
  */
 function buildPrompt(eventRequest: EventRequest, dateAnalyses: DateAnalysis[]): string {
   const requestedDate = eventRequest.desiredEventDate 
-    ? new Date(eventRequest.desiredEventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(eventRequest.desiredEventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
     : 'Not specified';
+
+  // Convert desiredEventDate to string for comparison
+  const desiredDateString = eventRequest.desiredEventDate
+    ? (typeof eventRequest.desiredEventDate === 'string' 
+        ? eventRequest.desiredEventDate 
+        : eventRequest.desiredEventDate.toISOString().split('T')[0])
+    : null;
 
   const organizationInfo = `
 Organization: ${eventRequest.organizationName}
 ${eventRequest.department ? `Department: ${eventRequest.department}` : ''}
 Estimated Participants: ${eventRequest.estimatedSandwichCount || 'Not specified'}
 Originally Requested Date: ${requestedDate}
-${eventRequest.message ? `Message: ${eventRequest.message}` : ''}
+${eventRequest.message ? `\n⚠️ IMPORTANT MESSAGE FROM ORGANIZATION:\n"${eventRequest.message}"\n\n→ Pay close attention to this message! It may contain flexibility about dates, willingness to reschedule, or important context about their availability.` : ''}
 `.trim();
 
   const dateOptions = dateAnalyses.map((analysis, idx) => {
-    const isRequestedDate = analysis.date === eventRequest.desiredEventDate;
+    const isRequestedDate = analysis.date === desiredDateString;
     return `
-Option ${idx + 1}: ${new Date(analysis.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}${isRequestedDate ? ' [ORIGINALLY REQUESTED]' : ''}
-  - Week of: ${new Date(analysis.weekStarting).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+Option ${idx + 1}: ${new Date(analysis.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}${isRequestedDate ? ' [ORIGINALLY REQUESTED]' : ''}
+  - Week of: ${new Date(analysis.weekStarting).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
   - Events already scheduled that week: ${analysis.eventCount}
   - Total sandwiches scheduled that week: ${analysis.totalScheduledSandwiches.toLocaleString()}
   - Status: ${analysis.isOptimal ? '✓ Good balance' : '⚠ Busy week'}
@@ -324,15 +353,17 @@ Option ${idx + 1}: ${new Date(analysis.date).toLocaleDateString('en-US', { weekd
 AVAILABLE DATE OPTIONS (all on or after their requested date):
 ${dateOptions}
 
-IMPORTANT: You may ONLY recommend dates on or after their originally requested date (${requestedDate}).
+CRITICAL CONSTRAINTS:
+- You may ONLY recommend dates on or after their originally requested date (${requestedDate})
+- READ THEIR MESSAGE CAREFULLY - If they say they're flexible or willing to move to a different month, take advantage of that flexibility to find a better date for balancing our volunteer workload
 
-Based on this information, which date would you recommend and why? Consider:
-1. Balancing sandwich production across weeks
-2. Avoiding overburdening volunteers in busy weeks
-3. The organization's needs and constraints
-4. Their originally requested date should be preferred unless there's a compelling reason to suggest an alternative
+YOUR MISSION:
+1. **Read their message** - If they indicate flexibility ("pivot to December", "flexible", "whenever works"), you should actively recommend a better date that balances our workload
+2. **Balance sandwich production** - Spread events across weeks to avoid overwhelming volunteers
+3. **Avoid busy weeks** - Weeks with 8+ events or 5,000+ sandwiches are very challenging for our team
+4. **Respect their constraints** - If they're NOT flexible, prefer their requested date unless it creates serious operational issues
 
-Provide a clear recommendation with specific reasoning.`;
+Provide a clear recommendation with specific reasoning that references their message if relevant.`;
 }
 
 /**
