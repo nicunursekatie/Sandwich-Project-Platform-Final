@@ -211,12 +211,14 @@ function analyzeDateOption(date: string, scheduledEvents: EventRequest[]): DateA
     return sum + (event.estimatedSandwichCount || 0);
   }, 0);
 
-  // Build nearby events list
-  const nearbyEvents: NearbyEvent[] = eventsInWeek.map(event => ({
-    organizationName: event.organizationName || 'Unknown Organization',
-    date: event.scheduledEventDate!,
-    estimatedSandwichCount: event.estimatedSandwichCount || 0,
-  }));
+  // Build nearby events list and sort by date
+  const nearbyEvents: NearbyEvent[] = eventsInWeek
+    .map(event => ({
+      organizationName: event.organizationName || 'Unknown Organization',
+      date: event.scheduledEventDate!,
+      estimatedSandwichCount: event.estimatedSandwichCount || 0,
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   // Determine if this is an optimal choice (fewer events = better)
   const isOptimal = eventsInWeek.length <= 2 && totalSandwiches < 5000;
