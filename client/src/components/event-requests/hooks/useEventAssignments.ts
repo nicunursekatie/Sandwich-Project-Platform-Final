@@ -164,6 +164,11 @@ export const useEventAssignments = () => {
   const resolveRecipientName = (recipientIdOrName: string | undefined): string => {
     if (!recipientIdOrName) return 'Not specified';
 
+    // Handle host-contact IDs by delegating to resolveUserName
+    if (recipientIdOrName.startsWith('host-contact-')) {
+      return resolveUserName(recipientIdOrName);
+    }
+
     if (/^\d+$/.test(recipientIdOrName)) {
       const recipient = recipients.find((r) => r.id.toString() === recipientIdOrName);
       return recipient ? recipient.name : recipientIdOrName;
