@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMessaging } from '@/hooks/useMessaging';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,18 +33,29 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
 }) => {
   const { getContextMessages } = useMessaging();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
-    const fetchMessages = async () => {
+    const fetchMessages = async (isInitialLoad = false) => {
       if (!eventId) return;
 
-      setLoading(true);
+      // Only show loading spinner on initial load
+      if (isInitialLoad) {
+        setInitialLoading(true);
+      }
       setError(null);
 
       try {
         const contextMessages = await getContextMessages('event', eventId);
+
+        // Handle null/undefined responses
+        if (!contextMessages || !Array.isArray(contextMessages)) {
+          setMessages([]);
+          return;
+        }
+
         // Filter out deleted messages and sort by creation date
         const activeMessages = contextMessages
           .filter((msg: Message) => !msg.deletedAt)
@@ -54,20 +65,27 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
         setMessages(activeMessages);
       } catch (err) {
         console.error('Failed to fetch event messages:', err);
-        setError('Failed to load messages');
+        // Only show error on initial load, silently fail on refreshes
+        if (isInitialLoad) {
+          setError('Failed to load messages');
+        }
       } finally {
-        setLoading(false);
+        if (isInitialLoad) {
+          setInitialLoading(false);
+        }
       }
     };
 
-    fetchMessages();
+    // Initial fetch
+    fetchMessages(isInitialLoadRef.current);
+    isInitialLoadRef.current = false;
 
-    // Refresh messages every 30 seconds
-    const interval = setInterval(fetchMessages, 30000);
+    // Refresh messages every 30 seconds (without loading spinner)
+    const interval = setInterval(() => fetchMessages(false), 30000);
     return () => clearInterval(interval);
   }, [eventId, getContextMessages]);
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
