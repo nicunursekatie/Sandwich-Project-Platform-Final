@@ -107,17 +107,21 @@ You must respond with a JSON object containing exactly these fields:
       throw new Error('Invalid AI response structure');
     }
 
+    // Normalize the AI-recommended date to YYYY-MM-DD format (remove timestamps if present)
+    const normalizedRecommendedDate = parsedResponse.recommendedDate.split('T')[0];
+
     // Validate the recommended date is one of the available options
-    const isValidDate = dateAnalyses.some(analysis => analysis.date === parsedResponse.recommendedDate);
+    const isValidDate = dateAnalyses.some(analysis => analysis.date === normalizedRecommendedDate);
     if (!isValidDate) {
-      logger.warn(`AI recommended date ${parsedResponse.recommendedDate} is not in available options, falling back to heuristic`);
+      logger.warn(`AI recommended date ${normalizedRecommendedDate} is not in available options, falling back to heuristic`);
+      logger.warn(`Available options: ${dateAnalyses.map(d => d.date).join(', ')}`);
       throw new Error('AI recommended date not in available options');
     }
 
     // CRITICAL VALIDATION: Ensure recommended date is not before the requested date
     const desiredDate = eventRequest.desiredEventDate;
-    if (desiredDate && parsedResponse.recommendedDate < desiredDate) {
-      logger.error(`AI recommended date ${parsedResponse.recommendedDate} is BEFORE requested date ${desiredDate}, falling back to heuristic`);
+    if (desiredDate && normalizedRecommendedDate < desiredDate) {
+      logger.error(`AI recommended date ${normalizedRecommendedDate} is BEFORE requested date ${desiredDate}, falling back to heuristic`);
       throw new Error('AI recommended date before requested date - this should never happen');
     }
 
@@ -126,10 +130,10 @@ You must respond with a JSON object containing exactly these fields:
       parsedResponse.confidence >= 70 ? 'high' :
       parsedResponse.confidence >= 40 ? 'medium' : 'low';
 
-    logger.log(`AI scheduling recommendation: ${parsedResponse.recommendedDate} (confidence: ${parsedResponse.confidence})`);
+    logger.log(`AI scheduling recommendation: ${normalizedRecommendedDate} (confidence: ${parsedResponse.confidence})`);
 
     return {
-      recommendedDate: parsedResponse.recommendedDate,
+      recommendedDate: normalizedRecommendedDate,
       reasoning: parsedResponse.reasoning,
       dateAnalysis: dateAnalyses,
       confidence,
