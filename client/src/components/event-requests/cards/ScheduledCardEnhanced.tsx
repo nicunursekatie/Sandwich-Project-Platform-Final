@@ -1393,15 +1393,19 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         <div className="flex flex-col gap-1.5 min-w-0">
                           {request.assignedRecipientIds.slice(0, 3).map((id, idx) => {
                             const recipientName = getRecipientName(id);
-                            const cleanName = recipientName.includes('(') 
+                            // Skip if the name still contains the raw ID format
+                            if (recipientName.startsWith('recipient:') || recipientName.startsWith('host:') || recipientName.startsWith('Recipient ID') || recipientName.startsWith('Host ID')) {
+                              return null;
+                            }
+                            const cleanName = recipientName.includes('(')
                               ? recipientName.substring(0, recipientName.indexOf('(')).trim()
                               : recipientName;
-                            const displayName = cleanName.length > 25 
+                            const displayName = cleanName.length > 25
                               ? cleanName.substring(0, 22) + '...'
                               : cleanName;
                             return (
-                              <Badge 
-                                key={idx} 
+                              <Badge
+                                key={idx}
                                 title={recipientName}
                                 className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
                               >
@@ -1409,7 +1413,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 <span className="truncate">{displayName}</span>
                               </Badge>
                             );
-                          })}
+                          }).filter(Boolean)}
                           {request.assignedRecipientIds.length > 3 && (
                             <Badge className="bg-gray-100 text-gray-700 border border-gray-300 text-xs font-medium px-2 py-1 shadow-sm w-fit">
                               +{request.assignedRecipientIds.length - 3} more recipients
