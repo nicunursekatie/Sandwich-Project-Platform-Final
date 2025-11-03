@@ -8,12 +8,20 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import type { EventRequest } from '@shared/schema';
 
+interface NearbyEvent {
+  organizationName: string;
+  date: string;
+  estimatedSandwichCount: number;
+}
+
 interface DateAnalysis {
   date: string;
+  dayOfWeek: string;
   weekStarting: string;
   totalScheduledSandwiches: number;
   eventCount: number;
   isOptimal: boolean;
+  nearbyEvents: NearbyEvent[];
 }
 
 interface AiSuggestion {
@@ -21,6 +29,7 @@ interface AiSuggestion {
   reasoning: string;
   dateAnalysis: DateAnalysis[];
   confidence: 'high' | 'medium' | 'low';
+  originallyRequestedDate: string | null;
 }
 
 interface AiDateSuggestionDialogProps {
@@ -178,6 +187,19 @@ export function AiDateSuggestionDialog({
 
           {suggestion && (
             <div className="space-y-4 sm:space-y-6">
+              {/* Originally Requested Date */}
+              {suggestion.originallyRequestedDate && (
+                <div className="bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <p className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400">Originally Requested Date</p>
+                  </div>
+                  <p className="text-sm sm:text-base font-medium text-gray-800 dark:text-gray-200 pl-6">
+                    {formatDate(suggestion.originallyRequestedDate)}
+                  </p>
+                </div>
+              )}
+
               {/* AI Recommendation - Prominent Section */}
               <div className="bg-gradient-to-br from-[#236383] to-[#47B3CB] p-1 rounded-xl shadow-lg">
                 <div className="bg-white dark:bg-gray-950 p-4 sm:p-6 rounded-lg">
@@ -194,16 +216,16 @@ export function AiDateSuggestionDialog({
                     {getConfidenceBadge(suggestion.confidence)}
                   </div>
 
-                  {/* The Recommended Date - Extra Prominent */}
+                  {/* The Recommended Date - Extra Prominent with Day of Week */}
                   <div className="text-center py-4 sm:py-6 mb-4 sm:mb-6 bg-gradient-to-br from-[#236383]/5 to-[#47B3CB]/5 dark:from-[#236383]/10 dark:to-[#47B3CB]/10 rounded-lg border-2 border-[#236383]/20">
                     <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
                       <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-[#236383]" />
                       <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#236383] leading-tight">
-                        {formatDate(suggestion.recommendedDate).split(',')[0]}
+                        {new Date(suggestion.recommendedDate).toLocaleDateString('en-US', { weekday: 'long' })}
                       </p>
                     </div>
                     <p className="text-xl sm:text-2xl font-semibold text-[#47B3CB] px-2">
-                      {formatDate(suggestion.recommendedDate).split(',').slice(1).join(',').trim()}
+                      {formatDate(suggestion.recommendedDate)}
                     </p>
                   </div>
 
@@ -250,39 +272,69 @@ export function AiDateSuggestionDialog({
                           : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900'
                       }`}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                            <p className="font-medium text-sm sm:text-base truncate">
-                              {formatDate(analysis.date)}
-                            </p>
-                            <div className="flex gap-2 flex-wrap">
-                              {analysis.isOptimal && (
-                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
-                                  Good Balance
-                                </Badge>
-                              )}
-                              {!analysis.isOptimal && analysis.eventCount > 3 && (
-                                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs">
-                                  Busy Week
-                                </Badge>
-                              )}
+                      <div className="space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                              <p className="font-medium text-sm sm:text-base">
+                                <span className="text-[#236383] font-bold">{analysis.dayOfWeek}</span>
+                                {' • '}
+                                {formatDate(analysis.date)}
+                              </p>
+                              <div className="flex gap-2 flex-wrap">
+                                {analysis.isOptimal && (
+                                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
+                                    Good Balance
+                                  </Badge>
+                                )}
+                                {!analysis.isOptimal && analysis.eventCount > 3 && (
+                                  <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs">
+                                    Busy Week
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                              <p>Week of {formatWeek(analysis.weekStarting)}</p>
+                              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                                <span className="whitespace-nowrap">
+                                  📅 {analysis.eventCount} {analysis.eventCount === 1 ? 'event' : 'events'} scheduled
+                                </span>
+                                <span className="whitespace-nowrap">
+                                  🥪 {analysis.totalScheduledSandwiches.toLocaleString()} sandwiches
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                            <p>Week of {formatWeek(analysis.weekStarting)}</p>
-                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                              <span className="whitespace-nowrap">
-                                📅 {analysis.eventCount} {analysis.eventCount === 1 ? 'event' : 'events'} scheduled
-                              </span>
-                              <span className="whitespace-nowrap">
-                                🥪 {analysis.totalScheduledSandwiches.toLocaleString()} sandwiches
-                              </span>
-                            </div>
-                          </div>
+                          {analysis.date === suggestion.recommendedDate && (
+                            <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-[#236383] flex-shrink-0 self-start" />
+                          )}
                         </div>
-                        {analysis.date === suggestion.recommendedDate && (
-                          <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-[#236383] flex-shrink-0 self-start" />
+
+                        {/* Nearby Events */}
+                        {analysis.nearbyEvents && analysis.nearbyEvents.length > 0 && (
+                          <div className="pl-4 border-l-2 border-gray-300 dark:border-gray-600">
+                            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                              Events scheduled this week:
+                            </p>
+                            <div className="space-y-1">
+                              {analysis.nearbyEvents.map((event, eventIdx) => (
+                                <div key={eventIdx} className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2">
+                                  <span className="text-gray-400">•</span>
+                                  <div className="flex-1">
+                                    <span className="font-medium">{event.organizationName}</span>
+                                    {' - '}
+                                    <span>{new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                    {event.estimatedSandwichCount > 0 && (
+                                      <span className="text-gray-500">
+                                        {' '}({event.estimatedSandwichCount.toLocaleString()} 🥪)
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>

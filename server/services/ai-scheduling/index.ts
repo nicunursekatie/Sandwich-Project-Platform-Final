@@ -7,12 +7,20 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+interface NearbyEvent {
+  organizationName: string;
+  date: string;
+  estimatedSandwichCount: number;
+}
+
 interface DateAnalysis {
   date: string;
+  dayOfWeek: string;
   weekStarting: string;
   totalScheduledSandwiches: number;
   eventCount: number;
   isOptimal: boolean;
+  nearbyEvents: NearbyEvent[];
 }
 
 interface AiDateSuggestion {
@@ -20,6 +28,7 @@ interface AiDateSuggestion {
   reasoning: string;
   dateAnalysis: DateAnalysis[];
   confidence: 'high' | 'medium' | 'low';
+  originallyRequestedDate: string | null;
 }
 
 interface OpenAiDateResponse {
@@ -108,6 +117,7 @@ You must respond with a JSON object containing exactly these fields:
       reasoning: parsedResponse.reasoning,
       dateAnalysis: dateAnalyses,
       confidence,
+      originallyRequestedDate: eventRequest.desiredEventDate || null,
     };
   } catch (error) {
     // Log the error and fall back to heuristic-based recommendation
@@ -121,6 +131,7 @@ You must respond with a JSON object containing exactly these fields:
       reasoning: 'Automatic recommendation based on balancing sandwich production across weeks. (AI suggestion unavailable)',
       dateAnalysis: dateAnalyses,
       confidence: fallbackConfidence,
+      originallyRequestedDate: eventRequest.desiredEventDate || null,
     };
   }
 }
@@ -185,6 +196,9 @@ function analyzeDateOption(date: string, scheduledEvents: EventRequest[]): DateA
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
+  // Get day of week
+  const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
+
   // Find all events in the same week
   const eventsInWeek = scheduledEvents.filter(event => {
     if (!event.scheduledEventDate) return false;
@@ -197,15 +211,24 @@ function analyzeDateOption(date: string, scheduledEvents: EventRequest[]): DateA
     return sum + (event.estimatedSandwichCount || 0);
   }, 0);
 
+  // Build nearby events list
+  const nearbyEvents: NearbyEvent[] = eventsInWeek.map(event => ({
+    organizationName: event.organizationName || 'Unknown Organization',
+    date: event.scheduledEventDate!,
+    estimatedSandwichCount: event.estimatedSandwichCount || 0,
+  }));
+
   // Determine if this is an optimal choice (fewer events = better)
   const isOptimal = eventsInWeek.length <= 2 && totalSandwiches < 5000;
 
   return {
     date,
+    dayOfWeek,
     weekStarting: weekStart.toISOString().split('T')[0],
     totalScheduledSandwiches: totalSandwiches,
     eventCount: eventsInWeek.length,
     isOptimal,
+    nearbyEvents,
   };
 }
 
