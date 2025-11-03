@@ -47,6 +47,7 @@ import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
+import { MessageComposer } from '@/components/messaging/message-composer';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -382,6 +383,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   tempIsConfirmed = false,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
   const headerContent = CardHeader({
     request,
     resolveUserName,
@@ -735,9 +737,20 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           <div className="flex-1" />
 
           {canEdit && (
-            <Button size="sm" variant="ghost" onClick={onEdit}>
-              <Edit className="w-4 h-4" />
-            </Button>
+            <>
+              <Button
+                size="sm"
+                onClick={() => setShowMessageDialog(true)}
+                variant="ghost"
+                className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+                aria-label="Message about this event"
+              >
+                <MessageSquare className="w-4 h-4" aria-hidden="true" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onEdit}>
+                <Edit className="w-4 h-4" />
+              </Button>
+            </>
           )}
           {canDelete && (
             <ConfirmationDialog
@@ -792,6 +805,22 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           )}
         </div>
       </CardContent>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
+          </DialogHeader>
+          <MessageComposer
+            contextType="event"
+            contextId={request.id.toString()}
+            contextTitle={`${request.organizationName} event`}
+            onSent={() => setShowMessageDialog(false)}
+            onCancel={() => setShowMessageDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
