@@ -206,8 +206,8 @@ const VALIDATION_RULES: ValidationRule[] = [
     category: 'sandwiches',
     severity: 'critical',
     check: (event) => {
-      const types = event.sandwichTypes as any;
-      if (!types || (Array.isArray(types) && types.length === 0)) {
+      const types = event.sandwichTypes;
+      if (!Array.isArray(types) || types.length === 0) {
         return {
           category: 'sandwiches',
           severity: 'critical',
