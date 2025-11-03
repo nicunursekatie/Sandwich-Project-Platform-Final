@@ -605,9 +605,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
       return (
         <div className="flex items-center gap-2 group">
-          <Package className="w-4 h-4 text-gray-500" />
-          <span className="text-base font-medium text-gray-600 min-w-[100px]">Sandwiches:</span>
-          <span className="text-base text-gray-900 font-semibold">{sandwichInfo}</span>
+          <Package className="w-4 h-4 text-[#FBAD3F]" />
+          <span className="text-base font-medium text-[#236383] min-w-[100px]">Sandwiches:</span>
+          <span className="text-base text-[#FBAD3F] font-bold">{sandwichInfo}</span>
           {canEdit && (
             <Button
               size="sm"
@@ -941,9 +941,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Contact Information Section */}
         {(request.firstName || request.lastName || request.email || request.phone || (request.tspContact || request.customTspContact)) && (
-          <div className="bg-purple-50 rounded-lg p-4 space-y-2 border border-purple-200">
+          <div className="bg-[#47B3CB]/10 rounded-lg p-4 space-y-2 border-l-4 border-[#47B3CB] border border-[#47B3CB]/30 shadow-sm">
             <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
-              <Users className="w-4 h-4 text-purple-600" />
+              <Users className="w-4 h-4 text-[#47B3CB]" />
               Contact Information
             </h3>
 
@@ -952,10 +952,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {request.phone && renderEditableField('phone', request.phone, 'Phone', <Phone className="w-4 h-4" />)}
 
             {(request.tspContact || request.customTspContact) && (
-              <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
-                <UserPlus className="w-4 h-4 text-gray-500" />
-                <span className="text-base font-medium text-gray-600 min-w-[100px]">TSP Contact:</span>
-                <span className="text-base text-gray-900">
+              <div className="flex items-center gap-2 pt-2 border-t border-[#47B3CB]/20">
+                <UserPlus className="w-4 h-4 text-[#236383]" />
+                <span className="text-base font-medium text-[#236383] min-w-[100px]">TSP Contact:</span>
+                <span className="text-base text-[#236383] font-semibold">
                   {request.customTspContact || resolveUserName(request.tspContact || '')}
                 </span>
                 {canEdit && (
@@ -974,9 +974,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Event Details Section */}
-        <div className="bg-blue-50 rounded-lg p-4 space-y-2 border border-blue-200">
+        <div className="bg-[#007E8C]/10 rounded-lg p-4 space-y-2 border-l-4 border-[#007E8C] border border-[#007E8C]/30 shadow-sm">
           <h3 className="text-base font-bold text-[#236383] mb-2 flex items-center gap-2 uppercase tracking-wide">
-            <Calendar className="w-4 h-4 text-blue-600" />
+            <Calendar className="w-4 h-4 text-[#007E8C]" />
             Event Details
           </h3>
 
@@ -1016,9 +1016,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-2 group">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <span className="text-base font-medium text-gray-600 min-w-[100px]">{dateLabel}:</span>
-              <span className="text-base text-gray-900 font-semibold">
+              <Calendar className="w-4 h-4 text-[#007E8C]" />
+              <span className="text-base font-medium text-[#236383] min-w-[100px]">{dateLabel}:</span>
+              <span className="text-base text-[#236383] font-semibold">
                 {displayDate && dateInfo ? dateInfo.text : 'No date set'}
               </span>
               {canEdit && (
@@ -1044,8 +1044,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
               {request.eventStartTime && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-semibold text-gray-700">Start:</span>
+                  <Clock className="w-4 h-4 text-[#007E8C]" />
+                  <span className="text-sm font-semibold text-[#236383]">Start:</span>
                   {isEditingThisCard && editingField === 'eventStartTime' ? (
                     <>
                       <Input
@@ -1064,7 +1064,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </>
                   ) : (
                     <>
-                      <span className="text-lg font-bold text-gray-900">
+                      <span className="text-lg font-bold text-[#236383]">
                         {formatTime12Hour(request.eventStartTime)}
                       </span>
                       {canEdit && (
@@ -1089,8 +1089,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {request.eventEndTime && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-semibold text-gray-700">End:</span>
+                  <Clock className="w-4 h-4 text-[#007E8C]" />
+                  <span className="text-sm font-semibold text-[#236383]">End:</span>
                   {isEditingThisCard && editingField === 'eventEndTime' ? (
                     <>
                       <Input
@@ -1109,7 +1109,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     </>
                   ) : (
                     <>
-                      <span className="text-lg font-bold text-gray-900">
+                      <span className="text-lg font-bold text-[#236383]">
                         {formatTime12Hour(request.eventEndTime)}
                       </span>
                       {canEdit && (
@@ -1134,8 +1134,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {(request.pickupDateTime || request.pickupTime) && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-semibold text-gray-700">Pickup:</span>
+                  <Clock className="w-4 h-4 text-[#FBAD3F]" />
+                  <span className="text-sm font-semibold text-[#236383]">Pickup:</span>
                   {isEditingThisCard && (editingField === 'pickupDateTime' || editingField === 'pickupTime') ? (
                     editingField === 'pickupDateTime' ? (
                       <div className="flex flex-col gap-2">
@@ -1178,7 +1178,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     )
                   ) : (
                     <>
-                      <span className="text-lg font-bold text-gray-900">
+                      <span className="text-lg font-bold text-[#236383]">
                         {request.pickupDateTime
                           ? (() => {
                               const date = new Date(request.pickupDateTime);
@@ -1260,17 +1260,17 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Delivery & Logistics Section */}
-        <div className="bg-orange-50 rounded-lg p-4 space-y-3 border border-orange-200">
+        <div className="bg-[#FBAD3F]/10 rounded-lg p-4 space-y-3 border-l-4 border-[#FBAD3F] border border-[#FBAD3F]/30 shadow-sm">
           <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
-            <Package className="w-4 h-4 text-orange-600" />
+            <Package className="w-4 h-4 text-[#FBAD3F]" />
             Delivery & Logistics
           </h3>
 
           {/* Recipients */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Building className="w-4 h-4 text-gray-500" />
-              <span className="text-base font-medium text-gray-600 min-w-[100px]">Recipients:</span>
+              <Building className="w-4 h-4 text-[#236383]" />
+              <span className="text-base font-medium text-[#236383] min-w-[100px]">Recipients:</span>
             </div>
             {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
               <div className="ml-8 space-y-2">
@@ -1340,9 +1340,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Assignments Section */}
         {(driverNeeded > 0 || speakerNeeded > 0 || volunteerNeeded > 0) && (
-          <div className="bg-emerald-50 rounded-lg p-4 space-y-4 border border-emerald-200">
+          <div className="bg-[#47B3CB]/10 rounded-lg p-4 space-y-4 border-l-4 border-[#47B3CB] border border-[#47B3CB]/30 shadow-sm">
             <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
-              <Users className="w-4 h-4 text-emerald-600" />
+              <Users className="w-4 h-4 text-[#47B3CB]" />
               Team Assignments
             </h3>
 
@@ -1350,8 +1350,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {driverNeeded > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl font-extrabold text-gray-900">
-                    <Car className="w-7 h-7 inline mr-2" />
+                  <span className="text-2xl font-extrabold text-[#236383]">
+                    <Car className="w-7 h-7 inline mr-2 text-[#007E8C]" />
                     Drivers ({driverAssigned}/{driverNeeded})
                   </span>
                   {canEdit && (
@@ -1409,7 +1409,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     );
                   })}
                   {driverAssigned === 0 && (
-                    <span className="text-xl font-medium text-gray-600 italic">No drivers assigned</span>
+                    <span className="text-xl font-medium text-[#236383]/60 italic">No drivers assigned</span>
                   )}
                 </div>
               </div>
@@ -1419,8 +1419,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {speakerNeeded > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl font-extrabold text-gray-900">
-                    <Megaphone className="w-7 h-7 inline mr-2" />
+                  <span className="text-2xl font-extrabold text-[#236383]">
+                    <Megaphone className="w-7 h-7 inline mr-2 text-[#FBAD3F]" />
                     Speakers ({speakerAssigned}/{speakerNeeded})
                   </span>
                   {canEdit && (
@@ -1465,7 +1465,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }
                   )}
                   {speakerAssigned === 0 && (
-                    <span className="text-xl font-medium text-gray-600 italic">No speakers assigned</span>
+                    <span className="text-xl font-medium text-[#236383]/60 italic">No speakers assigned</span>
                   )}
                 </div>
               </div>
@@ -1475,8 +1475,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {volunteerNeeded > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl font-extrabold text-gray-900">
-                    <Users className="w-7 h-7 inline mr-2" />
+                  <span className="text-2xl font-extrabold text-[#236383]">
+                    <Users className="w-7 h-7 inline mr-2 text-[#47B3CB]" />
                     Volunteers ({volunteerAssigned}/{volunteerNeeded})
                   </span>
                   {canEdit && (
@@ -1521,7 +1521,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }
                   )}
                   {volunteerAssigned === 0 && (
-                    <span className="text-xl font-medium text-gray-600 italic">No volunteers assigned</span>
+                    <span className="text-xl font-medium text-[#236383]/60 italic">No volunteers assigned</span>
                   )}
                 </div>
               </div>
@@ -1543,15 +1543,15 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           request.unresponsiveNotes ||
           request.socialMediaPostNotes) && (
           <div className="bg-amber-50 rounded-lg p-4">
-            <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <FileText className="w-4 h-4" />
+            <h3 className="text-base font-semibold text-[#236383] mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#007E8C]" />
               Notes & Requirements
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {request.message && (
                 <div className="sm:col-span-2">
                   <p className="text-base font-medium mb-1">Original Request Message:</p>
-                  <p className="text-base text-gray-700 bg-white p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
+                  <p className="text-base text-gray-700 bg-[#007E8C]/5 p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
                     {request.message}
                   </p>
                 </div>
@@ -1559,7 +1559,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {request.additionalRequirements && (
                 <div>
                   <p className="text-base font-medium mb-1">Special Requirements:</p>
-                  <p className="text-base text-gray-700 bg-white p-3 rounded border-l-4 border-orange-400 whitespace-pre-wrap">
+                  <p className="text-base text-gray-700 bg-[#FBAD3F]/10 p-3 rounded border-l-4 border-[#FBAD3F] whitespace-pre-wrap">
                     {request.additionalRequirements}
                   </p>
                 </div>
