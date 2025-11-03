@@ -12,7 +12,12 @@ import {
   Calendar,
   MapPin,
   Sandwich as SandwichIcon,
-  Users
+  Users,
+  Edit,
+  Phone,
+  Mail,
+  StickyNote,
+  ExternalLink
 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -47,12 +52,20 @@ interface AiIntakeAssistantDialogProps {
   open: boolean;
   onClose: () => void;
   eventRequest: EventRequest;
+  onEditEvent?: () => void;
+  onLogContact?: () => void;
+  onScheduleCall?: () => void;
+  onAddNote?: () => void;
 }
 
 export function AiIntakeAssistantDialog({
   open,
   onClose,
-  eventRequest
+  eventRequest,
+  onEditEvent,
+  onLogContact,
+  onScheduleCall,
+  onAddNote
 }: AiIntakeAssistantDialogProps) {
   const { toast } = useToast();
   const [analysis, setAnalysis] = useState<AiIntakeAssistance | null>(null);
@@ -79,6 +92,85 @@ export function AiIntakeAssistantDialog({
   const handleClose = () => {
     setAnalysis(null);
     onClose();
+  };
+
+  // Determine which action buttons to show based on the recommendation text
+  const getActionButtons = (text: string) => {
+    const lowerText = text.toLowerCase();
+    const buttons = [];
+
+    // Contact-related actions
+    if (lowerText.includes('contact') || lowerText.includes('reach out') || lowerText.includes('call') || lowerText.includes('speak')) {
+      if (onLogContact) {
+        buttons.push({
+          label: 'Log Contact',
+          icon: Phone,
+          action: () => {
+            handleClose();
+            onLogContact();
+          },
+          variant: 'default' as const
+        });
+      }
+      if (onScheduleCall) {
+        buttons.push({
+          label: 'Schedule Call',
+          icon: Calendar,
+          action: () => {
+            handleClose();
+            onScheduleCall();
+          },
+          variant: 'outline' as const
+        });
+      }
+    }
+
+    // Edit-related actions (for missing data like address, times, counts, etc.)
+    if (lowerText.includes('address') || lowerText.includes('time') || lowerText.includes('count') || 
+        lowerText.includes('sandwich') || lowerText.includes('refrigeration') || lowerText.includes('date') ||
+        lowerText.includes('get ') || lowerText.includes('determine')) {
+      if (onEditEvent) {
+        buttons.push({
+          label: 'Edit Event',
+          icon: Edit,
+          action: () => {
+            handleClose();
+            onEditEvent();
+          },
+          variant: 'default' as const
+        });
+      }
+    }
+
+    // Note-related actions
+    if (lowerText.includes('note') || lowerText.includes('document') || lowerText.includes('record')) {
+      if (onAddNote) {
+        buttons.push({
+          label: 'Add Note',
+          icon: StickyNote,
+          action: () => {
+            handleClose();
+            onAddNote();
+          },
+          variant: 'outline' as const
+        });
+      }
+    }
+
+    // If no specific buttons were added but onEditEvent is available, add it as a fallback
+    if (buttons.length === 0 && onEditEvent) {
+      buttons.push({
+        label: 'Edit Event',
+        icon: Edit,
+        action: () => {
+          handleClose();
+          onEditEvent();
+        },
+        variant: 'outline' as const
+      });
+    }
+
+    return buttons;
   };
 
   const getCategoryIcon = (category: ValidationCategory) => {
@@ -154,6 +246,7 @@ export function AiIntakeAssistantDialog({
   const IssueCard = ({ issue }: { issue: ValidationIssue }) => {
     const Icon = getCategoryIcon(issue.category);
     const severityColor = getSeverityColor(issue.severity);
+    const actionButtons = getActionButtons(issue.title + ' ' + issue.message + ' ' + (issue.suggestion || ''));
 
     return (
       <div className="border rounded-lg p-4 space-y-3 bg-white dark:bg-gray-950">
@@ -183,6 +276,27 @@ export function AiIntakeAssistantDialog({
                   <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     <span className="text-[#236383]">→</span> {issue.action}
                   </p>
+                </div>
+              )}
+              
+              {/* Action Buttons */}
+              {actionButtons.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+                  {actionButtons.map((btn, btnIdx) => {
+                    const BtnIcon = btn.icon;
+                    return (
+                      <Button
+                        key={btnIdx}
+                        size="sm"
+                        variant={btn.variant}
+                        onClick={btn.action}
+                        className="text-xs"
+                      >
+                        <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
+                        {btn.label}
+                      </Button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -341,6 +455,8 @@ export function AiIntakeAssistantDialog({
                       
                       const IconComponent = icon;
                       
+                      const actionButtons = getActionButtons(title + ' ' + content);
+                      
                       return (
                         <div key={idx} className={`${bgColor} border ${borderColor} rounded-lg p-4`}>
                           <div className="flex items-start gap-3">
@@ -351,9 +467,30 @@ export function AiIntakeAssistantDialog({
                               <h4 className="font-semibold text-base mb-2 text-gray-900 dark:text-gray-100">
                                 {title}
                               </h4>
-                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
                                 {content}
                               </p>
+                              
+                              {/* Action Buttons */}
+                              {actionButtons.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                  {actionButtons.map((btn, btnIdx) => {
+                                    const BtnIcon = btn.icon;
+                                    return (
+                                      <Button
+                                        key={btnIdx}
+                                        size="sm"
+                                        variant={btn.variant}
+                                        onClick={btn.action}
+                                        className="text-xs"
+                                      >
+                                        <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
+                                        {btn.label}
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -370,14 +507,41 @@ export function AiIntakeAssistantDialog({
                     <ListChecks className="h-5 w-5 text-[#236383]" />
                     <h3 className="font-semibold text-sm">Next Steps</h3>
                   </div>
-                  <ol className="space-y-2">
-                    {analysis.nextSteps.map((step, idx) => (
-                      <li key={idx} className="flex gap-3 text-sm">
-                        <span className="font-semibold text-[#236383] flex-shrink-0">{idx + 1}.</span>
-                        <span className="text-gray-700 dark:text-gray-300">{step}</span>
-                      </li>
-                    ))}
-                  </ol>
+                  <div className="space-y-3">
+                    {analysis.nextSteps.map((step, idx) => {
+                      const actionButtons = getActionButtons(step);
+                      
+                      return (
+                        <div key={idx} className="flex gap-3 items-start">
+                          <span className="font-semibold text-[#236383] flex-shrink-0 mt-0.5">{idx + 1}.</span>
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{step}</p>
+                            
+                            {/* Action Buttons */}
+                            {actionButtons.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {actionButtons.map((btn, btnIdx) => {
+                                  const BtnIcon = btn.icon;
+                                  return (
+                                    <Button
+                                      key={btnIdx}
+                                      size="sm"
+                                      variant={btn.variant}
+                                      onClick={btn.action}
+                                      className="text-xs"
+                                    >
+                                      <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
+                                      {btn.label}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

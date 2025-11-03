@@ -514,6 +514,26 @@ const EventRequestsManagementContent: React.FC = () => {
               setAiIntakeAssistantEventRequest(null);
             }}
             eventRequest={aiIntakeAssistantEventRequest}
+            onEditEvent={() => {
+              // Open edit dialog
+              setSelectedEventRequest(aiIntakeAssistantEventRequest);
+              setIsEditing(true);
+            }}
+            onLogContact={() => {
+              // Open log contact dialog
+              setLogContactEventRequest(aiIntakeAssistantEventRequest);
+              setShowLogContactDialog(true);
+            }}
+            onScheduleCall={() => {
+              // Open contact organizer dialog for scheduling a call
+              setSelectedEventRequest(aiIntakeAssistantEventRequest);
+              setShowContactOrganizerDialog(true);
+            }}
+            onAddNote={() => {
+              // Open edit dialog to add notes
+              setSelectedEventRequest(aiIntakeAssistantEventRequest);
+              setIsEditing(true);
+            }}
           />
         )}
 
