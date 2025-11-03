@@ -114,6 +114,28 @@ const getSandwichInfo = (event: EventRequest) => {
       tooltip: `${event.estimatedSandwichCount} sandwiches estimated`,
     });
   }
+  // Check for sandwich range (min-max)
+  else if (
+    (event as any).estimatedSandwichCountMin &&
+    (event as any).estimatedSandwichCountMax
+  ) {
+    const min = (event as any).estimatedSandwichCountMin;
+    const max = (event as any).estimatedSandwichCountMax;
+    const rangeType = (event as any).estimatedSandwichRangeType;
+
+    let rangeText = `${min}-${max}`;
+    if (rangeType) {
+      rangeText += ` ${rangeType}`;
+    }
+
+    sandwichInfo.push({
+      icon: Sandwich,
+      count: null,
+      countText: rangeText,
+      color: 'text-[#fbad3f]',
+      tooltip: `${min}-${max} sandwiches estimated${rangeType ? ` (${rangeType})` : ''}`,
+    });
+  }
 
   // Check for actual sandwich count (for completed events)
   if (event.actualSandwichCount && event.actualSandwichCount > 0) {
@@ -427,7 +449,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
                               <div className="flex items-center gap-1">
                                 <Sandwich className="w-5 h-5 text-[#fbad3f]" />
                                 <span className="text-sm font-semibold">
-                                  {sandwichInfo[0].count}
+                                  {(sandwichInfo[0] as any).countText || sandwichInfo[0].count}
                                 </span>
                               </div>
                             )}

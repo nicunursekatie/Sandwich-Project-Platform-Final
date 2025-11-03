@@ -96,11 +96,19 @@ export const ScheduledTab: React.FC = () => {
       if (eventRequest) {
         const existingSandwichTypes = parseSandwichTypes(eventRequest.sandwichTypes) || [];
         const hasTypesData = existingSandwichTypes.length > 0;
+        const hasRangeData = (eventRequest as any).estimatedSandwichCountMin && (eventRequest as any).estimatedSandwichCountMax;
         const totalCount = eventRequest.estimatedSandwichCount || 0;
 
-        setInlineSandwichMode(hasTypesData ? 'types' : 'total');
+        setInlineSandwichMode(hasTypesData ? 'types' : hasRangeData ? 'range' : 'total');
         setInlineTotalCount(totalCount);
         setInlineSandwichTypes(hasTypesData ? existingSandwichTypes : []);
+
+        // Set range values if range data exists
+        if (hasRangeData) {
+          setInlineRangeMin((eventRequest as any).estimatedSandwichCountMin || 0);
+          setInlineRangeMax((eventRequest as any).estimatedSandwichCountMax || 0);
+          setInlineRangeType((eventRequest as any).estimatedSandwichRangeType || '');
+        }
       }
     }
   };

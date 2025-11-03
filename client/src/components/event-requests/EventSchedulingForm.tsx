@@ -183,6 +183,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       
       // Determine mode based on existing data
       const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
+      const hasRangeData = (eventRequest as any)?.estimatedSandwichCountMin && (eventRequest as any)?.estimatedSandwichCountMax;
       const totalCount = eventRequest?.estimatedSandwichCount || 0;
       
       const existingActualSandwichTypes = eventRequest?.actualSandwichTypes ? 
@@ -334,7 +335,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       });
       
       // Set mode based on existing data
-      setSandwichMode(hasTypesData ? 'types' : 'total');
+      setSandwichMode(hasTypesData ? 'types' : hasRangeData ? 'range' : 'total');
       setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
 
       // Set attendee mode based on whether adult/children breakdown exists
