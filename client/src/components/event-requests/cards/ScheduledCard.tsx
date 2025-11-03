@@ -815,7 +815,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
                   request.isConfirmed
                     ? 'bg-[#47B3CB]/10 text-[#007E8C] border-[#007E8C]/30'
-                    : 'bg-gray-100 text-gray-600 border-gray-300'
+                    : 'bg-[#236383]/10 text-[#236383] border-[#236383]/40'
                 }`}
                 variant="outline"
                 title="Click to toggle confirmation status"
@@ -828,7 +828,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
                   request.addedToOfficialSheet
                     ? 'bg-[#236383]/10 text-[#236383] border-[#236383]/30'
-                    : 'bg-gray-100 text-gray-600 border-gray-300'
+                    : 'bg-[#007E8C]/10 text-[#007E8C] border-[#007E8C]/40'
                 }`}
                 variant="outline"
                 title="Click to toggle official sheet status"
@@ -1300,7 +1300,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Badge
                         key={index}
                         variant="secondary"
-                        className="bg-white border border-gray-300"
+                        className="bg-[#007E8C]/10 border border-[#007E8C]/40 text-[#236383]"
                       >
                         {type === 'recipient' && '🏢 '}
                         {type === 'host' && '🏠 '}
@@ -1392,7 +1392,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Badge
                         key={driverId}
                         variant="secondary"
-                        className="bg-white border border-gray-300 text-xl px-4 py-2.5 font-semibold"
+                        className="bg-gradient-to-r from-[#007E8C]/20 to-[#007E8C]/10 border border-[#007E8C]/50 text-[#236383] text-xl px-4 py-2.5 font-semibold"
                       >
                         {displayName}
                         {canEdit && (
@@ -1445,7 +1445,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Badge
                           key={speakerId}
                           variant="secondary"
-                          className="bg-white border border-gray-300 text-xl px-4 py-2.5 font-semibold"
+                          className="bg-gradient-to-r from-[#007E8C]/20 to-[#007E8C]/10 border border-[#007E8C]/50 text-[#236383] text-xl px-4 py-2.5 font-semibold"
                         >
                           {displayName}
                           {canEdit && (
@@ -1501,7 +1501,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Badge
                           key={volunteerId}
                           variant="secondary"
-                          className="bg-white border border-gray-300 text-xl px-4 py-2.5 font-semibold"
+                          className="bg-gradient-to-r from-[#007E8C]/20 to-[#007E8C]/10 border border-[#007E8C]/50 text-[#236383] text-xl px-4 py-2.5 font-semibold"
                         >
                           {displayName}
                           {canEdit && (
@@ -1602,7 +1602,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-base text-gray-700 bg-white p-3 rounded border border-gray-200 whitespace-pre-wrap">
+                    <p className="text-base text-gray-700 bg-gradient-to-r from-[#47B3CB]/15 to-[#47B3CB]/5 p-3 rounded border-l-4 border-[#47B3CB] border border-[#47B3CB]/40 whitespace-pre-wrap">
                       {request.planningNotes}
                     </p>
                   )}
@@ -1703,7 +1703,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {request.unresponsiveNotes && (
                 <div>
                   <p className="text-base font-medium mb-1">Contact Attempts Logged:</p>
-                  <p className="text-base text-gray-700 bg-white p-3 rounded border-l-4 border-gray-400">
+                  <p className="text-base text-gray-700 bg-gradient-to-r from-[#A31C41]/15 to-[#A31C41]/5 p-3 rounded border-l-4 border-[#A31C41]">
                     {request.unresponsiveNotes}
                   </p>
                 </div>
@@ -1722,7 +1722,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Communication & Notes Section */}
         {request.id && (
-          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+          <div className="bg-gradient-to-r from-[#236383]/10 to-[#236383]/5 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border border-[#236383]/30 shadow-sm">
             <EventMessageThread
               eventId={request.id.toString()}
               eventRequest={request}

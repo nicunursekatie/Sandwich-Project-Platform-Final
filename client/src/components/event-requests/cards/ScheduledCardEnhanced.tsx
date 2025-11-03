@@ -1425,7 +1425,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               <Badge
                                 key={idx}
                                 title={recipientName}
-                                className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
+                                className="bg-gradient-to-r from-[#007E8C]/20 to-[#007E8C]/10 text-[#236383] border border-[#007E8C]/50 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1.5 w-fit max-w-full"
                               >
                                 <span className="text-sm shrink-0">🏠</span>
                                 <span className="truncate">{displayName}</span>
@@ -1433,13 +1433,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             );
                           }).filter(Boolean)}
                           {request.assignedRecipientIds.length > 3 && (
-                            <Badge className="bg-gray-100 text-gray-700 border border-gray-300 text-xs font-medium px-2 py-1 shadow-sm w-fit">
+                            <Badge className="bg-gradient-to-r from-[#007E8C]/20 to-[#007E8C]/10 text-[#236383] border border-[#007E8C]/50 text-xs font-medium px-2 py-1 shadow-sm w-fit">
                               +{request.assignedRecipientIds.length - 3} more recipients
                             </Badge>
                           )}
                         </div>
                       ) : request.recipientsCount ? (
-                        <Badge className="bg-white text-gray-900 border border-gray-300 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
+                        <Badge className="bg-gradient-to-r from-[#007E8C]/20 to-[#007E8C]/10 text-[#236383] border border-[#007E8C]/50 text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
                           <span className="text-sm">🏠</span>
                           <span>Unknown Host ({request.recipientsCount})</span>
                         </Badge>
@@ -1506,9 +1506,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           request.duplicateNotes ||
           request.unresponsiveNotes ||
           request.socialMediaPostNotes) && (
-          <div className="bg-amber-50 rounded-lg p-4 mb-4">
+          <div className="bg-gradient-to-r from-[#236383]/15 to-[#236383]/5 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border border-[#236383]/40 shadow-md">
             <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
-              <FileText className="w-4 h-4" />
+              <FileText className="w-4 h-4 text-[#236383]" />
               Notes & Requirements
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1565,7 +1565,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-700 bg-white p-3 rounded border border-gray-200 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-gradient-to-r from-[#47B3CB]/15 to-[#47B3CB]/5 p-3 rounded border-l-4 border-[#47B3CB] border border-[#47B3CB]/40 whitespace-pre-wrap">
                       {request.planningNotes}
                     </p>
                   )}
@@ -1665,7 +1665,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {request.unresponsiveNotes && (
                 <div>
                   <p className="text-sm font-medium mb-1 text-gray-900">Contact Attempts Logged:</p>
-                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-gray-400">
+                  <p className="text-sm text-gray-700 bg-gradient-to-r from-[#A31C41]/15 to-[#A31C41]/5 p-3 rounded border-l-4 border-[#A31C41]">
                     {request.unresponsiveNotes}
                   </p>
                 </div>
