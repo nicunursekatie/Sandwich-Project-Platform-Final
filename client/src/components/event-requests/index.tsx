@@ -151,7 +151,7 @@ const EventRequestsManagementContent: React.FC = () => {
     updateEventRequestMutation,
   } = useEventMutations();
 
-  const { users, drivers } = useEventQueries();
+  const { users, drivers, hostsWithContacts } = useEventQueries();
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -588,8 +588,44 @@ const EventRequestsManagementContent: React.FC = () => {
               allSpeakerIds.forEach(speakerId => {
                 // Only add new details if they don't exist yet
                 if (!speakerDetails[speakerId]) {
-                  const foundUser = (users as any[]).find((u: any) => u.id === speakerId);
-                  const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : speakerId;
+                  let name = speakerId; // Default fallback
+                  
+                  // Handle custom IDs (e.g., "custom-1762134226512-David")
+                  if (speakerId.startsWith('custom-')) {
+                    const parts = speakerId.split('-');
+                    if (parts.length >= 3) {
+                      const nameParts = parts.slice(2);
+                      name = nameParts.join('-').replace(/-/g, ' ').trim() || 'Custom Speaker';
+                    } else {
+                      name = 'Custom Speaker';
+                    }
+                  }
+                  // Handle host-contact IDs (e.g., "host-contact-4")
+                  else if (speakerId.startsWith('host-contact-')) {
+                    const contactId = parseInt(speakerId.replace('host-contact-', ''));
+                    // Try to find in hostsWithContacts
+                    let found = false;
+                    if (hostsWithContacts && hostsWithContacts.length > 0) {
+                      for (const host of hostsWithContacts) {
+                        const contact = host.contacts?.find((c: any) => c.id === contactId);
+                        if (contact) {
+                          name = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.name || contact.email || `Contact #${contactId}`;
+                          found = true;
+                          break;
+                        }
+                      }
+                    }
+                    if (!found) {
+                      name = `Contact #${contactId}`;
+                    }
+                  }
+                  // Handle regular user IDs
+                  else {
+                    const foundUser = (users as any[]).find((u: any) => u.id === speakerId);
+                    if (foundUser) {
+                      name = `${foundUser.firstName} ${foundUser.lastName}`.trim() || foundUser.displayName || speakerId;
+                    }
+                  }
 
                   speakerDetails[speakerId] = {
                     name: name,
@@ -620,8 +656,44 @@ const EventRequestsManagementContent: React.FC = () => {
               allVolunteerIds.forEach(volunteerId => {
                 // Only add new details if they don't exist yet
                 if (!volunteerDetails[volunteerId]) {
-                  const foundUser = (users as any[]).find((u: any) => u.id === volunteerId);
-                  const name = foundUser ? `${foundUser.firstName} ${foundUser.lastName}`.trim() : volunteerId;
+                  let name = volunteerId; // Default fallback
+                  
+                  // Handle custom IDs (e.g., "custom-1762134226512-David")
+                  if (volunteerId.startsWith('custom-')) {
+                    const parts = volunteerId.split('-');
+                    if (parts.length >= 3) {
+                      const nameParts = parts.slice(2);
+                      name = nameParts.join('-').replace(/-/g, ' ').trim() || 'Custom Volunteer';
+                    } else {
+                      name = 'Custom Volunteer';
+                    }
+                  }
+                  // Handle host-contact IDs (e.g., "host-contact-4")
+                  else if (volunteerId.startsWith('host-contact-')) {
+                    const contactId = parseInt(volunteerId.replace('host-contact-', ''));
+                    // Try to find in hostsWithContacts
+                    let found = false;
+                    if (hostsWithContacts && hostsWithContacts.length > 0) {
+                      for (const host of hostsWithContacts) {
+                        const contact = host.contacts?.find((c: any) => c.id === contactId);
+                        if (contact) {
+                          name = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.name || contact.email || `Contact #${contactId}`;
+                          found = true;
+                          break;
+                        }
+                      }
+                    }
+                    if (!found) {
+                      name = `Contact #${contactId}`;
+                    }
+                  }
+                  // Handle regular user IDs
+                  else {
+                    const foundUser = (users as any[]).find((u: any) => u.id === volunteerId);
+                    if (foundUser) {
+                      name = `${foundUser.firstName} ${foundUser.lastName}`.trim() || foundUser.displayName || volunteerId;
+                    }
+                  }
 
                   volunteerDetails[volunteerId] = {
                     name: name,
