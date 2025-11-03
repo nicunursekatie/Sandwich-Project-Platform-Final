@@ -3415,6 +3415,56 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
   }
 });
 
+// AI Date Suggestion - Analyze possible dates and suggest optimal scheduling
+router.post('/:id/ai-suggest-dates', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+
+    // Check permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    // Get the event request
+    const eventRequest = await storage.getEventRequestById(eventId);
+    if (!eventRequest) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Get all scheduled events for analysis
+    const allEventRequests = await storage.getAllEventRequests();
+    const scheduledEvents = allEventRequests.filter(e => 
+      e.status === 'scheduled' && e.scheduledEventDate
+    );
+
+    // Import and call AI scheduling assistant
+    const { suggestOptimalEventDate } = await import('../services/ai-scheduling');
+    const suggestion = await suggestOptimalEventDate(eventRequest, scheduledEvents);
+
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_VIEW',
+      `Used AI assistant to analyze dates for event request: ${eventId}`,
+      { organizationName: eventRequest.organizationName }
+    );
+
+    res.json(suggestion);
+  } catch (error: unknown) {
+    const err = error as Error;
+    logger.error('❌ Error generating AI date suggestion:', error);
+    res.status(500).json({
+      error: 'Failed to generate AI suggestion',
+      message: err?.message || 'Unknown error occurred'
+    });
+  }
+});
+
 // Schedule a follow-up call
 router.patch('/:id/schedule-call', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
   try {
