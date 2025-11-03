@@ -6,6 +6,13 @@ import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
+// Get messages for an event context (stub route - events don't have messaging yet)
+router.get('/context/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  // Event requests don't have a messaging system yet, so return empty array
+  // This prevents 404 errors in the console when EventMessageThread loads
+  res.json({ messages: [] });
+});
+
 // Get unread messages for the user
 router.get('/unread', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
