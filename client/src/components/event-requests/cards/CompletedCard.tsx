@@ -2417,7 +2417,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             onClick={onLogContact}
             className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
           >
-            <MessageSquare className="w-4 h-4 mr-1" />
+            <FileText className="w-4 h-4 mr-1" />
             Log Contact
           </Button>
 
