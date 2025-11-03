@@ -80,13 +80,18 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
     <div className="space-y-3">
       {showHeader && (
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Message Thread
-            <Badge variant="secondary" className="text-xs">
-              {messages.length}
-            </Badge>
-          </h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Message Thread
+              <Badge variant="secondary" className="text-xs">
+                {messages.length}
+              </Badge>
+            </h3>
+            {eventTitle && (
+              <p className="text-xs text-gray-500 mt-1">{eventTitle}</p>
+            )}
+          </div>
         </div>
       )}
 

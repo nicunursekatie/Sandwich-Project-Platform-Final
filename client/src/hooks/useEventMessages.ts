@@ -19,6 +19,9 @@ interface Message {
  * Unlike useMessaging(), this hook does NOT create WebSocket connections
  * or set up notification handlers, making it safe to use in multiple
  * components without creating duplicate connections.
+ * 
+ * Implements visibility-based polling to reduce unnecessary API calls
+ * when the page is not visible.
  */
 export function useEventMessages(eventId: string | undefined) {
   return useQuery<Message[]>({
@@ -40,7 +43,12 @@ export function useEventMessages(eventId: string | undefined) {
       }
     },
     enabled: !!eventId,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    // Only refetch when page is visible to reduce unnecessary API calls
+    refetchInterval: (query) => {
+      return document.hidden ? false : 30000;
+    },
+    refetchIntervalInBackground: false, // Don't refetch when tab is hidden
+    refetchOnWindowFocus: true, // Refetch when tab becomes visible
     staleTime: 25000, // Consider data stale after 25 seconds
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
