@@ -763,7 +763,7 @@ export default function Dashboard({
             </div>
 
             {/* Simple Navigation with enhanced mobile scrolling */}
-            <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-contain">
+            <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-auto">
               <SimpleNav
                 navigationItems={NAV_ITEMS}
                 activeSection={activeSection}
