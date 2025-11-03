@@ -185,7 +185,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     severity: 'suggestion',
     check: (event) => {
       const count = event.estimatedSandwichCount || 0;
-      if (count > 0 && count <= 200) {
+      if (count > 0 && count < 200) {
         return {
           category: 'sandwiches',
           severity: 'suggestion',
