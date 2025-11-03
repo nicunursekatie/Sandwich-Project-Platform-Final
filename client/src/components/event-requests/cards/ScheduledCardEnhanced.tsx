@@ -153,6 +153,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   onLogContact,
   onFollowUp,
   onReschedule,
+  onAiIntakeAssist,
   startEditing,
   saveEdit,
   cancelEdit,
