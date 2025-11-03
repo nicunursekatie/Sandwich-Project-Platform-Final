@@ -28,11 +28,9 @@ import {
   Trash2,
   Calendar,
   Users,
-  Building,
   Car,
   Megaphone,
   UserPlus,
-  Check,
   Phone,
   Mail,
   AlertTriangle,
@@ -107,7 +105,7 @@ interface ScheduledCardEnhancedProps {
   canEdit?: boolean;
 }
 
-const parsePostgresArray = (arr: any): string[] => {
+const parsePostgresArray = (arr: unknown): string[] => {
   if (!arr) return [];
   if (Array.isArray(arr)) return arr;
   if (typeof arr === 'string') {
@@ -184,7 +182,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   // Mutation for updating event request fields
   const updateFieldsMutation = useMutation({
-    mutationFn: async (updates: Record<string, any>) => {
+    mutationFn: async (updates: Record<string, unknown>) => {
       const response = await fetch(`/api/event-requests/${request.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
