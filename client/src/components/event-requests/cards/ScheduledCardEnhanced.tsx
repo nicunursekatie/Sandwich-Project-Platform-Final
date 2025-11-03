@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -113,7 +112,7 @@ const parsePostgresArray = (arr: any): string[] => {
   if (Array.isArray(arr)) return arr;
   if (typeof arr === 'string') {
     if (arr === '{}' || arr === '') return [];
-    let cleaned = arr.replace(/^{|}$/g, '');
+    const cleaned = arr.replace(/^{|}$/g, '');
     if (!cleaned) return [];
     return cleaned.split(',').map((item) => item.trim()).filter((item) => item);
   }
