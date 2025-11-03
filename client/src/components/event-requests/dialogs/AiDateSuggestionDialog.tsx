@@ -223,7 +223,7 @@ export function AiDateSuggestionDialog({
                     <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
                       <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-[#236383]" />
                       <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#236383] leading-tight">
-                        {new Date(suggestion.recommendedDate).toLocaleDateString('en-US', { weekday: 'long' })}
+                        {new Date(suggestion.recommendedDate).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })}
                       </p>
                     </div>
                     <p className="text-xl sm:text-2xl font-semibold text-[#47B3CB] px-2">
