@@ -229,6 +229,68 @@ export function AiDateSuggestionDialog({
                     </p>
                   </div>
 
+                  {/* Scheduling Context for Recommended Date */}
+                  {(() => {
+                    const recommendedAnalysis = suggestion.dateAnalysis.find(
+                      (a) => a.date === suggestion.recommendedDate
+                    );
+                    if (!recommendedAnalysis) return null;
+
+                    return (
+                      <div className="mb-4 sm:mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="space-y-3">
+                          {/* Week info */}
+                          <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                              Week of {formatWeek(recommendedAnalysis.weekStarting)}
+                            </p>
+                            <div className="flex gap-4 text-sm">
+                              <span className="text-gray-700 dark:text-gray-300">
+                                📅 {recommendedAnalysis.eventCount} {recommendedAnalysis.eventCount === 1 ? 'event' : 'events'} scheduled
+                              </span>
+                              <span className="text-gray-700 dark:text-gray-300">
+                                🥪 {recommendedAnalysis.totalScheduledSandwiches.toLocaleString()} sandwiches
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Nearby Events */}
+                          {recommendedAnalysis.nearbyEvents && recommendedAnalysis.nearbyEvents.length > 0 && (
+                            <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Events scheduled this week:
+                              </p>
+                              <div className="pl-4 border-l-2 border-gray-300 dark:border-gray-600 space-y-1.5">
+                                {recommendedAnalysis.nearbyEvents.map((event, eventIdx) => (
+                                  <div key={eventIdx} className="flex items-start gap-2 text-sm">
+                                    <span className="text-gray-400 mt-0.5">•</span>
+                                    <div className="flex-1">
+                                      <span className="font-medium text-gray-800 dark:text-gray-200">
+                                        {event.organizationName}
+                                      </span>
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        {' - '}
+                                        {new Date(event.date).toLocaleDateString('en-US', { 
+                                          month: 'short', 
+                                          day: 'numeric' 
+                                        })}
+                                      </span>
+                                      {event.estimatedSandwichCount > 0 && (
+                                        <span className="text-gray-500 dark:text-gray-500">
+                                          {' '}({event.estimatedSandwichCount.toLocaleString()} 🥪)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Reasoning - Clearly Secondary */}
                   <div className="mb-4 sm:mb-6">
                     <div className="flex items-center gap-2 mb-3">
