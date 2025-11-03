@@ -141,7 +141,10 @@ You must respond with a JSON object containing exactly these fields:
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       eventRequestId: eventRequest.id,
+      hasApiKey: !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      apiKeyLength: process.env.AI_INTEGRATIONS_OPENAI_API_KEY?.length || 0,
     });
+    console.error('❌ OpenAI API Error Details:', error);
     
     const fallbackDate = determineRecommendedDateHeuristic(dateAnalyses);
     const fallbackConfidence = calculateConfidence(dateAnalyses);
