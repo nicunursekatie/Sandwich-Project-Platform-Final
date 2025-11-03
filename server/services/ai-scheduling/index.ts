@@ -121,7 +121,11 @@ You must respond with a JSON object containing exactly these fields:
     };
   } catch (error) {
     // Log the error and fall back to heuristic-based recommendation
-    logger.error('OpenAI scheduling failed, falling back to heuristic', error);
+    logger.error('OpenAI scheduling failed, falling back to heuristic', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      eventRequestId: eventRequest.id,
+    });
     
     const fallbackDate = determineRecommendedDateHeuristic(dateAnalyses);
     const fallbackConfidence = calculateConfidence(dateAnalyses);
