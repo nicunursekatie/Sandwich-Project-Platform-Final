@@ -1137,10 +1137,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           const recipientName = id.startsWith('host-contact-') && resolveRecipientName
                             ? resolveRecipientName(id)
                             : null;
-                          // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > id as fallback
-                          const displayName = (detailName && !/^\d+$/.test(detailName))
+                          // Check if detailName is actually just the ID (common with host-contact and custom IDs)
+                          const isDetailNameJustId = detailName === id ||
+                            detailName?.startsWith('host-contact-') ||
+                            detailName?.startsWith('custom-');
+                          // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > detail name as fallback
+                          const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
                             ? detailName
-                            : customName || recipientName || (userName !== id ? userName : 'Unknown Speaker');
+                            : customName || recipientName || (userName !== id ? userName : detailName || 'Unknown Speaker');
                           return (
                             <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
                               <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
