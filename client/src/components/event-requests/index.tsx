@@ -53,6 +53,7 @@ import { AssignmentDialog } from './dialogs/AssignmentDialog';
 import { MissingInfoSummaryDialog } from './MissingInfoSummaryDialog';
 import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
 import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
+import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
 import { logger } from '@/lib/logger';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
@@ -109,6 +110,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowLogContactDialog,
     showAiDateSuggestionDialog,
     setShowAiDateSuggestionDialog,
+    showAiIntakeAssistantDialog,
+    setShowAiIntakeAssistantDialog,
 
     // Assignment dialog state
     assignmentType,
@@ -137,6 +140,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setLogContactEventRequest,
     aiSuggestionEventRequest,
     setAiSuggestionEventRequest,
+    aiIntakeAssistantEventRequest,
+    setAiIntakeAssistantEventRequest,
 
     // Other states
     scheduleCallDate,
@@ -497,6 +502,18 @@ const EventRequestsManagementContent: React.FC = () => {
               setShowAiDateSuggestionDialog(false);
               setAiSuggestionEventRequest(null);
             }}
+          />
+        )}
+
+        {/* AI Intake Assistant Dialog */}
+        {aiIntakeAssistantEventRequest && (
+          <AiIntakeAssistantDialog
+            open={showAiIntakeAssistantDialog}
+            onClose={() => {
+              setShowAiIntakeAssistantDialog(false);
+              setAiIntakeAssistantEventRequest(null);
+            }}
+            eventRequest={aiIntakeAssistantEventRequest}
           />
         )}
 

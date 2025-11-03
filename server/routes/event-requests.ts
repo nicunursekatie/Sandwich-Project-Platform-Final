@@ -3465,6 +3465,56 @@ router.post('/:id/ai-suggest-dates', isAuthenticated, async (req, res) => {
   }
 });
 
+// AI Intake Assistant - Comprehensive analysis and suggestions for intake coordinators
+router.post('/:id/ai-intake-assist', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+
+    // Check permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    // Get the event request
+    const eventRequest = await storage.getEventRequestById(eventId);
+    if (!eventRequest) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Get all scheduled events for context (for date conflict analysis)
+    const allEventRequests = await storage.getAllEventRequests();
+    const scheduledEvents = allEventRequests.filter(e =>
+      e.status === 'scheduled' && e.scheduledEventDate
+    );
+
+    // Import and call AI intake assistant
+    const { analyzeEventRequest } = await import('../services/ai-intake-assistant');
+    const analysis = await analyzeEventRequest(eventRequest, scheduledEvents);
+
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_VIEW',
+      `Used AI intake assistant for event request: ${eventId}`,
+      { organizationName: eventRequest.organizationName }
+    );
+
+    res.json(analysis);
+  } catch (error: unknown) {
+    const err = error as Error;
+    logger.error('❌ Error generating AI intake assistance:', error);
+    res.status(500).json({
+      error: 'Failed to generate AI assistance',
+      message: err?.message || 'Unknown error occurred'
+    });
+  }
+});
+
 // Schedule a follow-up call
 router.patch('/:id/schedule-call', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
   try {
