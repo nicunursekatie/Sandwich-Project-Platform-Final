@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useMessaging } from '@/hooks/useMessaging';
+import React, { useMemo } from 'react';
+import { useEventMessages } from '@/hooks/useEventMessages';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -31,61 +31,23 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
   maxHeight = '400px',
   showHeader = true,
 }) => {
-  const { getContextMessages } = useMessaging();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const isInitialLoadRef = useRef(true);
+  // Use lightweight hook that doesn't create WebSocket connections
+  const { data: rawMessages, isLoading, isError } = useEventMessages(eventId);
 
-  useEffect(() => {
-    const fetchMessages = async (isInitialLoad = false) => {
-      if (!eventId) return;
+  // Filter out deleted messages and sort by creation date
+  const messages = useMemo(() => {
+    if (!rawMessages || !Array.isArray(rawMessages)) {
+      return [];
+    }
 
-      // Only show loading spinner on initial load
-      if (isInitialLoad) {
-        setInitialLoading(true);
-      }
-      setError(null);
+    return rawMessages
+      .filter((msg: Message) => !msg.deletedAt)
+      .sort((a: Message, b: Message) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+  }, [rawMessages]);
 
-      try {
-        const contextMessages = await getContextMessages('event', eventId);
-
-        // Handle null/undefined responses
-        if (!contextMessages || !Array.isArray(contextMessages)) {
-          setMessages([]);
-          return;
-        }
-
-        // Filter out deleted messages and sort by creation date
-        const activeMessages = contextMessages
-          .filter((msg: Message) => !msg.deletedAt)
-          .sort((a: Message, b: Message) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
-        setMessages(activeMessages);
-      } catch (err) {
-        console.error('Failed to fetch event messages:', err);
-        // Only show error on initial load, silently fail on refreshes
-        if (isInitialLoad) {
-          setError('Failed to load messages');
-        }
-      } finally {
-        if (isInitialLoad) {
-          setInitialLoading(false);
-        }
-      }
-    };
-
-    // Initial fetch
-    fetchMessages(isInitialLoadRef.current);
-    isInitialLoadRef.current = false;
-
-    // Refresh messages every 30 seconds (without loading spinner)
-    const interval = setInterval(() => fetchMessages(false), 30000);
-    return () => clearInterval(interval);
-  }, [eventId, getContextMessages]);
-
-  if (initialLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -94,10 +56,10 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-red-500">{error}</p>
+        <p className="text-sm text-red-500">Failed to load messages</p>
       </div>
     );
   }
