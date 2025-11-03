@@ -200,29 +200,7 @@ export function AiIntakeAssistantDialog({
       }
     }
 
-    // Edit-related actions (for missing data like address, times, counts, etc.)
-    if (
-      lowerText.includes('address') ||
-      lowerText.includes('time') ||
-      lowerText.includes('count') ||
-      lowerText.includes('sandwich') ||
-      lowerText.includes('refrigeration') ||
-      lowerText.includes('date') ||
-      lowerText.includes('get ') ||
-      lowerText.includes('determine')
-    ) {
-      if (onEditEvent) {
-        buttons.push({
-          label: 'Edit Event',
-          icon: Edit,
-          action: () => {
-            handleClose();
-            onEditEvent();
-          },
-          variant: 'default' as const,
-        });
-      }
-    }
+    // Edit-related actions removed - we now have inline editing directly in the issue cards
 
     // Note-related actions
     if (
@@ -243,18 +221,7 @@ export function AiIntakeAssistantDialog({
       }
     }
 
-    // If no specific buttons were added but onEditEvent is available, add it as a fallback
-    if (buttons.length === 0 && onEditEvent) {
-      buttons.push({
-        label: 'Edit Event',
-        icon: Edit,
-        action: () => {
-          handleClose();
-          onEditEvent();
-        },
-        variant: 'outline' as const,
-      });
-    }
+    // No fallback "Edit Event" button - we have inline editing now
 
     return buttons;
   };
@@ -836,39 +803,26 @@ export function AiIntakeAssistantDialog({
                                 </div>
                               </div>
 
-                              {/* Action Buttons - Always show consistently */}
-                              <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                                {actionButtons.length > 0
-                                  ? actionButtons.map((btn, btnIdx) => {
-                                      const BtnIcon = btn.icon;
-                                      return (
-                                        <Button
-                                          key={btnIdx}
-                                          size="sm"
-                                          variant={btn.variant}
-                                          onClick={btn.action}
-                                          className="text-xs h-8"
-                                        >
-                                          <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
-                                          {btn.label}
-                                        </Button>
-                                      );
-                                    })
-                                  : onEditEvent && (
+                              {/* Action Buttons - Contact/Note actions only */}
+                              {actionButtons.length > 0 && (
+                                <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                  {actionButtons.map((btn, btnIdx) => {
+                                    const BtnIcon = btn.icon;
+                                    return (
                                       <Button
+                                        key={btnIdx}
                                         size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                          handleClose();
-                                          onEditEvent();
-                                        }}
+                                        variant={btn.variant}
+                                        onClick={btn.action}
                                         className="text-xs h-8"
                                       >
-                                        <Edit className="h-3.5 w-3.5 mr-1.5" />
-                                        Edit Event
+                                        <BtnIcon className="h-3.5 w-3.5 mr-1.5" />
+                                        {btn.label}
                                       </Button>
-                                    )}
-                              </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
