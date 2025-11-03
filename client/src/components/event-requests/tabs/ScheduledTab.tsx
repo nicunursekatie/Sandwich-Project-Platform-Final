@@ -345,6 +345,7 @@ export const ScheduledTab: React.FC = () => {
                 updateInlineSandwichType={updateInlineSandwichType}
                 removeInlineSandwichType={removeInlineSandwichType}
                 resolveUserName={resolveUserName}
+                resolveRecipientName={resolveRecipientName}
                 openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
                 handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
                 canEdit={true}

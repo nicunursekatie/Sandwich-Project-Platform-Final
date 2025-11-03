@@ -102,6 +102,7 @@ interface ScheduledCardEnhancedProps {
   updateInlineSandwichType: (index: number, field: 'type' | 'quantity', value: string | number) => void;
   removeInlineSandwichType: (index: number) => void;
   resolveUserName: (id: string) => string;
+  resolveRecipientName?: (id: string) => string;
   openAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer') => void;
   handleRemoveAssignment: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
   canEdit?: boolean;
@@ -168,6 +169,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   updateInlineSandwichType,
   removeInlineSandwichType,
   resolveUserName,
+  resolveRecipientName,
   openAssignmentDialog,
   handleRemoveAssignment,
   canEdit = true,
@@ -1132,10 +1134,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           const detailName = (request.speakerDetails as any)?.[id]?.name;
                           const customName = extractCustomName(id);
                           const userName = resolveUserName(id);
-                          // Prioritize: speaker detail name > custom extracted name > resolved user name > id as fallback
+                          // Try resolveRecipientName for host-contact IDs
+                          const recipientName = id.startsWith('host-contact-') && resolveRecipientName
+                            ? resolveRecipientName(id)
+                            : null;
+                          // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > id as fallback
                           const displayName = (detailName && !/^\d+$/.test(detailName))
                             ? detailName
-                            : customName || (userName !== id ? userName : 'Unknown Speaker');
+                            : customName || recipientName || (userName !== id ? userName : 'Unknown Speaker');
                           return (
                             <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
                               <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
