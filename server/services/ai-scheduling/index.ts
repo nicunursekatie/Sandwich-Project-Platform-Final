@@ -245,7 +245,7 @@ function analyzeDateOption(date: string, scheduledEvents: EventRequest[]): DateA
   weekEnd.setDate(weekEnd.getDate() + 7);
 
   // Get day of week
-  const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
 
   // Find all events in the same week
   const eventsInWeek = scheduledEvents.filter(event => {
@@ -297,7 +297,7 @@ function getWeekStart(date: Date): Date {
  */
 function buildPrompt(eventRequest: EventRequest, dateAnalyses: DateAnalysis[]): string {
   const requestedDate = eventRequest.desiredEventDate 
-    ? new Date(eventRequest.desiredEventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(eventRequest.desiredEventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
     : 'Not specified';
 
   const organizationInfo = `
@@ -311,8 +311,8 @@ ${eventRequest.message ? `Message: ${eventRequest.message}` : ''}
   const dateOptions = dateAnalyses.map((analysis, idx) => {
     const isRequestedDate = analysis.date === eventRequest.desiredEventDate;
     return `
-Option ${idx + 1}: ${new Date(analysis.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}${isRequestedDate ? ' [ORIGINALLY REQUESTED]' : ''}
-  - Week of: ${new Date(analysis.weekStarting).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+Option ${idx + 1}: ${new Date(analysis.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}${isRequestedDate ? ' [ORIGINALLY REQUESTED]' : ''}
+  - Week of: ${new Date(analysis.weekStarting).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
   - Events already scheduled that week: ${analysis.eventCount}
   - Total sandwiches scheduled that week: ${analysis.totalScheduledSandwiches.toLocaleString()}
   - Status: ${analysis.isOptimal ? '✓ Good balance' : '⚠ Busy week'}
