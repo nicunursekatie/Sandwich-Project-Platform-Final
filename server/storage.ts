@@ -33,6 +33,7 @@ import {
   eventRequests,
   organizations,
   eventVolunteers,
+  eventReminders,
   meetingNotes,
   importedExternalIds,
   availabilitySlots,
@@ -3024,70 +3025,99 @@ export class MemStorage implements IStorage {
     return this.eventVolunteers.delete(id);
   }
 
-  // Event reminders methods
-  private eventReminders: Map<number, any> = new Map();
-  private nextEventReminderId = 1;
-
+  // Event reminders methods - Database implementation
   async getEventRemindersCount(userId?: string): Promise<number> {
-    if (userId) {
-      return Array.from(this.eventReminders.values()).filter(
-        (reminder) =>
-          reminder.assignedToUserId === userId && reminder.status === 'pending'
-      ).length;
+    try {
+      let query = this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(eventReminders)
+        .where(eq(eventReminders.status, 'pending'));
+      
+      if (userId) {
+        query = query.where(eq(eventReminders.assignedToUserId, userId)) as any;
+      }
+      
+      const result = await query;
+      return Number(result[0]?.count || 0);
+    } catch (error) {
+      logger.error('Error getting event reminders count:', error);
+      throw error;
     }
-    return Array.from(this.eventReminders.values()).filter(
-      (reminder) => reminder.status === 'pending'
-    ).length;
   }
 
   async getAllEventReminders(userId?: string): Promise<any[]> {
-    let reminders = Array.from(this.eventReminders.values());
-    if (userId) {
-      reminders = reminders.filter(
-        (reminder) =>
-          reminder.assignedToUserId === userId || reminder.createdBy === userId
-      );
+    try {
+      let query = this.db
+        .select()
+        .from(eventReminders)
+        .orderBy(desc(eventReminders.createdAt));
+      
+      if (userId) {
+        query = query.where(
+          or(
+            eq(eventReminders.assignedToUserId, userId),
+            eq(eventReminders.createdBy, userId)
+          )
+        ) as any;
+      }
+      
+      return await query;
+    } catch (error) {
+      logger.error('Error getting all event reminders:', error);
+      throw error;
     }
-    return reminders.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
   }
 
   async createEventReminder(reminderData: any): Promise<any> {
-    const reminder = {
-      id: this.nextEventReminderId++,
-      ...reminderData,
-      status: reminderData.status || 'pending',
-      priority: reminderData.priority || 'medium',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.eventReminders.set(reminder.id, reminder);
-    return reminder;
+    try {
+      const [reminder] = await this.db
+        .insert(eventReminders)
+        .values({
+          ...reminderData,
+          status: reminderData.status || 'pending',
+          priority: reminderData.priority || 'medium',
+        })
+        .returning();
+      return reminder;
+    } catch (error) {
+      logger.error('Error creating event reminder:', error);
+      throw error;
+    }
   }
 
   async updateEventReminder(id: number, updates: any): Promise<any> {
-    const reminder = this.eventReminders.get(id);
-    if (!reminder) return null;
-
-    const updated = {
-      ...reminder,
-      ...updates,
-      updatedAt: new Date(),
-    };
-
-    // Handle completion
-    if (updates.status === 'completed' && !reminder.completedAt) {
-      updated.completedAt = new Date();
+    try {
+      const updateData: any = { ...updates };
+      
+      // Handle completion
+      if (updates.status === 'completed' && !updates.completedAt) {
+        updateData.completedAt = new Date();
+      }
+      
+      const [updated] = await this.db
+        .update(eventReminders)
+        .set(updateData)
+        .where(eq(eventReminders.id, id))
+        .returning();
+      
+      return updated || null;
+    } catch (error) {
+      logger.error('Error updating event reminder:', error);
+      throw error;
     }
-
-    this.eventReminders.set(id, updated);
-    return updated;
   }
 
   async deleteEventReminder(id: number): Promise<boolean> {
-    return this.eventReminders.delete(id);
+    try {
+      const result = await this.db
+        .delete(eventReminders)
+        .where(eq(eventReminders.id, id))
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      logger.error('Error deleting event reminder:', error);
+      throw error;
+    }
   }
 
   // External ID Blacklist methods (stub implementations for memory storage)

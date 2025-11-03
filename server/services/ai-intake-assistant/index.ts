@@ -703,7 +703,7 @@ async function generateAiRecommendations(
 
 Be concise, actionable, and supportive. Focus on what the coordinator should do next to complete the intake process. Your tone should be helpful and professional.
 
-Provide 2-3 specific, actionable recommendations based on the current state of the event request.`
+Provide 2-3 specific, actionable recommendations based on the current state of the event request. Format your response as a bulleted list using "•" as the bullet character, with one recommendation per line.`
       },
       {
         role: 'user',
