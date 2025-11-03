@@ -112,7 +112,7 @@ interface CardHeaderProps {
   setEditingCustomTspContact?: (value: string) => void;
   setTspContactInputMode?: (mode: 'dropdown' | 'text') => void;
   users?: { id: number; name: string; email: string }[];
-  updateTspContactMutation?: any;
+  updateTspContactMutation?: ReturnType<typeof useMutation>;
   tempIsConfirmed?: boolean;
   setTempIsConfirmed?: (value: boolean) => void;
 }
@@ -522,12 +522,12 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   onRemoveAssignment,
   onSelfSignup,
 }) => {
-  const parsePostgresArray = (arr: any): string[] => {
+  const parsePostgresArray = (arr: unknown): string[] => {
     if (!arr) return [];
     if (Array.isArray(arr)) return arr;
     if (typeof arr === 'string') {
       if (arr === '{}' || arr === '') return [];
-      let cleaned = arr.replace(/^{|}$/g, '');
+      const cleaned = arr.replace(/^{|}$/g, '');
       if (!cleaned) return [];
       if (cleaned.includes('"')) {
         const matches = cleaned.match(/"[^"]*"|[^",]+/g);
@@ -542,7 +542,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   const getDrivers = () => {
     const regularDrivers = parsePostgresArray(request.assignedDriverIds);
     const drivers: { id: string; name: string }[] = regularDrivers.map(id => {
-      const detailName = (request.driverDetails as any)?.[id]?.name;
+      const detailName = (request.driverDetails as Record<string, { name?: string }>)?.[id]?.name;
       let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
       if (name.startsWith('custom-')) {
         name = extractNameFromCustomId(name);
@@ -565,7 +565,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   const getSpeakers = () => {
     const speakerIds = Object.keys(request.speakerDetails || {});
     return speakerIds.map(id => {
-      const detailName = (request.speakerDetails as any)?.[id]?.name;
+      const detailName = (request.speakerDetails as Record<string, { name?: string }>)?.[id]?.name;
       let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
       if (name.startsWith('custom-')) {
         name = extractNameFromCustomId(name);
@@ -830,7 +830,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
   
   // State for post link editing
   const [editingPostLink, setEditingPostLink] = useState(false);
-  const [postLink, setPostLink] = useState((request as any).socialMediaPostLink || '');
+  const [postLink, setPostLink] = useState((request as EventRequest & { socialMediaPostLink?: string }).socialMediaPostLink || '');
   
   // State for Instagram link
   const [showInstagramDialog, setShowInstagramDialog] = useState(false);
@@ -839,7 +839,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
   const [tempInstagramLink, setTempInstagramLink] = useState('');
 
   const updateSocialMediaMutation = useMutation({
-    mutationFn: (data: any) =>
+    mutationFn: (data: Record<string, unknown>) =>
       apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
     onSuccess: () => {
       toast({
@@ -891,7 +891,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
   // Handle marking as posted (with optional Instagram link)
   const handleMarkPostedWithLink = () => {
     const todayDate = new Date().toISOString();
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       socialMediaPostCompleted: true,
       socialMediaPostCompletedDate: todayDate,
     };
@@ -1178,7 +1178,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
               )}
 
               {/* Compact Post Link */}
-              {((request as any).socialMediaPostLink || editingPostLink) && (
+              {((request as EventRequest & { socialMediaPostLink?: string }).socialMediaPostLink || editingPostLink) && (
                 <div className="text-xs">
                   {editingPostLink ? (
                     <div className="flex flex-col gap-1">
@@ -1192,7 +1192,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleUpdatePostLink();
                           if (e.key === 'Escape') {
-                            setPostLink((request as any).socialMediaPostLink || '');
+                            setPostLink((request as EventRequest & { socialMediaPostLink?: string }).socialMediaPostLink || '');
                             setEditingPostLink(false);
                           }
                         }}
@@ -1210,7 +1210,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                           size="sm"
                           variant="ghost"
                           onClick={() => {
-                            setPostLink((request as any).socialMediaPostLink || '');
+                            setPostLink((request as EventRequest & { socialMediaPostLink?: string }).socialMediaPostLink || '');
                             setEditingPostLink(false);
                           }}
                           className="text-xs px-2 py-1 h-6"
@@ -1223,13 +1223,13 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                   ) : (
                     <div
                       onClick={() => {
-                        setPostLink((request as any).socialMediaPostLink || '');
+                        setPostLink((request as EventRequest & { socialMediaPostLink?: string }).socialMediaPostLink || '');
                         setEditingPostLink(true);
                       }}
                       className="p-1 rounded border border-[#47b3cb]/30 bg-white/50 cursor-pointer hover:bg-white/70 transition-colors truncate"
                     >
-                      {(request as any).socialMediaPostLink ? (
-                        <a href={(request as any).socialMediaPostLink} target="_blank" rel="noopener noreferrer" className="text-[#007e8c] underline text-xs">
+                      {(request as EventRequest & { socialMediaPostLink?: string }).socialMediaPostLink ? (
+                        <a href={(request as EventRequest & { socialMediaPostLink?: string }).socialMediaPostLink} target="_blank" rel="noopener noreferrer" className="text-[#007e8c] underline text-xs">
                           View post
                         </a>
                       ) : (
@@ -1241,7 +1241,7 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
               )}
               
               {/* Add link button if no link exists */}
-              {!(request as any).socialMediaPostLink && !editingPostLink && (
+              {!(request as EventRequest & { socialMediaPostLink?: string }).socialMediaPostLink && !editingPostLink && (
                 <Button
                   onClick={() => setEditingPostLink(true)}
                   className="bg-[#47b3cb]/20 hover:bg-[#47b3cb]/30 text-[#236383] text-xs px-2 py-1 h-6 w-full"
@@ -1392,7 +1392,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Social media mutation
   const updateSocialMediaMutation = useMutation({
-    mutationFn: (data: any) =>
+    mutationFn: (data: Record<string, unknown>) =>
       apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
     onSuccess: () => {
       toast({
@@ -1414,7 +1414,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Organization details mutation
   const updateOrgDetailsMutation = useMutation({
-    mutationFn: (data: any) =>
+    mutationFn: (data: Record<string, unknown>) =>
       apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
     onSuccess: () => {
       toast({
@@ -1440,7 +1440,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   // Sandwich count mutation
   const updateSandwichCountMutation = useMutation({
-    mutationFn: (data: { actualSandwichCount: number; actualSandwichTypes?: any }) =>
+    mutationFn: (data: { actualSandwichCount: number; actualSandwichTypes?: unknown }) =>
       apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
     onSuccess: () => {
       toast({
@@ -1535,8 +1535,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     // Check if we have type data
     if (currentTypes && Array.isArray(currentTypes) && currentTypes.length > 0) {
       // Parse existing types into editing state
-      const typeMap: any = {};
-      currentTypes.forEach((item: any) => {
+      const typeMap: Record<string, number> = {};
+      currentTypes.forEach((item: { type?: string; quantity?: number }) => {
         if (item.type && item.quantity) {
           const typeLower = item.type.toLowerCase();
           typeMap[typeLower] = item.quantity;
@@ -1573,7 +1573,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       });
     } else {
       // Detailed mode - save types and calculate total
-      const types: any[] = [];
+      const types: Array<{ type: string; quantity: number }> = [];
       let total = 0;
 
       Object.entries(editingTypes).forEach(([type, count]) => {
@@ -1692,7 +1692,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   const handleMarkPostedWithLink = () => {
     const todayDate = new Date().toISOString();
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       socialMediaPostCompleted: true,
       socialMediaPostCompletedDate: todayDate,
     };
@@ -1740,7 +1740,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   });
 
   // Helper to get display information from IDs (supports new prefixed format)
-  const getRecipientDisplayInfo = (recipientIds: any): Array<{ name: string; type: string; icon: React.ReactNode }> => {
+  const getRecipientDisplayInfo = (recipientIds: unknown): Array<{ name: string; type: string; icon: React.ReactNode }> => {
     if (!recipientIds) return [];
     
     // Parse the array (could be string or array)
@@ -1897,7 +1897,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     });
   };
 
-  const assignedRecipientInfo = getRecipientDisplayInfo((request as any).assignedRecipientIds);
+  const assignedRecipientInfo = getRecipientDisplayInfo((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds);
 
   // Get event date and time for display
   const eventDate = request.scheduledEventDate || request.desiredEventDate;
@@ -2235,7 +2235,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                             variant="outline"
                             onClick={() => {
                               setEditingField('assignedRecipientIds');
-                              setEditingValue((request as any).assignedRecipientIds ? JSON.stringify((request as any).assignedRecipientIds) : '[]');
+                              setEditingValue((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds ? JSON.stringify((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds) : '[]');
                               setIsEditingField(true);
                             }}
                             className="text-[#236383] border-[#236383]/30 hover:bg-[#236383]/10"
@@ -2251,7 +2251,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                           variant="ghost"
                           onClick={() => {
                             setEditingField('assignedRecipientIds');
-                            setEditingValue((request as any).assignedRecipientIds ? JSON.stringify((request as any).assignedRecipientIds) : '[]');
+                            setEditingValue((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds ? JSON.stringify((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds) : '[]');
                             setIsEditingField(true);
                           }}
                           className="h-6 px-2 opacity-70 hover:opacity-100 transition-opacity"
