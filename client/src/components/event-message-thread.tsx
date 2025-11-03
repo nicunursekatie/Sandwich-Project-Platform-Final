@@ -62,10 +62,28 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
 
     fetchMessages();
 
-    // Refresh messages every 30 seconds
-    const interval = setInterval(fetchMessages, 30000);
-    return () => clearInterval(interval);
-  }, [eventId, getContextMessages]);
+    // Refresh messages every 30 seconds, but only when page is visible
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        fetchMessages();
+      }
+    }, 30000);
+
+    // Also fetch when page becomes visible again
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchMessages();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+    // getContextMessages is stable (wrapped in useCallback with empty deps in useMessaging)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
 
   if (loading) {
     return (
@@ -100,13 +118,18 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
     <div className="space-y-3">
       {showHeader && (
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Message Thread
-            <Badge variant="secondary" className="text-xs">
-              {messages.length}
-            </Badge>
-          </h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Message Thread
+              <Badge variant="secondary" className="text-xs">
+                {messages.length}
+              </Badge>
+            </h3>
+            {eventTitle && (
+              <p className="text-xs text-gray-500 mt-1">{eventTitle}</p>
+            )}
+          </div>
         </div>
       )}
 
