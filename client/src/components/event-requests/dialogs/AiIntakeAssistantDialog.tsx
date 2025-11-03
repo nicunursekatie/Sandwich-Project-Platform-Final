@@ -8,6 +8,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Sparkles,
   AlertCircle,
@@ -24,8 +34,10 @@ import {
   Mail,
   StickyNote,
   ExternalLink,
+  Save,
+  X,
 } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
@@ -80,7 +92,10 @@ export function AiIntakeAssistantDialog({
   onAddNote,
 }: AiIntakeAssistantDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [analysis, setAnalysis] = useState<AiIntakeAssistance | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<any>('');
 
   const analyzeEventMutation = useMutation({
     mutationFn: async () => {
@@ -100,6 +115,49 @@ export function AiIntakeAssistantDialog({
       });
     },
   });
+
+  const updateFieldMutation = useMutation({
+    mutationFn: async ({ field, value }: { field: string; value: any }) => {
+      return await apiRequest(
+        'PATCH',
+        `/api/event-requests/${eventRequest.id}`,
+        { [field]: value }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      toast({
+        title: 'Updated',
+        description: 'Event information updated successfully',
+      });
+      setEditingField(null);
+      // Re-analyze after update
+      analyzeEventMutation.mutate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Failed to update event information',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const startEditing = (field: string, currentValue: any) => {
+    setEditingField(field);
+    setEditValue(currentValue ?? '');
+  };
+
+  const cancelEditing = () => {
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  const saveField = () => {
+    if (editingField) {
+      updateFieldMutation.mutate({ field: editingField, value: editValue });
+    }
+  };
 
   const handleClose = () => {
     setAnalysis(null);
@@ -280,12 +338,183 @@ export function AiIntakeAssistantDialog({
     );
   };
 
+  // Render inline field editor based on field type
+  const renderFieldEditor = (field: string) => {
+    const currentValue = (eventRequest as any)[field];
+    const isEditing = editingField === field;
+
+    // Map of field configurations
+    const fieldConfigs: Record<string, {
+      label: string;
+      type: 'text' | 'number' | 'date' | 'time' | 'boolean' | 'textarea' | 'select';
+      options?: { value: any; label: string }[];
+    }> = {
+      hasRefrigeration: {
+        label: 'Refrigeration Available',
+        type: 'select',
+        options: [
+          { value: true, label: 'Yes' },
+          { value: false, label: 'No' },
+        ],
+      },
+      scheduledEventDate: {
+        label: 'Scheduled Event Date',
+        type: 'date',
+      },
+      desiredEventDate: {
+        label: 'Desired Event Date',
+        type: 'date',
+      },
+      eventStartTime: {
+        label: 'Event Start Time',
+        type: 'time',
+      },
+      eventEndTime: {
+        label: 'Event End Time',
+        type: 'time',
+      },
+      sandwichPickupTime: {
+        label: 'Sandwich Pickup Time',
+        type: 'time',
+      },
+      deliveryAddress: {
+        label: 'Delivery Address',
+        type: 'textarea',
+      },
+      estimatedSandwichCount: {
+        label: 'Estimated Sandwich Count',
+        type: 'number',
+      },
+      phone: {
+        label: 'Phone Number',
+        type: 'text',
+      },
+      email: {
+        label: 'Email Address',
+        type: 'text',
+      },
+      firstName: {
+        label: 'First Name',
+        type: 'text',
+      },
+      lastName: {
+        label: 'Last Name',
+        type: 'text',
+      },
+    };
+
+    const config = fieldConfigs[field];
+    if (!config) return null;
+
+    if (!isEditing) {
+      return (
+        <div className="bg-gray-50 dark:bg-gray-900/50 rounded-md p-3 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-xs text-gray-600 dark:text-gray-400">{config.label}</Label>
+              <p className="text-sm font-medium mt-1">
+                {currentValue !== null && currentValue !== undefined
+                  ? config.type === 'boolean'
+                    ? currentValue
+                      ? 'Yes'
+                      : 'No'
+                    : String(currentValue)
+                  : <span className="text-gray-400 italic">Not set</span>}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => startEditing(field, currentValue)}
+              className="h-8"
+            >
+              <Edit className="h-3.5 w-3.5 mr-1" />
+              Edit
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-blue-50 dark:bg-blue-950/50 rounded-md p-3 border-2 border-blue-300 dark:border-blue-700">
+        <Label className="text-xs font-medium mb-2 block">{config.label}</Label>
+        {config.type === 'select' && config.options ? (
+          <Select value={String(editValue)} onValueChange={(val) => setEditValue(val === 'true')}>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {config.options.map((opt) => (
+                <SelectItem key={String(opt.value)} value={String(opt.value)}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : config.type === 'textarea' ? (
+          <Textarea
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            className="min-h-20"
+            autoFocus
+          />
+        ) : (
+          <Input
+            type={config.type}
+            value={editValue}
+            onChange={(e) => setEditValue(config.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value)}
+            className="h-9"
+            autoFocus
+          />
+        )}
+        <div className="flex gap-2 mt-2">
+          <Button
+            size="sm"
+            onClick={saveField}
+            disabled={updateFieldMutation.isPending}
+            className="h-8"
+          >
+            <Save className="h-3.5 w-3.5 mr-1" />
+            Save
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={cancelEditing}
+            disabled={updateFieldMutation.isPending}
+            className="h-8"
+          >
+            <X className="h-3.5 w-3.5 mr-1" />
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const IssueCard = ({ issue }: { issue: ValidationIssue }) => {
     const Icon = getCategoryIcon(issue.category);
     const severityColor = getSeverityColor(issue.severity);
     const actionButtons = getActionButtons(
       issue.title + ' ' + issue.message + ' ' + (issue.suggestion || '')
     );
+
+    // Check if this issue has a field that can be edited inline
+    const canEditInline = issue.field && [
+      'hasRefrigeration',
+      'scheduledEventDate',
+      'desiredEventDate',
+      'eventStartTime',
+      'eventEndTime',
+      'sandwichPickupTime',
+      'deliveryAddress',
+      'estimatedSandwichCount',
+      'phone',
+      'email',
+      'firstName',
+      'lastName',
+    ].includes(issue.field);
 
     // Get border color based on severity
     const getBorderColor = (severity: ValidationSeverity) => {
@@ -339,6 +568,13 @@ export function AiIntakeAssistantDialog({
               )}
             </div>
           </div>
+
+          {/* Inline Field Editor */}
+          {canEditInline && (
+            <div className="mt-3">
+              {renderFieldEditor(issue.field)}
+            </div>
+          )}
 
           {/* Action Buttons - Always show consistently */}
           {actionButtons.length > 0 && (
