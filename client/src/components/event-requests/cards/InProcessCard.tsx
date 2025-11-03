@@ -29,6 +29,7 @@ import {
   History,
   ChevronDown,
   ChevronUp,
+  Sparkles,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -65,6 +66,7 @@ interface InProcessCardProps {
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
   onLogContact: () => void;
+  onAiSuggest?: () => void;
   canEdit?: boolean;
   canDelete?: boolean;
   // Inline editing props
@@ -743,6 +745,20 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             >
               <UserPlus className="w-4 h-4 mr-1" />
               Assign TSP Contact
+            </Button>
+          )}
+
+          {/* AI Date Suggestion - show if there are dates to analyze */}
+          {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAiSuggest}
+              className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+              data-testid="button-ai-suggest-date"
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              AI Date Suggest
             </Button>
           )}
 
