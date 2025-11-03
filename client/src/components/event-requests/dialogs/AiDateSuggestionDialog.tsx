@@ -39,6 +39,12 @@ interface AiDateSuggestionDialogProps {
   onSelectDate?: (date: string) => void;
 }
 
+interface FlexibilityOptions {
+  canChangeDayOfWeek: boolean;
+  canChangeWeek: boolean;
+  canChangeMonth: boolean;
+}
+
 export function AiDateSuggestionDialog({ 
   open, 
   onClose, 
@@ -47,12 +53,19 @@ export function AiDateSuggestionDialog({
 }: AiDateSuggestionDialogProps) {
   const { toast } = useToast();
   const [suggestion, setSuggestion] = useState<AiSuggestion | null>(null);
+  const [showFlexibilityOptions, setShowFlexibilityOptions] = useState(false);
+  const [flexibility, setFlexibility] = useState<FlexibilityOptions>({
+    canChangeDayOfWeek: false,
+    canChangeWeek: false,
+    canChangeMonth: false,
+  });
 
   const generateSuggestionMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest<AiSuggestion>(
         'POST',
-        `/api/event-requests/${eventRequest.id}/ai-suggest-dates`
+        `/api/event-requests/${eventRequest.id}/ai-suggest-dates`,
+        flexibility
       );
     },
     onSuccess: (data) => {
@@ -153,22 +166,87 @@ export function AiDateSuggestionDialog({
             </p>
           </div>
 
-          {/* Generate or Show Suggestions */}
+          {/* Flexibility Selection or Generate */}
           {!suggestion && !generateSuggestionMutation.isPending && (
-            <div className="text-center py-6 sm:py-8 px-4">
-              <div className="bg-gradient-to-br from-[#236383]/5 to-[#47B3CB]/5 dark:from-[#236383]/10 dark:to-[#47B3CB]/10 p-6 sm:p-8 rounded-xl border border-[#236383]/20">
-                <Sparkles className="h-10 w-10 sm:h-12 sm:w-12 text-[#236383] mx-auto mb-3 sm:mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base px-2">
-                  Analyze the available dates and get AI-powered scheduling recommendations
-                </p>
-                <Button
-                  onClick={() => generateSuggestionMutation.mutate()}
-                  className="bg-[#236383] hover:bg-[#1a4d66] text-white font-semibold px-6 py-2 sm:px-8 sm:py-3 text-sm sm:text-base shadow-md hover:shadow-lg transition-all"
-                  data-testid="button-generate-ai-suggestion"
-                >
-                  <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                  Generate AI Suggestions
-                </Button>
+            <div className="space-y-6">
+              {/* Flexibility Options */}
+              <div className="bg-gradient-to-br from-[#236383]/5 to-[#47B3CB]/5 dark:from-[#236383]/10 dark:to-[#47B3CB]/10 p-6 rounded-xl border border-[#236383]/20">
+                <div className="flex items-start gap-3 mb-4">
+                  <AlertCircle className="h-5 w-5 text-[#236383] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-[#236383] mb-2">Scheduling Flexibility</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Help the AI find the best date by letting us know what flexibility the organization has:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 ml-8">
+                  {/* Day of Week Flexibility */}
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={flexibility.canChangeDayOfWeek}
+                      onChange={(e) => setFlexibility({ ...flexibility, canChangeDayOfWeek: e.target.checked })}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#236383] focus:ring-[#236383] cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#236383]">
+                        Can change day of the week
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        e.g., Move from Tuesday to Friday within the same week
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Week Flexibility */}
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={flexibility.canChangeWeek}
+                      onChange={(e) => setFlexibility({ ...flexibility, canChangeWeek: e.target.checked })}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#236383] focus:ring-[#236383] cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#236383]">
+                        Can change to a different week
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        e.g., Move from the 2nd week to the 4th week of the month
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Month Flexibility */}
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={flexibility.canChangeMonth}
+                      onChange={(e) => setFlexibility({ ...flexibility, canChangeMonth: e.target.checked })}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#236383] focus:ring-[#236383] cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-[#236383]">
+                        Can move to a different month
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        e.g., Move from November to December
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <Button
+                    onClick={() => generateSuggestionMutation.mutate()}
+                    className="w-full bg-[#236383] hover:bg-[#1a4d66] text-white font-semibold py-3 shadow-md hover:shadow-lg transition-all"
+                    data-testid="button-generate-ai-suggestion"
+                  >
+                    <Sparkles className="h-5 w-5 mr-2" />
+                    Analyze Dates with AI
+                  </Button>
+                </div>
               </div>
             </div>
           )}

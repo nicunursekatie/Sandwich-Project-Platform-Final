@@ -37,16 +37,23 @@ interface OpenAiDateResponse {
   confidence: number;
 }
 
+interface FlexibilityOptions {
+  canChangeDayOfWeek: boolean;
+  canChangeWeek: boolean;
+  canChangeMonth: boolean;
+}
+
 /**
  * Analyzes possible event dates and suggests the optimal date
  * based on current scheduled events and sandwich distribution
  */
 export async function suggestOptimalEventDate(
   eventRequest: EventRequest,
-  allScheduledEvents: EventRequest[]
+  allScheduledEvents: EventRequest[],
+  flexibilityOptions?: FlexibilityOptions
 ): Promise<AiDateSuggestion> {
   // Extract all possible dates from the event request
-  const possibleDates = extractPossibleDates(eventRequest);
+  const possibleDates = extractPossibleDates(eventRequest, flexibilityOptions);
   
   if (possibleDates.length === 0) {
     throw new Error('No dates found in event request');
@@ -55,8 +62,8 @@ export async function suggestOptimalEventDate(
   // Analyze each possible date
   const dateAnalyses = possibleDates.map(date => analyzeDateOption(date, allScheduledEvents));
 
-  // Create prompt for OpenAI
-  const prompt = buildPrompt(eventRequest, dateAnalyses);
+  // Create prompt for OpenAI with flexibility context
+  const prompt = buildPrompt(eventRequest, dateAnalyses, flexibilityOptions);
 
   // Call OpenAI for intelligent recommendation with structured JSON output
   try {
@@ -193,10 +200,10 @@ You must respond with a JSON object containing exactly these fields:
 }
 
 /**
- * Extracts all possible dates from an event request
- * Focus on requested date + a few nearby alternatives if needed
+ * Extracts all possible dates from an event request based on flexibility options
+ * Focus on requested date + alternatives based on coordinator-specified flexibility
  */
-function extractPossibleDates(eventRequest: EventRequest): string[] {
+function extractPossibleDates(eventRequest: EventRequest, flexibilityOptions?: FlexibilityOptions): string[] {
   const dates: string[] = [];
   const desiredDate = eventRequest.desiredEventDate;
 
@@ -213,39 +220,68 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
   // Add the desired event date (primary focus)
   dates.push(desiredDateString);
 
-  // Check if message indicates flexibility (e.g., "pivot to December", "flexible", "any time")
-  const message = eventRequest.message?.toLowerCase() || '';
-  const hasFlexibility = /pivot|flexible|any time|whenever|different month|alternative|open to/i.test(message);
-  const mentionsLaterMonth = /december|january|february|march|next month|later/i.test(message);
-
-  logger.log(`Flexibility detection - hasFlexibility: ${hasFlexibility}, mentionsLaterMonth: ${mentionsLaterMonth}, message: "${eventRequest.message}"`);
-
   const baseDate = new Date(desiredDate);
+  const flexibility = flexibilityOptions || { canChangeDayOfWeek: false, canChangeWeek: false, canChangeMonth: false };
   
-  // If they're flexible or mention moving to a later month, analyze a wider range
-  if (hasFlexibility && mentionsLaterMonth) {
-    logger.log(`Detected flexibility - analyzing extended date range (5 weeks)`);
-    // Add dates spread across several weeks to give AI real alternatives
-    const daysToAdd = [1, 3, 7, 14, 21, 28, 35]; // 1 day, 3 days, 1 week, 2 weeks, 3 weeks, 4 weeks, 5 weeks
+  logger.log(`Flexibility options - canChangeDayOfWeek: ${flexibility.canChangeDayOfWeek}, canChangeWeek: ${flexibility.canChangeWeek}, canChangeMonth: ${flexibility.canChangeMonth}`);
+
+  // Case 1: Can change day of week - Analyze all 7 days in the same week
+  if (flexibility.canChangeDayOfWeek) {
+    logger.log(`Analyzing all days in the requested week`);
+    const dayOfWeek = baseDate.getUTCDay(); // 0 = Sunday, 6 = Saturday
+    // Add all other days in the week
+    for (let i = -dayOfWeek; i <= (6 - dayOfWeek); i++) {
+      if (i === 0) continue; // Skip the original date (already added)
+      const date = new Date(baseDate);
+      date.setUTCDate(date.getUTCDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+      if (dateStr >= desiredDateString && !dates.includes(dateStr)) {
+        dates.push(dateStr);
+      }
+    }
+  }
+
+  // Case 2: Can change week - Analyze 2-4 weeks around the requested date
+  if (flexibility.canChangeWeek) {
+    logger.log(`Analyzing multiple weeks around the requested date`);
+    const weeksToAnalyze = [7, 14, 21, 28]; // 1, 2, 3, 4 weeks later
+    weeksToAnalyze.forEach(days => {
+      const futureDate = new Date(baseDate);
+      futureDate.setUTCDate(futureDate.getUTCDate() + days);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      if (!dates.includes(dateStr)) {
+        dates.push(dateStr);
+      }
+    });
+  }
+
+  // Case 3: Can change month - Analyze 5-8 weeks into the future
+  if (flexibility.canChangeMonth) {
+    logger.log(`Analyzing extended date range (different months)`);
+    const daysToAdd = [7, 14, 21, 28, 35, 42, 49, 56]; // Up to 8 weeks
     daysToAdd.forEach(days => {
       const futureDate = new Date(baseDate);
-      futureDate.setDate(futureDate.getDate() + days);
-      dates.push(futureDate.toISOString().split('T')[0]);
+      futureDate.setUTCDate(futureDate.getUTCDate() + days);
+      const dateStr = futureDate.toISOString().split('T')[0];
+      if (!dates.includes(dateStr)) {
+        dates.push(dateStr);
+      }
     });
-  } else {
-    logger.log(`No flexibility detected - analyzing standard 3-date range`);
-    // Add 1-2 nearby alternatives for minor adjustments
+  }
+
+  // If no flexibility specified, add just 1-2 nearby alternatives
+  if (!flexibility.canChangeDayOfWeek && !flexibility.canChangeWeek && !flexibility.canChangeMonth) {
+    logger.log(`No flexibility specified - analyzing 2 nearby dates`);
     const dayAfter = new Date(baseDate);
-    dayAfter.setDate(dayAfter.getDate() + 1);
+    dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
     dates.push(dayAfter.toISOString().split('T')[0]);
     
     const threeDaysLater = new Date(baseDate);
-    threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+    threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
     dates.push(threeDaysLater.toISOString().split('T')[0]);
   }
   
   logger.log(`Final extracted dates: ${dates.join(', ')}`);
-
 
   // Add backup dates if explicitly provided (must be on or after desired date)
   if (eventRequest.backupDates && eventRequest.backupDates.length > 0) {
@@ -256,19 +292,8 @@ function extractPossibleDates(eventRequest: EventRequest): string[] {
     });
   }
 
-  // Parse dates from message field (must be on or after desired date)
-  if (eventRequest.message) {
-    const extractedDates = extractDatesFromText(eventRequest.message);
-    extractedDates.forEach(date => {
-      if (!dates.includes(date) && date >= desiredDateString) {
-        dates.push(date);
-      }
-    });
-  }
-
-  // CRITICAL: Filter out any dates before the requested date
-  // This ensures we never recommend a date earlier than what they asked for
-  return dates.filter(date => date && date >= desiredDateString);
+  // CRITICAL: Filter out any dates before the requested date and sort them
+  return dates.filter(date => date && date >= desiredDateString).sort();
 }
 
 /**
@@ -353,7 +378,7 @@ function getWeekStart(date: Date): Date {
 /**
  * Builds the prompt for OpenAI
  */
-function buildPrompt(eventRequest: EventRequest, dateAnalyses: DateAnalysis[]): string {
+function buildPrompt(eventRequest: EventRequest, dateAnalyses: DateAnalysis[], flexibilityOptions?: FlexibilityOptions): string {
   const requestedDate = eventRequest.desiredEventDate 
     ? new Date(eventRequest.desiredEventDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
     : 'Not specified';
@@ -365,12 +390,24 @@ function buildPrompt(eventRequest: EventRequest, dateAnalyses: DateAnalysis[]): 
         : eventRequest.desiredEventDate.toISOString().split('T')[0])
     : null;
 
+  const flexibility = flexibilityOptions || { canChangeDayOfWeek: false, canChangeWeek: false, canChangeMonth: false };
+  
+  // Build flexibility context
+  const flexibilityContext = [];
+  if (flexibility.canChangeDayOfWeek) flexibilityContext.push('change day of the week (e.g., Tuesday → Friday)');
+  if (flexibility.canChangeWeek) flexibilityContext.push('move to a different week in the same month');
+  if (flexibility.canChangeMonth) flexibilityContext.push('move to a completely different month');
+  
+  const flexibilityText = flexibilityContext.length > 0
+    ? `\n\n✅ FLEXIBILITY CONFIRMED BY COORDINATOR:\nThe organization can: ${flexibilityContext.join(', ')}.\nYou should actively leverage this flexibility to find the optimal date that balances our workload.`
+    : `\n\n⚠️ LIMITED FLEXIBILITY:\nThe coordinator has not confirmed any flexibility. Prefer their originally requested date unless it creates serious operational issues.`;
+
   const organizationInfo = `
 Organization: ${eventRequest.organizationName}
 ${eventRequest.department ? `Department: ${eventRequest.department}` : ''}
 Estimated Participants: ${eventRequest.estimatedSandwichCount || 'Not specified'}
-Originally Requested Date: ${requestedDate}
-${eventRequest.message ? `\n⚠️ IMPORTANT MESSAGE FROM ORGANIZATION:\n"${eventRequest.message}"\n\n→ Pay close attention to this message! It may contain flexibility about dates, willingness to reschedule, or important context about their availability.` : ''}
+Originally Requested Date: ${requestedDate}${flexibilityText}
+${eventRequest.message ? `\n\nNOTE FROM SUBMISSION:\n"${eventRequest.message}"` : ''}
 `.trim();
 
   const dateOptions = dateAnalyses.map((analysis, idx) => {
@@ -391,15 +428,15 @@ ${dateOptions}
 
 CRITICAL CONSTRAINTS:
 - You may ONLY recommend dates on or after their originally requested date (${requestedDate})
-- READ THEIR MESSAGE CAREFULLY - If they say they're flexible or willing to move to a different month, take advantage of that flexibility to find a better date for balancing our volunteer workload
+- Consider the flexibility confirmed by the coordinator above
 
 YOUR MISSION:
-1. **Read their message** - If they indicate flexibility ("pivot to December", "flexible", "whenever works"), you should actively recommend a better date that balances our workload
+1. **Use flexibility wisely** - If the coordinator confirmed flexibility, actively recommend a better date that balances our workload. If no flexibility, prefer their requested date.
 2. **Balance sandwich production** - Spread events across weeks to avoid overwhelming volunteers
 3. **Avoid busy weeks** - Weeks with 8+ events or 5,000+ sandwiches are very challenging for our team
-4. **Respect their constraints** - If they're NOT flexible, prefer their requested date unless it creates serious operational issues
+4. **Consider the context** - Read any notes from the submission for additional context
 
-Provide a clear recommendation with specific reasoning that references their message if relevant.`;
+Provide a clear recommendation with specific reasoning.`;
 }
 
 /**

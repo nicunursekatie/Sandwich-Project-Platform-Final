@@ -3429,6 +3429,13 @@ router.post('/:id/ai-suggest-dates', isAuthenticated, async (req, res) => {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
+    // Get flexibility options from request body
+    const flexibilityOptions = {
+      canChangeDayOfWeek: req.body?.canChangeDayOfWeek || false,
+      canChangeWeek: req.body?.canChangeWeek || false,
+      canChangeMonth: req.body?.canChangeMonth || false,
+    };
+
     // Get the event request
     const eventRequest = await storage.getEventRequestById(eventId);
     if (!eventRequest) {
@@ -3441,9 +3448,9 @@ router.post('/:id/ai-suggest-dates', isAuthenticated, async (req, res) => {
       e.status === 'scheduled' && e.scheduledEventDate
     );
 
-    // Import and call AI scheduling assistant
+    // Import and call AI scheduling assistant with flexibility options
     const { suggestOptimalEventDate } = await import('../services/ai-scheduling');
-    const suggestion = await suggestOptimalEventDate(eventRequest, scheduledEvents);
+    const suggestion = await suggestOptimalEventDate(eventRequest, scheduledEvents, flexibilityOptions);
 
     // Log activity
     await logActivity(
@@ -3451,7 +3458,7 @@ router.post('/:id/ai-suggest-dates', isAuthenticated, async (req, res) => {
       res,
       'EVENT_REQUESTS_VIEW',
       `Used AI assistant to analyze dates for event request: ${eventId}`,
-      { organizationName: eventRequest.organizationName }
+      { organizationName: eventRequest.organizationName, flexibility: flexibilityOptions }
     );
 
     res.json(suggestion);
