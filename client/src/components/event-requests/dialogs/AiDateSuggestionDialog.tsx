@@ -42,8 +42,8 @@ export function AiDateSuggestionDialog({
   const generateSuggestionMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest<AiSuggestion>(
-        `/api/event-requests/${eventRequest.id}/ai-suggest-dates`,
-        'POST'
+        'POST',
+        `/api/event-requests/${eventRequest.id}/ai-suggest-dates`
       );
     },
     onSuccess: (data) => {
