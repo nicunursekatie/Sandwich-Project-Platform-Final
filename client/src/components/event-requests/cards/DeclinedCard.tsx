@@ -15,11 +15,20 @@ import {
   Edit2,
   Save,
   X,
+  MessageSquare,
+  FileText,
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { MessageComposer } from '@/components/message-composer';
 import type { EventRequest } from '@shared/schema';
 
 interface DeclinedCardProps {
@@ -29,6 +38,7 @@ interface DeclinedCardProps {
   onContact: () => void;
   onCall: () => void;
   onReactivate: () => void;
+  onLogContact: () => void;
   canDelete?: boolean;
   resolveUserName?: (id: string) => string;
 }
@@ -232,9 +242,11 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
   onContact,
   onCall,
   onReactivate,
+  onLogContact,
   canDelete = true,
   resolveUserName,
 }) => {
+  const [showMessageDialog, setShowMessageDialog] = React.useState(false);
   const dateInfo = formatEventDate(request.desiredEventDate || '');
 
   return (
@@ -331,7 +343,27 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
             Email
           </Button>
 
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onLogContact}
+            className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+          >
+            <FileText className="w-4 h-4 mr-1" />
+            Log Contact
+          </Button>
+
           <div className="flex-1" />
+
+          <Button
+            size="sm"
+            onClick={() => setShowMessageDialog(true)}
+            variant="ghost"
+            className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
+            aria-label="Message about this event"
+          >
+            <MessageSquare className="w-4 h-4" aria-hidden="true" />
+          </Button>
 
           {canDelete && (
             <ConfirmationDialog
@@ -355,6 +387,22 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
           )}
         </div>
       </CardContent>
+
+      {/* Message Composer Dialog */}
+      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Message About Event: {request.organizationName}</DialogTitle>
+          </DialogHeader>
+          <MessageComposer
+            contextType="event"
+            contextId={request.id.toString()}
+            contextTitle={`${request.organizationName} event`}
+            onSent={() => setShowMessageDialog(false)}
+            onCancel={() => setShowMessageDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

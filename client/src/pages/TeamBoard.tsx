@@ -27,9 +27,11 @@ import {
   Send,
   ChevronDown,
   ChevronUp,
-  UserPlus
+  UserPlus,
+  Copy
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 
 // Helper to safely flatten assignment arrays (fixes corrupted nested array data)
@@ -280,6 +282,165 @@ function ItemComments({ itemId, initialCommentCount }: { itemId: number; initial
   );
 }
 
+// Component for creating multiple tasks from a template
+function CreateMultipleTasksDialog({ sourceItem }: { sourceItem: TeamBoardItem }) {
+  const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+  const [taskInput, setTaskInput] = useState('');
+  const [inheritAssignments, setInheritAssignments] = useState(true);
+
+  // Mutation for creating multiple tasks
+  const createMultipleMutation = useMutation({
+    mutationFn: async (tasks: Array<{ content: string; type: BoardItemType; assignedTo?: string[] | null; assignedToNames?: string[] | null }>) => {
+      // Create all tasks in parallel
+      const promises = tasks.map(task => 
+        apiRequest('POST', '/api/team-board', task)
+      );
+      return await Promise.all(promises);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
+      setIsOpen(false);
+      setTaskInput('');
+      toast({
+        title: 'Tasks created!',
+        description: `Successfully created ${data.length} task${data.length > 1 ? 's' : ''}`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to create tasks',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Split by newlines and filter out empty lines
+    const taskLines = taskInput
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    if (taskLines.length === 0) {
+      toast({
+        title: 'No tasks entered',
+        description: 'Please enter at least one task (one per line)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Create task objects
+    const tasks = taskLines.map(content => ({
+      content,
+      type: sourceItem.type,
+      ...(inheritAssignments && sourceItem.assignedTo && sourceItem.assignedToNames ? {
+        assignedTo: sourceItem.assignedTo,
+        assignedToNames: sourceItem.assignedToNames,
+      } : {}),
+    }));
+
+    createMultipleMutation.mutate(tasks);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 text-gray-400 hover:text-[#236383] dark:text-gray-500 dark:hover:text-[#47B3CB]"
+          title="Create multiple tasks from this item"
+          data-testid={`button-create-multiple-${sourceItem.id}`}
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Create Multiple Tasks</DialogTitle>
+            <DialogDescription>
+              Create multiple related tasks based on: <span className="font-semibold italic">"{sourceItem.content}"</span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="tasks" className="text-sm font-medium">
+                Enter task names (one per line)
+              </label>
+              <Textarea
+                id="tasks"
+                value={taskInput}
+                onChange={(e) => setTaskInput(e.target.value)}
+                placeholder="get chet onboarded&#10;get noel onboarded&#10;get alison onboarded"
+                className="min-h-[150px] font-mono text-sm"
+                data-testid="input-multiple-tasks"
+              />
+              <p className="text-xs text-gray-500">
+                Each line will become a separate {sourceItem.type}
+              </p>
+            </div>
+
+            {sourceItem.assignedTo && sourceItem.assignedToNames && sourceItem.assignedTo.length > 0 && (
+              <div className="flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <input
+                  type="checkbox"
+                  id="inheritAssignments"
+                  checked={inheritAssignments}
+                  onChange={(e) => setInheritAssignments(e.target.checked)}
+                  className="mt-1"
+                  data-testid="checkbox-inherit-assignments"
+                />
+                <label htmlFor="inheritAssignments" className="text-sm flex-1 cursor-pointer">
+                  <div className="font-medium mb-1">Copy assignments to new tasks</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    Assign to: {sourceItem.assignedToNames.join(', ')}
+                  </div>
+                </label>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={createMultipleMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={!taskInput.trim() || createMultipleMutation.isPending}
+              className="bg-teal-600 hover:bg-teal-700"
+              data-testid="button-submit-multiple-tasks"
+            >
+              {createMultipleMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Tasks
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function TeamBoard() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -436,6 +597,7 @@ export default function TeamBoard() {
     updateItemMutation.mutate({
       id: item.id,
       updates: {
+        status: 'claimed',
         assignedTo: [...currentAssignedTo, user.id],
         assignedToNames: [...currentAssignedToNames, displayName],
       },
@@ -460,6 +622,7 @@ export default function TeamBoard() {
     updateItemMutation.mutate({
       id: item.id,
       updates: {
+        status: 'claimed',
         assignedTo: [...currentAssignedTo, member.id],
         assignedToNames: [...currentAssignedToNames, member.name],
       },
@@ -703,15 +866,18 @@ export default function TeamBoard() {
                         {getTypeIcon(item.type)}
                         {item.type}
                       </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(item.id)}
-                        className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
-                        data-testid={`button-delete-${item.id}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <CreateMultipleTasksDialog sourceItem={item} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(item.id)}
+                          className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
+                          data-testid={`button-delete-${item.id}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                     
                     <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap leading-relaxed">
@@ -837,15 +1003,18 @@ export default function TeamBoard() {
                         {getTypeIcon(item.type)}
                         {item.type}
                       </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(item.id)}
-                        className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
-                        data-testid={`button-delete-${item.id}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <CreateMultipleTasksDialog sourceItem={item} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(item.id)}
+                          className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
+                          data-testid={`button-delete-${item.id}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                     
                     <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap leading-relaxed">
@@ -952,15 +1121,18 @@ export default function TeamBoard() {
                         {getTypeIcon(item.type)}
                         {item.type}
                       </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(item.id)}
-                        className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
-                        data-testid={`button-delete-${item.id}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <CreateMultipleTasksDialog sourceItem={item} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(item.id)}
+                          className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400"
+                          data-testid={`button-delete-${item.id}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                     
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 whitespace-pre-wrap leading-relaxed line-through">

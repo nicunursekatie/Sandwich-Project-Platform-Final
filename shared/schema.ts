@@ -1859,6 +1859,11 @@ export const eventRequests = pgTable(
     deliveryTimeWindow: text('delivery_time_window'), // Time window for next-day delivery after overnight storage
     deliveryParkingAccess: text('delivery_parking_access'), // Parking/access details for delivery location
 
+    // Special event tracking
+    isMlkDayEvent: boolean('is_mlk_day_event').default(false), // Whether this event is designated as an MLK Day event
+    mlkDayMarkedAt: timestamp('mlk_day_marked_at'), // When it was marked as MLK Day event
+    mlkDayMarkedBy: varchar('mlk_day_marked_by'), // User ID who marked it as MLK Day event
+
     // Audit tracking
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
