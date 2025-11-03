@@ -790,7 +790,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
     >
       <CardContent className={`${isMobile ? 'p-4' : 'p-6'} space-y-4`}>
         {/* Header Section */}
-        <div className="flex items-start justify-between gap-4 pb-4 border-b-2 border-[#007E8C]/10">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b-2 border-[#236383]/30">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               <h2 className="text-xl sm:text-2xl font-bold text-[#236383]">
@@ -941,7 +941,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Contact Information Section */}
         {(request.firstName || request.lastName || request.email || request.phone || (request.tspContact || request.customTspContact)) && (
-          <div className="bg-[#47B3CB]/10 rounded-lg p-4 space-y-2 border-l-4 border-[#47B3CB] border border-[#47B3CB]/30 shadow-sm">
+          <div className="bg-gradient-to-r from-[#47B3CB]/20 to-[#47B3CB]/10 rounded-lg p-4 space-y-2 border-l-4 border-[#47B3CB] border border-[#47B3CB]/50 shadow-md">
             <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
               <Users className="w-4 h-4 text-[#47B3CB]" />
               Contact Information
@@ -974,7 +974,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Event Details Section */}
-        <div className="bg-[#007E8C]/10 rounded-lg p-4 space-y-2 border-l-4 border-[#007E8C] border border-[#007E8C]/30 shadow-sm">
+        <div className="bg-gradient-to-r from-[#007E8C]/25 to-[#007E8C]/10 rounded-lg p-4 space-y-2 border-l-4 border-[#007E8C] border border-[#007E8C]/60 shadow-md">
           <h3 className="text-base font-bold text-[#236383] mb-2 flex items-center gap-2 uppercase tracking-wide">
             <Calendar className="w-4 h-4 text-[#007E8C]" />
             Event Details
@@ -1260,7 +1260,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         </div>
 
         {/* Delivery & Logistics Section */}
-        <div className="bg-[#FBAD3F]/10 rounded-lg p-4 space-y-3 border-l-4 border-[#FBAD3F] border border-[#FBAD3F]/30 shadow-sm">
+        <div className="bg-gradient-to-r from-[#FBAD3F]/25 to-[#FBAD3F]/10 rounded-lg p-4 space-y-3 border-l-4 border-[#FBAD3F] border border-[#FBAD3F]/60 shadow-md">
           <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
             <Package className="w-4 h-4 text-[#FBAD3F]" />
             Delivery & Logistics
@@ -1340,7 +1340,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Assignments Section */}
         {(driverNeeded > 0 || speakerNeeded > 0 || volunteerNeeded > 0) && (
-          <div className="bg-[#47B3CB]/10 rounded-lg p-4 space-y-4 border-l-4 border-[#47B3CB] border border-[#47B3CB]/30 shadow-sm">
+          <div className="bg-gradient-to-r from-[#47B3CB]/20 to-[#47B3CB]/10 rounded-lg p-4 space-y-4 border-l-4 border-[#47B3CB] border border-[#47B3CB]/50 shadow-md">
             <h3 className="text-base font-bold text-[#236383] mb-3 flex items-center gap-2 uppercase tracking-wide">
               <Users className="w-4 h-4 text-[#47B3CB]" />
               Team Assignments
@@ -1542,16 +1542,16 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
           request.duplicateNotes ||
           request.unresponsiveNotes ||
           request.socialMediaPostNotes) && (
-          <div className="bg-amber-50 rounded-lg p-4">
+          <div className="bg-gradient-to-r from-[#236383]/15 to-[#236383]/5 rounded-lg p-4 border-l-4 border-[#236383] border border-[#236383]/40 shadow-md">
             <h3 className="text-base font-semibold text-[#236383] mb-3 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#007E8C]" />
+              <FileText className="w-4 h-4 text-[#236383]" />
               Notes & Requirements
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {request.message && (
                 <div className="sm:col-span-2">
                   <p className="text-base font-medium mb-1">Original Request Message:</p>
-                  <p className="text-base text-gray-700 bg-[#007E8C]/5 p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
+                  <p className="text-base text-gray-700 bg-gradient-to-r from-[#007E8C]/15 to-[#007E8C]/5 p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
                     {request.message}
                   </p>
                 </div>
@@ -1559,7 +1559,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {request.additionalRequirements && (
                 <div>
                   <p className="text-base font-medium mb-1">Special Requirements:</p>
-                  <p className="text-base text-gray-700 bg-[#FBAD3F]/10 p-3 rounded border-l-4 border-[#FBAD3F] whitespace-pre-wrap">
+                  <p className="text-base text-gray-700 bg-gradient-to-r from-[#FBAD3F]/20 to-[#FBAD3F]/8 p-3 rounded border-l-4 border-[#FBAD3F] whitespace-pre-wrap">
                     {request.additionalRequirements}
                   </p>
                 </div>
