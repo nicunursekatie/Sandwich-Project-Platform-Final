@@ -271,6 +271,7 @@ export function AiDateSuggestionDialog({
                                       <span className="text-gray-600 dark:text-gray-400">
                                         {' - '}
                                         {new Date(event.date).toLocaleDateString('en-US', { 
+                                          weekday: 'long',
                                           month: 'short', 
                                           day: 'numeric' 
                                         })}
@@ -386,7 +387,7 @@ export function AiDateSuggestionDialog({
                                   <div className="flex-1">
                                     <span className="font-medium">{event.organizationName}</span>
                                     {' - '}
-                                    <span>{new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                    <span>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                                     {event.estimatedSandwichCount > 0 && (
                                       <span className="text-gray-500">
                                         {' '}({event.estimatedSandwichCount.toLocaleString()} 🥪)
