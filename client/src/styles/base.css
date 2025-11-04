@@ -40,13 +40,13 @@ body {
 
 @layer base {
   :root {
-    --color-background: 0 0% 100%; /* #FFFFFF */
+    --color-background: 30 11% 96%; /* #F7F6F4 - Warm neutral base */
     --color-foreground: 24 5% 38%; /* #605251 - Dark Gray */
     --color-muted: 0 0% 82%; /* #D1D3D4 - Light Gray */
     --color-muted-foreground: 24 5% 38%; /* #605251 */
     --color-popover: 0 0% 100%; /* #FFFFFF */
     --color-popover-foreground: 24 5% 38%; /* #605251 */
-    --color-card: 0 0% 100%; /* #FFFFFF */
+    --color-card: 0 0% 100%; /* #FFFFFF - Keep cards white for contrast */
     --color-card-foreground: 24 5% 38%; /* #605251 */
     --color-border: 0 0% 90%; /* Light border */
     --color-input: 0 0% 96%; /* Light input background */

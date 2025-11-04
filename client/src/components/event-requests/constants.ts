@@ -43,15 +43,15 @@ export const statusBorderColors = {
   cancelled: '#A31C41', // Vibrant red
 };
 
-// Card background accent colors - VIBRANT BRAND COLORS (much bolder tints)
+// Card background colors - SOLID LIGHTER TINTS (no opacity mixing)
 export const statusBgColors = {
-  new: 'bg-[#007E8C]/15', // Vibrant teal tint
-  in_process: 'bg-[#FBAD3F]/15', // Vibrant orange tint
-  scheduled: 'bg-[#236383]/15', // Vibrant dark blue tint
-  completed: 'bg-[#47B3CB]/15', // Vibrant light blue tint
-  declined: 'bg-[#A31C41]/15', // Vibrant red tint
-  postponed: 'bg-[#A31C41]/15', // Vibrant red tint
-  cancelled: 'bg-[#A31C41]/15', // Vibrant red tint
+  new: 'bg-[#E2F5F6]', // Solid light teal
+  in_process: 'bg-[#FFF4E5]', // Solid light gold
+  scheduled: 'bg-[#E4EFF6]', // Solid light navy
+  completed: 'bg-[#E8F7FB]', // Solid light sky blue
+  declined: 'bg-[#FAE7ED]', // Solid light crimson
+  postponed: 'bg-[#FAE7ED]', // Solid light crimson
+  cancelled: 'bg-[#FAE7ED]', // Solid light crimson
 };
 
 // My Assignment highlight color
