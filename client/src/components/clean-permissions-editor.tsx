@@ -299,9 +299,10 @@ export default function CleanPermissionsEditor({
                   <div className="space-y-2">
                     {filteredGroups.map(([groupKey, group]) => {
                       // Filter permissions based on showAdvanced
+                      const allPermissions = (group.permissions || []).filter(p => p); // Filter out null/undefined
                       const groupPermissions = showAdvanced
-                        ? group.permissions
-                        : group.permissions.filter(p => COMMON_PERMISSIONS.has(p.split('.').pop() || p));
+                        ? allPermissions
+                        : allPermissions.filter(p => COMMON_PERMISSIONS.has(p.split('.').pop() || p));
 
                       if (groupPermissions.length === 0) return null;
 

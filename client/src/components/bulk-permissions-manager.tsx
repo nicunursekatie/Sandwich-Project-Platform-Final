@@ -106,8 +106,8 @@ export default function BulkPermissionsManager() {
         percentage: Math.round((usersWithPermission.length / users.length) * 100),
         users: usersWithPermission.map(user => ({
           id: user.id,
-          name: `${user.firstName} ${user.lastName}`,
-          email: user.email
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
+          email: user.email || ''
         }))
       });
     });
@@ -543,7 +543,7 @@ export default function BulkPermissionsManager() {
                               <Tooltip>
                                 <TooltipTrigger>
                                   <Badge variant="outline" className="text-xs">
-                                    {user.name.split(' ').map(n => n[0]).join('')}
+                                    {user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'}
                                   </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent>
