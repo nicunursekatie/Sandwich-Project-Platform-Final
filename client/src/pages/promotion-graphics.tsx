@@ -634,7 +634,7 @@ export default function PromotionGraphics() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredGraphics.map((graphic) => (
             <Card key={graphic.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-video w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => {
+              <div className="aspect-square w-full overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer" onClick={() => {
                 setSelectedGraphic(graphic);
                 trackViewMutation.mutate(graphic.id);
               }}>
@@ -651,7 +651,7 @@ export default function PromotionGraphics() {
                   <img
                     src={`/api/objects/proxy?url=${encodeURIComponent(graphic.imageUrl)}`}
                     alt={graphic.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 )}
               </div>
