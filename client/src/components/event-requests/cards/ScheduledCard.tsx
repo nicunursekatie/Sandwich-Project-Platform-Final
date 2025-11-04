@@ -295,6 +295,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   handleSelfSignup,
   canSelfSignup,
   isUserSignedUp,
+  isSaving,
   canEdit = true,
 }) => {
   const isMobile = useIsMobile();
