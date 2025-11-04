@@ -792,14 +792,17 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         {/* Header Section */}
         <div className="flex items-start justify-between gap-3 pb-3 border-b-2 border-[#236383]/30">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center flex-wrap gap-1.5 mb-2">
               <h2 className="text-xl sm:text-2xl font-bold text-[#236383]">
                 {request.organizationName}
               </h2>
               {request.department && (
-                <span className="text-base text-[#236383]/70 font-medium">
-                  {request.department}
-                </span>
+                <>
+                  <span className="text-[#236383]/60">•</span>
+                  <span className="text-base text-[#236383]/70 font-medium">
+                    {request.department}
+                  </span>
+                </>
               )}
             </div>
 

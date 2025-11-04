@@ -229,7 +229,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
               </p>
             </div>
-            <div className={`${isMobile ? 'flex flex-col space-y-2 w-full' : 'flex items-center gap-2 flex-wrap'}`}>
+            <div className={`${isMobile ? 'flex flex-col space-y-2 w-full' : 'flex items-center gap-3 flex-wrap'}`}>
               <button
                 onClick={() => {
                   setShowScheduleCallDialog(false);
