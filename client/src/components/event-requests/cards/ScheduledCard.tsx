@@ -785,10 +785,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   return (
     <Card
       id={`event-card-${request.id}`}
-      className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} bg-white border-l-[4px] shadow-[0_1px_2px_rgba(0,0,0,0.06)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08)] transition-all border-[#E7E4DF]`}
+      className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} bg-white border-l-[4px] shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] transition-all border-[#D8DEE2] rounded-xl`}
       style={{ borderLeftColor: statusBorderColors.scheduled }}
     >
-      <CardContent className={`${isMobile ? 'p-4' : 'p-6'} space-y-4`}>
+      <CardContent className="p-3 space-y-3">
         {/* Header Section */}
         <div className="flex items-start justify-between gap-4 pb-4 border-b-2 border-[#236383]/30">
           <div className="flex-1">

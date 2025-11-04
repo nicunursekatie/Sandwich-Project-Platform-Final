@@ -409,12 +409,12 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   return (
     <Card
       id={`event-card-${request.id}`}
-      className={`transition-all duration-200 hover:shadow-[0_2px_4px_rgba(0,0,0,0.08)] border-l-[4px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] border-[#E7E4DF] ${
+      className={`transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl ${
         isStale ? 'border-l-[#A31C41]' : ''
       }`}
       style={!isStale ? { borderLeftColor: statusBorderColors.in_process } : {}}
     >
-      <CardContent className="p-6">
+      <CardContent className="p-3">
         {headerContent.header}
 
         {/* Toolkit Sent Status - Professional and brand-aligned */}

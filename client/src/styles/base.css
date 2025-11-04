@@ -48,7 +48,7 @@ body {
     --color-popover-foreground: 222 47% 11%; /* #0F172A */
     --color-card: 0 0% 100%; /* #FFFFFF - White cards for contrast */
     --color-card-foreground: 220 9% 18%; /* #1F2937 - Body text */
-    --color-border: 30 8% 91%; /* #E7E4DF - Warm neutral borders */
+    --color-border: 211 15% 88%; /* #D8DEE2 - Stronger borders */
     --color-input: 30 15% 96%; /* #F5F2EE - Panel bg */
     --color-primary: 197 100% 28%; /* #236383 - Brand Primary */
     --color-primary-foreground: 0 0% 100%; /* #FFFFFF */
@@ -61,17 +61,21 @@ body {
     --color-brand-teal: #007E8C;
     --color-brand-teal-light: #47B3CB;
     --color-brand-teal-hover: #006B75;
-    --color-brand-teal-dark: #004F59;
+    --color-brand-teal-dark: #1A4F61;
     --color-brand-orange: #FBAD3F;
     --color-brand-navy: #1A2332;
     --color-secondary: 35 96% 62%; /* #FBAD3F exact HSL conversion */
-    --color-secondary-foreground: 24 5% 38%; /* #605251 */
+    --color-secondary-foreground: 0 0% 100%; /* White text on gold */
     --color-accent: 342 63% 38%; /* #A31C41 - Burgundy */
     --color-accent-foreground: 0 0% 100%; /* #FFFFFF */
     --color-destructive: 0 84% 60%; /* #EF4444 */
     --color-destructive-foreground: 0 0% 100%; /* #FFFFFF */
     --color-ring: 197 100% 37%; /* #007EBC */
-    --radius: 0.5rem;
+    --radius: 12px; /* Updated to 12px for modern feel */
+    /* Compact spacing scale */
+    --gap: 12px;
+    --pad: 12px;
+    --chip-padding: 4px 8px;
     /* Premium design system radius values */
     --radius-premium-sm: 8px;
     --radius-premium-md: 12px;
@@ -121,6 +125,13 @@ body {
     font-family: 'Roboto', sans-serif;
     font-weight: 900;
     text-transform: uppercase;
+  }
+
+  /* Punchy headings */
+  h1, h2, h3, h4, h5, h6 {
+    color: #0F172A;
+    font-weight: 700;
+    letter-spacing: 0;
   }
 
   .font-sub-heading {

@@ -1914,10 +1914,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   return (
     <Card 
-      className={`transition-all duration-200 hover:shadow-[0_2px_4px_rgba(0,0,0,0.08)] border-l-[4px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] border-[#E7E4DF]`}
+      className={`transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl`}
       style={{ borderLeftColor: statusBorderColors.completed }}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-3">
         <CardHeader
           request={request}
           resolveUserName={resolveUserName}

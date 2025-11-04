@@ -1,6 +1,11 @@
 @tailwind components;
 
 @layer components {
+  /* Compact spacing scale */
+  .grid { gap: var(--gap); }
+  .card-compact { padding: var(--pad); }
+  .chip { padding: var(--chip-padding); }
+  
   /* Design System: Consistent Spacing Scale */
   .space-xs { gap: 0.25rem; } /* 4px */
   .space-sm { gap: 0.5rem; }  /* 8px */
@@ -14,13 +19,51 @@
   .p-lg { padding: 1.5rem; }
   .p-xl { padding: 2rem; }
 
-  /* Design System: Consistent Card Styles */
+  /* Design System: Modern Card Styles with Color Rails */
+  .card {
+    border: 1px solid #D8DEE2;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  
+  .card--ok { border-left: 4px solid #236383; }     /* teal */
+  .card--warn { border-left: 4px solid #FBAD3F; }   /* gold */
+  .card--alert { border-left: 4px solid #A31C41; }  /* crimson */
+  
   .card-elevated {
     @apply bg-card border border-border rounded-lg shadow-sm;
   }
 
   .card-flat {
     @apply bg-card border border-border rounded-lg;
+  }
+  
+  /* Solid brand chips instead of ghost */
+  .chip--info {
+    background: #E6F2F6;
+    color: #1A4F61;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .chip--count {
+    background: #FFF3DF;
+    color: #7A4F16;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .chip--danger {
+    background: #FCEDEF;
+    color: #7C102D;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
   }
 
   /* Design System: Improved Focus States */
@@ -64,29 +107,33 @@
     background-color: var(--color-brand-teal-hover);
   }
 
-  /* Professional Button Styling */
+  /* Modern button styling with punchy colors */
   .btn-primary {
-    background-color: hsl(var(--color-primary));
-    color: hsl(var(--color-primary-foreground));
-    border-radius: 6px;
-    font-weight: 500;
+    background: #FBAD3F;
+    color: #fff;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 8px 16px;
     transition: all 0.2s ease;
   }
 
   .btn-primary:hover {
-    background-color: hsl(var(--color-primary-hover));
+    background: #E69B37;
   }
 
   .btn-secondary {
-    background-color: hsl(var(--color-secondary));
-    color: hsl(var(--color-secondary-foreground));
-    border-radius: 6px;
-    font-weight: 500;
+    background: #fff;
+    color: #236383;
+    border: 1px solid #D8DEE2;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 8px 16px;
     transition: all 0.2s ease;
   }
 
   .btn-secondary:hover {
-    background-color: hsl(var(--color-secondary) / 0.9);
+    background: #F5F2EE;
+    border-color: #236383;
   }
 
   .btn-outline {
