@@ -402,18 +402,21 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         {/* Header Row - Organization & Status */}
         <div className="flex items-start justify-between gap-3 mb-3 pb-3 border-b-2 border-[#236383]/40">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center flex-wrap gap-1.5 mb-2">
               <h2 className="text-2xl font-bold text-[#236383]">
                 {request.organizationName}
               </h2>
               {request.department && (
-                <span className="text-lg text-[#236383]/70 font-medium">
-                  {request.department}
-                </span>
+                <>
+                  <span className="text-[#236383]/60">•</span>
+                  <span className="text-lg text-[#236383]/70 font-medium">
+                    {request.department}
+                  </span>
+                </>
               )}
-              <span className="text-lg text-[#236383]/60">•</span>
+              <span className="text-[#236383]/60">•</span>
               {isEditingThisCard && editingField === dateFieldToEdit ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Input
                     type="date"
                     value={editingValue}
@@ -428,7 +431,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 group">
+                <div className="flex items-center gap-1.5 group">
                   <Calendar className="w-5 h-5 text-[#007E8C]" />
                   <span className="text-xl font-bold text-[#47B3CB]">
                     {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium">No date set</span>}
