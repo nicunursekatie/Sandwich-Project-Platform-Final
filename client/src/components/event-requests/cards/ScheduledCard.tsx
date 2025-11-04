@@ -563,7 +563,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {value}
             </a>
           ) : (
-            value || 'Not set'
+            value || <span className="text-[#FBAD3F] font-medium">Not set</span>
           )}
         </span>
         {canEdit && (
@@ -974,9 +974,9 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Event Details Section */}
-        <div className="bg-gradient-to-r from-[#007E8C]/35 to-[#007E8C]/20 rounded-lg p-4 space-y-2 border-l-4 border-[#007E8C] border border-[#007E8C] shadow-md">
+        <div className="bg-gradient-to-r from-[#47B3CB]/40 to-[#47B3CB]/25 rounded-lg p-4 space-y-2 border-l-4 border-[#47B3CB] border border-[#47B3CB] shadow-md">
           <h3 className="text-base font-bold text-[#236383] mb-2 flex items-center gap-2 uppercase tracking-wide">
-            <Calendar className="w-4 h-4 text-[#007E8C]" />
+            <Calendar className="w-4 h-4 text-[#47B3CB]" />
             Event Details
           </h3>
 
@@ -1016,10 +1016,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-2 group">
-              <Calendar className="w-4 h-4 text-[#007E8C]" />
+              <Calendar className="w-4 h-4 text-[#47B3CB]" />
               <span className="text-base font-medium text-[#236383] min-w-[100px]">{dateLabel}:</span>
               <span className="text-base text-[#236383] font-semibold">
-                {displayDate && dateInfo ? dateInfo.text : 'No date set'}
+                {displayDate && dateInfo ? dateInfo.text : <span className="text-[#FBAD3F] font-medium">No date set</span>}
               </span>
               {canEdit && (
                 <Button
@@ -1044,7 +1044,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
               {request.eventStartTime && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-[#007E8C]" />
+                  <Clock className="w-4 h-4 text-[#47B3CB]" />
                   <span className="text-sm font-semibold text-[#236383]">Start:</span>
                   {isEditingThisCard && editingField === 'eventStartTime' ? (
                     <>
@@ -1089,7 +1089,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
               {request.eventEndTime && (
                 <div className="flex items-center gap-2 group">
-                  <Clock className="w-4 h-4 text-[#007E8C]" />
+                  <Clock className="w-4 h-4 text-[#47B3CB]" />
                   <span className="text-sm font-semibold text-[#236383]">End:</span>
                   {isEditingThisCard && editingField === 'eventEndTime' ? (
                     <>
@@ -1300,7 +1300,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Badge
                         key={index}
                         variant="secondary"
-                        className="bg-[#007E8C]/25 border border-[#007E8C] text-[#236383]"
+                        className="bg-[#47B3CB]/25 border border-[#47B3CB] text-[#236383]"
                       >
                         {type === 'recipient' && '🏢 '}
                         {type === 'host' && '🏠 '}
@@ -1311,7 +1311,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     );
                   })
                 ) : (
-                  <span className="text-base text-gray-500 italic">No recipients assigned</span>
+                  <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F] font-medium">
+                    <Building className="w-3 h-3 mr-1" />
+                    No recipients assigned
+                  </Badge>
                 )}
                 {canEdit && (
                   <Button
@@ -1392,7 +1395,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       <Badge
                         key={driverId}
                         variant="secondary"
-                        className="bg-gradient-to-r from-[#007E8C]/40 to-[#007E8C]/25 border border-[#007E8C] text-[#236383] text-xl px-4 py-2.5 font-semibold"
+                        className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 border border-[#236383] text-white text-xl px-4 py-2.5 font-semibold"
                       >
                         {displayName}
                         {canEdit && (
@@ -1409,7 +1412,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     );
                   })}
                   {driverAssigned === 0 && (
-                    <span className="text-xl font-medium text-[#236383]/60 italic">No drivers assigned</span>
+                    <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium text-lg">
+                      <Car className="w-4 h-4 mr-1" />
+                      No drivers assigned
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -1445,7 +1451,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Badge
                           key={speakerId}
                           variant="secondary"
-                          className="bg-gradient-to-r from-[#007E8C]/40 to-[#007E8C]/25 border border-[#007E8C] text-[#236383] text-xl px-4 py-2.5 font-semibold"
+                          className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 border border-[#236383] text-white text-xl px-4 py-2.5 font-semibold"
                         >
                           {displayName}
                           {canEdit && (
@@ -1465,7 +1471,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }
                   )}
                   {speakerAssigned === 0 && (
-                    <span className="text-xl font-medium text-[#236383]/60 italic">No speakers assigned</span>
+                    <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#FBAD3F] border-[#FBAD3F]/40 font-medium text-lg">
+                      <Megaphone className="w-4 h-4 mr-1" />
+                      No speakers assigned
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -1501,7 +1510,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                         <Badge
                           key={volunteerId}
                           variant="secondary"
-                          className="bg-gradient-to-r from-[#007E8C]/40 to-[#007E8C]/25 border border-[#007E8C] text-[#236383] text-xl px-4 py-2.5 font-semibold"
+                          className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 border border-[#236383] text-white text-xl px-4 py-2.5 font-semibold"
                         >
                           {displayName}
                           {canEdit && (
@@ -1521,7 +1530,10 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                     }
                   )}
                   {volunteerAssigned === 0 && (
-                    <span className="text-xl font-medium text-[#236383]/60 italic">No volunteers assigned</span>
+                    <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#47B3CB] border-[#47B3CB]/40 font-medium text-lg">
+                      <Users className="w-4 h-4 mr-1" />
+                      No volunteers assigned
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -1551,7 +1563,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
               {request.message && (
                 <div className="sm:col-span-2">
                   <p className="text-base font-medium mb-1">Original Request Message:</p>
-                  <p className="text-base text-gray-700 bg-gradient-to-r from-[#007E8C]/30 to-[#007E8C]/15 p-3 rounded border-l-4 border-[#007E8C] whitespace-pre-wrap">
+                  <p className="text-base text-gray-700 bg-gradient-to-r from-[#236383]/30 to-[#236383]/15 p-3 rounded border-l-4 border-[#236383] whitespace-pre-wrap">
                     {request.message}
                   </p>
                 </div>
