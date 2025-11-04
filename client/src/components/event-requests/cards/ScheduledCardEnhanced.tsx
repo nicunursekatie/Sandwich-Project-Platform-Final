@@ -475,8 +475,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {request.isMlkDayEvent && <MlkDayBadge />}
 
               {/* Sandwich count badge */}
-              <Badge className="bg-[#FBAD3F] text-white text-base font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
-                <span className="text-lg">🥪</span>
+              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] font-medium flex items-center gap-1">
+                <span>🥪</span>
                 <span>{sandwichInfo} Sandwiches</span>
               </Badge>
 
