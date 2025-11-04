@@ -130,6 +130,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Team Board',
     icon: StickyNote,
     href: 'team-board',
+    permission: PERMISSIONS.NAV_TEAM_BOARD,
     group: 'communication',
     highlighted: true,
   },
@@ -138,6 +139,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Promotion',
     icon: Image,
     href: 'promotion',
+    permission: PERMISSIONS.NAV_PROMOTION,
     group: 'communication',
   },
   {
@@ -145,6 +147,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Quick SMS Links',
     icon: MessageCircle,
     href: 'quick-sms-links',
+    permission: PERMISSIONS.NAV_QUICK_SMS_LINKS,
     group: 'communication',
   },
 
@@ -162,7 +165,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Host Map',
     icon: Route,
     href: 'route-map',
-    permission: PERMISSIONS.NAV_HOSTS,
+    permission: PERMISSIONS.NAV_ROUTE_MAP,
     group: 'operations',
     parentId: 'hosts',
     isSubItem: true,
@@ -229,6 +232,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Expenses & Receipts',
     icon: Receipt,
     href: 'expenses',
+    permission: PERMISSIONS.NAV_EXPENSES,
     group: 'operations',
     highlighted: true,
   },
@@ -256,7 +260,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Event Reminders',
     icon: Clock,
     href: 'event-reminders',
-    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
+    permission: PERMISSIONS.NAV_EVENT_REMINDERS,
     group: 'event-planning',
   },
   {
@@ -264,7 +268,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Sign Up Genius',
     icon: Link,
     href: 'signup-genius',
-    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
+    permission: PERMISSIONS.NAV_SIGNUP_GENIUS,
     group: 'event-planning',
   },
   {
@@ -272,7 +276,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Events Google Sheet',
     icon: Sheet,
     href: 'events',
-    permission: PERMISSIONS.EVENT_REQUESTS_VIEW,
+    permission: PERMISSIONS.NAV_EVENTS_GOOGLE_SHEET,
     group: 'event-planning',
   },
 
@@ -282,7 +286,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Projects',
     icon: ListTodo,
     href: 'projects',
-    permission: PERMISSIONS.PROJECTS_VIEW,
+    permission: PERMISSIONS.NAV_PROJECTS,
     group: 'strategic-planning',
   },
   {
@@ -290,7 +294,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Meetings',
     icon: ClipboardList,
     href: 'meetings',
-    permission: PERMISSIONS.MEETINGS_VIEW,
+    permission: PERMISSIONS.NAV_MEETINGS,
     group: 'strategic-planning',
     highlighted: true,
   },
@@ -301,7 +305,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Analytics',
     icon: BarChart3,
     href: 'analytics',
-    permission: PERMISSIONS.ANALYTICS_VIEW,
+    permission: PERMISSIONS.NAV_ANALYTICS,
     group: 'analytics',
   },
   {
@@ -327,6 +331,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Resources',
     icon: FileText,
     href: 'resources',
+    permission: PERMISSIONS.NAV_RESOURCES,
     group: 'documentation',
     highlighted: true,
   },
@@ -335,6 +340,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Quick Tools',
     icon: Link,
     href: 'important-links',
+    permission: PERMISSIONS.NAV_IMPORTANT_LINKS,
     group: 'documentation',
   },
   {
@@ -377,7 +383,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'User Management',
     icon: UserCog,
     href: 'user-management',
-    permission: PERMISSIONS.ADMIN_PANEL_ACCESS,
+    permission: PERMISSIONS.NAV_USER_MANAGEMENT,
     group: 'admin',
   },
   {
@@ -385,7 +391,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Historical Import',
     icon: FileSpreadsheet,
     href: 'historical-import',
-    permission: PERMISSIONS.DATA_IMPORT,
+    permission: PERMISSIONS.NAV_HISTORICAL_IMPORT,
     group: 'admin',
   },
   {
