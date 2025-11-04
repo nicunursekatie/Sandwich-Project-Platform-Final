@@ -742,7 +742,7 @@ export default function Dashboard({
               isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
             } md:translate-x-0 fixed md:relative z-50 ${
               isSidebarCollapsed ? 'w-16' : 'w-56 xs:w-64 sm:w-72'
-            } bg-[#236383] border-r border-[#1A4F61] shadow-lg flex flex-col transition-all duration-300 ease-in-out h-full`}
+            } bg-gradient-to-b from-white to-orange-50/30 border-r-2 border-amber-200 shadow-lg flex flex-col transition-all duration-300 ease-in-out h-full`}
           >
             {/* Collapse Toggle Button */}
             <div className="hidden md:flex justify-end p-2 border-b border-amber-200">
