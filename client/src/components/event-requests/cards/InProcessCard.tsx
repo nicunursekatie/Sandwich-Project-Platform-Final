@@ -409,7 +409,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   return (
     <Card
       id={`event-card-${request.id}`}
-      className={`transition-all duration-200 hover:shadow-lg border-l-4 bg-white shadow-sm ${statusBgColors.in_process} ${
+      className={`transition-all duration-200 hover:shadow-xl border-l-[6px] bg-gradient-to-br from-[#FF9500]/20 via-[#FF9500]/10 to-white shadow-md ${
         isStale ? 'border-l-[#A31C41]' : ''
       }`}
       style={!isStale ? { borderLeftColor: statusBorderColors.in_process } : {}}

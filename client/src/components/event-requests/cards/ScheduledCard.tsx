@@ -785,7 +785,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   return (
     <Card
       id={`event-card-${request.id}`}
-      className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} bg-gradient-to-br from-[#236383]/15 to-white border-l-4 shadow-sm hover:shadow-lg transition-all`}
+      className={`w-full ${isMobile ? 'mx-2' : 'max-w-7xl mx-auto'} bg-gradient-to-br from-[#007AFF]/20 via-[#007AFF]/10 to-white border-l-[6px] shadow-md hover:shadow-xl transition-all`}
       style={{ borderLeftColor: statusBorderColors.scheduled }}
     >
       <CardContent className={`${isMobile ? 'p-4' : 'p-6'} space-y-4`}>

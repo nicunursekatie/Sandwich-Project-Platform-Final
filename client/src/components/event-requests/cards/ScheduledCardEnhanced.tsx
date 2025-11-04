@@ -395,8 +395,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   return (
     <Card 
-      className="w-full bg-gradient-to-br from-[#236383]/15 to-white border-l-4 shadow-sm hover:shadow-lg transition-all"
-      style={{ borderLeftColor: '#236383' }}
+      className="w-full bg-gradient-to-br from-[#007AFF]/20 via-[#007AFF]/10 to-white border-l-[6px] shadow-md hover:shadow-xl transition-all"
+      style={{ borderLeftColor: '#007AFF' }}
     >
       <CardContent className="p-6">
         {/* Header Row - Organization & Status */}

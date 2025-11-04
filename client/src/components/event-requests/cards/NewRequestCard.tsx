@@ -415,7 +415,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   );
   return (
     <Card
-      className={`transition-all duration-200 hover:shadow-lg border-l-4 bg-gradient-to-br from-[#007E8C]/20 to-white shadow-sm`}
+      className={`transition-all duration-200 hover:shadow-xl border-l-[6px] bg-gradient-to-br from-[#00C9FF]/20 via-[#00C9FF]/10 to-white shadow-md`}
       style={{ borderLeftColor: statusBorderColors.new }}
     >
       <CardContent className="p-6">
