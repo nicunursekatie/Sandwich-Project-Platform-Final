@@ -1442,7 +1442,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           )}
                         </div>
                       ) : request.recipientsCount ? (
-                        <Badge className="bg-gradient-to-r from-[#007E8C]/40 to-[#007E8C]/25 text-[#236383] border border-[#007E8C] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
+                        <Badge className="bg-gradient-to-r from-[#236383]/40 to-[#236383]/25 text-white border border-[#236383] text-sm font-medium px-2 py-1 shadow-sm inline-flex items-center gap-1">
                           <span className="text-sm">🏠</span>
                           <span>Unknown Host ({request.recipientsCount})</span>
                         </Badge>
