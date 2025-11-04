@@ -401,7 +401,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       <CardContent className="p-3">
         {/* Header Row - Organization & Status */}
         <div className="flex items-start justify-between gap-3 mb-3 pb-3 border-b-2 border-[#236383]/40">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center flex-wrap gap-1.5 mb-2">
               <h2 className="text-2xl font-bold text-[#236383]">
                 {request.organizationName}
@@ -413,41 +413,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {request.department}
                   </span>
                 </>
-              )}
-              <span className="text-[#236383]/60">•</span>
-              {isEditingThisCard && editingField === dateFieldToEdit ? (
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="date"
-                    value={editingValue}
-                    onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
-                  />
-                  <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save date">
-                    <Save className="w-3 h-3" aria-hidden="true" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
-                    <X className="w-3 h-3" aria-hidden="true" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 group">
-                  <Calendar className="w-5 h-5 text-[#007E8C]" />
-                  <span className="text-xl font-bold text-[#47B3CB]">
-                    {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium">No date set</span>}
-                  </span>
-                  {canEdit && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
-                      className="opacity-0 group-hover:opacity-100 text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2"
-                      aria-label="Edit date"
-                    >
-                      <Edit2 className="w-3 h-3" aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
               )}
             </div>
 
@@ -536,7 +501,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Date Display - Right Side */}
+          <div className="flex items-center shrink-0">
+            {isEditingThisCard && editingField === dateFieldToEdit ? (
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="date"
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
+                />
+                <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save date">
+                  <Save className="w-3 h-3" aria-hidden="true" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
+                  <X className="w-3 h-3" aria-hidden="true" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 group">
+                <Calendar className="w-5 h-5 text-[#007E8C]" />
+                <span className="text-lg font-bold text-[#47B3CB] whitespace-nowrap">
+                  {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium">No date set</span>}
+                </span>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                    className="opacity-0 group-hover:opacity-100 text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2"
+                    aria-label="Edit date"
+                  >
+                    <Edit2 className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons Section */}
+        <div className="mb-3">
           {canEdit && (
             <div className="flex gap-2">
               <Button
