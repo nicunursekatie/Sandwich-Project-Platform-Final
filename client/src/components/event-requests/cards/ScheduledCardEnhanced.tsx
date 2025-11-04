@@ -22,6 +22,7 @@ import {
   Clock,
   Package,
   MapPin,
+  Building2,
   Edit2,
   Save,
   X,
@@ -568,7 +569,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           {/* Column 1: Event Details */}
           <div className="flex flex-col h-full">
             {/* Event Details Card */}
-            <div className="bg-gradient-to-r from-[#47B3CB]/40 to-[#47B3CB]/25 rounded-lg p-4 border-l-4 border-[#47B3CB] border border-[#47B3CB] shadow-md flex-1">
+            <div className="bg-gradient-to-r from-[#47B3CB]/40 to-[#47B3CB]/25 rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md flex-1">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] flex items-center gap-2 mb-4">
                 <Calendar className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
                 Event Details
@@ -995,7 +996,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
           {/* Column 2: Team Assignments */}
           <div className="flex flex-col h-full lg:order-2">
-            <div className="bg-gradient-to-r from-[#47B3CB]/40 to-[#47B3CB]/25 rounded-lg p-4 border-l-4 border-[#47B3CB] border border-[#47B3CB] shadow-md flex-1">
+            <div className="bg-gradient-to-r from-[#47B3CB]/40 to-[#47B3CB]/25 rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md flex-1">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
@@ -1315,7 +1316,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           {/* Column 3: Event Organizer & Delivery Logistics */}
           <div className="flex flex-col gap-4 h-full lg:order-3">
             {/* Event Organizer */}
-            <div className="bg-gradient-to-r from-[#47B3CB]/40 to-[#47B3CB]/25 rounded-lg p-4 border-l-4 border-[#47B3CB] border border-[#47B3CB] shadow-md">
+            <div className="bg-gradient-to-r from-[#47B3CB]/40 to-[#47B3CB]/25 rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
                 Event Organizer
@@ -1370,7 +1371,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
 
             {/* Delivery Logistics */}
-            <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-4 border-l-4 border-[#FBAD3F] border border-[#FBAD3F] shadow-md">
+            <div className="bg-gradient-to-r from-[#FBAD3F]/40 to-[#FBAD3F]/25 rounded-lg p-4 border-l-4 border-[#FBAD3F] border-t border-r border-b border-[#FBAD3F]/20 shadow-md">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Package className="w-4 h-4 text-[#FBAD3F]" aria-hidden="true" />
                 Delivery Logistics
@@ -1448,7 +1449,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F] text-sm">
-                          <Building className="w-3 h-3 mr-1" />
+                          <Building2 className="w-3 h-3 mr-1" />
                           No recipients assigned
                         </Badge>
                       )}
@@ -1512,7 +1513,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           request.duplicateNotes ||
           request.unresponsiveNotes ||
           request.socialMediaPostNotes) && (
-          <div className="bg-gradient-to-r from-[#236383]/30 to-[#236383]/15 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border border-[#236383] shadow-md">
+          <div className="bg-gradient-to-r from-[#236383]/30 to-[#236383]/15 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border-t border-r border-b border-[#236383]/20 shadow-md">
             <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4 text-[#236383]" />
               Notes & Requirements
@@ -1571,7 +1572,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-700 bg-gradient-to-r from-[#47B3CB]/30 to-[#47B3CB]/15 p-3 rounded border-l-4 border-[#47B3CB] border border-[#47B3CB] whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 bg-gradient-to-r from-[#47B3CB]/30 to-[#47B3CB]/15 p-3 rounded border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 whitespace-pre-wrap">
                       {request.planningNotes}
                     </p>
                   )}
