@@ -117,8 +117,9 @@ body {
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased text-foreground;
     font-family: 'Roboto', system-ui, sans-serif;
+    background-color: #007E8C; /* Deep teal for app shell */
   }
 
   .font-main-heading {
