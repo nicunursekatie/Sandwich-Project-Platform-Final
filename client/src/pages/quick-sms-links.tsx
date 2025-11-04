@@ -133,14 +133,15 @@ export default function QuickSMSLinks() {
               <Input
                 id="phone-number"
                 type="tel"
-                placeholder="+1234567890"
+                placeholder="+12345678900"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 disabled={sendSMSMutation.isPending}
                 data-testid="input-phone-number"
+                pattern="^\+?[1-9]\d{1,14}$"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Include country code (e.g., +1 for US)
+                Include country code (e.g., +1 for US). Format: +12345678900
               </p>
             </div>
 
