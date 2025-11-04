@@ -521,7 +521,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             ) : (
               <div className="flex items-center gap-1.5 group">
                 <Calendar className="w-5 h-5 text-[#007E8C]" />
-                <span className="text-lg font-bold text-[#47B3CB] whitespace-nowrap">
+                <span className="text-2xl font-bold text-[#47B3CB] whitespace-nowrap">
                   {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium">No date set</span>}
                 </span>
                 {canEdit && (
