@@ -15,43 +15,43 @@ export const SANDWICH_TYPES = [
   { value: 'unknown', label: 'Unknown' },
 ] as const;
 
-// Status color scheme - VIBRANT VERSION: Bright, saturated colors for maximum visibility
+// Status color scheme - VIBRANT BRAND COLORS: Using TSP brand palette with high saturation
 export const statusColors = {
-  new: 'bg-gradient-to-br from-[#00C9FF] to-[#0AF] text-white border-2 border-[#00C9FF] shadow-md',
+  new: 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border-2 border-[#007E8C] shadow-md',
   in_process:
-    'bg-gradient-to-br from-[#FF9500] to-[#FFB000] text-white border-2 border-[#FF9500] shadow-md',
+    'bg-gradient-to-br from-[#FBAD3F] to-[#ffc966] text-white border-2 border-[#FBAD3F] shadow-md',
   scheduled:
-    'bg-gradient-to-br from-[#007AFF] to-[#0096FF] text-white border-2 border-[#007AFF] shadow-md',
+    'bg-gradient-to-br from-[#236383] to-[#2d7da5] text-white border-2 border-[#236383] shadow-md',
   completed:
-    'bg-gradient-to-br from-[#34C759] to-[#30D158] text-white border-2 border-[#34C759] shadow-md',
+    'bg-gradient-to-br from-[#47B3CB] to-[#6bc4d4] text-white border-2 border-[#47B3CB] shadow-md',
   declined:
-    'bg-gradient-to-br from-[#FF3B30] to-[#FF453A] text-white border-2 border-[#FF3B30] font-bold shadow-lg',
+    'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
   postponed:
-    'bg-gradient-to-br from-[#FF3B30] to-[#FF453A] text-white border-2 border-[#FF3B30] font-bold shadow-lg',
+    'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
   cancelled:
-    'bg-gradient-to-br from-[#FF3B30] to-[#FF453A] text-white border-2 border-[#FF3B30] font-bold shadow-lg',
+    'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
 };
 
-// Card border colors for left border accent - VIBRANT VERSION
+// Card border colors for left border accent - VIBRANT BRAND COLORS
 export const statusBorderColors = {
-  new: '#00C9FF', // Bright cyan
-  in_process: '#FF9500', // Bright orange
-  scheduled: '#007AFF', // Bright blue
-  completed: '#34C759', // Bright green
-  declined: '#FF3B30', // Bright red
-  postponed: '#FF3B30', // Bright red
-  cancelled: '#FF3B30', // Bright red
+  new: '#007E8C', // Vibrant teal
+  in_process: '#FBAD3F', // Vibrant orange
+  scheduled: '#236383', // Vibrant dark blue
+  completed: '#47B3CB', // Vibrant light blue
+  declined: '#A31C41', // Vibrant red
+  postponed: '#A31C41', // Vibrant red
+  cancelled: '#A31C41', // Vibrant red
 };
 
-// Card background accent colors - VIBRANT VERSION (brighter tints)
+// Card background accent colors - VIBRANT BRAND COLORS (much bolder tints)
 export const statusBgColors = {
-  new: 'bg-[#00C9FF]/10', // Bright cyan tint
-  in_process: 'bg-[#FF9500]/10', // Bright orange tint
-  scheduled: 'bg-[#007AFF]/10', // Bright blue tint
-  completed: 'bg-[#34C759]/10', // Bright green tint
-  declined: 'bg-[#FF3B30]/10', // Bright red tint
-  postponed: 'bg-[#FF3B30]/10', // Bright red tint
-  cancelled: 'bg-[#FF3B30]/10', // Bright red tint
+  new: 'bg-[#007E8C]/15', // Vibrant teal tint
+  in_process: 'bg-[#FBAD3F]/15', // Vibrant orange tint
+  scheduled: 'bg-[#236383]/15', // Vibrant dark blue tint
+  completed: 'bg-[#47B3CB]/15', // Vibrant light blue tint
+  declined: 'bg-[#A31C41]/15', // Vibrant red tint
+  postponed: 'bg-[#A31C41]/15', // Vibrant red tint
+  cancelled: 'bg-[#A31C41]/15', // Vibrant red tint
 };
 
 // My Assignment highlight color

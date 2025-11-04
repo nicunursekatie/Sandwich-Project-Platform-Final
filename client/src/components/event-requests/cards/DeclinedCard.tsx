@@ -252,7 +252,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
 
   return (
     <Card 
-      className={`transition-all duration-200 hover:shadow-xl border-l-[6px] bg-gradient-to-br from-[#FF3B30]/20 via-[#FF3B30]/10 to-white shadow-md opacity-95`}
+      className={`transition-all duration-200 hover:shadow-xl border-l-[6px] bg-gradient-to-br from-[#A31C41]/30 via-[#A31C41]/15 to-white shadow-md opacity-95`}
       style={{ borderLeftColor: statusBorderColors[request.status as keyof typeof statusBorderColors] || statusBorderColors.declined }}
     >
       <CardContent className="p-6">
