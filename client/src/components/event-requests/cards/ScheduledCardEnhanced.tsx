@@ -400,9 +400,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     >
       <CardContent className="p-3">
         {/* Header Row - Organization & Status */}
-        <div className="flex items-start justify-between gap-4 mb-4 pb-4 border-b-2 border-[#236383]/40">
+        <div className="flex items-start justify-between gap-3 mb-3 pb-3 border-b-2 border-[#236383]/40">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-2 mb-2">
               <h2 className="text-2xl font-bold text-[#236383]">
                 {request.organizationName}
               </h2>
