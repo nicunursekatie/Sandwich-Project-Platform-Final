@@ -140,6 +140,13 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'promotion',
     group: 'communication',
   },
+  {
+    id: 'quick-sms-links',
+    label: 'Quick SMS Links',
+    icon: MessageCircle,
+    href: 'quick-sms-links',
+    group: 'communication',
+  },
 
   // OPERATIONS (the weekly flow)
   {

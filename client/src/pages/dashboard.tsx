@@ -96,6 +96,7 @@ const WeeklyMonitoringDashboard = lazy(() => import('@/components/weekly-monitor
 const WishlistPage = lazy(() => import('@/pages/wishlist'));
 const TeamBoard = lazy(() => import('@/pages/TeamBoard'));
 const PromotionGraphics = lazy(() => import('@/pages/promotion-graphics'));
+const QuickSMSLinks = lazy(() => import('@/pages/quick-sms-links'));
 const CoolerTrackingPage = lazy(() => import('@/pages/cooler-tracking'));
 const EventRequestsManagement = lazy(() => import('@/components/event-requests'));
 const EventRemindersManagement = lazy(() => import('@/components/event-reminders-management'));
@@ -383,6 +384,8 @@ export default function Dashboard({
         return <TeamBoard />;
       case 'promotion':
         return <PromotionGraphics />;
+      case 'quick-sms-links':
+        return <QuickSMSLinks />;
       case 'cooler-tracking':
         return <CoolerTrackingPage />;
       case 'important-links':

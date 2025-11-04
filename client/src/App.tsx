@@ -228,6 +228,9 @@ function Router() {
         <Route path="/team-board">
           {() => <Dashboard initialSection="team-board" />}
         </Route>
+        <Route path="/quick-sms-links">
+          {() => <Dashboard initialSection="quick-sms-links" />}
+        </Route>
         <Route path="/cooler-tracking">
           {() => <Dashboard initialSection="cooler-tracking" />}
         </Route>

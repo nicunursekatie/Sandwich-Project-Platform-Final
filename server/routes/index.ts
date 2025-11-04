@@ -31,6 +31,7 @@ import { createActivityLogRoutes } from './activity-log';
 import { smsUserRoutes } from './sms-users';
 import { smsTestingRoutes } from './sms-testing';
 import { smsAnnouncementRoutes } from './sms-announcement';
+import quickSmsRouter from './quick-sms';
 import monitoringRouter from './monitoring';
 import enhancedActivityRouter from './enhanced-user-activity';
 import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
@@ -439,6 +440,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     smsAnnouncementRoutes
   );
   router.use('/api/sms-announcement', createErrorHandler('sms-announcement'));
+
+  router.use(
+    '/api/quick-sms',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    quickSmsRouter
+  );
+  router.use('/api/quick-sms', createErrorHandler('quick-sms'));
 
   router.use(
     '/api/monitoring',
