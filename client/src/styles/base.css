@@ -40,16 +40,16 @@ body {
 
 @layer base {
   :root {
-    --color-background: 30 11% 96%; /* #F7F6F4 - Warm neutral base */
-    --color-foreground: 24 5% 38%; /* #605251 - Dark Gray */
-    --color-muted: 0 0% 82%; /* #D1D3D4 - Light Gray */
-    --color-muted-foreground: 24 5% 38%; /* #605251 */
+    --color-background: 42 29% 98%; /* #FAF8F5 - Warm paper tone */
+    --color-foreground: 222 47% 11%; /* #0F172A - Near black */
+    --color-muted: 30 8% 91%; /* #E7E4DF - Warm neutral dividers */
+    --color-muted-foreground: 215 16% 47%; /* #6B7280 - Sublabels */
     --color-popover: 0 0% 100%; /* #FFFFFF */
-    --color-popover-foreground: 24 5% 38%; /* #605251 */
-    --color-card: 0 0% 100%; /* #FFFFFF - Keep cards white for contrast */
-    --color-card-foreground: 24 5% 38%; /* #605251 */
-    --color-border: 0 0% 90%; /* Light border */
-    --color-input: 0 0% 96%; /* Light input background */
+    --color-popover-foreground: 222 47% 11%; /* #0F172A */
+    --color-card: 0 0% 100%; /* #FFFFFF - White cards for contrast */
+    --color-card-foreground: 220 9% 18%; /* #1F2937 - Body text */
+    --color-border: 30 8% 91%; /* #E7E4DF - Warm neutral borders */
+    --color-input: 30 15% 96%; /* #F5F2EE - Panel bg */
     --color-primary: 197 100% 28%; /* #236383 - Brand Primary */
     --color-primary-foreground: 0 0% 100%; /* #FFFFFF */
     --color-primary-hover: 197 100% 24%;
