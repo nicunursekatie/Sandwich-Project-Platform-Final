@@ -168,11 +168,27 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
 
     // Add unresponsive/contact attempts logged
     if (eventRequest.unresponsiveNotes) {
+      // Try to extract date from content like "[Nov 3, 2025, 3:35 PM] Attempt #1..."
+      const dateMatch = eventRequest.unresponsiveNotes.match(/\[(.*?)\]/);
+      let parsedDate: Date | undefined;
+      let contentWithoutDate = eventRequest.unresponsiveNotes;
+
+      if (dateMatch) {
+        try {
+          parsedDate = new Date(dateMatch[1]);
+          // Remove the date portion from content
+          contentWithoutDate = eventRequest.unresponsiveNotes.replace(/\[.*?\]\s*/, '');
+        } catch (e) {
+          // If date parsing fails, keep original content
+        }
+      }
+
       items.push({
         type: 'note',
         icon: <PhoneOff className="h-4 w-4" />,
         title: 'Contact Attempts Logged',
-        content: eventRequest.unresponsiveNotes,
+        content: contentWithoutDate,
+        date: parsedDate,
       });
     }
 
