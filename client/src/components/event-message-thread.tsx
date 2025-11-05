@@ -73,25 +73,8 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       });
     }
 
-    // Add contact attempt info
-    if (eventRequest.contactAttempts && eventRequest.contactAttempts > 0) {
-      const methodIcons = {
-        phone: <Phone className="h-4 w-4" />,
-        email: <Mail className="h-4 w-4" />,
-        video_meeting: <Video className="h-4 w-4" />,
-      };
-
-      items.push({
-        type: 'contact',
-        icon: eventRequest.communicationMethod 
-          ? methodIcons[eventRequest.communicationMethod as keyof typeof methodIcons] || <MessageSquare className="h-4 w-4" />
-          : <MessageSquare className="h-4 w-4" />,
-        title: `Contact Attempt${eventRequest.contactAttempts > 1 ? 's' : ''}`,
-        content: eventRequest.contactCompletionNotes || 'Contact made',
-        date: eventRequest.lastContactAttempt ? new Date(eventRequest.lastContactAttempt) : undefined,
-        badge: `${eventRequest.contactAttempts} attempt${eventRequest.contactAttempts > 1 ? 's' : ''}`,
-      });
-    }
+    // Contact attempt info is now handled by unresponsiveNotes below
+    // (removed duplicate contact attempt display)
 
     // Add planning notes
     if (eventRequest.planningNotes) {
