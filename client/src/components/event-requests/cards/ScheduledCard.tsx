@@ -1738,15 +1738,13 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
         {/* Communication & Notes Section */}
         {request.id && (
-          <div className="bg-gradient-to-r from-[#236383]/25 to-[#236383]/12 rounded-lg p-4 mb-4 border-l-4 border-[#236383] shadow-md overflow-hidden">
-            <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
-              <EventMessageThread
-                eventId={request.id.toString()}
-                eventRequest={request}
-                eventTitle={`${request.organizationName} event`}
-                maxHeight="300px"
-              />
-            </div>
+          <div className="bg-gradient-to-r from-[#236383]/25 to-[#236383]/12 rounded-lg p-4 mb-4 border-l-4 border-[#236383] shadow-md">
+            <EventMessageThread
+              eventId={request.id.toString()}
+              eventRequest={request}
+              eventTitle={`${request.organizationName} event`}
+              maxHeight="300px"
+            />
           </div>
         )}
 
