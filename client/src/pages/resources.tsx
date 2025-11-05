@@ -62,8 +62,8 @@ const CATEGORIES = [
     borderColor: 'border-[#47B3CB]/30',
   },
   {
-    id: 'training',
-    label: 'Training & Resources',
+    id: 'toolkit',
+    label: 'Toolkit',
     icon: BookOpen,
     color: 'text-[#FBAD3F]', // Brand orange
     bgColor: 'bg-[#FBAD3F]/10',
