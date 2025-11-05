@@ -20,10 +20,11 @@ import SignupPage from '@/pages/signup';
 import ResetPassword from '@/pages/reset-password';
 import NotFound from '@/pages/not-found';
 import Help from '@/pages/Help';
+import PendingApproval from '@/pages/pending-approval';
 import { logger } from '@/lib/logger';
 
 function Router() {
-  const { isAuthenticated, isLoading, error } = useAuth();
+  const { isAuthenticated, isLoading, error, user } = useAuth();
 
   // Track page views when routes change
   useAnalytics();
@@ -181,6 +182,30 @@ function Router() {
             return (
               <LoadingState
                 text="Redirecting to login..."
+                size="lg"
+                className="min-h-screen"
+              />
+            );
+          }}
+        </Route>
+      </Switch>
+    );
+  }
+
+  // Check if user is authenticated but account is inactive (pending approval)
+  if (isAuthenticated && user && !user.isActive) {
+    return (
+      <Switch>
+        <Route path="/pending-approval">
+          <PendingApproval />
+        </Route>
+        <Route>
+          {() => {
+            // Redirect all other routes to pending approval page
+            window.location.href = '/pending-approval';
+            return (
+              <LoadingState
+                text="Redirecting..."
                 size="lg"
                 className="min-h-screen"
               />
