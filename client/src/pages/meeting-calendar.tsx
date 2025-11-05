@@ -96,9 +96,9 @@ export default function MeetingCalendar({
     try {
       const [hours, minutes] = time24.split(':');
       const hour = parseInt(hours);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const meridiem = hour >= 12 ? 'PM' : 'AM';
       const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-      return `${hour12}:${minutes} ${ampm}`;
+      return `${hour12}:${minutes} ${meridiem}`;
     } catch {
       return null;
     }

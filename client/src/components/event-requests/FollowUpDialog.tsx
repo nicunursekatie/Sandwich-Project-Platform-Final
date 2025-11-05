@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -147,7 +147,7 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
                 </>
               ) : (
                 <>
-                  <li>• Check if they're planning any future events</li>
+                  <li>• Check if they&apos;re planning any future events</li>
                   <li>• Ask about their overall experience with TSP</li>
                   <li>• Gather feedback for program improvement</li>
                 </>
