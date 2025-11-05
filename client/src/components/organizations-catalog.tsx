@@ -329,9 +329,11 @@ export default function GroupCatalog({
     const matchesDateEnd = !filters.dateRange.to || !eventDate || eventDate <= filters.dateRange.to;
 
     // Hosted events filter
+    // "Never Hosted" = organizations that were declined/postponed/cancelled (they engaged but never hosted)
+    // "Has Hosted" = organizations with completed events or collection data
     const matchesHosted = filters.hostedEvents.length === 0 ||
       (filters.hostedEvents.includes('hosted') && org.hasHostedEvent) ||
-      (filters.hostedEvents.includes('not-hosted') && !org.hasHostedEvent);
+      (filters.hostedEvents.includes('not-hosted') && !org.hasHostedEvent && ['declined', 'postponed', 'cancelled'].includes(org.status));
 
     return matchesSearch && matchesCategory && matchesStatus && matchesDateStart && matchesDateEnd && matchesHosted;
   });
@@ -660,7 +662,10 @@ export default function GroupCatalog({
               type: 'tags',
               options: [
                 { value: 'hosted', label: 'Has Hosted', count: allOrganizations.filter(o => o.hasHostedEvent).length },
-                { value: 'not-hosted', label: 'Never Hosted', count: allOrganizations.filter(o => !o.hasHostedEvent).length },
+                { value: 'not-hosted', label: 'Never Hosted', count: allOrganizations.filter(o => 
+                  !o.hasHostedEvent && 
+                  ['declined', 'postponed', 'cancelled'].includes(o.status)
+                ).length },
               ],
             },
             {
