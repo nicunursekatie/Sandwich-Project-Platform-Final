@@ -331,9 +331,13 @@ export default function GroupCatalog({
     // Hosted events filter
     // "Never Hosted" = organizations that were declined/postponed/cancelled (they engaged but never hosted)
     // "Has Hosted" = organizations with completed events or collection data
+    // CRITICAL: If actualSandwichTotal > 0, they DEFINITELY hosted - exclude from "Never Hosted"
     const matchesHosted = filters.hostedEvents.length === 0 ||
-      (filters.hostedEvents.includes('hosted') && org.hasHostedEvent) ||
-      (filters.hostedEvents.includes('not-hosted') && !org.hasHostedEvent && ['declined', 'postponed', 'cancelled'].includes(org.status));
+      (filters.hostedEvents.includes('hosted') && (org.hasHostedEvent || (org.actualSandwichTotal && org.actualSandwichTotal > 0))) ||
+      (filters.hostedEvents.includes('not-hosted') && 
+        !org.hasHostedEvent && 
+        (!org.actualSandwichTotal || org.actualSandwichTotal === 0) && 
+        ['declined', 'postponed', 'cancelled'].includes(org.status));
 
     return matchesSearch && matchesCategory && matchesStatus && matchesDateStart && matchesDateEnd && matchesHosted;
   });
@@ -661,9 +665,10 @@ export default function GroupCatalog({
               label: 'Event History',
               type: 'tags',
               options: [
-                { value: 'hosted', label: 'Has Hosted', count: allOrganizations.filter(o => o.hasHostedEvent).length },
+                { value: 'hosted', label: 'Has Hosted', count: allOrganizations.filter(o => o.hasHostedEvent || (o.actualSandwichTotal && o.actualSandwichTotal > 0)).length },
                 { value: 'not-hosted', label: 'Never Hosted', count: allOrganizations.filter(o => 
                   !o.hasHostedEvent && 
+                  (!o.actualSandwichTotal || o.actualSandwichTotal === 0) &&
                   ['declined', 'postponed', 'cancelled'].includes(o.status)
                 ).length },
               ],
