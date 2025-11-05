@@ -682,6 +682,14 @@ export function Resources() {
 
               const CategoryIcon = category.icon;
 
+              // Separate labels from other resources for special layout
+              const labelResources = categoryResources.filter(r => 
+                r.resource.title.includes('Labels')
+              );
+              const otherResources = categoryResources.filter(r => 
+                !r.resource.title.includes('Labels')
+              );
+
               return (
                 <div key={category.id}>
                   <div className={`flex items-center gap-3 mb-4 pb-3 border-b-2 ${category.borderColor}`}>
@@ -696,11 +704,23 @@ export function Resources() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                    {categoryResources.map((resource) => (
-                      <ResourceCard key={resource.resource.id} item={resource} />
-                    ))}
-                  </div>
+                  {/* Labels displayed side-by-side */}
+                  {labelResources.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      {labelResources.map((resource) => (
+                        <ResourceCard key={resource.resource.id} item={resource} />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Other resources in standard grid */}
+                  {otherResources.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                      {otherResources.map((resource) => (
+                        <ResourceCard key={resource.resource.id} item={resource} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
