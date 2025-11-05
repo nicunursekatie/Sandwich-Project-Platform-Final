@@ -249,6 +249,7 @@ export default function GroupCatalog({
       organizationName: org.name,
       contactName: contact.contactName || contact.name,
       email: contact.email,
+      phone: contact.phone,
       department: contact.department,
       latestRequestDate: contact.latestRequestDate || org.lastRequestDate,
       latestActivityDate:
