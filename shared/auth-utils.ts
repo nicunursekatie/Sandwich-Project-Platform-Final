@@ -338,6 +338,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.COMMITTEE_MEMBER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         // Core access permissions
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.PROJECTS_VIEW,
@@ -375,6 +378,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.HOST:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         // Directory access
         PERMISSIONS.HOSTS_VIEW,
         PERMISSIONS.RECIPIENTS_VIEW,
@@ -414,6 +420,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.CORE_TEAM:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         // Core viewing permissions
         PERMISSIONS.HOSTS_VIEW,
         PERMISSIONS.RECIPIENTS_VIEW,
@@ -481,6 +490,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.DRIVER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.PROJECTS_VIEW,
         PERMISSIONS.SUGGESTIONS_VIEW,
@@ -504,6 +516,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.VOLUNTEER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.PROJECTS_VIEW,
         PERMISSIONS.SUGGESTIONS_VIEW,
@@ -529,6 +544,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.RECIPIENT:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.SUGGESTIONS_VIEW,
         PERMISSIONS.MESSAGES_VIEW,
@@ -550,6 +568,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.DEMO_USER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         // Can view all main sections but cannot edit/delete/manage anything
         PERMISSIONS.HOSTS_VIEW,
         PERMISSIONS.RECIPIENTS_VIEW,
@@ -591,6 +612,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.VIEWER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.TOOLKIT_ACCESS,
         PERMISSIONS.PROJECTS_VIEW,
@@ -612,6 +636,9 @@ export function getDefaultPermissionsForRole(role: string): string[] {
 
     case USER_ROLES.WORK_LOGGER:
       return [
+        // Navigation permissions
+        PERMISSIONS.NAV_PROMOTION,
+
         PERMISSIONS.COLLECTIONS_VIEW,
         PERMISSIONS.CHAT_GENERAL,
         PERMISSIONS.CHAT_DIRECT,
