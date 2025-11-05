@@ -3,7 +3,6 @@ import { useEventMessages } from '@/hooks/useEventMessages';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList, AlertCircle, Users, Truck, Car, Bell, Package, Copy, PhoneOff, Share2, Edit2, Trash2 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
@@ -303,7 +302,7 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
         </div>
       )}
 
-      <ScrollArea style={{ height: maxHeight }} className="pr-4">
+      <div style={{ maxHeight }} className="overflow-y-auto pr-4">
         <div className="space-y-3 pb-4">
           {activityItems.map((item, index) => (
             <Card key={index} className="p-3 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
@@ -360,7 +359,7 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
             </Card>
           ))}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 };
