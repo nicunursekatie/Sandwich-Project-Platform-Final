@@ -14,21 +14,26 @@ export const blockInactiveUsers: RequestHandler = async (req, res, next) => {
 
     const user = req.user || req.session?.user;
     
-    // Define paths that pending users CAN access
-    const allowedPaths = [
-      '/api/auth/',
-      '/api/user/me',
-      '/api/user/profile',
-      '/healthz',
-      '/api/login',
-      '/api/logout',
+    // Define exact path+method combinations that pending users CAN access
+    // Using exact matching to prevent bypassing mutation endpoints
+    const allowedRoutes = [
+      { method: 'GET', path: '/api/auth/user' },      // Get current user info
+      { method: 'POST', path: '/api/auth/login' },    // Login
+      { method: 'POST', path: '/api/auth/logout' },   // Logout
+      { method: 'POST', path: '/api/auth/signup' },   // Signup
+      { method: 'GET', path: '/api/user/me' },        // Get own profile (read-only)
+      { method: 'GET', path: '/healthz' },            // Health check
+      { method: 'GET', path: '/api/login' },          // Login page
+      { method: 'GET', path: '/api/logout' },         // Logout page
     ];
 
-    // Check if the request path is allowed for inactive users
-    const isAllowedPath = allowedPaths.some(path => req.path.startsWith(path));
+    // Check if the request method+path combination is allowed for inactive users
+    const isAllowedRoute = allowedRoutes.some(
+      route => route.method === req.method && req.path === route.path
+    );
     
     // If user is inactive and trying to access a protected route, block them
-    if (user && !user.isActive && !isAllowedPath) {
+    if (user && !user.isActive && !isAllowedRoute) {
       logger.log(`❌ INACTIVE USER BLOCKED: ${user.email} attempted to access ${req.path}`);
       return res.status(403).json({
         message: 'Account pending approval',

@@ -4,7 +4,8 @@ import { storage } from '../storage-wrapper';
 import { db } from '../db';
 import { users } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
-import { getDefaultPermissionsForRole } from '@shared/auth-utils';
+import { getDefaultPermissionsForRole, PERMISSIONS } from '@shared/auth-utils';
+import { requirePermission } from '../middleware/auth';
 
 const router = Router();
 
@@ -108,7 +109,7 @@ Registration Date: ${new Date().toISOString()}
 });
 
 // Get pending registrations (admin only)
-router.get('/auth/pending-registrations', async (req, res) => {
+router.get('/auth/pending-registrations', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
     // In a real implementation, check admin permissions here
     const users = await storage.getAllUsers();
@@ -124,7 +125,7 @@ router.get('/auth/pending-registrations', async (req, res) => {
 });
 
 // Approve user registration (admin only)
-router.patch('/auth/approve-user/:userId', async (req, res) => {
+router.patch('/auth/approve-user/:userId', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
     const { userId } = req.params;
     const { approved } = req.body;
