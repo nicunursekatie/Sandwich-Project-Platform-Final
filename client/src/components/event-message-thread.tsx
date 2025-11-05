@@ -264,11 +264,11 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
                         {item.title}
                       </p>
                       {item.date && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <Badge variant="secondary" className="text-xs mt-1">
                           {formatDistanceToNow(item.date, { addSuffix: true })}
                           {' • '}
                           {format(item.date, 'MMM d, yyyy h:mm a')}
-                        </p>
+                        </Badge>
                       )}
                     </div>
                   </div>
