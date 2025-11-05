@@ -563,13 +563,15 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
         {/* Communication & Notes Section */}
         {request.id && (
-          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-            <EventMessageThread
-              eventId={request.id.toString()}
-              eventRequest={request}
-              eventTitle={`${request.organizationName} event`}
-              maxHeight="300px"
-            />
+          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200 overflow-hidden">
+            <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
+              <EventMessageThread
+                eventId={request.id.toString()}
+                eventRequest={request}
+                eventTitle={`${request.organizationName} event`}
+                maxHeight="300px"
+              />
+            </div>
           </div>
         )}
 

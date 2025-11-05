@@ -64,6 +64,7 @@ import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import SendKudosButton from '@/components/send-kudos-button';
 import { MessageComposer } from '@/components/message-composer';
+import { EventMessageThread } from '@/components/event-message-thread';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
 
 interface ScheduledCardEnhancedProps {
@@ -1693,6 +1694,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Communication & Notes Section */}
+        {request.id && (
+          <div className="bg-gradient-to-r from-[#236383]/25 to-[#236383]/12 rounded-lg p-4 mb-4 border-l-4 border-[#236383] border-t border-r border-b border-[#236383]/20 shadow-md overflow-hidden">
+            <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
+              <EventMessageThread
+                eventId={request.id.toString()}
+                eventRequest={request}
+                eventTitle={`${request.organizationName} event`}
+                maxHeight="300px"
+              />
             </div>
           </div>
         )}
