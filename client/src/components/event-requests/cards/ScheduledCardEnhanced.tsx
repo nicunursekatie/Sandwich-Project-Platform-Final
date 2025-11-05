@@ -1798,7 +1798,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           <MessageComposer
             contextType="event"
             contextId={request.id.toString()}
-            contextTitle={`${request.organizationName} event on ${formatEventDate(request.scheduledDate)}`}
+            contextTitle={`${request.organizationName} event${displayDate ? ` on ${formatEventDate(displayDate.toString())}` : ''}`}
             onSent={() => setShowMessageDialog(false)}
             onCancel={() => setShowMessageDialog(false)}
           />

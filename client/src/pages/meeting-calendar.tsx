@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
@@ -14,13 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Calendar,
   Clock,
   MapPin,
@@ -35,7 +28,6 @@ import {
 import { queryClient } from '@/lib/queryClient';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useLocation } from 'wouter';
 
 interface Meeting {
   id: number;
@@ -61,8 +53,7 @@ interface MeetingCalendarProps {
 export default function MeetingCalendar({
   isEmbedded = false,
 }: MeetingCalendarProps) {
-  const { trackView, trackCreate } = useActivityTracker();
-  const [, setLocation] = useLocation();
+  const { trackView, trackCreate, trackUpdate } = useActivityTracker();
   const { setActiveSection } = useDashboardNavigation();
   const [isCreating, setIsCreating] = useState(false);
 
@@ -77,9 +68,6 @@ export default function MeetingCalendar({
     }
   }, [isEmbedded, trackView]);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -97,7 +85,7 @@ export default function MeetingCalendar({
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'Invalid date';
       return date.toLocaleDateString();
-    } catch (error) {
+    } catch {
       return 'Invalid date';
     }
   };
@@ -111,7 +99,7 @@ export default function MeetingCalendar({
       const ampm = hour >= 12 ? 'PM' : 'AM';
       const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
       return `${hour12}:${minutes} ${ampm}`;
-    } catch (error) {
+    } catch {
       return null;
     }
   };
@@ -145,7 +133,7 @@ export default function MeetingCalendar({
       if (!response.ok) throw new Error('Failed to create meeting');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
       setIsCreating(false);
       setFormData({
@@ -156,7 +144,61 @@ export default function MeetingCalendar({
         agenda: '',
         meetingLink: '',
       });
+      if (!isEmbedded) {
+        trackCreate(
+          'Meetings',
+          'Meetings',
+          'Meeting Calendar',
+          `Created meeting: ${data.title || formData.title}`
+        );
+      }
       toast({ title: 'Meeting scheduled successfully' });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: number } & typeof formData) => {
+      const response = await fetch(`/api/meetings/${data.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          meetingDate: data.meetingDate,
+          startTime: data.startTime,
+          agenda: data.agenda,
+          meetingLink: data.meetingLink,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to update meeting');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+      setEditingId(null);
+      setFormData({
+        title: '',
+        description: '',
+        meetingDate: '',
+        startTime: '',
+        agenda: '',
+        meetingLink: '',
+      });
+      if (!isEmbedded) {
+        trackUpdate(
+          'Meetings',
+          'Meetings',
+          'Meeting Calendar',
+          `Updated meeting: ${data.title || formData.title}`
+        );
+      }
+      toast({ title: 'Meeting updated successfully' });
+    },
+    onError: () => {
+      toast({ 
+        title: 'Failed to update meeting',
+        variant: 'destructive'
+      });
     },
   });
 
@@ -182,7 +224,37 @@ export default function MeetingCalendar({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    if (editingId) {
+      updateMutation.mutate({ ...formData, id: editingId });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const handleEditMeeting = (meeting: Meeting) => {
+    setEditingId(meeting.id);
+    setFormData({
+      title: meeting.title,
+      description: meeting.description || '',
+      meetingDate: meeting.meetingDate ? new Date(meeting.meetingDate).toISOString().split('T')[0] : '',
+      startTime: meeting.startTime || '',
+      agenda: meeting.agenda || '',
+      meetingLink: meeting.meetingLink || '',
+    });
+    setIsCreating(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setIsCreating(false);
+    setFormData({
+      title: '',
+      description: '',
+      meetingDate: '',
+      startTime: '',
+      agenda: '',
+      meetingLink: '',
+    });
   };
 
   const handleDeleteMeeting = (meetingId: number) => {
@@ -321,13 +393,13 @@ export default function MeetingCalendar({
         </Card>
       </div>
 
-      {/* Create Form */}
+      {/* Create/Edit Form */}
       {isCreating && (
         <Card>
           <CardHeader>
-            <CardTitle>Schedule New Meeting</CardTitle>
+            <CardTitle>{editingId ? 'Edit Meeting' : 'Schedule New Meeting'}</CardTitle>
             <CardDescription>
-              Create a new meeting and send invitations
+              {editingId ? 'Update meeting details' : 'Create a new meeting and send invitations'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -405,15 +477,19 @@ export default function MeetingCalendar({
                 />
               </div>
               <div className="flex gap-2">
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending
-                    ? 'Scheduling...'
-                    : 'Schedule Meeting'}
+                <Button 
+                  type="submit" 
+                  disabled={editingId ? updateMutation.isPending : createMutation.isPending}
+                >
+                  {editingId 
+                    ? (updateMutation.isPending ? 'Updating...' : 'Update Meeting')
+                    : (createMutation.isPending ? 'Scheduling...' : 'Schedule Meeting')
+                  }
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsCreating(false)}
+                  onClick={handleCancelEdit}
                 >
                   Cancel
                 </Button>
@@ -479,7 +555,11 @@ export default function MeetingCalendar({
                       )}
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditMeeting(meeting)}
+                      >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <ConfirmationDialog
