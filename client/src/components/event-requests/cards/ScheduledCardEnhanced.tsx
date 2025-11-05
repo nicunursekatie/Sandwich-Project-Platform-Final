@@ -1526,7 +1526,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <FileText className="w-4 h-4 text-[#236383]" />
               Notes & Requirements
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
               {request.message && (
                 <div className="sm:col-span-2">
                   <p className="text-sm font-medium mb-1 text-gray-900">Original Request Message:</p>
