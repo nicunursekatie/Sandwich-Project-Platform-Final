@@ -341,6 +341,10 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             ...(Array.from(orgData.eventDates) as string[]).map((d) => new Date(d).getTime())
           );
 
+          const latestCollectionDateString = new Date(latestCollectionDate)
+            .toISOString()
+            .split('T')[0];
+
           departmentsMap.set(departmentKey, {
             organizationName: orgData.originalName,
             canonicalName: canonicalOrgName,
@@ -355,10 +359,8 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
             actualSandwichTotal: orgData.totalSandwiches,
             actualEventCount: orgData.eventCount,
             eventFrequency: calculateEventFrequency(orgData.eventDates),
-            eventDate: null,
-            latestCollectionDate: new Date(latestCollectionDate)
-              .toISOString()
-              .split('T')[0],
+            eventDate: latestCollectionDateString, // Use collection date as event date
+            latestCollectionDate: latestCollectionDateString,
           });
         }
       });
