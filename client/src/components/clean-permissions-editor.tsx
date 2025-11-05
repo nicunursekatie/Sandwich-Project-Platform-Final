@@ -181,13 +181,13 @@ export default function CleanPermissionsEditor({
   const permissionsContent = (
     <div className="space-y-4">
           {/* Role Template Selector - PROMINENT */}
-          <Card className="border-2 border-brand-primary/20">
+          <Card className="border-2 border-brand-primary/30 bg-gradient-to-br from-brand-primary/5 to-brand-primary/10 shadow-md hover:shadow-lg transition-all duration-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+              <CardTitle className="text-base flex items-center gap-2 text-brand-primary font-semibold">
+                <Shield className="h-5 w-5" />
                 Role Template
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Start with a pre-configured role. Most users only need this step.
               </CardDescription>
             </CardHeader>
@@ -211,14 +211,14 @@ export default function CleanPermissionsEditor({
               </Select>
 
               {selectedPermissions.size !== defaultPermissions.size && (
-                <div className="mt-3 flex items-center gap-2 text-sm text-amber-600">
+                <div className="mt-3 flex items-center gap-2 text-sm text-amber-700 bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-l-brand-secondary rounded-lg p-3 shadow-sm">
                   <AlertCircle className="h-4 w-4" />
-                  <span>Custom permissions active ({selectedPermissions.size} total)</span>
+                  <span className="font-medium">Custom permissions active ({selectedPermissions.size} total)</span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setSelectedPermissions(new Set(getDefaultPermissionsForRole(selectedRole)))}
-                    className="ml-auto text-xs"
+                    className="ml-auto text-xs hover:bg-white/50 transition-all duration-200"
                   >
                     Reset to Role Default
                   </Button>
@@ -228,34 +228,34 @@ export default function CleanPermissionsEditor({
           </Card>
 
           {/* Risk Level Summary */}
-          <Card className="border-amber-200 bg-amber-50/50">
+          <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 shadow-md transition-all duration-200">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Shield className="h-4 w-4 text-amber-600" />
+              <CardTitle className="text-sm flex items-center gap-2 text-amber-700 font-semibold">
+                <Shield className="h-5 w-5" />
                 Permission Risk Summary
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex items-center justify-between px-2 py-1.5 rounded bg-green-50 border border-green-200">
-                  <span className="text-green-700 font-medium">👁️ Safe</span>
-                  <Badge variant="outline" className="bg-white text-green-700 border-green-300">{riskCounts.safe}</Badge>
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-l-green-500 shadow-sm hover:shadow transition-all duration-200">
+                  <span className="text-green-700 font-semibold">👁️ Safe</span>
+                  <Badge variant="outline" className="bg-white text-green-700 border-green-400 font-medium">{riskCounts.safe}</Badge>
                 </div>
-                <div className="flex items-center justify-between px-2 py-1.5 rounded bg-blue-50 border border-blue-200">
-                  <span className="text-blue-700 font-medium">✏️ Moderate</span>
-                  <Badge variant="outline" className="bg-white text-blue-700 border-blue-300">{riskCounts.moderate}</Badge>
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-l-blue-500 shadow-sm hover:shadow transition-all duration-200">
+                  <span className="text-blue-700 font-semibold">✏️ Moderate</span>
+                  <Badge variant="outline" className="bg-white text-blue-700 border-blue-400 font-medium">{riskCounts.moderate}</Badge>
                 </div>
-                <div className="flex items-center justify-between px-2 py-1.5 rounded bg-orange-50 border border-orange-200">
-                  <span className="text-orange-700 font-medium">⚠️ Elevated</span>
-                  <Badge variant="outline" className="bg-white text-orange-700 border-orange-300">{riskCounts.elevated}</Badge>
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gradient-to-r from-orange-50 to-amber-50 border-l-4 border-l-orange-500 shadow-sm hover:shadow transition-all duration-200">
+                  <span className="text-orange-700 font-semibold">⚠️ Elevated</span>
+                  <Badge variant="outline" className="bg-white text-orange-700 border-orange-400 font-medium">{riskCounts.elevated}</Badge>
                 </div>
-                <div className="flex items-center justify-between px-2 py-1.5 rounded bg-red-50 border border-red-200">
-                  <span className="text-red-700 font-medium">🔥 Critical</span>
-                  <Badge variant="outline" className="bg-white text-red-700 border-red-300">{riskCounts.critical}</Badge>
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gradient-to-r from-red-50 to-rose-50 border-l-4 border-l-red-500 shadow-sm hover:shadow transition-all duration-200">
+                  <span className="text-red-700 font-semibold">🔥 Critical</span>
+                  <Badge variant="outline" className="bg-white text-red-700 border-red-400 font-medium">{riskCounts.critical}</Badge>
                 </div>
               </div>
               {riskCounts.critical > 0 && (
-                <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                <div className="mt-3 text-xs text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-l-4 border-l-red-500 rounded-lg p-3 shadow-sm">
                   ⚠️ <strong>Warning:</strong> This user has {riskCounts.critical} critical permission{riskCounts.critical !== 1 ? 's' : ''} (can delete data or manage users)
                 </div>
               )}
@@ -263,23 +263,23 @@ export default function CleanPermissionsEditor({
           </Card>
 
           {/* Search - PROMINENT */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <div className="relative shadow-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-brand-primary" />
             <Input
               placeholder="Search permissions (e.g., 'volunteer', 'edit', 'messages')..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 h-12 text-base"
+              className="pl-11 h-12 text-base border-2 border-slate-200 focus:border-brand-primary rounded-lg transition-all duration-200"
             />
           </div>
 
           {/* Permissions Groups - COLLAPSIBLE */}
-          <Card>
-            <CardHeader className="pb-3">
+          <Card className="border-2 border-slate-200 shadow-md transition-all duration-200">
+            <CardHeader className="pb-3 bg-gradient-to-r from-slate-50 to-slate-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">Custom Permissions</CardTitle>
-                  <CardDescription className="text-xs">
+                  <CardTitle className="text-base text-slate-800 font-semibold">Custom Permissions</CardTitle>
+                  <CardDescription className="text-xs text-slate-600">
                     {showAdvanced ? 'Showing all permissions' : 'Showing commonly adjusted permissions'}
                   </CardDescription>
                 </div>
@@ -287,7 +287,7 @@ export default function CleanPermissionsEditor({
                   variant="outline"
                   size="sm"
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="text-xs"
+                  className="text-xs bg-white hover:bg-brand-primary hover:text-white transition-all duration-200 shadow-sm"
                 >
                   {showAdvanced ? 'Show Common Only' : 'Show All Permissions'}
                 </Button>
@@ -320,17 +320,17 @@ export default function CleanPermissionsEditor({
 
                       return (
                         <Collapsible key={groupKey} open={isExpanded} onOpenChange={() => !searchQuery && toggleGroup(groupKey)}>
-                          <div className="border rounded-lg">
+                          <div className="border-2 border-brand-primary/20 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
                             <CollapsibleTrigger className="w-full">
-                              <div className="flex items-center justify-between p-3 hover:bg-gray-50">
+                              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#47b3cbbf] to-[#47b3cbd0] hover:from-[#47b3cbd0] hover:to-[#47b3cbdf] rounded-t-lg transition-all duration-200 group">
                                 <div className="flex items-center gap-2">
                                   {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                                    <ChevronDown className="h-4 w-4 text-brand-primary group-hover:scale-110 transition-transform" />
                                   ) : (
-                                    <ChevronRight className="h-4 w-4 text-gray-500" />
+                                    <ChevronRight className="h-4 w-4 text-brand-primary group-hover:scale-110 transition-transform" />
                                   )}
-                                  <span className="font-medium text-sm">{group.label}</span>
-                                  <Badge variant="outline" className="text-xs">
+                                  <span className="font-bold text-sm text-brand-primary tracking-wide">{group.label}</span>
+                                  <Badge variant="outline" className="text-xs bg-white/80 text-brand-primary border-brand-primary/40 font-medium">
                                     {selectedCount}/{visiblePermissions.length}
                                   </Badge>
                                 </div>
@@ -339,7 +339,7 @@ export default function CleanPermissionsEditor({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => toggleGroupPermissions(visiblePermissions, !allSelected)}
-                                    className="text-xs h-7"
+                                    className="text-xs h-7 bg-white/50 hover:bg-white text-brand-primary hover:text-brand-primary-dark transition-all duration-200 shadow-sm"
                                   >
                                     {allSelected ? 'Deselect All' : 'Select All'}
                                   </Button>
@@ -358,28 +358,29 @@ export default function CleanPermissionsEditor({
                                   return (
                                     <div
                                       key={permission}
-                                      className="flex items-center justify-between py-2 hover:bg-gray-50 rounded px-2"
+                                      className="flex items-center justify-between py-2.5 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100 rounded-lg px-3 transition-all duration-200 group"
                                     >
                                       <div className="flex items-center gap-3 flex-1">
                                         <Switch
                                           checked={isSelected}
                                           onCheckedChange={() => togglePermission(permission)}
                                           id={permission}
+                                          className="data-[state=checked]:bg-brand-primary"
                                         />
                                         <Label
                                           htmlFor={permission}
-                                          className="cursor-pointer text-sm flex items-center gap-2 flex-1"
+                                          className="cursor-pointer text-sm flex items-center gap-2 flex-1 font-medium text-slate-700"
                                         >
                                           <span className="flex-1">{label}</span>
                                           <div className="flex items-center gap-1.5">
                                             <Badge
                                               variant="outline"
-                                              className={`text-[10px] px-1.5 py-0 border ${riskInfo.badgeColor}`}
+                                              className={`text-[10px] px-1.5 py-0 border ${riskInfo.badgeColor} font-semibold`}
                                             >
                                               {riskInfo.icon} {riskInfo.level}
                                             </Badge>
                                             {isDefault && (
-                                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-gray-50">
+                                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-brand-primary/10 border-brand-primary/30 text-brand-primary font-medium">
                                                 From Role
                                               </Badge>
                                             )}
@@ -388,14 +389,14 @@ export default function CleanPermissionsEditor({
                                       </div>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
-                                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                            <AlertCircle className="h-3 w-3 text-gray-400" />
+                                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <AlertCircle className="h-4 w-4 text-brand-primary" />
                                           </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="left" className="max-w-xs">
+                                        <TooltipContent side="left" className="max-w-xs bg-slate-900 text-white">
                                           <div className="space-y-1">
                                             <p className="text-xs font-semibold">{getPermissionDescription(permission)}</p>
-                                            <p className="text-xs text-gray-500">{riskInfo.description}</p>
+                                            <p className="text-xs text-slate-300">{riskInfo.description}</p>
                                           </div>
                                         </TooltipContent>
                                       </Tooltip>
@@ -417,20 +418,24 @@ export default function CleanPermissionsEditor({
   );
 
   const saveButton = (
-    <div className="flex items-center justify-between w-full pt-4 border-t">
-      <span className="text-sm text-gray-500">
+    <div className="flex items-center justify-between w-full pt-4 border-t-2 border-brand-primary/20">
+      <span className="text-sm font-semibold text-slate-700 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
         {selectedPermissions.size} permissions selected
       </span>
       <div className="flex gap-2">
         {!embedded && (
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className="hover:bg-slate-100 transition-all duration-200 shadow-sm"
+          >
             Cancel
           </Button>
         )}
         <Button
           onClick={handleSave}
           disabled={!hasChanges}
-          className="bg-brand-primary hover:bg-brand-primary-dark"
+          className="bg-gradient-to-r from-brand-primary to-brand-primary-dark hover:shadow-lg text-white shadow-md border-l-4 border-l-brand-secondary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Check className="h-4 w-4 mr-2" />
           Save Changes
@@ -452,13 +457,17 @@ export default function CleanPermissionsEditor({
   // Default: render with Dialog wrapper
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-brand-primary" />
-            Permissions for {user.firstName} {user.lastName}
+      <DialogContent className="max-w-4xl max-h-[90vh] border-2 border-brand-primary/30 shadow-2xl">
+        <DialogHeader className="pb-4 border-b-2 border-brand-primary/20 bg-gradient-to-r from-brand-primary/5 to-brand-primary/10 -mx-6 -mt-6 px-6 pt-6 rounded-t-lg">
+          <DialogTitle className="flex items-center gap-3 text-xl">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-brand-primary to-brand-primary-dark shadow-md">
+              <Shield className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-brand-primary font-bold">
+              Permissions for {user.firstName} {user.lastName}
+            </span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm text-slate-600 font-medium pl-14">
             Choose a role template or customize specific permissions
           </DialogDescription>
         </DialogHeader>
