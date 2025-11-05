@@ -114,6 +114,7 @@ export default function GroupCatalog({
 }: GroupCatalogProps = {}) {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchScope, setSearchScope] = useState<'all' | 'organization' | 'department'>('all');
   const [sortBy, setSortBy] = useState('groupName');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -288,12 +289,27 @@ export default function GroupCatalog({
 
   // Filter all organizations uniformly (no separation between active/historical)
   const filteredActiveGroups = allOrganizations.filter((org) => {
-    const matchesSearch =
-      (org.organizationName && org.organizationName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (org.contactName && org.contactName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (org.email && org.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (org.phone && org.phone.includes(searchTerm)) ||
-      (org.department && org.department.toLowerCase().includes(searchTerm.toLowerCase()));
+    // Search logic based on scope
+    let matchesSearch = true;
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+
+      if (searchScope === 'organization') {
+        // Only search organization name
+        matchesSearch = org.organizationName && org.organizationName.toLowerCase().includes(lowerSearchTerm);
+      } else if (searchScope === 'department') {
+        // Only search department name
+        matchesSearch = org.department && org.department.toLowerCase().includes(lowerSearchTerm);
+      } else {
+        // Search all fields (default)
+        matchesSearch =
+          (org.organizationName && org.organizationName.toLowerCase().includes(lowerSearchTerm)) ||
+          (org.contactName && org.contactName.toLowerCase().includes(lowerSearchTerm)) ||
+          (org.email && org.email.toLowerCase().includes(lowerSearchTerm)) ||
+          (org.phone && org.phone.includes(searchTerm)) ||
+          (org.department && org.department.toLowerCase().includes(lowerSearchTerm));
+      }
+    }
 
     // Category filter - empty array means show all categories
     const orgCategory = org.category || null;
@@ -462,7 +478,7 @@ export default function GroupCatalog({
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filters, sortBy, sortOrder]);
+  }, [searchTerm, searchScope, filters, sortBy, sortOrder]);
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -659,6 +675,7 @@ export default function GroupCatalog({
           showActiveFilters
           onClearAll={() => {
             setSearchTerm('');
+            setSearchScope('all');
             setFilters({
               status: [],
               category: [],
@@ -667,6 +684,39 @@ export default function GroupCatalog({
             });
           }}
         />
+
+        {/* Search Scope Selector */}
+        {searchTerm && (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-600">Search in:</span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={searchScope === 'all' ? 'default' : 'outline'}
+                onClick={() => setSearchScope('all')}
+                className={searchScope === 'all' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+              >
+                All Fields
+              </Button>
+              <Button
+                size="sm"
+                variant={searchScope === 'organization' ? 'default' : 'outline'}
+                onClick={() => setSearchScope('organization')}
+                className={searchScope === 'organization' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+              >
+                Organization Name Only
+              </Button>
+              <Button
+                size="sm"
+                variant={searchScope === 'department' ? 'default' : 'outline'}
+                onClick={() => setSearchScope('department')}
+                className={searchScope === 'department' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+              >
+                Department Only
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Sort Controls */}
         <div className="mt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
