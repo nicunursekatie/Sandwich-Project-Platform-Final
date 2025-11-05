@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,6 @@ import {
   Shield,
   Mail,
   Phone,
-  X,
 } from 'lucide-react';
 import { EventEmailComposer } from '@/components/event-email-composer';
 import type { EventRequest } from '@shared/schema';
@@ -87,7 +86,7 @@ const ToolkitSentDialog = ({
                 {eventRequest.firstName} {eventRequest.lastName}
               </strong>{' '}
               at <strong>{eventRequest.organizationName}</strong>. This will move
-              the event to "In Process" status.
+              the event to &quot;In Process&quot; status.
             </DialogDescription>
           </DialogHeader>
 
@@ -138,8 +137,8 @@ const ToolkitSentDialog = ({
                 What happens when you mark toolkit as sent:
               </h4>
               <ul className="text-sm text-[#236383] space-y-2">
-                <li>• Event status will change from "New" to "In Process"</li>
-                <li>• Event will appear in the "In Process" tab</li>
+                <li>• Event status will change from &quot;New&quot; to &quot;In Process&quot;</li>
+                <li>• Event will appear in the &quot;In Process&quot; tab</li>
                 {!emailSent && (
                   <li>
                     • You can optionally send an email to{' '}
@@ -231,13 +230,20 @@ const ToolkitSentDialog = ({
       {/* Email Composer as a separate dialog */}
       <EventEmailComposer
         eventRequest={{
-          ...eventRequest,
+          id: eventRequest.id,
           firstName: eventRequest.firstName || '',
           lastName: eventRequest.lastName || '',
-          organizationName: eventRequest.organizationName || '',
           email: eventRequest.email || '',
           phone: eventRequest.phone || undefined,
-        } as any}
+          organizationName: eventRequest.organizationName || '',
+          department: eventRequest.department || undefined,
+          desiredEventDate: eventRequest.desiredEventDate?.toString() || undefined,
+          eventAddress: eventRequest.eventAddress || undefined,
+          estimatedSandwichCount: eventRequest.estimatedSandwichCount || undefined,
+          eventStartTime: eventRequest.eventStartTime || undefined,
+          eventEndTime: eventRequest.eventEndTime || undefined,
+          message: eventRequest.message || undefined,
+        }}
         onEmailSent={handleEmailSent}
         isOpen={showEmailComposer}
         onClose={() => setShowEmailComposer(false)}
