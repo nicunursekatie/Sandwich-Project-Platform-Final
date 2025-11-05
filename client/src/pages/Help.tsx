@@ -33,6 +33,9 @@ import {
 } from '@/components/ui/collapsible';
 import { TOURS, TOUR_CATEGORIES, type TourCategory, type Tour } from '@/lib/tourDefinitions';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useAuth } from '@/hooks/useAuth';
+import { hasPermission } from '@shared/unified-auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
 
 interface HelpTopic {
   id: string;
@@ -46,6 +49,7 @@ interface HelpTopic {
     tips?: string[];
   };
   tourId?: string;
+  requiredPermissions?: string[];
 }
 
 const HELP_TOPICS: HelpTopic[] = [
@@ -56,6 +60,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'files-resources',
     icon: FileImage,
     tourId: 'find-logos',
+    requiredPermissions: [PERMISSIONS.NAV_IMPORTANT_DOCUMENTS],
     content: {
       summary: 'The Sandwich Project logos are available in the Logos & Branding tab of Important Documents.',
       steps: [
@@ -77,6 +82,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'files-resources',
     icon: ClipboardList,
     tourId: 'sandwich-signin-forms',
+    requiredPermissions: [PERMISSIONS.NAV_TOOLKIT],
     content: {
       summary: 'Sign-in forms are used to track participants at sandwich collection events and are stored in the Toolkit.',
       steps: [
@@ -99,6 +105,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'analytics-reports',
     icon: TrendingUp,
     tourId: 'analytics-overview',
+    requiredPermissions: [PERMISSIONS.NAV_ANALYTICS],
     content: {
       summary: 'The Analytics dashboard provides comprehensive insights into TSP\'s impact and performance across multiple views.',
       steps: [
@@ -122,6 +129,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'my-work',
     icon: ListTodo,
     tourId: 'action-hub-guide',
+    requiredPermissions: [PERMISSIONS.NAV_MY_ACTIONS],
     content: {
       summary: 'My Actions is your personal dashboard where all tasks assigned to you are collected in one place.',
       steps: [
@@ -145,6 +153,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'my-work',
     icon: Calendar,
     tourId: 'event-requests-assignments',
+    requiredPermissions: [PERMISSIONS.EVENT_REQUESTS_VIEW],
     content: {
       summary: 'The My Assignments tab in Event Requests shows only events where you have specific responsibilities.',
       steps: [
@@ -168,6 +177,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'my-work',
     icon: LayoutDashboard,
     tourId: 'dashboard-assignments',
+    requiredPermissions: [PERMISSIONS.NAV_DASHBOARD],
     content: {
       summary: 'The dashboard provides a quick snapshot of your current assignments without navigating to different sections.',
       steps: [
@@ -190,6 +200,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'events-calendar',
     icon: Calendar,
     tourId: 'calendar-symbols',
+    requiredPermissions: [PERMISSIONS.EVENT_REQUESTS_VIEW],
     content: {
       summary: 'The calendar view provides a visual timeline of events with color-coded status indicators.',
       steps: [
@@ -217,6 +228,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'team-management',
     icon: MessageCircle,
     tourId: 'team-chat-guide',
+    requiredPermissions: [PERMISSIONS.MESSAGES_VIEW],
     content: {
       summary: 'Team Chat is your communication hub for messaging teammates, joining conversations, and staying connected.',
       steps: [
@@ -242,6 +254,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'team-management',
     icon: StickyNote,
     tourId: 'team-board-guide',
+    requiredPermissions: [PERMISSIONS.BOARD_VIEW],
     content: {
       summary: 'Team Board is a collaborative space where team members can post tasks, ideas, notes, and reminders.',
       steps: [
@@ -268,6 +281,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'events-calendar',
     icon: ClipboardList,
     tourId: 'collections-log-guide',
+    requiredPermissions: [PERMISSIONS.NAV_COLLECTIONS_LOG],
     content: {
       summary: 'The Collections Log is where you record sandwiches collected at events to track community impact.',
       steps: [
@@ -295,6 +309,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'team-management',
     icon: Inbox,
     tourId: 'inbox-messages-guide',
+    requiredPermissions: [PERMISSIONS.MESSAGES_VIEW],
     content: {
       summary: 'The Inbox is your personal message center for important communications and kudos.',
       steps: [
@@ -320,6 +335,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'my-work',
     icon: ListTodo,
     tourId: 'projects-guide',
+    requiredPermissions: [PERMISSIONS.NAV_PROJECTS],
     content: {
       summary: 'Projects help organize major initiatives and ongoing work with tasks, milestones, and team collaboration.',
       steps: [
@@ -345,6 +361,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'events-calendar',
     icon: Building2,
     tourId: 'hosts-management-guide',
+    requiredPermissions: [PERMISSIONS.NAV_HOSTS],
     content: {
       summary: 'Host organizations are groups that collect sandwiches for The Sandwich Project.',
       steps: [
@@ -369,6 +386,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'events-calendar',
     icon: Clock,
     tourId: 'event-reminders-guide',
+    requiredPermissions: [PERMISSIONS.NAV_EVENT_REMINDERS],
     content: {
       summary: 'Event Reminders help ensure no events are forgotten with automated notifications.',
       steps: [
@@ -394,6 +412,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'my-work',
     icon: Calendar,
     tourId: 'my-availability-guide',
+    requiredPermissions: [PERMISSIONS.NAV_MY_AVAILABILITY],
     content: {
       summary: 'Your availability helps coordinators know when you can volunteer.',
       steps: [
@@ -418,6 +437,7 @@ const HELP_TOPICS: HelpTopic[] = [
     category: 'team-management',
     icon: Users,
     tourId: 'volunteers-management-guide',
+    requiredPermissions: [PERMISSIONS.NAV_VOLUNTEERS],
     content: {
       summary: 'The volunteer management system helps track and coordinate all volunteers supporting TSP.',
       steps: [
@@ -452,6 +472,7 @@ interface HelpProps {
 
 export default function Help({ onLaunchTour }: HelpProps) {
   const { trackView, trackSearch, trackClick } = useActivityTracker();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TourCategory | null>(null);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
@@ -467,6 +488,18 @@ export default function Help({ onLaunchTour }: HelpProps) {
 
   const filteredTopics = useMemo(() => {
     let topics = HELP_TOPICS;
+
+    // Filter by permissions - only show topics the user has access to
+    topics = topics.filter((topic) => {
+      // If no permissions required, show to everyone
+      if (!topic.requiredPermissions || topic.requiredPermissions.length === 0) {
+        return true;
+      }
+      // Check if user has at least one of the required permissions
+      return topic.requiredPermissions.some((permission) =>
+        hasPermission(user, permission)
+      );
+    });
 
     if (selectedCategory) {
       topics = topics.filter((topic) => topic.category === selectedCategory);
@@ -484,7 +517,7 @@ export default function Help({ onLaunchTour }: HelpProps) {
     }
 
     return topics;
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, user]);
 
   const toggleTopic = (topicId: string) => {
     const newExpanded = new Set(expandedTopics);
