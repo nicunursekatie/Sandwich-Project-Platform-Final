@@ -295,6 +295,16 @@ export const PERMISSION_GROUPS = {
  * Get human-readable label for a permission
  */
 export function getPermissionLabel(permission: string): string {
+  // Custom labels for specific permissions
+  const customLabels: Record<string, string> = {
+    [PERMISSIONS.NAV_IMPORTANT_LINKS]: 'Nav Quick Tools',
+  };
+
+  // Return custom label if exists
+  if (customLabels[permission]) {
+    return customLabels[permission];
+  }
+
   // Convert SNAKE_CASE to Title Case
   return permission
     .split('_')

@@ -247,7 +247,7 @@ export const PERMISSIONS = {
   NAV_ANALYTICS: 'NAV_ANALYTICS', // Access to Analytics tab
   NAV_WEEKLY_MONITORING: 'NAV_WEEKLY_MONITORING', // Access to Weekly Monitoring tab
   NAV_IMPORTANT_DOCUMENTS: 'NAV_IMPORTANT_DOCUMENTS', // Access to Important Documents tab
-  NAV_IMPORTANT_LINKS: 'NAV_IMPORTANT_LINKS', // Access to Important Links tab
+  NAV_IMPORTANT_LINKS: 'NAV_IMPORTANT_LINKS', // Access to Quick Tools tab
   NAV_TOOLKIT: 'NAV_TOOLKIT', // Access to Toolkit tab
   NAV_DOCUMENT_MANAGEMENT: 'NAV_DOCUMENT_MANAGEMENT', // Access to Document Management tab
   NAV_MY_AVAILABILITY: 'NAV_MY_AVAILABILITY', // Access to My Availability tab

@@ -139,6 +139,8 @@ export default function CleanPermissionsEditor({
       // Apply permission dependencies before saving to ensure completeness
       const permissionsWithDeps = applyPermissionDependencies(Array.from(selectedPermissions));
       onSave(user.id, selectedRole, permissionsWithDeps);
+      // Close the dialog after saving
+      onOpenChange(false);
     }
   };
 
