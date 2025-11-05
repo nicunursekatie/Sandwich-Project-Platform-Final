@@ -4,6 +4,7 @@ import { storage } from '../storage-wrapper';
 import { db } from '../db';
 import { users } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
+import { getDefaultPermissionsForRole } from '@shared/auth-utils';
 
 const router = Router();
 
@@ -133,7 +134,8 @@ router.patch('/auth/approve-user/:userId', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const updates = {
+    // Build updates object
+    const updates: any = {
       isActive: approved,
       metadata: {
         ...user.metadata,
@@ -142,10 +144,22 @@ router.patch('/auth/approve-user/:userId', async (req, res) => {
       },
     };
 
+    // When approving, assign default permissions for user's role
+    if (approved) {
+      const defaultPermissions = getDefaultPermissionsForRole(user.role);
+      updates.permissions = defaultPermissions;
+      
+      logger.log(`Approving user ${userId} with role ${user.role}`);
+      logger.log(`Assigning ${defaultPermissions.length} default permissions`);
+    }
+
     await storage.updateUser(userId, updates);
+
+    logger.log(`User ${userId} ${approved ? 'approved' : 'rejected'} successfully`);
 
     res.json({
       message: `User ${approved ? 'approved' : 'rejected'} successfully`,
+      permissions: approved ? updates.permissions.length : 0,
     });
   } catch (error) {
     logger.error('Error updating user approval:', error);

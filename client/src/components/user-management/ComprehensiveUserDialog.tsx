@@ -227,7 +227,7 @@ export function ComprehensiveUserDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-[95vw] max-w-[1600px] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserIcon className="h-5 w-5" />
@@ -420,6 +420,8 @@ export function ComprehensiveUserDialog({
                     onSave={(userId, role, permissions) => {
                       if (onUpdatePermissions) {
                         onUpdatePermissions(userId, role, permissions);
+                        // Close the parent dialog after saving permissions
+                        handleClose();
                       }
                     }}
                     embedded={true}
