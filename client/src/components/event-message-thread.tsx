@@ -335,34 +335,35 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
             <Card key={index} className="p-3 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
               <div className="space-y-2">
                 {/* Activity Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="text-[#236383] dark:text-[#47B3CB]">
-                      {item.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {item.title}
-                      </p>
-                      {item.date && (
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          {formatDistanceToNow(item.date, { addSuffix: true })}
-                          {' • '}
-                          {format(item.date, 'MMM d, yyyy h:mm a')}
-                        </Badge>
-                      )}
-                    </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-[#236383] dark:text-[#47B3CB]">
+                    {item.icon}
                   </div>
-                  {item.badge && (
-                    <Badge variant="outline" className="text-xs shrink-0">
-                      {item.badge}
-                    </Badge>
-                  )}
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {item.title}
+                  </p>
                 </div>
 
                 {/* Activity Content */}
-                <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words ml-6">
-                  {item.content}
+                <div className="ml-6">
+                  <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                    {item.content}
+                  </div>
+                  {/* Badges next to content */}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {item.date && (
+                      <Badge variant="secondary" className="text-xs">
+                        {formatDistanceToNow(item.date, { addSuffix: true })}
+                        {' • '}
+                        {format(item.date, 'MMM d, yyyy h:mm a')}
+                      </Badge>
+                    )}
+                    {item.badge && (
+                      <Badge variant="outline" className="text-xs">
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 {/* Edit/Delete buttons for contact attempts */}
