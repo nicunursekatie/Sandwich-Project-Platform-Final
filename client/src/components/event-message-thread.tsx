@@ -330,7 +330,7 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       )}
 
       <ScrollArea style={{ maxHeight }} className="pr-4">
-        <div className="space-y-3">
+        <div className="space-y-3 pb-4">
           {activityItems.map((item, index) => (
             <Card key={index} className="p-3 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
               <div className="space-y-2">
