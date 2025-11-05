@@ -4,6 +4,47 @@ import { PERMISSIONS } from '../../shared/auth-utils';
 import { checkPermission, checkOwnershipPermission } from '../../shared/unified-auth-utils';
 import { logger } from '../utils/production-safe-logger';
 
+// Global middleware to block inactive (pending approval) users
+export const blockInactiveUsers: RequestHandler = async (req, res, next) => {
+  try {
+    // Allow unauthenticated requests to proceed (they'll be caught by other auth checks)
+    if (!req.user && !req.session?.user) {
+      return next();
+    }
+
+    const user = req.user || req.session?.user;
+    
+    // Define paths that pending users CAN access
+    const allowedPaths = [
+      '/api/auth/',
+      '/api/user/me',
+      '/api/user/profile',
+      '/healthz',
+      '/api/login',
+      '/api/logout',
+    ];
+
+    // Check if the request path is allowed for inactive users
+    const isAllowedPath = allowedPaths.some(path => req.path.startsWith(path));
+    
+    // If user is inactive and trying to access a protected route, block them
+    if (user && !user.isActive && !isAllowedPath) {
+      logger.log(`❌ INACTIVE USER BLOCKED: ${user.email} attempted to access ${req.path}`);
+      return res.status(403).json({
+        message: 'Account pending approval',
+        code: 'PENDING_APPROVAL',
+        details: 'Your account is awaiting admin approval. You will be notified once approved.',
+        status: user.metadata?.status || 'pending_approval',
+      });
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error in blockInactiveUsers middleware:', error);
+    next(); // Allow request to proceed on error to avoid breaking the app
+  }
+};
+
 // Single, authoritative requirePermission middleware
 // DENIES ACCESS BY DEFAULT - only grants access if explicitly authorized
 export const requirePermission = (permission: string): RequestHandler => {

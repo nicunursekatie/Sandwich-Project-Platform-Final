@@ -5,7 +5,7 @@ import connectPg from 'connect-pg-simple';
 import { storage } from './storage-wrapper';
 import { createActivityLogger } from './middleware/activity-logger';
 import createMainRoutes from './routes/index';
-import { requirePermission } from './middleware/auth';
+import { requirePermission, blockInactiveUsers } from './middleware/auth';
 import { createCorsMiddleware, logCorsConfig } from './config/cors';
 import { logger } from './utils/production-safe-logger';
 
@@ -94,6 +94,10 @@ export async function registerRoutes(app: Express): Promise<any> {
 
   // Add activity logging middleware after authentication setup
   app.use(createActivityLogger({ storage }));
+
+  // Block inactive (pending approval) users from accessing protected routes
+  app.use(blockInactiveUsers);
+  logger.log('✅ Inactive user blocking middleware enabled');
 
   // Disable caching for all API routes to prevent development issues
   app.use('/api', (req, res, next) => {
