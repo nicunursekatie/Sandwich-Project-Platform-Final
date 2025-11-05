@@ -1846,7 +1846,16 @@ export const eventRequests = pgTable(
     unresponsiveReason: text('unresponsive_reason'), // Why they were marked unresponsive
     contactMethod: varchar('contact_method'), // 'phone', 'email', 'both' - preferred contact method
     nextFollowUpDate: timestamp('next_follow_up_date'), // Scheduled next attempt date
-    unresponsiveNotes: text('unresponsive_notes'), // Detailed notes about unresponsive status
+    unresponsiveNotes: text('unresponsive_notes'), // Detailed notes about unresponsive status (legacy - use contactAttemptsLog for new entries)
+    contactAttemptsLog: jsonb('contact_attempts_log').$type<Array<{
+      attemptNumber: number;
+      timestamp: string;
+      method: string;
+      outcome: string;
+      notes?: string;
+      createdBy: string;
+      createdByName?: string;
+    }>>(), // Structured log of all contact attempts with metadata for editing/deleting
 
     // Google Sheets sync tracking
     googleSheetRowId: text('google_sheet_row_id'), // Stable identifier: Google Sheets row number for duplicate detection

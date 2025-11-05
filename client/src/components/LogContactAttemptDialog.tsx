@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Phone, Mail, MessageSquare, X, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import type { EventRequest } from '@shared/schema';
 
 interface LogContactAttemptDialogProps {
@@ -31,6 +32,15 @@ interface LogContactAttemptDialogProps {
     contactMethod: string;
     unresponsiveNotes: string;
     contactOutcome: string;
+    contactAttemptsLog?: Array<{
+      attemptNumber: number;
+      timestamp: string;
+      method: string;
+      outcome: string;
+      notes?: string;
+      createdBy: string;
+      createdByName?: string;
+    }>;
   }) => Promise<void>;
 }
 
@@ -57,6 +67,7 @@ export default function LogContactAttemptDialog({
   onLogContact,
 }: LogContactAttemptDialogProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [contactMethod, setContactMethod] = useState<string>('');
   const [contactOutcome, setContactOutcome] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -105,11 +116,26 @@ export default function LogContactAttemptDialog({
 
       const attemptLog = `[${timestamp}] Attempt #${attemptNumber} - ${methodLabel}: ${outcomeLabel}${notes ? `\n${notes}` : ''}`;
 
-      // Append to existing unresponsive notes or create new
+      // Append to existing unresponsive notes or create new (legacy format for backward compatibility)
       const existingNotes = eventRequest.unresponsiveNotes || '';
       const updatedNotes = existingNotes
         ? `${existingNotes}\n\n${attemptLog}`
         : attemptLog;
+
+      // Build structured contact attempt log
+      const existingLog = eventRequest.contactAttemptsLog || [];
+      const newAttempt = {
+        attemptNumber,
+        timestamp: contactDate.toISOString(),
+        method: contactMethod,
+        outcome: contactOutcome,
+        notes: notes || undefined,
+        createdBy: user?.id || 'unknown',
+        createdByName: user?.displayName || user?.firstName && user?.lastName
+          ? `${user.firstName} ${user.lastName}`
+          : user?.email || undefined,
+      };
+      const updatedLog = [...existingLog, newAttempt];
 
       await onLogContact({
         contactAttempts: attemptNumber,
@@ -117,6 +143,7 @@ export default function LogContactAttemptDialog({
         contactMethod,
         unresponsiveNotes: updatedNotes,
         contactOutcome,
+        contactAttemptsLog: updatedLog,
       });
 
       toast({

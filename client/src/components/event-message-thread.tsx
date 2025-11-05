@@ -1,10 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useEventMessages } from '@/hooks/useEventMessages';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList, AlertCircle, Users, Truck, Car, Bell, Package, Copy, PhoneOff, Share2 } from 'lucide-react';
+import { MessageSquare, Loader2, Phone, Mail, Video, Calendar, FileText, ClipboardList, AlertCircle, Users, Truck, Car, Bell, Package, Copy, PhoneOff, Share2, Edit2, Trash2 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import { useAuth } from '@/hooks/useAuth';
 import type { EventRequest } from '@shared/schema';
 
 interface Message {
@@ -25,6 +27,13 @@ interface EventMessageThreadProps {
   eventTitle?: string;
   maxHeight?: string;
   showHeader?: boolean;
+  onDeleteContactAttempt?: (attemptNumber: number) => Promise<void>;
+  onEditContactAttempt?: (attemptNumber: number, updatedData: {
+    method: string;
+    outcome: string;
+    notes?: string;
+    timestamp: string;
+  }) => Promise<void>;
 }
 
 export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
@@ -33,7 +42,10 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
   eventTitle,
   maxHeight = '400px',
   showHeader = true,
+  onDeleteContactAttempt,
+  onEditContactAttempt,
 }) => {
+  const { user } = useAuth();
   // Use lightweight hook that doesn't create WebSocket connections
   const { data: rawMessages, isLoading, isError } = useEventMessages(eventId);
 
@@ -59,6 +71,10 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       content: string;
       date?: Date;
       badge?: string;
+      attemptNumber?: number;
+      createdBy?: string;
+      canEdit?: boolean;
+      canDelete?: boolean;
     }> = [];
 
     if (!eventRequest) return items;
@@ -73,8 +89,57 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       });
     }
 
-    // Contact attempt info is now handled by unresponsiveNotes below
-    // (removed duplicate contact attempt display)
+    // Add structured contact attempts from new contactAttemptsLog
+    if (eventRequest.contactAttemptsLog && Array.isArray(eventRequest.contactAttemptsLog)) {
+      eventRequest.contactAttemptsLog.forEach((attempt) => {
+        const methodIcons = {
+          phone: <Phone className="h-4 w-4" />,
+          email: <Mail className="h-4 w-4" />,
+          both: <MessageSquare className="h-4 w-4" />,
+        };
+
+        const canModify = user?.id === attempt.createdBy;
+
+        items.push({
+          type: 'contact',
+          icon: methodIcons[attempt.method as keyof typeof methodIcons] || <MessageSquare className="h-4 w-4" />,
+          title: `Contact Attempt #${attempt.attemptNumber}`,
+          content: attempt.notes || attempt.outcome,
+          date: new Date(attempt.timestamp),
+          badge: `by ${attempt.createdByName || 'Unknown'}`,
+          attemptNumber: attempt.attemptNumber,
+          createdBy: attempt.createdBy,
+          canEdit: canModify,
+          canDelete: canModify,
+        });
+      });
+    }
+
+    // Legacy: Add old unresponsiveNotes if present and no new structured log exists
+    if (eventRequest.unresponsiveNotes && (!eventRequest.contactAttemptsLog || eventRequest.contactAttemptsLog.length === 0)) {
+      // Try to extract date from content like "[Nov 3, 2025, 3:35 PM] Attempt #1..."
+      const dateMatch = eventRequest.unresponsiveNotes.match(/\[(.*?)\]/);
+      let parsedDate: Date | undefined;
+      let contentWithoutDate = eventRequest.unresponsiveNotes;
+
+      if (dateMatch) {
+        try {
+          parsedDate = new Date(dateMatch[1]);
+          // Remove the date portion from content
+          contentWithoutDate = eventRequest.unresponsiveNotes.replace(/\[.*?\]\s*/, '');
+        } catch (e) {
+          // If date parsing fails, keep original content
+        }
+      }
+
+      items.push({
+        type: 'note',
+        icon: <PhoneOff className="h-4 w-4" />,
+        title: 'Contact Attempts Logged (Legacy)',
+        content: contentWithoutDate,
+        date: parsedDate,
+      });
+    }
 
     // Add planning notes
     if (eventRequest.planningNotes) {
@@ -220,7 +285,7 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       if (!b.date) return 1;
       return b.date.getTime() - a.date.getTime();
     });
-  }, [eventRequest, messages]);
+  }, [eventRequest, messages, user]);
 
   const totalCount = activityItems.length;
 
@@ -299,6 +364,23 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
                 <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words ml-6">
                   {item.content}
                 </div>
+
+                {/* Edit/Delete buttons for contact attempts */}
+                {item.type === 'contact' && (item.canEdit || item.canDelete) && (
+                  <div className="flex gap-2 ml-6 mt-2">
+                    {item.canDelete && onDeleteContactAttempt && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => item.attemptNumber && onDeleteContactAttempt(item.attemptNumber)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </Card>
           ))}
