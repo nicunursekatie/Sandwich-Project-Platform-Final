@@ -292,7 +292,7 @@ export default function GroupCatalog({
       (org.organizationName && org.organizationName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (org.contactName && org.contactName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (org.email && org.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (org.phone && org.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (org.phone && org.phone.includes(searchTerm)) ||
       (org.department && org.department.toLowerCase().includes(searchTerm.toLowerCase()));
 
     // Category filter - empty array means show all categories
