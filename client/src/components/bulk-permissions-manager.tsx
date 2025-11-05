@@ -205,6 +205,7 @@ export default function BulkPermissionsManager() {
   };
 
   const getPermissionDisplayName = (permission: string) => {
+    if (!permission) return '';
     return permission.replace(/_/g, ' ').toLowerCase()
       .replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -455,7 +456,7 @@ export default function BulkPermissionsManager() {
                                       <div className="max-w-xs">
                                         <p className="font-semibold mb-2">All Permissions:</p>
                                         <div className="space-y-1">
-                                          {(user.permissions || []).map(perm => (
+                                          {(user.permissions || []).filter(Boolean).map(perm => (
                                             <div key={perm} className="text-xs">
                                               {getPermissionDisplayName(perm)}
                                             </div>
