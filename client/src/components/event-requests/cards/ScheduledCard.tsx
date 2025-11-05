@@ -978,7 +978,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
         )}
 
         {/* Event Details Section */}
-        <div className="bg-white rounded-lg p-4 space-y-2 border-l-4 border-[#47B3CB] border border-[#47B3CB] shadow-md">
+        <div className="bg-white rounded-lg p-4 space-y-2 border-l-4 border-[#47B3CB] shadow-md">
           <h3 className="text-base font-bold text-[#236383] mb-2 flex items-center gap-2 uppercase tracking-wide">
             <Calendar className="w-4 h-4 text-[#47B3CB]" />
             Event Details
