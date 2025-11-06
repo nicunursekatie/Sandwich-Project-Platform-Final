@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { insertMeetingNoteSchema, type MeetingNote } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
 import type { AuthenticatedRequest } from '../types/express';
+import { safeAssign, validateNoPrototypePollution } from '../utils/object-utils';
 
 // Type for project objects used in agenda compilation
 interface AgendaProject {
@@ -611,16 +612,25 @@ router.patch('/notes/:id', isAuthenticated, async (req: AuthenticatedRequest, re
 
     logger.log(`[Meeting Notes API] Updating meeting note ${id}`, req.body);
 
-    // Validate that only allowed fields are being updated
+    // Validate against prototype pollution attempts
+    try {
+      validateNoPrototypePollution(req.body);
+    } catch (error) {
+      logger.error('Prototype pollution attempt detected in meeting note update', {
+        userId: user.id,
+        noteId: id,
+        error
+      });
+      return res.status(400).json({
+        message: 'Invalid request: prohibited property names detected'
+      });
+    }
+
+    // Validate that only allowed fields are being updated (using safe assignment)
     const allowedUpdates = ['content', 'type', 'status'];
     const updates: Partial<MeetingNote> = {};
+    safeAssign(updates, req.body, allowedUpdates);
 
-    for (const key of allowedUpdates) {
-      if (req.body[key] !== undefined) {
-        updates[key as keyof MeetingNote] = req.body[key];
-      }
-    }
-    
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ message: 'No valid fields to update' });
     }

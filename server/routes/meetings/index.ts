@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { storage } from '../../storage-wrapper';
 import { logger } from '../../middleware/logger';
 import { meetingMinutesUpload } from '../../middleware/uploads';
+import { safeAssign, validateNoPrototypePollution } from '../../utils/object-utils';
 import {
   insertMeetingMinutesSchema,
   insertAgendaItemSchema,
@@ -522,15 +523,23 @@ meetingsRouter.patch('/notes/:id', requirePermission('MEETINGS_MANAGE'), async (
       return res.status(400).json({ message: 'Invalid note ID' });
     }
 
-    // Validate that only allowed fields are being updated
+    // Validate against prototype pollution attempts
+    try {
+      validateNoPrototypePollution(req.body);
+    } catch (error) {
+      logger.error('Prototype pollution attempt detected in meeting note update', {
+        userId: getUserId(req),
+        error
+      });
+      return res.status(400).json({
+        message: 'Invalid request: prohibited property names detected'
+      });
+    }
+
+    // Validate that only allowed fields are being updated (using safe assignment)
     const allowedUpdates = ['content', 'type', 'status'];
     const updates: any = {};
-    
-    for (const key of allowedUpdates) {
-      if (req.body[key] !== undefined) {
-        updates[key] = req.body[key];
-      }
-    }
+    safeAssign(updates, req.body, allowedUpdates);
     
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ message: 'No valid fields to update' });

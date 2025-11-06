@@ -8,6 +8,7 @@ import { SmartSearchService } from '../services/smart-search.service';
 import type { SmartSearchQuery, SmartSearchResponse } from '../types/smart-search';
 import type { SessionUser } from '../types/express';
 import { storage } from '../storage';
+import { safeAssign, validateNoPrototypePollution } from '../utils/object-utils';
 
 interface ExtendedSmartSearchQuery extends SmartSearchQuery {
   userPermissions?: string[];
@@ -367,14 +368,19 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
         return res.status(403).json({ error: 'Admin access required' });
       }
 
-      // Validate and sanitize update payload
+      // Validate against prototype pollution attempts
+      try {
+        validateNoPrototypePollution(req.body);
+      } catch (error) {
+        return res.status(400).json({
+          error: 'Invalid request: prohibited property names detected'
+        });
+      }
+
+      // Validate and sanitize update payload (using safe assignment)
       const allowedFields = ['title', 'description', 'category', 'route', 'keywords', 'requiredPermissions'];
       const updatePayload: Record<string, any> = {};
-      for (const key of allowedFields) {
-        if (Object.prototype.hasOwnProperty.call(req.body, key)) {
-          updatePayload[key] = req.body[key];
-        }
-      }
+      safeAssign(updatePayload, req.body, allowedFields);
 
       // Prevent attempts to update system fields
       if ('id' in req.body) {
