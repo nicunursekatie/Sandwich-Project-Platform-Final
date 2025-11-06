@@ -19,17 +19,25 @@ export interface ParseResult<T> {
  * Safely parse JSON with error handling
  * Returns a result object indicating success/failure
  *
- * @param jsonString - String to parse as JSON
+ * @param jsonString - String to parse as JSON (or null/undefined which will return error)
  * @param defaultValue - Default value to return if parsing fails
  * @param context - Optional context for error logging (e.g., "API response", "user input")
  * @returns ParseResult with success flag and either data or error
  *
  * @example
- * const result = safeJsonParse(req.body.data, [], 'sandwichTypes field');
+ * // Preferred: Handle null/undefined at call site
+ * const result = safeJsonParse(req.body.data ?? '', [], 'sandwichTypes field');
  * if (!result.success) {
  *   return res.status(400).json({ error: result.error });
  * }
  * const data = result.data;
+ *
+ * @example
+ * // Also supported: Pass potentially null value
+ * const result = safeJsonParse(req.body.data, [], 'sandwichTypes field');
+ * if (!result.success) {
+ *   return res.status(400).json({ error: result.error });
+ * }
  */
 export function safeJsonParse<T = any>(
   jsonString: string | null | undefined,

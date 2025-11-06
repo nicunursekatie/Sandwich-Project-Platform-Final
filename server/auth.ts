@@ -3,7 +3,7 @@ import { storage } from './storage-wrapper';
 import { getDefaultPermissionsForRole as getSharedPermissions } from '../shared/auth-utils';
 import bcrypt from 'bcrypt';
 import { logger } from './utils/production-safe-logger';
-import { saveSession, destroySession } from './utils/session-utils';
+import { saveSession } from './utils/session-utils';
 
 // Using shared permissions from auth-utils
 

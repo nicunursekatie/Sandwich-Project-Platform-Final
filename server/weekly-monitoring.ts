@@ -1046,7 +1046,13 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
     // Log warning if some emails failed
     if (emailResult.failureCount > 0) {
       logger.warn(`${emailResult.failureCount} emails failed to send`, {
-        failedIndices: emailResult.failed.map(f => f.index)
+        failedIndices: emailResult.failed.map(f => f.index),
+        failedContacts: emailResult.failed.map(f => {
+          const contact = targetContacts[f.index];
+          return contact
+            ? { name: contact.name, email: contact.email }
+            : { name: 'unknown', email: 'unknown' };
+        }),
       });
     }
 

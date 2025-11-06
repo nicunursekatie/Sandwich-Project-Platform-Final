@@ -1591,6 +1591,9 @@ router.put(
                 error: parseResult.error,
                 value: processedUpdates.sandwichTypes.substring(0, 100)
               });
+              return res.status(400).json({
+                error: 'Invalid sandwichTypes: must be valid JSON array.'
+              });
             }
 
             processedUpdates.sandwichTypes = parseResult.data;
