@@ -10,9 +10,18 @@ import {
   Clock,
   MapPin,
   Users,
+  Filter,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EventRequest } from '@shared/schema';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
@@ -54,11 +63,31 @@ const getStatusColor = (status: string) => {
 
 export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [statusFilters, setStatusFilters] = useState<string[]>([
+    'new',
+    'in_process',
+    'scheduled',
+    'completed',
+    'cancelled',
+  ]);
 
   // Fetch all event requests
   const { data: events = [] } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
   });
+
+  // Filter events by selected statuses
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => statusFilters.includes(event.status));
+  }, [events, statusFilters]);
+
+  const toggleStatusFilter = (status: string) => {
+    setStatusFilters((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status]
+    );
+  };
 
   // Get the first and last day of the current month
   const firstDayOfMonth = useMemo(() => {
@@ -101,7 +130,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
   const eventsByDate = useMemo(() => {
     const grouped = new Map<string, EventRequest[]>();
 
-    events.forEach((event) => {
+    filteredEvents.forEach((event) => {
       // Use scheduledEventDate if available, otherwise use desiredEventDate
       const eventDate = event.scheduledEventDate || event.desiredEventDate;
       if (!eventDate) return;
@@ -114,7 +143,7 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
     });
 
     return grouped;
-  }, [events]);
+  }, [filteredEvents]);
 
   const goToPreviousMonth = () => {
     setCurrentDate(
@@ -158,6 +187,63 @@ export function EventCalendarView({ onEventClick }: EventCalendarViewProps) {
             Event Calendar
           </CardTitle>
           <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Filter Status
+                  {statusFilters.length < 5 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {statusFilters.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={statusFilters.includes('new')}
+                  onCheckedChange={() => toggleStatusFilter('new')}
+                >
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-300 mr-2">
+                    New
+                  </Badge>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={statusFilters.includes('in_process')}
+                  onCheckedChange={() => toggleStatusFilter('in_process')}
+                >
+                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 mr-2">
+                    In Process
+                  </Badge>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={statusFilters.includes('scheduled')}
+                  onCheckedChange={() => toggleStatusFilter('scheduled')}
+                >
+                  <Badge className="bg-green-100 text-green-800 border-green-300 mr-2">
+                    Scheduled
+                  </Badge>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={statusFilters.includes('completed')}
+                  onCheckedChange={() => toggleStatusFilter('completed')}
+                >
+                  <Badge className="bg-teal-100 text-teal-800 border-teal-300 mr-2">
+                    Completed
+                  </Badge>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={statusFilters.includes('cancelled')}
+                  onCheckedChange={() => toggleStatusFilter('cancelled')}
+                >
+                  <Badge className="bg-red-100 text-red-800 border-red-300 mr-2">
+                    Cancelled
+                  </Badge>
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" size="sm" onClick={goToToday}>
               Today
             </Button>
