@@ -15,6 +15,7 @@ import { requirePermission } from '../middleware/auth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { promotionGraphicsUpload } from '../middleware/uploads';
 import { ObjectStorageService } from '../objectStorage';
+import { batchSendEmails } from '../utils/batch-operations';
 
 // Type definitions for authenticated requests
 interface AuthenticatedRequest extends Request {
@@ -603,7 +604,11 @@ Thank you for helping us spread the word about our mission!`,
       }
     });
 
-    await Promise.all(emailPromises);
+    // Send emails in batch (continues even if some fail)
+    const emailResult = await batchSendEmails(
+      emailPromises,
+      'Promotion graphic notifications'
+    );
 
     // Update the graphic to mark notification as sent
     await db
@@ -614,10 +619,20 @@ Thank you for helping us spread the word about our mission!`,
       })
       .where(eq(promotionGraphics.id, graphic.id));
 
-    logger.info('Successfully sent all notification emails', {
+    logger.info('Notification emails processed', {
       graphicId: graphic.id,
-      recipientCount: targetUsers.length
+      total: emailResult.total,
+      sent: emailResult.successCount,
+      failed: emailResult.failureCount
     });
+
+    // Log warning if some emails failed (but don't fail entire operation)
+    if (emailResult.failureCount > 0) {
+      logger.warn(`${emailResult.failureCount} notification emails failed to send`, {
+        graphicId: graphic.id,
+        failedIndices: emailResult.failed.map(f => f.index)
+      });
+    }
   } catch (error) {
     logger.error('Error in sendNotificationEmail', error);
     throw error;

@@ -3,6 +3,7 @@ import { db } from './db';
 import { sandwichCollections, hosts, hostContacts } from '@shared/schema';
 import { eq, sql, and, gte, lte, like, or } from 'drizzle-orm';
 import { logger } from './utils/production-safe-logger';
+import { batchSendEmails } from './utils/batch-operations';
 
 if (!process.env.SENDGRID_API_KEY) {
   logger.error(
@@ -1031,12 +1032,23 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
       });
     });
 
-    await Promise.all(emailPromises);
+    // Send emails in batch (continues even if some fail)
+    const emailResult = await batchSendEmails(
+      emailPromises,
+      'Targeted Dunwoody emails'
+    );
 
     const contactNames = targetContacts.map((c) => c.name).join(', ');
     logger.log(
-      `✅ Targeted Dunwoody email sent successfully to: ${contactNames}`
+      `✅ Targeted Dunwoody emails processed: ${emailResult.successCount}/${emailResult.total} sent successfully`
     );
+
+    // Log warning if some emails failed
+    if (emailResult.failureCount > 0) {
+      logger.warn(`${emailResult.failureCount} emails failed to send`, {
+        failedIndices: emailResult.failed.map(f => f.index)
+      });
+    }
 
     return {
       success: true,
