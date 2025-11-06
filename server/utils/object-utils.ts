@@ -10,6 +10,10 @@ import { logger } from './production-safe-logger';
 /**
  * Safely copy properties from source to target, preventing prototype pollution
  *
+ * Note: Properties with undefined values are NOT copied. This is intentional to prevent
+ * clearing existing values. If you need to explicitly set a property to undefined,
+ * assign it directly after calling this function.
+ *
  * @param target - Object to copy properties to
  * @param source - Object to copy properties from
  * @param allowedKeys - Whitelist of property names that can be copied

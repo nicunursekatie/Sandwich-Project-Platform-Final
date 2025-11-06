@@ -11,7 +11,7 @@ import { logger } from './production-safe-logger';
 
 export interface BatchResult<T> {
   successful: T[];
-  failed: Array<{ error: any; index: number; input?: any }>;
+  failed: Array<{ error: unknown; index: number; input?: any }>;
   total: number;
   successCount: number;
   failureCount: number;
@@ -104,7 +104,7 @@ export async function batchSendEmails(
       context,
       failures: result.failed.map(f => ({
         index: f.index,
-        error: f.error?.message || String(f.error)
+        error: f.error instanceof Error ? f.error.message : String(f.error)
       }))
     });
   }
@@ -137,7 +137,7 @@ export async function batchProcessWithRetry<T>(
   context?: string
 ): Promise<BatchResult<T>> {
   const promises = operations.map(async (op, index) => {
-    let lastError: any;
+    let lastError: unknown;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {

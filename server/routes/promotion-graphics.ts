@@ -630,7 +630,13 @@ Thank you for helping us spread the word about our mission!`,
     if (emailResult.failureCount > 0) {
       logger.warn(`${emailResult.failureCount} notification emails failed to send`, {
         graphicId: graphic.id,
-        failedIndices: emailResult.failed.map(f => f.index)
+        failedIndices: emailResult.failed.map(f => f.index),
+        failedRecipients: emailResult.failed.map(f => {
+          const user = targetUsers[f.index];
+          return user
+            ? { email: user.email, name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.displayName || undefined }
+            : { index: f.index, error: 'User not found' };
+        })
       });
     }
   } catch (error) {
