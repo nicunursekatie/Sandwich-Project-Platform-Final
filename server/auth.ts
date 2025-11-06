@@ -1,0 +1,1257 @@
+import type { Express, RequestHandler } from 'express';
+import { storage } from './storage-wrapper';
+import { getDefaultPermissionsForRole as getSharedPermissions } from '../shared/auth-utils';
+import bcrypt from 'bcrypt';
+import { logger } from './utils/production-safe-logger';
+import { saveSession } from './utils/session-utils';
+
+// Using shared permissions from auth-utils
+
+function getDefaultPermissionsForRole(role: string): string[] {
+  return getSharedPermissions(role);
+}
+
+// Committee-specific permission checking
+export const requireCommitteeAccess = (
+  committeeId?: string
+): RequestHandler => {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = req.user;
+
+    // Admins have access to all committees
+    if (
+      user.role === 'admin' ||
+      user.role === 'admin_coordinator' ||
+      user.role === 'admin_viewer'
+    ) {
+      return next();
+    }
+
+    // For committee members, check specific committee access
+    if (user.role === 'committee_member' && committeeId) {
+      try {
+        const isMember = await storage.isUserCommitteeMember(
+          user.id,
+          committeeId
+        );
+        if (!isMember) {
+          return res
+            .status(403)
+            .json({ message: 'Access denied: Not a member of this committee' });
+        }
+      } catch (error) {
+        logger.error('Error checking committee membership:', error);
+        return res
+          .status(500)
+          .json({ message: 'Error verifying committee access' });
+      }
+    }
+
+    next();
+  };
+};
+
+// Extend session and request types
+declare module 'express-session' {
+  interface SessionData {
+    user?: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      profileImageUrl: string | null;
+      role: string;
+      permissions: string[];
+      isActive: boolean;
+    };
+  }
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        profileImageUrl: string | null;
+        role: string;
+        permissions: string[];
+        isActive: boolean;
+      };
+    }
+  }
+}
+
+// Official authentication system for The Sandwich Project
+export function setupAuth(app: Express) {
+  // GET route for login page with registration capability
+  app.get('/api/login', (req, res) => {
+    const loginHtml = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>The Sandwich Project - Login</title>
+      <style>
+        body { 
+          font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          min-height: 100vh; 
+          margin: 0; 
+          background: linear-gradient(135deg, #FEF3C7 0%, #F59E0B 100%);
+          background-attachment: fixed;
+        }
+        .login-card { 
+          background: linear-gradient(to bottom, #ffffff 0%, #fef9e7 100%); 
+          padding: 2.5rem; 
+          border-radius: 16px; 
+          box-shadow: 0 10px 25px rgba(245, 158, 11, 0.15), 0 4px 6px rgba(0,0,0,0.1); 
+          max-width: 420px; 
+          width: 100%; 
+          border: 2px solid #F59E0B;
+          position: relative;
+          overflow: hidden;
+        }
+        .login-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(to right, #236383 0%, #F59E0B 50%, #EA580C 100%);
+        }
+        .logo-header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+        .logo-header h1 {
+          color: #236383;
+          font-size: 1.75rem;
+          font-weight: bold;
+          margin: 0;
+          text-shadow: 0 1px 2px rgba(35, 99, 131, 0.1);
+        }
+        .logo-header p {
+          color: #B45309;
+          font-size: 0.95rem;
+          margin: 0.5rem 0 0 0;
+          font-weight: 500;
+        }
+        .form-group {
+          margin-bottom: 1.25rem;
+          text-align: left;
+        }
+        .form-group label {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: #236383;
+          font-weight: 600;
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .form-group input {
+          width: 100%;
+          padding: 12px 16px;
+          border: 2px solid #FDE68A;
+          border-radius: 8px;
+          font-size: 15px;
+          transition: all 0.3s ease;
+          background: #FFFBEB;
+          box-sizing: border-box;
+        }
+        .form-group input:focus {
+          outline: none;
+          border-color: #F59E0B;
+          box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+          background: white;
+        }
+        .btn { 
+          background: linear-gradient(135deg, #236383 0%, #1E5A78 100%); 
+          color: white; 
+          border: none; 
+          padding: 14px 28px; 
+          border-radius: 8px; 
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 15px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(35, 99, 131, 0.3);
+          text-transform: uppercase;
+          letter-spacing: 0.5px; 
+          font-size: 16px; 
+          margin: 10px 0;
+          width: 100%;
+        }
+        .btn:hover { background-color: #1a4d61; }
+        .btn-secondary {
+          background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+          background-color: #545b62;
+        }
+        .tab-buttons {
+          display: flex;
+          margin-bottom: 1.5rem;
+          border-radius: 10px;
+          overflow: hidden;
+          background: #FEF3C7;
+          border: 1px solid #F59E0B;
+        }
+        .tab-btn {
+          flex: 1;
+          padding: 12px 16px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          font-weight: 600;
+          color: #B45309;
+          transition: all 0.3s ease;
+          position: relative;
+        }
+        .tab-btn:hover {
+          background: rgba(245, 158, 11, 0.1);
+        }
+        .tab-btn.active {
+          background: linear-gradient(135deg, #236383 0%, #1E5A78 100%);
+          color: white;
+          box-shadow: 0 2px 8px rgba(35, 99, 131, 0.3);
+        }
+        .tab-content {
+          display: none;
+        }
+        .tab-content.active {
+          display: block;
+        }
+        .error {
+          color: #DC2626;
+          font-size: 14px;
+          margin-top: 0.75rem;
+          padding: 8px 12px;
+          background: #FEE2E2;
+          border: 1px solid #FECACA;
+          border-radius: 6px;
+          font-weight: 500;
+          display: none; /* Hidden by default */
+        }
+        .error.show {
+          display: block;
+        }
+        .success-message {
+          color: #059669;
+          font-size: 14px;
+          margin-top: 0.75rem;
+          padding: 8px 12px;
+          background: #ECFDF5;
+          border: 1px solid #A7F3D0;
+          border-radius: 6px;
+          font-weight: 500;
+          display: none;
+        }
+        .success-message.show {
+          display: block;
+        }
+        .forgot-password-link {
+          text-align: center;
+          margin-top: 1rem;
+        }
+        .back-to-login {
+          text-align: center;
+          margin-top: 1rem;
+        }
+        .tab-content p {
+          color: #78716C; 
+          margin-bottom: 1.5rem; 
+          text-align: center;
+          font-size: 0.95rem;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="login-card">
+        <div class="logo-header">
+          <h1>The Sandwich Project</h1>
+          <p>Volunteer Management Platform</p>
+        </div>
+
+        <div class="tab-buttons">
+          <button class="tab-btn active" onclick="showTab('login')">Login</button>
+          <button class="tab-btn" onclick="showTab('register')">Register</button>
+        </div>
+
+        <div id="login-tab" class="tab-content active">
+          <p>Sign in to access the platform</p>
+          <form id="login-form">
+            <div class="form-group">
+              <label for="login-email">Email:</label>
+              <input type="email" id="login-email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="login-password">Password:</label>
+              <input type="password" id="login-password" name="password" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
+          </form>
+          <div id="login-error" class="error"></div>
+          <div class="forgot-password-link">
+            <a href="#" onclick="showForgotPassword()" style="color: #236383; text-decoration: none; font-size: 0.9rem;">Forgot your password?</a>
+          </div>
+        </div>
+
+        <div id="register-tab" class="tab-content">
+          <p>Create your account</p>
+          <form id="register-form">
+            <div class="form-group">
+              <label for="reg-email">Email:</label>
+              <input type="email" id="reg-email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-password">Password:</label>
+              <input type="password" id="reg-password" name="password" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-first-name">First Name:</label>
+              <input type="text" id="reg-first-name" name="firstName" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-last-name">Last Name:</label>
+              <input type="text" id="reg-last-name" name="lastName" required>
+            </div>
+            <button type="submit" class="btn">Register</button>
+          </form>
+          <div id="register-error" class="error"></div>
+        </div>
+
+        <div id="forgot-password-tab" class="tab-content">
+          <p>Enter your email to receive a password reset link</p>
+          <form id="forgot-password-form">
+            <div class="form-group">
+              <label for="forgot-email">Email:</label>
+              <input type="email" id="forgot-email" name="email" required>
+            </div>
+            <button type="submit" class="btn">Send Reset Link</button>
+          </form>
+          <div id="forgot-password-error" class="error"></div>
+          <div id="forgot-password-success" class="success-message"></div>
+          <div class="back-to-login">
+            <a href="#" onclick="showTab('login')" style="color: #236383; text-decoration: none; font-size: 0.9rem;">← Back to Login</a>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        function showForgotPassword() {
+          showTab('forgot-password');
+        }
+
+        function showTab(tabName) {
+          // Hide all tabs
+          document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+          });
+          document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+          });
+
+          // Clear any error messages and success messages
+          document.querySelectorAll('.error').forEach(error => {
+            error.classList.remove('show');
+            error.textContent = '';
+          });
+          document.querySelectorAll('.success-message').forEach(success => {
+            success.classList.remove('show');
+            success.textContent = '';
+          });
+
+          // Show selected tab
+          document.getElementById(tabName + '-tab').classList.add('active');
+          event.target.classList.add('active');
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData);
+
+          try {
+            const response = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+              credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              window.location.href = '/';
+            } else {
+              const errorDiv = document.getElementById('login-error');
+              errorDiv.textContent = result.message || 'Login failed';
+              errorDiv.classList.add('show');
+            }
+          } catch (error) {
+            const errorDiv = document.getElementById('login-error');
+            errorDiv.textContent = 'Login failed: ' + error.message;
+            errorDiv.classList.add('show');
+          }
+        });
+
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData);
+
+          try {
+            const response = await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+              credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+              alert('Registration successful! You can now log in.');
+              showTab('login');
+              document.getElementById('login-email').value = data.email;
+            } else {
+              const errorDiv = document.getElementById('register-error');
+              errorDiv.textContent = result.message || 'Registration failed';
+              errorDiv.classList.add('show');
+            }
+          } catch (error) {
+            const errorDiv = document.getElementById('register-error');
+            errorDiv.textContent = 'Registration failed: ' + error.message;
+            errorDiv.classList.add('show');
+          }
+        });
+
+        document.getElementById('forgot-password-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData);
+
+          try {
+            const response = await fetch('/api/forgot-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+              credentials: 'include'
+            });
+
+            const result = await response.json();
+
+            // Clear previous messages
+            const errorDiv = document.getElementById('forgot-password-error');
+            const successDiv = document.getElementById('forgot-password-success');
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+
+            if (result.success) {
+              successDiv.textContent = result.message;
+              successDiv.classList.add('show');
+              
+              // Clean success message without development links
+              successDiv.textContent = result.message;
+              
+              // Clear the form
+              document.getElementById('forgot-email').value = '';
+            } else {
+              errorDiv.textContent = result.message || 'Request failed';
+              errorDiv.classList.add('show');
+            }
+          } catch (error) {
+            const errorDiv = document.getElementById('forgot-password-error');
+            errorDiv.textContent = 'Request failed: ' + error.message;
+            errorDiv.classList.add('show');
+          }
+        });
+      </script>
+    </body>
+    </html>
+    `;
+    res.send(loginHtml);
+  });
+
+  // User registration endpoint
+  app.post('/api/auth/register', async (req: any, res) => {
+    try {
+      const { email, password, firstName, lastName, role } = req.body;
+
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({
+          success: false,
+          message: 'All fields are required',
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'User with this email already exists',
+        });
+      }
+
+      // Create new user with unique ID
+      const userId =
+        'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      const userRole = role || 'volunteer'; // Use provided role or default to volunteer
+
+      // Hash password with bcrypt
+      const hashedPassword = await bcrypt.hash(password.trim(), 10);
+
+      const newUser = await storage.createUser({
+        id: userId,
+        email,
+        password: hashedPassword, // Store hashed password
+        firstName,
+        lastName,
+        role: userRole,
+        permissions: getDefaultPermissionsForRole(userRole),
+        isActive: true,
+        profileImageUrl: null,
+        metadata: {},
+      });
+
+      res.json({ success: true, message: 'Registration successful' });
+    } catch (error) {
+      logger.error('Registration error:', error);
+      res.status(500).json({ success: false, message: 'Registration failed' });
+    }
+  });
+
+  // Debug endpoint to check user permissions
+  app.get('/api/debug/user/:email', async (req: any, res) => {
+    try {
+      const email = req.params.email;
+      const user = await storage.getUserByEmail(email);
+      if (user) {
+        res.json({
+          email: user.email,
+          role: user.role,
+          permissions: user.permissions,
+          isActive: user.isActive,
+        });
+      } else {
+        res.status(404).json({ message: 'User not found' });
+      }
+    } catch (error) {
+      logger.error('Debug user error:', error);
+      res.status(500).json({ error: 'Failed to get user' });
+    }
+  });
+
+  // Debug endpoint to check specific user
+  app.get('/api/auth/debug-user/:email', async (req: any, res) => {
+    try {
+      const { email } = req.params;
+      const user = await storage.getUserByEmail(email);
+      res.json(
+        user
+          ? {
+              email: user.email,
+              role: user.role,
+              permissions: user.permissions,
+              exists: true,
+            }
+          : { exists: false }
+      );
+    } catch (error) {
+      logger.error('Debug user error:', error);
+      res.status(500).json({ error: 'Failed to get user' });
+    }
+  });
+
+  // Fix existing users with empty permissions endpoint
+  app.post('/api/auth/fix-permissions', async (req: any, res) => {
+    try {
+      logger.log('Fixing permissions for existing users...');
+
+      // Get all users and update their permissions to match the shared auth system
+      const allUsers = await storage.getAllUsers();
+
+      for (const user of allUsers) {
+        let correctPermissions = getDefaultPermissionsForRole(user.role);
+
+        // Special case: Give Katie projects access if requested by admin
+        if (user.email === 'katielong2316@gmail.com') {
+          if (!correctPermissions.includes('view_projects')) {
+            correctPermissions = [...correctPermissions, 'view_projects'];
+            logger.log('Adding VIEW_PROJECTS permission to Katie');
+          }
+          // Force update Katie regardless to ensure she gets projects access
+          logger.log(
+            `Forcing Katie's permission update. Current: [${Array.isArray(user.permissions) ? user.permissions.join(', ') : 'none'}]`
+          );
+          logger.log(`New: [${correctPermissions.join(', ')}]`);
+        }
+
+        // Update user with correct permissions if they differ, or force update for Katie
+        const shouldUpdate =
+          JSON.stringify(user.permissions) !==
+            JSON.stringify(correctPermissions) ||
+          user.email === 'katielong2316@gmail.com';
+
+        if (shouldUpdate) {
+          logger.log(`Updating permissions for ${user.email} (${user.role})`);
+          await storage.updateUser(user.id, {
+            ...user,
+            permissions: correctPermissions,
+          });
+          logger.log(`Updated ${user.email} permissions:`, correctPermissions);
+        }
+      }
+
+      res.json({ success: true, message: 'All user permissions fixed' });
+    } catch (error) {
+      logger.error('Fix permissions error:', error);
+      res
+        .status(500)
+        .json({ success: false, message: 'Failed to fix permissions' });
+    }
+  });
+
+  // User login endpoint
+  app.post('/api/auth/login', async (req: any, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email and password are required',
+        });
+      }
+
+      // Trim email to handle mobile keyboard whitespace
+      const trimmedEmail = email.trim().toLowerCase();
+
+      // Find user by email
+      const user = await storage.getUserByEmail(trimmedEmail);
+      if (!user || !user.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password',
+        });
+      }
+
+      // Check password using bcrypt
+      const storedPassword = user.password;
+
+      if (!storedPassword) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password',
+        });
+      }
+
+      // Verify password with bcrypt - trim password to match registration behavior
+      const isValidPassword = await bcrypt.compare(password.trim(), storedPassword);
+      if (!isValidPassword) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password',
+        });
+      }
+
+      // Create session user object
+      const sessionUser = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+        role: user.role,
+        permissions: user.permissions,
+        isActive: user.isActive,
+      };
+
+      // Update last login time
+      await storage.updateUser(user.id, { lastLoginAt: new Date() });
+
+      // Store user in session with explicit save
+      req.session.user = sessionUser;
+      req.user = sessionUser;
+
+      // Force session save to ensure persistence (await to prevent race condition)
+      try {
+        await saveSession(req);
+        logger.log('Session saved successfully for user:', sessionUser.email);
+        logger.log('Session ID:', req.sessionID);
+        res.json({ success: true, user: sessionUser });
+      } catch (err) {
+        logger.error('Session save error:', err);
+        return res
+          .status(500)
+          .json({ success: false, message: 'Session save failed. Please try again.' });
+      }
+    } catch (error) {
+      logger.error('Login error:', error);
+      res.status(500).json({ success: false, message: 'Login failed' });
+    }
+  });
+
+  // Legacy login endpoint (for backward compatibility - development/testing only)
+  app.post('/api/temp-login', async (req: any, res) => {
+    try {
+      // Get Katie's actual user data for testing
+      const katieUser = await storage.getUserByEmail('katielong2316@gmail.com');
+      if (!katieUser) {
+        return res.status(404).json({ error: 'Test user not found' });
+      }
+
+      // Create session user object with Katie's real data
+      const sessionUser = {
+        id: katieUser.id,
+        email: katieUser.email,
+        firstName: katieUser.firstName,
+        lastName: katieUser.lastName,
+        profileImageUrl: katieUser.profileImageUrl,
+        role: katieUser.role,
+        permissions: katieUser.permissions,
+        isActive: katieUser.isActive,
+      };
+
+      // Store user in session
+      req.session.user = sessionUser;
+      req.user = sessionUser;
+
+      res.json({ success: true, user: sessionUser });
+    } catch (error) {
+      logger.error('Temp login error:', error);
+      res.status(500).json({ error: 'Login failed' });
+    }
+  });
+
+  // Get current user endpoint (legacy path for backward compatibility)
+  app.get('/api/temp-auth/current-user', async (req: any, res) => {
+    if (req.session.user) {
+      try {
+        // Get fresh user data from database to ensure permissions are current
+        const dbUser = await storage.getUserByEmail(req.session.user.email);
+        if (!dbUser || !dbUser.isActive) {
+          return res
+            .status(401)
+            .json({ message: 'User account not found or inactive' });
+        }
+
+        // Standardize authentication - Always use (req as any).user and attach dbUser to request
+        (req as any).user = dbUser;
+
+        // Return the database user data instead of session data to include latest profile updates
+        res.json({
+          id: dbUser.id,
+          email: dbUser.email,
+          firstName: dbUser.firstName,
+          lastName: dbUser.lastName,
+          displayName: dbUser.displayName,
+          profileImageUrl: dbUser.profileImageUrl,
+          phoneNumber: dbUser.phoneNumber,
+          preferredEmail: dbUser.preferredEmail,
+          role: dbUser.role,
+          permissions: dbUser.permissions,
+          isActive: dbUser.isActive,
+        });
+      } catch (error) {
+        logger.error('Error fetching user data:', error);
+        res.status(500).json({ message: 'Error fetching user data' });
+      }
+    } else {
+      res.status(401).json({ message: 'Unauthorized' });
+    }
+  });
+
+  // FIXED: Add the missing /api/auth/user endpoint that frontend expects
+  app.get('/api/auth/user', async (req: any, res) => {
+    if (req.session.user) {
+      try {
+        // Get fresh user data from database to ensure permissions are current
+        const dbUser = await storage.getUserByEmail(req.session.user.email);
+        if (!dbUser || !dbUser.isActive) {
+          return res
+            .status(401)
+            .json({ message: 'User account not found or inactive' });
+        }
+
+        // Standardize authentication - Always use (req as any).user and attach dbUser to request
+        (req as any).user = dbUser;
+
+        // Return the database user data instead of session data to include latest profile updates
+        res.json({
+          id: dbUser.id,
+          email: dbUser.email,
+          firstName: dbUser.firstName,
+          lastName: dbUser.lastName,
+          displayName: dbUser.displayName,
+          profileImageUrl: dbUser.profileImageUrl,
+          phoneNumber: dbUser.phoneNumber,
+          preferredEmail: dbUser.preferredEmail,
+          role: dbUser.role,
+          permissions: dbUser.permissions,
+          isActive: dbUser.isActive,
+        });
+      } catch (error) {
+        logger.error('Error fetching user data:', error);
+        res.status(500).json({ message: 'Error fetching user data' });
+      }
+    } else {
+      res.status(401).json({ message: 'Unauthorized' });
+    }
+  });
+
+  // Logout endpoint
+  app.post('/api/logout', (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        logger.error('Session destroy error:', err);
+        return res
+          .status(500)
+          .json({ success: false, message: 'Logout failed' });
+      }
+      res.clearCookie('tsp.session');
+      res.json({ success: true, message: 'Logged out successfully' });
+    });
+  });
+
+  // Profile management endpoints
+  app.get('/api/auth/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.session.user;
+      const userData = await storage.getUserByEmail(user.email);
+      if (userData) {
+        res.json({
+          id: userData.id,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          displayName: userData.displayName,
+          profileImageUrl: userData.profileImageUrl,
+          preferredEmail: userData.preferredEmail,
+          phoneNumber: userData.phoneNumber,
+        });
+      } else {
+        res.status(404).json({ message: 'User not found' });
+      }
+    } catch (error) {
+      logger.error('Profile fetch error:', error);
+      res.status(500).json({ message: 'Failed to fetch profile' });
+    }
+  });
+
+  app.put('/api/auth/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.session.user;
+      const { firstName, lastName, displayName, email, preferredEmail, phoneNumber } = req.body;
+
+      const userData = await storage.getUserByEmail(user.email);
+      if (!userData) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const updatedUser = await storage.updateUser(userData.id, {
+        firstName,
+        lastName,
+        displayName,
+        email,
+        preferredEmail: preferredEmail || null,
+        phoneNumber: phoneNumber || null,
+        updatedAt: new Date(),
+      });
+
+      // Update session with new email if changed
+      if (email !== user.email) {
+        req.session.user.email = email;
+      }
+
+      res.json({
+        id: updatedUser?.id,
+        email: updatedUser?.email,
+        firstName: updatedUser?.firstName,
+        lastName: updatedUser?.lastName,
+        displayName: updatedUser?.displayName,
+        profileImageUrl: updatedUser?.profileImageUrl,
+        preferredEmail: updatedUser?.preferredEmail,
+        phoneNumber: updatedUser?.phoneNumber,
+      });
+    } catch (error) {
+      logger.error('Profile update error:', error);
+      res.status(500).json({ message: 'Failed to update profile' });
+    }
+  });
+
+  app.put(
+    '/api/auth/change-password',
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const user = req.session.user;
+        const { currentPassword, newPassword } = req.body;
+
+        const userData = await storage.getUserByEmail(user.email);
+        if (!userData) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check current password with bcrypt
+        const storedPassword = userData.password;
+        if (!storedPassword) {
+          return res
+            .status(400)
+            .json({ message: 'Current password is incorrect' });
+        }
+
+        const isValidPassword = await bcrypt.compare(currentPassword.trim(), storedPassword);
+        if (!isValidPassword) {
+          return res
+            .status(400)
+            .json({ message: 'Current password is incorrect' });
+        }
+
+        // Hash and update new password
+        const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
+        await storage.updateUser(userData.id, {
+          password: hashedPassword,
+          updatedAt: new Date(),
+        });
+
+        res.json({ message: 'Password changed successfully' });
+      } catch (error) {
+        logger.error('Password change error:', error);
+        res.status(500).json({ message: 'Failed to change password' });
+      }
+    }
+  );
+
+  // Admin endpoint to reset any user's password
+  app.put(
+    '/api/auth/admin/reset-password',
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const user = req.session.user;
+
+        // Only admins can reset passwords
+        if (user.role !== 'admin') {
+          return res
+            .status(403)
+            .json({ message: 'Only administrators can reset passwords' });
+        }
+
+        const { userEmail, newPassword } = req.body;
+
+        if (!userEmail || !newPassword) {
+          return res
+            .status(400)
+            .json({ message: 'User email and new password are required' });
+        }
+
+        const targetUser = await storage.getUserByEmail(userEmail);
+        if (!targetUser) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Hash and update password
+        const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
+        await storage.updateUser(targetUser.id, {
+          password: hashedPassword,
+          updatedAt: new Date(),
+        });
+
+        res.json({
+          message: `Password reset successfully for ${userEmail}`,
+          newPassword: newPassword, // Include for admin convenience
+        });
+      } catch (error) {
+        logger.error('Admin password reset error:', error);
+        res.status(500).json({ message: 'Failed to reset password' });
+      }
+    }
+  );
+}
+
+// Middleware to check if user is authenticated
+export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
+  logger.log('=== AUTHENTICATION MIDDLEWARE ===');
+  logger.log('URL:', req.method, req.url);
+  logger.log('req.session exists:', !!req.session);
+  logger.log('req.session.user exists:', !!req.session?.user);
+  logger.log('Session ID:', req.sessionID);
+  logger.log('User email in session:', req.session?.user?.email);
+
+  // AUTHENTICATION REQUIRED - no auto-login
+  if (!req.session || !req.session.user) {
+    logger.log('❌ No session user found - authentication required');
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  // Always fetch fresh user data from database to ensure permissions are current
+  try {
+    const freshUser = await storage.getUserByEmail(req.session.user.email);
+    if (freshUser && freshUser.isActive) {
+      // Update session with fresh user data if permissions are missing or changed
+      if (
+        !req.session.user.permissions ||
+        req.session.user.permissions.length === 0 ||
+        JSON.stringify(req.session.user.permissions) !==
+          JSON.stringify(freshUser.permissions)
+      ) {
+        logger.log(
+          `🔄 Updating session for ${freshUser.email} with fresh permissions`
+        );
+        req.session.user = {
+          id: freshUser.id,
+          email: freshUser.email,
+          firstName: freshUser.firstName,
+          lastName: freshUser.lastName,
+          profileImageUrl: freshUser.profileImageUrl,
+          role: freshUser.role,
+          permissions: freshUser.permissions,
+          isActive: freshUser.isActive,
+        };
+
+        // Attempt to save updated session (non-critical, don't fail request)
+        try {
+          await saveSession(req);
+        } catch (err) {
+          logger.error('Failed to save updated session (non-critical):', err);
+          // Continue anyway - session update is not critical for this request
+        }
+      }
+
+      // CRITICAL: Always set req.user to the fresh database user data
+      req.user = {
+        id: freshUser.id,
+        email: freshUser.email,
+        firstName: freshUser.firstName,
+        lastName: freshUser.lastName,
+        profileImageUrl: freshUser.profileImageUrl,
+        role: freshUser.role,
+        permissions: freshUser.permissions,
+        isActive: freshUser.isActive,
+      };
+
+      // Update lastLoginAt if it's been more than 1 hour since last update
+      // This ensures active users with persistent sessions have accurate lastLoginAt
+      const now = new Date();
+      const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      if (!freshUser.lastLoginAt || new Date(freshUser.lastLoginAt) < hourAgo) {
+        storage.updateUser(freshUser.id, { lastLoginAt: now }).catch((err) => {
+          logger.error('Failed to update lastLoginAt:', err);
+        });
+      }
+
+      logger.log(
+        `✅ Authentication successful for ${freshUser.email} (${freshUser.role})`
+      );
+      const permCount = Array.isArray(freshUser.permissions) ? freshUser.permissions.length : 0;
+      logger.log(
+        `✅ req.user set with ${permCount} permissions`
+      );
+    } else {
+      logger.log(`❌ User not found or inactive: ${req.session.user.email}`);
+      // User not found in database or inactive, clear invalid session
+      req.session.destroy((err: unknown) => {
+        if (err) logger.error('Session destroy error:', err);
+      });
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+  } catch (error) {
+    logger.error(
+      '❌ Error fetching fresh user data in isAuthenticated:',
+      error
+    );
+    // Fallback to session user if database fetch fails but still set req.user
+    req.user = req.session.user;
+    logger.log(
+      `⚠️ Fallback: Using session user for ${req.session.user.email}`
+    );
+  }
+
+  next();
+};
+
+// Initialize authentication system with default admin user and committees
+export async function initializeAuth() {
+  logger.log('Authentication system initialized');
+
+  // Create default admin user if it doesn't exist
+  try {
+    const adminEmail = 'admin@sandwich.project';
+    const existingAdmin = await storage.getUserByEmail(adminEmail);
+
+    if (!existingAdmin) {
+      const adminId = 'admin_' + Date.now();
+      await storage.createUser({
+        id: adminId,
+        email: adminEmail,
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'admin',
+        permissions: getDefaultPermissionsForRole('admin'),
+        isActive: true,
+        profileImageUrl: null,
+        metadata: {
+          password: process.env.DEFAULT_ADMIN_PASSWORD || 'admin123',
+        }, // Use env var or fallback
+      });
+      logger.log(
+        '✅ Default admin user created: admin@sandwich.project / [password set from env or default]'
+      );
+    } else {
+      logger.log(
+        '✅ Default admin user already exists: admin@sandwich.project'
+      );
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      logger.log(
+        '❌ Could not create default admin user (using fallback):',
+        error.message
+      );
+    } else {
+      logger.log(
+        '❌ Could not create default admin user (using fallback):',
+        error
+      );
+    }
+  }
+
+  // Setup default committees and committee member user
+  try {
+    // Create default committees if they don't exist
+    try {
+      const committees = await storage.getAllCommittees();
+      if (committees.length === 0) {
+        await storage.createCommittee({
+          name: 'Finance',
+          description: 'Financial oversight and budgeting',
+        });
+        await storage.createCommittee({
+          name: 'Operations',
+          description: 'Day-to-day operations management',
+        });
+        await storage.createCommittee({
+          name: 'Outreach',
+          description: 'Community outreach and partnerships',
+        });
+        logger.log('✅ Default committees created');
+      }
+    } catch (error) {
+      logger.warn('Committee creation failed:', error.message);
+    }
+
+    // Create committee member user and assign to specific committee
+    const committeeEmail = 'katielong2316@gmail.com';
+    const existingCommitteeMember =
+      await storage.getUserByEmail(committeeEmail);
+
+    let committeeMemberId;
+    if (!existingCommitteeMember) {
+      committeeMemberId = 'committee_' + Date.now();
+      await storage.createUser({
+        id: committeeMemberId,
+        email: committeeEmail,
+        firstName: 'Katie',
+        lastName: 'Long',
+        role: 'committee_member',
+        permissions: getDefaultPermissionsForRole('committee_member'),
+        isActive: true,
+        profileImageUrl: null,
+        metadata: {
+          password: process.env.DEFAULT_COMMITTEE_PASSWORD || 'committee123',
+        },
+      });
+      logger.log(
+        '✅ Committee member user created: katielong2316@gmail.com / [password set from env or default]'
+      );
+    } else {
+      // Use existing user without updating role (preserve current role and permissions)
+      committeeMemberId = existingCommitteeMember.id;
+      logger.log(
+        '✅ Found existing user: katielong2316@gmail.com (preserving current role and permissions)'
+      );
+    }
+
+    // Assign committee member to finance committee only
+    try {
+      const katie = await storage.getUserByEmail('katielong2316@gmail.com');
+
+      if (katie) {
+        // Get Finance committee ID
+        const committees = await storage.getAllCommittees();
+        const financeCommittee = committees.find(
+          (c) => c.name.toLowerCase() === 'finance'
+        );
+
+        if (financeCommittee) {
+          // Check if Katie is already in Finance committee
+          const isFinanceMember = await storage.isUserCommitteeMember(
+            katie.id,
+            financeCommittee.id
+          );
+          if (!isFinanceMember) {
+            await storage.addUserToCommittee({
+              userId: katie.id,
+              committeeId: financeCommittee.id,
+              role: 'member',
+            });
+          }
+          logger.log(
+            '✅ Assigned katielong2316@gmail.com to Finance Committee only'
+          );
+        }
+      }
+    } catch (error) {
+      logger.warn('Assigning committee member failed:', error.message);
+    }
+  } catch (error) {
+    logger.log('❌ Could not setup committees:', error.message);
+  }
+
+  // Setup driver user - kenig.ka@gmail.com with restricted permissions
+  try {
+    const driverEmail = 'kenig.ka@gmail.com';
+    const existingDriver = await storage.getUserByEmail(driverEmail);
+
+    if (!existingDriver) {
+      const driverId = `driver_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await storage.createUser({
+        id: driverId,
+        email: driverEmail,
+        firstName: 'Ken',
+        lastName: 'Ig',
+        role: 'driver',
+        permissions: getDefaultPermissionsForRole('driver'),
+        isActive: true,
+        profileImageUrl: null,
+        metadata: {
+          password: process.env.DEFAULT_DRIVER_PASSWORD || 'driver123',
+        },
+      });
+      logger.log(
+        '✅ Driver user created: kenig.ka@gmail.com / [password set from env or default]'
+      );
+    } else {
+      // Preserve existing user permissions - do not reset them
+      logger.log(
+        '✅ Found existing user: kenig.ka@gmail.com (preserving current role and permissions)'
+      );
+    }
+  } catch (error) {
+    logger.log('❌ Could not setup driver user:', error.message);
+  }
+}

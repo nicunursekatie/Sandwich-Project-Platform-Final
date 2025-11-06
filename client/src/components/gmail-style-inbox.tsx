@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -63,6 +64,8 @@ import {
 } from '@/components/ui/select';
 import { ButtonTooltip } from '@/components/ui/button-tooltip';
 import { KudosInbox } from '@/components/kudos-inbox';
+import { MessageContextBadge } from '@/components/message-context-badge';
+import { logger } from '@/lib/logger';
 
 interface User {
   id: string;
@@ -109,13 +112,14 @@ interface Draft {
 }
 
 export default function GmailStyleInbox() {
-  console.log('🔍 GmailStyleInbox component is rendering');
+  logger.log('🔍 GmailStyleInbox component is rendering');
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { track } = useOnboardingTracker();
 
   // Add early return for loading state
   if (authLoading) {
-    console.log('🔄 Auth is loading, showing loading state');
+    logger.log('🔄 Auth is loading, showing loading state');
     return (
       <div className="flex h-full items-center justify-center bg-white">
         <div className="text-center">
@@ -127,7 +131,7 @@ export default function GmailStyleInbox() {
   }
 
   if (!user) {
-    console.log('❌ No user found, showing error');
+    logger.log('❌ No user found, showing error');
     return (
       <div className="flex h-full items-center justify-center bg-white">
         <div className="text-center">
@@ -137,7 +141,7 @@ export default function GmailStyleInbox() {
     );
   }
 
-  console.log(
+  logger.log(
     '✅ User authenticated, rendering inbox for:',
     (user as any)?.email
   );
@@ -235,7 +239,7 @@ export default function GmailStyleInbox() {
           isRead: kudo.isRead || false,
         }));
         
-        console.log(`Fetched ${formattedKudos.length} kudos`);
+        logger.log(`Fetched ${formattedKudos.length} kudos`);
         return formattedKudos;
       } else if (activeFolder === 'inbox') {
         // For inbox, fetch both emails and kudos, then merge them
@@ -268,7 +272,7 @@ export default function GmailStyleInbox() {
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         
-        console.log(
+        logger.log(
           `Fetched ${emails.length} emails and ${kudos.length} kudos, merged into ${allMessages.length} total messages`
         );
         return allMessages;
@@ -282,7 +286,7 @@ export default function GmailStyleInbox() {
           messageType: 'email',
         }));
         
-        console.log(`Fetched ${formattedMessages.length} emails from ${activeFolder} folder`);
+        logger.log(`Fetched ${formattedMessages.length} emails from ${activeFolder} folder`);
         return formattedMessages;
       }
     },
@@ -321,19 +325,21 @@ export default function GmailStyleInbox() {
         content: messageData.content,
         isDraft: messageData.isDraft || false,
       };
-      console.log('Sending email with data:', emailData);
+      logger.log('Sending email with data:', emailData);
       return await apiRequest('POST', '/api/emails', emailData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [apiBase] });
       // Also invalidate Gmail unread count to update navigation indicator
       queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
+      // Track challenge completion
+      track('inbox_send_email');
       setShowCompose(false);
       resetCompose();
       toast({ description: 'Message sent successfully' });
     },
     onError: (error) => {
-      console.error('Send email error:', error);
+      logger.error('Send email error:', error);
       toast({
         description: 'Failed to send message',
         variant: 'destructive',
@@ -360,7 +366,7 @@ export default function GmailStyleInbox() {
         isDraft: false,
       };
 
-      console.log('Sending reply:', replyEmailData);
+      logger.log('Sending reply:', replyEmailData);
       return await apiRequest('POST', '/api/emails', replyEmailData);
     },
     onSuccess: () => {
@@ -372,7 +378,7 @@ export default function GmailStyleInbox() {
       toast({ description: 'Reply sent successfully' });
     },
     onError: (error) => {
-      console.error('Reply error:', error);
+      logger.error('Reply error:', error);
       toast({
         description: 'Failed to send reply',
         variant: 'destructive',
@@ -396,7 +402,7 @@ export default function GmailStyleInbox() {
       toast({ description: 'Marked as read' });
     },
     onError: (error) => {
-      console.error('Mark as read error:', error);
+      logger.error('Mark as read error:', error);
       toast({
         description: 'Failed to mark as read',
         variant: 'destructive',
@@ -413,7 +419,7 @@ export default function GmailStyleInbox() {
       messageId: number;
       isStarred: boolean;
     }) => {
-      console.log(
+      logger.log(
         'Star not implemented for conversation messages:',
         messageId,
         isStarred
@@ -442,7 +448,7 @@ export default function GmailStyleInbox() {
       toast({ description: 'Messages archived successfully' });
     },
     onError: (error) => {
-      console.error('Archive error:', error);
+      logger.error('Archive error:', error);
       toast({
         description: 'Failed to archive messages',
         variant: 'destructive',
@@ -467,7 +473,7 @@ export default function GmailStyleInbox() {
       toast({ description: 'Messages moved to trash' });
     },
     onError: (error) => {
-      console.error('Trash error:', error);
+      logger.error('Trash error:', error);
       toast({
         description: 'Failed to move messages to trash',
         variant: 'destructive',
@@ -594,7 +600,7 @@ export default function GmailStyleInbox() {
       return;
     }
 
-    console.log('Sending reply with data:', {
+    logger.log('Sending reply with data:', {
       content: replyContent,
       sender: null, // Let backend use authenticated user info
       recipientId: selectedMessage.userId,
@@ -680,8 +686,8 @@ export default function GmailStyleInbox() {
     },
   ];
 
-  console.log('🎨 About to render GmailStyleInbox main UI');
-  console.log('📊 Component state:', {
+  logger.log('🎨 About to render GmailStyleInbox main UI');
+  logger.log('📊 Component state:', {
     activeFolder,
     selectedMessage: !!selectedMessage,
     messageCount: messages.length,
@@ -693,7 +699,7 @@ export default function GmailStyleInbox() {
       await apiRequest('PATCH', `/api/emails/kudos/${kudoId}`, { isRead: true });
       queryClient.invalidateQueries({ queryKey: ['/api/emails/kudos'] });
     } catch (error) {
-      console.error('Failed to mark kudos as read', error);
+      logger.error('Failed to mark kudos as read', error);
     }
   };
 
@@ -883,7 +889,7 @@ export default function GmailStyleInbox() {
                   variant="ghost"
                   size="sm"
                   onClick={() =>
-                    console.log(
+                    logger.log(
                       'Mark Read not implemented for conversation messages'
                     )
                   }
@@ -1138,7 +1144,7 @@ export default function GmailStyleInbox() {
                             : selectedMessage?.id === message.id
                             ? 'bg-amber-100 border-r-4 border-amber-500 shadow-sm'
                             : !message.isRead
-                            ? 'bg-blue-50 font-bold border-l-4 border-blue-500'
+                            ? 'bg-brand-primary-lighter font-bold border-l-4 border-blue-500'
                             : 'bg-white font-normal'
                         } hover:bg-amber-50 border-gray-100
                         ${isKudos && !message.isRead ? 'animate-pulse' : ''}
@@ -1152,14 +1158,14 @@ export default function GmailStyleInbox() {
                             e.stopPropagation();
                             handleToggleSelect(message.id);
                           }}
-                          className="mt-1 h-4 w-4 text-brand-primary bg-white border-gray-300 rounded focus:ring-blue-500"
+                          className="mt-1 h-4 w-4 text-brand-primary bg-white border-gray-300 rounded focus:ring-brand-primary-muted"
                         />
                         
                         {/* Kudos trophy icon or regular star */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            console.log('Star clicked for message', message.id);
+                            logger.log('Star clicked for message', message.id);
                           }}
                           className="mt-1"
                         >
@@ -1351,7 +1357,7 @@ export default function GmailStyleInbox() {
                             textarea?.focus();
                           }, 300);
                         }}
-                        className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 px-3 py-2 font-medium"
+                        className="bg-brand-primary-lighter border-brand-primary-border text-brand-primary hover:bg-brand-primary-light hover:border-brand-primary-border-strong px-3 py-2 font-medium"
                       >
                         <Reply className="h-4 w-4 mr-2" />
                         Reply to Message
@@ -1361,7 +1367,7 @@ export default function GmailStyleInbox() {
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        console.log(
+                        logger.log(
                           'Star clicked for message',
                           selectedMessage.id
                         )
@@ -1430,65 +1436,70 @@ export default function GmailStyleInbox() {
                 </div>
               </div>
 
-              {/* Message Content */}
-              <div
-                className={`p-4 ${
-                  selectedMessage.content.length > 500
-                    ? 'flex-1 overflow-y-auto'
-                    : 'flex-shrink-0'
-                }`}
-              >
-                <div className="prose max-w-none">
-                  {/* Special formatting for Kudos messages */}
-                  {(selectedMessage as any).isKudos ? (
-                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6 mb-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-yellow-100 p-2 rounded-full">
-                          <Trophy className="h-6 w-6 text-yellow-600" />
+              {/* Message Content - Scrollable area for all messages */}
+              <ScrollArea className="flex-1">
+                <div className="p-4">
+                  <div className="prose max-w-none">
+                    {/* Special formatting for Kudos messages */}
+                    {(selectedMessage as any).isKudos ? (
+                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6 mb-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="bg-yellow-100 p-2 rounded-full">
+                            <Trophy className="h-6 w-6 text-yellow-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-yellow-800">
+                              Kudos Received!
+                            </h3>
+                            <p className="text-sm text-yellow-700">
+                              From {selectedMessage.senderName}
+                              {(selectedMessage as any).projectTitle && (
+                                <span className="ml-1">
+                                  for "{(selectedMessage as any).projectTitle}"
+                                </span>
+                              )}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-yellow-800">
-                            Kudos Received!
-                          </h3>
-                          <p className="text-sm text-yellow-700">
-                            From {selectedMessage.senderName}
-                            {(selectedMessage as any).projectTitle && (
-                              <span className="ml-1">
-                                for "{(selectedMessage as any).projectTitle}"
-                              </span>
-                            )}
-                          </p>
+                        <div className="bg-white border border-yellow-300 rounded-lg p-4">
+                          <div className="text-lg text-gray-800 font-medium leading-relaxed">
+                            {selectedMessage.content}
+                          </div>
                         </div>
+                        {(selectedMessage as any).contextType && (
+                          <div className="mt-4">
+                            <MessageContextBadge
+                              contextType={(selectedMessage as any).contextType}
+                              contextId={(selectedMessage as any).contextId}
+                              contextTitle={
+                                (selectedMessage as any).contextTitle ||
+                                (selectedMessage as any).entityName ||
+                                (selectedMessage as any).projectTitle
+                              }
+                            />
+                          </div>
+                        )}
                       </div>
-                      <div className="bg-white border border-yellow-300 rounded-lg p-4">
-                        <div className="text-lg text-gray-800 font-medium leading-relaxed">
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="whitespace-pre-wrap">
                           {selectedMessage.content}
                         </div>
+                        {selectedMessage.contextType && selectedMessage.contextId && (
+                          <MessageContextBadge
+                            contextType={selectedMessage.contextType}
+                            contextId={selectedMessage.contextId}
+                            contextTitle={
+                              selectedMessage.contextTitle ||
+                              (selectedMessage as any).entityName
+                            }
+                          />
+                        )}
                       </div>
-                      {(selectedMessage as any).contextType && (
-                        <div className="mt-4 text-xs text-yellow-600">
-                          <span className="font-medium">Context:</span>{' '}
-                          {(selectedMessage as any).contextType === 'project'
-                            ? 'Project'
-                            : 'Task'}{' '}
-                          -{' '}
-                          {(selectedMessage as any).entityName ||
-                            (selectedMessage as any).projectTitle}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="whitespace-pre-wrap">
-                      {selectedMessage.content}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              {/* Flexible spacer for short messages */}
-              {selectedMessage.content.length <= 500 && (
-                <div className="flex-1 min-h-0"></div>
-              )}
+              </ScrollArea>
 
               {/* Gmail-Style Reply Section - Always visible for non-Kudos messages */}
               {!(selectedMessage as any).isKudos && (
@@ -1511,7 +1522,7 @@ export default function GmailStyleInbox() {
                         }
                       }}
                       rows={6}
-                      className="w-full bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 resize-none"
+                      className="w-full bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary-muted focus:border-blue-500 text-gray-900 resize-none"
                       style={{
                         minHeight: '150px',
                         fontSize: '14px',

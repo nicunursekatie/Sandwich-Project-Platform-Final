@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { isAuthenticated } from '../temp-auth';
+import { isAuthenticated } from '../auth';
 import { storage } from '../storage-wrapper';
 import { z } from 'zod';
 import { generateVerificationCode, sendConfirmationSMS, submitTollFreeVerification, checkTollFreeVerificationStatus } from '../sms-service';
 import twilio from 'twilio';
+import { logger } from '../utils/production-safe-logger';
+import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { NotificationService } from '../notification-service';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -51,7 +54,7 @@ router.get('/users/sms-status', isAuthenticated, async (req, res) => {
       confirmationMethod: smsConsent.confirmationMethod || null,
     });
   } catch (error) {
-    console.error('Error getting SMS status:', error);
+    logger.error('Error getting SMS status:', error);
     res.status(500).json({
       error: 'Failed to get SMS status',
       message: (error as Error).message,
@@ -118,27 +121,7 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    // Send provider-appropriate welcome SMS to confirm opt-in
-    try {
-      const { sendWelcomeSMS } = await import('../sms-service');
-      
-      // Use the new sendWelcomeSMS function which sends provider-appropriate messages
-      const result = await sendWelcomeSMS(formattedPhone);
-      
-      if (result.success) {
-        console.log(`✅ Welcome SMS sent to ${formattedPhone}`);
-      } else {
-        console.warn(`⚠️ Welcome SMS failed: ${result.message}`);
-      }
-    } catch (smsError) {
-      // Log the error but don't fail the opt-in
-      console.error('Failed to send welcome SMS:', smsError);
-      console.error('Error details:', {
-        message: (smsError as any).message
-      });
-    }
-
-    console.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone})`);
+    logger.log(`✅ SMS opt-in successful for user ${user.email} (${formattedPhone})`);
 
     res.json({
       success: true,
@@ -147,7 +130,7 @@ router.post('/users/sms-opt-in', isAuthenticated, async (req, res) => {
       status: 'pending_confirmation',
     });
   } catch (error) {
-    console.error('Error processing SMS opt-in:', error);
+    logger.error('Error processing SMS opt-in:', error);
     
     if ((error as any).name === 'ZodError') {
       return res.status(400).json({
@@ -191,14 +174,14 @@ router.post('/users/sms-opt-out', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    console.log(`✅ SMS opt-out successful for user ${user.email}`);
+    logger.log(`✅ SMS opt-out successful for user ${user.email}`);
 
     res.json({
       success: true,
       message: 'Successfully opted out of SMS reminders',
     });
   } catch (error) {
-    console.error('Error processing SMS opt-out:', error);
+    logger.error('Error processing SMS opt-out:', error);
     res.status(500).json({
       error: 'Failed to opt out of SMS reminders',
       message: (error as Error).message,
@@ -234,8 +217,15 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
       });
     }
 
+    // Debug logging for verification code comparison
+    logger.log(`🔍 SMS Verification Attempt:`);
+    logger.log(`  - User entered: ${verificationCode}`);
+    logger.log(`  - Stored code: ${smsConsent.verificationCode}`);
+    logger.log(`  - Match: ${smsConsent.verificationCode === verificationCode}`);
+
     // Check if verification code matches
     if (smsConsent.verificationCode !== verificationCode) {
+      logger.error(`❌ Verification code mismatch for ${user.email}`);
       return res.status(400).json({ 
         error: 'Invalid verification code' 
       });
@@ -249,7 +239,9 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
       });
     }
 
-    // Confirm SMS consent
+    // Confirm SMS consent and set default notification preferences
+    const notificationPreferences = metadata.notificationPreferences || {};
+
     const updatedMetadata = {
       ...(user.metadata as any || {}),
       smsConsent: {
@@ -260,11 +252,67 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
         verificationCode: undefined, // Remove verification code after confirmation
         verificationCodeExpiry: undefined,
       },
+      notificationPreferences: {
+        ...notificationPreferences,
+        primaryReminderEnabled: true,
+        primaryReminderHours: 72,
+        primaryReminderType: 'sms',
+        secondaryReminderEnabled: notificationPreferences.secondaryReminderEnabled || false,
+        secondaryReminderHours: notificationPreferences.secondaryReminderHours || 1,
+        secondaryReminderType: notificationPreferences.secondaryReminderType || 'email',
+      },
     };
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    console.log(`✅ SMS confirmation successful for user ${user.email} (${smsConsent.phoneNumber})`);
+    const redactedPhone = smsConsent.phoneNumber ? `***${smsConsent.phoneNumber.slice(-4)}` : 'unknown';
+    logger.log(`✅ SMS confirmation successful for user ID: ${userId} (${redactedPhone})`);
+
+    // Re-read user to get fresh data and check if welcome SMS should be sent (prevents race condition)
+    const freshUser = await storage.getUserById(userId);
+    if (!freshUser) {
+      logger.error(`❌ Failed to re-read user ${userId} for welcome SMS check`);
+      res.json({
+        success: true,
+        message: 'SMS notifications confirmed! You will now receive weekly reminders.',
+        phoneNumber: smsConsent.phoneNumber,
+        status: 'confirmed',
+      });
+      return;
+    }
+
+    const freshMetadata = freshUser.metadata as any || {};
+    const freshSmsConsent = freshMetadata.smsConsent || {};
+    const hasReceivedWelcome = freshSmsConsent.welcomeSmsSentAt;
+
+    if (!hasReceivedWelcome) {
+      try {
+        logger.log(`🔍 Manual confirmation: About to send welcome SMS to ${redactedPhone} for user ID: ${userId}`);
+
+        const { sendWelcomeSMS } = await import('../sms-service');
+        const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
+
+        if (welcomeResult.success) {
+          logger.log(`✅ Welcome SMS sent to ${redactedPhone} after confirmation`);
+
+          // Mark that welcome SMS has been sent using fresh metadata
+          const finalMetadata = {
+            ...freshMetadata,
+            smsConsent: {
+              ...freshSmsConsent,
+              welcomeSmsSentAt: new Date().toISOString(),
+            },
+          };
+          await storage.updateUser(userId, { metadata: finalMetadata });
+        } else {
+          logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+        }
+      } catch (smsError) {
+        logger.error('Failed to send welcome SMS after confirmation:', smsError);
+      }
+    } else {
+      logger.log(`ℹ️ Skipping welcome SMS - already sent to ${redactedPhone} for user ID: ${userId}`);
+    }
 
     res.json({
       success: true,
@@ -273,7 +321,7 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
       status: 'confirmed',
     });
   } catch (error) {
-    console.error('Error confirming SMS:', error);
+    logger.error('Error confirming SMS:', error);
     
     if ((error as any).name === 'ZodError') {
       return res.status(400).json({
@@ -322,14 +370,14 @@ router.post('/users/sms-reset', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    console.log(`✅ SMS status reset for user ${user.email}`);
+    logger.log(`✅ SMS status reset for user ${user.email}`);
 
     res.json({
       success: true,
       message: 'SMS opt-in status has been reset. You can now start the opt-in process again.',
     });
   } catch (error) {
-    console.error('Error resetting SMS status:', error);
+    logger.error('Error resetting SMS status:', error);
     res.status(500).json({
       error: 'Failed to reset SMS status',
       message: (error as Error).message,
@@ -396,7 +444,7 @@ router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
 
     await storage.updateUser(userId, { metadata: updatedMetadata });
 
-    console.log(`✅ Verification code resent to ${phoneNumber} for user ${user.email}`);
+    logger.log(`✅ Verification code resent to ${phoneNumber} for user ${user.email}`);
 
     res.json({
       success: true,
@@ -404,7 +452,7 @@ router.post('/users/sms-resend', isAuthenticated, async (req, res) => {
       phoneNumber: phoneNumber,
     });
   } catch (error) {
-    console.error('Error resending verification code:', error);
+    logger.error('Error resending verification code:', error);
     res.status(500).json({
       error: 'Failed to resend verification code',
       message: (error as Error).message,
@@ -422,12 +470,12 @@ router.post('/sms/webhook', async (req, res) => {
     const twilioSignature = req.headers['x-twilio-signature'] as string;
     
     if (!twilioSignature) {
-      console.warn('⚠️ SECURITY VIOLATION: SMS webhook request missing X-Twilio-Signature header');
+      logger.warn('⚠️ SECURITY VIOLATION: SMS webhook request missing X-Twilio-Signature header');
       return res.status(403).json({ error: 'Forbidden: Missing signature' });
     }
     
     if (!process.env.TWILIO_AUTH_TOKEN) {
-      console.error('❌ SECURITY ERROR: TWILIO_AUTH_TOKEN not configured for webhook validation');
+      logger.error('❌ SECURITY ERROR: TWILIO_AUTH_TOKEN not configured for webhook validation');
       return res.status(500).json({ error: 'Server configuration error' });
     }
     
@@ -445,13 +493,13 @@ router.post('/sms/webhook', async (req, res) => {
     );
     
     if (!isValidRequest) {
-      console.warn(`⚠️ SECURITY VIOLATION: Invalid Twilio signature for webhook request from ${req.ip}`);
-      console.warn(`Attempted URL: ${webhookUrl}`);
-      console.warn(`Signature: ${twilioSignature}`);
+      logger.warn(`⚠️ SECURITY VIOLATION: Invalid Twilio signature for webhook request from ${req.ip}`);
+      logger.warn(`Attempted URL: ${webhookUrl}`);
+      logger.warn(`Signature: ${twilioSignature}`);
       return res.status(403).json({ error: 'Forbidden: Invalid signature' });
     }
     
-    console.log('✅ SECURITY: Twilio webhook signature validated successfully');
+    logger.log('✅ SECURITY: Twilio webhook signature validated successfully');
     
     const { Body, From } = req.body;
     
@@ -461,13 +509,31 @@ router.post('/sms/webhook', async (req, res) => {
 
     const messageBody = Body.trim().toUpperCase();
     const phoneNumber = From;
+    const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
 
-    console.log(`📱 Received SMS from ${phoneNumber}: "${Body}"`);
+    logger.log(`📱 Received SMS from ${redactedPhone}: "${Body}"`);
 
     // Check if message is "YES" confirmation
     if (messageBody === 'YES') {
+      // Redact phone number for logging (show last 4 digits only)
+      const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
+      logger.log(`🔍 YES confirmation received from ${redactedPhone}`);
+
       // Find user with this phone number and pending confirmation
       const allUsers = await storage.getAllUsers();
+
+      // Check for duplicate phone numbers (potential bug)
+      const usersWithThisPhone = allUsers.filter((user) => {
+        const metadata = user.metadata as any || {};
+        const smsConsent = metadata.smsConsent || {};
+        return smsConsent.phoneNumber === phoneNumber;
+      });
+
+      if (usersWithThisPhone.length > 1) {
+        logger.warn(`⚠️ POTENTIAL BUG: Found ${usersWithThisPhone.length} users with phone ${redactedPhone}`);
+        logger.warn(`  User IDs: ${usersWithThisPhone.map(u => u.id).join(', ')}`);
+      }
+
       const userWithPendingConfirmation = allUsers.find((user) => {
         const metadata = user.metadata as any || {};
         const smsConsent = metadata.smsConsent || {};
@@ -478,14 +544,20 @@ router.post('/sms/webhook', async (req, res) => {
       });
 
       if (!userWithPendingConfirmation) {
-        console.log(`❌ No pending confirmation found for ${phoneNumber}`);
-        return res.status(200).send('OK'); // Still return 200 to Twilio
+        logger.log(`❌ No pending confirmation found for ${redactedPhone}`);
+        // Return TwiML response with no message (empty response)
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
+
+      logger.log(`✅ Matched user ID: ${userWithPendingConfirmation.id} with phone: ${redactedPhone}`);
 
       // Confirm SMS consent via YES reply
       const metadata = userWithPendingConfirmation.metadata as any || {};
       const smsConsent = metadata.smsConsent || {};
+      const notificationPreferences = metadata.notificationPreferences || {};
       
+      // Set default notification preferences: 72 hours before event with SMS
       const updatedMetadata = {
         ...(userWithPendingConfirmation.metadata as any || {}),
         smsConsent: {
@@ -497,16 +569,85 @@ router.post('/sms/webhook', async (req, res) => {
           verificationCode: undefined,
           verificationCodeExpiry: undefined,
         },
+        notificationPreferences: {
+          ...notificationPreferences,
+          primaryReminderEnabled: true,
+          primaryReminderHours: 72,
+          primaryReminderType: 'sms',
+          secondaryReminderEnabled: notificationPreferences.secondaryReminderEnabled || false,
+          secondaryReminderHours: notificationPreferences.secondaryReminderHours || 1,
+          secondaryReminderType: notificationPreferences.secondaryReminderType || 'email',
+        },
       };
 
       await storage.updateUser(userWithPendingConfirmation.id, { metadata: updatedMetadata });
 
-      console.log(`✅ SMS confirmation via YES reply successful for user ${userWithPendingConfirmation.email} (${phoneNumber})`);
+      logger.log(`✅ SMS confirmation via YES reply successful for user ID: ${userWithPendingConfirmation.id} (${redactedPhone})`);
+
+      // Re-read user to get fresh data and check if welcome SMS should be sent (prevents race condition)
+      const freshUser = await storage.getUserById(userWithPendingConfirmation.id);
+      if (!freshUser) {
+        logger.error(`❌ Failed to re-read user ${userWithPendingConfirmation.id} for welcome SMS check`);
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      }
+
+      const freshMetadata = freshUser.metadata as any || {};
+      const freshSmsConsent = freshMetadata.smsConsent || {};
+      const hasReceivedWelcome = freshSmsConsent.welcomeSmsSentAt;
+
+      if (!hasReceivedWelcome) {
+        try {
+          const { sendWelcomeSMS } = await import('../sms-service');
+          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
+
+          if (welcomeResult.success) {
+            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after YES confirmation`);
+
+            // Mark that welcome SMS has been sent using fresh metadata
+            const finalMetadata = {
+              ...freshMetadata,
+              smsConsent: {
+                ...freshSmsConsent,
+                welcomeSmsSentAt: new Date().toISOString(),
+              },
+            };
+            await storage.updateUser(userWithPendingConfirmation.id, { metadata: finalMetadata });
+          } else {
+            logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+          }
+        } catch (smsError) {
+          logger.error('Failed to send welcome SMS after YES confirmation:', smsError);
+        }
+      } else {
+        logger.log(`ℹ️ Skipping welcome SMS - already sent to ${redactedPhone} for user ID: ${userWithPendingConfirmation.id}`);
+      }
+      
+      // Return empty TwiML response (don't send duplicate message)
+      res.type('text/xml');
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     } 
     // Check if message is a verification code
     else if (/^\d{6}$/.test(messageBody)) {
+      // Redact phone number for logging (show last 4 digits only)
+      const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
+      logger.log(`🔍 Verification code received from ${redactedPhone}`);
+
       // Find user with this phone number and matching verification code
       const allUsers = await storage.getAllUsers();
+
+      // Check for duplicate phone numbers (potential bug)
+      const usersWithThisPhone = allUsers.filter((user) => {
+        const metadata = user.metadata as any || {};
+        const smsConsent = metadata.smsConsent || {};
+        return smsConsent.phoneNumber === phoneNumber;
+      });
+
+      if (usersWithThisPhone.length > 1) {
+        logger.warn(`⚠️ POTENTIAL BUG: Found ${usersWithThisPhone.length} users with phone ${redactedPhone}`);
+        logger.warn(`  User IDs: ${usersWithThisPhone.map(u => u.id).join(', ')}`);
+      }
+
       const userWithMatchingCode = allUsers.find((user) => {
         const metadata = user.metadata as any || {};
         const smsConsent = metadata.smsConsent || {};
@@ -518,9 +659,12 @@ router.post('/sms/webhook', async (req, res) => {
       });
 
       if (!userWithMatchingCode) {
-        console.log(`❌ No matching verification code found for ${phoneNumber}: ${messageBody}`);
-        return res.status(200).send('OK');
+        logger.log(`❌ No matching verification code found for ${redactedPhone}`);
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
+
+      logger.log(`✅ Matched user ID: ${userWithMatchingCode.id} with phone: ${redactedPhone}`);
 
       // Check expiry
       const metadata = userWithMatchingCode.metadata as any || {};
@@ -528,11 +672,16 @@ router.post('/sms/webhook', async (req, res) => {
       const expiry = new Date(smsConsent.verificationCodeExpiry);
       
       if (new Date() > expiry) {
-        console.log(`❌ Verification code expired for ${phoneNumber}`);
-        return res.status(200).send('OK');
+        logger.log(`❌ Verification code expired for ${phoneNumber}`);
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
       }
 
       // Confirm SMS consent via verification code
+      const metadata2 = userWithMatchingCode.metadata as any || {};
+      const notificationPreferences2 = metadata2.notificationPreferences || {};
+      
+      // Set default notification preferences: 72 hours before event with SMS
       const updatedMetadata = {
         ...(userWithMatchingCode.metadata as any || {}),
         smsConsent: {
@@ -544,21 +693,75 @@ router.post('/sms/webhook', async (req, res) => {
           verificationCode: undefined,
           verificationCodeExpiry: undefined,
         },
+        notificationPreferences: {
+          ...notificationPreferences2,
+          primaryReminderEnabled: true,
+          primaryReminderHours: 72,
+          primaryReminderType: 'sms',
+          secondaryReminderEnabled: notificationPreferences2.secondaryReminderEnabled || false,
+          secondaryReminderHours: notificationPreferences2.secondaryReminderHours || 1,
+          secondaryReminderType: notificationPreferences2.secondaryReminderType || 'email',
+        },
       };
 
       await storage.updateUser(userWithMatchingCode.id, { metadata: updatedMetadata });
 
-      console.log(`✅ SMS confirmation via verification code successful for user ${userWithMatchingCode.email} (${phoneNumber})`);
+      logger.log(`✅ SMS confirmation via verification code successful for user ID: ${userWithMatchingCode.id} (${redactedPhone})`);
+
+      // Re-read user to get fresh data and check if welcome SMS should be sent (prevents race condition)
+      const freshUser = await storage.getUserById(userWithMatchingCode.id);
+      if (!freshUser) {
+        logger.error(`❌ Failed to re-read user ${userWithMatchingCode.id} for welcome SMS check`);
+        res.type('text/xml');
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      }
+
+      const freshMetadata = freshUser.metadata as any || {};
+      const freshSmsConsent = freshMetadata.smsConsent || {};
+      const hasReceivedWelcome = freshSmsConsent.welcomeSmsSentAt;
+
+      if (!hasReceivedWelcome) {
+        try {
+          const { sendWelcomeSMS } = await import('../sms-service');
+          const welcomeResult = await sendWelcomeSMS(freshSmsConsent.phoneNumber);
+
+          if (welcomeResult.success) {
+            logger.log(`✅ Welcome SMS sent to ${redactedPhone} after code confirmation`);
+
+            // Mark that welcome SMS has been sent using fresh metadata
+            const finalMetadata = {
+              ...freshMetadata,
+              smsConsent: {
+                ...freshSmsConsent,
+                welcomeSmsSentAt: new Date().toISOString(),
+              },
+            };
+            await storage.updateUser(userWithMatchingCode.id, { metadata: finalMetadata });
+          } else {
+            logger.warn(`⚠️ Welcome SMS failed: ${welcomeResult.message}`);
+          }
+        } catch (smsError) {
+          logger.error('Failed to send welcome SMS after code confirmation:', smsError);
+        }
+      } else {
+        logger.log(`ℹ️ Skipping welcome SMS - already sent to ${redactedPhone} for user ID: ${userWithMatchingCode.id}`);
+      }
+      
+      // Return empty TwiML response
+      res.type('text/xml');
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     } else {
-      console.log(`ℹ️ Unrecognized SMS message from ${phoneNumber}: "${Body}"`);
+      logger.log(`ℹ️ Unrecognized SMS message from ${phoneNumber}: "${Body}"`);
     }
 
-    // Always respond with 200 OK to Twilio
-    res.status(200).send('OK');
+    // Always respond with TwiML (empty response for unrecognized messages)
+    res.type('text/xml');
+    res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
   } catch (error) {
-    console.error('Error processing SMS webhook:', error);
-    // Always respond with 200 OK to Twilio even on errors
-    res.status(200).send('OK');
+    logger.error('Error processing SMS webhook:', error);
+    // Always respond with TwiML even on errors
+    res.type('text/xml');
+    res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
   }
 });
 
@@ -568,12 +771,12 @@ router.post('/sms/webhook', async (req, res) => {
  */
 router.post('/users/sms-webhook/status', async (req, res) => {
   try {
-    console.log('📱 Received Twilio status webhook:', req.body);
+    logger.log('📱 Received Twilio status webhook:', req.body);
 
     const { MessageSid, MessageStatus, ErrorCode, To, From } = req.body;
 
     if (MessageStatus === 'undelivered' || MessageStatus === 'failed') {
-      console.error(`❌ SMS delivery failed:`, {
+      logger.error(`❌ SMS delivery failed:`, {
         sid: MessageSid,
         status: MessageStatus,
         errorCode: ErrorCode,
@@ -583,28 +786,28 @@ router.post('/users/sms-webhook/status', async (req, res) => {
 
       // Log specific error code details
       if (ErrorCode === '30032') {
-        console.error('⚠️ Error 30032: Carrier unreachable. This may be due to:');
-        console.error('- The number may be a landline');
-        console.error('- Carrier-specific filtering (AT&T/Verizon may block unregistered numbers)');
-        console.error('- The number needs to be registered with A2P 10DLC');
-        console.error('- Try texting "START" to the Twilio number from the recipient phone first');
+        logger.error('⚠️ Error 30032: Carrier unreachable. This may be due to:');
+        logger.error('- The number may be a landline');
+        logger.error('- Carrier-specific filtering (AT&T/Verizon may block unregistered numbers)');
+        logger.error('- The number needs to be registered with A2P 10DLC');
+        logger.error('- Try texting "START" to the Twilio number from the recipient phone first');
       } else if (ErrorCode === '30005') {
-        console.error('⚠️ Error 30005: Unknown destination handset');
-        console.error('- The phone number format may be incorrect');
-        console.error('- The number may not exist or be deactivated');
+        logger.error('⚠️ Error 30005: Unknown destination handset');
+        logger.error('- The phone number format may be incorrect');
+        logger.error('- The number may not exist or be deactivated');
       } else if (ErrorCode === '30003') {
-        console.error('⚠️ Error 30003: Unreachable destination handset');
-        console.error('- The phone is likely turned off or out of service area');
+        logger.error('⚠️ Error 30003: Unreachable destination handset');
+        logger.error('- The phone is likely turned off or out of service area');
       } else if (ErrorCode === '30006') {
-        console.error('⚠️ Error 30006: Landline or unreachable carrier');
-        console.error('- The number is likely a landline that cannot receive SMS');
+        logger.error('⚠️ Error 30006: Landline or unreachable carrier');
+        logger.error('- The number is likely a landline that cannot receive SMS');
       } else if (ErrorCode === '30007') {
-        console.error('⚠️ Error 30007: Carrier violation');
-        console.error('- Message content was blocked by the carrier');
-        console.error('- May need to register for A2P 10DLC');
+        logger.error('⚠️ Error 30007: Carrier violation');
+        logger.error('- Message content was blocked by the carrier');
+        logger.error('- May need to register for A2P 10DLC');
       } else if (ErrorCode === '30008') {
-        console.error('⚠️ Error 30008: Unknown error');
-        console.error('- Carrier returned an unknown error');
+        logger.error('⚠️ Error 30008: Unknown error');
+        logger.error('- Carrier returned an unknown error');
       }
 
       // Update user's SMS status if delivery fails with certain error codes
@@ -632,11 +835,11 @@ router.post('/users/sms-webhook/status', async (req, res) => {
           };
 
           await storage.updateUser(affectedUser.id, { metadata: updatedMetadata });
-          console.log(`📝 Updated user ${affectedUser.email} with delivery error information`);
+          logger.log(`📝 Updated user ${affectedUser.email} with delivery error information`);
         }
       }
     } else if (MessageStatus === 'delivered') {
-      console.log(`✅ SMS delivered successfully:`, {
+      logger.log(`✅ SMS delivered successfully:`, {
         sid: MessageSid,
         to: To,
       });
@@ -645,7 +848,7 @@ router.post('/users/sms-webhook/status', async (req, res) => {
     // Always respond with 200 OK to Twilio
     res.status(200).send('OK');
   } catch (error) {
-    console.error('Error processing SMS status webhook:', error);
+    logger.error('Error processing SMS status webhook:', error);
     // Always respond with 200 OK to Twilio even on errors
     res.status(200).send('OK');
   }
@@ -657,9 +860,8 @@ router.post('/users/sms-webhook/status', async (req, res) => {
 router.post('/users/toll-free-verification/submit', isAuthenticated, async (req, res) => {
   try {
     // Only admin users can submit toll-free verification
-    const userPermissions = typeof req.user?.permissions === 'number' ? req.user.permissions : 0;
-    if (!req.user?.permissions || userPermissions < 80) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
+    if (!req.user || !hasPermission(req.user, PERMISSIONS.ADMIN_ACCESS)) {
+      return res.status(403).json({ error: 'PERMISSION_DENIED' });
     }
 
     const result = await submitTollFreeVerification();
@@ -678,7 +880,7 @@ router.post('/users/toll-free-verification/submit', isAuthenticated, async (req,
       });
     }
   } catch (error) {
-    console.error('Error submitting toll-free verification:', error);
+    logger.error('Error submitting toll-free verification:', error);
     res.status(500).json({
       error: 'Failed to submit toll-free verification',
       message: (error as Error).message,
@@ -692,9 +894,8 @@ router.post('/users/toll-free-verification/submit', isAuthenticated, async (req,
 router.get('/users/toll-free-verification/status', isAuthenticated, async (req, res) => {
   try {
     // Only admin users can check toll-free verification
-    const userPermissions = typeof req.user?.permissions === 'number' ? req.user.permissions : 0;
-    if (!req.user?.permissions || userPermissions < 80) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
+    if (!req.user || !hasPermission(req.user, PERMISSIONS.ADMIN_ACCESS)) {
+      return res.status(403).json({ error: 'PERMISSION_DENIED' });
     }
 
     const verificationSid = req.query.verificationSid as string;
@@ -714,9 +915,80 @@ router.get('/users/toll-free-verification/status', isAuthenticated, async (req, 
       });
     }
   } catch (error) {
-    console.error('Error checking toll-free verification status:', error);
+    logger.error('Error checking toll-free verification status:', error);
     res.status(500).json({
       error: 'Failed to check toll-free verification status',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * Send SMS opt-in instructions email to selected users
+ */
+router.post('/users/send-sms-instructions', isAuthenticated, async (req, res) => {
+  try {
+    // Check for admin permissions
+    if (!req.user || !hasPermission(req.user, PERMISSIONS.ADMIN_ACCESS)) {
+      return res.status(403).json({ error: 'PERMISSION_DENIED' });
+    }
+
+    const { userIds } = z.object({
+      userIds: z.array(z.string()).min(1, 'At least one user must be selected'),
+    }).parse(req.body);
+
+    logger.log(`📧 Sending SMS opt-in instructions to ${userIds.length} users...`);
+
+    // Get all selected users
+    const selectedUsers = await Promise.all(
+      userIds.map(id => storage.getUserById(id))
+    );
+
+    const validUsers = selectedUsers.filter(user => user !== null && user.email);
+    
+    if (validUsers.length === 0) {
+      return res.status(400).json({
+        error: 'No valid users found',
+        message: 'None of the selected users have valid email addresses',
+      });
+    }
+
+    // Send emails to all users
+    const results = await Promise.allSettled(
+      validUsers.map(user => 
+        NotificationService.sendSMSOptInInstructions(
+          user!.email,
+          user!.name || undefined
+        )
+      )
+    );
+
+    const successCount = results.filter(r => r.status === 'fulfilled' && r.value).length;
+    const failCount = results.length - successCount;
+
+    logger.log(`✅ SMS opt-in emails sent: ${successCount} successful, ${failCount} failed`);
+
+    res.json({
+      success: true,
+      message: `SMS opt-in instructions sent to ${successCount} user(s)`,
+      details: {
+        total: validUsers.length,
+        successful: successCount,
+        failed: failCount,
+      },
+    });
+  } catch (error) {
+    logger.error('Error sending SMS opt-in instructions:', error);
+    
+    if ((error as any).name === 'ZodError') {
+      return res.status(400).json({
+        error: 'Invalid request data',
+        details: (error as any).errors,
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to send SMS opt-in instructions',
       message: (error as Error).message,
     });
   }

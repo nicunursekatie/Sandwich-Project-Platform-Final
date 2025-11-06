@@ -1,7 +1,5 @@
-# Replit.md
-
 ## Overview
-This full-stack application for The Sandwich Project nonprofit manages sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients, aiming to streamline operations, enhance data visibility, and support the organization's growth. The business vision is to become a vital tool for food security initiatives, with market potential in supporting volunteer-driven community projects, scaling operations, and improving outreach to reduce food waste and hunger.
+This full-stack application for The Sandwich Project nonprofit streamlines sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to enhance data visibility, support organizational growth, and become a vital tool for food security initiatives, ultimately reducing food waste and hunger.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -9,70 +7,49 @@ UI Design: Button labels and interface text must be extremely clear about their 
 Form Design: Eliminate redundant or confusing form fields - host dialogs should have a single "Host Location Name" field instead of separate "Name" and "Host Location" fields.
 Mobile UX Priority: Mobile user experience is critical - chat positioning and space efficiency are key concerns. Vehicle type should NOT be required for new driver entries.
 Documentation: All technical findings and fixes must be documented in replit.md to avoid repeated searching and debugging.
-Navigation Icons: Collections log icon in simple-nav should use sandwich logo.png from LOGOS folder.
+AI Intake Assistant Sandwich Type Detection (Nov 3, 2025): Fixed validation rule that incorrectly suggested "Encourage Deli Meat Sandwiches" when events already had deli meat mentioned in notes fields. The validation now checks BOTH the structured `sandwichTypes` array field AND all notes fields (planningNotes, schedulingNotes, additionalRequirements, message) for mentions of turkey, ham, roast beef, chicken, or deli. This prevents false positives where sandwich type information is written in notes instead of the structured field. Location: `server/services/ai-intake-assistant/index.ts` line 228-293, `prefer_deli_meat` validation rule.
+Storage Wrapper Missing Method Fix (Nov 3, 2025): Fixed "storage.getHostContact is not a function" error when deleting host contacts. Root cause: The `StorageWrapper` class (`server/storage-wrapper.ts`) was missing the `getHostContact(id)` method (singular) even though it had `getHostContacts(hostId)` (plural). The delete and update routes in `server/routes/hosts.ts` call `storage.getHostContact(id)` to verify the contact exists before deletion/update, causing a runtime error. Solution: Added the missing `getHostContact` method to StorageWrapper at line 1011-1016 with proper fallback delegation to both primaryStorage (DatabaseStorage) and fallbackStorage (MemStorage). This wrapper pattern ensures database operations work with automatic fallback to memory storage if needed. **Additional Fix**: Also fixed "logger is not defined" error when updating host contacts by adding the missing logger import (`import { logger } from '../utils/production-safe-logger';`) to `server/routes/hosts.ts` line 16.
+Event Request Status Colors Vibrant Update (Nov 4, 2025): Completely redesigned event request cards to eliminate "hospital blue/green/gray" vibe. **Root Issue**: Light blue/green tinted backgrounds created institutional feel. **Solution**: WHITE card backgrounds with colored 4px left borders as status indicators only. Location: all card components. **Design Changes**: (1) All cards now have `bg-white` (no tinted backgrounds), (2) Status indicated by 4px colored left border only: New=#007E8C (teal), In Process=#FBAD3F (gold), Scheduled=#236383 (navy), Completed=#47B3CB (light blue), Declined=#A31C41 (crimson), (3) Warm paper tone page background #FAF8F5, (4) Warm neutral borders #E7E4DF, (5) Subtle shadows `shadow-[0_1px_2px_rgba(0,0,0,0.06)]`, (6) Better text colors: headings #0F172A (near-black), body #1F2937, sublabels #6B7280. Files updated: `NewRequestCard.tsx`, `InProcessCard.tsx`, `ScheduledCard.tsx`, `ScheduledCardEnhanced.tsx`, `CompletedCard.tsx`, `DeclinedCard.tsx`, `base.css`.
+
+Modern Compact Design System (Nov 4, 2025): Implemented compact spacing scale and modern design system to eliminate "hospital enterprise" feel. **Changes**: (1) Compact spacing: card padding 12px (down from 24px), grid gap 12px, chip padding 4px 8px, (2) Stronger borders: 1px solid #D8DEE2 with better shadows `0 1px 4px rgba(0,0,0,.08)`, (3) Modern buttons: primary gold (#FBAD3F) with bold weight 700, secondary white with teal text (#236383), (4) Solid brand chips: info=#E6F2F6/text #1A4F61, count=#FFF3DF/text #7A4F16, danger=#FCEDEF/text #7C102D, (5) Punchy headings: #0F172A weight 700 letter-spacing 0, (6) Increased border radius to 12px for modern feel. **Tonal Hierarchy Fix**: Implemented proper color depth to eliminate "wall of pale teal" issue: body background=#007E8C (deep teal for app shell), sidebar=#236383 (brand teal), main content area=#F6F9FA (light neutral for contrast), cards remain white. This creates proper visual separation and hierarchy. Location: `base.css`, `components.css`, `dashboard.tsx`, all card components. Variables added: --gap: 12px, --pad: 12px, --chip-padding: 4px 8px.
+Analytics Philosophy: NEVER compare or rank hosts against each other. The Sandwich Project is about increasing volunteer turnout globally, not about which host reported more/less sandwiches. All host comparison features, "top performing hosts", "underperforming hosts", and similar language must be removed from analytics.
 Desktop Chat UX: Desktop users require proper scrolling behavior without nested scrolling containers that cause page focus issues - chat layout must handle desktop and mobile differently.
+Secure New User Signup (Nov 5, 2025): Implemented strict access control for new signups to prevent unauthorized access. **Security**: People were discovering the app while exploring team resources, so we implemented multi-layer protection: (1) New signups via portal receive `permissions: []` and `isActive: false`, rendering them unable to access any features. (2) Backend middleware `blockInactiveUsers` uses exact method+path matching to block inactive users from ALL routes except: GET /api/auth/user, POST /api/auth/login/logout/signup, GET /api/user/me, GET /healthz. This prevents privilege escalation via mutation endpoints. (3) Approval endpoints PATCH /auth/approve-user/:userId and GET /auth/pending-registrations now require ADMIN_ACCESS permission, preventing self-approval. (4) Frontend route guard in App.tsx redirects inactive users to /pending-approval page showing "Account Pending Approval" message with logout option. (5) Upon admin approval, users receive default permissions for their registered role via `getDefaultPermissionsForRole()`. **Security audit passed**: No bypass routes or privilege escalation paths remain. Location: `server/middleware/auth.ts` (blockInactiveUsers), `server/routes/signup.ts` (approval with permissions), `client/src/App.tsx` (route guard), `client/src/pages/pending-approval.tsx` (pending UI).
+Lazy Component Loading Retry Fix (Nov 5, 2025): Fixed "Failed to fetch dynamically imported module" errors when switching between dashboard components. **Root Issue**: Vite's hot module reload (HMR) during development causes stale chunk references, resulting in dynamic import failures that require page refresh. **Solution**: Created `lazyWithRetry` utility wrapper (`client/src/lib/lazy-with-retry.ts`) that automatically retries failed dynamic imports up to 3 times with 1-second delays. Updated all lazy-loaded components in `client/src/pages/dashboard.tsx` to use `lazyWithRetry` instead of standard `lazy()`. This handles transient HMR errors gracefully without requiring user intervention. Location: `client/src/lib/lazy-with-retry.ts`, `client/src/pages/dashboard.tsx` (all 80+ lazy component declarations).
 
 ## System Architecture
+The application features a React 18 frontend with TypeScript, Vite, TanStack Query, and Tailwind CSS (with shadcn/ui). The backend uses Express.js (TypeScript), Drizzle ORM, and PostgreSQL (Neon serverless), including session-based authentication. The UI/UX adheres to The Sandwich Project's official color palette and Roboto typography, prioritizing clarity, responsiveness, and card-based dashboards.
 
-### Core Technologies
-- **Frontend**: React 18 (TypeScript), Vite, TanStack Query, Tailwind CSS (with shadcn/ui), React Hook Form (with Zod).
-- **Backend**: Express.js (TypeScript), Drizzle ORM, PostgreSQL (Neon serverless), Session-based authentication (connect-pg-simple), Replit Auth.
-- **Database**: Dev/Production separation with `DATABASE_URL` (development workspace) and `PRODUCTION_DATABASE_URL` (deployed app). `server/db.ts` automatically uses production database when `PRODUCTION_DATABASE_URL` is set, ensuring development changes don't affect live users.
-- **Logging**: Winston-based structured logging with service-specific loggers, log rotation, and environment-based configuration.
-- **Security**: Centralized CORS configuration with environment-aware origin validation.
-
-### Backend Router Architecture
-The application features a modular backend router architecture:
-- **server/routes/index.ts**: Central router for orchestrating feature modules and applying consistent middleware.
-- **server/middleware/index.ts**: Centralized middleware configuration.
-- **Feature Modules (server/routes/)**: Dedicated modules for core, users, projects, tasks, collections, meetings, messaging, reports, search, storage, notifications, and versioning.
-- **Middleware Architecture**: Standardized functions (`createStandardMiddleware()`, `createErrorHandler()`, `createPublicMiddleware()`) provide consistent authentication, logging, sanitization, permissions, and error handling.
-
-### UI/UX Decisions
-The application uses The Sandwich Project's official color palette (Teal Primary: #236383, Orange Secondary: #FBAD3F, Burgundy Accent: #A31C41, Teal Muted: #007E8C) and Roboto typography. UI elements prioritize clarity, responsiveness, and visual hierarchy with card-based dashboards.
-
-### Technical Implementations
-- **Unified Permissions System**: Modernized system using `shared/unified-auth-utils.ts` for consistent frontend/backend logic, `client/src/components/modern-permissions-editor.tsx` for visual role templates and categorized permissions, and a standardized `RESOURCE_ACTION` format. Ensures strict validation, audit trails, and full TypeScript integration.
-- **Structured Logging**: Winston-based system with service-specific loggers, structured metadata, log levels, and file rotation.
-- **Data Management**: Comprehensive management of Sandwich Collections, Hosts, Recipients, Projects, Users (with role-based access), and Audit Logs, including Zod validation and timezone-safe date handling.
-- **Date Field Validation Fix**: Resolved critical "value.toISOString is not a function" errors during event creation by implementing hardened Zod date transformations in insertEventRequestSchema for scheduledCallDate, followUpOneDayDate, and followUpOneMonthDate fields. The fix trims whitespace, converts empty strings to null, validates YYYY-MM-DD format with regex, and prevents Invalid Date objects from reaching the database layer. This ensures event creation works properly with both blank optional date fields and valid date inputs.
-- **Authentication & Authorization**: Role-based access with consistent permission logic, role templates (Volunteer, Host, Core Team, Admin), 30-day session management, and SendGrid-powered password reset.
-- **Search & Filtering**: Real-time search and filtering across management interfaces.
-- **Performance**: Optimized with query optimization, LRU caching, pagination, memoization, database connection pooling, and Express compression.
-- **Messaging & Notifications**: Multi-layered communication including email interface, committee-specific messaging, real-time Socket.IO chat, dashboard notifications, SMS notifications with Twilio integration, and a Kudos System.
-- **Operational Tools**: Project management, meeting management, work logs, user feedback, analytics dashboards, and an important documents toolkit.
-- **Collection Walkthrough Tool**: Permissions-based data entry with a standard form and a step-by-step walkthrough.
-- **Analytics**: Comprehensive dashboard for community impact insights with interactive visualizations and user activity tracking.
-- **Distribution Tracking**: System for logging sandwich distributions.
-- **Recipients Focus Area Tracking**: Enhanced recipients management with a focus area field.
-- **Wishlist System**: Amazon wishlist suggestion system with database persistence and a responsive UI.
-- **Meeting Management**: Full-featured system with automated agenda compilation, project integration, Google Sheets export, task status controls, and PDF export.
-- **Meeting Notes System**: Complete database-backed meeting notes with CRUD operations, bulk actions, filtering by project/meeting/type/status, and specialized rendering for different note types (discussion points, decision items, tabled projects, off-agenda items). Fixed recurring issue where API routes were stubbed out - now fully connected to database storage via `server/routes/meeting-notes.ts`.
-- **Event Requests Management System**: Complete tracking with database schema, duplicate detection, status tracking, permissions, CRUD API, responsive UI, and Google Sheets integration.
-- **Google Sheets Integration**: Bidirectional automatic synchronization with Google Sheets for project tracker and event requests, with intelligent deletion tracking to prevent re-importing manually deleted items.
-- **SMS Notifications System**: Complete Twilio-powered SMS reminder system with user opt-in/opt-out functionality, dashboard prompts for adoption, integrated user profile notifications tab, and admin-controlled weekly reminders for missing sandwich collection submissions.
-- **Twilio Compliance Documentation**: Public SMS verification docs page (`/sms-verification-docs`) for Twilio compliance review, built with plain HTML/Tailwind to avoid React context dependencies. Shows complete consent process, UI mockups, opt-out methods, message frequency, and data protection policies.
-- **Confidential Document Storage**: Secure file storage with email-based access control, audit logging, file type validation, and a 100MB upload limit.
-- **Enhanced Audit Log Display**: User-friendly audit trail system with human-readable field names, properly formatted values (dates, booleans, phone numbers), and complete tracking of all meaningful value changes including falsy values (0, empty strings, false). Converts technical field names to plain English and provides clear "Previous/Updated to" formatting for easy comprehension by non-technical users.
-- **SendGrid Email Compliance**: All SendGrid emails include required opt-out text for compliance. Centralized footer utility (`server/utils/email-footer.ts`) provides consistent unsubscribe information across all email types: toolkit emails (`server/services/email-service.ts`), suggestion notifications (`server/sendgrid.ts`), notification templates (`server/notifications/email-service.ts`), chat mentions (`server/services/email-notification-service.ts`), and password resets (`server/routes/password-reset.ts`). Footer text: "To unsubscribe from these emails, please contact us at katie@thesandwichproject.org or reply STOP."
-- **Team Assignment Auto-Adjustment & Validation**: Implemented comprehensive validation and auto-adjustment logic for event team assignments to prevent impossible states. The system now:
-  1. **Prevents Invalid Manual Changes**: When users manually set driversNeeded/speakersNeeded/volunteersNeeded, the system validates that the value is not less than currently assigned staff. If invalid, it auto-corrects to match the assigned count with a warning log.
-  2. **Auto-Adjusts on Assignment Changes**: When drivers (including van drivers), speakers, or volunteers are assigned to an event, if assignments exceed current needs, the system automatically increases the needed count to match.
-  3. **Counts Van Drivers Properly**: Van drivers are correctly counted alongside regular drivers in all calculations (assignedVanDriverId is treated as 1 driver when not null/empty).
-  4. **Null-Safe Handling**: Proper handling for speakerDetails objects and empty string checks for van driver IDs.
-  5. **Applied Across All Endpoints**: Validation and auto-adjustment logic implemented in PATCH /:id, PUT /:id, and PATCH /:id/drivers endpoints.
-  6. This prevents display bugs like "1/0 assigned" and ensures data consistency. One-time SQL migration executed to fix 3 existing events with mismatched assignment counts.
-- **Toolkit Attachment Filtering**: Event toolkit email composer (`/api/storage/documents` endpoint in `server/routes/storage/index.ts`) returns ONLY essential toolkit documents for event communications. Filter criteria matches frontend logic: includes documents containing "food safety" (except for hosts), "deli", "pbj"/"pb&j", or "sandwich making" in title/filename. Currently returns 5 documents: Food Safety Guide for Volunteers, PBJ Sandwich Making 101, Deli Sandwich Making 101, PBJ Sandwich Labels, and Deli Sandwich Labels. Excludes all confidential documents and Food Safety Guide for Hosts to prevent accidental exposure of internal materials.
+**Key Technical Implementations & Features:**
+-   **Authentication & Permissions**: Role-based access control, session management, password security, and a unified permissions system.
+-   **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation and timezone-safe date handling. `sandwich_collections` table is the operational source of truth for grant metrics.
+-   **Search & Filtering**: Real-time capabilities across management interfaces.
+-   **Performance Optimization**: Query optimization, caching, pagination, and database connection pooling.
+-   **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications.
+-   **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool.
+-   **Event Requests Management System**: Tracks requests, handles duplicate detection, manages statuses, integrates with Google Sheets, calculates van driver staffing, supports multi-recipient assignment, and performs comprehensive intake validation. Features an interactive Leaflet map with cluster/all-pins views, TSP-branded icons, color-coding by status, search/filter, and dual-layer geocoding. Includes a sophisticated AI Intake Assistant for actionable recommendations and an AI Scheduling Assistant with flexible date analysis.
+-   **Google Sheets Integration**: Bidirectional automatic synchronization for project tracker and event requests.
+-   **User Activity Logging System**: Comprehensive tracking of authenticated user actions via middleware.
+-   **Sandwich Type Tracking System**: Comprehensive tracking for individual and group collections with real-time validation and analytics.
+-   **Interactive Route Map & Driver Optimization**: Leaflet map for visualizing host contact locations, route optimization, and driver assignment.
+-   **Automated Reminders**: 24-hour volunteer reminder system via cron job.
+-   **Team Board**: Commenting system with real-time counts and multi-user assignment.
+-   **Email System**: Uses `katie@thesandwichproject.org` as the verified SendGrid sender with table-based HTML templates.
+-   **SMS Notifications**: Opt-in SMS alerts for assignment notifications, secured by Twilio signature validation.
+-   **Expenses Receipt Upload**: Handles receipt uploads to Google Cloud Storage.
+-   **Dashboard Annual Goal Display**: Displays the organizational annual goal of 500,000 sandwiches.
+-   **Social Media Graphics**: Supports image and PDF uploads to Google Cloud Storage with optional email notifications.
+-   **Progressive Web App (PWA)**: Full PWA support enabling mobile installation, offline access, and real-time updates.
 
 ## External Dependencies
-- **Database**: `@neondatabase/serverless`, `drizzle-orm`
-- **Web Framework**: `express`
-- **UI/Styling**: `@radix-ui`, `tailwindcss`, `lucide-react`, `class-variance-authority`, `shadcn/ui`
-- **Data Fetching/State**: `@tanstack/react-query`, `react-hook-form`, `zod`
-- **Email**: `@sendgrid/mail`
-- **Real-time Communication**: `socket.io`, `socket.io-client`
-- **PDF Generation**: `pdfkit`
-- **Authentication**: `connect-pg-simple`
-- **File Uploads**: `multer`
-- **Google Integration**: Google Sheets API, `@google-cloud/storage`
-- **Analytics**: Google Analytics
+-   **Database**: `@neondatabase/serverless`, `drizzle-orm`
+-   **Web Framework**: `express`
+-   **UI/Styling**: `@radix-ui`, `tailwindcss`, `lucide-react`, `class-variance-authority`, `shadcn/ui`
+-   **Data Fetching/State**: `@tanstack/react-query`, `react-hook-form`, `zod`
+-   **Email**: `@sendgrid/mail`
+-   **Real-time Communication**: `socket.io`, `socket.io-client`
+-   **PDF Generation**: `pdfkit`
+-   **Authentication**: `connect-pg-simple`
+-   **File Uploads**: `multer`
+-   **Google Integration**: Google Sheets API, `@google-cloud/storage`, Google Analytics
+-   **Mapping**: `leaflet`, `react-leaflet`, `react-leaflet-cluster`

@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   ListTodo,
   MessageCircle,
+  MessageSquare,
   ClipboardList,
   FolderOpen,
   BarChart3,
@@ -25,88 +26,132 @@ import {
   Clock,
   Truck,
   FileImage,
+  Gift,
+  Copy,
+  ExternalLink,
+  HelpCircle,
 } from 'lucide-react';
-import { useLocation } from 'wouter';
+import { useLocation, useRoute } from 'wouter';
 // Using optimized SVG for faster loading
 const sandwichLogo = '/sandwich-icon-optimized.svg';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ProjectList from '@/components/project-list';
-import WeeklySandwichForm from '@/components/weekly-sandwich-form';
-
-import CommitteeChat from '@/components/committee-chat';
-import GoogleDriveLinks from '@/components/google-drive-links';
-import DashboardOverview from '@/components/dashboard-overview';
-import SandwichCollectionLog from '@/components/sandwich-collection-log';
-import RecipientsManagement from '@/components/recipients-management';
-import DriversManagement from '@/components/drivers-management-simple';
-import VolunteerManagement from '@/components/volunteer-management';
-import HostsManagement from '@/components/hosts-management-consolidated';
-import { DocumentsBrowser } from '@/components/documents-browser';
-import DocumentManagement from '@/components/document-management';
-import ImportantDocuments from '@/pages/important-documents';
-
-import BulkDataManager from '@/components/bulk-data-manager';
-import HostAnalytics from '@/components/host-analytics';
-import EnhancedMeetingDashboard from '@/components/enhanced-meeting-dashboard';
-import RoleDemo from '@/pages/role-demo';
-import ProjectsManagementV2 from '@/components/projects-v2';
-import ProjectDetailClean from '@/pages/project-detail-clean';
-import Analytics from '@/pages/analytics';
-import ImpactDashboard from '@/pages/impact-dashboard';
-import DataManagement from '@/pages/data-management';
-import PerformanceDashboard from '@/pages/performance-dashboard';
-import GrantMetrics from '@/pages/grant-metrics';
-
-import UserManagementRedesigned from '@/components/user-management-redesigned';
-import UserProfile from '@/components/user-profile';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Suspense } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
 import { queryClient } from '@/lib/queryClient';
 import SimpleNav from '@/components/simple-nav';
 import { NAV_ITEMS } from '@/nav.config';
 import AnnouncementBanner from '@/components/announcement-banner';
-import MessageNotifications from '@/components/message-notifications';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import EnhancedNotifications from '@/components/enhanced-notifications';
-import WorkLogPage from '@/pages/work-log';
-import SuggestionsPortal from '@/pages/suggestions';
-import GoogleSheetsPage from '@/pages/google-sheets';
-
-import MessagingSystem from '@/components/messaging-system';
-import RealTimeMessages from '@/pages/real-time-messages';
-
-import GmailStyleInbox from '@/components/gmail-style-inbox';
-import { ToolkitTabs } from '@/components/toolkit-tabs';
-import { KudosInbox } from '@/components/kudos-inbox';
+import OnboardingChallengeButton from '@/components/onboarding-challenge-button';
 import { KudosLoginNotifier } from '@/components/kudos-login-notifier';
-import StreamChatRooms from '@/components/stream-chat-rooms';
-import EventsViewer from '@/components/events-viewer';
-import SignUpGeniusViewer from '@/components/signup-genius-viewer';
-import DonationTracking from '@/components/donation-tracking';
-import WeeklyMonitoringDashboard from '@/components/weekly-monitoring-dashboard';
-import WishlistPage from '@/pages/wishlist';
-import EventRequestsManagement from '@/components/event-requests-management';
-import EventRequestsManagementV2 from '@/components/event-requests-v2';
-import EventRemindersManagement from '@/components/event-reminders-management';
-import GroupCatalog from '@/components/organizations-catalog';
-import ActionTracking from '@/components/action-tracking-enhanced';
-import LogosPage from '@/pages/logos';
-import ImportantLinks from '@/pages/important-links';
-import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import { GuidedTour } from '@/components/GuidedTour';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
+import { SMSAnnouncementModal } from '@/components/sms-announcement-modal';
+import { lazyWithRetry } from '@/lib/lazy-with-retry';
+
+// Lazy load all page/section components with automatic retry on failure
+const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
+const WeeklySandwichForm = lazyWithRetry(() => import('@/components/weekly-sandwich-form'));
+const CommitteeChat = lazyWithRetry(() => import('@/components/committee-chat'));
+const GoogleDriveLinks = lazyWithRetry(() => import('@/components/google-drive-links'));
+const DashboardOverview = lazyWithRetry(() => import('@/components/dashboard-overview'));
+const SandwichCollectionLog = lazyWithRetry(() => import('@/components/sandwich-collection-log'));
+const RecipientsManagement = lazyWithRetry(() => import('@/components/recipients-management'));
+const DriversManagement = lazyWithRetry(() => import('@/components/drivers-management-simple'));
+const VolunteerManagement = lazyWithRetry(() => import('@/components/volunteer-management'));
+const HostsManagement = lazyWithRetry(() => import('@/components/hosts-management-consolidated'));
+const DocumentManagement = lazyWithRetry(() => import('@/components/document-management'));
+const ImportantDocuments = lazyWithRetry(() => import('@/pages/important-documents'));
+const BulkDataManager = lazyWithRetry(() => import('@/components/bulk-data-manager'));
+const HostAnalytics = lazyWithRetry(() => import('@/components/host-analytics'));
+const EnhancedMeetingDashboard = lazyWithRetry(() => import('@/components/enhanced-meeting-dashboard'));
+const RoleDemo = lazyWithRetry(() => import('@/pages/role-demo'));
+const ProjectsManagement = lazyWithRetry(() => import('@/components/projects'));
+const ProjectDetailClean = lazyWithRetry(() => import('@/pages/project-detail-clean'));
+const Analytics = lazyWithRetry(() => import('@/pages/analytics'));
+const ImpactDashboard = lazyWithRetry(() => import('@/pages/impact-dashboard'));
+const DataManagement = lazyWithRetry(() => import('@/pages/data-management'));
+const PerformanceDashboard = lazyWithRetry(() => import('@/pages/performance-dashboard'));
+const GrantMetrics = lazyWithRetry(() => import('@/pages/grant-metrics'));
+const UserManagementRedesigned = lazyWithRetry(() => import('@/components/user-management-redesigned'));
+const UserProfile = lazyWithRetry(() => import('@/components/user-profile'));
+const OnboardingAdmin = lazyWithRetry(() => import('@/pages/onboarding-admin'));
+const WorkLogPage = lazyWithRetry(() => import('@/pages/work-log'));
+const SuggestionsPortal = lazyWithRetry(() => import('@/pages/suggestions'));
+const GoogleSheetsPage = lazyWithRetry(() => import('@/pages/google-sheets'));
+const RealTimeMessages = lazyWithRetry(() => import('@/pages/real-time-messages'));
+const GmailStyleInbox = lazyWithRetry(() => import('@/components/gmail-style-inbox'));
+const MessagingInbox = lazyWithRetry(() => import('@/pages/messaging-inbox'));
+const ToolkitTabs = lazyWithRetry(() => import('@/components/toolkit-tabs').then(m => ({ default: m.ToolkitTabs })));
+const KudosInbox = lazyWithRetry(() => import('@/components/kudos-inbox').then(m => ({ default: m.KudosInbox })));
+const StreamChatRooms = lazyWithRetry(() => import('@/components/stream-chat-rooms'));
+const EventsViewer = lazyWithRetry(() => import('@/components/events-viewer'));
+const SignUpGeniusViewer = lazyWithRetry(() => import('@/components/signup-genius-viewer'));
+const DonationTracking = lazyWithRetry(() => import('@/components/donation-tracking'));
+const WeeklyMonitoringDashboard = lazyWithRetry(() => import('@/components/weekly-monitoring-dashboard'));
+const WishlistPage = lazyWithRetry(() => import('@/pages/wishlist'));
+const TeamBoard = lazyWithRetry(() => import('@/pages/TeamBoard'));
+const PromotionGraphics = lazyWithRetry(() => import('@/pages/promotion-graphics'));
+const QuickSMSLinks = lazyWithRetry(() => import('@/pages/quick-sms-links'));
+const CoolerTrackingPage = lazyWithRetry(() => import('@/pages/cooler-tracking'));
+const EventRequestsManagement = lazyWithRetry(() => import('@/components/event-requests'));
+const EventRemindersManagement = lazyWithRetry(() => import('@/components/event-reminders-management'));
+const GroupCatalog = lazyWithRetry(() => import('@/components/organizations-catalog'));
+const ActionTracking = lazyWithRetry(() => import('@/components/action-tracking-enhanced'));
+const LogosPage = lazyWithRetry(() => import('@/pages/logos'));
+const ImportantLinks = lazyWithRetry(() => import('@/pages/important-links'));
+const Resources = lazyWithRetry(() => import('@/pages/resources').then(m => ({ default: m.Resources })));
+const EventRequestAuditLog = lazyWithRetry(() => import('@/components/event-request-audit-log').then(m => ({ default: m.EventRequestAuditLog })));
+const HistoricalImport = lazyWithRetry(() => import('@/pages/historical-import'));
+const MyAvailability = lazyWithRetry(() => import('@/pages/my-availability'));
+const TeamAvailability = lazyWithRetry(() => import('@/pages/team-availability'));
+const GoogleCalendarAvailability = lazyWithRetry(() => import('@/pages/google-calendar-availability'));
+const RouteMapView = lazyWithRetry(() => import('@/pages/route-map'));
+const EventMapView = lazyWithRetry(() => import('@/pages/event-map'));
+const Help = lazyWithRetry(() => import('@/pages/Help'));
+const ExpensesPage = lazyWithRetry(() => import('@/pages/ExpensesPage'));
+const AdminSettings = lazyWithRetry(() => import('@/pages/admin-settings'));
+const DesignSystemShowcase = lazyWithRetry(() => import('@/pages/design-system-showcase'));
+const SmartSearchAdmin = lazyWithRetry(() => import('@/pages/smart-search-admin'));
 
 import sandwich_logo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 
 import sandwich_20logo from '@assets/LOGOS/sandwich logo.png';
+import { logger } from '@/lib/logger';
+
+// Loading fallback component for lazy-loaded sections
+const SectionLoader = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+      <p className="text-muted-foreground">Loading section...</p>
+    </div>
+  </div>
+);
 
 export default function Dashboard({
   initialSection = 'dashboard',
 }: {
   initialSection?: string;
 }) {
-  const [location] = useLocation();
+  const { trackView } = useActivityTracker();
+  const [location, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
+
+  React.useEffect(() => {
+    trackView(
+      'Dashboard',
+      'Dashboard',
+      'Main Dashboard',
+      `User accessed dashboard - section: ${activeSection}`
+    );
+  }, [activeSection, trackView]);
 
   // Parse URL query parameters
   const urlParams = useMemo(() => {
@@ -122,16 +167,16 @@ export default function Dashboard({
 
   // Listen to URL changes to update activeSection
   React.useEffect(() => {
-    console.log('Current URL location:', location);
+    logger.log('Current URL location:', location);
 
     // Check for section in query parameters first
     if (urlParams.section) {
-      console.log('Setting activeSection from query parameter:', urlParams.section);
+      logger.log('Setting activeSection from query parameter:', urlParams.section);
       
       // Handle special case for project detail view via query parameters
       if (urlParams.section === 'projects' && urlParams.view === 'detail' && urlParams.id) {
         const projectSection = `project-${urlParams.id}`;
-        console.log('Setting activeSection to project detail:', projectSection);
+        logger.log('Setting activeSection to project detail:', projectSection);
         setActiveSection(projectSection);
         return;
       }
@@ -148,40 +193,32 @@ export default function Dashboard({
       const projectId = parts.length > 1 ? parts[1] : null;
       if (projectId) {
         const newSection = `project-${projectId}`;
-        console.log('Setting activeSection to project ID:', newSection);
+        logger.log('Setting activeSection to project ID:', newSection);
         setActiveSection(newSection);
       }
     } else {
       // Handle other sections - strip query parameters and leading slash
       const pathSection = pathWithoutQuery.substring(1) || 'dashboard';
-      console.log('Setting activeSection to:', pathSection);
+      logger.log('Setting activeSection to:', pathSection);
       setActiveSection(pathSection);
     }
   }, [location, urlParams.section]);
 
   // Debug logging
   React.useEffect(() => {
-    console.log('Dashboard activeSection changed to:', activeSection);
+    logger.log('Dashboard activeSection changed to:', activeSection);
   }, [activeSection]);
 
   // Enhanced setActiveSection with debugging
   const enhancedSetActiveSection = (section: string) => {
-    console.log('📍 Dashboard setActiveSection called with:', section);
+    logger.log('📍 Dashboard setActiveSection called with:', section);
     setActiveSection(section);
   };
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user, isLoading } = useAuth();
-
-  // Make setActiveSection available globally for project detail navigation
-  React.useEffect(() => {
-    (window as any).dashboardSetActiveSection = enhancedSetActiveSection;
-
-    return () => {
-      delete (window as any).dashboardSetActiveSection;
-    };
-  }, []);
+  const { trackNavigation, trackButtonClick } = useAnalytics();
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
@@ -222,10 +259,10 @@ export default function Dashboard({
                 <Clock className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">
                   Weekly Monitoring
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600 break-words">
                   Track weekly submission status and send email notifications
                   for missing data
                 </p>
@@ -244,9 +281,11 @@ export default function Dashboard({
         return <DashboardOverview onSectionChange={setActiveSection} />;
       case 'important-documents':
         return <ImportantDocuments />;
+      case 'resources':
+        return <Resources />;
       case 'projects':
-        console.log('Rendering ProjectsManagementV2 component');
-        return <ProjectsManagementV2 />;
+        logger.log('Rendering ProjectsManagement component');
+        return <ProjectsManagement />;
       case 'real-time-messages':
         return <RealTimeMessages />;
       case 'messages':
@@ -255,6 +294,8 @@ export default function Dashboard({
         return <GmailStyleInbox />;
       case 'inbox':
         return <GmailStyleInbox />;
+      case 'messaging-inbox':
+        return <MessagingInbox />;
       case 'stream-messages':
         return <RealTimeMessages />;
       case 'chat':
@@ -265,8 +306,8 @@ export default function Dashboard({
                 <MessageCircle className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
-                <p className="text-gray-600">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Team Chat</h1>
+                <p className="text-sm sm:text-base text-gray-600 break-words">
                   Real-time communication with your team across different
                   channels
                 </p>
@@ -285,8 +326,8 @@ export default function Dashboard({
                 <Trophy className="w-6 h-6 text-yellow-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Your Kudos</h1>
-                <p className="text-gray-600">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Your Kudos</h1>
+                <p className="text-sm sm:text-base text-gray-600 break-words">
                   Recognition received for your great work
                 </p>
               </div>
@@ -308,6 +349,10 @@ export default function Dashboard({
 
       case 'hosts':
         return <HostsManagement />;
+      case 'route-map':
+        return <RouteMapView />;
+      case 'event-map':
+        return <EventMapView />;
       case 'recipients':
         return <RecipientsManagement />;
       case 'drivers':
@@ -315,13 +360,14 @@ export default function Dashboard({
       case 'volunteers':
         return <VolunteerManagement />;
       case 'event-requests':
-        // Use v2 as the default now
-        return <EventRequestsManagementV2
+        return <EventRequestsManagement
           initialTab={urlParams.tab}
           initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
         />;
       case 'event-reminders':
         return <EventRemindersManagement />;
+      case 'historical-import':
+        return <HistoricalImport />;
       case 'groups-catalog':
         return (
           <GroupCatalog
@@ -335,16 +381,24 @@ export default function Dashboard({
 
       case 'wishlist':
         return <WishlistPage />;
+      case 'team-board':
+        return <TeamBoard />;
+      case 'promotion':
+        return <PromotionGraphics />;
+      case 'quick-sms-links':
+        return <QuickSMSLinks />;
+      case 'cooler-tracking':
+        return <CoolerTrackingPage />;
       case 'important-links':
         return <ImportantLinks />;
       case 'analytics':
         return (
           <div className="p-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-main-heading text-primary">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-main-heading text-primary break-words">
                 Impact & Analytics Dashboard
               </h1>
-              <p className="font-body text-muted-foreground">
+              <p className="text-sm sm:text-base font-body text-muted-foreground break-words">
                 Track community impact, collection trends, and host performance
               </p>
             </div>
@@ -383,6 +437,8 @@ export default function Dashboard({
         return <RoleDemo />;
       case 'work-log':
         return <WorkLogPage />;
+      case 'expenses':
+        return <ExpensesPage />;
       case 'suggestions':
         return <SuggestionsPortal />;
       case 'google-sheets':
@@ -402,10 +458,10 @@ export default function Dashboard({
                 />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">
                   Committee Communications
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600 break-words">
                   Internal committee discussions and collaboration
                 </p>
               </div>
@@ -413,10 +469,24 @@ export default function Dashboard({
             <CommitteeChat />
           </div>
         );
+      case 'my-availability':
+        return <MyAvailability />;
+      case 'team-availability':
+        return <TeamAvailability />;
+      case 'google-calendar-availability':
+        return <GoogleCalendarAvailability />;
       case 'user-management':
         return <UserManagementRedesigned />;
+      case 'onboarding-admin':
+        return <OnboardingAdmin />;
       case 'admin':
-        return <EventRequestAuditLog showFilters data-testid="audit-log" />;
+        return <AdminSettings />;
+      case 'help':
+        return <Help />;
+      case 'design-system':
+        return <DesignSystemShowcase />;
+      case 'smart-search-admin':
+        return <SmartSearchAdmin />;
       default:
         // Handle project detail pages
         if (projectId) {
@@ -457,13 +527,15 @@ export default function Dashboard({
     <>
       {/* Login Kudos Notifier */}
       <KudosLoginNotifier />
+      <SMSAnnouncementModal />
 
-      <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
+      <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
+        <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
         {/* Announcement Banner */}
         <AnnouncementBanner />
         
         {/* Top Header */}
-        <div className="bg-gradient-to-r from-white to-orange-50/30 border-b-2 border-amber-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-hidden">
+        <div className="bg-gradient-to-r from-white to-teal-50/30 border-b-2 border-teal-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px]">
           <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
             {/* Mobile menu button - positioned first for easy access */}
             <button
@@ -499,7 +571,7 @@ export default function Dashboard({
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Compact user indicator for tablets */}
             {user && (
-              <div className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 shadow-sm max-w-[120px] xs:max-w-[150px] sm:max-w-[180px] md:max-w-none">
+              <div className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-200 shadow-sm max-w-[120px] xs:max-w-[150px] sm:max-w-[180px] md:max-w-none">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-teal-100 to-teal-200 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
                   <span className="text-xs font-medium text-teal-800">
                     {(user as any)?.firstName?.charAt(0) ||
@@ -515,7 +587,7 @@ export default function Dashboard({
                         }`.trim()
                       : (user as any)?.email}
                   </span>
-                  <span className="text-xs text-amber-600 truncate">
+                  <span className="text-xs text-teal-600 truncate">
                     {(user as any)?.email}
                   </span>
                 </div>
@@ -533,7 +605,8 @@ export default function Dashboard({
             <div className="flex items-center gap-0.5 xs:gap-1 relative z-50 flex-shrink-0">
               <button
                 onClick={() => {
-                  console.log('Messages button clicked');
+                  logger.log('Messages button clicked');
+                  trackButtonClick('messages', 'dashboard_header');
                   setActiveSection('messages');
                   setIsMobileMenuOpen(false);
                 }}
@@ -548,19 +621,58 @@ export default function Dashboard({
                 <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
+              <button
+                onClick={() => {
+                  logger.log('Comments button clicked');
+                  trackButtonClick('comments', 'dashboard_header');
+                  setActiveSection('messaging-inbox');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] ${
+                  activeSection === 'messaging-inbox'
+                    ? 'bg-brand-primary hover:bg-brand-primary-dark text-white border border-brand-primary shadow-sm'
+                    : 'text-teal-600 hover:bg-teal-50 hover:text-teal-800'
+                }`}
+                title="Comments"
+                aria-label="Comments"
+              >
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+
               {/* Enhanced In-App Notifications - the main notification bell */}
               {typeof window !== 'undefined' && (
                 <EnhancedNotifications user={user} />
               )}
 
+              {/* Onboarding Challenge Button */}
+              <OnboardingChallengeButton onNavigate={(section) => setActiveSection(section)} />
+
+              {/* Quick Help Button */}
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log(
+                  logger.log('Help button clicked');
+                  trackButtonClick('help', 'dashboard_header');
+                  setLocation('/help');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] text-teal-600 hover:bg-teal-50 hover:text-teal-800`}
+                title="Help & Support"
+                aria-label="Help & Support"
+              >
+                <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  logger.log(
                     'Profile button clicked, current section:',
                     activeSection
                   );
+                  trackButtonClick('profile', 'dashboard_header');
                   setActiveSection('profile');
                   window.history.pushState(
                     {},
@@ -584,6 +696,7 @@ export default function Dashboard({
               <button
                 onClick={async () => {
                   try {
+                    trackButtonClick('logout', 'dashboard_header');
                     await fetch('/api/auth/logout', {
                       method: 'POST',
                       credentials: 'include',
@@ -597,7 +710,7 @@ export default function Dashboard({
                     // Force immediate redirect to login page
                     window.location.href = '/api/login';
                   } catch (error) {
-                    console.error('Logout error:', error);
+                    logger.error('Logout error:', error);
                     queryClient.clear();
                     queryClient.invalidateQueries({
                       queryKey: ['/api/auth/user'],
@@ -654,15 +767,26 @@ export default function Dashboard({
             </div>
 
             {/* Simple Navigation with enhanced mobile scrolling */}
-            <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-contain">
+            <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-auto">
               <SimpleNav
                 navigationItems={NAV_ITEMS}
                 activeSection={activeSection}
                 onSectionChange={(section) => {
-                  console.log(
+                  logger.log(
                     'Dashboard setActiveSection called with:',
                     section
                   );
+
+                  // Track navigation
+                  trackNavigation(section, activeSection);
+
+                  // Handle standalone routes (navigate away from dashboard)
+                  if (section === 'help') {
+                    setLocation('/help');
+                    setIsMobileMenuOpen(false);
+                    return;
+                  }
+
                   setActiveSection(section);
                   // Close mobile menu when navigation item is clicked
                   setIsMobileMenuOpen(false);
@@ -678,7 +802,7 @@ export default function Dashboard({
 
               {/* EIN Information - Always visible at bottom */}
               {!isSidebarCollapsed && (
-                <div className="px-4 mt-6 pt-4 border-t border-amber-200">
+                <div className="px-4 mt-6 pt-4 border-t border-amber-200 space-y-3">
                   <div className="bg-gradient-to-r from-teal-50 to-teal-100 border border-teal-200 rounded-lg px-3 py-2">
                     <div className="text-xs text-teal-700 font-medium uppercase tracking-wide">
                       Organization EIN
@@ -687,29 +811,100 @@ export default function Dashboard({
                       87-0939484
                     </div>
                   </div>
+
+                  {/* Amazon Wishlist Quick Access */}
+                  <div className="bg-gradient-to-r from-[#FBAD3F]/10 to-[#FBAD3F]/20 border-2 border-[#FBAD3F] rounded-lg px-3 py-2.5 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <Gift className="w-4 h-4 text-[#FBAD3F]" />
+                        <div className="text-xs text-[#FBAD3F] font-bold uppercase tracking-wide">
+                          Amazon Wishlist
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => {
+                          setActiveSection('wishlist');
+                          window.history.pushState({}, '', '/dashboard?section=wishlist');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="flex-1 bg-[#FBAD3F] hover:bg-[#E89A2F] text-white text-xs font-medium px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1"
+                        title="View wishlist and share with supporters"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        View & Share
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText('https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV?ref_=wl_share');
+                            // Show toast notification (you'll need to add toast hook)
+                            logger.log('Wishlist link copied!');
+                          } catch (err) {
+                            logger.error('Copy failed:', err);
+                          }
+                        }}
+                        className="bg-[#FBAD3F]/20 hover:bg-[#FBAD3F]/30 text-[#FBAD3F] px-2 py-1.5 rounded transition-colors"
+                        title="Copy main wishlist link"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-amber-50/30 min-w-0 pt-6 pl-6">
-            {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
-              // Special full-height layout for inbox and chat
-              <div className="h-full">{renderContent()}</div>
-            ) : (
-              // Normal layout for other content
-              <div className="h-full overflow-y-auto overflow-x-hidden w-full">
-                <div className="w-full pb-20 min-h-full">
-                  <div className="w-full overflow-x-visible">
-                    {renderContent()}
+          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-[#F6F9FA] min-w-0">
+            <ErrorBoundary
+              fallback={
+                <div className="p-4 sm:p-8 text-center">
+                  <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      This section encountered an error
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Don't worry - your other sections are still working. Try switching to a different section or refreshing the page.
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-dark transition-colors"
+                    >
+                      Refresh Page
+                    </button>
                   </div>
                 </div>
-              </div>
-            )}
+              }
+            >
+              <Suspense fallback={<SectionLoader />}>
+                {activeSection === 'gmail-inbox' || activeSection === 'chat' ? (
+                  // Special full-height layout for inbox and chat
+                  <div className="h-full">{renderContent()}</div>
+                ) : (
+                  // Normal layout for other content
+                  <div className="h-full overflow-y-auto overflow-x-hidden w-full max-w-full">
+                    <div className="w-full pb-20 min-h-full px-4 sm:px-6 pt-6">
+                      {renderContent()}
+                    </div>
+                  </div>
+                )}
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
-      </div>
+        </div>
+
+        {/* Guided Tour System */}
+        <GuidedTour />
+      </DashboardNavigationProvider>
     </>
   );
 }

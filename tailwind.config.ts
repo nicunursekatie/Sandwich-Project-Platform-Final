@@ -1,9 +1,23 @@
 import type { Config } from 'tailwindcss';
+import { TAILWIND_SCREENS } from './shared/breakpoints';
 
 export default {
   // darkMode disabled per user request
   content: ['./client/index.html', './client/src/**/*.{js,jsx,ts,tsx}'],
+  safelist: [
+    // Ensure brand colors and sidebar styles used in dynamic contexts are always generated
+    'bg-brand-primary',
+    'border-brand-primary-dark',
+    'ring-brand-primary',
+    'text-brand-primary',
+    'hover:bg-brand-primary',
+    'border-l-4',
+    'border-transparent',
+    'font-semibold',
+    'shadow-sm',
+  ],
   theme: {
+    screens: TAILWIND_SCREENS,
     extend: {
       fontFamily: {
         sans: ['Roboto', 'sans-serif'],
@@ -17,6 +31,12 @@ export default {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        // Premium design system values
+        'premium-sm': '8px',
+        'premium-md': '12px',
+        'premium-lg': '16px',
+        'premium-xl': '20px',
+        'premium-full': '9999px',
       },
       colors: {
         background: 'hsl(var(--color-background))',
@@ -61,7 +81,14 @@ export default {
         },
         brand: {
           primary: '#236383',
+          'primary-muted': '#007E8C',
           'primary-dark': '#1e5a75',
+          'primary-darker': '#1A2332',
+          'primary-light': 'hsl(193 60% 91%)',
+          'primary-lighter': 'hsl(193 60% 95%)',
+          'primary-soft': 'hsl(193 60% 88%)',
+          'primary-border': 'hsl(193 60% 85%)',
+          'primary-border-strong': 'hsl(193 60% 75%)',
           teal: '#007E8C',
           'teal-dark': '#006B75',
           orange: '#FBAD3F',

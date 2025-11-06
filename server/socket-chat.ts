@@ -6,6 +6,7 @@ import { db } from './db';
 import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { getSocketCorsConfig } from './config/cors';
+import { logger } from './utils/production-safe-logger';
 
 interface ChatMessage {
   id: string;
@@ -24,6 +25,17 @@ interface ConnectedUser {
   channels: string[];
 }
 
+// Module-level variable to store Socket.IO instance
+let socketInstance: SocketServer | null = null;
+
+/**
+ * Get the Socket.IO instance (for emitting events from routes)
+ * Returns null if Socket.IO hasn't been initialized yet
+ */
+export function getSocketInstance(): SocketServer | null {
+  return socketInstance;
+}
+
 export function setupSocketChat(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     cors: getSocketCorsConfig(),
@@ -32,13 +44,16 @@ export function setupSocketChat(httpServer: HttpServer) {
     allowEIO3: true,
   });
 
-  console.log('✓ Socket.IO server initialized on /socket.io/ with secure CORS');
+  // Store instance for access from routes
+  socketInstance = io;
+
+  logger.log('✓ Socket.IO server initialized on /socket.io/ with secure CORS');
 
   // Store active users
   const activeUsers = new Map<string, ConnectedUser>();
 
   io.on('connection', (socket) => {
-    console.log(`✅ Socket.IO client connected: ${socket.id}`);
+    logger.log(`✅ Socket.IO client connected: ${socket.id}`);
 
     // Send available rooms to connected client
     socket.on('get-rooms', () => {
@@ -74,7 +89,7 @@ export function setupSocketChat(httpServer: HttpServer) {
           // Join the channel
           socket.join(channel);
 
-          console.log(
+          logger.log(
             `User ${userName} (${userId}) joined channel: ${channel}`
           );
 
@@ -97,22 +112,46 @@ export function setupSocketChat(httpServer: HttpServer) {
             // Auto-mark all messages in this channel as read for the joining user
             try {
               await storage.markChannelMessagesAsRead(userId, channel);
-              console.log(
+              logger.log(
                 `Marked all messages in ${channel} as read for user ${userId}`
               );
             } catch (markReadError) {
-              console.error('Error marking messages as read:', markReadError);
+              logger.error('Error marking messages as read:', markReadError);
             }
           } catch (error) {
-            console.error('Error loading message history:', error);
+            logger.error('Error loading message history:', error);
             socket.emit('message-history', []);
           }
 
           // Send confirmation
           socket.emit('joined-channel', { channel, userName });
         } catch (error) {
-          console.error('Error joining channel:', error);
+          logger.error('Error joining channel:', error);
           socket.emit('error', { message: 'Failed to join channel' });
+        }
+      }
+    );
+
+    // Handle joining notification channel (for real-time notification updates)
+    socket.on(
+      'join-notification-channel',
+      async (data: { userId: string; userName: string }) => {
+        try {
+          const { userId, userName } = data;
+
+          // Join user-specific notification channel
+          const notificationChannel = `notifications:${userId}`;
+          socket.join(notificationChannel);
+
+          logger.log(
+            `User ${userName} (${userId}) joined notification channel: ${notificationChannel}`
+          );
+
+          // Send confirmation
+          socket.emit('joined-notification-channel', { userId });
+        } catch (error) {
+          logger.error('Error joining notification channel:', error);
+          socket.emit('error', { message: 'Failed to join notification channel' });
         }
       }
     );
@@ -181,18 +220,18 @@ export function setupSocketChat(httpServer: HttpServer) {
               savedMessage.id
             );
           } catch (notificationError) {
-            console.error(
+            logger.error(
               'Error processing chat mention notifications:',
               notificationError
             );
             // Don't fail the message send if notifications fail
           }
 
-          console.log(
+          logger.log(
             `Message saved and sent to ${channel} by ${user.userName}: ${content}`
           );
         } catch (error) {
-          console.error('Error sending message:', error);
+          logger.error('Error sending message:', error);
           socket.emit('error', { message: 'Failed to send message' });
         }
       }
@@ -267,11 +306,11 @@ export function setupSocketChat(httpServer: HttpServer) {
           // Broadcast the updated message to all users in the channel
           io.to(messageToEdit.channel).emit('message-edited', updatedMessage);
 
-          console.log(
+          logger.log(
             `Message ${messageId} edited by ${user.userName} in ${messageToEdit.channel}`
           );
         } catch (error) {
-          console.error('Error editing message:', error);
+          logger.error('Error editing message:', error);
           socket.emit('error', { message: 'Failed to edit message' });
         }
       }
@@ -340,11 +379,11 @@ export function setupSocketChat(httpServer: HttpServer) {
             deletedBy: user.userName,
           });
 
-          console.log(
+          logger.log(
             `Message ${messageId} deleted by ${user.userName} in ${messageToDelete.channel}`
           );
         } catch (error) {
-          console.error('Error deleting message:', error);
+          logger.error('Error deleting message:', error);
           socket.emit('error', { message: 'Failed to delete message' });
         }
       }
@@ -365,11 +404,11 @@ export function setupSocketChat(httpServer: HttpServer) {
           room: channel,
           messages: formattedMessages,
         });
-        console.log(
+        logger.log(
           `Sent message history for ${channel}: ${formattedMessages.length} messages`
         );
       } catch (error) {
-        console.error('Error loading message history:', error);
+        logger.error('Error loading message history:', error);
         socket.emit('message-history', { room: channel, messages: [] });
       }
     });
@@ -380,14 +419,105 @@ export function setupSocketChat(httpServer: HttpServer) {
       (data: { channel: string; userId: string; userName: string }) => {
         const { channel, userName } = data;
         socket.leave(channel);
-        console.log(`User ${userName} left channel: ${channel}`);
+        logger.log(`User ${userName} left channel: ${channel}`);
       }
     );
+
+    // ========================================================================
+    // UNIFIED ACTIVITIES SYSTEM - Socket.IO Events
+    // ========================================================================
+
+    /**
+     * Subscribe to activity updates
+     * Join a room for real-time updates on a specific activity or context
+     */
+    socket.on('activity:subscribe', (data: { activityId?: string; contextType?: string; contextId?: string }) => {
+      try {
+        const { activityId, contextType, contextId } = data;
+
+        if (activityId) {
+          // Subscribe to specific activity (for thread views)
+          socket.join(`activity:${activityId}`);
+          logger.log(`Socket ${socket.id} subscribed to activity: ${activityId}`);
+        }
+
+        if (contextType && contextId) {
+          // Subscribe to all activities in a context (e.g., all tasks in a project)
+          const contextRoom = `context:${contextType}:${contextId}`;
+          socket.join(contextRoom);
+          logger.log(`Socket ${socket.id} subscribed to context: ${contextRoom}`);
+        }
+      } catch (error) {
+        logger.error('Error subscribing to activity:', error);
+      }
+    });
+
+    /**
+     * Unsubscribe from activity updates
+     */
+    socket.on('activity:unsubscribe', (data: { activityId?: string; contextType?: string; contextId?: string }) => {
+      try {
+        const { activityId, contextType, contextId } = data;
+
+        if (activityId) {
+          socket.leave(`activity:${activityId}`);
+          logger.log(`Socket ${socket.id} unsubscribed from activity: ${activityId}`);
+        }
+
+        if (contextType && contextId) {
+          socket.leave(`context:${contextType}:${contextId}`);
+          logger.log(`Socket ${socket.id} unsubscribed from context: ${contextType}:${contextId}`);
+        }
+      } catch (error) {
+        logger.error('Error unsubscribing from activity:', error);
+      }
+    });
+
+    /**
+     * Activity created event (emitted from server-side only)
+     * Clients subscribe to this via activity:subscribe
+     */
+    // Note: This is emitted from the backend API routes, not from client events
+    // Example usage in routes/activities.ts:
+    //   io.to(`context:${contextType}:${contextId}`).emit('activity:created', activity);
+
+    /**
+     * Activity updated event (emitted from server-side only)
+     */
+    // Example usage:
+    //   io.to(`activity:${activityId}`).emit('activity:updated', updatedActivity);
+
+    /**
+     * Activity reply event (emitted from server-side only)
+     */
+    // Example usage:
+    //   io.to(`activity:${rootId}`).emit('activity:reply', reply);
+
+    /**
+     * Activity reaction event (emitted from server-side only)
+     */
+    // Example usage:
+    //   io.to(`activity:${activityId}`).emit('activity:reaction', { activityId, userId, reactionType });
+
+    /**
+     * Typing indicator for activity threads (optional future feature)
+     */
+    socket.on('activity:typing', (data: { activityId: string; userName: string }) => {
+      try {
+        const { activityId, userName } = data;
+        socket.to(`activity:${activityId}`).emit('activity:user-typing', {
+          activityId,
+          userName,
+        });
+      } catch (error) {
+        logger.error('Error broadcasting typing indicator:', error);
+      }
+    });
 
     // Handle disconnect
     socket.on('disconnect', () => {
       activeUsers.delete(socket.id);
-      console.log(`Socket disconnected: ${socket.id}`);
+      logger.log(`Socket disconnected: ${socket.id}`);
     });
   });
 

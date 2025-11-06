@@ -3,6 +3,8 @@ import { SMSProvider } from './sms-providers/types';
 import { db } from './db';
 import { hosts } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
+import { getUserMetadata } from '../shared/types';
+import { logger } from './utils/production-safe-logger';
 
 // Initialize SMS provider
 let smsProvider: SMSProvider | null = null;
@@ -12,12 +14,12 @@ try {
   smsProvider = factory.getProvider();
   
   if (smsProvider.isConfigured()) {
-    console.log(`✅ ${smsProvider.name} SMS service initialized`);
+    logger.log(`✅ ${smsProvider.name} SMS service initialized`);
   } else {
-    console.log(`⚠️ ${smsProvider.name} SMS service not configured - SMS features will be limited`);
+    logger.log(`⚠️ ${smsProvider.name} SMS service not configured - SMS features will be limited`);
   }
 } catch (error) {
-  console.log('⚠️ SMS service initialization failed:', (error as Error).message);
+  logger.log('⚠️ SMS service initialization failed:', (error as Error).message);
   smsProvider = null;
 }
 
@@ -70,12 +72,12 @@ export async function sendSMSReminder(
     // Get all users who have confirmed SMS opt-in
     const allUsers = await storage.getAllUsers();
     const optedInUsers = allUsers.filter((user) => {
-      const metadata = user.metadata as any || {};
-      const smsConsent = metadata.smsConsent || {};
+      const metadata = getUserMetadata(user);
+      const smsConsent = metadata.smsConsent;
       // Only include users with confirmed status and enabled flag
       return (
-        smsConsent.status === 'confirmed' &&
-        smsConsent.enabled && 
+        smsConsent?.status === 'confirmed' &&
+        smsConsent.enabled &&
         smsConsent.phoneNumber
       );
     });
@@ -91,9 +93,21 @@ export async function sendSMSReminder(
     const results = [];
     for (const user of optedInUsers) {
       try {
-        const metadata = user.metadata as any || {};
-        const smsConsent = metadata.smsConsent || {};
-        const phoneNumber = smsConsent.phoneNumber;
+        const metadata = getUserMetadata(user);
+        const smsConsent = metadata.smsConsent;
+        const phoneNumber = smsConsent?.phoneNumber;
+
+        // Validate phone number exists before sending
+        if (!phoneNumber) {
+          logger.warn(`⚠️ Skipping SMS for ${user.email}: No phone number found`);
+          results.push({
+            user: user.email,
+            phone: 'none',
+            error: 'No phone number in SMS consent',
+            success: false,
+          });
+          continue;
+        }
 
         const message = `Hi! 🥪 Friendly reminder: The Sandwich Project weekly numbers haven't been submitted yet for ${hostLocation}. Please submit at: ${appUrl} - Thanks for all you do!`;
 
@@ -109,14 +123,15 @@ export async function sendSMSReminder(
           success: result.success,
         });
 
-        console.log(
+        logger.log(
           `✅ SMS sent to ${user.email} (${phoneNumber}) for ${hostLocation}`
         );
       } catch (error) {
-        console.error(`❌ Failed to send SMS to ${user.email}:`, error);
+        logger.error(`❌ Failed to send SMS to ${user.email}:`, error);
+        const metadata = getUserMetadata(user);
         results.push({
           user: user.email,
-          phone: (user.metadata as any)?.smsConsent?.phoneNumber || 'unknown',
+          phone: metadata.smsConsent?.phoneNumber || 'unknown',
           error: (error as Error).message,
           success: false,
         });
@@ -135,7 +150,7 @@ export async function sendSMSReminder(
         .join(', '),
     };
   } catch (error) {
-    console.error('Error sending SMS reminder:', error);
+    logger.error('Error sending SMS reminder:', error);
     return {
       success: false,
       message: `Failed to send SMS reminder: ${(error as Error).message}`,
@@ -196,7 +211,7 @@ export async function sendTestSMS(
       formattedPhone = `+${formattedPhone}`;
     }
 
-    console.log(`📱 Formatting phone number: ${toPhoneNumber} -> ${formattedPhone}`);
+    logger.log(`📱 Formatting phone number: ${toPhoneNumber} -> ${formattedPhone}`);
 
     const testMessage = `🧪 Test SMS from The Sandwich Project! This is a test of the SMS reminder system. App link: ${
       appUrl || 'https://your-app.replit.app'
@@ -208,7 +223,7 @@ export async function sendTestSMS(
     });
 
     if (result.success) {
-      console.log(`✅ Test SMS sent to ${formattedPhone}`);
+      logger.log(`✅ Test SMS sent to ${formattedPhone}`);
       return {
         success: true,
         message: `Test SMS sent successfully to ${formattedPhone}`,
@@ -221,7 +236,7 @@ export async function sendTestSMS(
       };
     }
   } catch (error) {
-    console.error('Error sending test SMS:', error);
+    logger.error('Error sending test SMS:', error);
     return {
       success: false,
       message: `Failed to send test SMS: ${(error as Error).message}`,
@@ -246,19 +261,19 @@ function getWelcomeMessages(provider: SMSProvider) {
   if (providerName === 'phone_gateway') {
     return {
       confirmation: (verificationCode: string) => 
-        `Welcome to The Sandwich Project! 🥪\n\nTo complete SMS signup, reply with this code: ${verificationCode}\n\nOr reply "YES" to confirm.\n\nYou'll get weekly sandwich collection reminders.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`,
+        `Welcome to The Sandwich Project! 🥪\n\nTo complete SMS signup, reply with this code:\n\n${verificationCode}\n\nYou'll receive helpful reminders and updates as needed.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`,
       
       welcome: () => 
-        `Welcome to The Sandwich Project SMS! 🥪\n\nYou'll receive text reminders when weekly sandwich counts are missing.\n\nTo stop messages, reply STOP or visit app settings.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`
+        `Welcome to The Sandwich Project SMS! 🥪\n\nYou're all set to receive helpful updates and reminders when needed.\n\nTo stop messages, reply STOP or visit app settings.${fromNumber ? `\n\nFrom: ${fromNumber}` : ''}`
     };
   } else {
     // Twilio or other providers
     return {
       confirmation: (verificationCode: string) => 
-        `Welcome to The Sandwich Project! 🥪\n\nTo complete your SMS signup, please reply with your verification code:\n\n${verificationCode}\n\nOr simply reply "YES" to confirm.\n\nThis confirms you want to receive weekly sandwich collection reminders.`,
+        `Welcome to The Sandwich Project! 🥪\n\nTo complete your SMS signup, please reply with your verification code:\n\n${verificationCode}\n\nYou'll receive helpful reminders and updates as needed.`,
       
       welcome: () => 
-        `Welcome to The Sandwich Project SMS reminders! 🥪\n\nYou'll receive text reminders when weekly sandwich counts are missing.\n\nTo stop receiving messages, reply STOP at any time or visit the app settings.`
+        `Welcome to The Sandwich Project SMS! 🥪\n\nYou're all set to receive helpful updates and reminders when needed.\n\nTo stop receiving messages, reply STOP at any time or visit the app settings.`
     };
   }
 }
@@ -271,22 +286,22 @@ export async function sendConfirmationSMS(
   verificationCode: string,
   retryCount: number = 0
 ): Promise<SMSConfirmationResult> {
-  console.log('📱 Attempting to send confirmation SMS...');
-  console.log('Phone number:', phoneNumber);
-  console.log('Verification code:', verificationCode);
-  console.log('Retry attempt:', retryCount);
-  console.log('Twilio configured:', !!twilioClient);
-  console.log('Twilio phone:', process.env.TWILIO_PHONE_NUMBER);
+  logger.log('📱 Attempting to send confirmation SMS...');
+  logger.log('Phone number:', phoneNumber);
+  logger.log('Verification code:', verificationCode);
+  logger.log('Retry attempt:', retryCount);
+  logger.log('SMS Provider configured:', !!smsProvider);
+  logger.log('Twilio phone:', process.env.TWILIO_PHONE_NUMBER);
 
-  if (!twilioClient) {
-    console.error('❌ Twilio client not initialized');
+  if (!smsProvider) {
+    logger.error('❌ SMS provider not initialized');
     return {
       success: false,
       message: 'SMS service not configured - no provider available',
     };
   }
   if (!process.env.TWILIO_PHONE_NUMBER) {
-    console.error('❌ TWILIO_PHONE_NUMBER not set');
+    logger.error('❌ TWILIO_PHONE_NUMBER not set');
     return {
       success: false,
       message: `SMS service not configured - ${smsProvider.name} provider missing configuration`,
@@ -294,6 +309,15 @@ export async function sendConfirmationSMS(
   }
 
   try {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      logger.error('❌ Invalid phone number provided');
+      return {
+        success: false,
+        message: 'Invalid phone number provided',
+      };
+    }
+
     const messages = getWelcomeMessages(smsProvider);
     const confirmationMessage = messages.confirmation(verificationCode);
 
@@ -303,7 +327,7 @@ export async function sendConfirmationSMS(
     });
 
     if (result.success) {
-      console.log(`✅ SMS confirmation sent via ${smsProvider.name} to ${phoneNumber} (${result.messageId})`);
+      logger.log(`✅ SMS confirmation sent via ${smsProvider.name} to ${phoneNumber} (${result.messageId})`);
       return {
         success: true,
         message: `Confirmation SMS sent successfully to ${phoneNumber}`,
@@ -316,12 +340,21 @@ export async function sendConfirmationSMS(
       };
     }
   } catch (error: any) {
-    console.error('Error sending confirmation SMS via provider:', error);
-    
+    logger.error('Error sending confirmation SMS via provider:', error);
+
     // Fallback to direct Twilio if provider fails
-    console.log('🔄 Falling back to direct Twilio...');
-    
+    logger.log('🔄 Falling back to direct Twilio...');
+
     try {
+      // Get the Twilio client from the provider
+      const { TwilioProvider } = await import('./sms-providers/twilio-provider');
+      const twilioProvider = smsProvider as InstanceType<typeof TwilioProvider>;
+      const twilioClient = twilioProvider.getClient();
+
+      if (!twilioClient) {
+        throw new Error('Twilio client not available');
+      }
+
       // Format phone number with improved AT&T compatibility
       let formattedPhone = phoneNumber.replace(/[^\d+]/g, '');
       if (formattedPhone.startsWith('1') && formattedPhone.length === 11) {
@@ -332,13 +365,13 @@ export async function sendConfirmationSMS(
         formattedPhone = `+${formattedPhone}`;
       }
 
-      console.log(`📱 Phone number formatting: ${phoneNumber} -> ${formattedPhone}`);
+      logger.log(`📱 Phone number formatting: ${phoneNumber} -> ${formattedPhone}`);
 
       // Simplified message to avoid carrier filtering
       const confirmationMessage = `Sandwich Project: Your verification code is ${verificationCode}. Reply with this code or YES to confirm weekly reminders.`;
 
-      console.log('📤 Sending SMS via Twilio...');
-      console.log('Message length:', confirmationMessage.length, 'characters');
+      logger.log('📤 Sending SMS via Twilio...');
+      logger.log('Message length:', confirmationMessage.length, 'characters');
 
       const result = await twilioClient.messages.create({
         body: confirmationMessage,
@@ -350,9 +383,9 @@ export async function sendConfirmationSMS(
           : undefined,
       });
 
-      console.log(`✅ SMS confirmation sent to ${phoneNumber} (${result.sid})`);
-      console.log('Message status:', result.status);
-      console.log('Message price:', result.price);
+      logger.log(`✅ SMS confirmation sent to ${phoneNumber} (${result.sid})`);
+      logger.log('Message status:', result.status);
+      logger.log('Message price:', result.price);
 
       return {
         success: true,
@@ -360,10 +393,10 @@ export async function sendConfirmationSMS(
         verificationCode,
       };
     } catch (twilioError: any) {
-      console.error('❌ Error sending confirmation SMS:', twilioError);
-      console.error('Error code:', twilioError.code);
-      console.error('Error message:', twilioError.message);
-      console.error('More info:', twilioError.moreInfo);
+      logger.error('❌ Error sending confirmation SMS:', twilioError);
+      logger.error('Error code:', twilioError.code);
+      logger.error('Error message:', twilioError.message);
+      logger.error('More info:', twilioError.moreInfo);
 
       // Check for specific Twilio error codes
       if (twilioError.code === 21211) {
@@ -384,12 +417,12 @@ export async function sendConfirmationSMS(
       } else if (twilioError.code === 30032 || twilioError.code === 30005) {
         // Error 30032: Unknown destination handset (carrier issue)
         // Error 30005: Unknown destination handset (number unreachable)
-        console.log(`⚠️ Carrier delivery issue (${twilioError.code}), attempting retry...`);
+        logger.log(`⚠️ Carrier delivery issue (${twilioError.code}), attempting retry...`);
 
         if (retryCount < 2) {
           // Wait before retry (exponential backoff)
           const delay = (retryCount + 1) * 2000;
-          console.log(`⏱️ Waiting ${delay}ms before retry ${retryCount + 1}...`);
+          logger.log(`⏱️ Waiting ${delay}ms before retry ${retryCount + 1}...`);
           await new Promise(resolve => setTimeout(resolve, delay));
 
           // Retry with incremented count
@@ -415,6 +448,14 @@ export async function sendConfirmationSMS(
 export async function sendWelcomeSMS(
   phoneNumber: string
 ): Promise<SMSReminderResult> {
+  // Redact phone number for logging (show last 4 digits only)
+  const redactedPhone = phoneNumber ? `***${phoneNumber.slice(-4)}` : 'unknown';
+
+  // Only log stack traces in development
+  if (process.env.NODE_ENV !== 'production') {
+    logger.log(`🔍 [DEBUG] sendWelcomeSMS called with phone: ${redactedPhone}`);
+  }
+
   if (!smsProvider) {
     return {
       success: false,
@@ -430,6 +471,17 @@ export async function sendWelcomeSMS(
   }
 
   try {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      logger.error('❌ Invalid phone number provided');
+      return {
+        success: false,
+        message: 'Invalid phone number provided',
+      };
+    }
+
+    logger.log(`📱 About to send welcome SMS to: ${redactedPhone}`);
+
     const messages = getWelcomeMessages(smsProvider);
     const welcomeMessage = messages.welcome();
 
@@ -439,7 +491,7 @@ export async function sendWelcomeSMS(
     });
 
     if (result.success) {
-      console.log(`✅ Welcome SMS sent via ${smsProvider.name} to ${phoneNumber} (${result.messageId})`);
+      logger.log(`✅ Welcome SMS sent via ${smsProvider.name} to ${redactedPhone} (${result.messageId})`);
       return {
         success: true,
         message: `Welcome SMS sent successfully to ${phoneNumber}`,
@@ -452,10 +504,85 @@ export async function sendWelcomeSMS(
       };
     }
   } catch (error) {
-    console.error('Error sending welcome SMS:', error);
+    logger.error('Error sending welcome SMS:', error);
     return {
       success: false,
       message: `Failed to send welcome SMS: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS notification for TSP contact assignment
+ */
+export async function sendTspContactAssignmentSMS(
+  phoneNumber: string,
+  organizationName: string,
+  eventId: number,
+  eventDate: Date | string | null
+): Promise<SMSReminderResult> {
+  if (!smsProvider) {
+    return {
+      success: false,
+      message: 'SMS service not configured - no provider available',
+    };
+  }
+
+  if (!smsProvider.isConfigured()) {
+    return {
+      success: false,
+      message: `SMS service not configured - ${smsProvider.name} provider missing configuration`,
+    };
+  }
+
+  try {
+    // Validate phone number
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      logger.error('❌ Invalid phone number provided');
+      return {
+        success: false,
+        message: 'Invalid phone number provided',
+      };
+    }
+
+    // Format event date
+    const formattedDate = eventDate 
+      ? new Date(eventDate).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric'
+        })
+      : 'TBD';
+
+    // Create app URL with event link
+    const appUrl = 'https://sandwich-project-platform-final-katielong2316.replit.app';
+    const eventUrl = `${appUrl}/event-requests`;
+
+    // Craft message
+    const message = `The Sandwich Project: You've been assigned as TSP contact for ${organizationName} (${formattedDate}). View details: ${eventUrl}`;
+
+    const result = await smsProvider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ TSP contact assignment SMS sent to ${phoneNumber} (${result.messageId})`);
+      return {
+        success: true,
+        message: `TSP contact assignment SMS sent successfully to ${phoneNumber}`,
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending TSP contact assignment SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send TSP contact assignment SMS: ${(error as Error).message}`,
     };
   }
 }
@@ -520,44 +647,115 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
   }
 
   try {
-    // Submit toll-free verification using REST API directly
+    // First, look up the phone number SID
+    logger.log(`🔍 Looking up phone number SID for: ${twilioPhoneNumber}`);
+    const phoneNumberResponse = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers.json?PhoneNumber=${encodeURIComponent(twilioPhoneNumber)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
+        },
+      }
+    );
+
+    if (!phoneNumberResponse.ok) {
+      const errorText = await phoneNumberResponse.text();
+      throw new Error(`Failed to lookup phone number: ${phoneNumberResponse.status} ${errorText}`);
+    }
+
+    const phoneNumberData = await phoneNumberResponse.json();
+    if (!phoneNumberData.incoming_phone_numbers || phoneNumberData.incoming_phone_numbers.length === 0) {
+      throw new Error(`Phone number ${twilioPhoneNumber} not found in your Twilio account`);
+    }
+
+    const num = phoneNumberData.incoming_phone_numbers[0];
+    const phoneNumberSid = num.sid;
+
+    // Validate that this is actually a toll-free number (8XX)
+    if (!/^\+1(800|833|844|855|866|877|888)\d{7}$/.test(num.phone_number)) {
+      throw new Error(`Number ${num.phone_number} is not toll-free; TFV requires an 8XX number (800, 833, 844, 855, 866, 877, or 888).`);
+    }
+
+    logger.log(`📱 Using toll-free phone number SID: ${phoneNumberSid}`);
+    logger.log(`📞 Number: ${num.phone_number}`);
+    logger.log(`🔍 Submitting toll-free verification with PascalCase fields`);
+
+    // Build form data with PascalCase field names (Twilio REST API format)
+    const form = new URLSearchParams();
+    const baseUrl = process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app';
+
+    // Required IDs
+    form.append('TollfreePhoneNumberSid', phoneNumberSid);
+
+    // Business + contacts
+    form.append('BusinessName', 'The Sandwich Project');
+    form.append('BusinessWebsite', 'https://www.thesandwichproject.org');
+    form.append('NotificationEmail', 'katie@thesandwichproject.org');
+
+    // Use case (array) - repeat key for each category
+    ['ACCOUNT_NOTIFICATION'].forEach(v =>
+      form.append('UseCaseCategories', v)
+    );
+    form.append('UseCaseSummary', 'Volunteer-powered nonprofit sending weekly reminders to volunteers about sandwich collection submissions and outreach events.');
+
+    // Message volume (string tier)
+    form.append('MessageVolume', '1000');
+
+    // Opt-in - repeat key for each URL
+    form.append('OptInType', 'WEB_FORM');
+    [`${baseUrl}/profile-notifications-signup.png`].forEach(url =>
+      form.append('OptInImageUrls', url)
+    );
+
+    // Sample message
+    form.append('ProductionMessageSample', 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.');
+
+    // Business address
+    form.append('BusinessStreetAddress', '2870 Peachtree Rd NW, PMB 915-2217');
+    form.append('BusinessCity', 'Atlanta');
+    form.append('BusinessStateProvinceRegion', 'GA');
+    form.append('BusinessPostalCode', '30305');
+    form.append('BusinessCountry', 'US');
+
+    // Contact + registration
+    form.append('BusinessContactFirstName', 'Christine');
+    form.append('BusinessContactLastName', 'Cooper Nowicki');
+    form.append('BusinessContactEmail', 'christine@thesandwichproject.org');
+    form.append('BusinessContactPhone', '+14047868116');
+    form.append('BusinessRegistrationNumber', '87-0939484');
+    form.append('BusinessType', 'NON_PROFIT');
+
+    logger.log(`📤 Submitting TFV with MessageVolume: 1000, UseCaseCategories: ACCOUNT_NOTIFICATION`);
+    logger.log(`📷 Opt-in image URL: ${baseUrl}/profile-notifications-signup.png`);
+
+    // Submit toll-free verification using REST API with correct snake_case fields
     const response = await fetch('https://messaging.twilio.com/v1/Tollfree/Verifications', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        TollfreePhoneNumber: twilioPhoneNumber,
-        BusinessName: 'The Sandwich Project',
-        BusinessWebsite: 'https://www.thesandwichproject.org',
-        NotificationEmail: 'admin@sandwich.project',
-        'UseCaseCategories': 'PUBLIC_SERVICE_ANNOUNCEMENT',
-        UseCaseSummary: 'The Sandwich Project is a nonprofit organization that coordinates volunteer-driven sandwich-making events for food insecurity relief. We use SMS to send weekly reminders to volunteers about upcoming sandwich collection submissions and community outreach events.',
-        ProductionMessageVolume: '500',
-        OptInType: 'WEB_FORM',
-        'OptInImageUrls': `${process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://your-app.replit.app'}/profile-notifications-signup.png`,
-        MessageSample: 'Reminder: Please submit your sandwich collection data for this week. Visit our app to log your donations. Reply STOP to opt out.',
-        BusinessStreetAddress: '123 Main Street',
-        BusinessCity: 'Atlanta',
-        BusinessStateProvinceRegion: 'GA',
-        BusinessPostalCode: '30309',
-        BusinessCountry: 'US',
-        BusinessContactFirstName: 'Admin',
-        BusinessContactLastName: 'User',
-        BusinessContactEmail: 'admin@sandwich.project',
-        BusinessContactPhone: '+14045551234'
-      }),
+      body: form,
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Twilio API error: ${response.status} ${errorText}`);
+      // Try to parse JSON error for better debugging
+      try {
+        const errorJson = JSON.parse(responseText);
+        logger.error('❌ Twilio TFV error details:', errorJson);
+        throw new Error(`Twilio API error: ${response.status} [${errorJson.code || 'NO_CODE'}] ${errorJson.message || responseText}`);
+      } catch (parseError) {
+        // If not JSON, throw the raw text
+        throw new Error(`Twilio API error: ${response.status} ${responseText}`);
+      }
     }
 
-    const verification = await response.json();
-    console.log(`✅ Toll-free verification submitted: ${verification.sid}`);
-    
+    const verification = JSON.parse(responseText);
+    logger.log(`✅ Toll-free verification submitted: ${verification.sid}`);
+
     return {
       success: true,
       message: `Toll-free verification submitted successfully. SID: ${verification.sid}`,
@@ -566,7 +764,7 @@ export async function submitTollFreeVerification(): Promise<TollFreeVerification
     };
 
   } catch (error) {
-    console.error('Error submitting toll-free verification:', error);
+    logger.error('Error submitting toll-free verification:', error);
     return {
       success: false,
       message: `Failed to submit toll-free verification: ${(error as Error).message}`,
@@ -655,10 +853,66 @@ export async function checkTollFreeVerificationStatus(verificationSid?: string):
     }
 
   } catch (error) {
-    console.error('Error checking toll-free verification status:', error);
+    logger.error('Error checking toll-free verification status:', error);
     return {
       success: false,
       message: `Failed to check verification status: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Send SMS reminder for an upcoming event to a specific volunteer or TSP contact
+ */
+export async function sendEventReminderSMS(
+  phoneNumber: string,
+  volunteerName: string,
+  organizationName: string,
+  eventDate: Date,
+  role?: string,
+  appUrl?: string
+): Promise<SMSReminderResult> {
+  if (!smsProvider || !smsProvider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const eventDateStr = eventDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
+    });
+
+    const roleText = role && role !== 'general' ? ` as ${role}` : '';
+    const message = `Hi ${volunteerName}! 🥪 Reminder: You're scheduled${roleText} for The Sandwich Project event at ${organizationName} on ${eventDateStr}. ${appUrl ? `View details: ${appUrl}` : ''} Thanks for making a difference!`;
+
+    const result = await smsProvider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ Event reminder SMS sent to ${phoneNumber} for ${organizationName}`);
+      return {
+        success: true,
+        message: 'Event reminder sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending event reminder SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send event reminder: ${(error as Error).message}`,
     };
   }
 }

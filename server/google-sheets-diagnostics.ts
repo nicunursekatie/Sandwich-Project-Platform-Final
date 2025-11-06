@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { logger } from './utils/production-safe-logger';
 
 export interface DiagnosticResult {
   issue: string;
@@ -12,7 +13,7 @@ export class GoogleSheetsDiagnostics {
   async runFullDiagnostics(): Promise<DiagnosticResult[]> {
     const results: DiagnosticResult[] = [];
 
-    console.log('🔍 Starting comprehensive Google Sheets diagnostics...');
+    logger.log('🔍 Starting comprehensive Google Sheets diagnostics...');
 
     // Check 1: Environment Variables
     results.push(...this.checkEnvironmentVariables());
@@ -26,7 +27,7 @@ export class GoogleSheetsDiagnostics {
     // Check 4: Project ID and Email Validation
     results.push(...this.validateServiceAccountDetails());
 
-    console.log('🔍 Diagnostics complete. Found', results.length, 'issues.');
+    logger.log('🔍 Diagnostics complete. Found', results.length, 'issues.');
 
     return results;
   }
@@ -84,7 +85,7 @@ export class GoogleSheetsDiagnostics {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY;
     if (!privateKey) return results;
 
-    console.log('🔍 Analyzing private key format...');
+    logger.log('🔍 Analyzing private key format...');
 
     // Check for common formatting issues
     const hasEscapedNewlines = privateKey.includes('\\n');
@@ -153,7 +154,7 @@ export class GoogleSheetsDiagnostics {
     const results: DiagnosticResult[] = [];
 
     try {
-      console.log('🔍 Testing service account configuration...');
+      logger.log('🔍 Testing service account configuration...');
 
       const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
       const privateKey = process.env.GOOGLE_PRIVATE_KEY;
@@ -196,13 +197,13 @@ export class GoogleSheetsDiagnostics {
         });
 
         const authClient = await auth.getClient();
-        console.log('✅ Service account client created successfully');
+        logger.log('✅ Service account client created successfully');
 
         // Try to get an access token without making API calls
         const accessToken = await authClient.getAccessToken();
 
         if (accessToken.token) {
-          console.log('✅ Access token generated successfully');
+          logger.log('✅ Access token generated successfully');
           results.push({
             issue: 'Service Account Working',
             severity: 'info',
@@ -221,7 +222,7 @@ export class GoogleSheetsDiagnostics {
           });
         }
       } catch (tokenError) {
-        console.error('❌ Token generation failed:', tokenError.message);
+        logger.error('❌ Token generation failed:', tokenError.message);
 
         if (tokenError.message.includes('invalid_grant')) {
           results.push({
@@ -292,23 +293,23 @@ export class GoogleSheetsDiagnostics {
   }
 
   printDiagnosticReport(results: DiagnosticResult[]) {
-    console.log('\n📋 GOOGLE SHEETS AUTHENTICATION DIAGNOSTIC REPORT');
-    console.log('='.repeat(60));
+    logger.log('\n📋 GOOGLE SHEETS AUTHENTICATION DIAGNOSTIC REPORT');
+    logger.log('='.repeat(60));
 
     const critical = results.filter((r) => r.severity === 'critical');
     const warnings = results.filter((r) => r.severity === 'warning');
     const info = results.filter((r) => r.severity === 'info');
 
     if (critical.length === 0) {
-      console.log('✅ No critical issues found');
+      logger.log('✅ No critical issues found');
     } else {
-      console.log(`❌ ${critical.length} CRITICAL ISSUES FOUND:`);
+      logger.log(`❌ ${critical.length} CRITICAL ISSUES FOUND:`);
       critical.forEach((result, i) => {
-        console.log(`\n${i + 1}. ${result.issue}`);
-        console.log(`   Problem: ${result.description}`);
-        console.log(`   Solution: ${result.solution}`);
+        logger.log(`\n${i + 1}. ${result.issue}`);
+        logger.log(`   Problem: ${result.description}`);
+        logger.log(`   Solution: ${result.solution}`);
         if (result.detailsFound) {
-          console.log(
+          logger.log(
             `   Details: ${JSON.stringify(result.detailsFound, null, 2)}`
           );
         }
@@ -316,41 +317,41 @@ export class GoogleSheetsDiagnostics {
     }
 
     if (warnings.length > 0) {
-      console.log(`\n⚠️  ${warnings.length} WARNINGS:`);
+      logger.log(`\n⚠️  ${warnings.length} WARNINGS:`);
       warnings.forEach((result, i) => {
-        console.log(`${i + 1}. ${result.issue}: ${result.description}`);
+        logger.log(`${i + 1}. ${result.issue}: ${result.description}`);
       });
     }
 
     if (info.length > 0) {
-      console.log(`\n💡 ${info.length} INFO:`);
+      logger.log(`\n💡 ${info.length} INFO:`);
       info.forEach((result, i) => {
-        console.log(`${i + 1}. ${result.issue}: ${result.description}`);
+        logger.log(`${i + 1}. ${result.issue}: ${result.description}`);
       });
     }
 
-    console.log('\n🔧 NEXT STEPS:');
+    logger.log('\n🔧 NEXT STEPS:');
     if (critical.length > 0) {
-      console.log('1. Fix all CRITICAL issues listed above');
-      console.log('2. Restart the application to test the fixes');
-      console.log('3. Try a manual sync to verify functionality');
+      logger.log('1. Fix all CRITICAL issues listed above');
+      logger.log('2. Restart the application to test the fixes');
+      logger.log('3. Try a manual sync to verify functionality');
     } else {
-      console.log('1. Address any warnings if needed');
-      console.log('2. Authentication should be working - test manual sync');
+      logger.log('1. Address any warnings if needed');
+      logger.log('2. Authentication should be working - test manual sync');
     }
 
-    console.log('\n📍 Google Cloud Console Links:');
-    console.log(
+    logger.log('\n📍 Google Cloud Console Links:');
+    logger.log(
       '- Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts'
     );
-    console.log(
+    logger.log(
       '- API Credentials: https://console.cloud.google.com/apis/credentials'
     );
-    console.log(
+    logger.log(
       '- Sheets API: https://console.cloud.google.com/apis/library/sheets.googleapis.com'
     );
 
-    console.log('='.repeat(60));
+    logger.log('='.repeat(60));
   }
 }
 

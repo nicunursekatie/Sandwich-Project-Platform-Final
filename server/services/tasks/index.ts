@@ -1,6 +1,7 @@
 import { logger } from '../../middleware/logger';
 import type { IStorage } from '../../storage';
 import { WebSocket } from 'ws';
+import { logger } from '../../utils/production-safe-logger';
 
 // Task Management Service
 // Business logic for task operations including assignment notifications and sync
@@ -55,10 +56,14 @@ export class TaskService implements ITaskService {
         const notification = await storage.createNotification({
           userId: assigneeId,
           type: 'task_assignment',
+          priority: 'medium',
           title: 'New Task Assignment',
-          content: `You have been assigned to task: ${taskTitle}`,
+          message: `You have been assigned to task: ${taskTitle}`,
+          category: 'tasks',
           relatedType: 'task',
           relatedId: taskId,
+          actionUrl: '/tasks',
+          actionText: 'View Task',
         });
 
         // Emit WebSocket notification if available
@@ -72,7 +77,7 @@ export class TaskService implements ITaskService {
           });
         }
       } catch (notificationError) {
-        console.error(
+        logger.error(
           `Error creating notification for user ${assigneeId}:`,
           notificationError
         );
@@ -100,14 +105,14 @@ export class TaskService implements ITaskService {
       const { triggerGoogleSheetsSync } = await import(
         '../../google-sheets-sync'
       );
-      console.log('Triggering Google Sheets sync after task status update...');
+      logger.log('Triggering Google Sheets sync after task status update...');
       setImmediate(() => {
         triggerGoogleSheetsSync().catch((error) => {
-          console.error('Google Sheets sync failed after task update:', error);
+          logger.error('Google Sheets sync failed after task update:', error);
         });
       });
     } catch (syncError) {
-      console.error('Error triggering Google Sheets sync:', syncError);
+      logger.error('Error triggering Google Sheets sync:', syncError);
       // Don't fail the task update if sync fails
     }
 
@@ -123,7 +128,7 @@ export class TaskService implements ITaskService {
     connectedClients: Map<string, WebSocket[]>
   ): void {
     try {
-      console.log(
+      logger.log(
         `Broadcasting task assignment notification to user: ${userId}`
       );
       const userClients = connectedClients.get(userId);
@@ -132,7 +137,7 @@ export class TaskService implements ITaskService {
         let sentCount = 0;
         userClients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
-            console.log(
+            logger.log(
               'Sending task assignment notification to client:',
               notificationData
             );
@@ -145,14 +150,14 @@ export class TaskService implements ITaskService {
             sentCount++;
           }
         });
-        console.log(
+        logger.log(
           `Sent task assignment notification to ${sentCount} clients for user ${userId}`
         );
       } else {
-        console.log(`No connected clients found for user ${userId}`);
+        logger.log(`No connected clients found for user ${userId}`);
       }
     } catch (error) {
-      console.error('Error broadcasting task assignment notification:', error);
+      logger.error('Error broadcasting task assignment notification:', error);
     }
   }
 }

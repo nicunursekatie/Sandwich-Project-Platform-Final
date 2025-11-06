@@ -3,13 +3,13 @@ run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
-channel = "stable-24_05"
-packages = ["chromium", "glib", "glibcLocales", "gtk3", "jq", "killall", "nss", "tree", "nano", "sqlite-interactive"]
+channel = "stable-22_11"
+packages = ["chromium", "glib", "glibcLocales", "gtk3", "jq", "killall", "nss", "tree", "nano", "sqlite-interactive", "zip"]
 
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+run = "NODE_ENV=production node dist/index.js"
 
 [[ports]]
 localPort = 80
@@ -118,4 +118,4 @@ args = "npm run dev"
 defaultBucketID = "replit-objstore-a7721532-5ea7-447a-83e7-dc6cdbc3d787"
 
 [agent]
-integrations = ["javascript_sendgrid==1.0.0"]
+integrations = ["javascript_sendgrid:1.0.0", "javascript_database:1.0.0", "twilio:1.0.0", "javascript_openai_ai_integrations:1.0.0"]

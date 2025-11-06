@@ -4,6 +4,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
+import {
   BarChart,
   Bar,
   XAxis,
@@ -21,6 +27,7 @@ import {
   Users2,
   Calendar,
   Trophy,
+  HelpCircle,
 } from 'lucide-react';
 import type { SandwichCollection } from '@shared/schema';
 import {
@@ -29,41 +36,41 @@ import {
   calculateActualWeeklyAverage,
   getRecordWeek,
   parseCollectionDate,
+  calculateYearlyBreakdown,
 } from '@/lib/analytics-utils';
 import { getCollectionMonthKey } from '@/lib/date-utils';
 import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/lib/logger';
 
 export default function AnalyticsDashboard() {
   // Get authenticated user - CRITICAL for API calls
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   
   // Force complete cache busting and debugging
   const [debugKey] = useState(() => `analytics-v4-${Date.now()}-${Math.random()}`);
   
-  console.log('\n🚀 ANALYTICS DASHBOARD v4 - COMPONENT LOADING:', debugKey);
-  console.log('🔐 Auth status:', { user: !!user, authLoading, userEmail: user?.email });
+  logger.log('\n🚀 ANALYTICS DASHBOARD v4 - COMPONENT LOADING:', debugKey);
+  logger.log('🔐 Auth status:', { user: !!user, authLoading, userEmail: user?.email });
   
   const { data: collections, isLoading: collectionsLoading } = useQuery<
     SandwichCollection[]
   >({
     queryKey: ['/api/sandwich-collections/all', debugKey], // Unique key per component instance
     queryFn: async () => {
-      console.log('\n🔄 ANALYTICS v4: Fetching collections with key:', debugKey);
+      logger.log('\n🔄 ANALYTICS v4: Fetching collections with key:', debugKey);
       const response = await fetch(`/api/sandwich-collections?limit=10000&cache=${Date.now()}`, {
         credentials: 'include',
       });
       if (!response.ok) {
-        console.error('❌ Failed to fetch collections:', response.status, response.statusText);
+        logger.error('❌ Failed to fetch collections:', response.status, response.statusText);
         throw new Error(`Failed to fetch collections: ${response.status}`);
       }
       const data = await response.json();
-      console.log('✅ ANALYTICS v4: Successfully fetched', data.collections?.length || 0, 'collections');
+      logger.log('✅ ANALYTICS v4: Successfully fetched', data.collections?.length || 0, 'collections');
       return data.collections || [];
     },
     enabled: !!user && !authLoading, // Only run when user is authenticated
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 2 * 60 * 1000, // 2 minutes - analytics need reasonable freshness but not aggressive refetching
     refetchOnWindowFocus: false,
   });
 
@@ -89,7 +96,7 @@ export default function AnalyticsDashboard() {
   const isLoading = authLoading || collectionsLoading || statsLoading || hostsLoading;
 
   const analyticsData = useMemo(() => {
-    console.log('\n📊 ANALYTICS v4 - COMPUTING DATA:', {
+    logger.log('\n📊 ANALYTICS v4 - COMPUTING DATA:', {
       collectionsCount: collections?.length || 0,
       hasStatsData: !!statsData,
       hasHostsData: !!hostsData,
@@ -97,7 +104,7 @@ export default function AnalyticsDashboard() {
     });
     
     if (!collections?.length || !statsData || !hostsData) {
-      console.log('⚠️ ANALYTICS v4: Missing required data, returning null');
+      logger.log('⚠️ ANALYTICS v4: Missing required data, returning null');
       return null;
     }
 
@@ -121,24 +128,20 @@ export default function AnalyticsDashboard() {
       {} as Record<string, { total: number; collections: number }>
     );
 
-    const topPerformer = Object.entries(hostStats).sort(
-      ([, a], [, b]) => b.total - a.total
-    )[0];
-
     // ===============================
     // BULLETPROOF ANALYTICS FIX v5 - FINAL COMPREHENSIVE SOLUTION
     // ===============================
-    console.log('\n🔥 ANALYTICS DASHBOARD v5 - BULLETPROOF FIX STARTING');
-    console.log('🆕 Debug Key:', debugKey);
-    console.log('📅 Current time:', new Date().toISOString());
-    console.log('📊 Total collections to process:', collections.length);
+    logger.log('\n🔥 ANALYTICS DASHBOARD v5 - BULLETPROOF FIX STARTING');
+    logger.log('🆕 Debug Key:', debugKey);
+    logger.log('📅 Current time:', new Date().toISOString());
+    logger.log('📊 Total collections to process:', collections.length);
     
     // Declare trendData outside try/catch for proper scoping
     let trendData: { month: string; sandwiches: number }[] = [];
     
     try {
       // STEP 1: DATA AGGREGATION - Build monthly totals with bulletproof calculation
-      console.log('\n📊 STEP 1: AGGREGATING MONTHLY DATA');
+      logger.log('\n📊 STEP 1: AGGREGATING MONTHLY DATA');
       
       const monthlyTotals: Record<string, number> = {};
       let totalProcessed = 0;
@@ -148,14 +151,14 @@ export default function AnalyticsDashboard() {
       collections.forEach((collection, index) => {
         const dateStr = collection.collectionDate;
         if (!dateStr) {
-          console.log(`⚠️ Skipping collection ${index}: No date`);
+          logger.log(`⚠️ Skipping collection ${index}: No date`);
           return;
         }
         
         // Extract YYYY-MM from date string (bulletproof parsing)
         const monthKey = getCollectionMonthKey(dateStr);
         if (!monthKey) {
-          console.log(`⚠️ Skipping collection ${index}: Invalid date format: ${dateStr}`);
+          logger.log(`⚠️ Skipping collection ${index}: Invalid date format: ${dateStr}`);
           return;
         }
         
@@ -177,7 +180,7 @@ export default function AnalyticsDashboard() {
           august2025Count++;
           
           if (august2025Count <= 3) { // Log first 3 for debugging
-            console.log(`🎆 August 2025 collection ${august2025Count}:`, {
+            logger.log(`🎆 August 2025 collection ${august2025Count}:`, {
               date: dateStr,
               host: collection.hostName,
               individual,
@@ -189,24 +192,24 @@ export default function AnalyticsDashboard() {
         }
       });
       
-      console.log('📊 Processed', totalProcessed, 'collections');
-      console.log('📅 Found data for months:', Object.keys(monthlyTotals).sort());
-      console.log('🎯 August 2025 VERIFICATION:');
-      console.log('  - Collections found:', august2025Count);
-      console.log('  - Total calculated:', august2025Total.toLocaleString());
-      console.log('  - Expected total: 26,009');
-      console.log('  - Match status:', august2025Total === 26009 ? '✅ EXACT MATCH' : '❌ MISMATCH');
+      logger.log('📊 Processed', totalProcessed, 'collections');
+      logger.log('📅 Found data for months:', Object.keys(monthlyTotals).sort());
+      logger.log('🎯 August 2025 VERIFICATION:');
+      logger.log('  - Collections found:', august2025Count);
+      logger.log('  - Total calculated:', august2025Total.toLocaleString());
+      logger.log('  - Expected total: 26,009');
+      logger.log('  - Match status:', august2025Total === 26009 ? '✅ EXACT MATCH' : '❌ MISMATCH');
       
       // STEP 2: TIMELINE GENERATION - Create bulletproof chronological sequence
-      console.log('\n📈 STEP 2: GENERATING BULLETPROOF TIMELINE (EXCLUDING CURRENT MONTH)');
+      logger.log('\n📈 STEP 2: GENERATING BULLETPROOF TIMELINE (EXCLUDING CURRENT MONTH)');
       
       const today = new Date();
       const currentYear = today.getFullYear();
       const currentMonth = today.getMonth(); // 0-based: September = 8
       
-      console.log('📅 Reference date:', today.toISOString().split('T')[0]);
-      console.log('📅 Current year:', currentYear, '| Current month (0-based):', currentMonth);
-      console.log('🚫 EXCLUDING current month to prevent incomplete data trend');
+      logger.log('📅 Reference date:', today.toISOString().split('T')[0]);
+      logger.log('📅 Current year:', currentYear, '| Current month (0-based):', currentMonth);
+      logger.log('🚫 EXCLUDING current month to prevent incomplete data trend');
       
       // Generate 12 months chronologically: [oldest ... newest] - EXCLUDING current month
       const chartData: { month: string; sandwiches: number }[] = [];
@@ -233,13 +236,13 @@ export default function AnalyticsDashboard() {
           sandwiches: monthTotal
         });
         
-        console.log(`📅 Position ${i + 1}/12: ${displayName} (${monthKey}) = ${monthTotal.toLocaleString()} sandwiches`);
+        logger.log(`📅 Position ${i + 1}/12: ${displayName} (${monthKey}) = ${monthTotal.toLocaleString()} sandwiches`);
       }
       
       // STEP 3: VERIFICATION - Ensure timeline is correct
-      console.log('\n🔍 STEP 3: FINAL VERIFICATION');
-      console.log('📅 Timeline order: [OLDEST] ' + chartData.map(d => d.month).join(' → ') + ' [NEWEST]');
-      console.log('🎯 Chart data length:', chartData.length);
+      logger.log('\n🔍 STEP 3: FINAL VERIFICATION');
+      logger.log('📅 Timeline order: [OLDEST] ' + chartData.map(d => d.month).join(' → ') + ' [NEWEST]');
+      logger.log('🎯 Chart data length:', chartData.length);
       
       // Check for August 2025 in chart data
       const augustChartEntry = chartData.find(d => {
@@ -249,25 +252,25 @@ export default function AnalyticsDashboard() {
       });
       
       if (augustChartEntry) {
-        console.log('🎯 August 2025 in chart:', augustChartEntry.month, '=', augustChartEntry.sandwiches.toLocaleString());
+        logger.log('🎯 August 2025 in chart:', augustChartEntry.month, '=', augustChartEntry.sandwiches.toLocaleString());
         if (augustChartEntry.sandwiches === 26009) {
-          console.log('✅ AUGUST DATA PERFECT MATCH!');
+          logger.log('✅ AUGUST DATA PERFECT MATCH!');
         } else {
-          console.log('❌ AUGUST DATA MISMATCH! Expected: 26,009, Got:', augustChartEntry.sandwiches);
+          logger.log('❌ AUGUST DATA MISMATCH! Expected: 26,009, Got:', augustChartEntry.sandwiches);
         }
       } else {
-        console.log('⚠️ August 2025 not found in chart data');
+        logger.log('⚠️ August 2025 not found in chart data');
       }
       
       trendData = chartData;
       
-      console.log('\n✅ BULLETPROOF ANALYTICS v5 COMPLETE!');
-      console.log('🚀 Timeline fixed: Chronological order verified');
-      console.log('🚀 August data fixed: Total verified');
-      console.log('🚀 Ready for chart rendering\n');
+      logger.log('\n✅ BULLETPROOF ANALYTICS v5 COMPLETE!');
+      logger.log('🚀 Timeline fixed: Chronological order verified');
+      logger.log('🚀 August data fixed: Total verified');
+      logger.log('🚀 Ready for chart rendering\n');
       
     } catch (error) {
-      console.error('❌ ANALYTICS v5 ERROR:', error);
+      logger.error('❌ ANALYTICS v5 ERROR:', error);
       // Fallback to empty data to prevent crashes
       trendData = Array.from({ length: 12 }, (_, i) => ({
         month: `Month ${i + 1}`,
@@ -275,15 +278,16 @@ export default function AnalyticsDashboard() {
       }));
     }
 
-    // Top performing hosts
-    const topHosts = Object.entries(hostStats)
-      .sort(([, a], [, b]) => b.total - a.total)
-      .slice(0, 10)
-      .map(([name, stats]) => ({
-        name: name.length > 20 ? name.substring(0, 20) + '...' : name,
-        total: stats.total,
-        collections: stats.collections,
-      }));
+    // Calculate yearly breakdown
+    const yearlyBreakdown = calculateYearlyBreakdown(collections);
+
+    logger.log('\n📅 YEARLY BREAKDOWN CALCULATED:');
+    yearlyBreakdown.forEach(year => {
+      let msg = `  ${year.year}: ${year.totalSandwiches.toLocaleString()} sandwiches (${year.totalCollections} collections)`;
+      if (year.isPeakYear) msg += ' - PEAK';
+      if (year.isIncomplete) msg += ' - incomplete';
+      logger.log(msg);
+    });
 
     return {
       totalSandwiches,
@@ -292,12 +296,9 @@ export default function AnalyticsDashboard() {
       totalHosts,
       activeHosts,
       avgWeekly: calculateActualWeeklyAverage(collections), // Calculate actual weekly average from real weekly buckets
-      topPerformer: topPerformer
-        ? { name: topPerformer[0], total: topPerformer[1].total }
-        : null,
       recordWeek: getRecordWeek(collections), // Get actual best performing week
       trendData,
-      topHosts,
+      yearlyBreakdown,
     };
   }, [collections, statsData, hostsData]);
 
@@ -344,16 +345,30 @@ export default function AnalyticsDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-brand-primary mb-2">
-          ANALYTICS DASHBOARD
-        </h1>
-        <p className="text-lg text-[#646464]">
-          Data insights and impact visualization
-        </p>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-6 lg:space-y-8 min-w-0 overflow-hidden">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-brand-primary">
+              ANALYTICS DASHBOARD
+            </h1>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                  <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold mb-1">Analytics Dashboard Help</p>
+                <p className="text-sm">View comprehensive data insights including total sandwiches delivered, weekly trends, host performance metrics, and impact statistics over different time periods.</p>
+              </TooltipContent>
+            </UITooltip>
+          </div>
+          <p className="text-lg text-[#646464]">
+            Data insights and impact visualization
+          </p>
+        </div>
 
       {/* Period Selection Buttons */}
       <div className="flex justify-center gap-2 mb-4">
@@ -384,55 +399,55 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <Trophy className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-brand-primary/10 text-brand-primary text-sm">
               500K Goal
             </Badge>
           </div>
-          <div className="text-3xl font-bold text-brand-primary mb-2">
+          <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
             {(analyticsData.totalSandwiches / 1000000).toFixed(2)}M
           </div>
           <p className="text-[#646464] font-medium">Total Impact</p>
           <p className="text-sm text-brand-primary mt-2">2025 Goal: 15K of 500K</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <TrendingUp className="h-8 w-8 text-brand-primary" />
-            <Badge className="bg-blue-100 text-blue-700 text-sm">
+            <Badge className="bg-brand-primary-light text-brand-primary text-sm">
               Weekly Avg
             </Badge>
           </div>
-          <div className="text-3xl font-bold text-brand-primary mb-2">
+          <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
             {analyticsData.avgWeekly.toLocaleString()}
           </div>
           <p className="text-[#646464] font-medium">Per Week</p>
           <p className="text-sm text-green-600 mt-2">↑ vs last month</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <Award className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-brand-orange/20 text-brand-orange text-sm">
               Record
             </Badge>
           </div>
-          <div className="text-3xl font-bold text-brand-primary mb-2">
+          <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
             {analyticsData.recordWeek.total.toLocaleString()}
           </div>
           <p className="text-[#646464] font-medium">Best Week</p>
           <p className="text-sm text-[#646464] mt-2">11/14/2023</p>
         </div>
 
-        <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
+        <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
           <div className="flex items-center justify-between mb-4">
             <Users2 className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-teal-100 text-teal-700 text-sm">Network</Badge>
           </div>
-          <div className="text-3xl font-bold text-brand-primary mb-2">
+          <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
             {analyticsData.totalHosts}
           </div>
           <p className="text-[#646464] font-medium">Total Hosts</p>
@@ -442,7 +457,7 @@ export default function AnalyticsDashboard() {
       {/* Period Summary Section */}
       <div className="bg-white rounded-lg p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all mt-8">
         <h2 className="text-2xl font-bold text-brand-primary mb-4">
-          {periodLabels[selectedPeriod] || 'Period Summary'}
+          {(periodLabels as any)[selectedPeriod] || 'Period Summary'}
         </h2>
         <div className="space-y-4">
               <div className="bg-brand-orange/10 p-4 rounded-lg border border-brand-orange/30">
@@ -486,6 +501,65 @@ export default function AnalyticsDashboard() {
             </div>
       </div>
 
+      {/* Yearly Breakdown Section */}
+      <Card className="border-2 border-brand-primary/20">
+        <div className="p-6 border-b">
+          <h3 className="text-xl font-semibold text-brand-primary flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Yearly Breakdown
+          </h3>
+          <p className="text-[#646464] mt-1">
+            Annual sandwich totals since founding
+          </p>
+        </div>
+        <CardContent className="p-6">
+          <div className="space-y-3">
+            {analyticsData.yearlyBreakdown && analyticsData.yearlyBreakdown.length > 0 ? (
+              analyticsData.yearlyBreakdown.map((yearData) => (
+                <div
+                  key={yearData.year}
+                  className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+                    yearData.isPeakYear
+                      ? 'bg-brand-orange/10 border-brand-orange/30'
+                      : yearData.isIncomplete
+                      ? 'bg-yellow-50 border-yellow-300'
+                      : 'bg-white border-brand-primary/20'
+                  } hover:shadow-md transition-all`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl font-bold text-brand-primary">
+                      {yearData.year}
+                    </div>
+                    {yearData.isPeakYear && (
+                      <Badge className="bg-brand-orange text-white">
+                        PEAK YEAR
+                      </Badge>
+                    )}
+                    {yearData.isIncomplete && (
+                      <Badge className="bg-yellow-500 text-white">
+                        Incomplete
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-brand-primary">
+                      {yearData.totalSandwiches.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-[#646464]">
+                      {yearData.totalCollections} collections
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-[#646464] py-8">
+                No yearly data available
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Charts Section - Vertical Layout */}
       <div className="space-y-8">
         {/* Monthly Trends - Full Width */}
@@ -498,23 +572,32 @@ export default function AnalyticsDashboard() {
             <p className="text-[#646464] mt-1">
               Monthly collection performance - Timeline & August data corrected
             </p>
-            <p className="text-xs text-blue-600 mt-1">
+            <p className="text-xs text-brand-primary-muted mt-1">
               Debug: {debugKey} | Data points: {analyticsData?.trendData?.length || 0}
             </p>
           </div>
-          <CardContent className="p-6">
-            <div className="h-96">
+          <CardContent className="p-4 lg:p-6">
+            <div className="h-64 sm:h-80 lg:h-96 xl:h-[28rem]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={analyticsData.trendData}>
+                <LineChart data={analyticsData.trendData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke="var(--color-brand-primary)"
                     opacity={0.2}
                   />
-                  <XAxis dataKey="month" stroke="var(--color-brand-primary)" fontSize={12} />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="var(--color-brand-primary)" 
+                    fontSize={10}
+                    className="text-xs"
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
                   <YAxis
                     stroke="var(--color-brand-primary)"
-                    fontSize={12}
+                    fontSize={10}
+                    width={40}
                     tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
                   />
                   <Tooltip
@@ -597,5 +680,6 @@ export default function AnalyticsDashboard() {
         </Card>
       </div>
     </div>
+    </TooltipProvider>
   );
 }

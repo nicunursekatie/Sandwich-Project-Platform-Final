@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SANDWICH_TYPES } from './constants';
+import { logger } from '@/lib/logger';
 
 // Simple inline sandwich types interface
 interface SandwichType {
@@ -70,7 +71,7 @@ const SandwichTypesSelector = ({
           }
         }
       } catch (error) {
-        console.warn('Error parsing sandwich types:', error);
+        logger.warn('Error parsing sandwich types:', error);
       }
     }
   }, [defaultValue]);

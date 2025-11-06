@@ -6,6 +6,7 @@ import {
   sendWeeklyReminderSMS,
   validateSMSConfig,
 } from '../sms-service';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
@@ -48,7 +49,7 @@ router.get('/sms-config', async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error checking SMS config:', error);
+    logger.error('Error checking SMS config:', error);
     res.status(500).json({ error: 'Failed to check SMS configuration' });
   }
 });
@@ -76,7 +77,7 @@ router.get('/phone-gateway/health', async (req, res) => {
     const healthResult = await (provider as any).healthCheck();
     res.json(healthResult);
   } catch (error) {
-    console.error('Error performing phone gateway health check:', error);
+    logger.error('Error performing phone gateway health check:', error);
     res.status(500).json({ 
       error: 'Failed to perform health check',
       message: (error as Error).message 
@@ -107,7 +108,7 @@ router.get('/phone-gateway/device-info', async (req, res) => {
     const deviceResult = await (provider as any).getDeviceInfo();
     res.json(deviceResult);
   } catch (error) {
-    console.error('Error getting phone gateway device info:', error);
+    logger.error('Error getting phone gateway device info:', error);
     res.status(500).json({ 
       error: 'Failed to get device info',
       message: (error as Error).message 
@@ -169,7 +170,7 @@ router.get('/weekly-status/:weeksAgo', async (req, res) => {
       reportingCount: locationStatus.size,
     });
   } catch (error) {
-    console.error('Error getting weekly status:', error);
+    logger.error('Error getting weekly status:', error);
     res.status(500).json({ error: 'Failed to get weekly status' });
   }
 });
@@ -177,11 +178,29 @@ router.get('/weekly-status/:weeksAgo', async (req, res) => {
 // Get multi-week report
 router.get('/multi-week-report/:weeks', async (req, res) => {
   try {
-    const weeks = parseInt(req.params.weeks, 10);
-    const reports = [];
+    const numWeeks = parseInt(req.params.weeks, 10);
+    const weekReports = [];
+    const locationStats: { [location: string]: { submitted: number; missed: number } } = {};
 
-    for (let i = 0; i < weeks; i++) {
-      // Calculate date range for each week
+    // Get all expected locations
+    const expectedLocations = [
+      'East Cobb/Roswell',
+      'Dunwoody/PTC',
+      'Alpharetta',
+      'Sandy Springs',
+      'Intown/Druid Hills',
+      'Dacula',
+      'Flowery Branch',
+      'Collective Learning',
+    ];
+
+    // Initialize stats for all locations
+    expectedLocations.forEach((location) => {
+      locationStats[location] = { submitted: 0, missed: 0 };
+    });
+
+    // Generate report for each week
+    for (let i = 0; i < numWeeks; i++) {
       const now = new Date();
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay() - i * 7);
@@ -191,30 +210,74 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      // Get all collections and filter for the week
-      const allCollections = await storage.getSandwichCollections(1000, 0);
-      const collections = allCollections.filter((c: any) => {
-        const collDate = new Date(c.collectionDate);
-        return collDate >= startOfWeek && collDate <= endOfWeek;
+      // Get submission status for this week
+      const submissionStatus = await checkWeekSubmissions(startOfWeek);
+
+      // Update location stats
+      submissionStatus.forEach((status: any) => {
+        if (locationStats[status.location]) {
+          if (status.hasSubmitted) {
+            locationStats[status.location].submitted++;
+          } else {
+            locationStats[status.location].missed++;
+          }
+        }
       });
 
-      const weekData = {
-        week: i,
-        totalCollections: collections.length,
-        totalSandwiches: collections.reduce(
-          (sum: number, c: any) => sum + (c.individualSandwiches || 0),
-          0
-        ),
-        locationsReporting: new Set(collections.map((c: any) => c.hostName))
-          .size,
-      };
+      const weekLabel = i === 0 ? 'This Week' : i === 1 ? 'Last Week' : `${i} Weeks Ago`;
 
-      reports.push(weekData);
+      weekReports.push({
+        weekRange: {
+          startDate: startOfWeek,
+          endDate: endOfWeek,
+        },
+        weekLabel,
+        submissionStatus,
+      });
     }
 
-    res.json({ weeks: reports });
+    // Calculate summary statistics
+    const overallStats: { [location: string]: { submitted: number; missed: number; percentage: number } } = {};
+    Object.keys(locationStats).forEach((location) => {
+      const stats = locationStats[location];
+      const total = stats.submitted + stats.missed;
+      const percentage = total > 0 ? Math.round((stats.submitted / total) * 100) : 0;
+      overallStats[location] = {
+        submitted: stats.submitted,
+        missed: stats.missed,
+        percentage,
+      };
+    });
+
+    // Find most reliable (>=75% submission rate)
+    const mostReliable = Object.keys(overallStats)
+      .filter((location) => overallStats[location].percentage >= 75)
+      .sort((a, b) => overallStats[b].percentage - overallStats[a].percentage);
+
+    // Find most missing (sorted by number of missed weeks)
+    const mostMissing = Object.keys(overallStats)
+      .filter((location) => overallStats[location].missed > 0)
+      .sort((a, b) => overallStats[b].missed - overallStats[a].missed)
+      .slice(0, 5);
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - startDate.getDay() - (numWeeks - 1) * 7);
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() - endDate.getDay() + 6);
+
+    res.json({
+      reportPeriod: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
+      weeks: weekReports,
+      summary: {
+        totalWeeks: numWeeks,
+        locationsTracked: expectedLocations,
+        mostMissing,
+        mostReliable,
+        overallStats,
+      },
+    });
   } catch (error) {
-    console.error('Error getting multi-week report:', error);
+    logger.error('Error getting multi-week report:', error);
     res.status(500).json({ error: 'Failed to get multi-week report' });
   }
 });
@@ -292,7 +355,7 @@ router.get('/stats', async (req, res) => {
 
     res.json(stats);
   } catch (error) {
-    console.error('Error getting monitoring stats:', error);
+    logger.error('Error getting monitoring stats:', error);
     res.status(500).json({ error: 'Failed to get monitoring statistics' });
   }
 });
@@ -304,7 +367,7 @@ router.post('/check-now', async (req, res) => {
     // For now, just return success
     res.json({ success: true, message: 'Manual check completed' });
   } catch (error) {
-    console.error('Error running manual check:', error);
+    logger.error('Error running manual check:', error);
     res.status(500).json({ error: 'Failed to run manual check' });
   }
 });
@@ -319,7 +382,7 @@ router.post('/check-week/:weeksAgo', async (req, res) => {
       message: `Check completed for week ${weeksAgo}`,
     });
   } catch (error) {
-    console.error('Error checking week:', error);
+    logger.error('Error checking week:', error);
     res.status(500).json({ error: 'Failed to check week' });
   }
 });
@@ -349,7 +412,7 @@ router.post('/send-sms-reminders', async (req, res) => {
       totalFailed: failureCount,
     });
   } catch (error) {
-    console.error('Error sending SMS reminders:', error);
+    logger.error('Error sending SMS reminders:', error);
     res.status(500).json({ error: 'Failed to send SMS reminders' });
   }
 });
@@ -377,7 +440,7 @@ router.post('/send-sms-reminder/:location', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error sending SMS reminder:', error);
+    logger.error('Error sending SMS reminder:', error);
     res.status(500).json({ error: 'Failed to send SMS reminder' });
   }
 });
@@ -408,41 +471,154 @@ router.post('/test-sms', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error sending test SMS:', error);
+    logger.error('Error sending test SMS:', error);
     res.status(500).json({ error: 'Failed to send test SMS' });
   }
 });
 
-// Test email
+// Test email - sends a sample weekly monitoring email
 router.post('/test-email', async (req, res) => {
   try {
-    // This would send a test email
-    // For now, just return success
+    const { emailAddress } = req.body;
+    
+    if (!emailAddress) {
+      return res.status(400).json({ error: 'Email address is required' });
+    }
+
+    // Import required modules
+    const mailService = (await import('@sendgrid/mail')).default;
+    const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
+    
+    const previousWednesday = new Date();
+    previousWednesday.setDate(previousWednesday.getDate() - ((previousWednesday.getDay() + 4) % 7));
+    const weekLabel = previousWednesday.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    const loginUrl = 'https://sandwich-project-platform-final-katielong2316.replit.app/';
+    const emailSubject = `🥪 Friendly Reminder: Weekly Sandwich Collection Numbers`;
+    const contactName = 'Katie';
+    const location = 'Test Location';
+
+    const emailText = `Hi ${contactName}!
+
+Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for ${weekLabel} yet.
+
+When you have a moment, could you please log in to our app and submit your numbers? It only takes a minute and really helps us track our community impact.
+
+Login here: ${loginUrl}
+
+Thanks so much for all you do for The Sandwich Project! Your location makes such a difference in our community.
+
+Best regards,
+The Sandwich Project Team
+
+P.S. If you've already submitted or have any questions, feel free to reach out to us!`;
+
+    const emailHtml = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #236383; margin: 0; font-size: 24px;">🥪 The Sandwich Project</h1>
+            <p style="color: #6c757d; margin: 10px 0 0 0; font-size: 16px;">Friendly Weekly Reminder</p>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hi ${contactName}!</p>
+            
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet.</p>
+            
+            <div style="background: #e3f2fd; border-left: 4px solid #236383; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <p style="margin: 0; font-weight: 600; color: #236383;">Collection Date: ${weekLabel}</p>
+              <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 14px;">Location: ${location}</p>
+            </div>
+            
+            <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">When you have a moment, could you please log in to our app and submit your numbers? It only takes a minute and really helps us track our community impact.</p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${loginUrl}" style="background: #236383; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">Login to Submit Numbers</a>
+          </div>
+          
+          <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+            <p style="margin: 0 0 10px 0; font-size: 16px; line-height: 1.5;">Thanks so much for all you do for The Sandwich Project! Your location makes such a difference in our community.</p>
+            
+            <p style="margin: 0 0 10px 0; font-size: 16px; line-height: 1.5; font-weight: 600;">Best regards,<br>The Sandwich Project Team</p>
+            
+            <p style="margin: 0; font-size: 14px; color: #6c757d; font-style: italic;">P.S. If you've already submitted or have any questions, feel free to reach out to us!</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    await mailService.send({
+      to: emailAddress,
+      from: 'katie@thesandwichproject.org',
+      subject: emailSubject,
+      text: emailText,
+      html: emailHtml,
+    });
+
     res.json({
       success: true,
-      message: 'Test email functionality not yet implemented',
+      message: `Test email sent successfully to ${emailAddress}`,
     });
   } catch (error) {
-    console.error('Error sending test email:', error);
-    res.status(500).json({ error: 'Failed to send test email' });
+    logger.error('Error sending test email:', error);
+    res.status(500).json({ error: 'Failed to send test email', details: error.message });
   }
 });
 
-// Send email reminder to single location
+// Send email reminder to single location (query parameter version for frontend compatibility)
+router.post('/send-email-reminder', async (req, res) => {
+  try {
+    const location = req.query.location as string;
+
+    if (!location) {
+      return res.status(400).json({ error: 'Location parameter is required' });
+    }
+
+    // Import email service
+    const { sendWeeklyMonitoringReminder } = await import('../sendgrid');
+
+    // Send the email reminder
+    const result = await sendWeeklyMonitoringReminder(location);
+
+    res.json({
+      success: true,
+      location,
+      message: 'Email reminder sent successfully',
+      ...result
+    });
+  } catch (error) {
+    logger.error('Error sending email reminder:', error);
+    res.status(500).json({ error: 'Failed to send email reminder', details: error.message });
+  }
+});
+
+// Send email reminder to single location (path parameter version - legacy)
 router.post('/send-email-reminder/:location', async (req, res) => {
   try {
     const location = decodeURIComponent(req.params.location);
 
-    // This would send an email reminder
-    // For now, just return success
+    // Import email service
+    const { sendWeeklyMonitoringReminder } = await import('../sendgrid');
+
+    // Send the email reminder
+    const result = await sendWeeklyMonitoringReminder(location);
+
     res.json({
       success: true,
       location,
-      message: 'Email reminder functionality not yet implemented',
+      message: 'Email reminder sent successfully',
+      ...result
     });
   } catch (error) {
-    console.error('Error sending email reminder:', error);
-    res.status(500).json({ error: 'Failed to send email reminder' });
+    logger.error('Error sending email reminder:', error);
+    res.status(500).json({ error: 'Failed to send email reminder', details: error.message });
   }
 });
 

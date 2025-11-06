@@ -11,6 +11,7 @@
 
 import { storage } from '../../storage-wrapper';
 import type { User, Message, Project } from '../../../shared/schema';
+import { logger } from '../../utils/production-safe-logger';
 
 // TODO: Move messaging logic from messaging-service.ts and chat components
 export interface MessagingService {
@@ -136,8 +137,52 @@ export class MessagingServiceImpl implements MessagingService {
     messageIds: string[],
     userId: string
   ): Promise<boolean> {
-    // TODO: Implement mark messages as read
-    throw new Error('Not implemented');
+    try {
+      const { db } = await import('../../db');
+      const { chatMessageReads, chatMessages } = await import('../../../shared/schema');
+      const { inArray } = await import('drizzle-orm');
+      
+      if (!messageIds || messageIds.length === 0) {
+        return true;
+      }
+
+      // Convert string IDs to integers and filter valid ones
+      const numericIds = messageIds
+        .map(id => parseInt(String(id)))
+        .filter(id => !isNaN(id));
+
+      if (numericIds.length === 0) {
+        return true;
+      }
+
+      // Get channel for each message to include in read records
+      const messagesToMark = await db
+        .select({ id: chatMessages.id, channel: chatMessages.channel })
+        .from(chatMessages)
+        .where(inArray(chatMessages.id, numericIds));
+
+      // Insert read tracking records, ignore duplicates
+      for (const message of messagesToMark) {
+        try {
+          await db
+            .insert(chatMessageReads)
+            .values({
+              messageId: message.id,
+              userId: userId,
+              channel: message.channel,
+            })
+            .onConflictDoNothing();
+        } catch (err) {
+          // Silently handle duplicates - this is expected behavior
+          logger.log(`Message ${message.id} already marked as read for user ${userId}`);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      logger.error('Error marking messages as read:', error);
+      return false;
+    }
   }
 
   async createGroupConversation(

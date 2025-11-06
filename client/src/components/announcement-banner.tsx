@@ -100,7 +100,7 @@ export default function AnnouncementBanner() {
     if (type === 'alert') {
       return `${baseStyles} bg-orange-50 dark:bg-orange-950/20 border-brand-orange text-orange-900 dark:text-orange-200`;
     }
-    return `${baseStyles} bg-blue-50 dark:bg-blue-950/20 border-brand-primary text-brand-primary dark:text-blue-200`;
+    return `${baseStyles} bg-brand-primary-lighter dark:bg-blue-950/20 border-brand-primary text-brand-primary dark:text-brand-primary-muted`;
   };
 
   return (

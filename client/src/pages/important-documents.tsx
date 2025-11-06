@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -25,6 +25,8 @@ import { DocumentPreview } from '@/components/document-preview';
 import { ConfidentialDocuments } from '@/components/confidential-documents';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Dialog,
   DialogContent,
@@ -32,20 +34,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { logger } from '@/lib/logger';
 
-interface AdminDocument {
+export interface AdminDocument {
   id: string;
   name: string;
   description: string;
   category: string;
   path: string;
-  type: 'pdf' | 'docx' | 'xlsx' | 'link';
+  type: 'pdf' | 'docx' | 'xlsx' | 'link' | 'image';
   size?: string;
   lastModified?: string;
   importance: 'critical' | 'high' | 'normal';
 }
 
-const adminDocuments: AdminDocument[] = [
+export const adminDocuments: AdminDocument[] = [
   // Legal & Tax Documents
   {
     id: 'tax-exempt-letter',
@@ -110,7 +114,7 @@ const adminDocuments: AdminDocument[] = [
     name: 'Sandwich Sign-In Form',
     description: 'Simple sign-in form for tracking sandwich collection participants without requiring email addresses',
     category: 'Forms',
-    path: '/attached_assets/SandwichSigninNoEmail_1759447137962.pdf',
+    path: '/attached_assets/Sandwich Project - Sign In Sheet correct qrs.pdf',
     type: 'pdf',
     importance: 'high',
   },
@@ -167,8 +171,8 @@ const adminDocuments: AdminDocument[] = [
     id: 'deli-labels',
     name: 'Deli Labels',
     description: 'Official TSP labels for deli sandwich identification and tracking',
-    category: 'Tools',
-    path: '/attached_assets/Deli labels_1749341916236.pdf',
+    category: 'Labels & Printing',
+    path: '/attached_assets/Deli Labels_1756865384146.pdf',
     type: 'pdf',
     importance: 'high',
   },
@@ -176,7 +180,7 @@ const adminDocuments: AdminDocument[] = [
     id: 'pbj-labels',
     name: 'PBJ Labels',
     description: 'Labels and guidelines for peanut butter and jelly sandwiches',
-    category: 'Tools',
+    category: 'Labels & Printing',
     path: '/attached_assets/PBJ Labels_1756865384146.pdf',
     type: 'pdf',
     importance: 'high',
@@ -241,6 +245,15 @@ const adminDocuments: AdminDocument[] = [
     type: 'pdf',
     importance: 'high',
   },
+  {
+    id: 'uploaded-document-oct-22',
+    name: 'Important Document',
+    description: 'Recently uploaded reference document',
+    category: 'Legal & Tax',
+    path: '/attached_assets/900F2271-08DB-4E61-8E25-03D21F987178_1761090885143.jpeg',
+    type: 'image',
+    importance: 'high',
+  },
 ];
 
 const categories = ['All', 'Legal & Tax', 'Governance', 'Forms', 'Safety Guidelines', 'Labels & Printing', 'Sandwich Making', 'Reference Lists', 'Toolkit'];
@@ -303,12 +316,29 @@ export default function ImportantDocuments() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const { toast } = useToast();
   const { user, isLoading: isAuthLoading } = useAuth();
+  const { track } = useOnboardingTracker();
+  const { trackView, trackClick } = useActivityTracker();
   const [previewDocument, setPreviewDocument] = useState<AdminDocument | null>(
     null
   );
 
+  // Track page view for activity tracking
+  useEffect(() => {
+    trackView(
+      'Documents',
+      'Documents',
+      'Important Documents',
+      'User accessed important documents page'
+    );
+  }, [trackView]);
+
+  // Track page visit for onboarding challenge
+  useEffect(() => {
+    track('view_important_documents');
+  }, []);
+
   // Show confidential tab only to admin users
-  const hasConfidentialAccess = !!user && !isAuthLoading && 
+  const hasConfidentialAccess = !!user && !isAuthLoading &&
     (user.email === 'admin@sandwich.project' || user.email === 'katielong2316@gmail.com');
 
   const filteredDocuments = adminDocuments.filter(
@@ -392,7 +422,7 @@ export default function ImportantDocuments() {
         description: `${displayName} has been downloaded successfully.`,
       });
     } catch (error) {
-      console.error('Download failed:', error);
+      logger.error('Download failed:', error);
       toast({
         title: 'Download Failed',
         description: 'Failed to download logo. Please try again.',
@@ -417,7 +447,7 @@ export default function ImportantDocuments() {
         });
       } catch (error: any) {
         if (error.name !== 'AbortError') {
-          console.error('Share failed:', error);
+          logger.error('Share failed:', error);
           toast({
             title: 'Share Failed',
             description:
@@ -450,7 +480,7 @@ export default function ImportantDocuments() {
         description: `${displayName} has been copied to clipboard.`,
       });
     } catch (error) {
-      console.error('Copy failed:', error);
+      logger.error('Copy failed:', error);
       // Fallback to copying the URL
       const logoUrl = `${window.location.origin}/attached_assets/LOGOS/${filename}`;
       await navigator.clipboard.writeText(logoUrl);
@@ -467,7 +497,7 @@ export default function ImportantDocuments() {
         return (
           <Badge
             variant="secondary"
-            className="text-xs bg-blue-100 text-blue-800"
+            className="text-xs bg-brand-primary-light text-brand-primary-dark"
           >
             Important
           </Badge>
@@ -523,6 +553,8 @@ export default function ImportantDocuments() {
             <TabsTrigger
               value="logos"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+              data-tour="logos-tab"
+              data-testid="tab-logos"
             >
               <FileImage className="h-4 w-4" />
               Logos & Branding
@@ -558,6 +590,8 @@ export default function ImportantDocuments() {
                         ? 'px-6 py-3 text-sm font-medium bg-gradient-to-r from-brand-primary to-brand-primary-dark text-white border-0 shadow-[0_4px_12px_rgba(35,99,131,0.25),0_2px_4px_rgba(35,99,131,0.1)] transform hover:scale-[1.02] hover:shadow-[0_6px_20px_rgba(35,99,131,0.3),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg'
                         : 'px-6 py-3 text-sm font-medium border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] transform hover:scale-[1.02] hover:shadow-[0_4px_12px_rgba(35,99,131,0.15)] transition-all duration-200 ease-in-out rounded-lg'
                     }
+                    data-tour={`category-${category.toLowerCase().replace(/\s+/g, '-')}`}
+                    data-testid={`category-${category.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     {category}
                   </Button>
@@ -566,10 +600,11 @@ export default function ImportantDocuments() {
             </div>
 
             {/* Documents Grid - Professional design */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mb-16" data-testid="file-list">
               {filteredDocuments.map((doc) => (
                 <Card
                   key={doc.id}
+                  data-testid={`document-${doc.id}`}
                   className="group transition-all duration-300 ease-in-out h-full flex flex-col bg-white border-0 shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),0_8px_24px_rgba(35,99,131,0.04)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.08),0_16px_48px_rgba(35,99,131,0.08)] hover:-translate-y-2 rounded-lg overflow-hidden"
                 >
                   <CardHeader className="pb-6 flex-shrink-0 bg-gradient-to-r from-gray-50 to-white">

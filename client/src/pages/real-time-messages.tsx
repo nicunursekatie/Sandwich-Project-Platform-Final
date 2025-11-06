@@ -1,6 +1,19 @@
 import EmailStyleMessaging from '@/components/email-style-messaging';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
 
 export default function RealTimeMessages() {
+  const { trackView } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Messages',
+      'Messages',
+      'Real-Time Messages',
+      'User accessed real-time messages'
+    );
+  }, [trackView]);
+
   return (
     <div className="p-6">
       <div className="mb-6">

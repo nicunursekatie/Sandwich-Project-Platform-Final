@@ -49,6 +49,7 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronUp,
+  MessageSquare,
 } from 'lucide-react';
 import type { UseMutationResult, QueryClient } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
@@ -58,6 +59,8 @@ import type { ToastActionElement } from '@/components/ui/toast';
 import type { Meeting } from '../hooks/useMeetings';
 import type { Project, NewProjectData } from '../hooks/useProjects';
 import type { AgendaItem } from '../hooks/useAgenda';
+import { ProjectNotesHistory } from '../components/ProjectNotesHistory';
+import { logger } from '@/lib/logger';
 
 // Toast function type based on the useToast hook
 type ToastFunction = (props: {
@@ -250,7 +253,7 @@ export function AgendaPlanningTab({
       });
     },
     onError: (error: any) => {
-      console.error('Delete project error:', error);
+      logger.error('Delete project error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to delete project.',
@@ -259,20 +262,23 @@ export function AgendaPlanningTab({
     },
   });
 
-  // Archive project mutation
+  // Archive project mutation - uses proper /archive endpoint
   const archiveProjectMutation = useMutation({
     mutationFn: async (id: number) => {
       return await apiRequest('POST', `/api/projects/${id}/archive`);
     },
     onSuccess: () => {
+      // Invalidate both active and archived project queries
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/archived'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/for-review'] });
       toast({
         title: 'Project archived successfully!',
-        description: 'The project has been moved to the archive.',
+        description: 'The project has been moved to the archive and removed from active projects.',
       });
     },
     onError: (error: any) => {
-      console.error('Archive project error:', error);
+      logger.error('Archive project error:', error);
       toast({
         title: 'Error',
         description: error?.message || 'Failed to archive project.',
@@ -319,15 +325,19 @@ export function AgendaPlanningTab({
         // Only create note if there's meaningful content
         if (discussionPoints?.trim() || decisionItems?.trim()) {
           try {
-            await createNoteMutation.mutateAsync({
+            const noteData = {
               projectId: project.id,
               meetingId: selectedMeeting.id,
-              type: 'meeting',
+              type: 'meeting' as const,
               content: JSON.stringify(noteContent),
-              status: 'active',
-            });
+              status: 'active' as const,
+            };
+            logger.log('Creating note for project:', project.title, noteData);
+            await createNoteMutation.mutateAsync(noteData);
             notesCreated++;
+            logger.log('Successfully created note for:', project.title);
           } catch (error) {
+            logger.error('Failed to save notes for', project.title, error);
             errors.push(`Failed to save notes for ${project.title}`);
           }
         }
@@ -400,27 +410,46 @@ export function AgendaPlanningTab({
 
       // Show success message
       if (notesCreated > 0) {
+        // Clear the local text state first
+        setLocalProjectText({});
+        setSelectedProjectIds([]);
+        setProjectAgendaStatus({});
+        setMinimizedProjects(new Set());
+
+        // Now clear the database fields for the projects
+        const clearPromises = agendaProjects.map(async (project) => {
+          try {
+            await apiRequest('PATCH', `/api/projects/${project.id}`, {
+              meetingDiscussionPoints: '',
+              meetingDecisionItems: '',
+            });
+          } catch (error) {
+            logger.warn(`Failed to clear text for project ${project.id}:`, error);
+          }
+        });
+
+        // Also clear tabled projects
+        const tabledClearPromises = tabledProjects.map(async (project) => {
+          try {
+            await apiRequest('PATCH', `/api/projects/${project.id}`, {
+              meetingDiscussionPoints: '',
+              meetingDecisionItems: '',
+            });
+          } catch (error) {
+            logger.warn(`Failed to clear text for tabled project ${project.id}:`, error);
+          }
+        });
+
+        // Wait for all clears to complete
+        await Promise.all([...clearPromises, ...tabledClearPromises]);
+
+        // Refresh the projects data
+        queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+
         toast({
           title: 'Notes Saved Successfully',
           description: `Saved ${notesCreated} note(s) from this meeting. View them in the Notes tab.`,
         });
-
-        // Reset agenda planning page to normal state
-        setSelectedProjectIds([]);
-        setProjectAgendaStatus({});
-        setMinimizedProjects(new Set());
-        setLocalProjectText({});
-        
-        // Clear discussion text by resetting the parent component state
-        // This will clear all the text boxes for discussion points and decision items
-        if (resetAgendaPlanningMutation) {
-          try {
-            await resetAgendaPlanningMutation.mutateAsync();
-          } catch (resetError) {
-            // Reset mutation failed, but notes were saved successfully
-            console.warn('Failed to reset agenda planning text:', resetError);
-          }
-        }
       } else {
         toast({
           title: 'No Notes to Save',
@@ -735,7 +764,7 @@ export function AgendaPlanningTab({
                                     <Badge
                                       className={`text-xs font-medium shadow-sm ${
                                         agendaStatus === 'agenda'
-                                          ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-300 shadow-green-200'
+                                          ? 'bg-gradient-to-r from-[#47B3CB]/20 to-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/40 shadow-[#007E8C]/10'
                                           : agendaStatus === 'tabled'
                                             ? 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border-orange-300 shadow-orange-200'
                                             : needsDiscussion
@@ -808,13 +837,13 @@ export function AgendaPlanningTab({
                           data-testid={`card-project-expanded-${project.id}`}
                           className={`border-2 transition-all shadow-lg hover:shadow-xl ${
                             agendaStatus === 'agenda'
-                              ? 'border-green-400 bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 shadow-green-200'
+                              ? 'border-[#007E8C] bg-gradient-to-br from-[#47B3CB]/10 via-[#007E8C]/10 to-[#47B3CB]/20 shadow-[#007E8C]/20'
                               : agendaStatus === 'tabled'
                                 ? 'border-orange-400 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 shadow-orange-200'
                                 : needsDiscussion
                                   ? 'border-teal-400 bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-100 shadow-teal-200'
                                   : index % 2 === 0
-                                    ? 'border-blue-300 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 shadow-blue-200'
+                                    ? 'border-brand-primary-border-strong bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 shadow-slate-200'
                                     : 'border-purple-300 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 shadow-purple-200'
                           }`}
                         >
@@ -997,6 +1026,23 @@ export function AgendaPlanningTab({
                           <Separator />
 
                           <CardContent className="pt-4 space-y-4">
+                            {/* Visual indicator for notes from previous meetings */}
+                            {(project.meetingDiscussionPoints || project.meetingDecisionItems) && (
+                              <div className="bg-gradient-to-r from-[#47B3CB]/10 to-[#007E8C]/10 border-l-4 border-[#007E8C] p-3 rounded-r-lg">
+                                <div className="flex items-center gap-2">
+                                  <MessageSquare className="w-4 h-4 text-[#007E8C] flex-shrink-0" />
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-[#007E8C]">
+                                      📋 Notes from Previous Meeting
+                                    </p>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                      These discussion points were added from past meeting notes. You can edit them below.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Discussion Notes */}
                             <div className="space-y-4">
                               <div className="space-y-2">
@@ -1054,6 +1100,12 @@ export function AgendaPlanningTab({
                               </div>
                             </div>
 
+                            {/* Past Notes History for this Project */}
+                            <ProjectNotesHistory 
+                              projectId={project.id}
+                              projectTitle={project.title}
+                            />
+
                             {/* Agenda Actions */}
                             <div className="pt-4 space-y-4">
                               <div className="flex gap-2">
@@ -1069,8 +1121,8 @@ export function AgendaPlanningTab({
                                   data-testid={`button-send-to-agenda-${project.id}`}
                                   className={
                                     agendaStatus === 'agenda'
-                                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-green-300 shadow-md'
-                                      : 'border-green-400 text-green-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 shadow-green-200 shadow-sm'
+                                      ? 'bg-gradient-to-r from-[#007E8C] to-[#236383] hover:from-[#006B75] hover:to-[#1A4F5E] text-white shadow-[#007E8C]/30 shadow-md'
+                                      : 'border-[#007E8C] text-[#007E8C] hover:bg-gradient-to-r hover:from-[#47B3CB]/10 hover:to-[#007E8C]/10 shadow-[#007E8C]/20 shadow-sm'
                                   }
                                 >
                                   {agendaStatus === 'agenda' ? (
@@ -1427,10 +1479,10 @@ export function AgendaPlanningTab({
               onClick={async () => {
                 if (editingProject) {
                   try {
-                    console.log('=== SUPPORT PEOPLE UPDATE DEBUG ===');
-                    console.log('Project ID:', editingProject);
-                    console.log('Support People Value:', editSupportPeople);
-                    console.log(
+                    logger.log('=== SUPPORT PEOPLE UPDATE DEBUG ===');
+                    logger.log('Project ID:', editingProject);
+                    logger.log('Support People Value:', editSupportPeople);
+                    logger.log(
                       'Support People Length:',
                       editSupportPeople?.length
                     );
@@ -1444,7 +1496,7 @@ export function AgendaPlanningTab({
                       }
                     );
 
-                    console.log('API Response:', response);
+                    logger.log('API Response:', response);
                     queryClient.invalidateQueries({
                       queryKey: ['/api/projects'],
                     });
@@ -1455,10 +1507,10 @@ export function AgendaPlanningTab({
                     });
                     setShowEditPeopleDialog(false);
                   } catch (error: any) {
-                    console.error('=== SUPPORT PEOPLE ERROR ===');
-                    console.error('Error details:', error);
-                    console.error('Error message:', error?.message);
-                    console.error('Error response:', error?.response);
+                    logger.error('=== SUPPORT PEOPLE ERROR ===');
+                    logger.error('Error details:', error);
+                    logger.error('Error message:', error?.message);
+                    logger.error('Error response:', error?.response);
 
                     toast({
                       title: 'Error',
@@ -1514,9 +1566,9 @@ export function AgendaPlanningTab({
               onClick={async () => {
                 if (editingProject) {
                   try {
-                    console.log('=== PROJECT OWNER UPDATE DEBUG ===');
-                    console.log('Project ID:', editingProject);
-                    console.log('Project Owner Value:', editProjectOwner);
+                    logger.log('=== PROJECT OWNER UPDATE DEBUG ===');
+                    logger.log('Project ID:', editingProject);
+                    logger.log('Project Owner Value:', editProjectOwner);
 
                     const response = await apiRequest(
                       'PATCH',
@@ -1527,7 +1579,7 @@ export function AgendaPlanningTab({
                       }
                     );
 
-                    console.log('API Response:', response);
+                    logger.log('API Response:', response);
                     queryClient.invalidateQueries({
                       queryKey: ['/api/projects'],
                     });
@@ -1538,10 +1590,10 @@ export function AgendaPlanningTab({
                     });
                     setShowEditOwnerDialog(false);
                   } catch (error: any) {
-                    console.error('=== PROJECT OWNER ERROR ===');
-                    console.error('Error details:', error);
-                    console.error('Error message:', error?.message);
-                    console.error('Error response:', error?.response);
+                    logger.error('=== PROJECT OWNER ERROR ===');
+                    logger.error('Error details:', error);
+                    logger.error('Error message:', error?.message);
+                    logger.error('Error response:', error?.response);
 
                     toast({
                       title: 'Error',

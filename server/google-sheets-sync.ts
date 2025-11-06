@@ -4,6 +4,7 @@ import {
 } from './google-sheets-service';
 import type { IStorage } from './storage';
 import { Project } from '@shared/schema';
+import { logger } from './utils/production-safe-logger';
 
 export class GoogleSheetsSyncService {
   constructor(private storage: IStorage) {}
@@ -18,7 +19,7 @@ export class GoogleSheetsSyncService {
   }> {
     // Check if sync from sheets is in progress to prevent cycling
     if ((global as any).syncFromSheetsInProgress) {
-      console.log('⏸️ Skipping sync TO sheets - sync FROM sheets is in progress');
+      logger.log('⏸️ Skipping sync TO sheets - sync FROM sheets is in progress');
       return {
         success: true,
         message: 'Skipped - sync from sheets in progress',
@@ -65,7 +66,7 @@ export class GoogleSheetsSyncService {
         synced: projects.length,
       };
     } catch (error) {
-      console.error('Error syncing to Google Sheets:', error);
+      logger.error('Error syncing to Google Sheets:', error);
       return {
         success: false,
         message: `Failed to sync: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -93,7 +94,7 @@ export class GoogleSheetsSyncService {
 
     try {
       // Set a sync lock to prevent re-triggering sync to sheets
-      console.log('🔒 Starting sync FROM Google Sheets - sync lock activated');
+      logger.log('🔒 Starting sync FROM Google Sheets - sync lock activated');
       (global as any).syncFromSheetsInProgress = true;
 
       // Read from Google Sheets
@@ -105,6 +106,7 @@ export class GoogleSheetsSyncService {
 
       // Get all projects once to track which ones should be archived
       const existingProjects = await this.storage.getAllProjects();
+      const archivedProjects = await this.storage.getArchivedProjects();
       const sheetProjectTitles = new Set(
         sheetRows
           .filter(row => row.project)
@@ -126,6 +128,18 @@ export class GoogleSheetsSyncService {
             p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
         );
 
+        // Check if this project was previously archived - if so, skip re-creating it
+        const wasArchived = archivedProjects.find(
+          (p) =>
+            p.originalProjectId?.toString() === row.rowIndex?.toString() ||
+            p.title.toLowerCase().trim() === row.project.toLowerCase().trim()
+        );
+
+        if (wasArchived && !existingProject) {
+          logger.log(`⏭️  Skipping archived project "${row.project}" - previously archived, not re-creating`);
+          continue;
+        }
+
         const projectData = this.sheetRowToProject(row);
 
         if (existingProject) {
@@ -143,7 +157,7 @@ export class GoogleSheetsSyncService {
           if (lastUpdated > oneHourAgo) {
             // Project was updated recently, preserve local status changes
             delete preservedData.status;
-            console.log(`🔒 Preserving recent local status change for project "${existingProject.title}" (status: ${existingProject.status})`);
+            logger.log(`🔒 Preserving recent local status change for project "${existingProject.title}" (status: ${existingProject.status})`);
           }
 
           // Update existing project but preserve meeting content and recent status changes
@@ -191,7 +205,7 @@ export class GoogleSheetsSyncService {
 
         // If project was synced from sheets but is no longer there, archive it
         if (!titleMatch && !rowIdMatch && project.status !== 'archived') {
-          console.log(`📦 Archiving project "${project.title}" - no longer in Google Sheets`);
+          logger.log(`📦 Archiving project "${project.title}" - no longer in Google Sheets`);
           const user = {
             id: 'google-sheets-sync',
             fullName: 'Google Sheets Sync',
@@ -204,7 +218,7 @@ export class GoogleSheetsSyncService {
 
       // Clear sync lock
       (global as any).syncFromSheetsInProgress = false;
-      console.log('✅ Sync FROM Google Sheets complete - sync lock released');
+      logger.log('✅ Sync FROM Google Sheets complete - sync lock released');
 
       return {
         success: true,
@@ -216,7 +230,7 @@ export class GoogleSheetsSyncService {
     } catch (error) {
       // Clear sync lock on error too
       (global as any).syncFromSheetsInProgress = false;
-      console.error('Error syncing from Google Sheets:', error);
+      logger.error('Error syncing from Google Sheets:', error);
       return {
         success: false,
         message: `Failed to sync: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -244,7 +258,7 @@ export class GoogleSheetsSyncService {
     }
 
     try {
-      console.log('🔄 Starting true bidirectional sync with hash-based change detection...');
+      logger.log('🔄 Starting true bidirectional sync with hash-based change detection...');
       
       // Get all meeting projects from database (those with googleSheetRowId)
       const allProjects = await this.storage.getAllProjects();
@@ -301,10 +315,10 @@ export class GoogleSheetsSyncService {
 
           if (hasAppChanges && hasSheetChanges) {
             // Conflict detected - use conflict resolution
-            console.log(`⚠️ Conflict detected for project "${dbProject.title}"`);
+            logger.log(`⚠️ Conflict detected for project "${dbProject.title}"`);
             
             const conflict = sheetsService.resolveConflict(appRowWithMeta, sheetRowWithMeta);
-            console.log(`🔧 Conflict resolution: ${conflict.winner} wins - ${conflict.reason}`);
+            logger.log(`🔧 Conflict resolution: ${conflict.winner} wins - ${conflict.reason}`);
             
             syncStats.conflicts++;
             
@@ -335,7 +349,7 @@ export class GoogleSheetsSyncService {
             }
           } else if (hasAppChanges) {
             // App has changes, sheet doesn't - push to sheet
-            console.log(`📤 Pushing app changes to sheet for project "${dbProject.title}"`);
+            logger.log(`📤 Pushing app changes to sheet for project "${dbProject.title}"`);
             await this.updateSheetRow(sheetsService, appRowWithMeta, sheetRow.rowIndex!);
             syncStats.appToSheetUpdates++;
             
@@ -346,7 +360,7 @@ export class GoogleSheetsSyncService {
             });
           } else if (hasSheetChanges) {
             // Sheet has changes, app doesn't - pull from sheet
-            console.log(`📥 Pulling sheet changes to app for project "${dbProject.title}"`);
+            logger.log(`📥 Pulling sheet changes to app for project "${dbProject.title}"`);
             await this.updateProjectFromSheetRow(dbProject, sheetRowWithMeta);
             syncStats.sheetToAppUpdates++;
             
@@ -358,7 +372,7 @@ export class GoogleSheetsSyncService {
           }
         } else {
           // New project from sheet - create in database
-          console.log(`➕ Creating new project from sheet: "${sheetRow.project}"`);
+          logger.log(`➕ Creating new project from sheet: "${sheetRow.project}"`);
           const projectData = this.sheetRowToProject(sheetRow);
           const newProject = await this.storage.createProject({
             title: projectData.title || 'Untitled Project',
@@ -383,7 +397,7 @@ export class GoogleSheetsSyncService {
 
       const message = `✅ Bidirectional sync complete: ${syncStats.conflicts} conflicts (${syncStats.appWins} app wins, ${syncStats.sheetWins} sheet wins), ${syncStats.appToSheetUpdates} app→sheet, ${syncStats.sheetToAppUpdates} sheet→app, ${syncStats.newFromSheet} new from sheet, ${syncStats.noChanges} unchanged`;
       
-      console.log(message);
+      logger.log(message);
       
       return {
         success: true,
@@ -391,7 +405,7 @@ export class GoogleSheetsSyncService {
         details: syncStats,
       };
     } catch (error) {
-      console.error('Error in bidirectional sync:', error);
+      logger.error('Error in bidirectional sync:', error);
       return {
         success: false,
         message: `Bidirectional sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -481,7 +495,7 @@ export class GoogleSheetsSyncService {
 
         if (taskItem.status && taskItem.status !== existingTask.status) {
           updateData.status = taskItem.status;
-          console.log(
+          logger.log(
             `📝 Updating task "${taskItem.title}" status from "${existingTask.status}" to "${taskItem.status}"`
           );
         }
@@ -492,7 +506,7 @@ export class GoogleSheetsSyncService {
         ) {
           updateData.assigneeName = taskItem.assignee;
           updateData.assigneeNames = [taskItem.assignee];
-          console.log(
+          logger.log(
             `👤 Updating task "${taskItem.title}" assignee to "${taskItem.assignee}"`
           );
         }
@@ -502,7 +516,7 @@ export class GoogleSheetsSyncService {
           existingTask.description &&
           existingTask.description.includes('Meeting Discussion Notes:')
         ) {
-          console.log(
+          logger.log(
             `🔒 Preserving meeting discussion content for task "${taskItem.title}"`
           );
         }
@@ -512,7 +526,7 @@ export class GoogleSheetsSyncService {
         }
       } else {
         // Create new task (basic version from sheet)
-        console.log(
+        logger.log(
           `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'pending'}"`
         );
         await this.storage.createProjectTask({
@@ -534,11 +548,11 @@ export class GoogleSheetsSyncService {
           existingTask.description &&
           existingTask.description.includes('Meeting Discussion Notes:')
         ) {
-          console.log(
+          logger.log(
             `🔒 Preserving meeting-generated task "${existingTask.title}"`
           );
         } else {
-          console.log(
+          logger.log(
             `🗑️ Removing task "${existingTask.title}" as it's no longer in the sheet`
           );
           await this.storage.deleteProjectTask(existingTask.id);
@@ -582,7 +596,7 @@ export class GoogleSheetsSyncService {
 
         if (taskItem.status && taskItem.status !== existingTask.status) {
           updateData.status = taskItem.status;
-          console.log(
+          logger.log(
             `📝 Updating task "${taskItem.title}" status from "${existingTask.status}" to "${taskItem.status}"`
           );
         }
@@ -593,7 +607,7 @@ export class GoogleSheetsSyncService {
         ) {
           updateData.assigneeName = taskItem.assignee;
           updateData.assigneeNames = [taskItem.assignee];
-          console.log(
+          logger.log(
             `👤 Updating task "${taskItem.title}" assignee to "${taskItem.assignee}"`
           );
         }
@@ -603,7 +617,7 @@ export class GoogleSheetsSyncService {
         }
       } else {
         // Create new task
-        console.log(
+        logger.log(
           `➕ Creating new task "${taskItem.title}" with status "${taskItem.status || 'pending'}"`
         );
         await this.storage.createProjectTask({
@@ -620,7 +634,7 @@ export class GoogleSheetsSyncService {
     // Remove tasks that are no longer in the sheet
     for (const existingTask of existingTasks) {
       if (!processedTaskTitles.has(existingTask.title)) {
-        console.log(
+        logger.log(
           `🗑️ Removing task "${existingTask.title}" as it's no longer in the sheet`
         );
         await this.storage.deleteProjectTask(existingTask.id);
@@ -716,7 +730,7 @@ export class GoogleSheetsSyncService {
         const date = new Date(excelEpoch.getTime() + serialNumber * millisecondsPerDay);
         
         if (isNaN(date.getTime())) {
-          console.error(
+          logger.error(
             `❌ CRITICAL: Invalid Excel serial number from Google Sheets: "${dateString}"`
           );
           return undefined;
@@ -728,7 +742,7 @@ export class GoogleSheetsSyncService {
         const day = String(date.getDate()).padStart(2, '0');
         const isoString = `${year}-${month}-${day}`;
 
-        console.log(`✅ Converted Excel serial number "${dateString}" to: ${isoString}`);
+        logger.log(`✅ Converted Excel serial number "${dateString}" to: ${isoString}`);
         return isoString;
       } else {
         // Try parsing common formats: MM/DD/YYYY, M/D/YYYY, YYYY-MM-DD
@@ -737,7 +751,7 @@ export class GoogleSheetsSyncService {
 
         // Check if it's a valid date
         if (isNaN(date.getTime())) {
-          console.error(
+          logger.error(
             `❌ CRITICAL: Invalid date format from Google Sheets: "${dateString}"`
           );
           return undefined;
@@ -749,11 +763,11 @@ export class GoogleSheetsSyncService {
         const day = String(date.getDate()).padStart(2, '0');
         const isoString = `${year}-${month}-${day}`;
 
-        console.log(`✅ Parsed date "${dateString}" to: ${isoString}`);
+        logger.log(`✅ Parsed date "${dateString}" to: ${isoString}`);
         return isoString;
       }
     } catch (error) {
-      console.error(`❌ CRITICAL: Failed to parse date "${dateString}":`, error);
+      logger.error(`❌ CRITICAL: Failed to parse date "${dateString}":`, error);
       return undefined;
     }
   }
@@ -937,22 +951,22 @@ export async function triggerGoogleSheetsSync(): Promise<void> {
     const { storage } = await import('./storage-wrapper');
     const syncService = getGoogleSheetsSyncService(storage as any);
 
-    console.log('🔄 Starting automatic Google Sheets sync...');
+    logger.log('🔄 Starting automatic Google Sheets sync...');
     const result = await syncService.syncToGoogleSheets();
 
     if (result.success) {
-      console.log(`✅ Google Sheets sync completed: ${result.message}`);
+      logger.log(`✅ Google Sheets sync completed: ${result.message}`);
     } else {
-      console.error(`❌ Google Sheets sync failed: ${result.message}`);
+      logger.error(`❌ Google Sheets sync failed: ${result.message}`);
     }
   } catch (error) {
-    console.error('Error during Google Sheets sync trigger:', error);
+    logger.error('Error during Google Sheets sync trigger:', error);
   }
 }
 
 // Test function to verify status mapping fix
 export function testStatusMappingFix(): void {
-  console.log('🧪 Testing status mapping fix...');
+  logger.log('🧪 Testing status mapping fix...');
   
   // Create a mock sync service instance for testing
   const mockStorage = {} as any;
@@ -985,25 +999,25 @@ export function testStatusMappingFix(): void {
     
     const sheetRow = (syncService as any).projectToSheetRow(mockProject, []);
     
-    console.log(`📤 App -> Sheet: ${testCase.status} (review: ${testCase.reviewInNextMeeting}) -> Status: "${sheetRow.status}", Review: "${sheetRow.reviewStatus}"`);
+    logger.log(`📤 App -> Sheet: ${testCase.status} (review: ${testCase.reviewInNextMeeting}) -> Status: "${sheetRow.status}", Review: "${sheetRow.reviewStatus}"`);
     
     // Test sheet -> app conversion
     const convertedProject = (syncService as any).sheetRowToProject(sheetRow);
     
-    console.log(`📥 Sheet -> App: Status: "${sheetRow.status}", Review: "${sheetRow.reviewStatus}" -> ${convertedProject.status} (review: ${convertedProject.reviewInNextMeeting})`);
+    logger.log(`📥 Sheet -> App: Status: "${sheetRow.status}", Review: "${sheetRow.reviewStatus}" -> ${convertedProject.status} (review: ${convertedProject.reviewInNextMeeting})`);
     
     // Verify round-trip preservation
     const statusPreserved = convertedProject.status === testCase.status;
     const reviewPreserved = convertedProject.reviewInNextMeeting === testCase.reviewInNextMeeting;
     
     if (statusPreserved && reviewPreserved) {
-      console.log(`✅ Round-trip test PASSED for ${testCase.status}`);
+      logger.log(`✅ Round-trip test PASSED for ${testCase.status}`);
     } else {
-      console.error(`❌ Round-trip test FAILED for ${testCase.status}: expected ${testCase.status}/${testCase.reviewInNextMeeting}, got ${convertedProject.status}/${convertedProject.reviewInNextMeeting}`);
+      logger.error(`❌ Round-trip test FAILED for ${testCase.status}: expected ${testCase.status}/${testCase.reviewInNextMeeting}, got ${convertedProject.status}/${convertedProject.reviewInNextMeeting}`);
     }
     
-    console.log('---');
+    logger.log('---');
   }
   
-  console.log('🧪 Status mapping test complete');
+  logger.log('🧪 Status mapping test complete');
 }

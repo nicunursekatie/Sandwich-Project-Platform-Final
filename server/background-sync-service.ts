@@ -2,8 +2,10 @@ import type { IStorage } from './storage';
 import { GoogleSheetsSyncService } from './google-sheets-sync';
 import { getEventRequestsGoogleSheetsService } from './google-sheets-event-requests-sync';
 import { db } from './db.js';
-import { sql } from 'drizzle-orm';
+import { sql, and, or, eq, lt, isNull, isNotNull } from 'drizzle-orm';
+import { eventRequests } from '@shared/schema';
 import { createServiceLogger } from './utils/logger.js';
+import { logger } from './utils/production-safe-logger';
 
 const syncLogger = createServiceLogger('background-sync');
 
@@ -19,27 +21,33 @@ export class BackgroundSyncService {
    */
   start() {
     if (this.isRunning) {
-      console.log('⚠ Background sync already running');
+      logger.log('⚠ Background sync already running');
       return;
     }
 
-    console.log('🚀 Starting background Google Sheets sync service...');
-    console.log('🛡️ PROTECTED: Now using permanent external_id blacklist system');
-    console.log('🔒 GUARANTEE: External_ids will NEVER be imported twice, even after deletion');
+    logger.log('🚀 Starting background Google Sheets sync service...');
+    logger.log('🛡️ PROTECTED: Now using permanent external_id blacklist system');
+    logger.log('🔒 GUARANTEE: External_ids will NEVER be imported twice, even after deletion');
     this.isRunning = true;
 
-    // Run sync immediately on startup
-    this.performSync();
+    // Run sync immediately on startup with error handling
+    this.performSync().catch((error) => {
+      syncLogger.error('Initial background sync failed', { error });
+      logger.error('❌ Initial background sync failed:', error);
+    });
 
     // Set up recurring sync every 5 minutes
     this.syncInterval = setInterval(
       () => {
-        this.performSync();
+        this.performSync().catch((error) => {
+          syncLogger.error('Scheduled background sync failed', { error });
+          logger.error('❌ Scheduled background sync failed:', error);
+        });
       },
       5 * 60 * 1000
     ); // 5 minutes
 
-    console.log('✅ Background sync service started - syncing every 5 minutes with blacklist protection');
+    logger.log('✅ Background sync service started - syncing every 5 minutes with blacklist protection');
   }
 
   /**
@@ -51,7 +59,7 @@ export class BackgroundSyncService {
       this.syncInterval = null;
     }
     this.isRunning = false;
-    console.log('🛑 Background sync service stopped');
+    logger.log('🛑 Background sync service stopped');
   }
 
   /**
@@ -80,7 +88,7 @@ export class BackgroundSyncService {
       syncLogger.info('Background sync acquired lock - starting execution', {
         lockKey: SYNC_LOCK_KEY
       });
-      console.log('📊 Starting automated background sync...');
+      logger.log('📊 Starting automated background sync...');
 
       try {
         // Sync Projects from Google Sheets
@@ -97,7 +105,7 @@ export class BackgroundSyncService {
           lockKey: SYNC_LOCK_KEY,
           duration: `${duration}ms`
         });
-        console.log('✅ Background sync completed successfully');
+        logger.log('✅ Background sync completed successfully');
 
       } catch (syncError) {
         const duration = Date.now() - startTime;
@@ -106,7 +114,7 @@ export class BackgroundSyncService {
           duration: `${duration}ms`,
           error: syncError
         });
-        console.error('❌ Background sync failed:', syncError);
+        logger.error('❌ Background sync failed:', syncError);
 
       } finally {
         // Always release the lock when done
@@ -119,7 +127,7 @@ export class BackgroundSyncService {
         lockKey: SYNC_LOCK_KEY,
         error: coordinationError
       });
-      console.error('❌ Background sync coordination failed:', coordinationError);
+      logger.error('❌ Background sync coordination failed:', coordinationError);
     }
   }
 
@@ -132,14 +140,14 @@ export class BackgroundSyncService {
       const result = await projectSyncService.bidirectionalSync();
 
       if (result.success) {
-        console.log(
+        logger.log(
           `📋 Projects sync: ${result.updated || 0} updated, ${result.created || 0} created`
         );
       } else {
-        console.log('⚠ Projects sync skipped:', result.message);
+        logger.log('⚠ Projects sync skipped:', result.message);
       }
     } catch (error) {
-      console.error('❌ Projects sync error:', error);
+      logger.error('❌ Projects sync error:', error);
     }
   }
 
@@ -153,7 +161,7 @@ export class BackgroundSyncService {
       );
 
       if (!eventRequestsSyncService) {
-        console.log(
+        logger.log(
           '⚠ Event requests sync skipped: Google Sheets service not configured'
         );
         return;
@@ -162,93 +170,79 @@ export class BackgroundSyncService {
       const result = await eventRequestsSyncService.syncFromGoogleSheets();
 
       if (result.success) {
-        console.log(
+        logger.log(
           `📝 Event requests sync: ${result.updated || 0} updated, ${result.created || 0} created`
         );
       } else {
-        console.log('⚠ Event requests sync skipped:', result.message);
+        logger.log('⚠ Event requests sync skipped:', result.message);
       }
     } catch (error) {
-      console.error('❌ Event requests sync error:', error);
+      logger.error('❌ Event requests sync error:', error);
     }
   }
 
   /**
    * Auto-transition scheduled events to completed if their date has passed
    * Events only transition the night after they end, not on the day of the event
+   * 
+   * Uses direct database query to avoid storage layer mismatches
    */
   private async autoTransitionPastEvents() {
     try {
       syncLogger.info('Starting auto-transition of past events');
       
-      // Get all scheduled event requests
-      const allEventRequests = await this.storage.getAllEventRequests();
-      const scheduledEvents = allEventRequests.filter(event => event.status === 'scheduled');
-      
-      if (scheduledEvents.length === 0) {
-        syncLogger.debug('No scheduled events found for auto-transition');
-        return;
-      }
-
+      // Calculate cutoff date: events should transition at start of day AFTER they occur
+      // If event is Sept 30, it transitions Oct 1 at 00:00 (start of next day)
+      // Use UTC to ensure timezone consistency with database
       const now = new Date();
+      const cutoffDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
       
-      let transitionedCount = 0;
+      syncLogger.debug('Auto-transition cutoff calculation', {
+        now: now.toISOString(),
+        cutoffDate: cutoffDate.toISOString(),
+        cutoffUTC: `${cutoffDate.getUTCFullYear()}-${String(cutoffDate.getUTCMonth() + 1).padStart(2, '0')}-${String(cutoffDate.getUTCDate()).padStart(2, '0')}`,
+        explanation: 'Events with date < cutoffDate (strictly before today) will be transitioned to completed'
+      });
       
-      for (const event of scheduledEvents) {
-        // Determine the actual event date: prioritize scheduledEventDate, fallback to desiredEventDate
-        const eventDate = event.scheduledEventDate || event.desiredEventDate;
-        
-        if (!eventDate) {
-          syncLogger.debug('Skipping event with no date information', {
-            eventId: event.id,
-            organizationName: event.organizationName
-          });
-          continue;
-        }
-
-        // Create the event end date by adding 1 day to account for the event lasting the full day
-        const eventEndDate = new Date(eventDate);
-        eventEndDate.setDate(eventEndDate.getDate() + 1);
-        eventEndDate.setHours(0, 0, 0, 0); // Start of the day after the event
-        
-        // Only transition if we're past the end of the day after the event
-        if (now >= eventEndDate) {
-          try {
-            await this.storage.updateEventRequest(event.id, {
-              status: 'completed',
-              updatedAt: new Date()
-            });
-            
-            transitionedCount++;
-            syncLogger.info('Auto-transitioned past event', {
-              eventId: event.id,
-              organizationName: event.organizationName,
-              originalEventDate: eventDate,
-              eventEndDate: eventEndDate,
-              scheduledEventDate: event.scheduledEventDate,
-              desiredEventDate: event.desiredEventDate,
-              fromStatus: 'scheduled',
-              toStatus: 'completed'
-            });
-          } catch (updateError) {
-            syncLogger.error('Failed to auto-transition event', {
-              eventId: event.id,
-              error: updateError
-            });
-          }
-        }
-      }
+      // Use direct database query to ensure we get authoritative data
+      // WHERE logic: Prefer scheduledEventDate when present, fallback to desiredEventDate
+      // This prevents premature completion of rescheduled events with old desiredEventDate
+      // Use strict lt (<) not lte (<=) to prevent same-day transitions
+      const transitionedEvents = await db
+        .update(eventRequests)
+        .set({
+          status: 'completed',
+          updatedAt: now
+        })
+        .where(
+          and(
+            eq(eventRequests.status, 'scheduled'),
+            or(
+              and(isNotNull(eventRequests.scheduledEventDate), lt(eventRequests.scheduledEventDate, cutoffDate)),
+              and(isNull(eventRequests.scheduledEventDate), lt(eventRequests.desiredEventDate, cutoffDate))
+            )
+          )
+        )
+        .returning();
       
-      if (transitionedCount > 0) {
-        console.log(`🗓️ Auto-transitioned ${transitionedCount} past events from scheduled to completed`);
-        syncLogger.info('Auto-transition completed', { transitionedCount });
+      if (transitionedEvents.length > 0) {
+        logger.log(`🗓️ Auto-transitioned ${transitionedEvents.length} past events from scheduled to completed`);
+        syncLogger.info('Auto-transition completed', {
+          transitionedCount: transitionedEvents.length,
+          events: transitionedEvents.map(e => ({
+            id: e.id,
+            organizationName: e.organizationName,
+            scheduledEventDate: e.scheduledEventDate,
+            desiredEventDate: e.desiredEventDate
+          }))
+        });
       } else {
         syncLogger.debug('No past events found to transition');
       }
       
     } catch (error) {
       syncLogger.error('Auto-transition of past events failed', { error });
-      console.error('❌ Auto-transition of past events failed:', error);
+      logger.error('❌ Auto-transition of past events failed:', error);
     }
   }
 

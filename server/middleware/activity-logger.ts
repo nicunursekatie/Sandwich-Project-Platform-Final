@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import type { IStorage } from '../storage';
+import { logger } from '../utils/production-safe-logger';
 
 interface ActivityLoggerOptions {
   storage: IStorage;
@@ -35,7 +36,14 @@ const routeToSectionAndFeature: Record<
   '/api/messages': { section: 'Communication', feature: 'Messaging' },
   '/api/conversations': { section: 'Communication', feature: 'Conversations' },
   '/api/user-activity': { section: 'Analytics', feature: 'Activity Analytics' },
-  '/api/suggestions': { section: 'Suggestions', feature: 'Suggestion Portal' },
+  '/api/wishlist-suggestions': {
+    section: 'Wishlist',
+    feature: 'Wishlist Suggestions',
+  },
+  '/api/wishlist-activity': {
+    section: 'Wishlist',
+    feature: 'Wishlist Activity',
+  },
   '/api/auth': { section: 'Authentication', feature: 'Login/Logout' },
   '/api/reports': { section: 'Reports', feature: 'Report Generation' },
   '/api/work-logs': { section: 'Work Log', feature: 'Time Tracking' },
@@ -77,6 +85,11 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
       '/api/messaging/unread',
       '/unread',
       '/api/user-activity', // Don't log activity API calls themselves
+      '/api/enhanced-user-activity', // Don't log enhanced analytics API calls
+      '/api/notifications/counts', // Skip notification polling
+      '/count', // Skip all count endpoints - they're background polling
+      '/stats', // Skip all stats endpoints - they're background data fetches
+      '/kudos/unnotified', // Skip kudos polling for unnotified entries
     ];
 
     const shouldSkip =
@@ -91,7 +104,7 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
     const originalEnd = res.end;
 
     // Override end method to log after response
-    res.end = function (chunk?: any, encoding?: any) {
+    (res as any).end = function (this: Response, chunk?: any, encoding?: any) {
       // Log the activity after response is sent
       setImmediate(async () => {
         try {
@@ -100,12 +113,12 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
 
           // Only log missing user context for API calls (not static assets)
           if (!user?.id && req.path.startsWith('/api/')) {
-            console.log(
+            logger.log(
               `🚨 Activity Logger: No user context for ${req.method} ${req.path}`
             );
-            console.log(`   - req.user exists: ${!!user}`);
-            console.log(`   - Session user exists: ${!!sessionUser}`);
-            console.log(`   - Status code: ${res.statusCode}`);
+            logger.log(`   - req.user exists: ${!!user}`);
+            logger.log(`   - Session user exists: ${!!sessionUser}`);
+            logger.log(`   - Status code: ${res.statusCode}`);
           }
 
           if (user?.id && res.statusCode < 400) {
@@ -145,6 +158,9 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
               } else if (req.path.includes('/user-management')) {
                 section = 'Admin';
                 feature = 'User Management';
+              } else if (req.path.includes('/event-requests') && req.path.includes('/toolkit-sent')) {
+                section = 'Event Requests';
+                feature = 'Toolkit Sent';
               } else {
                 // Extract meaningful names from path
                 const pathParts = req.path
@@ -352,7 +368,7 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
             // Activity logged silently
           }
         } catch (error) {
-          console.error('Error logging user activity:', error);
+          logger.error('Error logging user activity:', error);
         }
       });
 

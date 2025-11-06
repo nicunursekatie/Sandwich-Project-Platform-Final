@@ -49,9 +49,9 @@ interface ContextualTooltipProps {
 const typeConfig = {
   info: {
     icon: <Info className="w-4 h-4" />,
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    textColor: 'text-blue-900',
+    bgColor: 'bg-brand-primary-lighter',
+    borderColor: 'border-brand-primary-border',
+    textColor: 'text-brand-primary-darker',
     iconColor: 'text-brand-primary',
   },
   tip: {

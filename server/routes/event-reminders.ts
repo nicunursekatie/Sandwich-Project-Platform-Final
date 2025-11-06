@@ -1,11 +1,10 @@
 import express from 'express';
-import type { IStorage } from '../storage';
+import type { RouterDependencies } from '../types';
+import { logger } from '../utils/production-safe-logger';
 
-export function createEventRemindersRoutes(
-  isAuthenticated: any,
-  storage: IStorage
-) {
+export function createEventRemindersRouter(deps: RouterDependencies) {
   const router = express.Router();
+  const { storage, isAuthenticated } = deps;
 
   // Get all event reminders
   router.get('/', isAuthenticated, async (req: any, res: any) => {
@@ -13,7 +12,7 @@ export function createEventRemindersRoutes(
       const reminders = await storage.getAllEventReminders(req.user?.id);
       res.json(reminders);
     } catch (error) {
-      console.error('Error getting event reminders:', error);
+      logger.error('Error getting event reminders:', error);
       res.status(500).json({ error: 'Failed to get event reminders' });
     }
   });
@@ -24,7 +23,7 @@ export function createEventRemindersRoutes(
       const count = await storage.getEventRemindersCount(req.user?.id);
       res.json({ count });
     } catch (error) {
-      console.error('Error getting event reminders count:', error);
+      logger.error('Error getting event reminders count:', error);
       res
         .status(500)
         .json({ error: 'Failed to get event reminders count', count: 0 });
@@ -40,9 +39,29 @@ export function createEventRemindersRoutes(
         createdBy: req.user?.id,
       };
       const reminder = await storage.createEventReminder(reminderData);
+
+      // Create notification for the user
+      try {
+        await storage.createNotification({
+          userId: req.user?.id,
+          type: 'event_reminder',
+          priority: 'high',
+          title: 'Event Reminder Created',
+          message: `Reminder set for: ${reminderData.title || 'Upcoming Event'}`,
+          category: 'events',
+          relatedType: 'event_reminder',
+          relatedId: reminder.id,
+          actionUrl: '/event-requests',
+          actionText: 'View Events',
+        });
+      } catch (notifError) {
+        logger.error('Failed to create notification for event reminder:', notifError);
+        // Don't fail the reminder creation if notification fails
+      }
+
       res.status(201).json(reminder);
     } catch (error) {
-      console.error('Error creating event reminder:', error);
+      logger.error('Error creating event reminder:', error);
       res.status(500).json({ error: 'Failed to create event reminder' });
     }
   });
@@ -62,7 +81,7 @@ export function createEventRemindersRoutes(
       }
       res.json(reminder);
     } catch (error) {
-      console.error('Error updating event reminder:', error);
+      logger.error('Error updating event reminder:', error);
       res.status(500).json({ error: 'Failed to update event reminder' });
     }
   });
@@ -77,7 +96,7 @@ export function createEventRemindersRoutes(
       }
       res.status(204).send();
     } catch (error) {
-      console.error('Error deleting event reminder:', error);
+      logger.error('Error deleting event reminder:', error);
       res.status(500).json({ error: 'Failed to delete event reminder' });
     }
   });
@@ -85,4 +104,5 @@ export function createEventRemindersRoutes(
   return router;
 }
 
-export default createEventRemindersRoutes;
+// Backwards compatibility export
+export default createEventRemindersRouter;

@@ -10,7 +10,8 @@ import {
 import { MoreHorizontal, Edit2, Trash2, Check, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { usePermissions } from '@/hooks/useResourcePermissions';
+import { PERMISSIONS } from '@shared/auth-utils';
 
 export interface ChatMessage {
   id: string;
@@ -34,11 +35,12 @@ export default function ChatMessageComponent({
   onDelete,
 }: ChatMessageProps) {
   const { user } = useAuth();
+  const { USERS_EDIT } = usePermissions(['USERS_EDIT']);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
 
   const isOwnMessage = user?.id === message.userId;
-  const isAdmin = hasPermission(user, PERMISSIONS.USERS_EDIT);
+  const isAdmin = USERS_EDIT;
   const canEdit = isOwnMessage;
   const canDelete = isOwnMessage || isAdmin;
 

@@ -14,6 +14,7 @@ import {
   type InsertKudosTracking,
 } from '@shared/schema';
 import { NotificationService } from '../notification-service';
+import { logger } from '../utils/production-safe-logger';
 
 export interface MessageWithSender extends Message {
   senderName?: string;
@@ -32,8 +33,9 @@ export interface SendMessageParams {
   senderId: string;
   recipientIds: string[];
   content: string;
-  contextType?: 'suggestion' | 'project' | 'task' | 'direct';
+  contextType?: 'suggestion' | 'project' | 'task' | 'event' | 'graphic' | 'expense' | 'collection' | 'direct';
   contextId?: string;
+  contextTitle?: string;
   parentMessageId?: number;
 }
 
@@ -54,6 +56,7 @@ export class MessagingService {
       content,
       contextType,
       contextId,
+      contextTitle,
       parentMessageId,
     } = params;
 
@@ -82,6 +85,7 @@ export class MessagingService {
           sender: senderName,
           contextType,
           contextId,
+          contextTitle,
         })
         .returning();
 
@@ -99,12 +103,12 @@ export class MessagingService {
 
       // Trigger notifications (don't await - let it run async)
       this.triggerNotifications(message, recipientIds).catch((error) => {
-        console.error('Failed to send notifications:', error);
+        logger.error('Failed to send notifications:', error);
       });
 
       return message;
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
       throw error;
     }
   }
@@ -153,7 +157,7 @@ export class MessagingService {
         senderEmail: row.senderEmail || undefined,
       }));
     } catch (error) {
-      console.error('Failed to get unread messages:', error);
+      logger.error('Failed to get unread messages:', error);
       throw error;
     }
   }
@@ -173,7 +177,7 @@ export class MessagingService {
         .limit(1);
 
       if (messageInfo.length === 0) {
-        console.log(`Message ${messageId} not found`);
+        logger.log(`Message ${messageId} not found`);
         return false;
       }
 
@@ -181,7 +185,7 @@ export class MessagingService {
 
       // If current user is the sender, don't update read status (sender messages are always "read")
       if (senderId === userId) {
-        console.log(
+        logger.log(
           `User ${userId} is sender of message ${messageId} - no read update needed`
         );
         return true; // Return true since sender doesn't need to mark their own message as read
@@ -201,12 +205,12 @@ export class MessagingService {
           )
         );
 
-      console.log(
+      logger.log(
         `Marked message ${messageId} as read for recipient ${userId}`
       );
       return true;
     } catch (error) {
-      console.error('Failed to mark message as read:', error);
+      logger.error('Failed to mark message as read:', error);
       return false;
     }
   }
@@ -253,7 +257,7 @@ export class MessagingService {
             );
         }
 
-        console.log(
+        logger.log(
           `Marked ${messageIds.length} messages as read for recipient ${userId} in context ${contextType}`
         );
         return messageIds.length;
@@ -290,13 +294,13 @@ export class MessagingService {
             );
         }
 
-        console.log(
+        logger.log(
           `Marked ${messageIds.length} total messages as read for recipient ${userId}`
         );
         return messageIds.length;
       }
     } catch (error) {
-      console.error('Failed to mark all messages as read:', error);
+      logger.error('Failed to mark all messages as read:', error);
       throw error;
     }
   }
@@ -341,10 +345,10 @@ export class MessagingService {
         }
       });
 
-      console.log(`Unread counts by context for user ${userId}:`, result);
+      logger.log(`Unread counts by context for user ${userId}:`, result);
       return result;
     } catch (error) {
-      console.error('Failed to get unread counts by context:', error);
+      logger.error('Failed to get unread counts by context:', error);
       throw error;
     }
   }
@@ -388,7 +392,7 @@ export class MessagingService {
         senderEmail: row.senderEmail || undefined,
       }));
     } catch (error) {
-      console.error('Failed to get context messages:', error);
+      logger.error('Failed to get context messages:', error);
       throw error;
     }
   }
@@ -447,7 +451,7 @@ export class MessagingService {
 
       return updatedMessage;
     } catch (error) {
-      console.error('Failed to edit message:', error);
+      logger.error('Failed to edit message:', error);
       throw error;
     }
   }
@@ -491,7 +495,7 @@ export class MessagingService {
 
       return true;
     } catch (error) {
-      console.error('Failed to delete message:', error);
+      logger.error('Failed to delete message:', error);
       return false;
     }
   }
@@ -548,7 +552,7 @@ export class MessagingService {
           );
       }
     } catch (error) {
-      console.error('Failed to sync context permissions:', error);
+      logger.error('Failed to sync context permissions:', error);
       throw error;
     }
   }
@@ -582,7 +586,7 @@ export class MessagingService {
         .limit(1);
 
       if (recipientExists.length === 0) {
-        console.error(
+        logger.error(
           `Kudos recipient not found in users table: ${recipientId}`
         );
         throw new Error(
@@ -631,7 +635,7 @@ export class MessagingService {
 
       return { message, alreadySent: false };
     } catch (error) {
-      console.error('Failed to send kudos:', error);
+      logger.error('Failed to send kudos:', error);
       throw error;
     }
   }
@@ -660,7 +664,7 @@ export class MessagingService {
 
       return result[0]?.count > 0;
     } catch (error) {
-      console.error('Failed to check kudos status:', error);
+      logger.error('Failed to check kudos status:', error);
       return false;
     }
   }
@@ -714,7 +718,7 @@ export class MessagingService {
 
       return { count: messageIds.length };
     } catch (error) {
-      console.error('Failed to mark kudos as read:', error);
+      logger.error('Failed to mark kudos as read:', error);
       throw error;
     }
   }
@@ -807,7 +811,7 @@ export class MessagingService {
               isRead: messageResult.isRead || false,
             };
           } catch (error) {
-            console.error(
+            logger.error(
               `Error fetching kudos message ${entry.messageId}:`,
               error
             );
@@ -819,7 +823,7 @@ export class MessagingService {
       // Filter out null results and return
       return kudosMessages.filter(Boolean);
     } catch (error) {
-      console.error('Failed to get received kudos:', error);
+      logger.error('Failed to get received kudos:', error);
       throw error;
     }
   }
@@ -881,7 +885,7 @@ export class MessagingService {
         readAt: msg.readAt || undefined,
       }));
     } catch (error) {
-      console.error('Failed to get all messages:', error);
+      logger.error('Failed to get all messages:', error);
       throw error;
     }
   }
@@ -936,7 +940,7 @@ export class MessagingService {
         read: true, // All sent messages are "read" from sender's perspective
       }));
     } catch (error) {
-      console.error('Failed to get sent messages:', error);
+      logger.error('Failed to get sent messages:', error);
       throw error;
     }
   }
@@ -998,7 +1002,7 @@ export class MessagingService {
         readAt: msg.readAt || undefined,
       }));
     } catch (error) {
-      console.error('Failed to get inbox messages:', error);
+      logger.error('Failed to get inbox messages:', error);
       throw error;
     }
   }
@@ -1049,7 +1053,7 @@ export class MessagingService {
 
       return reply;
     } catch (error) {
-      console.error('Failed to reply to message:', error);
+      logger.error('Failed to reply to message:', error);
       throw error;
     }
   }
@@ -1084,7 +1088,7 @@ export class MessagingService {
         await this.scheduleEmailFallback(message.id, recipientId);
       }
     } catch (error) {
-      console.error('Failed to trigger notifications:', error);
+      logger.error('Failed to trigger notifications:', error);
     }
   }
 
@@ -1121,14 +1125,14 @@ export class MessagingService {
             );
           }
         } catch (error) {
-          console.error(
+          logger.error(
             `Failed to send direct message email to ${recipientId}:`,
             error
           );
         }
       }
     } catch (error) {
-      console.error('Failed to send direct message emails:', error);
+      logger.error('Failed to send direct message emails:', error);
     }
   }
 
@@ -1190,7 +1194,7 @@ export class MessagingService {
             }
           }
         } catch (error) {
-          console.error('Failed to send email fallback:', error);
+          logger.error('Failed to send email fallback:', error);
         }
       },
       delayMinutes * 60 * 1000
@@ -1214,7 +1218,7 @@ export class MessagingService {
       // This will prevent the 404 error but still work with the UI
       return [];
     } catch (error) {
-      console.error('Failed to get draft messages:', error);
+      logger.error('Failed to get draft messages:', error);
       throw error;
     }
   }
@@ -1242,7 +1246,7 @@ export class MessagingService {
         isDraft: true,
       };
     } catch (error) {
-      console.error('Failed to save draft:', error);
+      logger.error('Failed to save draft:', error);
       throw error;
     }
   }
@@ -1284,7 +1288,7 @@ export class MessagingService {
         entityName: row.entityName || 'Unknown Entity',
       }));
     } catch (error) {
-      console.error('Failed to get unnotified kudos:', error);
+      logger.error('Failed to get unnotified kudos:', error);
       throw error;
     }
   }
@@ -1310,7 +1314,7 @@ export class MessagingService {
           )
         );
     } catch (error) {
-      console.error('Failed to mark kudos as initially notified:', error);
+      logger.error('Failed to mark kudos as initially notified:', error);
       throw error;
     }
   }

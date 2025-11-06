@@ -2,9 +2,11 @@ import { MailService } from '@sendgrid/mail';
 import { db } from './db';
 import { sandwichCollections, hosts, hostContacts } from '@shared/schema';
 import { eq, sql, and, gte, lte, like, or } from 'drizzle-orm';
+import { logger } from './utils/production-safe-logger';
+import { batchSendEmails } from './utils/batch-operations';
 
 if (!process.env.SENDGRID_API_KEY) {
-  console.error(
+  logger.error(
     'SENDGRID_API_KEY environment variable must be set for email notifications'
   );
 }
@@ -19,16 +21,28 @@ const EXPECTED_HOST_LOCATIONS = [
   'East Cobb/Roswell',
   'Dunwoody/PTC',
   'Alpharetta',
-  'Sandy Springs',
-  'Intown/Druid Hills',
+  'Sandy Springs/Chastain',
+  'Intown/Druid Hills/Oak Grove/Chamblee/Brookhaven/Buckhead',
   'Dacula',
   'Flowery Branch',
-  'Collective Learning',
+  'UGA',
 ];
+
+// Fallback email mapping for specific locations (when database lookup fails or for spam prevention)
+const LOCATION_CONTACT_EMAILS: Record<string, string> = {
+  'Alpharetta': 'atlantamillers@comcast.net', // Nancy Miller
+  'East Cobb/Roswell': 'vickib@aol.com', // Vicki Tropauer
+  'Intown/Druid Hills': 'lzauderer@yahoo.com', // Laura Baldwin
+  'Intown/Druid Hills/Oak Grove/Chamblee/Brookhaven/Buckhead': 'lzauderer@yahoo.com', // Laura Baldwin
+  'Flowery Branch': 'kristinamday@yahoo.com', // Kristina McCarthney
+  'Sandy Springs': 'jenmcohen@gmail.com', // Jen Cohen
+  'Sandy Springs/Chastain': 'jenmcohen@gmail.com', // Jen Cohen
+  'Dunwoody/PTC': 'mdlouza@gmail.com', // Marcy Louza (primary)
+};
 
 // Admin email to receive notifications
 const ADMIN_EMAIL = 'katielong2316@gmail.com';
-const FROM_EMAIL = 'katielong2316@gmail.com'; // Using verified sender for reliable delivery
+const FROM_EMAIL = 'katie@thesandwichproject.org'; // Using verified domain sender to avoid spam filters
 
 interface WeeklySubmissionStatus {
   location: string;
@@ -149,7 +163,8 @@ export function getPreviousWednesday(): Date {
 
 /**
  * Check Dunwoody special requirements: need both Lisa Hiles AND either Stephanie or Marcy
- * Also accepts entries from admin accounts (katielong2316@gmail.com, kenig.ka@gmail.com, admin@sandwich.project)
+ * Also accepts entries from admin accounts (Katie, Christine, kenig.ka, admin@sandwich.project)
+ * who submit collection data on behalf of Stephanie/Marcy
  */
 function checkDunwoodyStatus(submissions: any[], location: string): any {
   const dunwoodySubmissions = submissions.filter((sub) =>
@@ -164,11 +179,11 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
     };
   }
 
-  // Admin emails that can submit for any location
-  const adminEmails = [
-    'katielong2316@gmail.com',
-    'kenig.ka@gmail.com',
-    'admin@sandwich.project',
+  // Admin user IDs that can submit for any location (counts as Stephanie/Marcy for Dunwoody)
+  const adminUserIds = [
+    'committee_1756853842170', // Katie Long
+    'user_1756855040337_5ix2krxc7', // Christine
+    'driver_1756853842645_3rhyj78ot', // kenig.ka@gmail.com
   ];
 
   // Check for Lisa Hiles
@@ -181,15 +196,14 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
   // Check for Stephanie or Marcy OR admin accounts
   const stephanieOrMarcySubmission = dunwoodySubmissions.some((sub) => {
     const submitter = sub.submittedBy?.toLowerCase() || '';
+    const createdBy = sub.createdBy || '';
 
-    // Check for Stephanie or Marcy
+    // Check for Stephanie or Marcy by name
     const isStephanieOrMarcy =
       submitter.includes('stephanie') || submitter.includes('marcy');
 
-    // Check if submitted by an admin account
-    const isAdminSubmission = adminEmails.some((email) =>
-      submitter.includes(email.toLowerCase())
-    );
+    // Check if submitted by an admin account (by user ID)
+    const isAdminSubmission = adminUserIds.includes(createdBy);
 
     return isStephanieOrMarcy || isAdminSubmission;
   });
@@ -210,10 +224,10 @@ export async function checkWeeklySubmissions(
 ): Promise<WeeklySubmissionStatus[]> {
   const { startDate, endDate } = getWeekRange(weeksAgo);
 
-  console.log(
+  logger.log(
     `Checking submissions for week: ${startDate.toDateString()} to ${endDate.toDateString()}`
   );
-  console.log(
+  logger.log(
     `Week range: ${startDate.toISOString().split('T')[0]} to ${
       endDate.toISOString().split('T')[0]
     }`
@@ -226,6 +240,7 @@ export async function checkWeeklySubmissions(
         hostName: sandwichCollections.hostName,
         collectionDate: sandwichCollections.collectionDate,
         submittedBy: sandwichCollections.createdByName,
+        createdBy: sandwichCollections.createdBy,
       })
       .from(sandwichCollections)
       .where(
@@ -241,7 +256,7 @@ export async function checkWeeklySubmissions(
         )
       );
 
-    console.log(
+    logger.log(
       `Found ${weeklySubmissions.length} submissions for this week:`,
       weeklySubmissions
     );
@@ -304,10 +319,10 @@ export async function checkWeeklySubmissions(
       });
     }
 
-    console.log(`Status results:`, statusResults);
+    logger.log(`Status results:`, statusResults);
     return statusResults;
   } catch (error) {
-    console.error('Error checking weekly submissions:', error);
+    logger.error('Error checking weekly submissions:', error);
     throw error;
   }
 }
@@ -415,7 +430,7 @@ export async function sendMissingSubmissionsEmail(
   weekLabel?: string
 ): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
-    console.log(
+    logger.log(
       'SendGrid not configured - would send email about missing submissions:',
       missingSubmissions.map((s) => s.location)
     );
@@ -437,7 +452,7 @@ export async function sendMissingSubmissionsEmail(
 
   // For test emails, always send even if no missing locations
   if (missingLocations.length === 0 && !isTest) {
-    console.log('All locations have submitted - no email needed');
+    logger.log('All locations have submitted - no email needed');
     return true;
   }
 
@@ -557,12 +572,12 @@ Check the Collections Log in the platform for real-time updates.
 
   try {
     await mailService.send(emailContent);
-    console.log(
+    logger.log(
       `Missing submissions email sent successfully to ${ADMIN_EMAIL}`
     );
     return true;
   } catch (error) {
-    console.error('Failed to send missing submissions email:', error);
+    logger.error('Failed to send missing submissions email:', error);
     return false;
   }
 }
@@ -571,14 +586,14 @@ Check the Collections Log in the platform for real-time updates.
  * Main function to check submissions and send alerts if needed
  */
 export async function runWeeklyMonitoring(): Promise<void> {
-  console.log('Running weekly sandwich submission monitoring...');
+  logger.log('Running weekly sandwich submission monitoring...');
 
   try {
     const submissionStatus = await checkWeeklySubmissions();
 
-    console.log('Weekly submission status:');
+    logger.log('Weekly submission status:');
     submissionStatus.forEach((status) => {
-      console.log(
+      logger.log(
         `- ${status.location}: ${
           status.hasSubmitted ? '✅ Submitted' : '❌ Missing'
         }`
@@ -590,10 +605,10 @@ export async function runWeeklyMonitoring(): Promise<void> {
     if (missingSubmissions.length > 0) {
       await sendMissingSubmissionsEmail(submissionStatus);
     } else {
-      console.log('🎉 All host locations have submitted their numbers!');
+      logger.log('🎉 All host locations have submitted their numbers!');
     }
   } catch (error) {
-    console.error('Error in weekly monitoring:', error);
+    logger.error('Error in weekly monitoring:', error);
 
     // Send error notification email
     if (process.env.SENDGRID_API_KEY) {
@@ -615,7 +630,7 @@ export async function runWeeklyMonitoring(): Promise<void> {
           `,
         });
       } catch (emailError) {
-        console.error('Failed to send error notification email:', emailError);
+        logger.error('Failed to send error notification email:', emailError);
       }
     }
   }
@@ -646,7 +661,7 @@ export function scheduleWeeklyMonitoring(): NodeJS.Timeout[] {
   const hourlyCheck = setInterval(checkAndRun, 60 * 60 * 1000);
   intervals.push(hourlyCheck);
 
-  console.log('Weekly monitoring scheduled for Thursday 7 PM and Friday 8 AM');
+  logger.log('Weekly monitoring scheduled for Thursday 7 PM and Friday 8 AM');
 
   return intervals;
 }
@@ -707,57 +722,66 @@ export async function sendEmailReminder(
     }
 
     // Standard logic for other locations
-    // Get host contact information for this location
-    // First find the host by name
-    const hostRecord = await db
-      .select()
-      .from(hosts)
-      .where(eq(hosts.name, location))
-      .limit(1);
+    // Try to get email from fallback mapping first (more reliable)
+    let contactEmail = LOCATION_CONTACT_EMAILS[location];
+    let contactName = location; // Default to location name
+    
+    // If no fallback mapping, try database lookup
+    if (!contactEmail) {
+      // Get host contact information for this location
+      // First find the host by name
+      const hostRecord = await db
+        .select()
+        .from(hosts)
+        .where(eq(hosts.name, location))
+        .limit(1);
 
-    if (hostRecord.length === 0) {
-      return {
-        success: false,
-        message: `No host found for location: ${location}`,
-      };
-    }
+      if (hostRecord.length === 0) {
+        return {
+          success: false,
+          message: `No host found for location: ${location} and no fallback email configured`,
+        };
+      }
 
-    // Then get the primary contact for this host
-    const contacts = await db
-      .select()
-      .from(hostContacts)
-      .where(
-        and(
-          eq(hostContacts.hostId, hostRecord[0].id),
-          eq(hostContacts.isPrimary, true)
-        )
-      )
-      .limit(1);
-
-    // If no primary contact, get any contact with an email
-    let contact = contacts[0];
-    if (!contact) {
-      const allContacts = await db
+      // Then get the primary contact for this host
+      const contacts = await db
         .select()
         .from(hostContacts)
-        .where(eq(hostContacts.hostId, hostRecord[0].id));
+        .where(
+          and(
+            eq(hostContacts.hostId, hostRecord[0].id),
+            eq(hostContacts.isPrimary, true)
+          )
+        )
+        .limit(1);
 
-      contact = allContacts.find((c) => c.email) || allContacts[0];
-    }
+      // If no primary contact, get any contact with an email
+      let contact = contacts[0];
+      if (!contact) {
+        const allContacts = await db
+          .select()
+          .from(hostContacts)
+          .where(eq(hostContacts.hostId, hostRecord[0].id));
 
-    if (!contact) {
-      return {
-        success: false,
-        message: `No contact person found for location: ${location}`,
-      };
-    }
+        contact = allContacts.find((c) => c.email) || allContacts[0];
+      }
 
-    const contactEmail = contact.email;
-    if (!contactEmail) {
-      return {
-        success: false,
-        message: `No email address found for ${location} contact: ${contact.name}`,
-      };
+      if (!contact) {
+        return {
+          success: false,
+          message: `No contact person found for location: ${location}`,
+        };
+      }
+
+      contactEmail = contact.email;
+      contactName = contact.name || location;
+      
+      if (!contactEmail) {
+        return {
+          success: false,
+          message: `No email address found for ${location} contact: ${contactName}`,
+        };
+      }
     }
 
     const loginUrl =
@@ -773,7 +797,7 @@ export async function sendEmailReminder(
 
     const emailSubject = `🥪 Friendly Reminder: Weekly Sandwich Collection Numbers`;
 
-    const emailText = `Hi ${contact.name || 'there'}!
+    const emailText = `Hi ${contactName || 'there'}!
 
 Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for ${weekLabel} yet.
 
@@ -798,7 +822,7 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
           
           <div style="margin-bottom: 25px;">
             <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hi ${
-              contact.name || 'there'
+              contactName || 'there'
             }!</p>
             
             <p style="margin: 0 0 15px 0; font-size: 16px; line-height: 1.5;">Hope you're having a great week! This is a friendly reminder that we haven't received your sandwich collection numbers for this week yet.</p>
@@ -829,23 +853,24 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
     await mailService.send({
       to: contactEmail,
       from: FROM_EMAIL,
+      bcc: ADMIN_EMAIL, // BCC admin on all host reminder emails
       subject: emailSubject,
       text: emailText,
       html: emailHtml,
     });
 
-    console.log(
+    logger.log(
       `✅ Email reminder sent successfully to ${location} (${contactEmail})`
     );
 
     return {
       success: true,
       message: `Email reminder sent successfully to ${
-        contact.name || location
+        contactName || location
       } at ${contactEmail}`,
     };
   } catch (error) {
-    console.error(`❌ Failed to send email reminder to ${location}:`, error);
+    logger.error(`❌ Failed to send email reminder to ${location}:`, error);
     return {
       success: false,
       message: `Failed to send email reminder: ${
@@ -1000,25 +1025,43 @@ P.S. If you've already submitted or have any questions, feel free to reach out t
       return await mailService.send({
         to: contact.email!,
         from: FROM_EMAIL,
+        bcc: ADMIN_EMAIL, // BCC admin on all Dunwoody reminder emails
         subject: emailSubject,
         text: emailText,
         html: emailHtml,
       });
     });
 
-    await Promise.all(emailPromises);
+    // Send emails in batch (continues even if some fail)
+    const emailResult = await batchSendEmails(
+      emailPromises,
+      'Targeted Dunwoody emails'
+    );
 
     const contactNames = targetContacts.map((c) => c.name).join(', ');
-    console.log(
-      `✅ Targeted Dunwoody email sent successfully to: ${contactNames}`
+    logger.log(
+      `✅ Targeted Dunwoody emails processed: ${emailResult.successCount}/${emailResult.total} sent successfully`
     );
+
+    // Log warning if some emails failed
+    if (emailResult.failureCount > 0) {
+      logger.warn(`${emailResult.failureCount} emails failed to send`, {
+        failedIndices: emailResult.failed.map(f => f.index),
+        failedContacts: emailResult.failed.map(f => {
+          const contact = targetContacts[f.index];
+          return contact
+            ? { name: contact.name, email: contact.email }
+            : { name: 'unknown', email: 'unknown' };
+        }),
+      });
+    }
 
     return {
       success: true,
       message: `Targeted email sent successfully to: ${contactNames}`,
     };
   } catch (error) {
-    console.log(`❌ Failed to send targeted Dunwoody email:`, error);
+    logger.log(`❌ Failed to send targeted Dunwoody email:`, error);
 
     return {
       success: false,

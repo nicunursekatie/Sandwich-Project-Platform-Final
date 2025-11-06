@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { formatDateForInput } from '@/lib/date-utils';
+import { logger } from '@/lib/logger';
 
 // Interfaces
 export interface Meeting {
@@ -201,7 +202,7 @@ export function useMeetings(selectedMeetingId?: number | null) {
         description: 'Meeting agenda PDF has been downloaded successfully.',
       });
     } catch (error) {
-      console.error('PDF download error:', error);
+      logger.error('PDF download error:', error);
       toast({
         title: 'Download Failed',
         description: 'Failed to download the meeting agenda PDF. Please try again.',

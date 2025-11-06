@@ -1,13 +1,18 @@
 import { storage } from '../../storage-wrapper';
 import { getDefaultPermissionsForRole } from '@shared/auth-utils';
 import { AuditLogger } from '../../audit-logger';
+import { logger } from '../../utils/production-safe-logger';
 
 export interface IUserService {
   // User CRUD operations
   getAllUsers(): Promise<any[]>;
   getUsersForAssignments(): Promise<any[]>;
   createUser(userData: CreateUserData): Promise<any>;
-  updateUser(id: string, updates: UserUpdateData): Promise<any>;
+  updateUser(
+    id: string,
+    updates: UserUpdateData,
+    requestUserId?: string
+  ): Promise<any>;
   updateUserStatus(id: string, isActive: boolean): Promise<any>;
   updateUserProfile(
     id: string,
@@ -37,6 +42,8 @@ export interface UserUpdateData {
   role?: string;
   permissions?: string[];
   metadata?: any;
+  permissionsModifiedAt?: Date;
+  permissionsModifiedBy?: string | null;
 }
 
 export interface UserProfileData {
@@ -60,7 +67,7 @@ export class UserService implements IUserService {
       const users = await storage.getAllUsers();
       return users;
     } catch (error) {
-      console.error('Error fetching all users:', error);
+      logger.error('Error fetching all users:', error);
       throw new Error('Failed to fetch users');
     }
   }
@@ -82,7 +89,7 @@ export class UserService implements IUserService {
       }));
       return assignableUsers;
     } catch (error) {
-      console.error('Error fetching users for assignments:', error);
+      logger.error('Error fetching users for assignments:', error);
       throw new Error('Failed to fetch users for assignments');
     }
   }
@@ -121,12 +128,16 @@ export class UserService implements IUserService {
 
       return newUser;
     } catch (error) {
-      console.error('Error creating user:', error);
+      logger.error('Error creating user:', error);
       throw error;
     }
   }
 
-  async updateUser(id: string, updates: UserUpdateData): Promise<any> {
+  async updateUser(
+    id: string,
+    updates: UserUpdateData,
+    requestUserId?: string
+  ): Promise<any> {
     try {
       // Deduplicate permissions to prevent database inconsistencies
       if (updates.permissions) {
@@ -136,15 +147,18 @@ export class UserService implements IUserService {
       // Build update object with only provided fields
       const updateData: any = {};
       if (updates.role !== undefined) updateData.role = updates.role;
-      if (updates.permissions !== undefined)
+      if (updates.permissions !== undefined) {
         updateData.permissions = updates.permissions;
+        updateData.permissionsModifiedAt = new Date();
+        updateData.permissionsModifiedBy = requestUserId || 'system';
+      }
       if (updates.metadata !== undefined)
         updateData.metadata = updates.metadata;
 
       const updatedUser = await storage.updateUser(id, updateData);
       return updatedUser;
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user:', error);
       throw new Error('Failed to update user');
     }
   }
@@ -154,7 +168,7 @@ export class UserService implements IUserService {
       const updatedUser = await storage.updateUser(id, { isActive });
       return updatedUser;
     } catch (error) {
-      console.error('Error updating user status:', error);
+      logger.error('Error updating user status:', error);
       throw new Error('Failed to update user status');
     }
   }
@@ -165,6 +179,9 @@ export class UserService implements IUserService {
     requestUserId?: string
   ): Promise<any> {
     try {
+      // Get old user data before update for audit logging
+      const oldUser = await storage.getUserById(id);
+      
       // Build update object with only provided fields
       const updateData: any = {};
       if (profileData.email !== undefined) updateData.email = profileData.email;
@@ -182,20 +199,24 @@ export class UserService implements IUserService {
 
       const updatedUser = await storage.updateUser(id, updateData);
 
-      // Log the user profile update
+      // Log the user profile update with old and new data for better audit trail
       if (requestUserId) {
-        await AuditLogger.log(
-          'user_profile_updated',
-          'user_management',
+        await AuditLogger.logEntityChange(
+          'users',
           id,
-          { updatedFields: Object.keys(updateData), newValues: updateData },
-          { userId: requestUserId }
+          oldUser || {},
+          updatedUser || {},
+          { userId: requestUserId },
+          {
+            actionType: 'user_profile_updated',
+            section: 'user_management'
+          }
         );
       }
 
       return updatedUser;
     } catch (error) {
-      console.error('Error updating user profile:', error);
+      logger.error('Error updating user profile:', error);
       throw new Error('Failed to update user profile');
     }
   }
@@ -204,7 +225,7 @@ export class UserService implements IUserService {
     try {
       await storage.deleteUser(id);
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logger.error('Error deleting user:', error);
       throw new Error('Failed to delete user');
     }
   }
@@ -218,7 +239,7 @@ export class UserService implements IUserService {
 
       await storage.setUserPassword(id, password);
     } catch (error) {
-      console.error('Error setting user password:', error);
+      logger.error('Error setting user password:', error);
       throw error;
     }
   }
@@ -260,7 +281,7 @@ export class UserService implements IUserService {
       const user = await storage.getUserById(userId);
       return user?.permissions || [];
     } catch (error) {
-      console.error('Error fetching user permissions:', error);
+      logger.error('Error fetching user permissions:', error);
       return [];
     }
   }
@@ -270,7 +291,7 @@ export class UserService implements IUserService {
       const user = await storage.getUserByEmail(email);
       return !!user;
     } catch (error) {
-      console.error('Error checking if user exists:', error);
+      logger.error('Error checking if user exists:', error);
       return false;
     }
   }

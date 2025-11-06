@@ -1,249 +1,475 @@
 import { Router } from 'express';
-import { z } from 'zod';
-import { storage } from '../storage-wrapper';
+import type { RouterDependencies } from '../types';
 import { sanitizeMiddleware } from '../middleware/sanitizer';
 import { insertHostSchema, insertHostContactSchema } from '@shared/schema';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { scrapeHostAvailability } from '../services/host-availability-scraper';
+import {
+  hostsErrorHandler,
+  asyncHandler,
+  createHostsError,
+  validateId,
+  validateRequired,
+  HostsError,
+} from './hosts/error-handler';
+import { z } from 'zod';
+import { AuditLogger } from '../audit-logger';
+import { logger } from '../utils/production-safe-logger';
 
-const router = Router();
+export function createHostsRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { storage, requirePermission } = deps;
 
-// Authentication middleware
-const isAuthenticated = (req: any, res: any, next: any) => {
-  const user = req.user || req.session?.user;
-  if (!user) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  req.user = user; // Ensure req.user is set
-  next();
-};
+  // Validation schema for coordinate updates
+  const coordinatesSchema = z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+  });
 
-// Permission check functions
-function canManageHosts(req: any) {
-  const user = req.user;
-  return hasPermission(user, PERMISSIONS.HOSTS_EDIT);
-}
-
-function canViewHosts(req: any) {
-  const user = req.user;
-  return hasPermission(user, PERMISSIONS.HOSTS_VIEW);
-}
-
-// Host management routes
-router.get('/hosts', isAuthenticated, async (req, res) => {
-  // Check if user has permission to view hosts
-  if (!canViewHosts(req)) {
-    return res
-      .status(403)
-      .json({ error: 'Insufficient permissions to view hosts' });
-  }
-  try {
+  // Host management routes
+  router.get('/hosts', 
+  requirePermission(PERMISSIONS.HOSTS_VIEW), 
+  asyncHandler(async (req, res) => {
     const hosts = await storage.getAllHosts();
     res.json(hosts);
-  } catch (error) {
-    console.error('Error fetching hosts:', error);
-    res.status(500).json({ error: 'Failed to fetch hosts' });
-  }
-});
-
-router.get('/hosts-with-contacts', isAuthenticated, async (req, res) => {
-  // Check if user has permission to view hosts
-  if (!canViewHosts(req)) {
-    return res
-      .status(403)
-      .json({ error: 'Insufficient permissions to view hosts' });
-  }
-  try {
-    const hostsWithContacts = await storage.getAllHostsWithContacts();
-    res.json(hostsWithContacts);
-  } catch (error) {
-    console.error('Error fetching hosts with contacts:', error);
-    res.status(500).json({ error: 'Failed to fetch hosts with contacts' });
-  }
-});
-
-router.get('/hosts/:id', isAuthenticated, async (req, res) => {
-  // Check if user has permission to view hosts
-  if (!canViewHosts(req)) {
-    return res
-      .status(403)
-      .json({ error: 'Insufficient permissions to view hosts' });
-  }
-  try {
-    const id = parseInt(req.params.id);
-    const host = await storage.getHost(id);
-    if (!host) {
-      return res.status(404).json({ error: 'Host not found' });
-    }
-    res.json(host);
-  } catch (error) {
-    console.error('Error fetching host:', error);
-    res.status(500).json({ error: 'Failed to fetch host' });
-  }
-});
-
-router.post('/hosts', isAuthenticated, sanitizeMiddleware, async (req, res) => {
-  // Check if user has permission to manage hosts
-  if (!canManageHosts(req)) {
-    return res
-      .status(403)
-      .json({ error: 'Insufficient permissions to create hosts' });
-  }
-  try {
-    const result = insertHostSchema.safeParse(req.body);
-    if (!result.success) {
-      return res.status(400).json({ error: result.error.message });
-    }
-    const host = await storage.createHost(result.data);
-    res.status(201).json(host);
-  } catch (error) {
-    console.error('Error creating host:', error);
-    res.status(500).json({ error: 'Failed to create host' });
-  }
-});
-
-router.patch(
-  '/hosts/:id',
-  isAuthenticated,
-  sanitizeMiddleware,
-  async (req, res) => {
-    // Check if user has permission to manage hosts
-    if (!canManageHosts(req)) {
-      return res
-        .status(403)
-        .json({ error: 'Insufficient permissions to update hosts' });
-    }
-    try {
-      const id = parseInt(req.params.id);
-      const updates = req.body;
-      const host = await storage.updateHost(id, updates);
-      if (!host) {
-        return res.status(404).json({ error: 'Host not found' });
-      }
-      res.json(host);
-    } catch (error) {
-      console.error('Error updating host:', error);
-      res.status(500).json({ error: 'Failed to update host' });
-    }
-  }
+  })
 );
 
-router.delete('/hosts/:id', isAuthenticated, async (req, res) => {
-  // Check if user has permission to manage hosts
-  if (!canManageHosts(req)) {
-    return res
-      .status(403)
-      .json({ error: 'Insufficient permissions to delete hosts' });
-  }
-  try {
-    const id = parseInt(req.params.id);
-    const success = await storage.deleteHost(id);
-    if (!success) {
-      return res.status(404).json({ error: 'Host not found' });
+  router.get(
+  '/hosts-with-contacts',
+  requirePermission(PERMISSIONS.HOSTS_VIEW),
+  asyncHandler(async (req, res) => {
+    const hostsWithContacts = await storage.getAllHostsWithContacts();
+    res.json(hostsWithContacts);
+  })
+);
+
+// Map endpoint - get host contacts with valid coordinates for map display
+  router.get(
+  '/hosts/map',
+  requirePermission(PERMISSIONS.HOSTS_VIEW),
+  asyncHandler(async (req, res) => {
+    const hostsWithContacts = await storage.getAllHostsWithContacts();
+    
+    // Flatten contacts and add host location info, filter for valid coordinates
+    const contactsWithCoordinates = hostsWithContacts
+      .filter(host => host.status === 'active') // Only active host locations
+      .flatMap(host => 
+        host.contacts
+          .filter(contact => 
+            contact.latitude !== null && 
+            contact.longitude !== null
+          )
+          .map(contact => ({
+            id: contact.id,
+            contactName: contact.name,
+            role: contact.role,
+            hostLocationName: host.name, // Host location area name
+            address: contact.address,
+            latitude: contact.latitude,
+            longitude: contact.longitude,
+            email: contact.email,
+            phone: contact.phone,
+          }))
+      );
+    
+    res.json(contactsWithCoordinates);
+  })
+);
+
+  router.get(
+  '/hosts/:id',
+  requirePermission(PERMISSIONS.HOSTS_VIEW),
+  asyncHandler(async (req, res) => {
+    const id = validateId(req.params.id, 'host');
+    const host = await storage.getHost(id);
+    if (!host) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
     }
-    res.status(204).send();
-  } catch (error) {
-    console.error('Error deleting host:', error);
-    // Check if it's a constraint error (has associated records)
-    if (error.message && error.message.includes('associated collection')) {
-      return res.status(409).json({
-        error: error.message,
-        code: 'CONSTRAINT_VIOLATION',
-      });
+    res.json(host);
+  })
+);
+
+  router.post(
+  '/hosts',
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
+  sanitizeMiddleware,
+  asyncHandler(async (req: any, res) => {
+    validateRequired(req.body, ['name'], 'host creation');
+
+    const result = insertHostSchema.safeParse(req.body);
+    if (!result.success) {
+      throw createHostsError(
+        'Invalid host data provided',
+        400,
+        'VALIDATION_ERROR',
+        { validationErrors: result.error.errors }
+      );
     }
-    res.status(500).json({ error: 'Failed to delete host' });
-  }
-});
+
+    const host = await storage.createHost(result.data);
+
+    // Audit log
+    await AuditLogger.logCreate(
+      'hosts',
+      String(host.id),
+      host,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
+    res.status(201).json(host);
+  })
+);
+
+  router.patch(
+  '/hosts/:id',
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
+  sanitizeMiddleware,
+  asyncHandler(async (req: any, res) => {
+    const id = validateId(req.params.id, 'host');
+    const updates = req.body;
+
+    if (!updates || Object.keys(updates).length === 0) {
+      throw createHostsError('No update data provided', 400, 'NO_UPDATE_DATA');
+    }
+
+    // Get old data before update
+    const oldHost = await storage.getHost(id);
+    if (!oldHost) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+
+    const host = await storage.updateHost(id, updates);
+    if (!host) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+
+    // Audit log
+    await AuditLogger.logEntityChange(
+      'hosts',
+      String(id),
+      oldHost,
+      host,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
+    res.json(host);
+  })
+);
+
+// Update host coordinates endpoint
+  router.patch(
+  '/hosts/:id/coordinates',
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
+  sanitizeMiddleware,
+  asyncHandler(async (req: any, res) => {
+    const id = validateId(req.params.id, 'host');
+
+    // Validate coordinates using Zod schema
+    const result = coordinatesSchema.safeParse(req.body);
+    if (!result.success) {
+      throw createHostsError(
+        'Invalid coordinates provided',
+        400,
+        'VALIDATION_ERROR',
+        { validationErrors: result.error.errors }
+      );
+    }
+
+    const { latitude, longitude } = result.data;
+
+    // Get old data before update
+    const oldHost = await storage.getHost(id);
+    if (!oldHost) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+
+    // Update host with new coordinates and set geocodedAt timestamp
+    const host = await storage.updateHost(id, {
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      geocodedAt: new Date(),
+    });
+
+    if (!host) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+
+    // Audit log
+    await AuditLogger.logEntityChange(
+      'hosts',
+      String(id),
+      oldHost,
+      host,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
+    res.json(host);
+  })
+);
+
+  router.delete(
+  '/hosts/:id',
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
+  asyncHandler(async (req: any, res) => {
+    const id = validateId(req.params.id, 'host');
+
+    // Get old data before delete
+    const oldHost = await storage.getHost(id);
+    if (!oldHost) {
+      throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+    }
+
+    try {
+      const success = await storage.deleteHost(id);
+      if (!success) {
+        throw createHostsError('Host not found', 404, 'HOST_NOT_FOUND', { hostId: id });
+      }
+
+      // Audit log
+      await AuditLogger.logDelete(
+        'hosts',
+        String(id),
+        oldHost,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
+      res.status(204).send();
+    } catch (error: unknown) {
+      // Check if it's a constraint error (has associated records)
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'message' in error &&
+        typeof (error as any).message === 'string' &&
+        (error as any).message.includes('associated collection')
+      ) {
+        throw createHostsError(
+          (error as any).message,
+          409,
+          'CONSTRAINT_VIOLATION',
+          { hostId: id, constraintType: 'associated_records' }
+        );
+      }
+      throw error; // Re-throw to be handled by error handler
+    }
+  })
+);
 
 // Host contact routes
-router.get('/host-contacts', async (req, res) => {
-  try {
+  router.get(
+  '/host-contacts',
+  requirePermission(PERMISSIONS.HOSTS_VIEW),
+  asyncHandler(async (req, res) => {
     const hostId = req.query.hostId
       ? parseInt(req.query.hostId as string)
       : undefined;
+      
+    if (hostId && isNaN(hostId)) {
+      throw createHostsError('Invalid host ID in query', 400, 'INVALID_HOST_ID', { providedHostId: req.query.hostId });
+    }
+    
     if (hostId) {
       const contacts = await storage.getHostContacts(hostId);
       res.json(contacts);
     } else {
-      // Return all host contacts
+      // Return all host contacts with their host location name
       const hosts = await storage.getAllHostsWithContacts();
-      const allContacts = hosts.flatMap((host) => host.contacts);
+      const allContacts = hosts.flatMap((host) => 
+        host.contacts.map(contact => ({
+          id: contact.id,
+          name: contact.name,
+          hostLocationName: host.name,
+          displayName: `${contact.name} (${host.name})`,
+          role: contact.role,
+          email: contact.email,
+          phone: contact.phone,
+          hostId: contact.hostId,
+        }))
+      );
       res.json(allContacts);
     }
-  } catch (error) {
-    console.error('Error fetching host contacts:', error);
-    res.status(500).json({ error: 'Failed to fetch host contacts' });
-  }
-});
+  })
+);
 
-router.post(
+  router.post(
   '/host-contacts',
-  isAuthenticated,
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  async (req, res) => {
-    // Check if user has permission to manage hosts
-    if (!canManageHosts(req)) {
-      return res
-        .status(403)
-        .json({ error: 'Insufficient permissions to create host contacts' });
+  asyncHandler(async (req: any, res) => {
+    validateRequired(req.body, ['name', 'role', 'phone', 'hostId'], 'host contact creation');
+
+    const result = insertHostContactSchema.safeParse(req.body);
+    if (!result.success) {
+      throw createHostsError(
+        'Invalid host contact data provided',
+        400,
+        'VALIDATION_ERROR',
+        { validationErrors: result.error.errors }
+      );
     }
-    try {
-      const result = insertHostContactSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ error: result.error.message });
+
+    const contact = await storage.createHostContact(result.data);
+
+    // Audit log
+    await AuditLogger.logCreate(
+      'host_contacts',
+      String(contact.id),
+      contact,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
       }
-      const contact = await storage.createHostContact(result.data);
-      res.status(201).json(contact);
-    } catch (error) {
-      console.error('Error creating host contact:', error);
-      res.status(500).json({ error: 'Failed to create host contact' });
-    }
-  }
+    );
+
+    res.status(201).json(contact);
+  })
 );
 
-router.patch(
+  router.patch(
   '/host-contacts/:id',
-  isAuthenticated,
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
   sanitizeMiddleware,
-  async (req, res) => {
-    // Check if user has permission to manage hosts
-    if (!canManageHosts(req)) {
-      return res
-        .status(403)
-        .json({ error: 'Insufficient permissions to update host contacts' });
+  asyncHandler(async (req: any, res) => {
+    const id = validateId(req.params.id, 'host contact');
+    const updates = req.body;
+
+    logger.info(`Updating host contact ${id} with data:`, updates);
+
+    if (!updates || Object.keys(updates).length === 0) {
+      throw createHostsError('No update data provided', 400, 'NO_UPDATE_DATA');
     }
+
+    // Get old data before update
+    const oldContact = await storage.getHostContact(id);
+    if (!oldContact) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
+    }
+
+    let contact;
     try {
-      const id = parseInt(req.params.id);
-      const updates = req.body;
-      const contact = await storage.updateHostContact(id, updates);
-      if (!contact) {
-        return res.status(404).json({ error: 'Host contact not found' });
-      }
-      res.json(contact);
-    } catch (error) {
-      console.error('Error updating host contact:', error);
-      res.status(500).json({ error: 'Failed to update host contact' });
+      contact = await storage.updateHostContact(id, updates);
+    } catch (dbError: any) {
+      logger.error(`Database error updating host contact ${id}:`, {
+        error: dbError,
+        errorMessage: dbError.message,
+        errorStack: dbError.stack,
+        updates: updates,
+        updateKeys: Object.keys(updates)
+      });
+      throw createHostsError(
+        `Database error: ${dbError.message || 'Unknown database error'}`,
+        500,
+        'DATABASE_ERROR',
+        { originalError: dbError.message, errorStack: dbError.stack, updates }
+      );
     }
-  }
+
+    if (!contact) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
+    }
+
+    // Audit log
+    await AuditLogger.logEntityChange(
+      'host_contacts',
+      String(id),
+      oldContact,
+      contact,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
+    res.json(contact);
+  })
 );
 
-router.delete('/host-contacts/:id', isAuthenticated, async (req, res) => {
-  // Check if user has permission to manage hosts
-  if (!canManageHosts(req)) {
-    return res
-      .status(403)
-      .json({ error: 'Insufficient permissions to delete host contacts' });
-  }
-  try {
-    const id = parseInt(req.params.id);
-    const success = await storage.deleteHostContact(id);
-    if (!success) {
-      return res.status(404).json({ error: 'Host contact not found' });
-    }
-    res.status(204).send();
-  } catch (error) {
-    console.error('Error deleting host contact:', error);
-    res.status(500).json({ error: 'Failed to delete host contact' });
-  }
-});
+  router.delete(
+  '/host-contacts/:id',
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
+  asyncHandler(async (req: any, res) => {
+    const id = validateId(req.params.id, 'host contact');
 
-export { router as hostsRoutes };
+    // Get old data before delete
+    const oldContact = await storage.getHostContact(id);
+    if (!oldContact) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
+    }
+
+    const success = await storage.deleteHostContact(id);
+
+    if (!success) {
+      throw createHostsError('Host contact not found', 404, 'HOST_CONTACT_NOT_FOUND', { contactId: id });
+    }
+
+    // Audit log
+    await AuditLogger.logDelete(
+      'host_contacts',
+      String(id),
+      oldContact,
+      {
+        userId: req.user?.id || req.session?.user?.id,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        sessionId: req.sessionID
+      }
+    );
+
+    res.status(204).send();
+  })
+);
+
+// Weekly availability scraper endpoint
+  router.post(
+  '/scrape-availability',
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
+  asyncHandler(async (req, res) => {
+    const result = await scrapeHostAvailability();
+
+    if (result.success) {
+      res.json({
+        message: 'Host availability updated successfully',
+        ...result,
+      });
+    } else {
+      throw createHostsError(
+        'Host availability scrape failed',
+        500,
+        'SCRAPE_FAILED',
+        { scrapeResult: result }
+      );
+    }
+  })
+);
+
+  // Add error handling middleware for all routes
+  router.use(hostsErrorHandler());
+
+  return router;
+}
+

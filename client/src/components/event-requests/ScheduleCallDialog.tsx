@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Mail, Phone } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ScheduleCallDialogProps {
   isOpen: boolean;
@@ -35,6 +36,8 @@ export const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
   scheduleCallTime,
   setScheduleCallTime,
 }) => {
+  const isMobile = useIsMobile();
+
   // Initialize date/time when dialog opens
   useEffect(() => {
     if (isOpen && eventRequest) {
@@ -90,8 +93,7 @@ export const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
                     variant="outline"
                     onClick={() => {
                       const phoneNumber = eventRequest.phone;
-                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                      
+
                       if (isMobile) {
                         window.location.href = `tel:${phoneNumber}`;
                       } else {
@@ -100,7 +102,7 @@ export const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
                     }}
                     className="ml-auto text-xs"
                   >
-                    {/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'Call' : 'Copy'}
+                    {isMobile ? 'Call' : 'Copy'}
                   </Button>
                 </div>
               )}

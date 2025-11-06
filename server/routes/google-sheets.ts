@@ -1,43 +1,43 @@
 import { Router } from 'express';
+import type { RouterDependencies } from '../types';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { googleSheets, insertGoogleSheetSchema } from '@shared/schema';
-import { isAuthenticated } from '../temp-auth';
+import { logger } from '../utils/production-safe-logger';
 
-const router = Router();
+export function createGoogleSheetsRouter(deps: RouterDependencies) {
+  const router = Router();
+  const { isAuthenticated } = deps;
 
-// Helper function to generate URLs from sheet ID
-function generateSheetUrls(sheetId: string) {
-  const embedUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing&widget=true&headers=false`;
-  const directUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing`;
-  return { embedUrl, directUrl };
-}
+  // Helper function to generate URLs from sheet ID
+  function generateSheetUrls(sheetId: string) {
+    const embedUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing&widget=true&headers=false`;
+    const directUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing`;
+    return { embedUrl, directUrl };
+  }
 
-// Get all Google Sheets
-router.get('/', async (req, res) => {
+  // Get all Google Sheets
+  router.get('/', async (req, res) => {
   try {
-    const sheets = await db
-      .select()
-      .from(googleSheets)
-      .orderBy(googleSheets.createdAt);
+    const sheets = await (db as any).select().from(googleSheets);
 
     res.json(sheets);
   } catch (error) {
-    console.error('Error fetching Google Sheets:', error);
+    logger.error('Error fetching Google Sheets:', error);
     res.status(500).json({ message: 'Failed to fetch Google Sheets' });
   }
 });
 
 // Get a specific Google Sheet
-router.get('/:id', async (req, res) => {
+  router.get('/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: 'Invalid sheet ID' });
     }
 
-    const [sheet] = await db
+    const [sheet] = await (db as any)
       .select()
       .from(googleSheets)
       .where(eq(googleSheets.id, id));
@@ -48,13 +48,13 @@ router.get('/:id', async (req, res) => {
 
     res.json(sheet);
   } catch (error) {
-    console.error('Error fetching Google Sheet:', error);
+    logger.error('Error fetching Google Sheet:', error);
     res.status(500).json({ message: 'Failed to fetch Google Sheet' });
   }
 });
 
 // Create a new Google Sheet entry
-router.post('/', isAuthenticated, async (req, res) => {
+  router.post('/', isAuthenticated, async (req, res) => {
   try {
     const validatedData = insertGoogleSheetSchema.parse(req.body);
     const { embedUrl, directUrl } = generateSheetUrls(validatedData.sheetId);
@@ -62,7 +62,7 @@ router.post('/', isAuthenticated, async (req, res) => {
     const user = (req as any).user;
     const userId = user?.id || user?.claims?.sub;
 
-    const [newSheet] = await db
+    const [newSheet] = await (db as any)
       .insert(googleSheets)
       .values({
         ...validatedData,
@@ -81,13 +81,13 @@ router.post('/', isAuthenticated, async (req, res) => {
       });
     }
 
-    console.error('Error creating Google Sheet:', error);
+    logger.error('Error creating Google Sheet:', error);
     res.status(500).json({ message: 'Failed to create Google Sheet' });
   }
 });
 
 // Update a Google Sheet
-router.patch('/:id', isAuthenticated, async (req, res) => {
+  router.patch('/:id', isAuthenticated, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -103,7 +103,7 @@ router.patch('/:id', isAuthenticated, async (req, res) => {
       urlData = { embedUrl, directUrl };
     }
 
-    const [updatedSheet] = await db
+    const [updatedSheet] = await (db as any)
       .update(googleSheets)
       .set({
         ...updateData,
@@ -126,20 +126,20 @@ router.patch('/:id', isAuthenticated, async (req, res) => {
       });
     }
 
-    console.error('Error updating Google Sheet:', error);
+    logger.error('Error updating Google Sheet:', error);
     res.status(500).json({ message: 'Failed to update Google Sheet' });
   }
 });
 
 // Delete a Google Sheet
-router.delete('/:id', isAuthenticated, async (req, res) => {
+  router.delete('/:id', isAuthenticated, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: 'Invalid sheet ID' });
     }
 
-    const [deletedSheet] = await db
+    const [deletedSheet] = await (db as any)
       .delete(googleSheets)
       .where(eq(googleSheets.id, id))
       .returning();
@@ -150,20 +150,20 @@ router.delete('/:id', isAuthenticated, async (req, res) => {
 
     res.json({ message: 'Google Sheet deleted successfully' });
   } catch (error) {
-    console.error('Error deleting Google Sheet:', error);
+    logger.error('Error deleting Google Sheet:', error);
     res.status(500).json({ message: 'Failed to delete Google Sheet' });
   }
 });
 
 // Test Google Sheet accessibility
-router.post('/:id/test', async (req, res) => {
+  router.post('/:id/test', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ message: 'Invalid sheet ID' });
     }
 
-    const [sheet] = await db
+    const [sheet] = await (db as any)
       .select()
       .from(googleSheets)
       .where(eq(googleSheets.id, id));
@@ -183,7 +183,7 @@ router.post('/:id/test', async (req, res) => {
         : 'Sheet may not be publicly accessible',
     });
   } catch (error) {
-    console.error('Error testing Google Sheet accessibility:', error);
+    logger.error('Error testing Google Sheet accessibility:', error);
     res.json({
       accessible: false,
       message: 'Unable to test sheet accessibility',
@@ -192,14 +192,14 @@ router.post('/:id/test', async (req, res) => {
 });
 
 // Analyze the structure of the target Google Sheet
-router.get('/sync/analyze', async (req, res) => {
+  router.get('/sync/analyze', async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
-    const syncService = new GoogleSheetsSyncService(storage);
+    const syncService = new GoogleSheetsSyncService(storage as any);
 
     const sheetName = (req.query.sheet as string) || 'Sheet1';
-    const analysis = await syncService.analyzeSheetStructure(sheetName);
+    const analysis = await (syncService as any).analyzeSheetStructure(sheetName);
 
     res.json({
       success: true,
@@ -208,21 +208,21 @@ router.get('/sync/analyze', async (req, res) => {
       targetSpreadsheetId: '1mjx5o6boluo8mNx8tzAV76NBGS6tF0um2Rq9bIdxPo8',
     });
   } catch (error) {
-    console.error('Error analyzing Google Sheet:', error);
+    logger.error('Error analyzing Google Sheet:', error);
     res.status(500).json({
       success: false,
       message: 'Google Sheets analysis failed. Please check API credentials.',
-      error: error.message,
+      error: (error as any).message,
     });
   }
 });
 
 // Import data from the target Google Sheet to database
-router.post('/sync/import', isAuthenticated, async (req, res) => {
+  router.post('/sync/import', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
-    const syncService = new GoogleSheetsSyncService(storage);
+    const syncService = new GoogleSheetsSyncService(storage as any);
 
     const {
       sheetName = 'Sheet1',
@@ -234,7 +234,7 @@ router.post('/sync/import', isAuthenticated, async (req, res) => {
       dryRun = false,
     } = req.body;
 
-    const result = await syncService.importFromGoogleSheet(sheetName, {
+    const result = await (syncService as any).importFromGoogleSheet(sheetName, {
       dateColumn,
       hostColumn,
       sandwichColumn,
@@ -251,24 +251,24 @@ router.post('/sync/import', isAuthenticated, async (req, res) => {
         : `Import complete: ${result.imported} records imported, ${result.skipped} skipped`,
     });
   } catch (error) {
-    console.error('Error importing from Google Sheet:', error);
+    logger.error('Error importing from Google Sheet:', error);
     res.status(500).json({
       success: false,
       message: 'Google Sheets import failed',
-      error: error.message,
+      error: (error as any).message,
     });
   }
 });
 
 // Export database data to Google Sheet
-router.post('/sync/export', isAuthenticated, async (req, res) => {
+  router.post('/sync/export', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
-    const syncService = new GoogleSheetsSyncService(storage);
+    const syncService = new GoogleSheetsSyncService(storage as any);
 
     const { sheetName = 'Database_Export' } = req.body;
-    const result = await syncService.exportToGoogleSheet(sheetName);
+    const result = await (syncService as any).exportToGoogleSheet(sheetName);
 
     res.json({
       success: true,
@@ -276,11 +276,11 @@ router.post('/sync/export', isAuthenticated, async (req, res) => {
       message: `Export complete: ${result.exported} records exported to ${sheetName}`,
     });
   } catch (error) {
-    console.error('Error exporting to Google Sheet:', error);
+    logger.error('Error exporting to Google Sheet:', error);
     res.status(500).json({
       success: false,
       message: 'Google Sheets export failed',
-      error: error.message,
+      error: (error as any).message,
     });
   }
 });
@@ -289,7 +289,7 @@ router.post('/sync/export', isAuthenticated, async (req, res) => {
 // ===================================
 
 // Get sync status for all projects
-router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
+  router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
   try {
     const { storage } = await import('../storage-wrapper');
     const projects = await storage.getAllProjects();
@@ -305,8 +305,8 @@ router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
         .filter((p) => p.lastSyncedAt)
         .sort(
           (a, b) =>
-            new Date(b.lastSyncedAt).getTime() -
-            new Date(a.lastSyncedAt).getTime()
+            new Date(b.lastSyncedAt!).getTime() -
+            new Date(a.lastSyncedAt!).getTime()
         )[0]?.lastSyncedAt,
       projects: projects.map((p) => ({
         id: p.id,
@@ -319,23 +319,23 @@ router.get('/projects/sync/status', isAuthenticated, async (req, res) => {
 
     res.json(syncStats);
   } catch (error) {
-    console.error('Error fetching sync status:', error);
+    logger.error('Error fetching sync status:', error);
     res.status(500).json({
       error: 'Failed to fetch sync status',
-      message: error.message,
+      message: (error as any).message,
     });
   }
 });
 
 // Sync projects TO Google Sheets
-router.post('/projects/sync/to-sheets', isAuthenticated, async (req, res) => {
+  router.post('/projects/sync/to-sheets', isAuthenticated, async (req, res) => {
   try {
     const { getGoogleSheetsSyncService } = await import(
       '../google-sheets-sync'
     );
     const { storage } = await import('../storage-wrapper');
 
-    const syncService = getGoogleSheetsSyncService(storage);
+    const syncService = getGoogleSheetsSyncService(storage as any);
     const result = await syncService.syncToGoogleSheets();
 
     if (result.success) {
@@ -351,24 +351,24 @@ router.post('/projects/sync/to-sheets', isAuthenticated, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error syncing to Google Sheets:', error);
+    logger.error('Error syncing to Google Sheets:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to sync to Google Sheets',
-      message: error.message,
+      message: (error as any).message,
     });
   }
 });
 
 // Sync projects FROM Google Sheets
-router.post('/projects/sync/from-sheets', isAuthenticated, async (req, res) => {
+  router.post('/projects/sync/from-sheets', isAuthenticated, async (req, res) => {
   try {
     const { getGoogleSheetsSyncService } = await import(
       '../google-sheets-sync'
     );
     const { storage } = await import('../storage-wrapper');
 
-    const syncService = getGoogleSheetsSyncService(storage);
+    const syncService = getGoogleSheetsSyncService(storage as any);
     const result = await syncService.syncFromGoogleSheets();
 
     if (result.success) {
@@ -385,7 +385,7 @@ router.post('/projects/sync/from-sheets', isAuthenticated, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error syncing from Google Sheets:', error);
+    logger.error('Error syncing from Google Sheets:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to sync from Google Sheets',
@@ -395,7 +395,7 @@ router.post('/projects/sync/from-sheets', isAuthenticated, async (req, res) => {
 });
 
 // Bidirectional project sync
-router.post(
+  router.post(
   '/projects/sync/bidirectional',
   isAuthenticated,
   async (req, res) => {
@@ -421,7 +421,7 @@ router.post(
         });
       }
     } catch (error) {
-      console.error('Error performing bidirectional sync:', error);
+      logger.error('Error performing bidirectional sync:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to perform bidirectional sync',
@@ -432,7 +432,7 @@ router.post(
 );
 
 // Check Google Sheets configuration
-router.get('/projects/config/check', async (req, res) => {
+  router.get('/projects/config/check', async (req, res) => {
   try {
     const requiredEnvVars = [
       'GOOGLE_PROJECT_ID',
@@ -453,7 +453,7 @@ router.get('/projects/config/check', async (req, res) => {
       worksheetName: process.env.GOOGLE_WORKSHEET_NAME || 'Sheet1',
     });
   } catch (error) {
-    console.error('Error checking configuration:', error);
+    logger.error('Error checking configuration:', error);
     res.status(500).json({
       configured: false,
       error: 'Failed to check configuration',
@@ -463,12 +463,12 @@ router.get('/projects/config/check', async (req, res) => {
 });
 
 // Append-only sync (safe for formatted sheets)
-router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
+  router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
   try {
     const { getGoogleSheetsService } = await import('../google-sheets-service');
 
     const config = {
-      spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID,
+      spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID!,
       worksheetName: process.env.GOOGLE_WORKSHEET_NAME || 'Sheet1',
     };
 
@@ -528,7 +528,7 @@ router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
       skipped: result.skipped,
     });
   } catch (error) {
-    console.error('Error in append-only sync:', error);
+    logger.error('Error in append-only sync:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to perform append-only sync',
@@ -538,7 +538,7 @@ router.post('/projects/sync/append-only', isAuthenticated, async (req, res) => {
 });
 
 // Mark project for review in next meeting
-router.post(
+  router.post(
   '/projects/:id/mark-for-review',
   isAuthenticated,
   async (req, res) => {
@@ -563,7 +563,7 @@ router.post(
         } for review in next meeting`,
       });
     } catch (error) {
-      console.error('Error updating project review status:', error);
+      logger.error('Error updating project review status:', error);
       res.status(500).json({
         error: 'Failed to update project review status',
         message: error.message,
@@ -573,7 +573,7 @@ router.post(
 );
 
 // Bidirectional sync between database and Google Sheet
-router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
+  router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
   try {
     const { GoogleSheetsSyncService } = await import('../google-sheets-sync');
     const { storage } = await import('../storage-wrapper');
@@ -597,7 +597,7 @@ router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
       message: `Sync complete: ${result.syncSummary}`,
     });
   } catch (error) {
-    console.error('Error syncing with Google Sheet:', error);
+    logger.error('Error syncing with Google Sheet:', error);
     res.status(500).json({
       success: false,
       message: 'Google Sheets sync failed',
@@ -610,7 +610,7 @@ router.post('/sync/bidirectional', isAuthenticated, async (req, res) => {
 // =======================================
 
 // Get sync status for event requests
-router.get('/event-requests/sync/status', isAuthenticated, async (req, res) => {
+  router.get('/event-requests/sync/status', isAuthenticated, async (req, res) => {
   try {
     const { getEventRequestsGoogleSheetsService } = await import(
       '../google-sheets-event-requests-sync'
@@ -640,7 +640,7 @@ router.get('/event-requests/sync/status', isAuthenticated, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching event requests sync status:', error);
+    logger.error('Error fetching event requests sync status:', error);
     res.status(500).json({
       configured: false,
       error: 'Failed to fetch event requests sync status',
@@ -650,7 +650,7 @@ router.get('/event-requests/sync/status', isAuthenticated, async (req, res) => {
 });
 
 // Sync event requests FROM Google Sheets (one-way import only)
-router.post(
+  router.post(
   '/event-requests/sync/from-sheets',
   isAuthenticated,
   async (req, res) => {
@@ -684,7 +684,7 @@ router.post(
         });
       }
     } catch (error) {
-      console.error('Error syncing event requests from Google Sheets:', error);
+      logger.error('Error syncing event requests from Google Sheets:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to sync event requests from Google Sheets',
@@ -695,7 +695,7 @@ router.post(
 );
 
 // Update event request status in Google Sheets
-router.post(
+  router.post(
   '/event-requests/:id/update-status',
   isAuthenticated,
   async (req, res) => {
@@ -730,7 +730,7 @@ router.post(
         );
 
         if (!result.success) {
-          console.warn(
+          logger.warn(
             'Failed to update Google Sheets status:',
             result.message
           );
@@ -743,7 +743,7 @@ router.post(
         sheetsUpdate: syncService ? 'attempted' : 'skipped',
       });
     } catch (error) {
-      console.error('Error updating event request status:', error);
+      logger.error('Error updating event request status:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to update event request status',
@@ -754,7 +754,7 @@ router.post(
 );
 
 // Check Google Sheets configuration for event requests
-router.get('/event-requests/config/check', async (req, res) => {
+  router.get('/event-requests/config/check', async (req, res) => {
   try {
     const requiredEnvVars = [
       'GOOGLE_PROJECT_ID',
@@ -775,7 +775,7 @@ router.get('/event-requests/config/check', async (req, res) => {
       worksheetName: 'Sheet1',
     });
   } catch (error) {
-    console.error('Error checking event requests configuration:', error);
+    logger.error('Error checking event requests configuration:', error);
     res.status(500).json({
       configured: false,
       error: 'Failed to check event requests configuration',
@@ -785,7 +785,7 @@ router.get('/event-requests/config/check', async (req, res) => {
 });
 
 // Test endpoint using service account JSON directly
-router.post('/test-direct-auth', async (req, res) => {
+  router.post('/test-direct-auth', async (req, res) => {
   try {
     const { google } = await import('googleapis');
 
@@ -835,7 +835,7 @@ TqvVOJ0zAgMBAAECggEAGMsmlOtvscXk21FhrJ5/9F[...truncated for security...]
       rowCount: response.data.values?.length || 0,
     });
   } catch (error) {
-    console.error('Direct auth test failed:', error);
+    logger.error('Direct auth test failed:', error);
     res.status(400).json({
       success: false,
       error: 'Direct auth failed: ' + (error as Error).message,
@@ -843,4 +843,6 @@ TqvVOJ0zAgMBAAECggEAGMsmlOtvscXk21FhrJ5/9F[...truncated for security...]
   }
 });
 
-export default router;
+  return router;
+}
+

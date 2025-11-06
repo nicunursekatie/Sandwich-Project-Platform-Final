@@ -15,6 +15,7 @@ interface DuplicateAnalysis {
   duplicateGroups: number;
   totalDuplicateEntries: number;
   suspiciousPatterns: number;
+  nearDuplicates: number;
   duplicates: Array<{
     entries: SandwichCollection[];
     count: number;
@@ -22,6 +23,15 @@ interface DuplicateAnalysis {
     toDelete: SandwichCollection[];
   }>;
   suspiciousEntries: SandwichCollection[];
+  nearDuplicateEntries?: Array<{
+    entry1: SandwichCollection;
+    entry2: SandwichCollection;
+    total1: number;
+    total2: number;
+    difference: number;
+    percentDifference: string;
+    reason: string;
+  }>;
 }
 
 interface DuplicateAnalysisProps {
@@ -72,30 +82,36 @@ export function DuplicateAnalysisDialog({
 
         <div className="space-y-6">
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold">
                 {analysis.totalCollections}
               </div>
-              <div className="text-sm text-gray-600">Collections</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">
-                {analysis.duplicateGroups}
-              </div>
-              <div className="text-sm text-gray-600">Groups</div>
+              <div className="text-sm text-gray-600">Total Collections</div>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-lg">
               <div className="text-2xl font-bold text-red-600">
                 {analysis.totalDuplicateEntries}
               </div>
-              <div className="text-sm text-gray-600">Duplicates</div>
+              <div className="text-sm text-gray-600">Exact Duplicates</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">
+                {analysis.nearDuplicates || 0}
+              </div>
+              <div className="text-sm text-gray-600">Near Duplicates</div>
             </div>
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
               <div className="text-2xl font-bold text-yellow-600">
                 {analysis.suspiciousPatterns}
               </div>
-              <div className="text-sm text-gray-600">Patterns</div>
+              <div className="text-sm text-gray-600">Suspicious</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">
+                {analysis.totalCollections - analysis.totalDuplicateEntries - (analysis.nearDuplicates || 0) - analysis.suspiciousPatterns}
+              </div>
+              <div className="text-sm text-gray-600">Clean Records</div>
             </div>
           </div>
 
@@ -175,6 +191,78 @@ export function DuplicateAnalysisDialog({
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Near-Duplicates (Potential Duplicates) */}
+          {analysis.nearDuplicateEntries && analysis.nearDuplicateEntries.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Potential Duplicates (Same Date & Location)</h3>
+              <div className="text-sm text-gray-600 mb-2">
+                These entries share the same date and host but have slightly different totals. They may be duplicates with data entry errors:
+              </div>
+              <div className="space-y-3">
+                {analysis.nearDuplicateEntries.map((nearDup, index) => (
+                  <div key={index} className="border rounded-lg p-4 bg-blue-50 border-l-4 border-blue-500">
+                    <div className="flex justify-between items-center mb-2">
+                      <Badge className="bg-blue-100 text-blue-800">
+                        NEEDS REVIEW
+                      </Badge>
+                      <span className="text-sm text-gray-600 font-medium">
+                        {nearDup.reason}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Entry 1 */}
+                      <div className="p-3 bg-white rounded border">
+                        <div className="text-xs text-gray-500 mb-1">Entry 1 (ID: {nearDup.entry1.id})</div>
+                        <div className="text-sm font-medium">
+                          {nearDup.entry1.collectionDate} - {nearDup.entry1.hostName}
+                        </div>
+                        <div className="text-sm mt-1">
+                          Individual: {nearDup.entry1.individualSandwiches}
+                        </div>
+                        <div className="text-sm">
+                          Groups: {(nearDup.entry1.group1Count || 0) + (nearDup.entry1.group2Count || 0)}
+                        </div>
+                        <div className="text-sm font-bold mt-1">
+                          Total: {nearDup.total1}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Submitted: {new Date(nearDup.entry1.submittedAt).toLocaleString()}
+                        </div>
+                      </div>
+
+                      {/* Entry 2 */}
+                      <div className="p-3 bg-white rounded border">
+                        <div className="text-xs text-gray-500 mb-1">Entry 2 (ID: {nearDup.entry2.id})</div>
+                        <div className="text-sm font-medium">
+                          {nearDup.entry2.collectionDate} - {nearDup.entry2.hostName}
+                        </div>
+                        <div className="text-sm mt-1">
+                          Individual: {nearDup.entry2.individualSandwiches}
+                        </div>
+                        <div className="text-sm">
+                          Groups: {(nearDup.entry2.group1Count || 0) + (nearDup.entry2.group2Count || 0)}
+                        </div>
+                        <div className="text-sm font-bold mt-1">
+                          Total: {nearDup.total2}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Submitted: {new Date(nearDup.entry2.submittedAt).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {nearDup.difference > 0 && (
+                      <div className="mt-2 text-xs text-gray-600 text-center">
+                        Difference: {nearDup.difference} sandwiches ({nearDup.percentDifference}%)
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

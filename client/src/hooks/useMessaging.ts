@@ -4,6 +4,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { createWebSocketConnection } from '@/utils/websocket-helper';
+import { logger } from '@/lib/logger';
 
 interface UnreadCounts {
   general: number;
@@ -41,8 +42,9 @@ interface Message {
 interface SendMessageParams {
   recipientIds: string[];
   content: string;
-  contextType?: 'suggestion' | 'project' | 'task' | 'direct';
+  contextType?: 'suggestion' | 'project' | 'task' | 'event' | 'graphic' | 'expense' | 'collection' | 'direct';
   contextId?: string;
+  contextTitle?: string;
   parentMessageId?: number;
 }
 
@@ -136,7 +138,7 @@ export function useMessaging() {
           task: (contextCounts && contextCounts.task) || 0,
         };
       } catch (error) {
-        console.warn('Unread counts fetch failed:', error);
+        logger.warn('Unread counts fetch failed:', error);
         return {
           general: 0,
           committee: 0,
@@ -219,7 +221,7 @@ export function useMessaging() {
   // Listen for notification refresh events (from chat mark-as-read)
   useEffect(() => {
     const handleNotificationRefresh = () => {
-      console.log(
+      logger.log(
         'Notification refresh event received in useMessaging hook - refetching counts'
       );
       refetchUnreadCounts();
@@ -239,7 +241,7 @@ export function useMessaging() {
   useEffect(() => {
     if (!isValidUser(user)) return;
 
-    console.log('Setting up messaging WebSocket for user:', user.id);
+    logger.log('Setting up messaging WebSocket for user:', user.id);
     
     const { cleanup } = createWebSocketConnection(
       {
@@ -249,7 +251,7 @@ export function useMessaging() {
       },
       {
         onOpen: (ws) => {
-          console.log('Messaging WebSocket connected successfully');
+          logger.log('Messaging WebSocket connected successfully');
           // Identify user
           ws.send(JSON.stringify({ type: 'identify', userId: user.id }));
           setWsConnection(ws);
@@ -276,20 +278,20 @@ export function useMessaging() {
               queryClient.invalidateQueries({ queryKey: ['/api/messaging'] });
             }
           } catch (error) {
-            console.error('Failed to parse WebSocket message:', error);
+            logger.error('Failed to parse WebSocket message:', error);
           }
         },
         onError: (error) => {
-          console.error('Messaging WebSocket error:', error);
+          logger.error('Messaging WebSocket error:', error);
           setWsConnection(null);
         },
         onClose: (event) => {
-          console.log('Messaging WebSocket disconnected:', event.code, event.reason);
+          logger.log('Messaging WebSocket disconnected:', event.code, event.reason);
           setWsConnection(null);
 
           // Only log warning for unexpected closures
           if (event.code !== 1000 && event.code !== 1001) {
-            console.warn(
+            logger.warn(
               'WebSocket closed unexpectedly:',
               event.code,
               event.reason
@@ -352,7 +354,7 @@ export function useMessaging() {
         );
         return response.messages || [];
       } catch (error) {
-        console.error('Failed to fetch context messages:', error);
+        logger.error('Failed to fetch context messages:', error);
         return [];
       }
     },

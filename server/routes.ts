@@ -1,18 +1,44 @@
 import type { Express } from 'express';
-import { createServer, type Server } from 'http';
 import express from 'express';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import { storage } from './storage-wrapper';
 import { createActivityLogger } from './middleware/activity-logger';
 import createMainRoutes from './routes/index';
-import { requirePermission } from './middleware/auth';
+import { requirePermission, blockInactiveUsers } from './middleware/auth';
 import { createCorsMiddleware, logCorsConfig } from './config/cors';
+import { logger } from './utils/production-safe-logger';
 
-export async function registerRoutes(app: Express): Promise<Server> {
+/**
+ * ⚠️  WARNING: LEGACY ROUTING SYSTEM - DO NOT ADD NEW ROUTES HERE! ⚠️
+ *
+ * This file is part of the LEGACY routing system and should NOT be used for new routes.
+ *
+ * ❌ DO NOT:
+ *   - Add new route registrations to this file
+ *   - Import new route files here
+ *   - Use app.use() or app.get/post/etc. to register routes
+ *
+ * ✅ DO INSTEAD:
+ *   - Add new routes to server/routes/index.ts using the modular system
+ *   - Use the RouterDependencies pattern for dependency injection
+ *   - Follow the example of existing routes in server/routes/
+ *
+ * 📚 DOCUMENTATION:
+ *   See ROUTING_CONSOLIDATION_PLAN.md for migration details
+ *
+ * 🔍 AUTOMATED CHECK:
+ *   Run `npm run check:routes` to verify no new legacy routes have been added
+ *
+ * This file will eventually be deprecated. All new development should use
+ * the modular routing system in server/routes/index.ts.
+ */
+
+export async function registerRoutes(app: Express): Promise<any> {
   // Use database-backed session store for deployment persistence
   // Use production database when PRODUCTION_DATABASE_URL is set (deployed app)
-  const databaseUrl = process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
+  const databaseUrl =
+    process.env.PRODUCTION_DATABASE_URL || process.env.DATABASE_URL;
   const PgSession = connectPg(session);
   const sessionStore = new PgSession({
     conString: databaseUrl,
@@ -25,6 +51,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   logCorsConfig(); // Log configuration for debugging
   app.use(createCorsMiddleware());
 
+  // Determine if we're in production (deployed) or development environment
+  // For Replit: disable secure cookies in development to allow HTTP
+  const isProduction = !!process.env.PRODUCTION_DATABASE_URL;
+  const isReplitDev = !!(process.env.REPL_ID || process.env.REPLIT_DB_URL);
+  const useSecureCookies = isProduction && !isReplitDev;
+
+  logger.log('[Session Config]', {
+    isProduction,
+    isReplitDev,
+    useSecureCookies,
+    cookieSettings: {
+      secure: useSecureCookies,
+      sameSite: useSecureCookies ? 'none' : 'lax',
+    },
+  });
+
   // Add session middleware with enhanced security and mobile compatibility
   app.use(
     session({
@@ -33,10 +75,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       resave: false, // Only save session when modified - prevents unnecessary DB writes
       saveUninitialized: false,
       cookie: {
-        secure: false, // Replit deployment isn't true HTTPS production - set to false
+        secure: useSecureCookies, // Only require HTTPS in true production (not Replit dev)
         httpOnly: true, // Prevent XSS attacks by blocking client-side access
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for extended user sessions
-        sameSite: 'lax', // Use 'lax' for Replit compatibility - 'none' requires HTTPS
+        sameSite: useSecureCookies ? 'none' : 'lax', // 'none' for production mobile, 'lax' for development
         domain: undefined, // Let Express auto-detect domain for Replit
       },
       name: 'tsp.session', // Custom session name
@@ -44,18 +86,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
-  // Import authentication middleware for legacy routes that still need it
-  const { isAuthenticated, setupTempAuth } = await import('./temp-auth');
-  
-  // Setup temp auth routes (including login page)
-  setupTempAuth(app);
+  // Import authentication middleware and setup
+  const { isAuthenticated, setupAuth } = await import('./auth');
+
+  // Setup authentication routes (including login page)
+  setupAuth(app);
 
   // Add activity logging middleware after authentication setup
   app.use(createActivityLogger({ storage }));
 
+  // Block inactive (pending approval) users from accessing protected routes
+  app.use(blockInactiveUsers);
+  logger.log('✅ Inactive user blocking middleware enabled');
+
   // Disable caching for all API routes to prevent development issues
   app.use('/api', (req, res, next) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, private'
+    );
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     next();
@@ -75,103 +124,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { signupRoutes } = await import('./routes/signup');
   app.use('/api', signupRoutes);
 
-  const passwordResetRoutes = await import('./routes/password-reset');
-  app.use('/api', passwordResetRoutes.default);
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
+  // const passwordResetRoutes = await import('./routes/password-reset');
+  // app.use('/api', passwordResetRoutes.default);
 
   // === ENTITY MANAGEMENT ROUTES ===
-  const driversRoutes = await import('./routes/drivers');
-  app.use('/api/drivers', driversRoutes.default(isAuthenticated, storage));
+  // REMOVED: Duplicate routes - now handled by modular system
+  // const driversRoutes = await import('./routes/drivers');
+  // app.use('/api/drivers', driversRoutes.default(isAuthenticated, storage));
+  // const volunteersRoutes = await import('./routes/volunteers');
+  // app.use('/api/volunteers', volunteersRoutes.default(isAuthenticated, storage));
+  // const { hostsRoutes } = await import('./routes/hosts');
+  // app.use('/api', hostsRoutes);
 
-  const volunteersRoutes = await import('./routes/volunteers');
-  app.use(
-    '/api/volunteers',
-    volunteersRoutes.default(isAuthenticated, storage)
-  );
-
-  const { hostsRoutes } = await import('./routes/hosts');
-  app.use('/api', hostsRoutes);
-
-  const recipientsRoutes = await import('./routes/recipients');
-  app.use('/api/recipients', recipientsRoutes.default);
-
-  const recipientTspContactRoutes = await import(
-    './routes/recipient-tsp-contacts'
-  );
-  app.use('/api/recipient-tsp-contacts', recipientTspContactRoutes.default);
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
+  // const recipientsRoutes = await import('./routes/recipients');
+  // app.use('/api/recipients', recipientsRoutes.default);
 
   // === EVENT & DATA MANAGEMENT ===
-  const eventRequestRoutes = await import('./routes/event-requests');
-  app.use('/api/event-requests', eventRequestRoutes.default);
+  // REMOVED: Duplicate routes - now handled by modular system in server/routes/index.ts
+  // const recipientTspContactRoutes = await import('./routes/recipient-tsp-contacts');
+  // app.use('/api/recipient-tsp-contacts', recipientTspContactRoutes.default);
+  // const eventRequestRoutes = await import('./routes/event-requests');
+  // app.use('/api/event-requests', eventRequestRoutes.default);
+  // const eventRemindersRoutes = await import('./routes/event-reminders');
+  // app.use('/api/event-reminders', eventRemindersRoutes.default(isAuthenticated, storage));
+  // const sandwichDistributionsRoutes = await import('./routes/sandwich-distributions');
+  // app.use('/api/sandwich-distributions', sandwichDistributionsRoutes.default);
+  // const importEventsRoutes = await import('./routes/import-events');
+  // app.use('/api/import', importEventsRoutes.default);
+  // const dataManagementRoutes = await import('./routes/data-management');
+  // app.use('/api', dataManagementRoutes.default);
 
-  const eventRemindersRoutes = await import('./routes/event-reminders');
-  app.use(
-    '/api/event-reminders',
-    eventRemindersRoutes.default(isAuthenticated, storage)
-  );
-
-  const sandwichDistributionsRoutes = await import(
-    './routes/sandwich-distributions'
-  );
-  app.use('/api/sandwich-distributions', sandwichDistributionsRoutes.default);
-
-  const importEventsRoutes = await import('./routes/import-events');
-  app.use('/api/import', importEventsRoutes.default);
-
-  // === DOCUMENT MANAGEMENT ===
-  const { createDocumentsRouter } = await import('./routes/documents');
-  app.use('/api/documents', createDocumentsRouter(storage));
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
+  // Dashboard Documents Configuration
+  // const dashboardDocumentsRoutes = await import('./routes/dashboard-documents');
+  // app.use('/api/dashboard-documents', dashboardDocumentsRoutes.default(isAuthenticated, requirePermission, storage));
 
   // === COMMUNICATION & EXTERNAL SERVICES ===
-  const emailRoutes = await import('./routes/email-routes');
-  app.use('/api/emails', emailRoutes.default);
-
-  const { streamRoutes } = await import('./routes/stream');
-  app.use('/api/stream', isAuthenticated, streamRoutes);
-
-  // Message notifications routes
-  const { registerMessageNotificationRoutes } = await import('./routes/message-notifications');
-  registerMessageNotificationRoutes(app);
-
-  // Announcements routes
-  const { registerAnnouncementRoutes } = await import('./routes/announcements');
-  registerAnnouncementRoutes(app);
+  // REMOVED: Duplicate routes - now handled by modular system in server/routes/index.ts
+  // const emailRoutes = await import('./routes/email-routes');
+  // app.use('/api/emails', emailRoutes.default);
+  // const { streamRoutes } = await import('./routes/stream');
+  // app.use('/api/stream', isAuthenticated, streamRoutes);
+  // const onboardingRoutes = await import('./routes/onboarding');
+  // app.use('/api/onboarding', onboardingRoutes.default);
+  // const { registerMessageNotificationRoutes } = await import('./routes/message-notifications');
+  // registerMessageNotificationRoutes(app);
+  // const { registerAnnouncementRoutes } = await import('./routes/announcements');
+  // registerAnnouncementRoutes(app);
+  // const { registerPerformanceRoutes } = await import('./routes/performance');
+  // registerPerformanceRoutes(app);
 
   // User routes are now handled by the modular system in server/routes/index.ts
 
-  // Register performance optimization routes
-  const { registerPerformanceRoutes } = await import('./routes/performance');
-  registerPerformanceRoutes(app);
+  // REMOVED: Duplicate routes - now handled by modular system in server/routes/index.ts
+  // const googleSheetsRoutes = await import('./routes/google-sheets');
+  // app.use('/api/google-sheets', googleSheetsRoutes.default);
+  // const googleCalendarRoutes = await import('./routes/google-calendar');
+  // app.use('/api/google-calendar', googleCalendarRoutes.default);
+  // const routeOptimizationRoutes = await import('./routes/routes');
+  // app.use('/api/routes', routeOptimizationRoutes.default);
 
-  // Google Sheets sync routes
-  const googleSheetsRoutes = await import('./routes/google-sheets');
-  app.use('/api/google-sheets', googleSheetsRoutes.default);
-
+  // REMOVED: Duplicate route - now handled by modular system in server/routes/index.ts
   // Monitoring routes for weekly collection tracking
-  try {
-    const monitoringRoutes = await import('./routes/monitoring');
-    console.log('✅ Monitoring routes loaded successfully');
-    app.use('/api/monitoring', isAuthenticated, monitoringRoutes.default);
-  } catch (error) {
-    console.error('❌ Failed to load monitoring routes:', error);
-  }
+  // try {
+  //   const monitoringRoutes = await import('./routes/monitoring');
+  //   logger.log('✅ Monitoring routes loaded successfully');
+  //   app.use('/api/monitoring', isAuthenticated, monitoringRoutes.default);
+  // } catch (error) {
+  //   logger.error('❌ Failed to load monitoring routes:', error);
+  // }
 
   // Add catch-all handler for unknown API routes to prevent SPA fallback serving HTML
   // This must come AFTER all legitimate API routes but BEFORE static file serving
   app.use('/api', (req, res, next) => {
     // Only catch unmatched API routes, not the root path or static files
     if (req.path.startsWith('/api/') && !res.headersSent) {
-      res.status(404).json({ 
+      res.status(404).json({
         error: 'API endpoint not found',
         path: req.path,
-        method: req.method 
+        method: req.method,
       });
     } else {
       next();
     }
   });
 
-  // Create HTTP server
-  const server = createServer(app);
+  // HTTP server is created by the caller (server/index.ts)
+  // This function only registers routes and middleware
 
-  return server;
+  // Return the session store so it can be used for monitoring
+  return sessionStore;
 }

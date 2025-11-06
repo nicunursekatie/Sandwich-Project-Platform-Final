@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -9,8 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -24,8 +24,6 @@ import {
   Mail,
   Phone,
   Calendar,
-  Search,
-  Filter,
   Users,
   MapPin,
   ExternalLink,
@@ -34,30 +32,21 @@ import {
   Clock,
   CheckCircle,
   UserCheck,
+  Edit,
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/date-utils';
-
-interface Group {
-  name: string;
-  contacts: Array<{
-    name: string;
-    email?: string;
-    status?: string;
-    latestRequestDate?: string;
-    totalRequests?: number;
-    hasHostedEvent?: boolean;
-    eventDate?: string | null;
-  }>;
-  totalRequests: number;
-  lastRequestDate: string;
-  hasHostedEvent: boolean;
-}
+import { logger } from '@/lib/logger';
+import { StandardFilterBar } from '@/components/ui/standard-filter-bar';
 
 interface OrganizationContact {
   organizationName: string;
   contactName: string;
   email?: string;
+  phone?: string;
   department?: string;
+  category?: string | null;
+  schoolClassification?: string | null;
+  isReligious?: boolean;
   latestRequestDate: string;
   latestActivityDate: string;
   totalRequests: number;
@@ -68,6 +57,8 @@ interface OrganizationContact {
     | 'scheduled'
     | 'past'
     | 'declined'
+    | 'postponed'
+    | 'cancelled'
     | 'contact_completed'
     | 'in_process';
   hasHostedEvent: boolean;
@@ -81,21 +72,61 @@ interface OrganizationContact {
   tspContactAssigned?: string | null;
   assignedTo?: string | null;
   assignedToName?: string | null;
+  pastEvents?: Array<{ date: string; sandwichCount: number }>;
 }
 
 interface GroupCatalogProps {
   onNavigateToEventPlanning?: () => void;
 }
 
+// Helper function to get category display label
+const getCategoryLabel = (category: string | null | undefined): string => {
+  if (!category) return 'Uncategorized';
+  const labels: Record<string, string> = {
+    school: 'School',
+    church_faith: 'Church/Faith',
+    club: 'Club',
+    neighborhood: 'Neighborhood',
+    large_corp: 'Corporation',
+    small_medium_corp: 'Small Business',
+    other: 'Other',
+  };
+  return labels[category] || category;
+};
+
+// Helper function to get category badge color
+const getCategoryBadgeColor = (category: string | null | undefined): string => {
+  if (!category) return 'bg-gray-100 text-gray-700';
+  const colors: Record<string, string> = {
+    school: 'bg-blue-100 text-blue-700',
+    church_faith: 'bg-purple-100 text-purple-700',
+    club: 'bg-green-100 text-green-700',
+    neighborhood: 'bg-yellow-100 text-yellow-700',
+    large_corp: 'bg-orange-100 text-orange-700',
+    small_medium_corp: 'bg-teal-100 text-teal-700',
+    other: 'bg-gray-100 text-gray-700',
+  };
+  return colors[category] || 'bg-gray-100 text-gray-700';
+};
+
 export default function GroupCatalog({
-  onNavigateToEventPlanning,
+  onNavigateToEventPlanning: _onNavigateToEventPlanning,
 }: GroupCatalogProps = {}) {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchScope, setSearchScope] = useState<'all' | 'organization' | 'department'>('all');
   const [sortBy, setSortBy] = useState('groupName');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Consolidated filter state
+  const [filters, setFilters] = useState({
+    status: ['contacted', 'scheduled', 'completed', 'declined', 'past'] as string[],
+    category: [] as string[],
+    dateRange: {} as { from?: Date; to?: Date },
+    hostedEvents: [] as string[], // 'hosted', 'not-hosted'
+  });
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(24);
   const [selectedOrganization, setSelectedOrganization] =
     useState<OrganizationContact | null>(null);
   const [showEventDetailsDialog, setShowEventDetailsDialog] = useState(false);
@@ -104,6 +135,8 @@ export default function GroupCatalog({
   const [organizationDetails, setOrganizationDetails] = useState<any>(null);
   const [loadingOrganizationDetails, setLoadingOrganizationDetails] =
     useState(false);
+  const [showContactDetailsModal, setShowContactDetailsModal] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<OrganizationContact | null>(null);
 
   // Fetch groups data
   const {
@@ -113,15 +146,14 @@ export default function GroupCatalog({
   } = useQuery({
     queryKey: ['/api/groups-catalog'],
     queryFn: async () => {
-      console.log('🔄 Groups catalog fetching data from API...');
+      logger.log('🔄 Groups catalog fetching data from API...');
       const response = await fetch('/api/groups-catalog');
       if (!response.ok) throw new Error('Failed to fetch groups');
       const data = await response.json();
-      console.log('✅ Groups catalog received data:', data);
+      logger.log('✅ Groups catalog received data:', data);
       return data;
     },
-    staleTime: 0, // Always consider data stale so it refetches when invalidated
-    refetchOnWindowFocus: true, // Refetch when window gains focus
+    // Use global defaults (5 min staleTime) - invalidateQueries handles refetch on mutations
   });
 
   // Function to fetch complete event details
@@ -139,7 +171,7 @@ export default function GroupCatalog({
       const details = await response.json();
       setEventDetails(details);
     } catch (error) {
-      console.error('Error fetching event details:', error);
+      logger.error('Error fetching event details:', error);
       setEventDetails(null);
     } finally {
       setLoadingEventDetails(false);
@@ -160,11 +192,19 @@ export default function GroupCatalog({
       setOrganizationDetails(details);
       setShowEventDetailsDialog(true);
     } catch (error) {
-      console.error('Error fetching organization details:', error);
+      logger.error('Error fetching organization details:', error);
       setOrganizationDetails(null);
     } finally {
       setLoadingOrganizationDetails(false);
     }
+  };
+
+  // Function to navigate to event request for editing
+  const handleEditEventRequest = (eventId: number) => {
+    // Close the dialog
+    setShowEventDetailsDialog(false);
+    // Navigate to event requests page with the event ID
+    setLocation(`/event-requests?eventId=${eventId}`);
   };
 
   // Helper function to get status badge color
@@ -175,7 +215,7 @@ export default function GroupCatalog({
       case 'contacted':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'in_process':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border';
       case 'scheduled':
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'completed':
@@ -192,6 +232,16 @@ export default function GroupCatalog({
   // Extract and flatten groups from response
   const rawGroups = groupsResponse?.groups || [];
 
+  // Create category lookup map by organization name
+  const organizationCategoryMap = new Map<string, { category: string | null, schoolClassification: string | null, isReligious: boolean }>();
+  rawGroups.forEach((org: any) => {
+    organizationCategoryMap.set(org.name, {
+      category: org.category || null,
+      schoolClassification: org.schoolClassification || null,
+      isReligious: org.isReligious || false,
+    });
+  });
+
   // Convert to flat structure and separate active vs historical organizations
   // Combine departments and contacts but deduplicate by unique key
   const allContactsAndDepartments = rawGroups.flatMap((org: any) => {
@@ -200,6 +250,7 @@ export default function GroupCatalog({
       organizationName: org.name,
       contactName: contact.contactName || contact.name,
       email: contact.email,
+      phone: contact.phone,
       department: contact.department,
       latestRequestDate: contact.latestRequestDate || org.lastRequestDate,
       latestActivityDate:
@@ -219,6 +270,9 @@ export default function GroupCatalog({
       tspContactAssigned: contact.tspContactAssigned || null,
       assignedTo: contact.assignedTo || null,
       assignedToName: contact.assignedToName || null,
+      category: org.category || null,
+      schoolClassification: org.schoolClassification || null,
+      isReligious: org.isReligious || false,
     }));
   });
 
@@ -233,36 +287,59 @@ export default function GroupCatalog({
 
   const allOrganizations: OrganizationContact[] = Array.from(uniqueOrganizationsMap.values());
 
-  // Separate active organizations (with event requests) from historical ones (sandwich collections only)
-  const activeOrganizations = allOrganizations.filter(
-    (org) => org.email && org.contactName !== 'Historical Organization'
-  );
+  // Filter all organizations uniformly (no separation between active/historical)
+  const filteredActiveGroups = allOrganizations.filter((org) => {
+    // Search logic based on scope
+    let matchesSearch = true;
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
 
-  const historicalOrganizations = allOrganizations.filter(
-    (org) => !org.email || org.contactName === 'Historical Organization'
-  );
+      if (searchScope === 'organization') {
+        // Only search organization name
+        matchesSearch = org.organizationName && org.organizationName.toLowerCase().includes(lowerSearchTerm);
+      } else if (searchScope === 'department') {
+        // Only search department name
+        matchesSearch = org.department && org.department.toLowerCase().includes(lowerSearchTerm);
+      } else {
+        // Search all fields (default)
+        matchesSearch =
+          (org.organizationName && org.organizationName.toLowerCase().includes(lowerSearchTerm)) ||
+          (org.contactName && org.contactName.toLowerCase().includes(lowerSearchTerm)) ||
+          (org.email && org.email.toLowerCase().includes(lowerSearchTerm)) ||
+          (org.phone && org.phone.includes(searchTerm)) ||
+          (org.department && org.department.toLowerCase().includes(lowerSearchTerm));
+      }
+    }
 
-  // Filter active organizations
-  const filteredActiveGroups = activeOrganizations.filter((org) => {
-    const matchesSearch =
-      org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      org.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (org.email &&
-        org.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (org.department &&
-        org.department.toLowerCase().includes(searchTerm.toLowerCase()));
+    // Category filter - empty array means show all categories
+    const orgCategory = org.category || null;
+    const matchesCategory = filters.category.length === 0 || filters.category.includes(orgCategory || '');
 
-    const matchesStatus = statusFilter === 'all' || org.status === statusFilter;
+    // For organizations without email/status (from collections only), only apply search and category filter
+    if (!org.email || org.contactName === 'Historical Organization' || org.contactName === 'Collection Logged Only') {
+      return matchesSearch && matchesCategory;
+    }
 
-    return matchesSearch && matchesStatus;
-  });
+    // For organizations with event requests, apply all filters
+    const matchesStatus = filters.status.length === 0 || filters.status.includes(org.status);
 
-  // Filter historical organizations (simpler filtering since they don't have emails/status)
-  const filteredHistoricalGroups = historicalOrganizations.filter((org) => {
-    return (
-      org.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      org.contactName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Use event date for filtering (when the event actually happened), not activity date (when it was created)
+    const eventDate = org.eventDate ? new Date(org.eventDate) : null;
+    const matchesDateStart = !filters.dateRange.from || !eventDate || eventDate >= filters.dateRange.from;
+    const matchesDateEnd = !filters.dateRange.to || !eventDate || eventDate <= filters.dateRange.to;
+
+    // Hosted events filter
+    // "Never Hosted" = organizations that were declined/postponed/cancelled (they engaged but never hosted)
+    // "Has Hosted" = organizations with completed events or collection data
+    // CRITICAL: If actualSandwichTotal > 0, they DEFINITELY hosted - exclude from "Never Hosted"
+    const matchesHosted = filters.hostedEvents.length === 0 ||
+      (filters.hostedEvents.includes('hosted') && (org.hasHostedEvent || (org.actualSandwichTotal && org.actualSandwichTotal > 0))) ||
+      (filters.hostedEvents.includes('not-hosted') && 
+        !org.hasHostedEvent && 
+        (!org.actualSandwichTotal || org.actualSandwichTotal === 0) && 
+        ['declined', 'postponed', 'cancelled'].includes(org.status));
+
+    return matchesSearch && matchesCategory && matchesStatus && matchesDateStart && matchesDateEnd && matchesHosted;
   });
 
   // Group entries by group name
@@ -280,7 +357,7 @@ export default function GroupCatalog({
   const activeGroupInfo: GroupInfo[] = Array.from(
     filteredActiveGroups
       .reduce((groups: Map<string, GroupInfo>, org) => {
-        const orgName = org.organizationName;
+        const orgName = org.organizationName || 'Unknown Organization';
 
         if (!groups.has(orgName)) {
           groups.set(orgName, {
@@ -318,39 +395,24 @@ export default function GroupCatalog({
       .values()
   );
 
-  // Process historical organizations into groups
-  const historicalGroupInfo: GroupInfo[] = Array.from(
-    filteredHistoricalGroups
-      .reduce((groups: Map<string, GroupInfo>, org) => {
-        const orgName = org.organizationName;
-
-        if (!groups.has(orgName)) {
-          groups.set(orgName, {
-            groupName: orgName,
-            departments: [],
-            totalRequests: 0,
-            totalDepartments: 0,
-            hasHostedEvent: org.hasHostedEvent,
-            latestRequestDate: org.latestRequestDate,
-            latestActivityDate: org.latestActivityDate,
-          });
-        }
-
-        const group = groups.get(orgName)!;
-        group.departments.push(org);
-        group.hasHostedEvent = group.hasHostedEvent || org.hasHostedEvent;
-
-        return groups;
-      }, new Map())
-      .values()
-  );
-
-  // Sort active groups by organization name or latest activity date
+  // Sort groups by organization name or latest activity date
   const sortedActiveGroups = activeGroupInfo.sort((a, b) => {
     if (sortBy === 'groupName') {
+      const aName = a.groupName || '';
+      const bName = b.groupName || '';
       return sortOrder === 'desc'
-        ? b.groupName.localeCompare(a.groupName)
-        : a.groupName.localeCompare(b.groupName);
+        ? bName.localeCompare(aName)
+        : aName.localeCompare(bName);
+    }
+
+    if (sortBy === 'category') {
+      const aInfo = organizationCategoryMap.get(a.groupName);
+      const bInfo = organizationCategoryMap.get(b.groupName);
+      const aCategory = getCategoryLabel(aInfo?.category);
+      const bCategory = getCategoryLabel(bInfo?.category);
+      return sortOrder === 'desc'
+        ? bCategory.localeCompare(aCategory)
+        : aCategory.localeCompare(bCategory);
     }
 
     // Default sort by latest activity date (includes both requests and collections)
@@ -359,12 +421,7 @@ export default function GroupCatalog({
     return sortOrder === 'desc' ? bDate - aDate : aDate - bDate;
   });
 
-  // Sort historical groups by organization name
-  const sortedHistoricalGroups = historicalGroupInfo.sort((a, b) => {
-    return a.groupName.localeCompare(b.groupName);
-  });
-
-  // Sort departments within each active group
+  // Sort departments within each group
   sortedActiveGroups.forEach((group) => {
     group.departments.sort((a, b) => {
       if (sortBy === 'eventDate') {
@@ -387,6 +444,14 @@ export default function GroupCatalog({
           : a.totalRequests - b.totalRequests;
       }
 
+      if (sortBy === 'category') {
+        const aCategory = getCategoryLabel(a.category);
+        const bCategory = getCategoryLabel(b.category);
+        return sortOrder === 'desc'
+          ? bCategory.localeCompare(aCategory)
+          : aCategory.localeCompare(bCategory);
+      }
+
       // Sort by contact name or department
       const aValue = a.department || a.contactName;
       const bValue = b.department || b.contactName;
@@ -403,7 +468,7 @@ export default function GroupCatalog({
   const totalActivePages = Math.ceil(totalActiveItems / itemsPerPage);
   
   // Debug logging
-  console.log('🔍 Pagination Debug:', {
+  logger.log('🔍 Pagination Debug:', {
     totalActiveItems,
     totalActivePages,
     itemsPerPage,
@@ -412,18 +477,14 @@ export default function GroupCatalog({
   });
   const activeStartIndex = (currentPage - 1) * itemsPerPage;
   const activeEndIndex = activeStartIndex + itemsPerPage;
-  const paginatedActiveGroups = sortedActiveGroups.slice(
-    activeStartIndex,
-    activeEndIndex
-  );
-
-  // Historical groups don't need pagination initially - show all
-  const paginatedHistoricalGroups = sortedHistoricalGroups;
+  const paginatedActiveGroups = Array.isArray(sortedActiveGroups)
+    ? sortedActiveGroups.slice(activeStartIndex, activeEndIndex)
+    : [];
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, sortBy, sortOrder]);
+  }, [searchTerm, searchScope, filters, sortBy, sortOrder]);
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -464,7 +525,7 @@ export default function GroupCatalog({
         );
       case 'in_process':
         return (
-          <Badge className="bg-gradient-to-r from-blue-100 to-indigo-200 text-blue-800 border border-blue-300 shadow-sm">
+          <Badge className="bg-gradient-to-r from-blue-100 to-indigo-200 text-brand-primary-dark border border-brand-primary-border-strong shadow-sm">
             In Process
           </Badge>
         );
@@ -564,50 +625,124 @@ export default function GroupCatalog({
 
       {/* Search and Filter Controls */}
       <div className="bg-white rounded-lg border p-4 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Search */}
-          <div className="md:col-span-2 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search organizations, contacts, emails..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        <StandardFilterBar
+          searchPlaceholder="Search organizations, contacts, emails, phone numbers, departments..."
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          filters={[
+            {
+              id: 'status',
+              label: 'Status',
+              type: 'multi-select',
+              options: [
+                { value: 'new', label: 'New Requests', count: allOrganizations.filter(o => o.status === 'new').length },
+                { value: 'in_process', label: 'In Process', count: allOrganizations.filter(o => o.status === 'in_process').length },
+                { value: 'contacted', label: 'Contacted', count: allOrganizations.filter(o => o.status === 'contacted').length },
+                { value: 'scheduled', label: 'Upcoming Events', count: allOrganizations.filter(o => o.status === 'scheduled').length },
+                { value: 'completed', label: 'Completed', count: allOrganizations.filter(o => o.status === 'completed').length },
+                { value: 'declined', label: 'Declined', count: allOrganizations.filter(o => o.status === 'declined').length },
+                { value: 'postponed', label: 'Postponed', count: allOrganizations.filter(o => o.status === 'postponed').length },
+                { value: 'cancelled', label: 'Cancelled', count: allOrganizations.filter(o => o.status === 'cancelled').length },
+                { value: 'past', label: 'Past Events', count: allOrganizations.filter(o => o.status === 'past').length },
+              ],
+            },
+            {
+              id: 'category',
+              label: 'Category',
+              type: 'multi-select',
+              options: [
+                { value: 'school', label: 'School', count: allOrganizations.filter(o => o.category === 'school').length },
+                { value: 'church_faith', label: 'Church/Faith', count: allOrganizations.filter(o => o.category === 'church_faith').length },
+                { value: 'club', label: 'Club', count: allOrganizations.filter(o => o.category === 'club').length },
+                { value: 'neighborhood', label: 'Neighborhood', count: allOrganizations.filter(o => o.category === 'neighborhood').length },
+                { value: 'large_corp', label: 'Corporation', count: allOrganizations.filter(o => o.category === 'large_corp').length },
+                { value: 'small_medium_corp', label: 'Small Business', count: allOrganizations.filter(o => o.category === 'small_medium_corp').length },
+                { value: 'other', label: 'Other', count: allOrganizations.filter(o => o.category === 'other').length },
+              ],
+            },
+            {
+              id: 'hostedEvents',
+              label: 'Event History',
+              type: 'tags',
+              options: [
+                { value: 'hosted', label: 'Has Hosted', count: allOrganizations.filter(o => o.hasHostedEvent || (o.actualSandwichTotal && o.actualSandwichTotal > 0)).length },
+                { value: 'not-hosted', label: 'Never Hosted', count: allOrganizations.filter(o => 
+                  !o.hasHostedEvent && 
+                  (!o.actualSandwichTotal || o.actualSandwichTotal === 0) &&
+                  ['declined', 'postponed', 'cancelled'].includes(o.status)
+                ).length },
+              ],
+            },
+            {
+              id: 'dateRange',
+              label: 'Event Date Range',
+              type: 'date-range',
+              placeholder: 'Filter by event date',
+            },
+          ]}
+          filterValues={filters}
+          onFilterChange={(id, value) => setFilters({ ...filters, [id]: value })}
+          showActiveFilters
+          onClearAll={() => {
+            setSearchTerm('');
+            setSearchScope('all');
+            setFilters({
+              status: [],
+              category: [],
+              dateRange: {},
+              hostedEvents: [],
+            });
+          }}
+        />
 
-          {/* Status Filter */}
-          <div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="new">New Requests</SelectItem>
-                <SelectItem value="contacted">Contacted</SelectItem>
-                <SelectItem value="scheduled">Upcoming Events</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="declined">Postponed Events</SelectItem>
-                <SelectItem value="past">Past Events</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Search Scope Selector */}
+        {searchTerm && (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-600">Search in:</span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={searchScope === 'all' ? 'default' : 'outline'}
+                onClick={() => setSearchScope('all')}
+                className={searchScope === 'all' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+              >
+                All Fields
+              </Button>
+              <Button
+                size="sm"
+                variant={searchScope === 'organization' ? 'default' : 'outline'}
+                onClick={() => setSearchScope('organization')}
+                className={searchScope === 'organization' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+              >
+                Organization Name Only
+              </Button>
+              <Button
+                size="sm"
+                variant={searchScope === 'department' ? 'default' : 'outline'}
+                onClick={() => setSearchScope('department')}
+                className={searchScope === 'department' ? 'bg-[#236383] hover:bg-[#1a4d66]' : ''}
+              >
+                Department Only
+              </Button>
+            </div>
           </div>
+        )}
 
-          {/* Sort */}
-          <div className="flex gap-2">
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="groupName">Group</SelectItem>
-                <SelectItem value="contactName">Contact Name</SelectItem>
-                <SelectItem value="eventDate">Event Date</SelectItem>
-                <SelectItem value="totalRequests">Total Requests</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Sort Controls */}
+        <div className="mt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div className="flex gap-2 items-center">
+            <span className="text-sm font-medium text-gray-600">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+            >
+              <option value="groupName">Group Name</option>
+              <option value="contactName">Contact Name</option>
+              <option value="eventDate">Event Date</option>
+              <option value="totalRequests">Total Requests</option>
+              <option value="category">Category</option>
+            </select>
             <Button
               variant="outline"
               size="sm"
@@ -617,52 +752,48 @@ export default function GroupCatalog({
               {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Per page:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+            >
+              <option value="12">12</option>
+              <option value="24">24</option>
+              <option value="48">48</option>
+              <option value="100">100</option>
+            </select>
+          </div>
         </div>
 
         {/* Results Summary */}
-        <div className="mt-4 pt-3 border-t flex justify-between items-center">
+        <div className="mt-4 pt-3 border-t">
           <small className="text-gray-600">
             Showing {activeStartIndex + 1}-
             {Math.min(activeEndIndex, totalActiveItems)} of {totalActiveItems}{' '}
-            active groups • {paginatedHistoricalGroups.length} historical
             organizations
           </small>
-          <div className="flex items-center gap-2">
-            <small className="text-gray-600">Items per page:</small>
-            <Select
-              value={itemsPerPage.toString()}
-              onValueChange={(value) => setItemsPerPage(Number(value))}
-            >
-              <SelectTrigger className="w-20 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="6">6</SelectItem>
-                <SelectItem value="12">12</SelectItem>
-                <SelectItem value="24">24</SelectItem>
-                <SelectItem value="48">48</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
 
-      {/* Organizations Display - Separated by Active and Historical */}
-      {totalActiveItems === 0 && paginatedHistoricalGroups.length === 0 ? (
+      {/* Organizations Display */}
+      {totalActiveItems === 0 ? (
         <div className="text-center py-12">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600">No organizations found</p>
           <p className="text-sm text-gray-500 mt-2">
-            {searchTerm || statusFilter !== 'all'
+            {searchTerm || filters.status.length > 0 || filters.category.length > 0
               ? 'Try adjusting your search or filters'
               : 'Event requests will populate this directory'}
           </p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <>
           {/* Active Organizations Section */}
           {totalActiveItems > 0 && (
-            <div>
+            <div className="space-y-8">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-200">
                   <Calendar className="w-5 h-5 text-teal-700" />
@@ -675,343 +806,613 @@ export default function GroupCatalog({
                 </Badge>
               </div>
 
-              <div className="space-y-6">
+              {/* Organization Grouped Layout - All Events and Departments Displayed */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {paginatedActiveGroups.map((group, groupIndex) => (
                   <div
-                    key={`${group.groupName}-${groupIndex}`}
-                    className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-6 shadow-sm"
+                    key={`group-${group.groupName}-${groupIndex}`}
+                    className="bg-gradient-to-br from-white via-gray-50 to-slate-100 rounded-lg border border-gray-200 p-4 shadow-sm"
                   >
-                    {/* Group Header */}
-                    <div className="mb-6 pb-4 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <Building
-                            className="w-6 h-6"
-                            style={{ color: '#236383' }}
-                          />
-                          <h2 className="text-xl font-bold text-gray-900">
-                            {group.groupName}
-                          </h2>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <span className="flex items-center space-x-1">
-                            <Users className="w-4 h-4" />
-                            <span>
-                              {group.totalDepartments}{' '}
-                              {group.totalDepartments === 1
-                                ? 'contact'
-                                : 'departments'}
-                            </span>
+                    {/* Organization Header */}
+                    <div className="mb-4 pb-3 border-b border-gray-200">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Building
+                          className="w-6 h-6"
+                          style={{ color: '#236383' }}
+                        />
+                        <h2 className="text-xl font-bold text-gray-900 truncate">
+                          {group.groupName}
+                        </h2>
+                        {(() => {
+                          const orgInfo = organizationCategoryMap.get(group.groupName);
+                          const category = orgInfo?.category;
+                          return category ? (
+                            <Badge className={getCategoryBadgeColor(category)}>
+                              {getCategoryLabel(category)}
+                            </Badge>
+                          ) : null;
+                        })()}
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <span className="flex items-center space-x-1">
+                          <Users className="w-4 h-4" />
+                          <span>
+                            {group.totalDepartments}{' '}
+                            {group.totalDepartments === 1
+                              ? 'contact'
+                              : 'depts'}
                           </span>
-                          <span className="flex items-center space-x-1">
-                            <Calendar className="w-4 h-4" />
-                            <span>{group.totalRequests} event requests</span>
-                          </span>
-                        </div>
+                        </span>
                       </div>
                     </div>
 
-                    {/* Department Cards */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {group.departments.map((org, index) => (
-                        <Card
-                          key={`${org.organizationName}-${org.contactName}-${index}`}
-                          className={`hover:shadow-lg transition-all duration-300 border-l-4 ${
-                            org.status === 'declined'
-                              ? 'border-l-4 border-2 shadow-xl'
-                              : 'bg-gradient-to-br from-white to-orange-50 border-l-4'
-                          }`}
-                          style={
-                            org.status === 'declined'
-                              ? {
-                                  background:
-                                    'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)',
-                                  borderLeftColor: '#A31C41',
-                                  borderColor: '#A31C41',
-                                }
-                              : { borderLeftColor: '#FBAD3F' }
-                          }
+                    {/* Group Departments by Department Name */}
+                    {(() => {
+                      // Group departments by department name to show related events together
+                      const departmentGroups = new Map();
+                      
+                      group.departments.forEach((org) => {
+                        const deptName = org.department || 'General';
+                        if (!departmentGroups.has(deptName)) {
+                          departmentGroups.set(deptName, []);
+                        }
+                        departmentGroups.get(deptName).push(org);
+                      });
+
+                      return Array.from(departmentGroups.entries()).map(([deptName, deptEvents], deptIndex) => (
+                        <div 
+                          key={`dept-${deptName}-${deptIndex}`} 
+                          className={`mb-4 ${deptName !== 'General' ? 'p-3 bg-purple-50/50 border-2 border-purple-200 rounded-lg' : ''}`}
                         >
-                          <CardHeader className="pb-3">
-                            {/* Main headline with org name and date */}
-                            <div className="space-y-3">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  {org.department && (
-                                    <h3 className="text-xl font-bold text-gray-900 leading-tight">
-                                      {org.department}
-                                    </h3>
-                                  )}
-                                  {/* Event Date - Prominent */}
-                                  {org.eventDate ? (
-                                    <div
-                                      className="flex items-center mt-2 text-lg font-semibold"
-                                      style={{ color: '#FBAD3F' }}
-                                    >
-                                      <Calendar className="w-5 h-5 mr-2" />
-                                      <span>
-                                        {formatDateForDisplay(org.eventDate)}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center mt-2 text-base text-gray-500">
-                                      <Calendar className="w-4 h-4 mr-2" />
-                                      <span>Event date not specified</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Contact Info - Enhanced with more details */}
-                              <div className="space-y-1">
-                                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                  <User className="w-4 h-4" />
-                                  <span className="font-medium">
-                                    {org.contactName}
-                                  </span>
-                                </div>
-                                {org.email && (
-                                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                                    <Mail className="w-4 h-4" />
-                                    <span>{org.email}</span>
-                                  </div>
-                                )}
-                                {org.department && (
-                                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                                    <Building className="w-4 h-4" />
-                                    <span>Department: {org.department}</span>
-                                  </div>
-                                )}
-                                {/* TSP Contact Display */}
-                                {(org.tspContact || org.tspContactAssigned || org.assignedToName) && (
-                                  <div className="flex items-center space-x-2 text-sm mt-1">
-                                    <UserCheck className="w-4 h-4 text-purple-500" />
-                                    <span className="text-purple-700 font-medium">
-                                      TSP: {org.tspContact || org.tspContactAssigned || org.assignedToName}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Enhanced Key Metrics Bar with Analytics */}
-                              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 border border-orange-200 rounded-md">
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-2">
-                                      <span className="text-sm text-gray-700">
-                                        Status:
-                                      </span>
-                                      <Badge
-                                        className={getStatusBadgeColor(
-                                          org.status
-                                        )}
-                                        variant="outline"
-                                      >
-                                        {getStatusText(org.status)}
-                                      </Badge>
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      {org.totalRequests} request
-                                      {org.totalRequests !== 1 ? 's' : ''}
-                                    </div>
-                                  </div>
-
-                                  {/* Enhanced Analytics Display */}
-                                  <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div className="flex items-center space-x-1">
-                                      <span>🥪</span>
-                                      <span className="font-semibold text-orange-700">
-                                        {org.actualSandwichTotal ||
-                                          org.totalSandwiches ||
-                                          0}{' '}
-                                        sandwiches
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                      <span>🎯</span>
-                                      <span className="font-semibold text-blue-700">
-                                        {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} events
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {/* Event Frequency Display */}
-                                  {org.eventFrequency && (
-                                    <div className="text-center text-xs text-purple-600 font-medium bg-purple-50 px-2 py-1 rounded">
-                                      {org.eventFrequency}
-                                    </div>
-                                  )}
-
-                                </div>
+                          {/* Department Header - Only show for non-General departments */}
+                          {deptName !== 'General' && (
+                            <div className="mb-3 pb-2 border-b border-purple-300">
+                              <div className="flex items-center space-x-2">
+                                <Building className="w-5 h-5 text-purple-600" />
+                                <h3 className="text-base font-semibold text-purple-900 truncate">
+                                  {deptName}
+                                </h3>
+                                <Badge className="bg-purple-200 text-purple-800 text-sm font-semibold">
+                                  {deptEvents.length} event{deptEvents.length !== 1 ? 's' : ''}
+                                </Badge>
                               </div>
                             </div>
-                          </CardHeader>
+                          )}
 
-                          <CardContent>
-                            <div className="space-y-3">
-                              {/* Contact Information - Most Important */}
-                              <div className="space-y-2">
-                                <div className="flex items-center space-x-2 text-base">
-                                  <User className="w-5 h-5 text-teal-600" />
-                                  <span className="font-semibold text-gray-900">
-                                    {org.contactName}
-                                  </span>
-                                </div>
-                                {org.email && (
-                                  <div className="flex items-center space-x-2 text-sm">
-                                    <Mail className="w-4 h-4 text-teal-500" />
-                                    <span className="text-teal-700 hover:text-teal-800">
-                                      {org.email}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* View Complete Organization History Button */}
-                              <Button
-                                onClick={() => {
-                                  setSelectedOrganization(org);
-                                  setOrganizationDetails(null); // Reset previous details
-                                  fetchOrganizationDetails(
-                                    org.organizationName
-                                  ); // Fetch complete organization history
-                                }}
-                                variant="outline"
-                                size="sm"
-                                className="w-full text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90"
+                          {/* Events Grid for this Department */}
+                          <div className="space-y-2">
+                            {/* Show only first 3 events to prevent cards from being too tall */}
+                            {deptEvents.slice(0, 3).map((org: OrganizationContact, index: number) => (
+                              <Card
+                                key={`${org.organizationName}-${org.contactName}-${index}`}
+                                className={`hover:shadow-lg transition-all duration-300 border-l-4 w-full ${
+                                  org.status === 'declined'
+                                    ? 'border-l-4 border-2 shadow-xl'
+                                    : 'bg-gradient-to-br from-white to-orange-50 border-l-4'
+                                }`}
+                                style={
+                                  org.status === 'declined'
+                                    ? {
+                                        background:
+                                          'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)',
+                                        borderLeftColor: '#A31C41',
+                                        borderColor: '#A31C41',
+                                      }
+                                    : { borderLeftColor: '#FBAD3F' }
+                                }
                               >
-                                <ExternalLink className="w-4 h-4 mr-2" />
-                                View Complete History
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                                <CardHeader className="pb-3 px-4 pt-4">
+                                  {/* Department Name and Event Date - Top of Card */}
+                                  <div className="mb-4 pb-3 border-b border-gray-200">
+                                    {org.department && org.department !== 'General' && (
+                                      <div className="flex items-center space-x-2 mb-2">
+                                        <Building className="w-5 h-5 text-purple-600" />
+                                        <h4 className="text-base font-semibold text-gray-800 truncate">
+                                          {org.department}
+                                        </h4>
+                                      </div>
+                                    )}
+                                    {/* Event Date */}
+                                    {org.eventDate ? (
+                                      <div className="flex items-center space-x-2 text-base text-gray-700">
+                                        <Calendar className="w-5 h-5 text-teal-600" />
+                                        <span className="font-semibold">
+                                          {formatDateForDisplay(org.eventDate)}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center space-x-2 text-base text-gray-500">
+                                        <Calendar className="w-5 h-5 text-gray-400" />
+                                        <span>No date specified</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Contact Information */}
+                                  <div className="space-y-2 mb-3">
+                                    <div className="flex items-center space-x-2 text-base">
+                                      <User className="w-5 h-5 text-teal-600" />
+                                      <button
+                                        onClick={() => {
+                                          setSelectedContact(org);
+                                          setShowContactDetailsModal(true);
+                                        }}
+                                        className="font-medium text-gray-900 hover:text-teal-600 truncate transition-colors underline decoration-dotted underline-offset-2"
+                                        data-testid={`button-contact-${org.organizationName}-${org.contactName}`}
+                                      >
+                                        {org.contactName}
+                                      </button>
+                                    </div>
+                                    {org.email && (
+                                      <div className="flex items-center space-x-2 text-sm">
+                                        <Mail className="w-4 h-4 text-teal-500" />
+                                        <span className="text-teal-700 hover:text-teal-800 truncate">
+                                          {org.email}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Status and Metrics */}
+                                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 border border-orange-200 rounded text-sm mt-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <Badge
+                                          className={getStatusBadgeColor(org.status)}
+                                          variant="outline"
+                                        >
+                                          {getStatusText(org.status)}
+                                        </Badge>
+                                        {org.category && (
+                                          <Badge className={getCategoryBadgeColor(org.category)}>
+                                            {getCategoryLabel(org.category)}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <span className="text-gray-600 font-medium">
+                                        {org.totalRequests} {org.totalRequests === 1 ? 'request' : 'requests'}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-1.5">
+                                        <span className="text-lg">🥪</span>
+                                        <span className="font-semibold text-orange-700 text-base">
+                                          {org.actualSandwichTotal || org.totalSandwiches || 0}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center space-x-1.5">
+                                        <span className="text-lg">📦</span>
+                                        <span className="font-semibold text-brand-primary text-base">
+                                          {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* TSP Contact Display */}
+                                    {(() => {
+                                      let tspContactName = null;
+
+                                      if (org.assignedToName && org.assignedToName.trim() &&
+                                          !org.assignedToName.includes('@') &&
+                                          !org.assignedToName.match(/^[a-f0-9-]{8,}$/i)) {
+                                        tspContactName = org.assignedToName;
+                                      } else if (org.tspContactAssigned && org.tspContactAssigned.trim()) {
+                                        tspContactName = org.tspContactAssigned;
+                                      } else if (org.tspContact && org.tspContact.trim()) {
+                                        tspContactName = org.tspContact;
+                                      }
+
+                                      return tspContactName ? (
+                                        <div className="flex items-center space-x-1.5 text-sm mt-2 pt-2 border-t border-orange-300">
+                                          <UserCheck className="w-4 h-4 text-purple-500" />
+                                          <span className="text-purple-700 font-medium truncate">
+                                            TSP: {tspContactName}
+                                          </span>
+                                        </div>
+                                      ) : null;
+                                    })()}
+
+                                    {/* Past Events List - Compact */}
+                                    {org.pastEvents && org.pastEvents.length > 0 && (
+                                      <div className="mt-2 pt-2 border-t border-orange-300">
+                                        <div className="text-sm font-semibold text-gray-700 mb-2">
+                                          Past Events:
+                                        </div>
+                                        <div className="space-y-1.5 max-h-28 overflow-y-auto">
+                                          {org.pastEvents.map((event, idx) => (
+                                            <div
+                                              key={idx}
+                                              className="flex items-center justify-between bg-white/60 px-2 py-1 rounded"
+                                            >
+                                              <div className="flex items-center space-x-1.5">
+                                                <Calendar className="w-3.5 h-3.5 text-teal-600" />
+                                                <span className="text-gray-700 text-xs">
+                                                  {formatDateForDisplay(event.date)}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center space-x-1.5">
+                                                <span className="font-semibold text-orange-700 text-xs">
+                                                  {event.sandwichCount}
+                                                </span>
+                                                <img
+                                                  src="/attached_assets/LOGOS/sandwich logo.png"
+                                                  alt="sandwich"
+                                                  className="w-3.5 h-3.5 object-contain"
+                                                />
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardHeader>
+
+                                <CardContent className="pt-0 px-4 pb-4">
+                                  {/* View Complete History Button */}
+                                  <Button
+                                    onClick={() => {
+                                      setSelectedOrganization(org);
+                                      setOrganizationDetails(null);
+                                      fetchOrganizationDetails(org.organizationName);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full text-sm bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-2"
+                                  >
+                                    <ExternalLink className="w-4 h-4 mr-1.5" />
+                                    View Complete History
+                                  </Button>
+                                </CardContent>
+                              </Card>
+                            ))}
+                            {/* Show indicator if there are more events */}
+                            {deptEvents.length > 3 && (
+                              <div className="text-center py-2 px-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded border border-orange-200">
+                                <p className="text-sm text-gray-600 font-medium">
+                                  + {deptEvents.length - 3} more event{deptEvents.length - 3 !== 1 ? 's' : ''} (click "View History" to see all)
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
 
-          {/* Historical Organizations Section */}
-          {paginatedHistoricalGroups.length > 0 && (
-            <div className="mt-12">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-gray-100 to-slate-200">
-                  <Building className="w-5 h-5 text-gray-700" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Historical Organizations
-                </h2>
-                <Badge className="bg-gray-100 text-gray-700">
-                  {paginatedHistoricalGroups.length} organizations
-                </Badge>
-                <span className="text-sm text-gray-600">
-                  (from sandwich collections only)
-                </span>
-              </div>
+                {/* REMOVED: Single-department organizations are now integrated above in the main loop */}
+                {(() => {
+                  // DISABLED: Single-department organizations are now integrated above
+                  return null;
+                  
+                  const singleDepartmentGroups = paginatedActiveGroups.filter(group => group.totalDepartments === 1);
+                  
+                  if (singleDepartmentGroups.length === 0) return null;
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {paginatedHistoricalGroups.map((group, groupIndex) => (
-                  <Card
-                    key={`historical-${group.groupName}-${groupIndex}`}
-                    className="bg-gradient-to-br from-gray-50 to-slate-100 border border-gray-200 hover:shadow-lg transition-all duration-300"
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg text-gray-800 flex items-center space-x-2">
-                        <Building className="w-5 h-5 text-gray-600" />
-                        <span>{group.groupName}</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Users className="w-4 h-4 mr-2" />
-                          <span>Historical host location</span>
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-green-100 to-emerald-200">
+                          <Users className="w-5 h-5 text-green-700" />
                         </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <span className="w-4 h-4 text-orange-600 mr-2">
-                            🥪
-                          </span>
-                          <span>Sandwich collection host</span>
-                        </div>
-                        <div className="pt-2 mt-3 border-t">
-                          <small className="text-gray-500">
-                            From sandwich collections records
-                          </small>
-                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Single-Department Organizations
+                        </h3>
+                        <Badge className="bg-green-100 text-green-700">
+                          {singleDepartmentGroups.length} organizations
+                        </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {singleDepartmentGroups.map((group, groupIndex) => {
+                        const org = group.departments[0]; // Single department
+                        return (
+                          <Card
+                            key={`single-${group.groupName}-${groupIndex}`}
+                            className={`hover:shadow-lg transition-all duration-300 border-l-4 ${
+                              org.status === 'declined'
+                                ? 'border-l-4 border-2 shadow-xl'
+                                : 'bg-gradient-to-br from-white to-orange-50 border-l-4'
+                            }`}
+                            style={
+                              org.status === 'declined'
+                                ? {
+                                    background:
+                                      'linear-gradient(135deg, #fef2f2 0%, #fecaca 100%)',
+                                    borderLeftColor: '#A31C41',
+                                    borderColor: '#A31C41',
+                                  }
+                                : { borderLeftColor: '#FBAD3F' }
+                            }
+                          >
+                            <CardHeader className="pb-3">
+                              {/* Organization Header - Compact */}
+                              <div className="flex items-center space-x-2 mb-3">
+                                <Building
+                                  className="w-4 h-4 flex-shrink-0"
+                                  style={{ color: '#236383' }}
+                                />
+                                <h3 className="text-lg font-bold text-gray-900 truncate">
+                                  {group.groupName}
+                                </h3>
+                              </div>
+
+                              {/* Main headline with org name and date */}
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    {org.department && (
+                                      <h4 className="text-base font-semibold text-gray-800 leading-tight">
+                                        {org.department}
+                                      </h4>
+                                    )}
+                                    {/* Event Date - Compact */}
+                                    {org.eventDate ? (
+                                      <div
+                                        className="flex items-center mt-1 text-sm font-semibold"
+                                        style={{ color: '#FBAD3F' }}
+                                      >
+                                        <Calendar className="w-4 h-4 mr-1" />
+                                        <span className="truncate">
+                                          {formatDateForDisplay(org.eventDate)}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center mt-1 text-xs text-gray-500">
+                                        <Calendar className="w-3 h-3 mr-1" />
+                                        <span>No date specified</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Contact Info - Compact */}
+                                <div className="space-y-1">
+                                  <div className="flex items-center space-x-1 text-xs text-gray-600">
+                                    <User className="w-3 h-3" />
+                                    <span className="font-medium truncate">
+                                      {org.contactName}
+                                    </span>
+                                  </div>
+                                  {org.email && (
+                                    <div className="flex items-center space-x-1 text-xs text-gray-500">
+                                      <Mail className="w-3 h-3" />
+                                      <span className="truncate">{org.email}</span>
+                                    </div>
+                                  )}
+                                  {/* TSP Contact Display - Compact */}
+                                  {(() => {
+                                    let tspContactName = null;
+                                    
+                                    if (org.assignedToName && org.assignedToName.trim() && 
+                                        !org.assignedToName.includes('@') && 
+                                        !org.assignedToName.match(/^[a-f0-9-]{8,}$/i)) {
+                                      tspContactName = org.assignedToName;
+                                    } else if (org.tspContactAssigned && org.tspContactAssigned.trim()) {
+                                      tspContactName = org.tspContactAssigned;
+                                    } else if (org.tspContact && org.tspContact.trim()) {
+                                      tspContactName = org.tspContact;
+                                    }
+                                    
+                                    return tspContactName ? (
+                                      <div className="flex items-center space-x-1 text-xs">
+                                        <UserCheck className="w-3 h-3 text-purple-500" />
+                                        <span className="text-purple-700 font-medium truncate">
+                                          TSP: {tspContactName}
+                                        </span>
+                                      </div>
+                                    ) : null;
+                                  })()}
+                                </div>
+
+                                {/* Compact Key Metrics */}
+                                <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-2 border border-orange-200 rounded text-xs">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <Badge
+                                      className={getStatusBadgeColor(org.status)}
+                                      variant="outline"
+                                    >
+                                      {getStatusText(org.status)}
+                                    </Badge>
+                                    <span className="text-gray-500">
+                                      {org.totalRequests} request{org.totalRequests !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-1">
+                                      <span>🥪</span>
+                                      <span className="font-semibold text-orange-700">
+                                        {org.actualSandwichTotal || org.totalSandwiches || 0}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                      <span>📦</span>
+                                          <span className="font-semibold text-brand-primary">
+                                            {org.actualEventCount || (org.hasHostedEvent ? 1 : 0)} event{(org.actualEventCount || (org.hasHostedEvent ? 1 : 0)) !== 1 ? 's' : ''}
+                                          </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Past Events List - Compact */}
+                                  {org.pastEvents && org.pastEvents.length > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-orange-300">
+                                      <div className="text-xs font-semibold text-gray-700 mb-1">
+                                        Past Events:
+                                      </div>
+                                      <div className="space-y-1 max-h-24 overflow-y-auto">
+                                        {org.pastEvents.map((event, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex items-center justify-between bg-white/60 px-1.5 py-0.5 rounded"
+                                          >
+                                            <div className="flex items-center space-x-1">
+                                              <Calendar className="w-2.5 h-2.5 text-teal-600" />
+                                              <span className="text-gray-700" style={{ fontSize: '10px' }}>
+                                                {formatDateForDisplay(event.date)}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center space-x-1">
+                                              <span className="font-semibold text-orange-700" style={{ fontSize: '10px' }}>
+                                                {event.sandwichCount}
+                                              </span>
+                                              <img 
+                                                src="/attached_assets/LOGOS/sandwich logo.png" 
+                                                alt="sandwich" 
+                                                className="w-2.5 h-2.5 object-contain"
+                                              />
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </CardHeader>
+
+                            <CardContent className="pt-0">
+                              <div className="space-y-2">
+                                {/* Compact Contact Information */}
+                                <div className="space-y-1">
+                                  <div className="flex items-center space-x-1 text-sm">
+                                    <User className="w-4 h-4 text-teal-600" />
+                                    <button
+                                      onClick={() => {
+                                        setSelectedContact(org);
+                                        setShowContactDetailsModal(true);
+                                      }}
+                                      className="font-medium text-gray-900 hover:text-teal-600 truncate transition-colors underline decoration-dotted underline-offset-2"
+                                      data-testid={`button-contact-${org.organizationName}`}
+                                    >
+                                      {org.contactName}
+                                    </button>
+                                  </div>
+                                  {org.email && (
+                                    <div className="flex items-center space-x-1 text-xs">
+                                      <Mail className="w-3 h-3 text-teal-500" />
+                                      <a
+                                        href={`mailto:${org.email}`}
+                                        className="text-teal-700 hover:text-teal-900 truncate hover:underline transition-colors"
+                                        data-testid={`link-email-${org.email}`}
+                                      >
+                                        {org.email}
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Compact View History Button */}
+                                <Button
+                                  onClick={() => {
+                                    setSelectedOrganization(org);
+                                    setOrganizationDetails(null);
+                                    fetchOrganizationDetails(org.organizationName);
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full text-xs bg-brand-orange hover:bg-brand-orange/90 text-white border-brand-orange hover:border-brand-orange/90 py-1"
+                                >
+                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  View History
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+          )}
+
+          {/* Pagination Controls - Only for Active Organizations */}
+          {totalActiveItems > 0 && totalActivePages > 1 && (
+            <div className="flex items-center justify-between bg-white rounded-lg border p-4 shadow-sm mt-6">
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalActivePages}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="h-8"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(totalActivePages, 5) }, (_, i) => {
+                    let pageNum;
+                    if (totalActivePages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalActivePages - 2) {
+                      pageNum = totalActivePages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalActivePages))}
+                  disabled={currentPage === totalActivePages}
+                  className="h-8"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Items per page:</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(parseInt(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-20 h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                <SelectItem value="12">12</SelectItem>
+                <SelectItem value="24">24</SelectItem>
+                <SelectItem value="48">48</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
-      {/* Pagination Controls - Only for Active Organizations */}
-      {totalActiveItems > 0 && totalActivePages > 1 && (
-        <div className="flex items-center justify-between bg-white rounded-lg border p-4 shadow-sm mt-6">
-          <div className="text-sm text-gray-600">
-            Page {currentPage} of {totalActivePages}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="h-8"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
-            </Button>
-
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(totalActivePages, 5) }, (_, i) => {
-                let pageNum;
-                if (totalActivePages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalActivePages - 2) {
-                  pageNum = totalActivePages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNum)}
-                    className="h-8 w-8 p-0"
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalActivePages))
-              }
-              disabled={currentPage === totalActivePages}
-              className="h-8"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Organization History Dialog */}
       <Dialog
@@ -1147,19 +1548,19 @@ export default function GroupCatalog({
                         (event: any, index: number) => (
                           <div
                             key={index}
-                            className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-brand-primary transition-colors"
+                            className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-brand-primary-border-strong dark:hover:border-brand-primary transition-colors"
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <div className="font-semibold text-gray-900 dark:text-gray-100">
+                                  <div className="font-semibold text-gray-900 dark:text-gray-100 text-base">
                                     {formatDateForDisplay(event.date)}
                                   </div>
                                   <Badge
                                     className={
                                       event.type === 'sandwich_collection'
                                         ? 'bg-green-100 text-green-800 border-green-200'
-                                        : 'bg-blue-100 text-blue-800 border-blue-200'
+                                        : 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border'
                                     }
                                   >
                                     {event.type === 'sandwich_collection'
@@ -1171,24 +1572,24 @@ export default function GroupCatalog({
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                   <div>
-                                    <div className="font-medium text-gray-700 dark:text-gray-300">
+                                    <div className="font-medium text-gray-900 dark:text-gray-100">
                                       Contact
                                     </div>
-                                    <div className="text-gray-600 dark:text-gray-400">
+                                    <div className="text-gray-900 dark:text-gray-100">
                                       {event.contactName}
                                     </div>
                                     {event.email && (
-                                      <div className="text-xs text-gray-500 dark:text-gray-500">
+                                      <div className="text-xs text-gray-600 dark:text-gray-400">
                                         {event.email}
                                       </div>
                                     )}
                                   </div>
 
                                   <div>
-                                    <div className="font-medium text-gray-700 dark:text-gray-300">
+                                    <div className="font-medium text-gray-900 dark:text-gray-100">
                                       Sandwiches
                                     </div>
-                                    <div className="text-gray-600 dark:text-gray-400">
+                                    <div className="text-gray-900 dark:text-gray-100">
                                       {event.actualSandwiches > 0
                                         ? `${event.actualSandwiches.toLocaleString()} made`
                                         : event.estimatedSandwiches > 0
@@ -1198,10 +1599,10 @@ export default function GroupCatalog({
                                   </div>
 
                                   <div>
-                                    <div className="font-medium text-gray-700 dark:text-gray-300">
+                                    <div className="font-medium text-gray-900 dark:text-gray-100">
                                       Details
                                     </div>
-                                    <div className="text-gray-600 dark:text-gray-400">
+                                    <div className="text-gray-900 dark:text-gray-100">
                                       {event.department && (
                                         <div>Dept: {event.department}</div>
                                       )}
@@ -1213,11 +1614,27 @@ export default function GroupCatalog({
                                 </div>
 
                                 {event.notes && (
-                                  <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 italic">
+                                  <div className="mt-2 text-sm text-gray-900 dark:text-gray-100 italic">
                                     {event.notes}
                                   </div>
                                 )}
                               </div>
+
+                              {/* Edit button for event requests */}
+                              {event.type === 'event_request' && event.id && (
+                                <div className="ml-4 flex-shrink-0">
+                                  <Button
+                                    onClick={() => handleEditEventRequest(event.id)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-brand-primary hover:bg-brand-primary hover:text-white"
+                                    data-testid={`button-edit-event-${event.id}`}
+                                  >
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit Request
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )
@@ -1238,6 +1655,192 @@ export default function GroupCatalog({
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact Details Modal */}
+      <Dialog open={showContactDetailsModal} onOpenChange={setShowContactDetailsModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-heading text-brand-primary">
+              Contact Information
+            </DialogTitle>
+            <DialogDescription>
+              Complete contact details for this organization
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedContact && (
+            <div className="space-y-4 mt-4">
+              {/* Organization Name */}
+              <div className="border-b pb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building className="w-5 h-5 text-brand-primary" />
+                  <h3 className="font-semibold text-gray-900">
+                    {selectedContact.organizationName}
+                  </h3>
+                </div>
+                {selectedContact.department && (
+                  <p className="text-sm text-gray-600 ml-7">
+                    Department: {selectedContact.department}
+                  </p>
+                )}
+              </div>
+
+              {/* Contact Details */}
+              <div className="space-y-3">
+                {/* Contact Name */}
+                <div className="flex items-start gap-2">
+                  <User className="w-5 h-5 text-teal-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-600">Contact Name</p>
+                    <p className="font-medium text-gray-900">{selectedContact.contactName}</p>
+                  </div>
+                </div>
+
+                {/* Email */}
+                {selectedContact.email && (
+                  <div className="flex items-start gap-2">
+                    <Mail className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">Email Address</p>
+                      <a
+                        href={`mailto:${selectedContact.email}`}
+                        className="font-medium text-teal-700 hover:text-teal-900 hover:underline"
+                        data-testid={`link-modal-email-${selectedContact.email}`}
+                      >
+                        {selectedContact.email}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Phone */}
+                {selectedContact.phone && (
+                  <div className="flex items-start gap-2">
+                    <Phone className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">Phone Number</p>
+                      <a
+                        href={`tel:${selectedContact.phone}`}
+                        className="font-medium text-teal-700 hover:text-teal-900 hover:underline"
+                        data-testid={`link-modal-phone-${selectedContact.phone}`}
+                      >
+                        {selectedContact.phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status */}
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-teal-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-600">Current Status</p>
+                    <div className="mt-1">{getStatusBadge(selectedContact.status)}</div>
+                  </div>
+                </div>
+
+                {/* Latest Activity */}
+                {selectedContact.latestActivityDate && (
+                  <div className="flex items-start gap-2">
+                    <Clock className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">Latest Activity</p>
+                      <p className="font-medium text-gray-900">
+                        {formatDateForDisplay(selectedContact.latestActivityDate.toString())}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Event Date */}
+                {selectedContact.eventDate && (
+                  <div className="flex items-start gap-2">
+                    <Calendar className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">Event Date</p>
+                      <p className="font-medium text-gray-900">
+                        {formatDateForDisplay(selectedContact.eventDate)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* TSP Contact */}
+                {selectedContact.tspContactAssigned && (
+                  <div className="flex items-start gap-2">
+                    <UserCheck className="w-5 h-5 text-teal-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">TSP Contact</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedContact.tspContactAssigned}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Statistics */}
+                {(selectedContact.actualEventCount || selectedContact.totalRequests) && (
+                  <div className="border-t pt-3 mt-3">
+                    <p className="text-sm text-gray-600 mb-2">Event History</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedContact.actualEventCount && selectedContact.actualEventCount > 0 && (
+                        <div>
+                          <p className="text-2xl font-bold text-brand-primary">
+                            {selectedContact.actualEventCount}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Completed Event{selectedContact.actualEventCount !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      )}
+                      {selectedContact.totalRequests > 0 && (
+                        <div>
+                          <p className="text-2xl font-bold text-brand-secondary">
+                            {selectedContact.totalRequests}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Total Request{selectedContact.totalRequests !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Past Events */}
+                {selectedContact.pastEvents && selectedContact.pastEvents.length > 0 && (
+                  <div className="border-t pt-3 mt-3">
+                    <p className="text-sm text-gray-600 mb-2">Past Collection Events</p>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {selectedContact.pastEvents.map((event, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-teal-600" />
+                            <span>{formatDateForDisplay(event.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-semibold text-orange-700">
+                              {event.sandwichCount}
+                            </span>
+                            <img 
+                              src="/attached_assets/LOGOS/sandwich logo.png" 
+                              alt="sandwich" 
+                              className="w-4 h-4 object-contain"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

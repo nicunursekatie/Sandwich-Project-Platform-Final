@@ -124,6 +124,14 @@ const sandwichMakingDocuments: ToolkitDocument[] = [
     description:
       'Interactive tool for calculating sandwich inventory and planning quantities for collections',
   },
+  {
+    name: 'Event Estimator',
+    path: 'https://nicunursekatie.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html',
+    type: 'link',
+    category: 'Sandwich Making',
+    description:
+      'Event planning tool for estimating sandwich quantities and resources needed for events',
+  },
 ];
 
 const getFileIcon = (type: string) => {
@@ -148,7 +156,7 @@ const getCategoryColor = (category: string) => {
     case 'Safety Guidelines':
       return 'bg-red-100 text-red-800';
     case 'Labels':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-brand-primary-light text-brand-primary-dark';
     case 'Sandwich Making':
       return 'bg-green-100 text-green-800';
     default:

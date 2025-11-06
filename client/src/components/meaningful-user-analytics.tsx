@@ -165,21 +165,31 @@ export default function MeaningfulUserAnalytics() {
     staleTime: 180000, // 3 minutes
   });
 
+  // Filter out admin users and sample data, then sort
   const sortedUsers =
-    userActivities?.sort((a, b) => {
-      switch (sortBy) {
-        case 'contribution':
-          return b.totalContributionValue - a.totalContributionValue;
-        case 'data':
-          return b.sandwichDataEntered - a.sandwichDataEntered;
-        case 'volunteers':
-          return b.volunteersManaged - a.volunteersManaged;
-        case 'active':
-          return b.daysActive - a.daysActive;
-        default:
-          return 0;
-      }
-    }) || [];
+    userActivities
+      ?.filter((user) => {
+        // Exclude admin roles and sample data
+        const isAdmin = user.role?.toLowerCase().includes('admin');
+        const isSampleData = 
+          user.email?.includes('admin@sandwich.project') ||
+          user.userName?.toLowerCase().includes('admin user');
+        return !isAdmin && !isSampleData;
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'contribution':
+            return b.totalContributionValue - a.totalContributionValue;
+          case 'data':
+            return b.sandwichDataEntered - a.sandwichDataEntered;
+          case 'volunteers':
+            return b.volunteersManaged - a.volunteersManaged;
+          case 'active':
+            return b.daysActive - a.daysActive;
+          default:
+            return 0;
+        }
+      }) || [];
 
   const getContributionLevel = (score: number) => {
     if (score >= 90)
@@ -192,7 +202,7 @@ export default function MeaningfulUserAnalytics() {
       return {
         level: 'High Impact',
         color: 'bg-brand-primary',
-        textColor: 'text-blue-700',
+        textColor: 'text-brand-primary',
       };
     if (score >= 50)
       return {
@@ -414,13 +424,13 @@ export default function MeaningfulUserAnalytics() {
       </Card>
 
       {/* What This Means */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-brand-primary-lighter border-brand-primary-border">
         <CardHeader>
-          <CardTitle className="text-blue-900">
+          <CardTitle className="text-brand-primary-darker">
             Understanding Your Analytics
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-blue-800">
+        <CardContent className="text-brand-primary-dark">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <h4 className="font-semibold mb-2">Sandwich Data Recorded</h4>

@@ -40,9 +40,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
 import { apiRequest } from '@/lib/queryClient';
 import { ButtonTooltip } from '@/components/ui/button-tooltip';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 
 export default function VolunteerManagement() {
   const { user } = useAuth();
@@ -75,10 +76,8 @@ export default function VolunteerManagement() {
   const [hostNotes, setHostNotes] = useState('');
 
   // Check permissions
-  const canManage = hasPermission(user, PERMISSIONS.VOLUNTEERS_EDIT);
-  const canAdd = hasPermission(user, PERMISSIONS.VOLUNTEERS_ADD);
-  const canEdit = hasPermission(user, PERMISSIONS.VOLUNTEERS_EDIT);
-  const canView = hasPermission(user, PERMISSIONS.VOLUNTEERS_VIEW);
+  const { canView, canAdd, canEdit } = useResourcePermissions('VOLUNTEERS');
+  const canManage = canEdit;
 
   if (!canView) {
     return (
@@ -371,7 +370,7 @@ export default function VolunteerManagement() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100">
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-primary-light">
           <Users className="w-6 h-6 text-brand-primary" />
         </div>
         <div className="flex-1">
@@ -393,7 +392,11 @@ export default function VolunteerManagement() {
           </Button>
           {canAdd && (
             <ButtonTooltip explanation="Add a new volunteer to your database. You can track their contact information, skills, and availability for scheduling.">
-              <Button onClick={handleAdd} className="flex items-center gap-2">
+              <Button
+                onClick={handleAdd}
+                className="flex items-center gap-2"
+                data-testid="add-volunteer"
+              >
                 <Plus className="w-4 h-4" />
                 Add Volunteer
               </Button>
@@ -432,7 +435,7 @@ export default function VolunteerManagement() {
       </Card>
 
       {/* Volunteers List */}
-      <div className="grid gap-4">
+      <div className="grid gap-4" data-testid="volunteers-list">
         {isLoading ? (
           <div className="text-center py-8">
             <div className="text-gray-500">Loading volunteers...</div>
@@ -458,6 +461,7 @@ export default function VolunteerManagement() {
             <Card
               key={volunteer.id}
               className="hover:shadow-md transition-shadow"
+              data-testid="volunteer-card"
             >
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">
@@ -693,8 +697,8 @@ export default function VolunteerManagement() {
                     </div>
 
                     {!showHostDesignation ? (
-                      <div className="bg-blue-50 rounded-lg p-4">
-                        <p className="text-sm text-blue-800 mb-3">
+                      <div className="bg-brand-primary-lighter rounded-lg p-4">
+                        <p className="text-sm text-brand-primary-dark mb-3">
                           Promote this volunteer to be a host contact at a
                           specific location. They will appear in the host
                           management section.
@@ -704,7 +708,7 @@ export default function VolunteerManagement() {
                             type="button"
                             variant="outline"
                             onClick={() => setShowHostDesignation(true)}
-                            className="text-brand-primary border-blue-200 hover:bg-blue-100"
+                            className="text-brand-primary border-brand-primary-border hover:bg-brand-primary-light"
                           >
                             <Building2 className="w-4 h-4 mr-2" />
                             Designate as Host

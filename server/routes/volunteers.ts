@@ -1,12 +1,12 @@
 import express from 'express';
-import type { IStorage } from '../storage';
+import type { RouterDependencies } from '../types';
 import { insertVolunteerSchema } from '@shared/schema';
+import { logger } from '../utils/production-safe-logger';
+import { AuditLogger } from '../audit-logger';
 
-export function createVolunteersRoutes(
-  isAuthenticated: any,
-  storage: IStorage
-) {
+export function createVolunteersRouter(deps: RouterDependencies) {
   const router = express.Router();
+  const { storage, isAuthenticated } = deps;
 
   // Get all volunteers
   router.get('/', isAuthenticated, async (req: any, res: any) => {
@@ -14,7 +14,7 @@ export function createVolunteersRoutes(
       const volunteers = await storage.getAllVolunteers();
       res.json(volunteers);
     } catch (error) {
-      console.error('Failed to get volunteers', error);
+      logger.error('Failed to get volunteers', error);
       res.status(500).json({ message: 'Failed to get volunteers' });
     }
   });
@@ -29,7 +29,7 @@ export function createVolunteersRoutes(
       }
       res.json(volunteer);
     } catch (error) {
-      console.error('Failed to get volunteer', error);
+      logger.error('Failed to get volunteer', error);
       res.status(500).json({ message: 'Failed to get volunteer' });
     }
   });
@@ -39,9 +39,23 @@ export function createVolunteersRoutes(
     try {
       const validatedData = insertVolunteerSchema.parse(req.body);
       const volunteer = await storage.createVolunteer(validatedData);
+
+      // Audit log
+      await AuditLogger.logCreate(
+        'volunteers',
+        String(volunteer.id),
+        volunteer,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.status(201).json(volunteer);
     } catch (error) {
-      console.error('Failed to create volunteer', error);
+      logger.error('Failed to create volunteer', error);
       res.status(500).json({ message: 'Failed to create volunteer' });
     }
   });
@@ -50,13 +64,35 @@ export function createVolunteersRoutes(
   router.patch('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before update
+      const oldVolunteer = await storage.getVolunteer(id);
+      if (!oldVolunteer) {
+        return res.status(404).json({ message: 'Volunteer not found' });
+      }
+
       const volunteer = await storage.updateVolunteer(id, req.body);
       if (!volunteer) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
+
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'volunteers',
+        String(id),
+        oldVolunteer,
+        volunteer,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.json(volunteer);
     } catch (error) {
-      console.error('Failed to update volunteer', error);
+      logger.error('Failed to update volunteer', error);
       res.status(500).json({ message: 'Failed to update volunteer' });
     }
   });
@@ -65,13 +101,35 @@ export function createVolunteersRoutes(
   router.put('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before update
+      const oldVolunteer = await storage.getVolunteer(id);
+      if (!oldVolunteer) {
+        return res.status(404).json({ message: 'Volunteer not found' });
+      }
+
       const volunteer = await storage.updateVolunteer(id, req.body);
       if (!volunteer) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
+
+      // Audit log
+      await AuditLogger.logEntityChange(
+        'volunteers',
+        String(id),
+        oldVolunteer,
+        volunteer,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.json(volunteer);
     } catch (error) {
-      console.error('Failed to update volunteer', error);
+      logger.error('Failed to update volunteer', error);
       res.status(500).json({ message: 'Failed to update volunteer' });
     }
   });
@@ -80,13 +138,34 @@ export function createVolunteersRoutes(
   router.delete('/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Get old data before delete
+      const oldVolunteer = await storage.getVolunteer(id);
+      if (!oldVolunteer) {
+        return res.status(404).json({ message: 'Volunteer not found' });
+      }
+
       const deleted = await storage.deleteVolunteer(id);
       if (!deleted) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
+
+      // Audit log
+      await AuditLogger.logDelete(
+        'volunteers',
+        String(id),
+        oldVolunteer,
+        {
+          userId: req.user?.id || req.session?.user?.id,
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          sessionId: req.sessionID
+        }
+      );
+
       res.status(204).send();
     } catch (error) {
-      console.error('Failed to delete volunteer', error);
+      logger.error('Failed to delete volunteer', error);
       res.status(500).json({ message: 'Failed to delete volunteer' });
     }
   });
@@ -131,7 +210,7 @@ export function createVolunteersRoutes(
 
       res.send(csvContent.join('\n'));
     } catch (error) {
-      console.error('Failed to export volunteers', error);
+      logger.error('Failed to export volunteers', error);
       res.status(500).json({ message: 'Failed to export volunteers' });
     }
   });
@@ -139,4 +218,5 @@ export function createVolunteersRoutes(
   return router;
 }
 
-export default createVolunteersRoutes;
+// Backwards compatibility export
+export default createVolunteersRouter;

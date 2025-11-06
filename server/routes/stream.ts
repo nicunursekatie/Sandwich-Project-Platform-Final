@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { StreamChat } from 'stream-chat';
+import { logger } from '../utils/production-safe-logger';
 
 export const streamRoutes = Router();
 
@@ -12,14 +13,14 @@ const initializeStreamServer = () => {
     const apiSecret = process.env.STREAM_API_SECRET;
 
     if (!apiKey || !apiSecret) {
-      console.log('Stream Chat credentials not found in environment variables');
+      logger.log('Stream Chat credentials not found in environment variables');
       return null;
     }
 
     streamServerClient = StreamChat.getInstance(apiKey, apiSecret);
     return streamServerClient;
   } catch (error) {
-    console.error('Failed to initialize Stream Chat server:', error);
+    logger.error('Failed to initialize Stream Chat server:', error);
     return null;
   }
 };
@@ -27,19 +28,19 @@ const initializeStreamServer = () => {
 // Get Stream Chat credentials and generate user token
 streamRoutes.post('/credentials', async (req, res) => {
   try {
-    console.log('=== STREAM CREDENTIALS ENDPOINT ===');
-    console.log('User from req.user:', req.user);
-    console.log('User from session:', req.session?.user);
-    console.log('Session exists:', !!req.session);
-    console.log('Session ID:', req.sessionID);
+    logger.log('=== STREAM CREDENTIALS ENDPOINT ===');
+    logger.log('User from req.user:', req.user);
+    logger.log('User from session:', req.session?.user);
+    logger.log('Session exists:', !!req.session);
+    logger.log('Session ID:', req.sessionID);
 
     const user = req.user || req.session?.user;
     if (!user) {
-      console.log('❌ No user found in request or session');
+      logger.log('❌ No user found in request or session');
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    console.log('✅ User authenticated:', user.email);
+    logger.log('✅ User authenticated:', user.email);
 
     const apiKey = process.env.STREAM_API_KEY;
     const apiSecret = process.env.STREAM_API_SECRET;
@@ -77,7 +78,7 @@ streamRoutes.post('/credentials', async (req, res) => {
         streamRole = 'user';
       }
 
-      console.log(`🔧 Stream Chat role mapping: ${userRole} -> ${streamRole} for user ${user.email}`);
+      logger.log(`🔧 Stream Chat role mapping: ${userRole} -> ${streamRole} for user ${user.email}`);
 
       // Create or update user in Stream
       await streamServerClient.upsertUser({
@@ -125,19 +126,37 @@ streamRoutes.post('/credentials', async (req, res) => {
         { id: 'recipient', name: 'Recipient Chat', permission: 'CHAT_RECIPIENT' },
       ];
 
-      // Create team channels that the user has permission for
+      // Create team channels that the user has permission for AND add user as member
       const userPermissions = user.permissions || [];
+      logger.log(`🔍 Processing channels for ${user.email}, permissions:`, userPermissions);
+
       for (const room of teamRooms) {
         if (userPermissions.includes(room.permission)) {
+          logger.log(`✓ User has permission ${room.permission}, setting up channel ${room.id}`);
           try {
+            // Get or create the channel
             const channel = streamServerClient.channel('team', room.id, {
               name: room.name,
               created_by_id: streamUserId,
             });
-            await channel.create();
-          } catch (channelError) {
-            // Channel might already exist, that's okay
-            console.log(`Channel ${room.id} already exists or couldn't be created`);
+
+            // Use getOrCreate to handle both new and existing channels
+            await channel.getOrCreate();
+
+            // Add user as member (this works for both new and existing channels)
+            try {
+              await channel.addMembers([streamUserId]);
+              logger.log(`✅ Added ${user.email} to channel ${room.id}`);
+            } catch (addError: any) {
+              // User might already be a member
+              if (addError.message?.includes('already a member')) {
+                logger.log(`User ${user.email} already in channel ${room.id}`);
+              } else {
+                logger.error(`Failed to add user to ${room.id}:`, addError.message);
+              }
+            }
+          } catch (channelError: any) {
+            logger.error(`Failed to setup channel ${room.id}:`, channelError.message);
           }
         }
       }
@@ -148,7 +167,7 @@ streamRoutes.post('/credentials', async (req, res) => {
         streamUserId,
       });
     } catch (streamError) {
-      console.error('❌ Stream Chat user creation error:', streamError);
+      logger.error('❌ Stream Chat user creation error:', streamError);
       res.status(500).json({
         error: 'Failed to create Stream user',
         message:
@@ -157,7 +176,7 @@ streamRoutes.post('/credentials', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('❌ Stream credentials error:', error);
+    logger.error('❌ Stream credentials error:', error);
     res.status(500).json({
       error: 'Internal server error',
       message: error.message,
@@ -195,7 +214,7 @@ streamRoutes.post('/channels', async (req, res) => {
       members: channel.data?.members || [],
     });
   } catch (error) {
-    console.error('Channel creation error:', error);
+    logger.error('Channel creation error:', error);
     res.status(500).json({ error: 'Failed to create channel' });
   }
 });

@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import MeetingMinutesModal from '@/components/modals/meeting-minutes-modal';
 import AddMeetingModal from '@/components/modals/add-meeting-modal';
 import type { MeetingMinutes } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 export default function MeetingMinutes() {
   const [showAllMinutes, setShowAllMinutes] = useState(false);
@@ -24,10 +25,10 @@ export default function MeetingMinutes() {
 
   // Handle clicking on a meeting minute to view document
   const handleViewMinutes = async (minute: MeetingMinutes) => {
-    console.log('🔍 Meeting minutes clicked:', minute);
+    logger.log('🔍 Meeting minutes clicked:', minute);
 
     // Add detailed debug info
-    console.log('📋 Meeting details:', {
+    logger.log('📋 Meeting details:', {
       id: minute.id,
       title: minute.title,
       filePath: minute.filePath,
@@ -37,13 +38,13 @@ export default function MeetingMinutes() {
 
     if (minute.filePath) {
       try {
-        console.log(
+        logger.log(
           '📁 Fetching file from:',
           `/api/meeting-minutes/${minute.id}/file`
         );
         // Try to download/view the file
         const response = await fetch(`/api/meeting-minutes/${minute.id}/file`);
-        console.log(
+        logger.log(
           '📄 File fetch response:',
           response.status,
           response.statusText
@@ -64,7 +65,7 @@ export default function MeetingMinutes() {
           description: `Opening ${minute.fileName || 'meeting minutes'}`,
         });
       } catch (error) {
-        console.error('❌ Error accessing meeting minutes:', error);
+        logger.error('❌ Error accessing meeting minutes:', error);
         toast({
           title: 'Unable to access document',
           description:
@@ -73,7 +74,7 @@ export default function MeetingMinutes() {
         });
       }
     } else if (minute.summary.includes('Google Docs link:')) {
-      console.log('🔗 Opening Google Docs link');
+      logger.log('🔗 Opening Google Docs link');
       // Extract Google Docs URL and open it
       const googleDocsMatch = minute.summary.match(
         /https:\/\/docs\.google\.com[^\s)]+/
@@ -86,7 +87,7 @@ export default function MeetingMinutes() {
         });
       }
     } else {
-      console.log('📋 Showing text summary in modal');
+      logger.log('📋 Showing text summary in modal');
       // Show summary in modal for text-only minutes
       setShowAllMinutes(true);
     }
@@ -95,7 +96,7 @@ export default function MeetingMinutes() {
   const getBorderColor = (color: string) => {
     switch (color) {
       case 'blue':
-        return 'border-l-blue-500';
+        return 'border-l-brand-primary';
       case 'green':
         return 'border-l-green-500';
       case 'amber':
@@ -103,7 +104,7 @@ export default function MeetingMinutes() {
       case 'purple':
         return 'border-l-purple-500';
       default:
-        return 'border-l-blue-500';
+        return 'border-l-brand-primary';
     }
   };
 
@@ -136,7 +137,7 @@ export default function MeetingMinutes() {
           <Button
             variant="ghost"
             size="sm"
-            className="text-brand-primary hover:text-blue-700"
+            className="text-brand-primary hover:text-brand-primary"
             onClick={() => setShowAddMeeting(true)}
           >
             <Plus className="mr-1 w-4 h-4" />
@@ -157,7 +158,7 @@ export default function MeetingMinutes() {
                       {minute.title}
                     </h3>
                     {minute.filePath ? (
-                      <FileText className="w-4 h-4 text-blue-500" />
+                      <FileText className="w-4 h-4 text-brand-primary" />
                     ) : minute.summary.includes('Google Docs link:') ? (
                       <ExternalLink className="w-4 h-4 text-green-500" />
                     ) : null}
@@ -169,7 +170,7 @@ export default function MeetingMinutes() {
                     ? `${minute.summary.substring(0, 150)}...`
                     : minute.summary}
                 </p>
-                <div className="mt-2 text-xs text-brand-primary hover:text-blue-800">
+                <div className="mt-2 text-xs text-brand-primary hover:text-brand-primary-dark">
                   Click to view full meeting minutes →
                 </div>
               </div>

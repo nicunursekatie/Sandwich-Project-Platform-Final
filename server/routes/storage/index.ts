@@ -171,12 +171,11 @@ storageRouter.post('/confidential',
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // CRITICAL SECURITY: Only specific users can upload confidential documents
-      const authorizedUploaders = ['admin@sandwich.project', 'katielong2316@gmail.com'];
-      if (!authorizedUploaders.includes(user.email)) {
-        logger.warn(`Unauthorized confidential document upload attempt by: ${user.email}`);
+      // CRITICAL SECURITY: Only users with DOCUMENTS_CONFIDENTIAL permission can upload
+      if (!user.permissions?.includes('DOCUMENTS_CONFIDENTIAL')) {
+        logger.warn(`Unauthorized confidential document upload attempt by: ${user.email} (missing DOCUMENTS_CONFIDENTIAL permission)`);
         return res.status(403).json({ 
-          error: 'Access denied. Only authorized administrators can upload confidential documents.' 
+          error: 'Access denied. You do not have permission to upload confidential documents.' 
         });
       }
 

@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useDashboardNavigation } from '@/contexts/dashboard-navigation-context';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Card,
   CardContent,
@@ -54,8 +56,21 @@ export default function MeetingAgenda({
   isEmbedded = false,
 }: MeetingAgendaProps) {
   const { user } = useAuth();
+  const { trackView, trackCreate, trackUpdate } = useActivityTracker();
   const canModifyAgenda = (user as any)?.role !== 'committee_member';
   const [, setLocation] = useLocation();
+  const { setActiveSection } = useDashboardNavigation();
+
+  useEffect(() => {
+    if (!isEmbedded) {
+      trackView(
+        'Meetings',
+        'Meetings',
+        'Meeting Agenda',
+        'User accessed meeting agenda page'
+      );
+    }
+  }, [isEmbedded, trackView]);
 
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -188,9 +203,7 @@ export default function MeetingAgenda({
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              (window as any).dashboardSetActiveSection?.('meetings')
-            }
+            onClick={() => setActiveSection('meetings')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -207,7 +220,7 @@ export default function MeetingAgenda({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl">
+          <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-brand-primary-light rounded-xl">
             <ListTodo className="w-5 h-5 sm:w-6 sm:h-6 text-brand-primary" />
           </div>
           <div>
@@ -234,7 +247,7 @@ export default function MeetingAgenda({
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <ListTodo className="w-8 h-8 text-blue-500" />
+              <ListTodo className="w-8 h-8 text-brand-primary" />
               <div>
                 <p className="text-2xl font-bold">
                   {(agendaItems as AgendaItem[]).length}

@@ -15,6 +15,9 @@ import {
   Download,
   ChevronDown,
   ChevronRight,
+  HelpCircle,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +25,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -45,13 +54,15 @@ import TSPContactManager from './tsp-contact-manager';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import type { Recipient } from '@shared/schema';
+import { logger } from '@/lib/logger';
 
 export default function RecipientsManagement() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEdit = hasPermission(user, PERMISSIONS.RECIPIENTS_EDIT);
+  const { canEdit } = useResourcePermissions('RECIPIENTS');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(
@@ -60,36 +71,38 @@ export default function RecipientsManagement() {
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('active'); // Default to active only
   const [contractFilter, setContractFilter] = useState<string>('all');
+  const [showInactive, setShowInactive] = useState(false);
   const [regionFilter, setRegionFilter] = useState<string>('all');
   const [tspContactFilter, setTspContactFilter] = useState<string>('all');
   const [sandwichTypeFilter, setSandwichTypeFilter] = useState<string>('all');
+  const [focusAreaFilter, setFocusAreaFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [customFocusArea, setCustomFocusArea] = useState('');
   const [importResults, setImportResults] = useState<{
     imported: number;
     skipped: number;
   } | null>(null);
 
-  // Collapsible section states
-  const [basicInfoSectionOpen, setBasicInfoSectionOpen] = useState(true);
-  const [contactSectionOpen, setContactSectionOpen] = useState(true);
-  const [secondContactSectionOpen, setSecondContactSectionOpen] =
-    useState(false);
-  const [operationalSectionOpen, setOperationalSectionOpen] = useState(false);
-  const [socialMediaSectionOpen, setSocialMediaSectionOpen] = useState(false);
+  // Collapsible section states - consolidated into single state object
+  const [sections, setSections] = useState({
+    basicInfo: true,
+    contact: true,
+    secondContact: false,
+    operational: false,
+    socialMedia: false,
+    editBasicInfo: true,
+    editContact: true,
+    editSecondContact: false,
+    editOperational: false,
+    editSocialMedia: false,
+  });
 
-  // Edit form collapsible states
-  const [editBasicInfoSectionOpen, setEditBasicInfoSectionOpen] =
-    useState(true);
-  const [editContactSectionOpen, setEditContactSectionOpen] = useState(true);
-  const [editSecondContactSectionOpen, setEditSecondContactSectionOpen] =
-    useState(false);
-  const [editOperationalSectionOpen, setEditOperationalSectionOpen] =
-    useState(false);
-  const [editSocialMediaSectionOpen, setEditSocialMediaSectionOpen] = 
-    useState(false);
+  const updateSection = (section: keyof typeof sections, open: boolean) => {
+    setSections(prev => ({ ...prev, [section]: open }));
+  };
   const [newRecipient, setNewRecipient] = useState({
     name: '',
     phone: '',
@@ -113,7 +126,7 @@ export default function RecipientsManagement() {
     reportingGroup: '',
     estimatedSandwiches: '',
     sandwichType: '',
-    focusArea: '', // New field for group focus (youth, veterans, etc.)
+    focusAreas: [] as string[], // Multiple focus areas
     tspContact: '',
     tspContactUserId: '',
     contractSigned: false,
@@ -162,7 +175,15 @@ export default function RecipientsManagement() {
             ?.toLowerCase()
             .includes(term) ||
           recipient.reportingGroup?.toLowerCase().includes(term) ||
-          (recipient as any).focusArea?.toLowerCase().includes(term) ||
+          (() => {
+            // Handle both new focusAreas array and legacy focusArea string
+            const areas = Array.isArray((recipient as any).focusAreas)
+              ? (recipient as any).focusAreas
+              : (recipient as any).focusArea
+                ? [(recipient as any).focusArea]
+                : [];
+            return areas.some((area: string) => area.toLowerCase().includes(term));
+          })() ||
           (recipient as any).instagramHandle?.toLowerCase().includes(term)
       );
     }
@@ -208,6 +229,19 @@ export default function RecipientsManagement() {
       );
     }
 
+    // Apply focus area filter
+    if (focusAreaFilter !== 'all') {
+      filtered = filtered.filter((recipient) => {
+        // Handle both new focusAreas array and legacy focusArea string
+        const areas = Array.isArray((recipient as any).focusAreas)
+          ? (recipient as any).focusAreas
+          : (recipient as any).focusArea
+            ? [(recipient as any).focusArea]
+            : [];
+        return areas.includes(focusAreaFilter);
+      });
+    }
+
     return filtered;
   }, [
     recipients,
@@ -217,7 +251,13 @@ export default function RecipientsManagement() {
     regionFilter,
     tspContactFilter,
     sandwichTypeFilter,
+    focusAreaFilter,
   ]);
+
+  // Separate list for inactive recipients (always filtered, no other filters applied)
+  const inactiveRecipients = useMemo(() => {
+    return recipients.filter((r) => r.status === 'inactive');
+  }, [recipients]);
 
   // Get unique values for filter dropdowns
   const uniqueRegions = useMemo(() => {
@@ -244,13 +284,23 @@ export default function RecipientsManagement() {
   }, [recipients]);
 
   const uniqueFocusAreas = useMemo(() => {
-    const areas = recipients.map((r) => (r as any).focusArea).filter(Boolean);
-    return [...new Set(areas)].sort();
+    const allAreas = recipients.flatMap((r) => {
+      // Handle both new focusAreas array and legacy focusArea string
+      if (Array.isArray((r as any).focusAreas) && (r as any).focusAreas.length > 0) {
+        return (r as any).focusAreas;
+      } else if ((r as any).focusArea) {
+        return [(r as any).focusArea];
+      }
+      return [];
+    });
+    return [...new Set(allAreas)].sort();
   }, [recipients]);
 
   const createRecipientMutation = useMutation({
-    mutationFn: (recipient: any) =>
-      apiRequest('POST', '/api/recipients', recipient),
+    mutationFn: (recipient: any) => {
+      logger.log('[CREATE RECIPIENT] Sending data:', recipient);
+      return apiRequest('POST', '/api/recipients', recipient);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
       setIsAddModalOpen(false);
@@ -276,7 +326,7 @@ export default function RecipientsManagement() {
         reportingGroup: '',
         estimatedSandwiches: '',
         sandwichType: '',
-        focusArea: '', // Reset focus area field
+        focusAreas: [], // Reset focus areas field
         tspContact: '',
         tspContactUserId: '',
         contractSigned: false,
@@ -371,10 +421,10 @@ export default function RecipientsManagement() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newRecipient.name || !newRecipient.phone) {
+    if (!newRecipient.name) {
       toast({
         title: 'Validation Error',
-        description: 'Name and phone are required',
+        description: 'Name is required',
         variant: 'destructive',
       });
       return;
@@ -391,13 +441,32 @@ export default function RecipientsManagement() {
       contractSignedDate: newRecipient.contractSignedDate
         ? new Date(newRecipient.contractSignedDate)
         : null,
+      // Convert sharedPostDate from string to Date (or null if empty)
+      sharedPostDate: (newRecipient as any).sharedPostDate
+        ? new Date((newRecipient as any).sharedPostDate)
+        : null,
     };
 
     createRecipientMutation.mutate(submissionData);
   };
 
   const handleEdit = (recipient: Recipient) => {
-    setEditingRecipient(recipient);
+    // Normalize focusAreas to always be an array
+    // Handle both new focusAreas array and legacy focusArea string
+    let focusAreas: string[] = [];
+
+    if (Array.isArray((recipient as any).focusAreas) && (recipient as any).focusAreas.length > 0) {
+      focusAreas = (recipient as any).focusAreas;
+    } else if ((recipient as any).focusArea && typeof (recipient as any).focusArea === 'string') {
+      // Migrate old single focusArea to array
+      focusAreas = [(recipient as any).focusArea];
+    }
+
+    const normalizedRecipient = {
+      ...recipient,
+      focusAreas
+    };
+    setEditingRecipient(normalizedRecipient as Recipient);
   };
 
   const handleUpdate = () => {
@@ -425,6 +494,15 @@ export default function RecipientsManagement() {
     }
   };
 
+  const handleToggleStatus = (recipient: Recipient) => {
+    const newStatus = recipient.status === 'active' ? 'inactive' : 'active';
+    const updateData = {
+      ...recipient,
+      status: newStatus
+    };
+    updateRecipientMutation.mutate(updateData);
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -441,7 +519,7 @@ export default function RecipientsManagement() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch('/api/recipients/export', {
+      const response = await fetch('/api/recipients/export-csv', {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Export failed');
@@ -473,14 +551,26 @@ export default function RecipientsManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center">
-            <Users className="text-blue-500 mr-3 w-6 h-6" />
-            Recipients Management
-          </h1>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+          <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Users className="text-blue-500 w-6 h-6" />
+              Recipients Management
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">Recipients Management Help</p>
+                  <p className="text-sm">Manage individuals and organizations who receive sandwiches. Track contact information, delivery addresses, and special requirements.</p>
+                </TooltipContent>
+              </Tooltip>
+            </h1>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -594,8 +684,8 @@ export default function RecipientsManagement() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Basic Information Section */}
                     <Collapsible
-                      open={basicInfoSectionOpen}
-                      onOpenChange={setBasicInfoSectionOpen}
+                      open={sections.basicInfo}
+                      onOpenChange={(open) => updateSection('basicInfo', open)}
                     >
                       <div>
                         <CollapsibleTrigger asChild>
@@ -606,7 +696,7 @@ export default function RecipientsManagement() {
                             <h4 className="font-medium text-sm text-slate-700">
                               Basic Information
                             </h4>
-                            {basicInfoSectionOpen ? (
+                            {sections.basicInfo ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (
                               <ChevronRight className="h-4 w-4" />
@@ -740,8 +830,8 @@ export default function RecipientsManagement() {
 
                     {/* Contact Person Section */}
                     <Collapsible
-                      open={contactSectionOpen}
-                      onOpenChange={setContactSectionOpen}
+                      open={sections.contact}
+                      onOpenChange={(open) => updateSection('contact', open)}
                     >
                       <div className="border-t pt-4 mt-4">
                         <CollapsibleTrigger asChild>
@@ -752,7 +842,7 @@ export default function RecipientsManagement() {
                             <h4 className="font-medium text-sm text-slate-700">
                               Contact Person Information
                             </h4>
-                            {contactSectionOpen ? (
+                            {sections.contact ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (
                               <ChevronRight className="h-4 w-4" />
@@ -833,8 +923,8 @@ export default function RecipientsManagement() {
 
                     {/* Second Contact Person Section */}
                     <Collapsible
-                      open={secondContactSectionOpen}
-                      onOpenChange={setSecondContactSectionOpen}
+                      open={sections.secondContact}
+                      onOpenChange={(open) => updateSection('secondContact', open)}
                     >
                       <div className="border-t pt-4 mt-4">
                         <CollapsibleTrigger asChild>
@@ -845,7 +935,7 @@ export default function RecipientsManagement() {
                             <h4 className="font-medium text-sm text-slate-700">
                               Second Contact Person (Optional)
                             </h4>
-                            {secondContactSectionOpen ? (
+                            {sections.secondContact ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (
                               <ChevronRight className="h-4 w-4" />
@@ -926,8 +1016,8 @@ export default function RecipientsManagement() {
 
                     {/* Enhanced Operational Fields */}
                     <Collapsible
-                      open={operationalSectionOpen}
-                      onOpenChange={setOperationalSectionOpen}
+                      open={sections.operational}
+                      onOpenChange={(open) => updateSection('operational', open)}
                     >
                       <div className="border-t pt-4 mt-4">
                         <CollapsibleTrigger asChild>
@@ -938,7 +1028,7 @@ export default function RecipientsManagement() {
                             <h4 className="font-medium text-sm text-slate-700">
                               Operational Details
                             </h4>
-                            {operationalSectionOpen ? (
+                            {sections.operational ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (
                               <ChevronRight className="h-4 w-4" />
@@ -997,18 +1087,83 @@ export default function RecipientsManagement() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor="focusArea">Focus Area</Label>
-                              <Input
-                                id="focusArea"
-                                value={newRecipient.focusArea}
-                                onChange={(e) =>
-                                  setNewRecipient({
-                                    ...newRecipient,
-                                    focusArea: e.target.value,
-                                  })
-                                }
-                                placeholder="Group focus (e.g., youth, veterans, seniors, families)"
-                              />
+                              <Label htmlFor="focusAreas">Focus Areas</Label>
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                  {/* Predefined options */}
+                                  {['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].map((area) => (
+                                    <Badge
+                                      key={area}
+                                      variant={newRecipient.focusAreas.includes(area) ? "default" : "outline"}
+                                      className="cursor-pointer"
+                                      onClick={() => {
+                                        const updated = newRecipient.focusAreas.includes(area)
+                                          ? newRecipient.focusAreas.filter(a => a !== area)
+                                          : [...newRecipient.focusAreas, area];
+                                        setNewRecipient({ ...newRecipient, focusAreas: updated });
+                                      }}
+                                    >
+                                      {area}
+                                    </Badge>
+                                  ))}
+
+                                  {/* Custom focus areas */}
+                                  {newRecipient.focusAreas
+                                    .filter((area) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].includes(area))
+                                    .map((area) => (
+                                      <Badge
+                                        key={area}
+                                        variant="default"
+                                        className="cursor-pointer"
+                                        onClick={() => {
+                                          const updated = newRecipient.focusAreas.filter(a => a !== area);
+                                          setNewRecipient({ ...newRecipient, focusAreas: updated });
+                                        }}
+                                      >
+                                        {area} ×
+                                      </Badge>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Input
+                                    placeholder="Add custom focus area..."
+                                    value={customFocusArea}
+                                    onChange={(e) => setCustomFocusArea(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && customFocusArea.trim()) {
+                                        e.preventDefault();
+                                        const trimmed = customFocusArea.trim();
+                                        if (!newRecipient.focusAreas.includes(trimmed)) {
+                                          setNewRecipient({
+                                            ...newRecipient,
+                                            focusAreas: [...newRecipient.focusAreas, trimmed]
+                                          });
+                                        }
+                                        setCustomFocusArea('');
+                                      }
+                                    }}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const trimmed = customFocusArea.trim();
+                                      if (trimmed && !newRecipient.focusAreas.includes(trimmed)) {
+                                        setNewRecipient({
+                                          ...newRecipient,
+                                          focusAreas: [...newRecipient.focusAreas, trimmed]
+                                        });
+                                        setCustomFocusArea('');
+                                      }
+                                    }}
+                                  >
+                                    Add
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
                             <div>
                               <Label htmlFor="tspContact">TSP Contact</Label>
@@ -1150,8 +1305,8 @@ export default function RecipientsManagement() {
 
                     {/* Social Media Tracking */}
                     <Collapsible
-                      open={socialMediaSectionOpen}
-                      onOpenChange={setSocialMediaSectionOpen}
+                      open={sections.socialMedia}
+                      onOpenChange={(open) => updateSection('socialMedia', open)}
                     >
                       <div className="border-t pt-4 mt-4">
                         <CollapsibleTrigger asChild>
@@ -1162,7 +1317,7 @@ export default function RecipientsManagement() {
                             <h4 className="font-medium text-sm text-slate-700">
                               Social Media Tracking
                             </h4>
-                            {socialMediaSectionOpen ? (
+                            {sections.socialMedia ? (
                               <ChevronDown className="h-4 w-4" />
                             ) : (
                               <ChevronRight className="h-4 w-4" />
@@ -1310,7 +1465,7 @@ export default function RecipientsManagement() {
                   value={contractFilter}
                   onValueChange={setContractFilter}
                 >
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1387,6 +1542,28 @@ export default function RecipientsManagement() {
                 </Select>
               </div>
 
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">
+                  Focus Area
+                </Label>
+                <Select
+                  value={focusAreaFilter}
+                  onValueChange={setFocusAreaFilter}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Focus Areas</SelectItem>
+                    {uniqueFocusAreas.map((area) => (
+                      <SelectItem key={area} value={area}>
+                        {area}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-end">
                 <Button
                   variant="ghost"
@@ -1398,6 +1575,7 @@ export default function RecipientsManagement() {
                     setRegionFilter('all');
                     setTspContactFilter('all');
                     setSandwichTypeFilter('all');
+                    setFocusAreaFilter('all');
                   }}
                   className="text-slate-500 hover:text-slate-700"
                 >
@@ -1434,7 +1612,7 @@ export default function RecipientsManagement() {
             recipient.id === 19 ||
             recipient.id === 36
           ) {
-            console.log('Recipients Debug - Rendering:', {
+            logger.log('Recipients Debug - Rendering:', {
               id: recipient.id,
               name: recipient.name,
               isBoysAndGirls: recipient.name.includes('Boys'),
@@ -1450,14 +1628,28 @@ export default function RecipientsManagement() {
                       <CardTitle className="text-lg">
                         {recipient.name}
                       </CardTitle>
-                      {(recipient as any).focusArea && (
-                        <Badge
-                          variant="outline"
-                          className="bg-blue-50 text-blue-700 border-blue-200"
-                        >
-                          {(recipient as any).focusArea}
-                        </Badge>
-                      )}
+                      {(() => {
+                        // Handle both new focusAreas array and legacy focusArea string
+                        const areas = Array.isArray((recipient as any).focusAreas) && (recipient as any).focusAreas.length > 0
+                          ? (recipient as any).focusAreas
+                          : (recipient as any).focusArea
+                            ? [(recipient as any).focusArea]
+                            : [];
+
+                        return areas.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {areas.map((area: string) => (
+                              <Badge
+                                key={area}
+                                variant="outline"
+                                className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border text-xs"
+                              >
+                                {area}
+                              </Badge>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge
@@ -1472,6 +1664,28 @@ export default function RecipientsManagement() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={!canEdit}
+                            onClick={() => handleToggleStatus(recipient)}
+                            className={recipient.status === 'active' ? 'text-green-600 hover:text-green-700' : 'text-gray-500 hover:text-gray-600'}
+                          >
+                            {recipient.status === 'active' ? (
+                              <ToggleRight className="w-4 h-4" />
+                            ) : (
+                              <ToggleLeft className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {recipient.status === 'active' ? 'Mark as Inactive' : 'Mark as Active'}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Button
                       size="sm"
                       variant="outline"
@@ -1788,6 +2002,72 @@ export default function RecipientsManagement() {
         )}
       </div>
 
+      {/* Inactive Recipients Section */}
+      {inactiveRecipients.length > 0 && (
+        <div className="mt-8">
+          <Collapsible open={showInactive} onOpenChange={setShowInactive}>
+            <div className="flex items-center justify-between mb-4">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 text-slate-600">
+                  {showInactive ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  <span className="text-sm font-medium">
+                    Inactive Recipients ({inactiveRecipients.length})
+                  </span>
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+
+            <CollapsibleContent>
+              <div className="grid gap-2 opacity-60">
+                {inactiveRecipients.map((recipient) => (
+                  <Card key={recipient.id} className="border border-slate-200 bg-slate-50">
+                    <CardHeader className="py-2 px-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <CardTitle className="text-sm font-normal text-slate-600">
+                            {recipient.name}
+                          </CardTitle>
+                          <Badge variant="secondary" className="text-xs">
+                            inactive
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={!canEdit}
+                                  onClick={() => handleToggleStatus(recipient)}
+                                  className="text-gray-500 hover:text-green-600 h-7 w-7 p-0"
+                                >
+                                  <ToggleLeft className="w-3 h-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Reactivate</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={!canEdit}
+                            onClick={() => handleEdit(recipient)}
+                            className="h-7 w-7 p-0"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      )}
+
       {/* Edit Modal */}
       {editingRecipient && (
         <Dialog
@@ -1810,8 +2090,8 @@ export default function RecipientsManagement() {
             <div className="space-y-4">
               {/* Basic Information Section */}
               <Collapsible
-                open={editBasicInfoSectionOpen}
-                onOpenChange={setEditBasicInfoSectionOpen}
+                open={sections.editBasicInfo}
+                onOpenChange={(open) => updateSection('editBasicInfo', open)}
               >
                 <div>
                   <CollapsibleTrigger asChild>
@@ -1822,7 +2102,7 @@ export default function RecipientsManagement() {
                       <h4 className="font-medium text-sm text-slate-700">
                         Basic Information
                       </h4>
-                      {editBasicInfoSectionOpen ? (
+                      {sections.editBasicInfo ? (
                         <ChevronDown className="h-4 w-4" />
                       ) : (
                         <ChevronRight className="h-4 w-4" />
@@ -1952,8 +2232,8 @@ export default function RecipientsManagement() {
 
               {/* Contact Person Section */}
               <Collapsible
-                open={editContactSectionOpen}
-                onOpenChange={setEditContactSectionOpen}
+                open={sections.editContact}
+                onOpenChange={(open) => updateSection('editContact', open)}
               >
                 <div className="border-t pt-4 mt-4">
                   <CollapsibleTrigger asChild>
@@ -1964,7 +2244,7 @@ export default function RecipientsManagement() {
                       <h4 className="font-medium text-sm text-slate-700">
                         Contact Person Information
                       </h4>
-                      {editContactSectionOpen ? (
+                      {sections.editContact ? (
                         <ChevronDown className="h-4 w-4" />
                       ) : (
                         <ChevronRight className="h-4 w-4" />
@@ -2045,8 +2325,8 @@ export default function RecipientsManagement() {
 
               {/* Second Contact Person Section */}
               <Collapsible
-                open={editSecondContactSectionOpen}
-                onOpenChange={setEditSecondContactSectionOpen}
+                open={sections.editSecondContact}
+                onOpenChange={(open) => updateSection('editSecondContact', open)}
               >
                 <div className="border-t pt-4 mt-4">
                   <CollapsibleTrigger asChild>
@@ -2057,7 +2337,7 @@ export default function RecipientsManagement() {
                       <h4 className="font-medium text-sm text-slate-700">
                         Second Contact Person (Optional)
                       </h4>
-                      {editSecondContactSectionOpen ? (
+                      {sections.editSecondContact ? (
                         <ChevronDown className="h-4 w-4" />
                       ) : (
                         <ChevronRight className="h-4 w-4" />
@@ -2150,8 +2430,8 @@ export default function RecipientsManagement() {
 
               {/* Enhanced Operational Fields */}
               <Collapsible
-                open={editOperationalSectionOpen}
-                onOpenChange={setEditOperationalSectionOpen}
+                open={sections.editOperational}
+                onOpenChange={(open) => updateSection('editOperational', open)}
               >
                 <div className="border-t pt-4 mt-4">
                   <CollapsibleTrigger asChild>
@@ -2162,7 +2442,7 @@ export default function RecipientsManagement() {
                       <h4 className="font-medium text-sm text-slate-700">
                         Operational Details
                       </h4>
-                      {editOperationalSectionOpen ? (
+                      {sections.editOperational ? (
                         <ChevronDown className="h-4 w-4" />
                       ) : (
                         <ChevronRight className="h-4 w-4" />
@@ -2220,18 +2500,87 @@ export default function RecipientsManagement() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="edit-focusArea">Focus Area</Label>
-                        <Input
-                          id="edit-focusArea"
-                          value={(editingRecipient as any).focusArea || ''}
-                          onChange={(e) =>
-                            setEditingRecipient({
-                              ...editingRecipient,
-                              focusArea: e.target.value,
-                            })
-                          }
-                          placeholder="Group focus (e.g., youth, veterans, seniors, families)"
-                        />
+                        <Label htmlFor="edit-focusAreas">Focus Areas</Label>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {/* Predefined options */}
+                            {['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].map((area) => (
+                              <Badge
+                                key={area}
+                                variant={((editingRecipient as any).focusAreas || []).includes(area) ? "default" : "outline"}
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  const currentAreas = (editingRecipient as any).focusAreas || [];
+                                  const updated = currentAreas.includes(area)
+                                    ? currentAreas.filter((a: string) => a !== area)
+                                    : [...currentAreas, area];
+                                  setEditingRecipient({ ...editingRecipient, focusAreas: updated });
+                                }}
+                              >
+                                {area}
+                              </Badge>
+                            ))}
+
+                            {/* Custom focus areas */}
+                            {((editingRecipient as any).focusAreas || [])
+                              .filter((area: string) => !['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'].includes(area))
+                              .map((area: string) => (
+                                <Badge
+                                  key={area}
+                                  variant="default"
+                                  className="cursor-pointer"
+                                  onClick={() => {
+                                    const currentAreas = (editingRecipient as any).focusAreas || [];
+                                    const updated = currentAreas.filter((a: string) => a !== area);
+                                    setEditingRecipient({ ...editingRecipient, focusAreas: updated });
+                                  }}
+                                >
+                                  {area} ×
+                                </Badge>
+                              ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Add custom focus area..."
+                              value={customFocusArea}
+                              onChange={(e) => setCustomFocusArea(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && customFocusArea.trim()) {
+                                  e.preventDefault();
+                                  const trimmed = customFocusArea.trim();
+                                  const currentAreas = (editingRecipient as any).focusAreas || [];
+                                  if (!currentAreas.includes(trimmed)) {
+                                    setEditingRecipient({
+                                      ...editingRecipient,
+                                      focusAreas: [...currentAreas, trimmed]
+                                    });
+                                  }
+                                  setCustomFocusArea('');
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const trimmed = customFocusArea.trim();
+                                const currentAreas = (editingRecipient as any).focusAreas || [];
+                                if (trimmed && !currentAreas.includes(trimmed)) {
+                                  setEditingRecipient({
+                                    ...editingRecipient,
+                                    focusAreas: [...currentAreas, trimmed]
+                                  });
+                                  setCustomFocusArea('');
+                                }
+                              }}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                       <div>
                         <Label htmlFor="edit-tspContact">TSP Contact</Label>
@@ -2392,8 +2741,8 @@ export default function RecipientsManagement() {
 
               {/* Social Media Tracking */}
               <Collapsible
-                open={editSocialMediaSectionOpen}
-                onOpenChange={setEditSocialMediaSectionOpen}
+                open={sections.editSocialMedia}
+                onOpenChange={(open) => updateSection('editSocialMedia', open)}
               >
                 <div className="border-t pt-4 mt-4">
                   <CollapsibleTrigger asChild>
@@ -2404,7 +2753,7 @@ export default function RecipientsManagement() {
                       <h4 className="font-medium text-sm text-slate-700">
                         Social Media Tracking
                       </h4>
-                      {editSocialMediaSectionOpen ? (
+                      {sections.editSocialMedia ? (
                         <ChevronDown className="h-4 w-4" />
                       ) : (
                         <ChevronRight className="h-4 w-4" />
@@ -2477,5 +2826,6 @@ export default function RecipientsManagement() {
         </Dialog>
       )}
     </div>
+    </TooltipProvider>
   );
 }

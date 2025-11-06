@@ -14,7 +14,9 @@ import {
 } from '@shared/schema';
 import { eq, count, sql } from 'drizzle-orm';
 import { ensureSessionsTable } from './session-migrate';
+import { runMigrationsAutomatically } from './migrate';
 import { createServiceLogger } from './utils/logger.js';
+import { logger } from './utils/production-safe-logger';
 
 const dbLogger = createServiceLogger('database');
 
@@ -29,6 +31,9 @@ export async function initializeDatabase() {
         ? process.env.DATABASE_URL.substring(0, 20) + '...'
         : 'not set',
     });
+
+    // Run any pending database migrations
+    await runMigrationsAutomatically();
 
     // Ensure sessions table exists for PostgreSQL session storage
     // This resolves the "MemoryStore is not designed for a production environment" warning
@@ -46,7 +51,7 @@ export async function initializeDatabase() {
       .select({ count: count() })
       .from(recipients);
 
-    console.log(
+    logger.log(
       'Table counts - Hosts:',
       hostsCount.count,
       'Projects:',
@@ -60,11 +65,11 @@ export async function initializeDatabase() {
     );
 
     // No seeding - all data should be added manually or via import
-    console.log('Database ready - no sample data seeded');
+    logger.log('Database ready - no sample data seeded');
 
-    console.log('Database initialization complete');
+    logger.log('Database initialization complete');
   } catch (error) {
-    console.error('Database initialization failed:', error);
+    logger.error('Database initialization failed:', error);
     // Don't throw - allow app to continue with fallback storage
   }
 }

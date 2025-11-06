@@ -45,6 +45,39 @@ export class TwilioProvider implements SMSProvider {
     return this.phoneNumber || null;
   }
 
+  /**
+   * Get the Twilio phone number SID for the configured phone number
+   */
+  async getPhoneNumberSid(): Promise<string | null> {
+    if (!this.client || !this.phoneNumber) {
+      return null;
+    }
+
+    try {
+      // Search for the phone number to get its SID
+      const phoneNumbers = await this.client.incomingPhoneNumbers.list({
+        phoneNumber: this.phoneNumber,
+        limit: 1
+      });
+
+      if (phoneNumbers.length > 0) {
+        return phoneNumbers[0].sid;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error fetching phone number SID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get the underlying Twilio client (for advanced operations)
+   */
+  getClient(): ReturnType<typeof Twilio> | null {
+    return this.client;
+  }
+
   async sendSMS(message: SMSMessage): Promise<SMSResult> {
     if (!this.client) {
       return {

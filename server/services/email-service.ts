@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { emailMessages, users } from '@shared/schema';
 import { eq, and, or, desc, isNull, sql, inArray } from 'drizzle-orm';
+import { logger } from '../utils/production-safe-logger';
 
 export interface EmailMessage {
   id: number;
@@ -49,7 +50,7 @@ export class EmailService {
 
       return result[0]?.count || 0;
     } catch (error) {
-      console.error('Failed to get unread email count:', error);
+      logger.error('Failed to get unread email count:', error);
       return 0;
     }
   }
@@ -103,7 +104,8 @@ export class EmailService {
               and(
                 eq(emailMessages.senderId, userId),
                 eq(emailMessages.isDraft, false),
-                eq(emailMessages.isTrashed, false)
+                eq(emailMessages.isTrashed, false),
+                eq(emailMessages.isArchived, false)
               )
             );
           break;
@@ -175,7 +177,7 @@ export class EmailService {
 
       return results as EmailMessage[];
     } catch (error) {
-      console.error(`Failed to get emails for folder ${folder}:`, error);
+      logger.error(`Failed to get emails for folder ${folder}:`, error);
       throw error;
     }
   }
@@ -236,6 +238,7 @@ export class EmailService {
       if (!data.isDraft) {
         try {
           const { sendEmail: sendGridEmail } = await import('../sendgrid');
+          const { documents } = await import('@shared/schema');
           
           // Use preferred email for Reply-To, fallback to sender email
           const replyToEmail = data.senderPreferredEmail || data.senderEmail;
@@ -259,9 +262,79 @@ export class EmailService {
           const signature = createSignature();
           const contentWithSignature = `${data.content}\n\n---\n${signature}`;
           
-          // Convert markdown-style bold **text** to HTML <strong>text</strong>
-          const contentHtml = data.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-          const signatureHtml = signature.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          // Convert markdown-style bold **text** to HTML <strong>text</strong> and \n to <br>
+          const contentHtml = data.content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+          const signatureHtml = signature
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+          
+          // Process attachments - handle both document IDs and file paths consistently
+          let processedAttachments: { filePath: string; originalName?: string }[] = [];
+          if (data.attachments && data.attachments.length > 0) {
+            const path = await import('path');
+            
+            // Separate document IDs from file paths
+            const numericIds = data.attachments
+              .map(a => typeof a === 'string' ? parseInt(a) : a)
+              .filter(id => !isNaN(id));
+            
+            const documentMap = new Map<number, { filePath: string; originalName?: string }>();
+            
+            if (numericIds.length > 0) {
+              // Fetch document metadata from database
+              const docs = await db
+                .select({
+                  id: documents.id,
+                  filePath: documents.filePath,
+                  originalName: documents.originalName,
+                })
+                .from(documents)
+                .where(inArray(documents.id, numericIds));
+              
+              docs.forEach(doc => {
+                documentMap.set(doc.id, {
+                  filePath: doc.filePath,
+                  originalName: doc.originalName || undefined,
+                });
+              });
+            }
+            
+            // Process each attachment consistently
+            for (const attachment of data.attachments) {
+              if (typeof attachment === 'string') {
+                const trimmed = attachment.trim();
+                
+                // Check if it's a numeric ID
+                if (/^\d+$/.test(trimmed)) {
+                  const docId = parseInt(trimmed, 10);
+                  const docMeta = documentMap.get(docId);
+                  if (docMeta) {
+                    processedAttachments.push(docMeta);
+                  } else {
+                    logger.warn(`[Email Service] Document ID ${docId} not found`);
+                  }
+                  continue;
+                }
+                
+                // Handle file path strings - convert to object format
+                let resolvedPath: string;
+                if (trimmed.startsWith('/uploads/')) {
+                  resolvedPath = path.join(process.cwd(), trimmed.substring(1));
+                } else if (path.isAbsolute(trimmed)) {
+                  resolvedPath = trimmed;
+                } else {
+                  resolvedPath = path.join(process.cwd(), trimmed);
+                }
+                
+                processedAttachments.push({
+                  filePath: resolvedPath,
+                  originalName: path.basename(resolvedPath)
+                });
+              }
+            }
+          }
           
           // Import SendGrid compliance footer
           const { EMAIL_FOOTER_TEXT, EMAIL_FOOTER_HTML } = await import('../utils/email-footer');
@@ -287,12 +360,13 @@ export class EmailService {
                 ${EMAIL_FOOTER_HTML}
               </div>
             `,
+            attachments: processedAttachments,
           });
-          console.log(
+          logger.log(
             `[Email Service] SendGrid notification sent successfully to ${data.recipientEmail}`
           );
         } catch (emailError) {
-          console.warn(
+          logger.warn(
             `[Email Service] SendGrid notification failed (but internal message saved): ${
               emailError?.message || 'Unknown error'
             }`
@@ -303,7 +377,7 @@ export class EmailService {
 
       return newEmail as EmailMessage;
     } catch (error) {
-      console.error('Failed to save internal email:', error);
+      logger.error('Failed to save internal email:', error);
       throw error;
     }
   }
@@ -339,14 +413,14 @@ export class EmailService {
         );
 
       if (!email) {
-        console.error('Email not found or user does not have access');
+        logger.error('Email not found or user does not have access');
         return false;
       }
 
       // CRITICAL FIX: Only allow recipients to mark emails as read
       // If sender is trying to mark as read, ignore that update to prevent affecting recipient's unread status
       if (updates.isRead !== undefined && email.senderId === userId) {
-        console.log(
+        logger.log(
           `Sender ${userId} attempted to mark email ${emailId} as read - ignoring to protect recipient read status`
         );
         // Remove isRead from updates for senders
@@ -377,7 +451,7 @@ export class EmailService {
 
       return true;
     } catch (error) {
-      console.error('Failed to update email status:', error);
+      logger.error('Failed to update email status:', error);
       return false;
     }
   }
@@ -409,7 +483,7 @@ export class EmailService {
 
       return true;
     } catch (error) {
-      console.error('Failed to delete email:', error);
+      logger.error('Failed to delete email:', error);
       return false;
     }
   }
@@ -437,7 +511,7 @@ export class EmailService {
 
       return (email as EmailMessage) || null;
     } catch (error) {
-      console.error('Failed to get email by ID:', error);
+      logger.error('Failed to get email by ID:', error);
       return null;
     }
   }
@@ -475,7 +549,7 @@ export class EmailService {
 
       return results as EmailMessage[];
     } catch (error) {
-      console.error('Failed to search emails:', error);
+      logger.error('Failed to search emails:', error);
       throw error;
     }
   }
@@ -505,7 +579,7 @@ export class EmailService {
 
       return results as EmailMessage[];
     } catch (error) {
-      console.error('Failed to get drafts by context:', error);
+      logger.error('Failed to get drafts by context:', error);
       throw error;
     }
   }

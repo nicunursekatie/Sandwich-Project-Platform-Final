@@ -51,7 +51,7 @@ import {
 import { PERMISSIONS, USER_ROLES, getRoleDisplayName } from '@shared/auth-utils';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import ModernPermissionsEditor from '@/components/modern-permissions-editor';
+import CleanPermissionsEditor from '@/components/clean-permissions-editor';
 
 interface User {
   id: string;
@@ -106,8 +106,8 @@ export default function BulkPermissionsManager() {
         percentage: Math.round((usersWithPermission.length / users.length) * 100),
         users: usersWithPermission.map(user => ({
           id: user.id,
-          name: `${user.firstName} ${user.lastName}`,
-          email: user.email
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
+          email: user.email || ''
         }))
       });
     });
@@ -205,6 +205,7 @@ export default function BulkPermissionsManager() {
   };
 
   const getPermissionDisplayName = (permission: string) => {
+    if (!permission) return '';
     return permission.replace(/_/g, ' ').toLowerCase()
       .replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -317,7 +318,7 @@ export default function BulkPermissionsManager() {
 
       {/* Bulk Actions */}
       {selectedUsers.length > 0 && (
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-brand-primary-border bg-brand-primary-lighter">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Settings className="h-5 w-5" />
@@ -398,7 +399,7 @@ export default function BulkPermissionsManager() {
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map(user => (
-                    <TableRow key={user.id} className={selectedUsers.includes(user.id) ? 'bg-blue-50' : ''}>
+                    <TableRow key={user.id} className={selectedUsers.includes(user.id) ? 'bg-brand-primary-lighter' : ''}>
                       <TableCell>
                         <Checkbox
                           checked={selectedUsers.includes(user.id)}
@@ -455,7 +456,7 @@ export default function BulkPermissionsManager() {
                                       <div className="max-w-xs">
                                         <p className="font-semibold mb-2">All Permissions:</p>
                                         <div className="space-y-1">
-                                          {(user.permissions || []).map(perm => (
+                                          {(user.permissions || []).filter(Boolean).map(perm => (
                                             <div key={perm} className="text-xs">
                                               {getPermissionDisplayName(perm)}
                                             </div>
@@ -529,7 +530,7 @@ export default function BulkPermissionsManager() {
                         <div className="flex items-center gap-2">
                           <div className="w-20 bg-gray-200 rounded-full h-2">
                             <div
-                              className="bg-blue-500 h-2 rounded-full"
+                              className="bg-brand-primary-lighter0 h-2 rounded-full"
                               style={{ width: `${stat.percentage}%` }}
                             />
                           </div>
@@ -543,7 +544,7 @@ export default function BulkPermissionsManager() {
                               <Tooltip>
                                 <TooltipTrigger>
                                   <Badge variant="outline" className="text-xs">
-                                    {user.name.split(' ').map(n => n[0]).join('')}
+                                    {user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'}
                                   </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -588,7 +589,7 @@ export default function BulkPermissionsManager() {
       )}
 
       {/* Individual User Permissions Editor */}
-      <ModernPermissionsEditor
+      <CleanPermissionsEditor
         user={selectedUser}
         open={!!selectedUser}
         onOpenChange={(open) => {

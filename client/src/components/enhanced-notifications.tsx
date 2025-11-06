@@ -34,6 +34,8 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { NotificationActionButton } from './NotificationActionButton';
+import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 
 interface Notification {
   id: number;
@@ -88,7 +90,7 @@ const getPriorityBadgeColor = (priority: string) => {
   switch (priority) {
     case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
     case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'medium': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'medium': return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border';
     case 'low': return 'bg-green-100 text-green-800 border-green-200';
     default: return 'bg-gray-100 text-gray-800 border-gray-200';
   }
@@ -103,6 +105,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     categories: [] as string[],
     priorities: [] as string[],
   });
+
+  // Connect to Socket.IO for real-time notification updates
+  const { connected: socketConnected } = useNotificationSocket();
 
   if (!user) return null;
 
@@ -122,15 +127,15 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
       if (currentTab === 'unread') params.set('unread_only', 'true');
       if (filters.categories.length > 0) params.set('category', filters.categories[0]);
       if (filters.unreadOnly) params.set('unread_only', 'true');
-      
-      return apiRequest(`/api/notifications?${params.toString()}`);
+
+      return apiRequest('GET', `/api/notifications?${params.toString()}`);
     },
   });
 
   // Mark notification as read mutation
   const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: number) => 
-      apiRequest(`/api/notifications/${notificationId}/read`, { method: 'PATCH' }),
+    mutationFn: (notificationId: number) =>
+      apiRequest('PATCH', `/api/notifications/${notificationId}/read`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
@@ -139,8 +144,8 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
 
   // Archive notification mutation
   const archiveNotificationMutation = useMutation({
-    mutationFn: (notificationId: number) => 
-      apiRequest(`/api/notifications/${notificationId}/archive`, { method: 'PATCH' }),
+    mutationFn: (notificationId: number) =>
+      apiRequest('PATCH', `/api/notifications/${notificationId}/archive`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
@@ -149,11 +154,8 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
 
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation({
-    mutationFn: () => 
-      apiRequest('/api/notifications/bulk/read', { 
-        method: 'PATCH',
-        body: { notificationIds: [] }, // Empty array marks all as read
-      }),
+    mutationFn: () =>
+      apiRequest('PATCH', '/api/notifications/bulk/read', { notificationIds: [] }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
@@ -164,8 +166,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     if (!notification.isRead) {
       markAsReadMutation.mutate(notification.id);
     }
-    
-    if (notification.actionUrl) {
+
+    // If there's an action button, don't auto-navigate - let the button handle it
+    if (notification.actionUrl && !notification.actionText) {
       if (notification.actionUrl.startsWith('http')) {
         window.open(notification.actionUrl, '_blank');
       } else {
@@ -289,7 +292,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                       key={notification.id}
                       className={cn(
                         "group flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors",
-                        !notification.isRead && "bg-blue-50/50"
+                        !notification.isRead && "bg-brand-primary-lighter/50"
                       )}
                       onClick={() => handleNotificationClick(notification)}
                       data-testid={`notification-${notification.id}`}
@@ -331,11 +334,16 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                         </div>
 
                         {notification.actionText && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {notification.actionText}
-                              <ExternalLink className="h-3 w-3 ml-1" />
-                            </Badge>
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
+                            <NotificationActionButton
+                              notificationId={notification.id}
+                              actionType={notification.actionText.toLowerCase().replace(/\s+/g, '_')}
+                              actionText={notification.actionText}
+                              actionUrl={notification.actionUrl}
+                              onSuccess={() => {
+                                // Notification list will auto-refresh via query invalidation
+                              }}
+                            />
                           </div>
                         )}
                       </div>

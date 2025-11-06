@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { storage } from '../storage-wrapper';
 import { db } from '../db';
 import { users } from '@shared/schema';
+import { logger } from '../utils/production-safe-logger';
+import { getDefaultPermissionsForRole, PERMISSIONS } from '@shared/auth-utils';
+import { requirePermission } from '../middleware/auth';
 
 const router = Router();
 
@@ -24,10 +27,10 @@ const signupSchema = z.object({
 });
 
 router.post('/auth/signup', async (req, res) => {
-  console.log('=== SIGNUP ROUTE HIT ===');
-  console.log('Request method:', req.method);
-  console.log('Request URL:', req.url);
-  console.log('Request body:', req.body);
+  logger.log('=== SIGNUP ROUTE HIT ===');
+  logger.log('Request method:', req.method);
+  logger.log('Request URL:', req.url);
+  logger.log('Request body:', req.body);
   try {
     // Validate request body
     const validatedData = signupSchema.parse(req.body);
@@ -45,7 +48,7 @@ router.post('/auth/signup', async (req, res) => {
       'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
     // Use direct database insert with explicit casting
-    console.log('Creating user with ID:', userId);
+    logger.log('Creating user with ID:', userId);
     const [newUser] = await db
       .insert(users)
       .values({
@@ -63,10 +66,10 @@ router.post('/auth/signup', async (req, res) => {
         } as any, // Cast to any for metadata
       } as any)
       .returning();
-    console.log('User created successfully:', newUser);
+    logger.log('User created successfully:', newUser);
 
     // Store registration details in a simple format for admin review
-    console.log(`
+    logger.log(`
 === NEW USER REGISTRATION ===
 Name: ${validatedData.firstName} ${validatedData.lastName}
 Email: ${validatedData.email}
@@ -90,7 +93,7 @@ Registration Date: ${new Date().toISOString()}
       userId: newUser.id,
     });
   } catch (error) {
-    console.error('Signup error:', error);
+    logger.error('Signup error:', error);
 
     if (error instanceof z.ZodError) {
       return res.status(400).json({
@@ -106,7 +109,7 @@ Registration Date: ${new Date().toISOString()}
 });
 
 // Get pending registrations (admin only)
-router.get('/auth/pending-registrations', async (req, res) => {
+router.get('/auth/pending-registrations', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
     // In a real implementation, check admin permissions here
     const users = await storage.getAllUsers();
@@ -116,13 +119,13 @@ router.get('/auth/pending-registrations', async (req, res) => {
 
     res.json(pendingUsers);
   } catch (error) {
-    console.error('Error fetching pending registrations:', error);
+    logger.error('Error fetching pending registrations:', error);
     res.status(500).json({ message: 'Failed to fetch pending registrations' });
   }
 });
 
 // Approve user registration (admin only)
-router.patch('/auth/approve-user/:userId', async (req, res) => {
+router.patch('/auth/approve-user/:userId', requirePermission(PERMISSIONS.ADMIN_ACCESS), async (req, res) => {
   try {
     const { userId } = req.params;
     const { approved } = req.body;
@@ -132,7 +135,8 @@ router.patch('/auth/approve-user/:userId', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const updates = {
+    // Build updates object
+    const updates: any = {
       isActive: approved,
       metadata: {
         ...user.metadata,
@@ -141,13 +145,25 @@ router.patch('/auth/approve-user/:userId', async (req, res) => {
       },
     };
 
+    // When approving, assign default permissions for user's role
+    if (approved) {
+      const defaultPermissions = getDefaultPermissionsForRole(user.role);
+      updates.permissions = defaultPermissions;
+      
+      logger.log(`Approving user ${userId} with role ${user.role}`);
+      logger.log(`Assigning ${defaultPermissions.length} default permissions`);
+    }
+
     await storage.updateUser(userId, updates);
+
+    logger.log(`User ${userId} ${approved ? 'approved' : 'rejected'} successfully`);
 
     res.json({
       message: `User ${approved ? 'approved' : 'rejected'} successfully`,
+      permissions: approved ? updates.permissions.length : 0,
     });
   } catch (error) {
-    console.error('Error updating user approval:', error);
+    logger.error('Error updating user approval:', error);
     res.status(500).json({ message: 'Failed to update user status' });
   }
 });

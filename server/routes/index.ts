@@ -1,49 +1,89 @@
 import { Router } from 'express';
-import createAdminRoutes from './admin';
-import createAuthRoutes from './auth';
-import createGroupsCatalogRoutes from './groups-catalog';
-
-// Import organized feature routers
+// Import organized feature routers from feature-first folders
 import usersRouter from './users';
+import createAuthRoutes from './users/auth';
 import createProjectRoutes from './projects';
+import createAdminRoutes from './core/admin';
+import createGroupsCatalogRoutes from './collections/groups-catalog';
 import tasksRouter from './tasks';
 import collectionsRouter from './collections';
 import recipientsRouter from './recipients';
-import meetingsRouter from './meetings/index';
+import createMeetingsRouter from './meetings/index';
+import meetingNotesRouter from './meeting-notes';
 import messagingRouter from './messaging';
 import eventRequestsRouter from './event-requests';
+import eventMapRouter from './event-map';
 import importCollectionsRouter from './import-collections';
 import notificationsRouter from './notifications';
 import reportsRouter from './reports';
 import searchRouter from './search';
+import { createSmartSearchRouter } from './smart-search';
+import { SmartSearchService } from '../services/smart-search.service';
 import storageRouter from './storage';
+import documentsRouter from './documents';
+import resourcesRouter from './resources';
 import versioningRouter from './versioning';
 import coreRouter from './core';
 import meRouter from './me';
-import { createDocumentsRouter } from './documents';
+import availabilityRouter from './availability';
 import createAgendaItemsRouter from '../routes/agenda-items';
 import { createActivityLogRoutes } from './activity-log';
 import { smsUserRoutes } from './sms-users';
 import { smsTestingRoutes } from './sms-testing';
 import { smsAnnouncementRoutes } from './sms-announcement';
+import quickSmsRouter from './quick-sms';
 import monitoringRouter from './monitoring';
 import enhancedActivityRouter from './enhanced-user-activity';
 import { wishlistSuggestionsRouter, wishlistActivityRouter } from './wishlist';
 import { streamRoutes } from './stream';
+import { coolerTypesRouter, coolerInventoryRouter } from './coolers';
+import teamBoardRouter from './team-board';
+import { promotionGraphicsRouter } from './promotion-graphics';
+import migrationsRouter from './migrations';
+import { createDashboardDocumentsRoutes } from './dashboard-documents';
+import { createDriversRouter } from './drivers';
+import { createVolunteersRouter } from './volunteers';
+import { createHostsRouter } from './hosts';
+import { createEventRemindersRouter } from './event-reminders';
+import { createEmailRouter } from './email-routes';
+import { createOnboardingRouter } from './onboarding';
+import { createGoogleSheetsRouter } from './google-sheets';
+import { createGoogleCalendarRouter } from './google-calendar';
+import { createRouteOptimizationRouter } from './routes';
+import { createRecipientTspContactsRouter } from './recipient-tsp-contacts';
+import { createSandwichDistributionsRouter } from './sandwich-distributions';
+import { createImportEventsRouter } from './import-events';
+import { createDataManagementRouter } from './data-management';
+import { createPasswordResetRouter } from './password-reset';
+import { createMessageNotificationsRouter } from './message-notifications';
+import { createAnnouncementsRouter } from './announcements';
+import { createPerformanceRouter } from './performance';
+import { createAuditLogsRouter } from './audit-logs';
+import { createApiDocsRouter } from './api-docs';
+import featureFlagsRouter from './feature-flags';
+import activitiesRouter from './activities';
+import expensesRouter from './expenses';
+import objectsRouter from './objects';
 
 // Import centralized middleware
-import { createStandardMiddleware, createErrorHandler } from '../middleware';
-import type { IStorage } from '../storage';
-
-interface RouterDependencies {
-  isAuthenticated: any;
-  requirePermission: any;
-  sessionStore: any;
-  storage: IStorage;
-}
+import {
+  createStandardMiddleware,
+  createErrorHandler,
+  createPublicMiddleware,
+} from '../middleware';
+import { createErrorLogsRoutes } from './error-logs';
+import workLogsRouter from './work-logs';
+import shoutoutsRouter from './shoutouts';
+import { RouterDependencies } from '../types';
 
 export function createMainRoutes(deps: RouterDependencies) {
   const router = Router();
+
+  // Initialize Smart Search Service
+  const smartSearchService = new SmartSearchService(process.env.OPENAI_API_KEY);
+  smartSearchService.loadIndex().catch(err => {
+    console.error('Failed to load smart search index:', err);
+  });
 
   // Legacy routes - preserve existing functionality
   const adminRoutes = createAdminRoutes({
@@ -57,6 +97,13 @@ export function createMainRoutes(deps: RouterDependencies) {
     isAuthenticated: deps.isAuthenticated,
   });
   router.use('/api/auth', authRoutes);
+
+  // Backwards compatibility: redirect /api/login to /api/auth/login
+  router.all('/api/login', (req, res, next) => {
+    req.url = '/api/auth/login';
+    next('route');
+  });
+  router.use('/api/login', authRoutes);
 
   const groupsCatalogRoutes = createGroupsCatalogRoutes({
     isAuthenticated: deps.isAuthenticated,
@@ -90,6 +137,9 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/projects', createErrorHandler('projects'));
 
+  // Instantiate meetings router with required dependencies
+  const meetingsRouter = createMeetingsRouter(deps);
+
   router.use(
     '/api/tasks',
     deps.isAuthenticated,
@@ -113,6 +163,28 @@ export function createMainRoutes(deps: RouterDependencies) {
     recipientsRouter
   );
   router.use('/api/recipients', createErrorHandler('recipients'));
+
+  router.use(
+    '/api/availability',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    availabilityRouter
+  );
+  router.use('/api/availability', createErrorHandler('availability'));
+
+  // Dashboard documents configuration
+  const dashboardDocumentsRouter = createDashboardDocumentsRoutes(
+    deps.isAuthenticated,
+    deps.requirePermission,
+    deps.storage
+  );
+  router.use(
+    '/api/dashboard-documents',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    dashboardDocumentsRouter
+  );
+  router.use('/api/dashboard-documents', createErrorHandler('dashboard-documents'));
 
   router.use(
     '/api/import-collections',
@@ -165,6 +237,14 @@ export function createMainRoutes(deps: RouterDependencies) {
   router.use('/api/meetings', createErrorHandler('meetings'));
 
   router.use(
+    '/api/meeting-notes',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    meetingNotesRouter
+  );
+  router.use('/api/meeting-notes', createErrorHandler('meeting-notes'));
+
+  router.use(
     '/api/drive-links',
     deps.isAuthenticated,
     ...createStandardMiddleware(),
@@ -212,6 +292,16 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/search', createErrorHandler('search'));
 
+  // Smart Search - AI-powered app navigation
+  const smartSearchRouter = createSmartSearchRouter(smartSearchService);
+  router.use(
+    '/api/smart-search',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    smartSearchRouter
+  );
+  router.use('/api/smart-search', createErrorHandler('smart-search'));
+
   router.use(
     '/api/storage',
     deps.isAuthenticated,
@@ -220,8 +310,14 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/storage', createErrorHandler('storage'));
 
-  // Documents router with standardized middleware
-  const documentsRouter = createDocumentsRouter(deps.storage);
+  router.use(
+    '/api/objects',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    objectsRouter
+  );
+  router.use('/api/objects', createErrorHandler('objects'));
+
   router.use(
     '/api/documents',
     deps.isAuthenticated,
@@ -229,6 +325,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     documentsRouter
   );
   router.use('/api/documents', createErrorHandler('documents'));
+
+  router.use(
+    '/api/resources',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    resourcesRouter
+  );
+  router.use('/api/resources', createErrorHandler('resources'));
 
   router.use(
     '/api/versioning',
@@ -248,6 +352,34 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/activity-log', createErrorHandler('activity-log'));
 
+  // Audit logs router
+  const auditLogsRouter = createAuditLogsRouter(deps);
+  router.use(
+    '/api/audit-logs',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    auditLogsRouter
+  );
+  router.use('/api/audit-logs', createErrorHandler('audit-logs'));
+
+  // Feature Flags router (for gradual rollout)
+  router.use(
+    '/api/feature-flags',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    featureFlagsRouter
+  );
+  router.use('/api/feature-flags', createErrorHandler('feature-flags'));
+
+  // Activities router (unified task + communication system)
+  router.use(
+    '/api/activities',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    activitiesRouter
+  );
+  router.use('/api/activities', createErrorHandler('activities'));
+
   // Event Requests routes
   router.use(
     '/api/event-requests',
@@ -256,6 +388,24 @@ export function createMainRoutes(deps: RouterDependencies) {
     eventRequestsRouter
   );
   router.use('/api/event-requests', createErrorHandler('event-requests'));
+
+  // Event map routes - map view of events with addresses
+  router.use(
+    '/api/event-map',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventMapRouter
+  );
+  router.use('/api/event-map', createErrorHandler('event-map'));
+
+  // Expenses routes - expense and receipt tracking
+  router.use(
+    '/api/expenses',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    expensesRouter
+  );
+  router.use('/api/expenses', createErrorHandler('expenses'));
 
   // Me routes - user-specific endpoints
   router.use(
@@ -267,9 +417,10 @@ export function createMainRoutes(deps: RouterDependencies) {
   router.use('/api/me', createErrorHandler('me'));
 
   // SMS notification routes - SMS users router already includes /users prefix
+  // Note: Individual routes in smsUserRoutes have their own auth middleware
+  // The /sms/webhook endpoint must remain public for Twilio callbacks
   router.use(
     '/api',
-    deps.isAuthenticated,
     ...createStandardMiddleware(),
     smsUserRoutes
   );
@@ -289,6 +440,14 @@ export function createMainRoutes(deps: RouterDependencies) {
     smsAnnouncementRoutes
   );
   router.use('/api/sms-announcement', createErrorHandler('sms-announcement'));
+
+  router.use(
+    '/api/quick-sms',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    quickSmsRouter
+  );
+  router.use('/api/quick-sms', createErrorHandler('quick-sms'));
 
   router.use(
     '/api/monitoring',
@@ -315,6 +474,41 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/wishlist-activity', createErrorHandler('wishlist-activity'));
 
+  // Team board routes
+  router.use(
+    '/api/team-board',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    teamBoardRouter
+  );
+  router.use('/api/team-board', createErrorHandler('team-board'));
+
+  // Promotion graphics routes
+  router.use(
+    '/api/promotion-graphics',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    promotionGraphicsRouter
+  );
+  router.use('/api/promotion-graphics', createErrorHandler('promotion-graphics'));
+
+  // Cooler tracking routes
+  router.use(
+    '/api/cooler-types',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    coolerTypesRouter
+  );
+  router.use('/api/cooler-types', createErrorHandler('cooler-types'));
+
+  router.use(
+    '/api/cooler-inventory',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    coolerInventoryRouter
+  );
+  router.use('/api/cooler-inventory', createErrorHandler('cooler-inventory'));
+
   // Enhanced user activity tracking (stub) - enabled to prevent 404 errors
   router.use('/api/enhanced-user-activity', enhancedActivityRouter);
 
@@ -326,6 +520,235 @@ export function createMainRoutes(deps: RouterDependencies) {
     streamRoutes
   );
   router.use('/api/stream', createErrorHandler('stream'));
+
+  // Client error logging endpoint (no auth required so we can capture pre-login issues)
+  const errorLogsRouter = createErrorLogsRoutes(deps.storage);
+  router.use(
+    '/api/error-logs',
+    ...createPublicMiddleware(),
+    errorLogsRouter
+  );
+  router.use('/api/error-logs', createErrorHandler('error-logs'));
+
+  // Work log time tracking endpoints
+  router.use(
+    '/api/work-logs',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    workLogsRouter
+  );
+  router.use('/api/work-logs', createErrorHandler('work-logs'));
+
+  // Volunteer shoutouts and recognition tools
+  router.use(
+    '/api/shoutouts',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    shoutoutsRouter
+  );
+  router.use('/api/shoutouts', createErrorHandler('shoutouts'));
+
+  // Database migrations (admin only)
+  router.use(
+    '/api/migrations',
+    deps.isAuthenticated,
+    migrationsRouter
+  );
+  router.use('/api/migrations', createErrorHandler('migrations'));
+
+  // Drivers management
+  const driversRouter = createDriversRouter(deps);
+  router.use(
+    '/api/drivers',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    driversRouter
+  );
+  router.use('/api/drivers', createErrorHandler('drivers'));
+
+  // Volunteers management
+  const volunteersRouter = createVolunteersRouter(deps);
+  router.use(
+    '/api/volunteers',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    volunteersRouter
+  );
+  router.use('/api/volunteers', createErrorHandler('volunteers'));
+
+  // Hosts management
+  const hostsRouter = createHostsRouter(deps);
+  router.use(
+    '/api',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    hostsRouter
+  );
+  router.use('/api/hosts*', createErrorHandler('hosts'));
+
+  // Event reminders
+  const eventRemindersRouter = createEventRemindersRouter(deps);
+  router.use(
+    '/api/event-reminders',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventRemindersRouter
+  );
+  router.use('/api/event-reminders', createErrorHandler('event-reminders'));
+
+  // Email/inbox system
+  const emailRouter = createEmailRouter(deps);
+  router.use(
+    '/api/emails',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    emailRouter
+  );
+  router.use('/api/emails', createErrorHandler('emails'));
+
+  // Onboarding challenges
+  const onboardingRouter = createOnboardingRouter(deps);
+  router.use(
+    '/api/onboarding',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    onboardingRouter
+  );
+  router.use('/api/onboarding', createErrorHandler('onboarding'));
+
+  // Google Sheets integration
+  const googleSheetsRouter = createGoogleSheetsRouter(deps);
+  router.use(
+    '/api/google-sheets',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    googleSheetsRouter
+  );
+  router.use('/api/google-sheets', createErrorHandler('google-sheets'));
+
+  // Google Calendar integration
+  const googleCalendarRouter = createGoogleCalendarRouter(deps);
+  router.use(
+    '/api/google-calendar',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    googleCalendarRouter
+  );
+  router.use('/api/google-calendar', createErrorHandler('google-calendar'));
+
+  // Route optimization
+  const routeOptimizationRouter = createRouteOptimizationRouter(deps);
+  router.use(
+    '/api/routes',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    routeOptimizationRouter
+  );
+  router.use('/api/routes', createErrorHandler('route-optimization'));
+
+  // Recipient TSP contacts
+  const recipientTspContactsRouter = createRecipientTspContactsRouter(deps);
+  router.use(
+    '/api/recipient-tsp-contacts',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    recipientTspContactsRouter
+  );
+  router.use('/api/recipient-tsp-contacts', createErrorHandler('recipient-tsp-contacts'));
+
+  // Sandwich distributions
+  const sandwichDistributionsRouter = createSandwichDistributionsRouter(deps);
+  router.use(
+    '/api/sandwich-distributions',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    sandwichDistributionsRouter
+  );
+  router.use('/api/sandwich-distributions', createErrorHandler('sandwich-distributions'));
+
+  // Event imports
+  const importEventsRouter = createImportEventsRouter(deps);
+  router.use(
+    '/api/import',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    importEventsRouter
+  );
+  router.use('/api/import', createErrorHandler('import-events'));
+
+  // Data management (exports, bulk operations, integrity checks)
+  const dataManagementRouter = createDataManagementRouter(deps);
+  router.use(
+    '/api/data-management',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    dataManagementRouter
+  );
+  router.use('/api/data-management', createErrorHandler('data-management'));
+
+  // Password reset
+  const passwordResetRouter = createPasswordResetRouter(deps);
+  router.use(
+    '/api',
+    ...createPublicMiddleware(),
+    passwordResetRouter
+  );
+
+  // Message notifications
+  const messageNotificationsRouter = createMessageNotificationsRouter(deps);
+  router.use(
+    '/api/message-notifications',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    messageNotificationsRouter
+  );
+  router.use('/api/message-notifications', createErrorHandler('message-notifications'));
+
+  // Announcements
+  const announcementsRouter = createAnnouncementsRouter(deps);
+  router.use(
+    '/api/announcements',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    announcementsRouter
+  );
+  router.use('/api/announcements', createErrorHandler('announcements'));
+
+  // Performance monitoring
+  const performanceRouter = createPerformanceRouter(deps);
+  router.use(
+    '/api/performance',
+    ...createStandardMiddleware(),
+    performanceRouter
+  );
+  router.use('/api/performance', createErrorHandler('performance'));
+
+  // Feature Flags (Admin only)
+  router.use(
+    '/api/feature-flags',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    featureFlagsRouter
+  );
+  router.use('/api/feature-flags', createErrorHandler('feature-flags'));
+
+  // API Documentation (OpenAPI/Swagger)
+  // Public route - no authentication required to view API docs
+  const apiDocsRouter = createApiDocsRouter();
+  router.use(
+    '/api/docs',
+    ...createPublicMiddleware(),
+    apiDocsRouter
+  );
+
+  // Object storage upload endpoint
+  router.use(
+    '/api/objects',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    objectsRouter
+  );
+  router.use('/api/objects', createErrorHandler('objects'));
 
   return router;
 }

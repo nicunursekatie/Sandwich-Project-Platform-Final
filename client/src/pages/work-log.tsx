@@ -6,21 +6,33 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { hasPermission, PERMISSIONS } from '@shared/auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
+import { useResourcePermissions, usePermissions } from '@/hooks/useResourcePermissions';
 
 export default function WorkLogPage() {
   const { user } = useAuth();
+  const { trackView, trackFormSubmit } = useActivityTracker();
+
+  useEffect(() => {
+    trackView(
+      'Work Log',
+      'Work Log',
+      'Work Log Page',
+      'User accessed work log page'
+    );
+  }, [trackView]);
 
   // Simplified permissions: CREATE_WORK_LOGS automatically includes edit/delete own permissions
-  const canCreateLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD);
-  const canEditOwnLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD); // Automatically included
-  const canDeleteOwnLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_ADD); // Automatically included
-  const canViewAllLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_VIEW);
-  const canEditAllLogs = hasPermission(user, PERMISSIONS.WORK_LOGS_EDIT_ALL);
-  const canDeleteAllLogs = hasPermission(
-    user,
-    PERMISSIONS.WORK_LOGS_DELETE_ALL
-  );
+  const { canAdd, canView, canEdit, canDelete } = useResourcePermissions('WORK_LOGS');
+  const { WORK_LOGS_EDIT_ALL: canEditAllLogs, WORK_LOGS_DELETE_ALL: canDeleteAllLogs } = usePermissions(['WORK_LOGS_EDIT_ALL', 'WORK_LOGS_DELETE_ALL']);
+
+  const canCreateLogs = canAdd;
+  const canEditOwnLogs = canAdd; // Automatically included
+  const canDeleteOwnLogs = canAdd; // Automatically included
+  const canViewAllLogs = canView;
   const [description, setDescription] = useState('');
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
@@ -38,16 +50,14 @@ export default function WorkLogPage() {
   } = useQuery({
     queryKey: ['/api/work-logs'],
     queryFn: async () => {
-      console.log('🚀 Work logs query function called');
+      logger.log('🚀 Work logs query function called');
       const data = await apiRequest('GET', '/api/work-logs');
-      console.log('🚀 Work logs API response data:', data);
+      logger.log('🚀 Work logs API response data:', data);
       return data;
     },
     enabled: !!user, // Only fetch when user is authenticated
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache results (TanStack Query v5 uses gcTime instead of cacheTime)
-    refetchOnMount: true, // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window gains focus
+    staleTime: 2 * 60 * 1000, // 2 minutes - work logs need reasonable freshness for collaborative updates
+    refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
   // Ensure logs is always an array
@@ -255,7 +265,7 @@ export default function WorkLogPage() {
                           : new Date(log.createdAt).toLocaleDateString()}
                       </span>
                       {log?.userId !== (user as any)?.id && (
-                        <span className="text-brand-primary text-xs px-2 py-1 bg-blue-50 rounded-full">
+                        <span className="text-brand-primary text-xs px-2 py-1 bg-brand-primary-lighter rounded-full">
                           Other user
                         </span>
                       )}

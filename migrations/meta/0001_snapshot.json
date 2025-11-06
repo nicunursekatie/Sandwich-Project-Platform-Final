@@ -1,6 +1,6 @@
 {
-  "id": "45df7df9-4e7a-405a-ad51-aa1740271ad4",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "dae5c1cf-02ea-4ba0-b89a-8c923933efaa",
+  "prevId": "1de470bc-8bae-4691-a589-df8f97befc4a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -481,6 +481,83 @@
       },
       "indexes": {},
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.availability_slots": {
+      "name": "availability_slots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_at": {
+          "name": "start_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_at": {
+          "name": "end_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "availability_slots_user_id_users_id_fk": {
+          "name": "availability_slots_user_id_users_id_fk",
+          "tableFrom": "availability_slots",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1149,6 +1226,150 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cooler_inventory": {
+      "name": "cooler_inventory",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "host_home_id": {
+          "name": "host_home_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cooler_type_id": {
+          "name": "cooler_type_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reported_at": {
+          "name": "reported_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "reported_by": {
+          "name": "reported_by",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cooler_inventory_cooler_type_id_cooler_types_id_fk": {
+          "name": "cooler_inventory_cooler_type_id_cooler_types_id_fk",
+          "tableFrom": "cooler_inventory",
+          "tableTo": "cooler_types",
+          "columnsFrom": [
+            "cooler_type_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.cooler_types": {
+      "name": "cooler_types",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
           "default": "now()"
         }
       },
@@ -2429,13 +2650,13 @@
           "name": "first_name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "last_name": {
           "name": "last_name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "email": {
           "name": "email",
@@ -2453,10 +2674,22 @@
           "name": "organization_name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "department": {
           "name": "department",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "organization_category": {
+          "name": "organization_category",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "school_classification": {
+          "name": "school_classification",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
@@ -2472,6 +2705,13 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_confirmed": {
+          "name": "is_confirmed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "message": {
           "name": "message",
@@ -2555,6 +2795,42 @@
         },
         "estimated_sandwich_count": {
           "name": "estimated_sandwich_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_sandwich_count_min": {
+          "name": "estimated_sandwich_count_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_sandwich_count_max": {
+          "name": "estimated_sandwich_count_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_sandwich_range_type": {
+          "name": "estimated_sandwich_range_type",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volunteer_count": {
+          "name": "volunteer_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adult_count": {
+          "name": "adult_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "children_count": {
+          "name": "children_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -2660,6 +2936,18 @@
         "pickup_date_time": {
           "name": "pickup_date_time",
           "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pickup_time_window": {
+          "name": "pickup_time_window",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pickup_person_responsible": {
+          "name": "pickup_person_responsible",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -3053,6 +3341,30 @@
           "primaryKey": false,
           "notNull": false
         },
+        "speaker_audience_type": {
+          "name": "speaker_audience_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "speaker_duration": {
+          "name": "speaker_duration",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delivery_time_window": {
+          "name": "delivery_time_window",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delivery_parking_access": {
+          "name": "delivery_parking_access",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -3225,6 +3537,12 @@
         },
         "confirmed_at": {
           "name": "confirmed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reminder_sent_at": {
+          "name": "reminder_sent_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
@@ -3434,6 +3752,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "is_primary": {
           "name": "is_primary",
           "type": "boolean",
@@ -3450,6 +3774,37 @@
         "host_location": {
           "name": "host_location",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weekly_active": {
+          "name": "weekly_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "last_scraped": {
+          "name": "last_scraped",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geocoded_at": {
+          "name": "geocoded_at",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -3622,6 +3977,24 @@
         "notes": {
           "name": "notes",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geocoded_at": {
+          "name": "geocoded_at",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -6801,6 +7174,30 @@
           "notNull": true,
           "default": 0
         },
+        "individual_deli": {
+          "name": "individual_deli",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "individual_turkey": {
+          "name": "individual_turkey",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "individual_ham": {
+          "name": "individual_ham",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "individual_pbj": {
+          "name": "individual_pbj",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "group1_name": {
           "name": "group1_name",
           "type": "text",
@@ -7635,6 +8032,82 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.team_board_items": {
+      "name": "team_board_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'note'"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_name": {
+          "name": "created_by_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_to": {
+          "name": "assigned_to",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "assigned_to_name": {
+          "name": "assigned_to_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.user_activity_logs": {
       "name": "user_activity_logs",
       "schema": "",
@@ -8038,6 +8511,18 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'[]'"
+        },
+        "permissions_modified_at": {
+          "name": "permissions_modified_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permissions_modified_by": {
+          "name": "permissions_modified_by",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
         },
         "metadata": {
           "name": "metadata",
