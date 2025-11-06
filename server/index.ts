@@ -69,6 +69,10 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Security middleware - must come after body parsers
+import { prototypePollutionGuard } from './middleware/prototype-pollution-guard';
+app.use(prototypePollutionGuard);  // Detect prototype pollution attempts
+
 // Add CDN caching headers for static assets
 app.use((req: Request, res: Response, next: NextFunction) => {
   const path = req.path;
@@ -310,6 +314,11 @@ async function bootstrap() {
 
           // Error tracking middleware (before final error handler)
           app.use(errorTrackingMiddleware);
+
+          // JSON error handler - catches malformed JSON from express.json()
+          // Must be after routes to properly catch errors
+          const { jsonErrorHandler } = await import('./middleware/json-validator');
+          app.use(jsonErrorHandler);
 
           // CRITICAL FIX: Add JSON 404 catch-all for unmatched API routes
           app.all('/api/*', (req: Request, res: Response) => {

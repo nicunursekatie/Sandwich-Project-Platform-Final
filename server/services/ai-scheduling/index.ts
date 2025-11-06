@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '../../utils/production-safe-logger';
+import { parseJsonStrict } from '../../utils/safe-json';
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -105,16 +106,25 @@ You must respond with a JSON object containing exactly these fields:
     });
 
     const aiResponse = completion.choices[0].message.content || '';
-    
+
     // Log the raw AI response for debugging
     logger.log(`Raw AI response: ${aiResponse}`);
-    
-    // Parse the JSON response from OpenAI
-    const parsedResponse: OpenAiDateResponse = JSON.parse(aiResponse);
-    
+
+    // Parse the JSON response from OpenAI (with error handling)
+    let parsedResponse: OpenAiDateResponse;
+    try {
+      parsedResponse = parseJsonStrict<OpenAiDateResponse>(aiResponse, 'OpenAI API response');
+    } catch (error) {
+      logger.error('Failed to parse OpenAI response', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        responsePreview: aiResponse.substring(0, 200)
+      });
+      throw new Error('AI scheduling service returned invalid JSON response');
+    }
+
     // Log the parsed response
     logger.log(`Parsed AI response: ${JSON.stringify(parsedResponse)}`);
-    
+
     // Validate the response has required fields
     if (!parsedResponse.recommendedDate || !parsedResponse.reasoning || typeof parsedResponse.confidence !== 'number') {
       logger.error(`Invalid AI response structure. recommendedDate: ${parsedResponse.recommendedDate}, reasoning: ${parsedResponse.reasoning}, confidence: ${parsedResponse.confidence}`);

@@ -15,6 +15,7 @@
     "db:migrate-focus": "tsx scripts/migrate-focus-areas.ts",
     "db:seed": "tsx scripts/seed-dev-database.ts",
     "db:reset": "tsx scripts/reset-dev-database.ts",
+    "verify:migrations": "tsx scripts/verify-migrations.ts",
     "test": "npm run test:unit && npm run test:integration",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:unit": "jest --config jest.config.js",

@@ -15,6 +15,7 @@ import { receiptUpload } from '../middleware/uploads';
 import { ObjectStorageService } from '../objectStorage';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { safeDeleteFile } from '../utils/file-cleanup';
 
 // Initialize object storage service for receipt uploads
 const objectStorageService = new ObjectStorageService();
@@ -266,7 +267,7 @@ expensesRouter.post('/', receiptUpload.single('receipt'), async (req: Authentica
 
     // Clean up uploaded file if it exists
     if (req.file?.path) {
-      await fs.unlink(req.file.path).catch(() => {});
+      await safeDeleteFile(req.file.path, 'expense creation cleanup after error');
     }
 
     if (error instanceof z.ZodError) {
@@ -387,7 +388,7 @@ expensesRouter.post('/:id/receipt', receiptUpload.single('receipt'), async (req:
       .where(eq(expenses.id, expenseId));
 
     if (!existingExpense) {
-      await fs.unlink(req.file.path).catch(() => {});
+      await safeDeleteFile(req.file.path, 'receipt upload cleanup - expense not found');
       return res.status(404).json({ error: 'Expense not found' });
     }
 
@@ -421,7 +422,7 @@ expensesRouter.post('/:id/receipt', receiptUpload.single('receipt'), async (req:
 
     // Clean up uploaded file if it exists
     if (req.file?.path) {
-      await fs.unlink(req.file.path).catch(() => {});
+      await safeDeleteFile(req.file.path, 'receipt upload cleanup after error');
     }
 
     res.status(500).json({ error: 'Failed to upload receipt' });

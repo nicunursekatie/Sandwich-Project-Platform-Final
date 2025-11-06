@@ -3,6 +3,7 @@ import { storage } from './storage-wrapper';
 import { getDefaultPermissionsForRole as getSharedPermissions } from '../shared/auth-utils';
 import bcrypt from 'bcrypt';
 import { logger } from './utils/production-safe-logger';
+import { saveSession } from './utils/session-utils';
 
 // Using shared permissions from auth-utils
 
@@ -686,19 +687,18 @@ export function setupAuth(app: Express) {
       req.session.user = sessionUser;
       req.user = sessionUser;
 
-      // Force session save to ensure persistence
-      req.session.save((err: any) => {
-        if (err) {
-          logger.error('Session save error:', err);
-          return res
-            .status(500)
-            .json({ success: false, message: 'Session save failed' });
-        }
+      // Force session save to ensure persistence (await to prevent race condition)
+      try {
+        await saveSession(req);
         logger.log('Session saved successfully for user:', sessionUser.email);
         logger.log('Session ID:', req.sessionID);
-        logger.log('Session data:', req.session);
         res.json({ success: true, user: sessionUser });
-      });
+      } catch (err) {
+        logger.error('Session save error:', err);
+        return res
+          .status(500)
+          .json({ success: false, message: 'Session save failed. Please try again.' });
+      }
     } catch (error) {
       logger.error('Login error:', error);
       res.status(500).json({ success: false, message: 'Login failed' });
@@ -1023,10 +1023,13 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
           isActive: freshUser.isActive,
         };
 
-        // Force session save to ensure persistence
-        req.session.save((err: unknown) => {
-          if (err) logger.error('Session save error:', err);
-        });
+        // Attempt to save updated session (non-critical, don't fail request)
+        try {
+          await saveSession(req);
+        } catch (err) {
+          logger.error('Failed to save updated session (non-critical):', err);
+          // Continue anyway - session update is not critical for this request
+        }
       }
 
       // CRITICAL: Always set req.user to the fresh database user data
